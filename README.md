@@ -146,6 +146,13 @@ Five waves of part-time work, TypeScript first because that is where the largest
 
 **This is measured, not believed.** From wave 1, six signals are tracked on the repositories where agent-authored pull requests can be seen: the share that pass the boundary check on their first CI run (target above 90%), the median turns from a violation to green (target one), rules caught by the authoring guardrails, Stop-hook latency, the share of rules carrying `fix` text, and budget raises merged (target zero). If the first two do not move, the agent surface is cut back to the reporter and the hook, and what remains is a faster dependency-cruiser that also covers .NET and Python. Saying that in advance is cheaper than discovering it later.
 
+## Validated nightly against real repositories
+
+Every night the repositories in [testbeds/manifest.yaml](testbeds/manifest.yaml) are cloned at a pinned commit and their incumbent tool runs with its own configuration: dependency-cruiser, NetArchTest, ArchUnitNET or import-linter. From wave 1 Rulebearing runs beside it, and the table shows whether the two agree to the finding and how long each took ([testbeds/README.md](testbeds/README.md)). The latest full run is on the [`testbeds-results`](https://github.com/benbahrenburg/rulebearing/tree/testbeds-results) branch; the table below is refreshed from it by pull request.
+
+<!-- testbeds:start -->
+<!-- testbeds:end -->
+
 ## Built the way it asks you to build
 
 This repository holds itself to the bar it proposes for yours. Every gate below is required and green today, before any feature code exists, so the first feature pull request faces the finished harness.

@@ -213,34 +213,40 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
-      - run: cargo build --release -p rb-cli
+      # Layer 1 (recorded test/extract cases, threshold.json) and layer 2 (upstream specs through
+      # the shim, excluded.json); conformance/dependency-cruiser/run.sh documents both.
       - run: conformance/dependency-cruiser/run.sh
-      # excluded.json may only shrink (ADR-0009).
-      - run: conformance/check-ratchet.sh dependency-cruiser
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: layer1-report
+          path: target/conformance/layer1.md
 
   conformance-archunitnet:
     name: conformance-gate-2
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      # The committed TestAssembly fixture, its hashes, portable PDB and notice; ported.json.
+      - run: scripts/gate2-check.sh
+
+  ratchets:
+    name: ratchets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
-      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
-      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
-        with:
-          dotnet-version: 10.0.x
-      - run: cargo build --release -p rb-cli
-      - run: conformance/archunitnet/run.sh
-      - run: conformance/check-ratchet.sh archunitnet
+      # excluded.json may only shrink, ported and the layer 1 threshold may only rise
+      # (docs/adr/0009-conformance-suites-as-specification.md).
+      - run: scripts/ratchets.sh
 
   self-check:
     name: self-check

@@ -1,0 +1,4 @@
+{
+  "$comment": "Conformance gate 1 layer 1: the minimum share of recorded test/extract cases the Rust extractor must pass. It may only rise. 0 while the harness lands without an extractor (plan 0000 sub-wave 0B), 0.95 from sub-wave 0C, 1.0 from wave 1 (docs/plans/pending/0000-wave-0-spike.md § 1.7).",
+  "layer1": 0
+}

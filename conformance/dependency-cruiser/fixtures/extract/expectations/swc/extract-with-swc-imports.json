@@ -1,0 +1,98 @@
+[
+  {
+    "id": "test/extract/swc/extract-with-swc-imports.spec.mjs#1",
+    "title": "[U] ast-extractors/extract-swc - regular imports extracts 'import for side effects only'",
+    "call": 1,
+    "surface": "walk-swc",
+    "cwd": ".",
+    "input": {
+      "parser": "swc",
+      "source": "import './import-for-side-effects';",
+      "extension": null,
+      "exoticRequireStrings": []
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./import-for-side-effects",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/swc/extract-with-swc-imports.spec.mjs#2",
+    "title": "[U] ast-extractors/extract-swc - regular imports extracts 'import some stuff only'",
+    "call": 1,
+    "surface": "walk-swc",
+    "cwd": ".",
+    "input": {
+      "parser": "swc",
+      "source": "import { SomeSingleExport } from './ts-thing';",
+      "extension": null,
+      "exoticRequireStrings": []
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./ts-thing",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/swc/extract-with-swc-imports.spec.mjs#3",
+    "title": "[U] ast-extractors/extract-swc - regular imports extracts 'import some stuff only and rename that'",
+    "call": 1,
+    "surface": "walk-swc",
+    "cwd": ".",
+    "input": {
+      "parser": "swc",
+      "source": "import { SomeSingleExport as RenamedSingleExport } from './ts-thing';",
+      "extension": null,
+      "exoticRequireStrings": []
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./ts-thing",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/swc/extract-with-swc-imports.spec.mjs#4",
+    "title": "[U] ast-extractors/extract-swc - regular imports extracts 'import everything into a variable'",
+    "call": 1,
+    "surface": "walk-swc",
+    "cwd": ".",
+    "input": {
+      "parser": "swc",
+      "source": "import * as entireTsOtherThingAsVariable from './ts-thing';",
+      "extension": null,
+      "exoticRequireStrings": []
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./ts-thing",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "import"
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "$comment": "Conformance gate 2 ratchet (docs/adr/0009-conformance-suites-as-specification.md): `ported` may only rise. `total` is filled when the port inventory is taken in wave 2 (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md); `customPredicate` counts tests that need a custom predicate rather than a data-driven case.",
+  "pin": "0.13.4",
+  "total": 0,
+  "ported": 0,
+  "customPredicate": 0
+}

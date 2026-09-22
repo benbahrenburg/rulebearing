@@ -1,0 +1,418 @@
+[
+  {
+    "id": "test/extract/resolve/index.typescript.spec.mjs#1",
+    "title": "[I] extract/resolve/index - typescript resolves to ts before it considers vue",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": ".",
+    "input": {
+      "module": {
+        "module": "./x",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__",
+      "fileDir": "test/extract/resolve/__mocks__/vue-last",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "vue-last/x.ts",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.typescript.spec.mjs#2",
+    "title": "[I] extract/resolve/index - typescript Resolves the .ts even when the import includes a (non-existing) .js with explicit extension",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": "test/extract/resolve/__mocks__/resolve-to-ts-even-when-imported-as-js",
+    "input": {
+      "module": {
+        "module": "./i-am-secretly-typescript.js",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__/resolve-to-ts-even-when-imported-as-js",
+      "fileDir": "test/extract/resolve/__mocks__/resolve-to-ts-even-when-imported-as-js",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "i-am-secretly-typescript.ts",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.typescript.spec.mjs#3",
+    "title": "[I] extract/resolve/index - typescript Resolves the .js even when the import includes an existing .js with explicit extension and the .ts exists",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": "test/extract/resolve/__mocks__/resolve-to-js-even-when-imported-as-js",
+    "input": {
+      "module": {
+        "module": "./i-am-genuinely-javascript.js",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__/resolve-to-js-even-when-imported-as-js",
+      "fileDir": "test/extract/resolve/__mocks__/resolve-to-js-even-when-imported-as-js",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "i-am-genuinely-javascript.js",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.typescript.spec.mjs#4",
+    "title": "[I] extract/resolve/index - typescript Does NOT resolve the .ts when the import includes a (non-existing) .cjs with explicit extension",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": "test/extract/resolve/__mocks__/resolve-to-ts-even-when-imported-as-js",
+    "input": {
+      "module": {
+        "module": "./i-am-secretly-typescript.cjs",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__/resolve-to-ts-even-when-imported-as-js",
+      "fileDir": "test/extract/resolve/__mocks__/resolve-to-ts-even-when-imported-as-js",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "./i-am-secretly-typescript.cjs",
+      "coreModule": false,
+      "followable": false,
+      "couldNotResolve": true,
+      "dependencyTypes": [
+        "unknown"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.typescript.spec.mjs#5",
+    "title": "[I] extract/resolve/index - typescript Resolves the .cts when the import includes a (non-existing) .cjs with explicit extension (even when .d.cts exists)",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": "test/extract/resolve/__mocks__/resolve-to-cts-even-when-imported-as-cjs",
+    "input": {
+      "module": {
+        "module": "./i-am-secretly-typescript.cjs",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__/resolve-to-cts-even-when-imported-as-cjs",
+      "fileDir": "test/extract/resolve/__mocks__/resolve-to-cts-even-when-imported-as-cjs",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "i-am-secretly-typescript.cts",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.typescript.spec.mjs#6",
+    "title": "[I] extract/resolve/index - typescript Resolves the .d.cts when the import includes a (non-existing) .cjs with explicit extension",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": "test/extract/resolve/__mocks__/resolve-to-d-cts-even-when-imported-as-cjs",
+    "input": {
+      "module": {
+        "module": "./i-am-secretly-typescript.cjs",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__/resolve-to-d-cts-even-when-imported-as-cjs",
+      "fileDir": "test/extract/resolve/__mocks__/resolve-to-d-cts-even-when-imported-as-cjs",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "i-am-secretly-typescript.d.cts",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.typescript.spec.mjs#7",
+    "title": "[I] extract/resolve/index - typescript Resolves the .cjs when the import includes an existing .cjs with explicit extension and the .cts exists",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": "test/extract/resolve/__mocks__/resolve-to-cjs-when-imported-as-cjs",
+    "input": {
+      "module": {
+        "module": "./i-am-just-commonjs.cjs",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__/resolve-to-cjs-when-imported-as-cjs",
+      "fileDir": "test/extract/resolve/__mocks__/resolve-to-cjs-when-imported-as-cjs",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "i-am-just-commonjs.cjs",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.typescript.spec.mjs#8",
+    "title": "[I] extract/resolve/index - typescript Resolves the .mts when the import includes a (non-existing) .mjs with explicit extension (even when .d.mts exists)",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": "test/extract/resolve/__mocks__/resolve-to-mts-even-when-imported-as-mjs",
+    "input": {
+      "module": {
+        "module": "./i-am-secretly-typescript.mjs",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__/resolve-to-mts-even-when-imported-as-mjs",
+      "fileDir": "test/extract/resolve/__mocks__/resolve-to-mts-even-when-imported-as-mjs",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "i-am-secretly-typescript.mts",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.typescript.spec.mjs#9",
+    "title": "[I] extract/resolve/index - typescript Resolves the .d.mts when the import includes a (non-existing) .mjs with explicit extension",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": "test/extract/resolve/__mocks__/resolve-to-d-mts-even-when-imported-as-mjs",
+    "input": {
+      "module": {
+        "module": "./i-am-secretly-typescript.mjs",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__/resolve-to-d-mts-even-when-imported-as-mjs",
+      "fileDir": "test/extract/resolve/__mocks__/resolve-to-d-mts-even-when-imported-as-mjs",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "i-am-secretly-typescript.d.mts",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.typescript.spec.mjs#10",
+    "title": "[I] extract/resolve/index - typescript Resolves the .mjs when the import includes an existing .mjs with explicit extension and the .cts exists",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": "test/extract/resolve/__mocks__/resolve-to-mjs-when-imported-as-mjs",
+    "input": {
+      "module": {
+        "module": "./i-am-just-esm.mjs",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__/resolve-to-mjs-when-imported-as-mjs",
+      "fileDir": "test/extract/resolve/__mocks__/resolve-to-mjs-when-imported-as-mjs",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "i-am-just-esm.mjs",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.typescript.spec.mjs#11",
+    "title": "[I] extract/resolve/index - typescript Does NOT resolve to something non-typescript-ish when the import includes a (non-existing) .js with explicit extension",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": "test/extract/resolve/__mocks__/donot-resolve-to-non-ts",
+    "input": {
+      "module": {
+        "module": "./there-is-a-cjs-variant-of-me-but-you-will-not-find-it.js",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__/donot-resolve-to-non-ts",
+      "fileDir": "test/extract/resolve/__mocks__/donot-resolve-to-non-ts",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "./there-is-a-cjs-variant-of-me-but-you-will-not-find-it.js",
+      "coreModule": false,
+      "followable": false,
+      "couldNotResolve": true,
+      "dependencyTypes": [
+        "unknown"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.typescript.spec.mjs#12",
+    "title": "[I] extract/resolve/index - typescript resolves triple slash directives - local",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": "test/extract/resolve/__mocks__/triple-slash-directives",
+    "input": {
+      "module": {
+        "module": "./hello",
+        "moduleSystem": "tsd"
+      },
+      "baseDir": "test/extract/resolve/__mocks__/triple-slash-directives",
+      "fileDir": "test/extract/resolve/__mocks__/triple-slash-directives",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "hello.ts",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.typescript.spec.mjs#13",
+    "title": "[I] extract/resolve/index - typescript resolves triple slash directives - external",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": "test/extract/resolve/__mocks__/triple-slash-directives",
+    "input": {
+      "module": {
+        "module": "something",
+        "moduleSystem": "tsd"
+      },
+      "baseDir": "test/extract/resolve/__mocks__/triple-slash-directives",
+      "fileDir": "test/extract/resolve/__mocks__/triple-slash-directives",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "node_modules/something/index.js",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "npm"
+      ]
+    }
+  }
+]
