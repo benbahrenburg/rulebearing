@@ -1,74 +1,17 @@
 {
   "$id": "https://benbahrenburg.github.io/rulebearing/schema/v1.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "GraphDocument",
-  "description": "The graph document: the module layer, the optional folder layer, the summary, the cache's\nrevision data and the additive code layer.",
-  "type": "object",
-  "properties": {
-    "code": {
-      "description": "Additive: the code layer (types, members, attributes, calls). Empty until an extractor\nfills it ([FR-EXT-DN-03](../../../docs/prd.md#fr-ext-dn-03)).",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/CodeLayer"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "folders": {
-      "description": "The folder layer, present when metrics or folder rules asked for it.",
-      "type": [
-        "array",
-        "null"
-      ],
-      "items": {
-        "$ref": "#/definitions/Folder"
-      }
-    },
-    "modules": {
-      "description": "Module layer nodes, sorted by `source` before output\n([FR-CORE-07](../../../docs/prd.md#fr-core-07)).",
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/Module"
-      }
-    },
-    "revisionData": {
-      "description": "The cache key: the git revision and the changes since it.",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/RevisionData"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "summary": {
-      "description": "Counts, violations and the options the run used.",
-      "allOf": [
-        {
-          "$ref": "#/definitions/Summary"
-        }
-      ]
-    }
-  },
   "additionalProperties": false,
-  "required": [
-    "modules",
-    "summary"
-  ],
   "definitions": {
     "AttributeElement": {
       "description": "An attribute or decorator applied to a type or member.",
-      "type": "object",
       "properties": {
         "arguments": {
           "description": "Constructor and named arguments, as literal text.",
-          "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "type": "array"
         },
         "attributeType": {
           "description": "The attribute type's full name.",
@@ -76,12 +19,12 @@
         },
         "column": {
           "description": "1-based column.",
+          "format": "uint32",
+          "minimum": 0,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "minimum": 0
+          ]
         },
         "file": {
           "description": "Repository-relative path, absent when attribution failed.",
@@ -91,21 +34,21 @@
           ]
         },
         "language": {
-          "description": "The language the element came from.",
           "allOf": [
             {
               "$ref": "#/definitions/Language"
             }
-          ]
+          ],
+          "description": "The language the element came from."
         },
         "line": {
           "description": "1-based line.",
+          "format": "uint32",
+          "minimum": 0,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "minimum": 0
+          ]
         },
         "target": {
           "description": "The full name of the type or `Type.member` it is applied to.",
@@ -116,28 +59,28 @@
         "target",
         "attributeType",
         "language"
-      ]
+      ],
+      "type": "object"
     },
     "Attribution": {
-      "type": "string",
       "enum": [
         "pdb",
         "inferred",
         "none"
-      ]
+      ],
+      "type": "string"
     },
     "CallElement": {
       "description": "A call from one member to another.",
-      "type": "object",
       "properties": {
         "column": {
           "description": "1-based column.",
+          "format": "uint32",
+          "minimum": 0,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "minimum": 0
+          ]
         },
         "file": {
           "description": "Repository-relative path, absent when attribution failed.",
@@ -151,21 +94,21 @@
           "type": "string"
         },
         "language": {
-          "description": "The language the element came from.",
           "allOf": [
             {
               "$ref": "#/definitions/Language"
             }
-          ]
+          ],
+          "description": "The language the element came from."
         },
         "line": {
           "description": "1-based line.",
+          "format": "uint32",
+          "minimum": 0,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "minimum": 0
+          ]
         },
         "to": {
           "description": "The called member, `Type.member`.",
@@ -176,21 +119,22 @@
         "from",
         "to",
         "language"
-      ]
+      ],
+      "type": "object"
     },
     "Change": {
+      "additionalProperties": true,
       "description": "One entry in [`RevisionData::changes`]. Extra keys are kept, as upstream allows them.",
-      "type": "object",
       "properties": {
         "args": {
           "description": "The command-line arguments of the cached run.",
+          "items": {
+            "type": "string"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "type": "string"
-          }
+          ]
         },
         "checksum": {
           "description": "Content checksum.",
@@ -218,22 +162,21 @@
           ]
         },
         "type": {
-          "description": "What happened to it.",
           "allOf": [
             {
               "$ref": "#/definitions/ChangeType"
             }
-          ]
+          ],
+          "description": "What happened to it."
         }
       },
-      "additionalProperties": true,
       "required": [
         "name",
         "type"
-      ]
+      ],
+      "type": "object"
     },
     "ChangeType": {
-      "type": "string",
       "enum": [
         "added",
         "copied",
@@ -247,50 +190,51 @@
         "unmodified",
         "untracked",
         "ignored"
-      ]
+      ],
+      "type": "string"
     },
     "CodeLayer": {
+      "additionalProperties": false,
       "description": "`code`: the four element lists.",
-      "type": "object",
       "properties": {
         "attributes": {
-          "description": "Attributes and decorators applied to a type or member.",
-          "type": "array",
           "default": [],
+          "description": "Attributes and decorators applied to a type or member.",
           "items": {
             "$ref": "#/definitions/AttributeElement"
-          }
+          },
+          "type": "array"
         },
         "calls": {
-          "description": "Call edges between members.",
-          "type": "array",
           "default": [],
+          "description": "Call edges between members.",
           "items": {
             "$ref": "#/definitions/CallElement"
-          }
+          },
+          "type": "array"
         },
         "members": {
-          "description": "Methods, constructors, properties, fields, events and accessors.",
-          "type": "array",
           "default": [],
+          "description": "Methods, constructors, properties, fields, events and accessors.",
           "items": {
             "$ref": "#/definitions/MemberElement"
-          }
+          },
+          "type": "array"
         },
         "types": {
-          "description": "Classes, interfaces, enums, structs, records, delegates, type aliases, functions.",
-          "type": "array",
           "default": [],
+          "description": "Classes, interfaces, enums, structs, records, delegates, type aliases, functions.",
           "items": {
             "$ref": "#/definitions/TypeElement"
-          }
+          },
+          "type": "array"
         }
       },
-      "additionalProperties": false
+      "type": "object"
     },
     "Dependency": {
+      "additionalProperties": false,
       "description": "One edge in the module layer: `modules[].dependencies[]`.",
-      "type": "object",
       "properties": {
         "circular": {
           "description": "Whether following the edge returns to the source.",
@@ -298,12 +242,12 @@
         },
         "column": {
           "description": "Additive: 1-based column of the import or reference.",
+          "format": "uint32",
+          "minimum": 0,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "minimum": 0
+          ]
         },
         "coreModule": {
           "description": "Whether the target is a runtime built-in.",
@@ -315,13 +259,13 @@
         },
         "cycle": {
           "description": "One cycle through the edge, when `circular`.",
+          "items": {
+            "$ref": "#/definitions/MiniDependency"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/MiniDependency"
-          }
+          ]
         },
         "declared": {
           "description": "Additive: the edge was declared rather than detected (wave 4).",
@@ -331,7 +275,6 @@
           ]
         },
         "dependencyKind": {
-          "description": "Additive: what kind of reference formed the edge.",
           "anyOf": [
             {
               "$ref": "#/definitions/DependencyKind"
@@ -339,14 +282,15 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "Additive: what kind of reference formed the edge."
         },
         "dependencyTypes": {
           "description": "The dependency types of the edge.",
-          "type": "array",
           "items": {
             "$ref": "#/definitions/DependencyType"
-          }
+          },
+          "type": "array"
         },
         "dynamic": {
           "description": "Whether the edge is `import()`.",
@@ -369,11 +313,11 @@
         },
         "instability": {
           "description": "The target's instability, denormalised.",
+          "format": "double",
           "type": [
             "number",
             "null"
-          ],
-          "format": "double"
+          ]
         },
         "license": {
           "description": "The target's npm licence.",
@@ -384,12 +328,12 @@
         },
         "line": {
           "description": "Additive: 1-based line of the import or reference.",
+          "format": "uint32",
+          "minimum": 0,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "minimum": 0
+          ]
         },
         "matchesDoNotFollow": {
           "description": "Whether the target matched `doNotFollow`.",
@@ -417,12 +361,12 @@
           "type": "string"
         },
         "moduleSystem": {
-          "description": "The module system of the dependency form.",
           "allOf": [
             {
               "$ref": "#/definitions/ModuleSystem"
             }
-          ]
+          ],
+          "description": "The module system of the dependency form."
         },
         "preCompilationOnly": {
           "description": "Whether the edge disappears after TypeScript compilation.",
@@ -432,7 +376,6 @@
           ]
         },
         "protocol": {
-          "description": "The protocol stripped from the specifier.",
           "anyOf": [
             {
               "$ref": "#/definitions/Protocol"
@@ -440,7 +383,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "The protocol stripped from the specifier."
         },
         "resolved": {
           "description": "The resolved, base-relative path, or the specifier when unresolved.",
@@ -448,13 +392,13 @@
         },
         "rules": {
           "description": "Rules the edge violated.",
+          "items": {
+            "$ref": "#/definitions/RuleSummary"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/RuleSummary"
-          }
+          ]
         },
         "sidecar": {
           "description": "Additive: the edge came from the Node sidecar\n([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)).",
@@ -475,7 +419,6 @@
           "type": "boolean"
         }
       },
-      "additionalProperties": false,
       "required": [
         "module",
         "resolved",
@@ -488,10 +431,10 @@
         "circular",
         "moduleSystem",
         "valid"
-      ]
+      ],
+      "type": "object"
     },
     "DependencyKind": {
-      "type": "string",
       "enum": [
         "import",
         "inherits",
@@ -503,10 +446,10 @@
         "generic-argument",
         "typeof",
         "call"
-      ]
+      ],
+      "type": "string"
     },
     "DependencyType": {
-      "type": "string",
       "enum": [
         "aliased-subpath-import",
         "aliased-tsconfig-base-url",
@@ -557,28 +500,29 @@
         "stdlib",
         "site",
         "dynamic"
-      ]
+      ],
+      "type": "string"
     },
     "Environment": {
+      "additionalProperties": false,
       "description": "`summary.environment`.",
-      "type": "object",
       "properties": {
         "extensionsFound": {
           "description": "Extensions and whether each was scannable.",
-          "type": "array",
           "items": {
             "$ref": "#/definitions/ExtensionFound"
-          }
+          },
+          "type": "array"
         },
         "issues": {
           "description": "Problems that may have influenced the cruise.",
+          "items": {
+            "$ref": "#/definitions/EnvironmentIssue"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/EnvironmentIssue"
-          }
+          ]
         },
         "nodeVersionFound": {
           "description": "The runtime found.",
@@ -594,17 +538,16 @@
         },
         "transpilersFound": {
           "description": "Transpilers and whether each was available.",
-          "type": "array",
           "items": {
             "$ref": "#/definitions/TranspilerFound"
-          }
+          },
+          "type": "array"
         },
         "version": {
           "description": "The tool version.",
           "type": "string"
         }
       },
-      "additionalProperties": false,
       "required": [
         "version",
         "nodeVersionSupported",
@@ -612,11 +555,12 @@
         "osVersionFound",
         "transpilersFound",
         "extensionsFound"
-      ]
+      ],
+      "type": "object"
     },
     "EnvironmentIssue": {
+      "additionalProperties": false,
       "description": "One issue in [`Environment`].",
-      "type": "object",
       "properties": {
         "description": {
           "description": "What happened.",
@@ -627,47 +571,47 @@
           "type": "string"
         },
         "severity": {
-          "description": "How much it matters.",
           "allOf": [
             {
               "$ref": "#/definitions/Severity"
             }
-          ]
+          ],
+          "description": "How much it matters."
         }
       },
-      "additionalProperties": false,
       "required": [
         "severity",
         "name",
         "description"
-      ]
+      ],
+      "type": "object"
     },
     "ExperimentalStats": {
+      "additionalProperties": false,
       "description": "`experimentalStats` on a module or folder.",
-      "type": "object",
       "properties": {
         "size": {
           "description": "Size in bytes.",
-          "type": "integer",
           "format": "uint64",
-          "minimum": 0
+          "minimum": 0,
+          "type": "integer"
         },
         "topLevelStatementCount": {
           "description": "Top-level statements in the file.",
-          "type": "integer",
           "format": "uint64",
-          "minimum": 0
+          "minimum": 0,
+          "type": "integer"
         }
       },
-      "additionalProperties": false,
       "required": [
         "topLevelStatementCount",
         "size"
-      ]
+      ],
+      "type": "object"
     },
     "ExtensionFound": {
+      "additionalProperties": false,
       "description": "One extension in [`Environment`].",
-      "type": "object",
       "properties": {
         "available": {
           "description": "Whether it could be scanned.",
@@ -678,54 +622,53 @@
           "type": "string"
         }
       },
-      "additionalProperties": false,
       "required": [
         "extension",
         "available"
-      ]
+      ],
+      "type": "object"
     },
     "Folder": {
+      "additionalProperties": false,
       "description": "One node in the folder layer: `folders[]`.",
-      "type": "object",
       "properties": {
         "afferentCouplings": {
           "description": "Modules outside that depend on modules inside.",
+          "format": "int64",
           "type": [
             "integer",
             "null"
-          ],
-          "format": "int64"
+          ]
         },
         "dependencies": {
           "description": "Folders this one depends on.",
+          "items": {
+            "$ref": "#/definitions/FolderDependency"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/FolderDependency"
-          }
+          ]
         },
         "dependents": {
           "description": "Folders that depend on this one.",
+          "items": {
+            "$ref": "#/definitions/FolderDependent"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/FolderDependent"
-          }
+          ]
         },
         "efferentCouplings": {
           "description": "Modules inside that depend on modules outside.",
+          "format": "int64",
           "type": [
             "integer",
             "null"
-          ],
-          "format": "int64"
+          ]
         },
         "experimentalStats": {
-          "description": "Summed statistics, when `experimentalStats` is on.",
           "anyOf": [
             {
               "$ref": "#/definitions/ExperimentalStats"
@@ -733,35 +676,36 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "Summed statistics, when `experimentalStats` is on."
         },
         "instability": {
           "description": "Efferent over total coupling.",
+          "format": "double",
           "type": [
             "number",
             "null"
-          ],
-          "format": "double"
+          ]
         },
         "moduleCount": {
           "description": "Modules in the folder and its sub-folders. Signed because the upstream schema types it\nas a plain number and dependency-cruiser's metrics use `-1` for \"not counted\".",
-          "type": "integer",
-          "format": "int64"
+          "format": "int64",
+          "type": "integer"
         },
         "name": {
           "description": "Posix folder name.",
           "type": "string"
         }
       },
-      "additionalProperties": false,
       "required": [
         "name",
         "moduleCount"
-      ]
+      ],
+      "type": "object"
     },
     "FolderDependency": {
+      "additionalProperties": false,
       "description": "A folder a [`Folder`] depends on.",
-      "type": "object",
       "properties": {
         "circular": {
           "description": "Whether following the edge returns to the folder.",
@@ -769,21 +713,21 @@
         },
         "cycle": {
           "description": "One cycle through the edge.",
+          "items": {
+            "$ref": "#/definitions/MiniDependency"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/MiniDependency"
-          }
+          ]
         },
         "instability": {
           "description": "Its instability, denormalised.",
+          "format": "double",
           "type": [
             "number",
             "null"
-          ],
-          "format": "double"
+          ]
         },
         "name": {
           "description": "The folder depended on.",
@@ -791,67 +735,66 @@
         },
         "rules": {
           "description": "Rules the edge violated.",
+          "items": {
+            "$ref": "#/definitions/RuleSummary"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/RuleSummary"
-          }
+          ]
         },
         "valid": {
           "description": "`true` when no rule flagged the edge.",
           "type": "boolean"
         }
       },
-      "additionalProperties": false,
       "required": [
         "name",
         "valid",
         "circular"
-      ]
+      ],
+      "type": "object"
     },
     "FolderDependent": {
+      "additionalProperties": false,
       "description": "A folder that depends on a [`Folder`].",
-      "type": "object",
       "properties": {
         "name": {
           "description": "The dependent folder.",
           "type": "string"
         }
       },
-      "additionalProperties": false,
       "required": [
         "name"
-      ]
+      ],
+      "type": "object"
     },
     "InstabilityMetric": {
+      "additionalProperties": false,
       "description": "One instability figure.",
-      "type": "object",
       "properties": {
         "instability": {
           "description": "Efferent over total coupling.",
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "type": "number"
         }
       },
-      "additionalProperties": false,
       "required": [
         "instability"
-      ]
+      ],
+      "type": "object"
     },
     "Language": {
-      "type": "string",
       "enum": [
         "typescript",
         "javascript",
         "dotnet",
         "python"
-      ]
+      ],
+      "type": "string"
     },
     "MemberElement": {
       "description": "One member of a type.",
-      "type": "object",
       "properties": {
         "abstract": {
           "description": "Abstract.",
@@ -862,12 +805,12 @@
         },
         "column": {
           "description": "1-based column.",
+          "format": "uint32",
+          "minimum": 0,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "minimum": 0
+          ]
         },
         "declaringType": {
           "description": "The declaring type's full name.",
@@ -885,21 +828,21 @@
           "type": "string"
         },
         "language": {
-          "description": "The language the element came from.",
           "allOf": [
             {
               "$ref": "#/definitions/Language"
             }
-          ]
+          ],
+          "description": "The language the element came from."
         },
         "line": {
           "description": "1-based line.",
+          "format": "uint32",
+          "minimum": 0,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "minimum": 0
+          ]
         },
         "name": {
           "description": "Simple name.",
@@ -907,10 +850,10 @@
         },
         "parameterTypes": {
           "description": "Parameter types' full names, in order.",
-          "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "type": "array"
         },
         "readonly": {
           "description": "Read-only (a field) or get-only (a property).",
@@ -953,36 +896,36 @@
         "name",
         "kind",
         "language"
-      ]
+      ],
+      "type": "object"
     },
     "MiniDependency": {
+      "additionalProperties": false,
       "description": "One step of a cycle or a `via` chain.",
-      "type": "object",
       "properties": {
         "dependencyTypes": {
           "description": "The dependency types of the step.",
-          "type": "array",
           "items": {
             "$ref": "#/definitions/DependencyType"
-          }
+          },
+          "type": "array"
         },
         "name": {
           "description": "The module name.",
           "type": "string"
         }
       },
-      "additionalProperties": false,
       "required": [
         "name",
         "dependencyTypes"
-      ]
+      ],
+      "type": "object"
     },
     "Module": {
+      "additionalProperties": false,
       "description": "One node in the module layer: `modules[]`.",
-      "type": "object",
       "properties": {
         "attribution": {
-          "description": "Additive: how a .NET module was attributed to a file\n([ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)).",
           "anyOf": [
             {
               "$ref": "#/definitions/Attribution"
@@ -990,7 +933,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "Additive: how a .NET module was attributed to a file\n([ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md))."
         },
         "checksum": {
           "description": "Content checksum, for the cache.",
@@ -1022,33 +966,32 @@
         },
         "dependencies": {
           "description": "Outgoing edges.",
-          "type": "array",
           "items": {
             "$ref": "#/definitions/Dependency"
-          }
+          },
+          "type": "array"
         },
         "dependencyTypes": {
           "description": "The dependency types of the edges that lead to this module.",
+          "items": {
+            "$ref": "#/definitions/DependencyType"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/DependencyType"
-          }
+          ]
         },
         "dependents": {
           "description": "The resolved names of the modules that depend on this one.",
+          "items": {
+            "type": "string"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "type": "string"
-          }
+          ]
         },
         "experimentalStats": {
-          "description": "Size and statement counts, when `experimentalStats` is on.",
           "anyOf": [
             {
               "$ref": "#/definitions/ExperimentalStats"
@@ -1056,7 +999,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "Size and statement counts, when `experimentalStats` is on."
         },
         "followable": {
           "description": "Whether the module was followed.",
@@ -1067,14 +1011,13 @@
         },
         "instability": {
           "description": "Efferent over total coupling.",
+          "format": "double",
           "type": [
             "number",
             "null"
-          ],
-          "format": "double"
+          ]
         },
         "language": {
-          "description": "Additive: which extractor produced the module.",
           "anyOf": [
             {
               "$ref": "#/definitions/Language"
@@ -1082,7 +1025,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "Additive: which extractor produced the module."
         },
         "license": {
           "description": "The npm licence, when `resolveLicenses` found one.",
@@ -1121,13 +1065,13 @@
         },
         "namespaces": {
           "description": "Additive: the namespaces the file declares.",
+          "items": {
+            "type": "string"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "type": "string"
-          }
+          ]
         },
         "orphan": {
           "description": "Whether nothing depends on the module and it depends on nothing.",
@@ -1145,33 +1089,33 @@
         },
         "reachable": {
           "description": "Reachability verdicts per rule.",
+          "items": {
+            "$ref": "#/definitions/Reachable"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/Reachable"
-          }
+          ]
         },
         "reaches": {
           "description": "What the module reaches, per rule.",
+          "items": {
+            "$ref": "#/definitions/Reaches"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/Reaches"
-          }
+          ]
         },
         "rules": {
           "description": "Rules the module violated.",
+          "items": {
+            "$ref": "#/definitions/RuleSummary"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/RuleSummary"
-          }
+          ]
         },
         "source": {
           "description": "Repository-relative, posix-separated path, or the specifier for an unresolved module.",
@@ -1182,15 +1126,14 @@
           "type": "boolean"
         }
       },
-      "additionalProperties": false,
       "required": [
         "source",
         "dependencies",
         "valid"
-      ]
+      ],
+      "type": "object"
     },
     "ModuleSystem": {
-      "type": "string",
       "enum": [
         "cjs",
         "es6",
@@ -1198,20 +1141,21 @@
         "tsd",
         "clr",
         "py"
-      ]
+      ],
+      "type": "string"
     },
     "Protocol": {
-      "type": "string",
       "enum": [
         "data:",
         "file:",
         "node:",
         "bun:"
-      ]
+      ],
+      "type": "string"
     },
     "Reachable": {
+      "additionalProperties": false,
       "description": "A reachability verdict for one rule.",
-      "type": "object",
       "properties": {
         "asDefinedInRule": {
           "description": "The rule that asked.",
@@ -1226,16 +1170,16 @@
           "type": "boolean"
         }
       },
-      "additionalProperties": false,
       "required": [
         "value",
         "asDefinedInRule",
         "matchedFrom"
-      ]
+      ],
+      "type": "object"
     },
     "ReachedModule": {
+      "additionalProperties": false,
       "description": "One module in a [`Reaches`] list.",
-      "type": "object",
       "properties": {
         "source": {
           "description": "The reached module.",
@@ -1243,21 +1187,21 @@
         },
         "via": {
           "description": "The path to it.",
-          "type": "array",
           "items": {
             "$ref": "#/definitions/MiniDependency"
-          }
+          },
+          "type": "array"
         }
       },
-      "additionalProperties": false,
       "required": [
         "source",
         "via"
-      ]
+      ],
+      "type": "object"
     },
     "Reaches": {
+      "additionalProperties": false,
       "description": "What a module reaches, for one rule.",
-      "type": "object",
       "properties": {
         "asDefinedInRule": {
           "description": "The rule that asked.",
@@ -1265,51 +1209,51 @@
         },
         "modules": {
           "description": "The reached modules and the path to each.",
-          "type": "array",
           "items": {
             "$ref": "#/definitions/ReachedModule"
-          }
+          },
+          "type": "array"
         }
       },
-      "additionalProperties": false,
       "required": [
         "modules",
         "asDefinedInRule"
-      ]
+      ],
+      "type": "object"
     },
     "Receipt": {
+      "additionalProperties": false,
       "description": "What one language's extractor inspected.",
-      "type": "object",
       "properties": {
         "assemblies": {
-          "description": "Assemblies read (.NET only).",
-          "type": "integer",
-          "format": "uint64",
           "default": 0,
-          "minimum": 0
+          "description": "Assemblies read (.NET only).",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
         },
         "files": {
           "description": "Source files read.",
-          "type": "integer",
           "format": "uint64",
-          "minimum": 0
+          "minimum": 0,
+          "type": "integer"
         },
         "modules": {
           "description": "Modules produced.",
-          "type": "integer",
           "format": "uint64",
-          "minimum": 0
+          "minimum": 0,
+          "type": "integer"
         }
       },
-      "additionalProperties": false,
       "required": [
         "files",
         "modules"
-      ]
+      ],
+      "type": "object"
     },
     "RevisionData": {
+      "additionalProperties": true,
       "description": "`revisionData`, the cache key. The upstream schema allows extra keys here, so they are kept.",
-      "type": "object",
       "properties": {
         "SHA1": {
           "description": "The git revision.",
@@ -1317,65 +1261,64 @@
         },
         "cacheFormatVersion": {
           "description": "The cache format version.",
+          "format": "uint64",
+          "minimum": 0,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint64",
-          "minimum": 0
+          ]
         },
         "changes": {
           "description": "Changes since the revision.",
-          "type": "array",
           "items": {
             "$ref": "#/definitions/Change"
-          }
+          },
+          "type": "array"
         }
       },
-      "additionalProperties": true,
       "required": [
         "SHA1",
         "changes"
-      ]
+      ],
+      "type": "object"
     },
     "RuleSummary": {
+      "additionalProperties": false,
       "description": "A rule reference inside a module, edge or violation.",
-      "type": "object",
       "properties": {
         "name": {
           "description": "The rule name.",
           "type": "string"
         },
         "severity": {
-          "description": "The rule severity.",
           "allOf": [
             {
               "$ref": "#/definitions/Severity"
             }
-          ]
+          ],
+          "description": "The rule severity."
         }
       },
-      "additionalProperties": false,
       "required": [
         "name",
         "severity"
-      ]
+      ],
+      "type": "object"
     },
     "Severity": {
-      "type": "string",
       "enum": [
         "ignore",
         "info",
         "warn",
         "error"
-      ]
+      ],
+      "type": "string"
     },
     "Summary": {
+      "additionalProperties": false,
       "description": "`summary`: violations, counts, the options and rule set used, the environment, plus the\nadditive receipt and vacuous-rule list.",
-      "type": "object",
       "properties": {
         "environment": {
-          "description": "The runtime the cruise ran on.",
           "anyOf": [
             {
               "$ref": "#/definitions/Environment"
@@ -1383,35 +1326,33 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "The runtime the cruise ran on."
         },
         "error": {
           "description": "Error-severity violations.",
-          "type": "integer",
           "format": "uint64",
-          "minimum": 0
+          "minimum": 0,
+          "type": "integer"
         },
         "ignore": {
           "description": "Ignore-severity violations.",
+          "format": "uint64",
+          "minimum": 0,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint64",
-          "minimum": 0
+          ]
         },
         "info": {
           "description": "Info-severity violations.",
-          "type": "integer",
           "format": "uint64",
-          "minimum": 0
+          "minimum": 0,
+          "type": "integer"
         },
         "inspected": {
+          "additionalProperties": false,
           "description": "Additive: the receipt, what the run looked at per language\n([design § Precision an agent can act on](../../../docs/artifacts/design.md#precision-an-agent-can-act-on)).",
-          "type": [
-            "object",
-            "null"
-          ],
           "properties": {
             "dotnet": {
               "$ref": "#/definitions/Receipt"
@@ -1426,61 +1367,63 @@
               "$ref": "#/definitions/Receipt"
             }
           },
-          "additionalProperties": false
+          "type": [
+            "object",
+            "null"
+          ]
         },
         "optionsUsed": {
+          "additionalProperties": true,
           "description": "The options, verbatim.",
-          "type": "object",
-          "additionalProperties": true
+          "type": "object"
         },
         "ruleSetUsed": {
+          "additionalProperties": true,
           "description": "The rule set, verbatim.",
           "type": [
             "object",
             "null"
-          ],
-          "additionalProperties": true
+          ]
         },
         "totalCruised": {
           "description": "Modules cruised.",
-          "type": "integer",
           "format": "uint64",
-          "minimum": 0
+          "minimum": 0,
+          "type": "integer"
         },
         "totalDependenciesCruised": {
           "description": "Dependencies cruised.",
+          "format": "uint64",
+          "minimum": 0,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint64",
-          "minimum": 0
+          ]
         },
         "vacuousRules": {
           "description": "Additive: rules whose selecting side matched nothing\n([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
+          "items": {
+            "$ref": "#/definitions/VacuousRule"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/VacuousRule"
-          }
+          ]
         },
         "violations": {
           "description": "Every violation found.",
-          "type": "array",
           "items": {
             "$ref": "#/definitions/Violation"
-          }
+          },
+          "type": "array"
         },
         "warn": {
           "description": "Warn-severity violations.",
-          "type": "integer",
           "format": "uint64",
-          "minimum": 0
+          "minimum": 0,
+          "type": "integer"
         }
       },
-      "additionalProperties": false,
       "required": [
         "violations",
         "error",
@@ -1488,11 +1431,12 @@
         "info",
         "totalCruised",
         "optionsUsed"
-      ]
+      ],
+      "type": "object"
     },
     "TranspilerFound": {
+      "additionalProperties": false,
       "description": "One transpiler in [`Environment`].",
-      "type": "object",
       "properties": {
         "available": {
           "description": "Whether it was found.",
@@ -1511,17 +1455,16 @@
           "type": "string"
         }
       },
-      "additionalProperties": false,
       "required": [
         "name",
         "version",
         "available",
         "currentVersion"
-      ]
+      ],
+      "type": "object"
     },
     "TypeElement": {
       "description": "One type.",
-      "type": "object",
       "properties": {
         "abstract": {
           "description": "Abstract.",
@@ -1538,7 +1481,6 @@
           ]
         },
         "attribution": {
-          "description": "How the file was found (.NET).",
           "anyOf": [
             {
               "$ref": "#/definitions/Attribution"
@@ -1546,7 +1488,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "How the file was found (.NET)."
         },
         "baseType": {
           "description": "The base type's full name.",
@@ -1557,12 +1500,12 @@
         },
         "column": {
           "description": "1-based column.",
+          "format": "uint32",
+          "minimum": 0,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "minimum": 0
+          ]
         },
         "file": {
           "description": "Repository-relative path, absent when attribution failed.",
@@ -1584,31 +1527,31 @@
         },
         "interfaces": {
           "description": "Implemented interfaces' full names.",
-          "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "type": "array"
         },
         "kind": {
           "description": "`class`, `interface`, `enum`, `struct`, `record`, `delegate`, `type-alias`, `function`.",
           "type": "string"
         },
         "language": {
-          "description": "The language the element came from.",
           "allOf": [
             {
               "$ref": "#/definitions/Language"
             }
-          ]
+          ],
+          "description": "The language the element came from."
         },
         "line": {
           "description": "1-based line.",
+          "format": "uint32",
+          "minimum": 0,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "minimum": 0
+          ]
         },
         "name": {
           "description": "Simple name.",
@@ -1662,11 +1605,12 @@
         "name",
         "kind",
         "language"
-      ]
+      ],
+      "type": "object"
     },
     "VacuousRule": {
+      "additionalProperties": false,
       "description": "A rule whose selecting side matched nothing\n([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
-      "type": "object",
       "properties": {
         "name": {
           "description": "The rule name.",
@@ -1677,15 +1621,15 @@
           "type": "string"
         }
       },
-      "additionalProperties": false,
       "required": [
         "name",
         "side"
-      ]
+      ],
+      "type": "object"
     },
     "Violation": {
+      "additionalProperties": false,
       "description": "One violation: `summary.violations[]`.",
-      "type": "object",
       "properties": {
         "comment": {
           "description": "The rule's comment.",
@@ -1696,13 +1640,13 @@
         },
         "cycle": {
           "description": "The cycle, for a cycle violation.",
+          "items": {
+            "$ref": "#/definitions/MiniDependency"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/MiniDependency"
-          }
+          ]
         },
         "decision": {
           "description": "Additive: the decision token parsed from the comment (`adr:0003`).",
@@ -1713,13 +1657,13 @@
         },
         "dependencyTypes": {
           "description": "The edge's dependency types.",
+          "items": {
+            "$ref": "#/definitions/DependencyType"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/DependencyType"
-          }
+          ]
         },
         "fix": {
           "description": "Additive: the rule's `fix` text.",
@@ -1740,7 +1684,6 @@
           ]
         },
         "metrics": {
-          "description": "The two instabilities, for a `moreUnstable` violation.",
           "anyOf": [
             {
               "$ref": "#/definitions/ViolationMetrics"
@@ -1748,22 +1691,22 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "The two instabilities, for a `moreUnstable` violation."
         },
         "rule": {
-          "description": "The rule.",
           "allOf": [
             {
               "$ref": "#/definitions/RuleSummary"
             }
-          ]
+          ],
+          "description": "The rule."
         },
         "to": {
           "description": "The module depended on.",
           "type": "string"
         },
         "type": {
-          "description": "What kind of rule was violated.",
           "anyOf": [
             {
               "$ref": "#/definitions/ViolationType"
@@ -1771,7 +1714,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "What kind of rule was violated."
         },
         "unresolvedTo": {
           "description": "The specifier, when `to` did not resolve.",
@@ -1782,51 +1726,50 @@
         },
         "via": {
           "description": "The path, for a reachability violation.",
+          "items": {
+            "$ref": "#/definitions/MiniDependency"
+          },
           "type": [
             "array",
             "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/MiniDependency"
-          }
+          ]
         }
       },
-      "additionalProperties": false,
       "required": [
         "from",
         "to",
         "rule"
-      ]
+      ],
+      "type": "object"
     },
     "ViolationMetrics": {
+      "additionalProperties": false,
       "description": "`violations[].metrics`.",
-      "type": "object",
       "properties": {
         "from": {
-          "description": "The `from` module's instability.",
           "allOf": [
             {
               "$ref": "#/definitions/InstabilityMetric"
             }
-          ]
+          ],
+          "description": "The `from` module's instability."
         },
         "to": {
-          "description": "The `to` module's instability.",
           "allOf": [
             {
               "$ref": "#/definitions/InstabilityMetric"
             }
-          ]
+          ],
+          "description": "The `to` module's instability."
         }
       },
-      "additionalProperties": false,
       "required": [
         "from",
         "to"
-      ]
+      ],
+      "type": "object"
     },
     "ViolationType": {
-      "type": "string",
       "enum": [
         "dependency",
         "module",
@@ -1834,7 +1777,64 @@
         "cycle",
         "instability",
         "folder"
-      ]
+      ],
+      "type": "string"
     }
-  }
+  },
+  "description": "The graph document: the module layer, the optional folder layer, the summary, the cache's\nrevision data and the additive code layer.",
+  "properties": {
+    "code": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/CodeLayer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Additive: the code layer (types, members, attributes, calls). Empty until an extractor\nfills it ([FR-EXT-DN-03](../../../docs/prd.md#fr-ext-dn-03))."
+    },
+    "folders": {
+      "description": "The folder layer, present when metrics or folder rules asked for it.",
+      "items": {
+        "$ref": "#/definitions/Folder"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "modules": {
+      "description": "Module layer nodes, sorted by `source` before output\n([FR-CORE-07](../../../docs/prd.md#fr-core-07)).",
+      "items": {
+        "$ref": "#/definitions/Module"
+      },
+      "type": "array"
+    },
+    "revisionData": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/RevisionData"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The cache key: the git revision and the changes since it."
+    },
+    "summary": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Summary"
+        }
+      ],
+      "description": "Counts, violations and the options the run used."
+    }
+  },
+  "required": [
+    "modules",
+    "summary"
+  ],
+  "title": "GraphDocument",
+  "type": "object"
 }

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "test/extract/acorn/extract-es6-deps.spec.mjs#8",
+    "surface": "walk-acorn-es6",
+    "class": "walker"
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#1",
+    "surface": "extract-dependencies",
+    "class": "walker"
+  },
+  {
+    "id": "test/extract/index.cachebusting.spec.mjs#1",
+    "surface": "extract",
+    "class": "expectation"
+  },
+  {
+    "id": "test/extract/index.cachebusting.spec.mjs#2",
+    "surface": "extract",
+    "class": "expectation"
+  }
+]

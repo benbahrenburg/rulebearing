@@ -3,6 +3,6 @@
 # (which runs `cargo +<msrv>`) still green.
 # Plan: docs/plans/pending/0000-wave-0-spike.md, Step 1 item 2. Decision: docs/adr/0002-rust-as-implementation-language.md.
 [toolchain]
-channel = "1.93.1"
+channel = "1.98.1"
 components = ["rustfmt", "clippy", "llvm-tools-preview"]
 profile = "minimal"

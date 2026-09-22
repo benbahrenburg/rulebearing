@@ -1,6 +1,6 @@
 # Plan 0000: Wave 0: Spike: TypeScript extractor, .NET metadata reader, conformance skeletons, foundation
 
-- **Status:** In progress (0A, 0B and 0D done)
+- **Status:** In progress (0A to 0D done)
 - **Owner:** Ben Bahrenburg (@benbahrenburg)
 - **Created:** 2026-09-20
 - **Calendar estimate:** 4 weeks at ~10 h/week (from design § Waves)
@@ -668,12 +668,12 @@ conformance/archunitnet/scripts/spike-b-attribution.sh     # needs the .NET SDK 
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 0C | `discover.rs`, `parse.rs`, `lib.rs` with `rayon` | Not started | |
-| 0C | `walk.rs`: every dependency form and its `dependencyTypes` | Not started | |
-| 0C | `resolve.rs`: `oxc_resolver` options, alias classification | Not started | |
-| 0C | `npm.rs`, `core.rs` | Not started | |
-| 0C | Layer 1 ratio at or above 0.95 | Not started | ratio: , artefact: |
-| 0C | `layer1-open.json` with classes; timing line | Not started | |
+| 0C | `discover.rs`, `parse.rs`, `lib.rs` with `rayon` | Done | As `pipeline.rs` (initial sources, walker choice, statistics, the recursive extract) and `TypeScriptExtractor` in `lib.rs`. Files are processed in order rather than with `rayon`: the recursive follow is sequential by definition, and parallel parsing is wave 1's performance work against the scale table |
+| 0C | `walk.rs`: every dependency form and its `dependencyTypes` | Done | dependency-cruiser's tsc, swc and acorn extractors reproduced as three flavours over one oxc tree, with JSDoc (`jsdoc.rs`), triple-slash directives, and TypeScript's import elision when acorn reads a `.ts` file |
+| 0C | `resolve.rs`: `oxc_resolver` options, alias classification | Done | enhanced-resolve's defaults as dependency-cruiser sets them, the TypeScript-variant retry, AMD resolution, and the webpack, tsconfig `paths` and `baseUrl`, subpath-import and workspace alias families |
+| 0C | `npm.rs`, `core.rs` | Done | Manifest lookup (nearest and `combinedDependencies`) with keys kept in file order, the npm types, licences and deprecation; Node 24's built-in list |
+| 0C | Layer 1 ratio at or above 0.95 | Done | ratio: **0.9865** (292 of 296 recorded cases); `threshold.json` raised to 0.95; artefact: `target/conformance/layer1.md`, uploaded by `conformance-gate-1` |
+| 0C | `layer1-open.json` with classes; timing line | Done | Four open cases, wave 1's worklist: an acorn-loose parse artefact, a Vue component (script blocks are wave 1), and two cache-busting cases whose spec writes its files at run time. Timing baseline: all 296 replayed in about 0.25 s |
 
 **Size:** M. **LOE:** 10 h, 1.0 calendar week (weeks 2 to 3). **Roles:** maintainer.
 

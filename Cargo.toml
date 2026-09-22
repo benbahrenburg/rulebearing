@@ -22,7 +22,7 @@ members = [
 [workspace.package]
 version = "0.0.1"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.96"
 license = "MIT"
 repository = "https://github.com/benbahrenburg/rulebearing"
 authors = ["Ben Bahrenburg"]
@@ -57,11 +57,25 @@ miniz_oxide = "0.9"
 # (docs/adr/0024-test-quality-gates.md). MIT or Apache-2.0, so cargo deny is unaffected.
 proptest = "1"
 
+# The TypeScript extractor (plan 0000, Step 8). oxc is pinned to exact versions and bumped only by a
+# pull request that re-runs conformance gate 1 (docs/adr/0012-oxc-for-typescript.md). All MIT.
+oxc_allocator = "=0.151.0"
+oxc_ast = "=0.151.0"
+oxc_ast_visit = "=0.151.0"
+oxc_diagnostics = "=0.151.0"
+oxc_parser = "=0.151.0"
+oxc_semantic = "=0.151.0"
+oxc_span = "=0.151.0"
+oxc_resolver = "=11.24.3"
+# Path patterns are regular expressions with linear-time matching only (docs/adr/0016). MIT/Apache-2.0.
+regex = "1"
+# Workspace and initial-source globs, as picomatch matches them. MIT (dual Unlicense).
+globset = "0.4"
+
 # Wave 1+ dependencies are added by the plan that needs them, not in advance:
-#   oxc_parser, oxc_resolver        docs/adr/0012-oxc-for-typescript.md
 #   ruff_python_parser              docs/adr/0013-ruff-parser-for-python.md
 #   rquickjs                        docs/adr/0006-embedded-quickjs-config-evaluator.md
-#   regex, clap, rayon              docs/architecture.md#technology-choices
+#   clap, rayon                     docs/architecture.md#technology-choices
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

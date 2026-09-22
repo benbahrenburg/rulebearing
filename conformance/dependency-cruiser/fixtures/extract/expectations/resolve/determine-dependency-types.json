@@ -6,6 +6,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "src/bla/localthing"
@@ -27,6 +28,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "fs",
@@ -49,6 +51,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": true,
         "resolved": "unresolvable-thing"
@@ -70,6 +73,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "node_modules/cool-module/main/index/js"
@@ -91,6 +95,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "module": "cool-module",
         "couldNotResolve": false,
@@ -113,6 +118,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "module": "cool-module",
         "couldNotResolve": false,
@@ -139,6 +145,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "node_modules/cool-module/main/index.js"
@@ -164,6 +171,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "node_modules/@types/my-totally-weird-types/index.d.ts"
@@ -189,6 +197,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "node_modules/snodash/index.js"
@@ -217,6 +226,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "node_modules/@types/my-totally-weird-types/index.d.ts"
@@ -229,7 +239,11 @@
       },
       "fileDir": "whatever",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {
+          "modules": [
+            "node_modules"
+          ]
+        },
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -247,6 +261,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "node_modules/cool-module/main/index.js"
@@ -276,6 +291,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "node_modules/cool-module/wappie.js"
@@ -304,6 +320,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "node_modules/cool-module/main/index.js"
@@ -329,6 +346,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "src/i-was-aliased.js"
@@ -341,7 +359,11 @@
       },
       "fileDir": ".",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {
+          "modules": [
+            "node_modules"
+          ]
+        },
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -361,6 +383,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "src/folder/source.mjs"
@@ -373,7 +396,11 @@
       },
       "fileDir": ".",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {
+          "modules": [
+            "node_modules"
+          ]
+        },
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -393,6 +420,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "node_modules/cool-module/main/index.js"
@@ -405,7 +433,11 @@
       },
       "fileDir": ".",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {
+          "modules": [
+            "node_modules"
+          ]
+        },
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -425,6 +457,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "test",
@@ -438,7 +471,11 @@
       },
       "fileDir": ".",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {
+          "modules": [
+            "node_modules"
+          ]
+        },
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -458,6 +495,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "src/i-was-not-aliased.js"
@@ -470,7 +508,11 @@
       },
       "fileDir": ".",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {
+          "modules": [
+            "node_modules"
+          ]
+        },
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -488,6 +530,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "src/wappie.js"
@@ -496,7 +539,11 @@
       "manifest": {},
       "fileDir": ".",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {
+          "alias": {
+            "@": "src"
+          }
+        },
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -516,6 +563,17 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": {
+        "tsConfig": {
+          "options": {
+            "paths": {
+              "@wappie": [
+                "src"
+              ]
+            }
+          }
+        }
+      },
       "dependency": {
         "couldNotResolve": false,
         "resolved": "src/wappie.js"
@@ -524,7 +582,9 @@
       "manifest": {},
       "fileDir": ".",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {
+          "tsConfig": "tsconfig.json"
+        },
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -545,6 +605,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "wappie.js"
@@ -570,6 +631,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "src/bla/somethinglocal.ts"
@@ -578,7 +640,12 @@
       "manifest": {},
       "fileDir": "whatever",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {
+          "modules": [
+            "node_modules",
+            "src"
+          ]
+        },
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -596,6 +663,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "src/bla/somethinglocal.ts"
@@ -604,7 +672,12 @@
       "manifest": {},
       "fileDir": "test/extract/resolve/socrates/hemlock/src/bla",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {
+          "modules": [
+            "node_modules",
+            "<root>/test/extract/resolve/socrates/hemlock/src"
+          ]
+        },
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -622,6 +695,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "couldNotResolve": false,
         "resolved": "test/bla/localthing.spec.js"
@@ -630,7 +704,12 @@
       "manifest": {},
       "fileDir": "whatever",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {
+          "modules": [
+            "node_modules",
+            "src"
+          ]
+        },
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -648,6 +727,7 @@
     "surface": "determine-dependency-types",
     "cwd": ".",
     "input": {
+      "transpileOptions": null,
       "dependency": {
         "dependencyTypes": [
           "type-only"
@@ -659,7 +739,12 @@
       "manifest": {},
       "fileDir": "whatever",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {
+          "modules": [
+            "node_modules",
+            "src"
+          ]
+        },
         "cruise": null,
         "tsConfig": null,
         "untagged": true

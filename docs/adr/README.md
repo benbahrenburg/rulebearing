@@ -31,3 +31,4 @@ A rule in `rulebearing.yaml` cites a decision with the token `adr:NNNN` in its `
 | [0023](0023-documentation-link-and-lint-gates.md) | Documentation links are checked on every compile, and every language has a configured linter behind one entry point | Accepted |
 | [0024](0024-test-quality-gates.md) | Test quality is gated by mutation testing, property tests and snapshots, not by coverage alone | Accepted |
 | [0025](0025-ci-and-supply-chain-hardening.md) | CI runs least-privileged, pinned and bounded, and the dependency supply chain is closed | Accepted |
+| [0026](0026-bsl-exception-for-dragonbox.md) | One crate-scoped licence exception: BSL-1.0 for `dragonbox_ecma`, which oxc requires | Accepted |

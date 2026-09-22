@@ -27,6 +27,11 @@ use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
+use oxc_span::SourceType;
+use rb_extract_ts::pipeline::{self, Extracted, ExtractedModule, Settings};
+use rb_extract_ts::resolve::{self, Context, ResolveConfig};
+use rb_extract_ts::walk::{self, Flavour, Found, WalkOptions};
+use rb_model::{DependencyType, ModuleSystem, TypeScriptOptions};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -35,7 +40,9 @@ fn conformance() -> PathBuf {
 }
 
 fn fixtures() -> PathBuf {
-    conformance().join("fixtures/extract")
+    let path = conformance().join("fixtures/extract");
+    // Canonical, so paths compared as strings (an absolute `modules` folder) agree.
+    path.canonicalize().unwrap_or(path)
 }
 
 #[derive(Deserialize)]
@@ -68,6 +75,8 @@ struct Case {
 enum Class {
     /// No Rust surface replays this kind of call yet.
     Surface,
+    /// The source did not parse.
+    Parser,
     /// The dependency forms found differ.
     Walker,
     /// A specifier resolved differently.
@@ -82,6 +91,7 @@ impl Class {
     fn name(self) -> &'static str {
         match self {
             Self::Surface => "surface",
+            Self::Parser => "parser",
             Self::Walker => "walker",
             Self::Resolver => "resolver",
             Self::Classify => "classify",
@@ -95,13 +105,443 @@ struct Failure {
     detail: String,
 }
 
+/// Replaces the recorder's `<root>` token with the vendored fixture root, everywhere in a value.
+fn rooted(value: &Value, root: &Path) -> Value {
+    match value {
+        Value::String(text) => Value::String(text.replace("<root>", &root.to_string_lossy())),
+        Value::Array(items) => Value::Array(items.iter().map(|v| rooted(v, root)).collect()),
+        Value::Object(map) => Value::Object(
+            map.iter()
+                .map(|(k, v)| (k.clone(), rooted(v, root)))
+                .collect(),
+        ),
+        other => other.clone(),
+    }
+}
+
+fn strings(value: &Value) -> Vec<String> {
+    value
+        .as_array()
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|v| v.as_str().map(str::to_owned))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn surface_error(detail: impl std::fmt::Display) -> Failure {
+    Failure {
+        class: Class::Expectation,
+        detail: detail.to_string(),
+    }
+}
+
+/// The keys of dependency-cruiser's cruise options that `TypeScriptOptions` models; the rest
+/// (`ruleSet`, `validate`, reporter options) do not reach extraction.
+const EXTRACTION_KEYS: &[&str] = &[
+    "baseDir",
+    "tsConfig",
+    "tsPreCompilationDeps",
+    "babelConfig",
+    "webpackConfig",
+    "enhancedResolveOptions",
+    "moduleSystems",
+    "parser",
+    "exoticRequireStrings",
+    "detectJSDocImports",
+    "detectProcessBuiltinModuleCalls",
+    "preserveSymlinks",
+    "combinedDependencies",
+    "externalModuleResolutionStrategy",
+    "builtInModules",
+    "extraExtensionsToScan",
+    "doNotFollow",
+    "exclude",
+    "includeOnly",
+    "maxDepth",
+    "experimentalStats",
+];
+
+fn typescript_options(cruise: &Value) -> Result<TypeScriptOptions, Failure> {
+    let mut kept = serde_json::Map::new();
+    for (key, value) in cruise.as_object().into_iter().flatten() {
+        if EXTRACTION_KEYS.contains(&key.as_str()) && !value.is_null() {
+            kept.insert(key.clone(), value.clone());
+        }
+    }
+    serde_json::from_value(Value::Object(kept)).map_err(|e| surface_error(format!("options: {e}")))
+}
+
+fn settings(cruise: &Value, cwd: &Path) -> Result<Settings, Failure> {
+    let options = typescript_options(cruise)?;
+    Settings::new(&options, cwd).map_err(surface_error)
+}
+
+/// The resolver settings a recorded `normalizeResolveOptions` call and transpile options describe.
+fn resolve_config(
+    resolve_options: &Value,
+    transpile: &Value,
+    cruise_fallback: &Value,
+) -> Result<ResolveConfig, Failure> {
+    let cruise = resolve_options
+        .get("cruise")
+        .filter(|c| !c.is_null())
+        .unwrap_or(cruise_fallback);
+    let mut config = rb_extract_ts::resolve_config(&typescript_options(cruise)?);
+    if let Some(raw) = resolve_options.get("resolve").and_then(Value::as_object) {
+        let list = |key: &str| raw.get(key).map(strings);
+        if let Some(v) = list("extensions") {
+            config.extensions = v;
+        }
+        if let Some(v) = list("modules") {
+            config.modules = v;
+        }
+        if let Some(v) = list("exportsFields") {
+            config.exports_fields = v;
+        }
+        if let Some(v) = list("conditionNames") {
+            config.condition_names = v;
+        }
+        if let Some(v) = list("mainFields") {
+            config.main_fields = v;
+        }
+        if let Some(v) = list("mainFiles") {
+            config.main_files = v;
+        }
+        if let Some(v) = list("aliasFields") {
+            config.alias_fields = v;
+        }
+        if let Some(alias) = raw.get("alias").and_then(Value::as_object) {
+            config.alias = alias
+                .iter()
+                .filter_map(|(k, v)| v.as_str().map(|v| (k.clone(), v.to_owned())))
+                .collect();
+        }
+        if let Some(symlinks) = raw.get("symlinks").and_then(Value::as_bool) {
+            config.symlinks = symlinks;
+        }
+        if let Some(tsconfig) = raw.get("tsConfig").and_then(Value::as_str) {
+            config.tsconfig = Some(PathBuf::from(tsconfig));
+        }
+        if let Some(builtins) = raw.get("builtInModules") {
+            config.built_in_modules = serde_json::from_value(builtins.clone())
+                .map_err(|e| surface_error(format!("builtInModules: {e}")))?;
+        }
+        if let Some(combined) = raw.get("combinedDependencies").and_then(Value::as_bool) {
+            config.combined_dependencies = combined;
+        }
+        config.resolve_licenses = raw
+            .get("resolveLicenses")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        config.resolve_deprecations = raw
+            .get("resolveDeprecations")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+    }
+    let tsconfig_options = transpile
+        .get("tsConfig")
+        .or_else(|| resolve_options.get("tsConfig"))
+        .and_then(|t| t.get("options"));
+    if let Some(options) = tsconfig_options {
+        config.tsconfig_base_url = options
+            .get("baseUrl")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        config.tsconfig_paths = options
+            .get("paths")
+            .and_then(Value::as_object)
+            .map(|p| p.keys().cloned().collect())
+            .unwrap_or_default();
+    }
+    Ok(config)
+}
+
+fn found_json(found: &Found) -> Value {
+    let mut object = serde_json::json!({
+        "module": found.module,
+        "moduleSystem": found.module_system.as_str(),
+        "dynamic": found.dynamic,
+        "exoticallyRequired": found.exotically_required,
+        "dependencyTypes": found.dependency_types.iter().map(|t| t.as_str()).collect::<Vec<_>>(),
+    });
+    if let Some(name) = &found.exotic_require {
+        object["exoticRequire"] = Value::from(name.as_str());
+    }
+    object
+}
+
+fn extracted_json(d: &Extracted) -> Value {
+    let mut object = serde_json::json!({
+        "module": d.module,
+        "moduleSystem": d.module_system.as_str(),
+        "dynamic": d.dynamic,
+        "exoticallyRequired": d.exotically_required,
+        "dependencyTypes": d.dependency_types.iter().map(|t| t.as_str()).collect::<Vec<_>>(),
+        "resolved": d.resolved,
+        "coreModule": d.core_module,
+        "followable": d.followable,
+        "couldNotResolve": d.could_not_resolve,
+        "matchesDoNotFollow": d.matches_do_not_follow,
+    });
+    if let Some(name) = &d.exotic_require {
+        object["exoticRequire"] = Value::from(name.as_str());
+    }
+    if let Some(protocol) = d.protocol {
+        object["protocol"] = Value::from(protocol.as_str());
+    }
+    if let Some(mime) = &d.mime_type {
+        object["mimeType"] = Value::from(mime.as_str());
+    }
+    if let Some(only) = d.pre_compilation_only {
+        object["preCompilationOnly"] = Value::from(only);
+    }
+    if let Some(license) = &d.license {
+        object["license"] = Value::from(license.as_str());
+    }
+    object
+}
+
+fn module_json(module: &ExtractedModule) -> Value {
+    if let Some(d) = &module.as_dependency {
+        return serde_json::json!({
+            "source": module.source,
+            "followable": d.followable,
+            "coreModule": d.core_module,
+            "couldNotResolve": d.could_not_resolve,
+            "matchesDoNotFollow": d.matches_do_not_follow,
+            "dependencyTypes": d.dependency_types.iter().map(|t| t.as_str()).collect::<Vec<_>>(),
+            "dependencies": [],
+        });
+    }
+    let mut object = serde_json::json!({
+        "source": module.source,
+        "dependencies": module.dependencies.iter().map(extracted_json).collect::<Vec<_>>(),
+    });
+    if let Some(stats) = module.experimental_stats {
+        object["experimentalStats"] = serde_json::json!({"topLevelStatementCount": stats.top_level_statement_count, "size": stats.size});
+    }
+    object
+}
+
+fn walk_case(
+    input: &Value,
+    flavour: Flavour,
+    module_systems: Vec<ModuleSystem>,
+    source_type: SourceType,
+) -> Result<Value, Failure> {
+    let source = input
+        .get("source")
+        .and_then(Value::as_str)
+        .ok_or_else(|| surface_error("no source"))?;
+    let options = WalkOptions {
+        module_systems,
+        exotic_require_strings: strings(input.get("exoticRequireStrings").unwrap_or(&Value::Null)),
+        detect_jsdoc_imports: input
+            .get("detectJSDocImports")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+        detect_process_builtin_module_calls: input
+            .get("detectProcessBuiltinModuleCalls")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+    };
+    let found = walk::walk_source(source, source_type, flavour, &options).map_err(|e| Failure {
+        class: Class::Parser,
+        detail: e.to_string(),
+    })?;
+    Ok(Value::Array(found.iter().map(found_json).collect()))
+}
+
+fn replay_resolve(root: &Path, cwd: &Path, input: &Value) -> Result<Value, Failure> {
+    let null = Value::Null;
+    let field = |key: &str| input.get(key).unwrap_or(&null);
+    let text = |key: &str| field(key).as_str().unwrap_or_default().to_owned();
+    let cwd = cwd.to_path_buf();
+    let config = resolve_config(field("resolveOptions"), field("transpileOptions"), &null)?;
+    let module = field("module");
+    let form_types: Vec<DependencyType> = strings(module.get("dependencyTypes").unwrap_or(&null))
+        .iter()
+        .filter_map(|t| t.parse().ok())
+        .collect();
+    let system: ModuleSystem = module
+        .get("moduleSystem")
+        .and_then(Value::as_str)
+        .unwrap_or("cjs")
+        .parse()
+        .map_err(surface_error)?;
+    let base_dir = root.join(text("baseDir"));
+    let file_dir = root.join(text("fileDir"));
+    let context = Context {
+        cwd: &cwd,
+        base_dir: &base_dir,
+        file_dir: &file_dir,
+    };
+    let r = resolve::resolve(
+        module
+            .get("module")
+            .and_then(Value::as_str)
+            .unwrap_or_default(),
+        system,
+        &form_types,
+        &context,
+        &config,
+    );
+    let mut object = serde_json::json!({
+        "resolved": r.resolved,
+        "coreModule": r.core_module,
+        "followable": r.followable,
+        "couldNotResolve": r.could_not_resolve,
+        "dependencyTypes": r.dependency_types.iter().map(|t| t.as_str()).collect::<Vec<_>>(),
+    });
+    if let Some(license) = r.license {
+        object["license"] = Value::from(license);
+    }
+    Ok(object)
+}
+
+fn replay_determine(root: &Path, cwd: &Path, input: &Value) -> Result<Value, Failure> {
+    let null = Value::Null;
+    let field = |key: &str| input.get(key).unwrap_or(&null);
+    let text = |key: &str| field(key).as_str().unwrap_or_default().to_owned();
+    let cwd = cwd.to_path_buf();
+    let config = if field("resolveOptions").is_null() {
+        ResolveConfig::default()
+    } else {
+        resolve_config(field("resolveOptions"), field("transpileOptions"), &null)?
+    };
+    let dependency = field("dependency");
+    let resolution = resolve::Resolution {
+        resolved: dependency
+            .get("resolved")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned(),
+        core_module: dependency
+            .get("coreModule")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+        followable: false,
+        could_not_resolve: dependency
+            .get("couldNotResolve")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+        dependency_types: Vec::new(),
+        license: None,
+    };
+    let manifest: Option<rb_extract_ts::npm::Manifest> = if field("manifest").is_object() {
+        serde_json::from_value(field("manifest").clone()).ok()
+    } else {
+        None
+    };
+    let base_dir = if field("baseDir").is_null() {
+        root.to_path_buf()
+    } else {
+        root.join(text("baseDir"))
+    };
+    let file_dir = if field("fileDir").is_null() {
+        cwd.clone()
+    } else {
+        root.join(text("fileDir"))
+    };
+    let context = Context {
+        cwd: &cwd,
+        base_dir: &base_dir,
+        file_dir: &file_dir,
+    };
+    let mut types = resolve::dependency_types(
+        &resolution,
+        &text("moduleName"),
+        manifest.as_ref(),
+        &context,
+        &config,
+    );
+    types.extend(
+        strings(dependency.get("dependencyTypes").unwrap_or(&null))
+            .iter()
+            .filter_map(|t| t.parse::<DependencyType>().ok()),
+    );
+    Ok(Value::Array(
+        types.iter().map(|t| Value::from(t.as_str())).collect(),
+    ))
+}
+
 /// Replays one case through the Rust surface that corresponds to its dependency-cruiser function.
 fn replay(root: &Path, case: &Case) -> Result<Value, Failure> {
-    let _ = (root, &case.cwd, &case.input);
-    Err(Failure {
-        class: Class::Surface,
-        detail: format!("no Rust replay for `{}` yet", case.surface),
-    })
+    let input = rooted(&case.input, root);
+    let cwd = root.join(&case.cwd);
+    let null = Value::Null;
+    let field = |key: &str| input.get(key).unwrap_or(&null);
+    let text = |key: &str| field(key).as_str().unwrap_or_default().to_owned();
+    let pipeline_error = |e: rb_extract_ts::pipeline::PipelineError| Failure {
+        class: Class::Expectation,
+        detail: e.to_string(),
+    };
+    match case.surface.as_str() {
+        "walk-tsc" => walk_case(&input, Flavour::Tsc, Vec::new(), SourceType::ts()),
+        "walk-swc" => walk_case(&input, Flavour::Swc, Vec::new(), SourceType::ts()),
+        "walk-acorn-cjs" => walk_case(
+            &input,
+            Flavour::Acorn,
+            vec![ModuleSystem::Cjs],
+            SourceType::mjs().with_jsx(true),
+        ),
+        "walk-acorn-es6" => walk_case(
+            &input,
+            Flavour::Acorn,
+            vec![ModuleSystem::Es6],
+            SourceType::mjs().with_jsx(true),
+        ),
+        "walk-acorn-amd" => walk_case(
+            &input,
+            Flavour::Acorn,
+            vec![ModuleSystem::Amd],
+            SourceType::mjs().with_jsx(true),
+        ),
+        "extract-dependencies" => {
+            let settings = settings(field("cruiseOptions"), &cwd)?;
+            let config = resolve_config(
+                field("resolveOptions"),
+                field("transpileOptions"),
+                field("cruiseOptions"),
+            )?;
+            let deps = pipeline::extract_dependencies(&text("fileName"), &settings, &config)
+                .map_err(pipeline_error)?;
+            Ok(Value::Array(deps.iter().map(extracted_json).collect()))
+        }
+        "resolve" => replay_resolve(root, &cwd, &input),
+        "determine-dependency-types" => replay_determine(root, &cwd, &input),
+        "extract" => {
+            let settings = settings(field("cruiseOptions"), &cwd)?;
+            let config = resolve_config(
+                field("resolveOptions"),
+                &serde_json::json!({"tsConfig": field("tsConfig")}),
+                field("cruiseOptions"),
+            )?;
+            let modules = pipeline::extract(&strings(field("files")), &settings, &config)
+                .map_err(pipeline_error)?;
+            Ok(Value::Array(modules.iter().map(module_json).collect()))
+        }
+        "gather-initial-sources" => {
+            let settings = settings(field("cruiseOptions"), &cwd)?;
+            let files = pipeline::gather_initial_sources(&strings(field("files")), &settings)
+                .map_err(pipeline_error)?;
+            Ok(Value::Array(files.into_iter().map(Value::from).collect()))
+        }
+        "extract-stats" | "stats-acorn" | "stats-tsc" => {
+            let settings = settings(field("cruiseOptions"), &cwd)?;
+            let stats = pipeline::stats(&text("fileName"), &settings).map_err(pipeline_error)?;
+            Ok(
+                serde_json::json!({"topLevelStatementCount": stats.top_level_statement_count, "size": stats.size}),
+            )
+        }
+        other => Err(Failure {
+            class: Class::Surface,
+            detail: format!("no Rust replay for `{other}`"),
+        }),
+    }
 }
 
 /// Classifies a mismatch by the first key whose value differs.

@@ -7,6 +7,8 @@
 // inner ones. Arguments are reduced to plain JSON: an AST is replaced by the source text that
 // produced it, a normalised options object by the raw options the test passed in, and every path
 // argument is made relative to the checkout root so the Rust replay can run from the vendored copy.
+// Absolute paths that remain inside option values (a webpack alias target, a tsconfig's outDir) are
+// written with the checkout root replaced by the token `<root>`, which the replay maps back.
 import { isAbsolute, relative, resolve } from 'node:path';
 
 let root = '';
@@ -79,7 +81,8 @@ function resolveOptions(value) {
     if (raw) {
         return raw;
     }
-    return { resolve: null, cruise: null, tsConfig: null, untagged: true };
+    // Passed as a plain object rather than through normalizeResolveOptions (unit tests do this).
+    return { resolve: plain(value ?? {}), cruise: null, tsConfig: null, untagged: true };
 }
 
 export function tagAst(parser, getAST) {
@@ -160,7 +163,9 @@ const INPUTS = {
         fileDir,
         resolveOpts,
         baseDir,
+        transpile,
     ]) => ({
+        transpileOptions: plain(transpile),
         dependency: plain(dependency),
         moduleName,
         manifest: plain(manifest),
@@ -204,6 +209,11 @@ function isWalk(name) {
     return name.startsWith('walk-');
 }
 
+/** Replaces the checkout root with `<root>` everywhere in a recorded call. */
+function portable(call) {
+    return JSON.parse(JSON.stringify(call).split(root).join('<root>'));
+}
+
 export function surface(name, fn) {
     return function recordedSurface(...args) {
         const outermost = depth === 0 && calls !== null;
@@ -218,12 +228,14 @@ export function surface(name, fn) {
             result = fn.apply(this, args);
         } catch (error) {
             if (outermost && replayable) {
-                calls.push({
-                    surface: name,
-                    cwd,
-                    input: INPUTS[name](args),
-                    throws: String(error?.message ?? error),
-                });
+                calls.push(
+                    portable({
+                        surface: name,
+                        cwd,
+                        input: INPUTS[name](args),
+                        throws: String(error?.message ?? error),
+                    }),
+                );
             }
             throw error;
         } finally {
@@ -231,12 +243,14 @@ export function surface(name, fn) {
         }
         if (outermost && replayable) {
             const expected = appended ? appended.slice(before) : result;
-            calls.push({
-                surface: name,
-                cwd,
-                input: INPUTS[name](args),
-                expected: plain(expected),
-            });
+            calls.push(
+                portable({
+                    surface: name,
+                    cwd,
+                    input: INPUTS[name](args),
+                    expected: plain(expected),
+                }),
+            );
         }
         return result;
     };
