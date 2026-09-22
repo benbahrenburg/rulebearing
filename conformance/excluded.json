@@ -1,0 +1,4 @@
+{
+  "$comment": "Specs excluded from conformance gate 1, each with a reason. This list may only shrink (docs/adr/0009-conformance-suites-as-specification.md). Wave 3 empties it when the CoffeeScript/LiveScript sidecar lands (docs/adr/0017-coffeescript-livescript-sidecar.md).",
+  "dependency-cruiser": []
+}

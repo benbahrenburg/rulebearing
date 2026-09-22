@@ -1,0 +1,3 @@
+# Schema
+
+`v1.json` is generated from `rb-model` with `schemars` and served at `https://benbahrenburg.github.io/rulebearing/schema/v1.json`, the `$schema` a native config names ([ADR-0004](../docs/adr/0004-graph-document-is-cruise-result-superset.md), [ADR-0005](../docs/adr/0005-native-config-superset-and-compat.md)). Two schemas live here once wave 1 lands: the configuration schema (with descriptions, so an agent's editor can complete keys) and the graph-document schema. The pinned dependency-cruiser 18.2.0 `configuration` and `cruise-result` schemas are vendored under `conformance/dependency-cruiser/fixtures/` for `--strict-schema` validation ([FR-OUT-03](../docs/prd.md#fr-out-03)). Generation: `cargo run -p rb-cli -- schema --out schema/` (wave 1).

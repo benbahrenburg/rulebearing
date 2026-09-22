@@ -1,0 +1,77 @@
+# Rulebearing workspace.
+# Layout and dependency direction are fixed by docs/adr/0010-crate-layout-and-extractor-boundary.md
+# and described in docs/architecture.md#crate-layout. The workspace is created by
+# docs/plans/pending/0000-wave-0-spike.md (sub-wave 0A).
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/rb-model",
+    "crates/rb-config",
+    "crates/rb-rules",
+    "crates/rb-extract-ts",
+    "crates/rb-extract-dotnet",
+    "crates/rb-extract-python",
+    "crates/rb-ingest",
+    "crates/rb-report",
+    "crates/rb-cli",
+    "crates/rb-node",
+    "xtask",
+]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+repository = "https://github.com/benbahrenburg/rulebearing"
+authors = ["Ben Bahrenburg"]
+publish = false
+
+[workspace.dependencies]
+# Internal crates
+rb-model = { path = "crates/rb-model" }
+rb-config = { path = "crates/rb-config" }
+rb-rules = { path = "crates/rb-rules" }
+rb-extract-ts = { path = "crates/rb-extract-ts" }
+rb-extract-dotnet = { path = "crates/rb-extract-dotnet" }
+rb-extract-python = { path = "crates/rb-extract-python" }
+rb-ingest = { path = "crates/rb-ingest" }
+rb-report = { path = "crates/rb-report" }
+rb-cli = { path = "crates/rb-cli" }
+xtask = { path = "xtask" }
+
+# Third-party crates pinned here so every crate uses one version.
+# Each is MIT or Apache-2.0 compatible; see docs/adr/0019-mit-licence.md and deny.toml.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+
+# Test-only. Property tests state an invariant and let the runner look for a counterexample
+# (docs/adr/0024-test-quality-gates.md). MIT or Apache-2.0, so cargo deny is unaffected.
+proptest = "1"
+
+# Wave 1+ dependencies are added by the plan that needs them, not in advance:
+#   oxc_parser, oxc_resolver        docs/adr/0012-oxc-for-typescript.md
+#   ruff_python_parser              docs/adr/0013-ruff-parser-for-python.md
+#   rquickjs                        docs/adr/0006-embedded-quickjs-config-evaluator.md
+#   regex, clap, schemars, rayon    docs/architecture.md#technology-choices
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

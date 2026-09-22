@@ -1,0 +1,31 @@
+# Spell checking for prose, code and configuration.
+# Gate: docs/adr/0025-ci-and-supply-chain-hardening.md. Run: `typos` (or `typos --write-changes`).
+[files]
+extend-exclude = [
+  "target/",
+  "node_modules/",
+  "package-lock.json",
+  "Cargo.lock",
+  # Verbatim exports and vendored upstream fixtures are not ours to correct.
+  "docs/artifacts/",
+  "conformance/*/upstream/",
+  "conformance/*/fixtures/",
+  "testbeds/checkouts/",
+  # Tool output: compiler command lines, not prose.
+  "mutants.out/",
+  "mutants.out.old/",
+  "lcov.info",
+]
+
+[default.extend-words]
+# Project and ecosystem vocabulary that is not a misspelling.
+rulebearing = "rulebearing"
+depcruise = "depcruise"
+oxc = "oxc"
+# The flate2 crate, a candidate for the cache's `compress` option.
+flate = "flate"
+
+[default.extend-identifiers]
+# Yarn Plug'n'Play, spelled PnP throughout dependency-cruiser's options and this project's docs.
+PnP = "PnP"
+pnp = "pnp"

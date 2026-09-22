@@ -1,0 +1,3 @@
+# Test beds
+
+The repositories in [manifest.yaml](manifest.yaml) are the nightly proof ([NFR-CONF-03](../docs/prd.md#nfr-conf-03), [design § Test beds](../docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against)). `run.sh` clones each at its pinned SHA into `checkouts/` (git-ignored), runs the incumbent tool and Rulebearing, and writes `results/` with the zero-diff table, the greenfield `init` fixtures and the timing table. `check-regression.sh` fails the nightly run on a timing regression over 20%. Both scripts land in [Wave 0, sub-wave 0B](../docs/plans/pending/0000-wave-0-spike.md).

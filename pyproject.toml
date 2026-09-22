@@ -1,0 +1,54 @@
+# Tooling configuration for the Python packages (wrappers/pip, adapters/python).
+# This file configures linters only; each package carries its own build metadata.
+# Conventions: CLAUDE.md § Python conventions. Gate: docs/adr/0023-documentation-link-and-lint-gates.md.
+# Run through the one entry point: `cargo xtask lint`.
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = [
+    "node_modules",
+    "target",
+    "testbeds/checkouts",
+    "conformance/*/upstream",
+    "conformance/*/fixtures",
+    "docs/artifacts",
+]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D203",   # conflicts with D211, which ruff also selects
+    "D213",   # conflicts with D212
+    "COM812", # trailing-comma rule that fights the formatter
+    "ISC001", # single-line implicit concatenation, same reason
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests assert, use fixtures and need no docstring on every function.
+"**/tests/**" = ["S101", "D100", "D103", "PLR2004", "INP001"]
+"**/conftest.py" = ["INP001"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+warn_unused_configs = true
+disallow_any_generics = true
+no_implicit_reexport = true
+exclude = "(^|/)(target|node_modules|\\.venv|testbeds/checkouts|conformance/.*/(upstream|fixtures))/"
+
+[tool.pytest.ini_options]
+addopts = "--cov --cov-report=term-missing --cov-fail-under=70"
+testpaths = ["wrappers/pip", "adapters/python"]
+
+[tool.coverage.run]
+branch = false
+omit = ["*/tests/*", "*/__main__.py"]

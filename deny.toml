@@ -1,0 +1,22 @@
+# Licence and advisory policy. See docs/adr/0019-mit-licence.md.
+[licenses]
+allow = ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Zlib", "Unicode-3.0", "Unicode-DFS-2016", "MPL-2.0"]
+confidence-threshold = 0.9
+
+[bans]
+multiple-versions = "warn"
+deny = [
+  # GPL-3; see the language decision table in docs/artifacts/design.md#language-decision
+  { crate = "dotnetdll" },
+]
+
+[advisories]
+ignore = []
+
+# Supply chain: crates may come only from the public registry. A git dependency, or a private
+# registry, has to be argued for in an ADR first (docs/adr/0025-ci-and-supply-chain-hardening.md).
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

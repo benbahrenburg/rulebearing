@@ -1,0 +1,36 @@
+<!--
+  Shared MSBuild settings for every C# project: adapters/dotnet (Rulebearing.TestAdapter),
+  frontends/Rulebearing.Analyzer, the conformance fixtures, and Rulebearing.Extract if the
+  fallback in docs/adr/0003-dotnet-extractor-fallback.md is invoked.
+  Conventions: CLAUDE.md, C# conventions. Gate: docs/adr/0023-documentation-link-and-lint-gates.md.
+-->
+<Project>
+  <PropertyGroup>
+    <TargetFramework Condition="'$(TargetFramework)' == '' and '$(TargetFrameworks)' == ''">net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DebugType>portable</DebugType>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>Ben Bahrenburg</Authors>
+    <RepositoryUrl>https://github.com/benbahrenburg/rulebearing</RepositoryUrl>
+  </PropertyGroup>
+
+  <!-- Coverage floor: docs/adr/0018-test-coverage-threshold.md -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>lcov</CoverletOutputFormat>
+    <Threshold>70</Threshold>
+    <ThresholdType>line</ThresholdType>
+    <ThresholdStat>total</ThresholdStat>
+  </PropertyGroup>
+</Project>

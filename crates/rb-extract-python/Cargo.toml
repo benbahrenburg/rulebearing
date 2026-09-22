@@ -1,0 +1,16 @@
+[package]
+name = "rb-extract-python"
+description = "Rulebearing Python extractor over ruff_python_parser"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+rb-model = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,43 @@
+# Nightly proof over the open-source test beds (docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against).
+# Oracle zero-diff, greenfield `init` fixtures, scale timing table; a timing regression over 20% fails.
+# Plan: docs/plans/pending/0000-wave-0-spike.md, sub-wave 0B. Requirement: docs/prd.md#nfr-conf-03.
+name: nightly-testbeds
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  testbeds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: cargo build --release -p rb-cli
+      - run: testbeds/run.sh --manifest testbeds/manifest.yaml --out testbeds/results
+      - run: testbeds/check-regression.sh --threshold 20
+      - uses: actions/upload-artifact@v4
+        with:
+          name: testbed-results
+          path: testbeds/results
+
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo install cargo-fuzz --locked
+      - run: fuzz/run-nightly.sh

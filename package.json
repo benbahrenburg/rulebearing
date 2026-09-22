@@ -1,0 +1,25 @@
+{
+  "name": "rulebearing-repo",
+  "private": true,
+  "type": "module",
+  "description": "Tooling root for the TypeScript packages. The published package is wrappers/npm (docs/architecture.md#distribution).",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check-links": "cargo xtask check-links",
+    "lint:all": "cargo xtask lint"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0"
+  }
+}

@@ -1,0 +1,19 @@
+/target
+**/*.rs.bk
+Cargo.lock.orig
+/.graph/
+/coverage/
+/lcov.info
+# cargo-mutants working output (docs/adr/0024-test-quality-gates.md)
+/mutants.out/
+/mutants.out.old/
+node_modules/
+dist/
+bin/
+obj/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+/conformance/**/upstream/
+/testbeds/checkouts/

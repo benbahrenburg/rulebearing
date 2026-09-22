@@ -1,0 +1,17 @@
+[package]
+name = "rb-report"
+description = "Rulebearing reporters: every dependency-cruiser reporter plus sarif, junit, trx, agent, plantuml"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+rb-model = { workspace = true }
+rb-rules = { workspace = true }
+
+[lints]
+workspace = true

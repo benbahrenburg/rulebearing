@@ -1,0 +1,36 @@
+[package]
+name = "rb-cli"
+description = "The rulebearing command-line tool"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "rulebearing"
+path = "src/main.rs"
+
+[features]
+# Each extractor is a feature so a narrower build never links the others
+# (docs/adr/0010-crate-layout-and-extractor-boundary.md).
+default = ["extract-ts", "extract-dotnet", "extract-python"]
+extract-ts = ["dep:rb-extract-ts"]
+extract-dotnet = ["dep:rb-extract-dotnet"]
+extract-python = ["dep:rb-extract-python"]
+
+[dependencies]
+rb-model = { workspace = true }
+rb-config = { workspace = true }
+rb-rules = { workspace = true }
+rb-ingest = { workspace = true }
+rb-report = { workspace = true }
+rb-extract-ts = { workspace = true, optional = true }
+rb-extract-dotnet = { workspace = true, optional = true }
+rb-extract-python = { workspace = true, optional = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

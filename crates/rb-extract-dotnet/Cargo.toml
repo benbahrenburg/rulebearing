@@ -1,0 +1,16 @@
+[package]
+name = "rb-extract-dotnet"
+description = "Rulebearing .NET extractor: ECMA-335 metadata, IL operands and portable PDBs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+rb-model = { workspace = true }
+
+[lints]
+workspace = true

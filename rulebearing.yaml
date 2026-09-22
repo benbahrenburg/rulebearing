@@ -1,0 +1,46 @@
+# Rulebearing's own architecture rules. Enforced by the `self-check` job in .github/workflows/ci.yml
+# from wave 1 (docs/plans/pending/0001-wave-1-typescript-parity.md, sub-wave 1G); informational
+# until `cruise` exists. Every rule cites the ADR it serves, as ADR-0001 requires of every user.
+# Rust is not one of the three supported languages, so these rules are evaluated over the crate
+# graph that `rulebearing cruise` reads from Cargo metadata in the self-check mode added in wave 1;
+# until then `cargo deny` bans and the dependency lists in crates/*/Cargo.toml hold the line.
+$schema: https://benbahrenburg.github.io/rulebearing/schema/v1.json
+extends: [rulebearing:recommended]
+
+rules:
+  dependencies:
+    forbidden:
+      - name: model-depends-on-nothing
+        comment: "rb-model is the contract every crate reads; it depends on nothing in the workspace. adr:0010"
+        fix: "Move the type into rb-model, or move the logic that needs the other crate out of rb-model."
+        severity: error
+        from: { path: "^crates/rb-model/" }
+        to:   { path: "^crates/rb-(?!model/)" }
+      - name: extractors-only-read-the-model
+        comment: "An extractor's only output is the graph document; it may not know about rules or config. adr:0010"
+        fix: "Pass per-language options as a plain struct defined in rb-model instead of reading rb-config."
+        severity: error
+        from: { path: "^crates/rb-extract-(ts|dotnet|python)/" }
+        to:   { path: "^crates/rb-(config|rules|report|cli|ingest|node)/" }
+      - name: engine-is-language-agnostic
+        comment: "rb-rules and rb-report compare strings in the document; they never import an extractor. adr:0010 adr:0014"
+        fix: "Put the language-specific fact into the graph document at extraction time and match on it as a string."
+        severity: error
+        from: { path: "^crates/rb-(rules|report)/" }
+        to:   { path: "^crates/rb-extract-" }
+      - name: no-circular-crates
+        comment: "The crate graph is a DAG. adr:0010"
+        severity: error
+        from: { path: "^crates/" }
+        to:   { circular: true }
+    required:
+      - name: cli-links-every-extractor-behind-a-feature
+        comment: "Each extractor is a Cargo feature of rb-cli so a narrower build never links the others. adr:0010"
+        module: { path: "^crates/rb-cli/Cargo\\.toml$" }
+        to:     { path: "^crates/rb-extract-(ts|dotnet|python)/", reachable: true }
+  ratchets:
+    - name: no-unsafe
+      comment: "unsafe_code is forbidden at the workspace level; this ratchet keeps the count at zero outside rb-node, whose napi macros are the one exception. adr:0002"
+      from: { path: "^crates/" }
+      to:   { path: "^unsafe$" }
+      budget: eng/unsafe-budget.json

@@ -1,0 +1,63 @@
+# Open-source test beds, from docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against.
+# Roles: oracle (must reproduce the incumbent tool's findings with zero diff at the pinned SHA),
+# greenfield (exercises `init` and `propose`), scale (timed nightly; a regression over 20% fails).
+# SHAs are pinned in wave 0 sub-wave 0B (docs/plans/pending/0000-wave-0-spike.md); "pin-in-0B" is a placeholder.
+# All repositories are read-only test beds; a pull request is offered only where the contributing guide invites it.
+version: 1
+oracles:
+  typescript:
+    - { repo: sverweij/dependency-cruiser, sha: pin-in-0B, config: .dependency-cruiser.cjs, note: "TypeScript oracle and the conformance suite itself" }
+    - { repo: langfuse/langfuse, sha: pin-in-0B, config: .dependency-cruiser.js }
+    - { repo: microsoft/FluidFramework, sha: pin-in-0B, config: .dependency-cruiser.cjs }
+    - { repo: ag-grid/ag-grid, sha: pin-in-0B }
+    - { repo: tsparticles/tsparticles, sha: pin-in-0B }
+    - { repo: liveblocks/liveblocks, sha: pin-in-0B }
+    - { repo: remult/remult, sha: pin-in-0B }
+    - { repo: invertase/react-native-firebase, sha: pin-in-0B }
+    - { repo: infinitered/ignite, sha: pin-in-0B }
+    - { repo: aws/aws-toolkit-vscode, sha: pin-in-0B }
+  dotnet:
+    - { repo: evolutionary-architecture/evolutionary-architecture-by-example, sha: pin-in-0B, tool: netarchtest }
+    - { repo: phongnguyend/Practical.CleanArchitecture, sha: pin-in-0B, tool: netarchtest }
+    - { repo: ardalis/RiverBooks, sha: pin-in-0B, tool: archunitnet }
+    - { repo: nager/Nager.Date, sha: pin-in-0B, tool: archunitnet }
+    - { repo: karaoke-dev/karaoke, sha: pin-in-0B, tool: archunitnet }
+    - { repo: onebeyond/monaco, sha: pin-in-0B, tool: archunitnet }
+    - { repo: dennisdoomen/packageguard, sha: pin-in-0B, tool: netarchtest }
+    - { repo: NeVeSpl/NetArchTest.eNhancedEdition, sha: pin-in-0B, tool: netarchtest }
+    - { repo: DrJohnMelville/Pdf, sha: pin-in-0B, tool: netarchtest }
+    - { repo: TNG/ArchUnitNET, sha: pin-in-0B, tool: archunitnet, note: "the .NET conformance suite" }
+    - { repo: BenMorris/NetArchTest, sha: pin-in-0B, tool: netarchtest, note: "the .NET conformance suite" }
+  python:
+    - { repo: seddonym/import-linter, sha: pin-in-0B, note: "Python oracle and the contract-kind mapping" }
+    - { repo: kedro-org/kedro, sha: pin-in-0B }
+    - { repo: sqlfluff/sqlfluff, sha: pin-in-0B }
+    - { repo: bridgecrewio/checkov, sha: pin-in-0B }
+    - { repo: openedx/openedx-platform, sha: pin-in-0B }
+    - { repo: napari/napari, sha: pin-in-0B }
+    - { repo: nolar/kopf, sha: pin-in-0B }
+    - { repo: online-ml/river, sha: pin-in-0B }
+    - { repo: wemake-services/wemake-python-styleguide, sha: pin-in-0B }
+    - { repo: google/langextract, sha: pin-in-0B }
+    - { repo: microsoft/promptflow, sha: pin-in-0B }
+    - { repo: HKUDS/DeepTutor, sha: pin-in-0B }
+  mixed:
+    - { repo: langgenius/dify, sha: pin-in-0B, languages: [typescript, python] }
+    - { repo: open-metadata/OpenMetadata, sha: pin-in-0B, languages: [typescript, python] }
+greenfield:
+  - { repo: microsoft/semantic-kernel, sha: pin-in-0B, languages: [dotnet, python, typescript] }
+  - { repo: microsoft/autogen, sha: pin-in-0B, languages: [python, dotnet, typescript] }
+  - { repo: jasontaylordev/CleanArchitecture, sha: pin-in-0B, languages: [dotnet, typescript] }
+  - { repo: abpframework/abp, sha: pin-in-0B, languages: [dotnet, typescript] }
+  - { repo: umbraco/Umbraco-CMS, sha: pin-in-0B, languages: [dotnet, typescript] }
+  - { repo: apache/superset, sha: pin-in-0B, languages: [python, typescript] }
+  - { repo: getsentry/sentry, sha: pin-in-0B, languages: [python, typescript] }
+  - { repo: zulip/zulip, sha: pin-in-0B, languages: [python, typescript] }
+  - { repo: PostHog/posthog, sha: pin-in-0B, languages: [python, typescript] }
+scale:
+  - { repo: n8n-io/n8n, sha: pin-in-0B, languages: [typescript], note: "Vue single-file components" }
+  - { repo: grafana/grafana, sha: pin-in-0B, languages: [typescript] }
+  - { repo: elastic/kibana, sha: pin-in-0B, languages: [typescript] }
+  - { repo: dotnet/aspnetcore, sha: pin-in-0B, languages: [dotnet], note: "hundreds of projects, source-link PDB paths" }
+  - { repo: jellyfin/jellyfin, sha: pin-in-0B, languages: [dotnet] }
+  - { repo: home-assistant/core, sha: pin-in-0B, languages: [python], note: "namespace packages, dynamic imports" }

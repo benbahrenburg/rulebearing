@@ -1,0 +1,18 @@
+# Prettier formats code and data files, not prose or configuration written for people to read.
+# Markdown style is editorial (CLAUDE.md, documentation conventions) and the mechanical gate on
+# documentation is the link check (docs/adr/0023-documentation-link-and-lint-gates.md); YAML here
+# is example configuration whose line breaks are deliberate.
+**/*.md
+**/*.yml
+**/*.yaml
+
+# Generated, vendored or verbatim. See docs/artifacts/README.md and conformance/README.md.
+target/
+node_modules/
+dist/
+docs/artifacts/
+conformance/**/fixtures/
+conformance/**/upstream/
+testbeds/checkouts/
+schema/*.json
+Cargo.lock

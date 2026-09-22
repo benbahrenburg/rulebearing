@@ -1,0 +1,17 @@
+[package]
+name = "rb-rules"
+description = "Rulebearing rule engine: matchers, cycles, reachability, element predicates, slices, diagrams"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+rb-model = { workspace = true }
+rb-config = { workspace = true }
+
+[lints]
+workspace = true
