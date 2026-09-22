@@ -1,0 +1,419 @@
+flowchart LR
+
+subgraph 0["bin"]
+1["dependency-cruise"]
+end
+2["package.json"]
+subgraph 3["node_modules"]
+subgraph 4["commander"]
+5["index.js"]
+end
+subgraph 6["semver"]
+7["semver.js"]
+end
+subgraph B["glob"]
+C["glob.js"]
+end
+subgraph D["lodash"]
+E["get.js"]
+M["lodash.js"]
+1N["memoize.js"]
+2H["clone.js"]
+2I["uniq.js"]
+2O["flattenDeep.js"]
+2X["uniqBy.js"]
+44["set.js"]
+48["isEqual.js"]
+49["uniqWith.js"]
+end
+subgraph 14["acorn-walk"]
+subgraph 15["dist"]
+16["walk.js"]
+end
+end
+subgraph 1A["semver-try-require"]
+subgraph 1B["src"]
+1C["index.js"]
+end
+end
+subgraph 1G["acorn"]
+subgraph 1H["dist"]
+1I["acorn.js"]
+end
+end
+subgraph 1J["acorn-loose"]
+subgraph 1K["dist"]
+1L["acorn-loose.js"]
+end
+end
+subgraph 22["resolve"]
+23["index.js"]
+end
+subgraph 27["enhanced-resolve"]
+subgraph 28["lib"]
+29["node.js"]
+end
+end
+subgraph 2B["awesome-typescript-loader"]
+subgraph 2C["dist"]
+2D["entry.js"]
+end
+end
+subgraph 2R["handlebars"]
+2S["runtime.js"]
+end
+subgraph 34["chalk"]
+35["index.js"]
+end
+subgraph 36["figures"]
+37["index.js"]
+end
+subgraph 3G["safe-regex"]
+3H["index.js"]
+end
+subgraph 3M["ajv"]
+subgraph 3N["lib"]
+3O["ajv.js"]
+end
+end
+subgraph 3Z["inquirer"]
+subgraph 40["lib"]
+41["inquirer.js"]
+end
+end
+subgraph 4B["strip-json-comments"]
+4C["index.js"]
+end
+end
+subgraph 8["src"]
+subgraph 9["cli"]
+A["index.js"]
+3P["formatMetaInfo.js"]
+3Q["getResolveConfig.js"]
+subgraph 3R["utl"]
+3S["makeAbsolute.js"]
+4E["io.js"]
+4F["validateFileExistence.js"]
+end
+subgraph 3T["initConfig"]
+3U["index.js"]
+3V["createConfigFile.js"]
+3W["config.js.template.js"]
+3X["config.json.template.js"]
+3Y["getUserInput.js"]
+end
+42["normalizeOptions.js"]
+43["defaults.json"]
+subgraph 45["compileConfig"]
+46["index.js"]
+47["mergeConfigs.js"]
+4A["readConfig.js"]
+end
+4D["parseTSConfig.js"]
+end
+subgraph F["main"]
+G["index.js"]
+subgraph 3C["options"]
+3D["normalize.js"]
+3E["defaults.json"]
+3F["validate.js"]
+end
+subgraph 3I["ruleSet"]
+3J["normalize.js"]
+3K["validate.js"]
+3L["jsonschema.json"]
+end
+end
+subgraph H["report"]
+subgraph I["dot"]
+J["richModuleColorScheme.json"]
+2Y["coloring.js"]
+2Z["defaultModuleColorScheme.json"]
+31["index.js"]
+32["dot.template.js"]
+end
+subgraph 2P["csv"]
+2Q["index.js"]
+2U["csv.template.js"]
+end
+2T["dependencyToIncidenceTransformer.js"]
+subgraph 2V["ddot"]
+2W["index.js"]
+30["ddot.template.js"]
+end
+33["err.js"]
+subgraph 38["html"]
+39["index.js"]
+3A["html.template.js"]
+end
+3B["json.js"]
+end
+subgraph K["extract"]
+L["index.js"]
+N["addValidations.js"]
+subgraph T["derive"]
+subgraph U["circular"]
+V["index.js"]
+W["dependencyEndsUpAtFrom.js"]
+end
+subgraph X["orphan"]
+Y["index.js"]
+Z["isOrphan.js"]
+end
+end
+10["extract.js"]
+subgraph 12["ast-extractors"]
+13["extract-AMD-deps.js"]
+17["extract-commonJS-deps.js"]
+18["extract-ES6-deps.js"]
+19["extract-typescript-deps.js"]
+end
+1D["ignore.js"]
+subgraph 1E["parse"]
+1F["toJavascriptAST.js"]
+1X["toTypescriptAST.js"]
+end
+subgraph 1O["transpile"]
+1P["index.js"]
+1Q["meta.js"]
+1R["coffeeWrap.js"]
+1S["javaScriptWrap.js"]
+1T["liveScriptWrap.js"]
+1U["typeScriptWrap.js"]
+end
+subgraph 1V["utl"]
+1W["getExtension.js"]
+20["pathToPosix.js"]
+end
+subgraph 1Y["resolve"]
+1Z["index.js"]
+21["resolve-AMD.js"]
+24["determineDependencyTypes.js"]
+25["localNpmHelpers.js"]
+26["resolve.js"]
+2A["compileResolveOptions.js"]
+subgraph 2E["readPackageDeps"]
+2F["index.js"]
+2G["mergePackages.js"]
+end
+2J["resolve-helpers.js"]
+2K["resolve-commonJS.js"]
+2L["isFollowable.js"]
+end
+2M["gatherInitialSources.js"]
+2N["summarize.js"]
+end
+subgraph O["validate"]
+P["index.js"]
+Q["matchDependencyRule.js"]
+R["isModuleOnlyRule.js"]
+S["matchModuleRule.js"]
+end
+end
+11["path"]
+1M["fs"]
+1-->2
+1-->A
+1-->5
+1-->7
+A-->G
+A-->3P
+A-->3Q
+A-->3U
+A-->42
+A-->4D
+A-->4E
+A-->4F
+A-->C
+A-->E
+G-->L
+G-->1Q
+G-->2Q
+G-->2W
+G-->31
+G-->J
+G-->33
+G-->39
+G-->3B
+G-->3D
+G-->3F
+G-->3J
+G-->3K
+L-->N
+L-->V
+L-->Y
+L-->10
+L-->2M
+L-->2N
+L-->20
+L-->M
+N-->P
+P-->Q
+P-->S
+Q-->R
+S-->R
+V-->W
+V-->E
+Y-->Z
+Y-->E
+10-->13
+10-->18
+10-->17
+10-->19
+10-->1D
+10-->1F
+10-->1X
+10-->1Z
+10-->M
+10-->11
+13-->17
+13-->16
+17-->16
+18-->16
+19-->2
+19-->1C
+1F-->1P
+1F-->1W
+1F-->1I
+1F-->1L
+1F-->1M
+1F-->1N
+1P-->1Q
+1Q-->2
+1Q-->1R
+1Q-->1S
+1Q-->1T
+1Q-->1U
+1R-->2
+1R-->1C
+1T-->2
+1T-->1C
+1U-->2
+1U-->E
+1U-->1C
+1W-->11
+1X-->2
+1X-->1M
+1X-->1N
+1X-->1C
+1Z-->20
+1Z-->21
+1Z-->2K
+1Z-->1M
+1Z-->11
+20-->11
+21-->20
+21-->24
+21-->2F
+21-->2J
+21-->1M
+21-->1N
+21-->11
+21-->23
+24-->25
+24-->11
+24-->23
+25-->26
+25-->1M
+25-->1N
+25-->11
+26-->20
+26-->2A
+26-->29
+2A-->1Q
+2A-->2D
+2A-->29
+2F-->2G
+2F-->1M
+2F-->1N
+2F-->11
+2G-->2H
+2G-->E
+2G-->2I
+2J-->25
+2K-->20
+2K-->24
+2K-->2L
+2K-->2F
+2K-->26
+2K-->2J
+2K-->11
+2K-->23
+2L-->1W
+2L-->2A
+2M-->1D
+2M-->1Q
+2M-->1M
+2M-->C
+2M-->11
+2N-->2O
+2Q-->2T
+2Q-->2U
+2Q-->2S
+2U-->2S
+2W-->2Y
+2W-->30
+2W-->2S
+2W-->2H
+2W-->E
+2W-->2X
+2W-->11
+2Y-->2Z
+2Y-->E
+30-->2S
+31-->2Y
+31-->32
+31-->2S
+31-->11
+32-->2S
+33-->35
+33-->37
+39-->2T
+39-->3A
+39-->2S
+3A-->2S
+3D-->3E
+3F-->3H
+3K-->3F
+3K-->3L
+3K-->3O
+3K-->3H
+3P-->G
+3P-->35
+3P-->37
+3Q-->3S
+3S-->11
+3U-->3V
+3U-->3Y
+3V-->2
+3V-->3W
+3V-->3X
+3V-->1M
+3V-->2S
+3W-->2S
+3X-->2S
+3Y-->41
+42-->46
+42-->43
+42-->1M
+42-->2H
+42-->E
+42-->44
+42-->11
+46-->26
+46-->47
+46-->4A
+46-->11
+47-->E
+47-->48
+47-->2X
+47-->49
+4A-->1M
+4A-->11
+4A-->4C
+4D-->2
+4D-->E
+4D-->11
+4D-->1C
+4E-->1M
+4F-->1M

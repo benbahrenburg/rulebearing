@@ -9,6 +9,10 @@ repository.workspace = true
 authors.workspace = true
 publish.workspace = true
 
+[lib]
+name = "rb_cli"
+path = "src/lib.rs"
+
 [[bin]]
 name = "rulebearing"
 path = "src/main.rs"
