@@ -1,102 +1,178 @@
 # Rulebearing
 
-One architecture rule set for TypeScript, .NET and Python.
+**Deterministic guardrails for agentic engineering.** Architecture rules your coding agent cannot talk its way past, with the fix attached to every finding, for TypeScript, .NET and Python in one rule file.
 
-Rulebearing is a single command-line tool and one rule language that does what [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) does for TypeScript and JavaScript, what [ArchUnitNET](https://github.com/TNG/ArchUnitNET) does for .NET, and what [import-linter](https://github.com/seddonym/import-linter) does for Python, over a single graph. A repository with more than one language keeps one set of architecture rules, one gate, and one answer to "may this file import that one".
+> **Status: wave 0.** The design is complete, every quality gate is wired and green, and no subcommand ships yet. The first release, a drop-in for repositories already using dependency-cruiser, is [wave 1](docs/plans/pending/0001-wave-1-typescript-parity.md). If the problem below is yours, star or watch the repository; the [roadmap](#roadmap) says what lands when.
 
-> **Status: wave 0, the spike.** The workspace builds and every quality gate is wired and green, but no subcommand is implemented yet. Nothing is published to any registry. The [plans](docs/plans/README.md) say what lands when, and [the roadmap below](#roadmap) summarises them. Watch the repository rather than waiting for an announcement.
+## The problem with telling an agent the rules
 
-## Why this exists
+Most teams working with coding agents have written the same file. It is called `AGENTS.md` or `CLAUDE.md`, it started as a page, and it is now forty kilobytes of prose rules, each one recording a mistake that already cost something. "Apps only talk to each other over HTTP." "Nothing in `Domain` may reference `Infrastructure`." "Features must not import each other."
 
-A load-bearing wall is the one you cannot take out. A rule-bearing codebase is one whose rules carry real weight. The name is also the tool's most distinctive check: a rule that matches nothing bears nothing, and Rulebearing fails it by default.
+Prose rules do not hold. Not because agents ignore them, but because of how agents actually work:
 
-Three good tools already enforce architecture, one per language. None of them reads the others' repositories, none of the .NET or Python ones emits a graph another script can consume, and none was designed for a coding agent as the reader of its findings. A GitHub search in September 2026 found 112 repositories carrying a dependency-cruiser config, 88 carrying a .NET architecture-test project and 109 carrying an import-linter contract, including much of the current generation of AI tooling. Those teams are doing the same work three times.
+- **They follow what fails fast and locally.** A rule that fails only in CI after merge documents drift; it does not prevent it. A rule the agent never sees fail is not a rule.
+- **They act on the message, not the rule.** Given `from -> to` and a line number, an agent fixes the import. Given a rule name, it goes searching. Given a paragraph in a Markdown file, it does what the paragraph mostly seems to say.
+- **They take the cheapest path to green.** Widen a pattern, raise a budget, add an exception. Every one of those is a legitimate edit unless something refuses it.
+- **They write rules when asked, and the rules match nothing.** In the monorepo this project comes from, four architecture rules sat for months matching zero files, reading as standing fences and guarding nothing.
 
-What carries over is not a tool but the practice around it, learned from running dependency-cruiser daily in a private 5,500-module monorepo:
+The tools that could enforce these rules already exist, one per language, and none of them was built with an agent as the reader of its findings. A finding names two files and no line. The fix-it advice lives in a comment only one output mode prints. Asking "may this file import that one" costs a thirteen-second full run. And a rule that matches nothing passes.
 
-- **A rule is a named, commented fence with a severity,** and its name is a stable id a decision record can cite.
-- **Matchers hit the resolved target,** so a boundary cannot be dodged by changing import style.
-- **The graph is a first-class artefact.** In that monorepo the cruise JSON is read by three other guards; a tool that only prints violations covers a third of the use.
-- **Liveness is checked.** Four rules there matched zero files for months and read as standing fences.
+## What a deterministic guardrail looks like
 
-## What it does
-
-| | |
-| --- | --- |
-| **Reads** | TypeScript and JavaScript sources, built .NET assemblies with their portable PDBs, Python sources |
-| **Produces** | One graph document: dependency-cruiser's `cruise-result` schema unchanged, plus a code layer of types, members, attributes and calls |
-| **Enforces** | Dependency rules (dependency-cruiser's whole language), element rules (ArchUnitNET's vocabulary, declarative), slice rules, diagram adherence, and ratchets |
-| **Reports** | Every dependency-cruiser output type, plus SARIF, GitHub annotations, JUnit, TRX and an output shaped for a coding agent |
-| **Promises** | Your existing `.dependency-cruiser.*` config runs unchanged on day one |
-
-**Superset, precisely.** Every rule attribute, option, flag, reporter and result field of dependency-cruiser 18.2.0, and every selector, predicate, condition, slice rule, loader option and PlantUML feature of ArchUnitNET 0.13.4, has a row in the coverage tables with its status. Nothing is dropped. The claim is measured, not asserted: the upstream projects' own test suites run against Rulebearing as required checks ([ADR-0009](docs/adr/0009-conformance-suites-as-specification.md)).
-
-What neither incumbent has, and Rulebearing adds for all three languages: a line and column on every edge, `fix` text and worked examples on every rule, a stable violation id, a receipt of what was inspected, ratchets as configuration, and a rule that matches nothing failing the build.
+Rulebearing turns the paragraph into a fence the agent runs into before it finishes its turn, with the way out attached.
 
 ```yaml
-# rulebearing.yaml, abbreviated
+# rulebearing.yaml
 rules:
   dependencies:
     forbidden:
       - name: no-cross-app-imports
         comment: "Apps share only packages/* and HTTP. adr:0003"
         fix: "Call the other app over its API, or move the shared code into packages/*."
+        severity: error
         from: { path: "^apps/([^/]+)/" }
-        to: { path: "^apps/([^/]+)/", pathNot: "^apps/$1/" }
-  elements:
-    - name: handlers-are-internal-and-sealed
-      comment: "adr:0002"
-      select: { kind: class, where: { haveNameEndingWith: Handler } }
-      should: { all: [{ beInternal: true }, { beSealed: true }] }
+        to:   { path: "^apps/([^/]+)/", pathNot: "^apps/$1/" }
+        examples:
+          forbidden: ["apps/web/src/x.ts -> apps/worker/src/y.ts"]
+          allowed:   ["apps/web/src/x.ts -> packages/format/src/index.ts"]
 ```
+
+Every part of that rule is load-bearing for an agent:
+
+| Field | What it does for the agent |
+| --- | --- |
+| `name` | A stable id a decision record can cite and a review comment can reference |
+| `comment` with `adr:0003` | The *why*, linked to the decision. A rule without a decision token is rejected |
+| `fix` | The imperative the agent follows when the rule fires. Printed in every output an agent reads |
+| `examples` | Executable. `rulebearing test` proves the rule fires before CI has to |
+| `from` and `to` | Match the **resolved** target, so switching import style cannot dodge the fence |
+
+And when it fires, the agent gets something it can act on rather than a paragraph to interpret:
+
+```jsonc
+// rulebearing cruise --affected HEAD --output-type agent   (shape, illustrative)
+{
+  "violations": [{
+    "id": "RB-4f2a9c1e",
+    "rule": "no-cross-app-imports",
+    "from": "apps/web/src/checkout/total.ts", "line": 3, "column": 1,
+    "to": "apps/worker/src/pricing/index.ts",
+    "fix": "Call the other app over its API, or move the shared code into packages/*.",
+    "decision": "adr:0003"
+  }],
+  "inspected": { "files": 212, "modules": 212 }
+}
+```
+
+A line and a column. A stable id, so "fix RB-4f2a9c1e" means the same thing on every run. The fix text. The decision it serves. A receipt of what was looked at, so "the check passed" is distinguishable from "the check looked at nothing". Token-budgeted with `--max-findings`, grouped by rule, no prose to parse.
+
+## Inside the loop, not beside it
+
+A check the agent has to remember to run is a check that gets skipped. Rulebearing installs itself into the loops agents already run.
+
+```sh
+rulebearing hooks install --claude-code
+```
+
+That writes three hooks for Claude Code:
+
+| Hook | What happens | Why it matters |
+| --- | --- | --- |
+| **SessionStart** | Injects a token-budgeted architecture brief: tiers, hot boundaries, open violations, ratchet headroom | The agent starts every session knowing the architecture, not just the task |
+| **PreToolUse** on Edit and Write | Runs `impact` on the file about to change | The agent is told *before* editing that the file sits on a boundary, not after |
+| **Stop** | Runs the affected check and feeds violations back before the turn ends | Sub-two-second budget, so it stays on. A thirteen-second check gets disabled |
+
+For pipelines and editors, the same rules and the same graph feed a pre-commit hook, one test case per rule in xUnit, NUnit, pytest or vitest, an ESLint rule that flags a boundary violation inline as the agent types, a Roslyn analyzer that fails `dotnet build` with the line, and an MCP server so the architecture is available as tools rather than as a document the agent may not have read.
+
+Before it writes the import, the agent can ask:
+
+```sh
+rulebearing can-import apps/web/src/x.ts apps/worker/src/y.ts   # yes or no, and which rule decides, in milliseconds
+rulebearing place --imports a,b --imported-by c --language ts    # where would a new module with these edges be legal
+rulebearing impact src/Domain/Entities/Order.cs                  # what depends on this, what rules mention it, is it on a cycle
+rulebearing explain no-cross-app-imports                         # the rule, its fix, what it matches today, the first ten edges
+```
+
+## Guardrails on the guardrails
+
+An agent asked to "stop Domain from reaching Web" will write the regex. The tool makes that safe rather than trusting it.
+
+- **A rule that matches nothing fails.** Every rule of every kind, by default. The four dead rules mentioned above would have failed the pull request that orphaned them. This check is what the tool is named for: a rule that bears nothing is not a rule.
+- **A rule needs a decision.** `--require-comment-token` refuses a fence that does not name the decision record it serves.
+- **A rule ships with proof.** `examples` are required for a new rule and `rulebearing test` runs them against a synthetic graph, so a rule cannot merge without evidence that it fires.
+- **`propose` drafts the rule from evidence.** Give it globs, a selector or one forbidden edge, and it returns the narrowest rule that covers it with the current match counts on both sides. The agent starts from that, not from a blank regex.
+- **`config lint` catches the mistakes agents make by hand.** A pattern that matches nothing, a rule shadowed by an earlier one, an allow-list that admits everything, a predicate the language cannot answer.
+- **Ratchets only fall.** A budget file records a ceiling that `count --write` may lower and refuses to raise. An agent clearing a check by editing the budget gets a failure, not a green build.
+- **Runs are hermetic.** No network, no code execution outside a sandboxed config evaluator, deterministic output. The agent's local run and CI agree byte for byte, and `attest` writes a receipt CI verifies, which answers the recurring review question on agent-authored pull requests: did it actually run the check it says it ran.
+
+## One rule file for the whole repository
+
+The rules above work the same way whether the edge is a TypeScript import, a .NET type reference read from the compiled assembly, or a Python import. Rulebearing is a strict superset of [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) for TypeScript and JavaScript and of [ArchUnitNET](https://github.com/TNG/ArchUnitNET) for .NET, with [import-linter](https://github.com/seddonym/import-linter)'s contract kinds mapped one to one for Python. Every rule attribute, option, flag and reporter of the incumbents has a row in the [coverage tables](docs/artifacts/README.md) with its status; nothing is dropped, and the claim is proven by running their own test suites against this tool as required checks.
+
+So a repository with a TypeScript front end, a .NET service and a Python pipeline keeps one rule file, one gate, one graph other scripts can read, and one answer to "may this file import that one". If you already have a `.dependency-cruiser.js`, it runs unchanged on day one.
+
+## Try it
+
+**Today, in wave 0.** Nothing runs yet, and this README will not pretend otherwise. What you can do:
+
+1. Read the [rule language](docs/architecture.md#configuration-and-the-rule-language) and the [agent surface](docs/architecture.md#agent-surface), and open an issue if a rule you need has no way to be written.
+2. If you run dependency-cruiser, ArchUnitNET, NetArchTest or import-linter today, your repository may be a good [validation target](testbeds/manifest.yaml). Rulebearing must reproduce your tool's findings with zero difference; a repository that breaks that is the most useful kind.
+3. Star or watch. The first release is a drop-in, and this is where it will be announced.
+
+**Wave 1, the first release.** In a TypeScript repository:
+
+```sh
+npm install --save-dev rulebearing
+npx rulebearing init                      # reads the repo and proposes rules that already pass
+npx rulebearing hooks install --claude-code
+npx rulebearing cruise --output-type agent
+```
+
+Or, if you already have a dependency-cruiser config, replace `depcruise` with `rulebearing` in your pipeline and change nothing else.
+
+**Wave 2.** `dotnet tool install Rulebearing` and `pip install rulebearing`, with `rulebearing import archunit` and `rulebearing import import-linter` to bring existing rules across as a command rather than a rewrite.
 
 ## Roadmap
 
-Five waves of part-time work, TypeScript first because that is where the largest set of validation repositories is. Each wave has a [plan](docs/plans/README.md) with an architect section, step-by-step developer instructions and a sub-wave delivery schedule. Durations are calendar weeks at roughly ten hours a week.
+Five waves of part-time work, TypeScript first because that is where the largest set of validation repositories is. Each wave has a [plan](docs/plans/README.md) with an architect section, step-by-step developer instructions and a sub-wave schedule.
 
-| Wave | Weeks | What lands | Exit criterion |
+| Wave | Weeks | What lands for you | Exit criterion |
 | --- | --- | --- | --- |
-| **[0 Spike](docs/plans/pending/0000-wave-0-spike.md)** | 4 | The TypeScript extractor over `oxc` against dependency-cruiser's 546 extraction fixtures; the ECMA-335 and portable PDB reader; both conformance harnesses; the nightly validation runner; the name held on four registries | Extraction fixtures at 95%, and 99% of .NET types attributed to a source file, or the C# fallback extractor is invoked |
-| **[1 TypeScript parity](docs/plans/pending/0001-wave-1-typescript-parity.md)** | 10 | The full dependency-cruiser rule language and options; both config formats; the terminal, JSON and agent reporters; `init`, `adopt`, hooks and `attest`; the npm package and a GitHub Action | Zero-diff against dependency-cruiser on its own repository, langfuse and FluidFramework at pinned commits |
-| **[2 .NET, Python, element rules](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md)** | 10 | Both remaining extractors; element, slice and diagram rules with ArchUnitNET's full vocabulary; SARIF, JUnit and graph reporters; importers from ArchUnitNET, import-linter and ESLint; test-runner adapters | Every .NET project's imported tests agree with `dotnet test`, and every Python project's contracts reproduce |
-| **[3 Operations and the inner loop](docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md)** | 8 | Caching, `--affected`, `diff`; the remaining reporters; framework presets; a source mode for .NET; a Roslyn analyzer; MCP and LSP servers; the public rule library | All twenty-one output types byte-compared, and a sub-two-second check on a large solution |
-| **[4 Reach](docs/plans/pending/0004-wave-4-reach.md)** | 8 | A WebAssembly playground and docs site; a pull-request app; `fix --plan`; fleet-wide rules across repositories | Funded only if the adoption measurements move; see below |
+| **[0 Spike](docs/plans/pending/0000-wave-0-spike.md)** | 4 | The TypeScript extractor proven against dependency-cruiser's 546 fixtures; the .NET metadata reader; both conformance harnesses; the name held on four registries | Fixtures at 95%; 99% of .NET types attributed to a source file, or the fallback extractor is invoked |
+| **[1 TypeScript](docs/plans/pending/0001-wave-1-typescript-parity.md)** | 10 | The drop-in: full dependency-cruiser parity, the `agent` reporter, `fix` and `examples`, line-precise findings, liveness by default, `init`, `adopt`, `hooks install`, `attest`, `can-import`, `explain`, `test`; npm package and GitHub Action | Zero difference against dependency-cruiser on its own repository, langfuse and FluidFramework |
+| **[2 .NET and Python](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md)** | 10 | Both extractors; ArchUnitNET's full vocabulary as declarative element rules; `propose`, `impact`, `place`, `docs`; importers; test-runner adapters; the ESLint rule; SARIF and JUnit | Every imported .NET test agrees with `dotnet test`; every Python contract reproduces |
+| **[3 Inner loop](docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md)** | 8 | Caching and `--affected`; a source mode for .NET that answers without a build; `guard --watch`; the Roslyn analyzer; MCP and LSP servers; framework presets; the public rule library | Stop hook under two seconds on a large .NET solution; all reporters byte-compared |
+| **[4 Reach](docs/plans/pending/0004-wave-4-reach.md)** | 8 | Browser playground; pull-request app; `fix --plan`; rules across a fleet of repositories | Funded only if the numbers below move |
 
-**Adoption order.** My own repositories first, then the TypeScript projects that already use dependency-cruiser, offered as a drop-in that reads their existing config. Then the .NET and Python projects, where migration is a command rather than a rewrite. Every offer goes to an issue first, with the zero-difference result attached, and is withdrawn without argument if declined.
+**This is measured, not believed.** From wave 1, six signals are tracked on the repositories where agent-authored pull requests can be seen: the share that pass the boundary check on their first CI run (target above 90%), the median turns from a violation to green (target one), rules caught by the authoring guardrails, Stop-hook latency, the share of rules carrying `fix` text, and budget raises merged (target zero). If the first two do not move, the agent surface is cut back to the reporter and the hook, and what remains is a faster dependency-cruiser that also covers .NET and Python. Saying that in advance is cheaper than discovering it later.
 
-**Wave 4 is conditional, deliberately.** Six adoption signals are measured from wave 1, including the share of agent-authored pull requests that pass the boundary check on the first run and the median number of turns from a violation to green. If the first two do not move, the agent-facing surface is cut back to the reporter and the hook, and the tool remains a better dependency-cruiser that also covers .NET and Python. That is still worth having, and saying so in advance is cheaper than discovering it later.
+## Built the way it asks you to build
 
-## Built for agents as well as people
-
-A rule file is already the best interface a coding agent has to an architecture: it is text, it is in the repository, it names the fence and the reason, and CI runs it. What daily use in an agent-developed monorepo shows is where that interface leaks, and each leak has an answer here. Findings carry a line, a column and the member reference that formed the edge. Every rule can carry `fix` text and executable examples. `can-import`, `place` and `impact` answer questions before the code is written, in milliseconds, from a cached graph. A vacuous rule fails, so an agent cannot write a fence that matches nothing and call the job done. Ratchets only fall, so clearing a check by raising a budget fails instead of passing.
-
-## Quality gates
-
-Every gate below is required and green today, on a repository with no feature code yet. That ordering is intentional: the first feature pull request faces the finished harness.
+This repository holds itself to the bar it proposes for yours. Every gate below is required and green today, before any feature code exists, so the first feature pull request faces the finished harness.
 
 | Gate | What it enforces |
 | --- | --- |
-| `cargo lint` | One entry point for four languages: rustfmt and clippy, eslint and prettier, ruff and mypy, dotnet format |
-| Documentation links | Every relative link and anchor resolves, checked inside every compile, so a broken reference fails `cargo build` |
-| Coverage | 70% of lines per crate, not just per workspace |
-| Mutation testing | `cargo mutants` over the contract crates; a surviving mutant is a missing assertion and fails the build |
-| Conformance | dependency-cruiser's and ArchUnitNET's own test suites, as ratchets that may only tighten |
-| Supply chain | Licences, advisories, banned crates and allowed registries; actions pinned by commit SHA |
+| `cargo lint` | Four languages behind one command: rustfmt and clippy, eslint and prettier, ruff and mypy, dotnet format |
+| Documentation links | Every relative link and anchor resolves, checked inside every compile. A broken reference fails `cargo build` |
+| Coverage | 70% of lines per crate, not per workspace |
+| Mutation testing | A surviving mutant is a missing assertion and fails the build. The gate starts at zero survivors |
+| Conformance | The incumbents' own test suites, as ratchets that may only tighten |
+| Supply chain | Licences, advisories, allowed registries; every action pinned by commit SHA |
 | Reproducibility | Minimum Rust version, every feature combination, determinism asserted byte for byte |
 
-See [CLAUDE.md](CLAUDE.md) for the working agreement, and [ADR-0023](docs/adr/0023-documentation-link-and-lint-gates.md) through [ADR-0025](docs/adr/0025-ci-and-supply-chain-hardening.md) for why each gate exists.
+The reasoning behind each is a numbered decision record in [docs/adr/](docs/adr/README.md), and the repository's own `rulebearing.yaml` cites them the way it asks yours to.
 
 ## Repository map
 
 | Path | What is there |
 | --- | --- |
-| [docs/artifacts/](docs/artifacts/README.md) | The source design and the two coverage tables. Read-only, exported verbatim |
-| [docs/prd.md](docs/prd.md) | Requirements with fixed identifiers that the plans and the code cite |
-| [docs/architecture.md](docs/architecture.md) | The target architecture: stages, crates, graph document, extractors, security, performance |
-| [docs/adr/](docs/adr/README.md) | Every decision, numbered. A rule cites one as `adr:NNNN` |
-| [docs/plans/](docs/plans/README.md) | One plan per wave, pending until its exit criteria are met |
+| [docs/artifacts/](docs/artifacts/README.md) | The source design and the two coverage tables, exported verbatim |
+| [docs/prd.md](docs/prd.md) | Requirements with fixed identifiers the plans and code cite |
+| [docs/architecture.md](docs/architecture.md) | Stages, crates, the graph document, extractors, security, performance |
+| [docs/adr/](docs/adr/README.md) | Every decision, numbered |
+| [docs/plans/](docs/plans/README.md) | One plan per wave |
 | `crates/` | The Rust workspace: model, config, rules, three extractors, ingest, reporters, CLI, Node binding |
-| `conformance/`, `testbeds/` | The upstream suites and the pinned open-source repositories validated nightly |
+| `conformance/`, `testbeds/` | The upstream suites and the pinned repositories validated nightly |
 | `wrappers/`, `adapters/`, `frontends/` | npm, NuGet and pip wrappers; test-runner adapters; the ESLint plugin and Roslyn analyzer |
 
 ## Building
@@ -105,23 +181,12 @@ See [CLAUDE.md](CLAUDE.md) for the working agreement, and [ADR-0023](docs/adr/00
 cargo build --release          # target/release/rulebearing
 cargo test --workspace --all-features
 cargo lint                     # all four languages, plus documentation links
-cargo check-links              # documentation links and anchors only
-cargo llvm-cov --workspace --fail-under-lines 70 && scripts/coverage-per-crate.sh 70
 cargo mutants --package rb-model --package rb-rules --package xtask
+git config core.hooksPath .githooks   # formatting, links and tests before each commit and push
 ```
 
-Install the git hooks once, and formatting, links and tests run before each commit and push:
+## Contributing and licence
 
-```sh
-git config core.hooksPath .githooks
-```
+[CONTRIBUTING.md](CONTRIBUTING.md) is short and points at the four documents that govern everything else. One person builds this in evenings; the reviewer of record is a pair of upstream test suites anyone can run, and a second maintainer is the goal by the end of wave 2.
 
-## Contributing
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md) first; it is short and points at the four documents that govern everything else. The bar is unusual in one respect: a change is proven by the upstream specification rather than by argument, and no gate may be lowered to get a build green.
-
-This is a personal project built in evenings by one person. The bus factor is one, and the mitigation is that the reviewer of record is a pair of upstream test suites that anyone can run. A second maintainer is the goal by the end of wave 2.
-
-## Licence
-
-[MIT](LICENSE), matching dependency-cruiser and NetArchTest, so the conformance harness can vendor their fixtures. ArchUnitNET's Apache-2.0 fixtures carry their notice. Security reports go through the [security policy](SECURITY.md).
+[MIT](LICENSE). Security reports go through the [security policy](SECURITY.md).
