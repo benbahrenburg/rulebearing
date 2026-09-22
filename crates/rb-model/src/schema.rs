@@ -20,7 +20,23 @@ pub const ID: &str = "https://benbahrenburg.github.io/rulebearing/schema/v1.json
 /// The committed schema's path, relative to the repository root.
 pub const PATH: &str = "schema/v1.json";
 
-/// Generates the schema as pretty-printed JSON with a trailing newline.
+/// Sorts every object's keys, recursively. `serde_json` keeps insertion order when any crate in
+/// the build enables its `preserve_order` feature (`oxc_resolver` does), so anything whose byte
+/// output is a contract sorts explicitly rather than relying on the map type.
+pub fn sort_keys(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Object(map) => {
+            map.sort_keys();
+            for inner in map.values_mut() {
+                sort_keys(inner);
+            }
+        }
+        serde_json::Value::Array(items) => items.iter_mut().for_each(sort_keys),
+        _ => {}
+    }
+}
+
+/// Generates the schema as pretty-printed JSON with a trailing newline, keys sorted.
 ///
 /// ```
 /// let text = rb_model::schema::render();
@@ -31,7 +47,9 @@ pub fn render() -> String {
     let generator = SchemaSettings::draft07().into_generator();
     let mut schema = generator.into_root_schema_for::<GraphDocument>();
     schema.insert("$id".to_owned(), serde_json::Value::from(ID));
-    let mut text = serde_json::to_string_pretty(&schema).unwrap_or_default();
+    let mut value = schema.to_value();
+    sort_keys(&mut value);
+    let mut text = serde_json::to_string_pretty(&value).unwrap_or_default();
     text.push('\n');
     text
 }
@@ -50,6 +68,16 @@ mod tests {
             committed.replace("\r\n", "\n") == render(),
             "schema/v1.json is stale; run `cargo run -p rb-model --example emit-schema`"
         );
+    }
+
+    #[test]
+    fn sorting_is_recursive_and_idempotent() {
+        let mut value = serde_json::json!({"b": [{"z": 1, "a": 2}], "a": {"y": 1, "x": 2}});
+        sort_keys(&mut value);
+        let text = serde_json::to_string(&value).unwrap_or_default();
+        assert_eq!(text, r#"{"a":{"x":2,"y":1},"b":[{"a":2,"z":1}]}"#);
+        sort_keys(&mut value);
+        assert_eq!(serde_json::to_string(&value).unwrap_or_default(), text);
     }
 
     #[test]

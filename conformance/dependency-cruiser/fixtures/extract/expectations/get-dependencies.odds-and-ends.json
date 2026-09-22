@@ -217,14 +217,14 @@
       "fileName": "non-existing-file.md",
       "cruiseOptions": {},
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {},
         "cruise": null,
         "tsConfig": null,
         "untagged": true
       },
       "transpileOptions": null
     },
-    "throws": "Extracting dependencies ran afoul of...\n\n  ENOENT: no such file or directory, open '/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/non-existing-file.md'\n... in non-existing-file.md\n\n"
+    "throws": "Extracting dependencies ran afoul of...\n\n  ENOENT: no such file or directory, open '<root>/non-existing-file.md'\n... in non-existing-file.md\n\n"
   },
   {
     "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#5",
@@ -308,7 +308,7 @@
       "fileName": "test/extract/__mocks__/cjs-require-non-strings/require-an-iife.js",
       "cruiseOptions": {},
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {},
         "cruise": null,
         "tsConfig": null,
         "untagged": true

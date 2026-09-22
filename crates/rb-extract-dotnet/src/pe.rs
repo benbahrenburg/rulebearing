@@ -161,7 +161,7 @@ impl<'a> PeImage<'a> {
     fn debug_entries(&self, rva: u32, size: u32) -> Read<Vec<DebugInfo>> {
         let directory = self.slice(rva, size, "debug directory")?;
         let mut entries = Vec::new();
-        for chunk in directory.chunks_exact(28) {
+        for chunk in directory.as_chunks::<28>().0 {
             let mut e = Reader::new(chunk, 12, "debug directory entry");
             let kind = e.u32()?;
             let size = e.u32()? as usize;

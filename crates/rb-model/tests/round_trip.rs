@@ -44,9 +44,11 @@ fn index() -> Result<Index, Box<dyn Error>> {
     Ok(serde_json::from_str(&text)?)
 }
 
-/// Serialises a value with sorted keys (`serde_json`'s default map is ordered).
+/// Serialises a value with every object's keys sorted, whatever map order the build uses.
 fn canonical(value: &serde_json::Value) -> String {
-    serde_json::to_string(value).unwrap_or_default()
+    let mut sorted = value.clone();
+    rb_model::schema::sort_keys(&mut sorted);
+    serde_json::to_string(&sorted).unwrap_or_default()
 }
 
 #[test]

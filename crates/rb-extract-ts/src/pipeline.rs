@@ -1,0 +1,851 @@
+//! From files to modules: which walker a file gets, resolving and filtering what it finds, the
+//! initial file list, and following dependencies to the modules they reach.
+//!
+//! - Plan: [Wave 0, Step 8](../../../docs/plans/pending/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
+//!   (`discover.rs`, `parse.rs`, `lib.rs` of the step's table, here as one module)
+//! - Source: [design § The five stages](../../../docs/artifacts/design.md#the-five-stages), stages
+//!   1 and 2; [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)
+//!   (`doNotFollow`, `exclude`, `includeOnly`, `maxDepth`, `tsPreCompilationDeps`,
+//!   `extraExtensionsToScan`, `experimentalStats`)
+//! - Specification: dependency-cruiser 18.2.0 `src/extract/{extract-dependencies,
+//!   gather-initial-sources,index,extract-stats}.mjs`
+
+use std::collections::BTreeSet;
+use std::path::{Path, PathBuf};
+
+use oxc_allocator::Allocator;
+use oxc_ast::ast::{ImportDeclarationSpecifier, ImportOrExportKind, Statement};
+use oxc_parser::{ParseOptions, Parser as OxcParser};
+use oxc_semantic::SemanticBuilder;
+use oxc_span::{GetSpan, SourceType, Span};
+use rb_model::options::{PathFilter, TsPreCompilationDeps};
+use rb_model::{
+    DependencyType, ExperimentalStats, ModuleSystem, Parser, Protocol, TypeScriptOptions,
+};
+use regex::Regex;
+
+use crate::collate;
+use crate::resolve::{self, Context, ResolveConfig, SCANNABLE_EXTENSIONS};
+use crate::walk::{self, Flavour, Found, WalkOptions};
+
+/// An option could not be used.
+#[derive(Debug, thiserror::Error)]
+pub enum PipelineError {
+    /// A path pattern is not a valid regular expression.
+    #[error("invalid pattern `{pattern}`: {reason}")]
+    Pattern {
+        /// The pattern.
+        pattern: String,
+        /// Why.
+        reason: String,
+    },
+    /// Reading a file or a folder failed.
+    #[error("{path}: {source}", path = path.display())]
+    Io {
+        /// The file.
+        path: PathBuf,
+        /// The error.
+        source: std::io::Error,
+    },
+    /// A file could not be parsed.
+    #[error("{path}: {reason}", path = path.display())]
+    Parse {
+        /// The file.
+        path: PathBuf,
+        /// The parser's message.
+        reason: String,
+    },
+}
+
+/// A compiled `doNotFollow`, `exclude` or `includeOnly`.
+#[derive(Debug, Clone, Default)]
+pub struct Filter {
+    /// The joined path patterns.
+    pub path: Option<Regex>,
+    /// `doNotFollow.dependencyTypes`.
+    pub dependency_types: Vec<DependencyType>,
+    /// `exclude.dynamic`.
+    pub dynamic: Option<bool>,
+}
+
+impl Filter {
+    fn compile(filter: Option<&PathFilter>) -> Result<Option<Self>, PipelineError> {
+        let Some(filter) = filter else {
+            return Ok(None);
+        };
+        let path = filter
+            .path()
+            .map(|p| {
+                let pattern = p.joined();
+                Regex::new(&pattern).map_err(|e| PipelineError::Pattern {
+                    pattern,
+                    reason: e.to_string(),
+                })
+            })
+            .transpose()?;
+        Ok(Some(Self {
+            path,
+            dependency_types: filter.dependency_types().to_vec(),
+            dynamic: filter.dynamic(),
+        }))
+    }
+
+    fn path_matches(&self, text: &str) -> bool {
+        self.path.as_ref().is_some_and(|re| re.is_match(text))
+    }
+}
+
+/// `tsPreCompilationDeps`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum PreCompilation {
+    /// Only what survives compilation (the default).
+    #[default]
+    Off,
+    /// Everything in the source.
+    On,
+    /// Everything, with the pre-compilation-only edges marked.
+    Specify,
+}
+
+/// dependency-cruiser's cruise options, normalised for extraction.
+#[derive(Debug, Clone)]
+pub struct Settings {
+    /// The process working directory; relative paths are taken against it.
+    pub cwd: PathBuf,
+    /// Output paths are relative to this directory.
+    pub base_dir: PathBuf,
+    /// The module systems to extract.
+    pub module_systems: Vec<ModuleSystem>,
+    /// The parser dependency-cruiser would have used.
+    pub parser: Option<Parser>,
+    /// `tsPreCompilationDeps`.
+    pub pre_compilation: PreCompilation,
+    /// Exotic require names.
+    pub exotic_require_strings: Vec<String>,
+    /// JSDoc imports.
+    pub detect_jsdoc_imports: bool,
+    /// `process.getBuiltinModule`.
+    pub detect_process_builtin_module_calls: bool,
+    /// Extensions scanned but not parsed.
+    pub extra_extensions_to_scan: Vec<String>,
+    /// `doNotFollow`.
+    pub do_not_follow: Option<Filter>,
+    /// `exclude`.
+    pub exclude: Option<Filter>,
+    /// `includeOnly`.
+    pub include_only: Option<Filter>,
+    /// `maxDepth`, 0 for unlimited.
+    pub max_depth: u32,
+    /// `experimentalStats`.
+    pub experimental_stats: bool,
+}
+
+impl Settings {
+    /// Normalises the options as dependency-cruiser's `normalizeCruiseOptions` does.
+    ///
+    /// # Errors
+    /// When a path pattern is not a valid regular expression.
+    pub fn new(options: &TypeScriptOptions, cwd: &Path) -> Result<Self, PipelineError> {
+        Ok(Self {
+            cwd: cwd.to_path_buf(),
+            base_dir: options
+                .base_dir
+                .as_deref()
+                .map_or_else(|| cwd.to_path_buf(), PathBuf::from),
+            module_systems: options.module_systems(),
+            parser: options.parser,
+            pre_compilation: match options.ts_pre_compilation_deps {
+                None | Some(TsPreCompilationDeps::Enabled(false)) => PreCompilation::Off,
+                Some(TsPreCompilationDeps::Enabled(true)) => PreCompilation::On,
+                Some(TsPreCompilationDeps::Specify(_)) => PreCompilation::Specify,
+            },
+            exotic_require_strings: options.exotic_require_strings().to_vec(),
+            detect_jsdoc_imports: options.detect_js_doc_imports.unwrap_or(false),
+            detect_process_builtin_module_calls: options
+                .detect_process_builtin_module_calls
+                .unwrap_or(false),
+            extra_extensions_to_scan: options.extra_extensions_to_scan.clone().unwrap_or_default(),
+            do_not_follow: Filter::compile(options.do_not_follow.as_ref())?,
+            exclude: Filter::compile(options.exclude.as_ref())?,
+            include_only: Filter::compile(options.include_only.as_ref())?,
+            max_depth: u32::from(options.max_depth()),
+            experimental_stats: options.experimental_stats.unwrap_or(false),
+        })
+    }
+
+    fn walk_options(&self) -> WalkOptions {
+        WalkOptions {
+            module_systems: self.module_systems.clone(),
+            exotic_require_strings: self.exotic_require_strings.clone(),
+            detect_jsdoc_imports: self.detect_jsdoc_imports,
+            detect_process_builtin_module_calls: self.detect_process_builtin_module_calls,
+        }
+    }
+
+    fn on_disk(&self, file: &str) -> PathBuf {
+        let base = if self.base_dir.is_absolute() {
+            self.base_dir.clone()
+        } else {
+            self.cwd.join(&self.base_dir)
+        };
+        base.join(file)
+    }
+}
+
+/// One dependency as `extractDependencies` returns it: the form, its attributes and its resolution.
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "the flags are dependency-cruiser's dependency fields, a public contract (ADR-0004)"
+)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Extracted {
+    /// The specifier, protocol stripped.
+    pub module: String,
+    /// The form's module system.
+    pub module_system: ModuleSystem,
+    /// `import()`.
+    pub dynamic: bool,
+    /// Exotically required.
+    pub exotically_required: bool,
+    /// The exotic name.
+    pub exotic_require: Option<String>,
+    /// Classification then form types.
+    pub dependency_types: Vec<DependencyType>,
+    /// `node:`, `data:`, `file:`, `bun:`.
+    pub protocol: Option<Protocol>,
+    /// The MIME type of a `data:` URL.
+    pub mime_type: Option<String>,
+    /// Set under `tsPreCompilationDeps: "specify"`.
+    pub pre_compilation_only: Option<bool>,
+    /// The resolution.
+    pub resolved: String,
+    /// Built in.
+    pub core_module: bool,
+    /// Followable, and not stopped by `doNotFollow`.
+    pub followable: bool,
+    /// Not found.
+    pub could_not_resolve: bool,
+    /// Matched `doNotFollow`.
+    pub matches_do_not_follow: bool,
+    /// The npm licence.
+    pub license: Option<String>,
+    /// Where the form is.
+    pub span: Span,
+}
+
+const TS_COMPATIBLE: &[&str] = &[".ts", ".tsx", ".mts", ".cts", ".js", ".mjs", ".cjs", ".vue"];
+const PROTOCOL_ONLY: &[&str] = &[
+    "node:sea",
+    "node:sqlite",
+    "node:test",
+    "node:test/reporters",
+    "bun:ffi",
+    "bun:jsc",
+    "bun:sqlite",
+    "bun:test",
+    "bun:wrap",
+];
+
+fn node_extname(file: &str) -> &str {
+    let name = file.rsplit('/').next().unwrap_or(file);
+    match name.rfind('.') {
+        Some(0) | None => "",
+        Some(at) => &name[at..],
+    }
+}
+
+/// dependency-cruiser's `extractModuleAttributes`: `node:fs` is module `fs`, protocol `node:`.
+pub fn module_attributes(specifier: &str) -> (String, Option<Protocol>, Option<String>) {
+    for protocol in [
+        Protocol::Node,
+        Protocol::File,
+        Protocol::Data,
+        Protocol::Bun,
+    ] {
+        let Some(rest) = specifier.strip_prefix(protocol.as_str()) else {
+            continue;
+        };
+        if rest.is_empty() {
+            break;
+        }
+        let (mime, module) = match rest.split_once(',') {
+            Some((mime, module)) if !mime.is_empty() && !module.is_empty() => {
+                (Some(mime.to_owned()), module)
+            }
+            _ => (None, rest),
+        };
+        let js_like = matches!(protocol, Protocol::Node | Protocol::Bun);
+        let with_protocol = format!("{}{module}", protocol.as_str());
+        let canonical = if !js_like || PROTOCOL_ONLY.contains(&with_protocol.as_str()) {
+            with_protocol
+        } else {
+            module.to_owned()
+        };
+        return (canonical, Some(protocol), mime);
+    }
+    (specifier.to_owned(), None, None)
+}
+
+fn source_type_for(file: &str) -> SourceType {
+    SourceType::from_path(file).unwrap_or_else(|_| SourceType::mjs().with_jsx(true))
+}
+
+/// Which walker dependency-cruiser uses for a file.
+pub fn flavour_for(settings: &Settings, file: &str) -> Flavour {
+    let compatible = TS_COMPATIBLE.contains(&node_extname(file));
+    if compatible
+        && (settings.pre_compilation != PreCompilation::Off || settings.parser == Some(Parser::Tsc))
+    {
+        Flavour::Tsc
+    } else if compatible && settings.parser == Some(Parser::Swc) {
+        Flavour::Swc
+    } else {
+        Flavour::Acorn
+    }
+}
+
+/// The import declarations TypeScript's `transpileModule` removes: type-only ones, and ones
+/// whose every binding is used only as a type or not at all. Returns their spans.
+pub fn elided_imports(source: &str, source_type: SourceType) -> Vec<Span> {
+    let allocator = Allocator::default();
+    let parsed = OxcParser::new(&allocator, source, source_type).parse();
+    let semantic = SemanticBuilder::new().build(&parsed.program).semantic;
+    let scoping = semantic.scoping();
+    let mut elided = Vec::new();
+    for statement in &parsed.program.body {
+        let Statement::ImportDeclaration(import) = statement else {
+            continue;
+        };
+        if import.import_kind == ImportOrExportKind::Type {
+            elided.push(import.span);
+            continue;
+        }
+        let Some(specifiers) = &import.specifiers else {
+            continue;
+        };
+        if specifiers.is_empty() {
+            continue;
+        }
+        let used_as_value = specifiers.iter().any(|specifier| {
+            let local = match specifier {
+                ImportDeclarationSpecifier::ImportSpecifier(s)
+                    if s.import_kind == ImportOrExportKind::Type =>
+                {
+                    return false;
+                }
+                ImportDeclarationSpecifier::ImportSpecifier(s) => &s.local,
+                ImportDeclarationSpecifier::ImportDefaultSpecifier(s) => &s.local,
+                ImportDeclarationSpecifier::ImportNamespaceSpecifier(s) => &s.local,
+            };
+            local.symbol_id.get().is_some_and(|symbol| {
+                scoping
+                    .get_resolved_references(symbol)
+                    .any(oxc_semantic::Reference::is_value)
+            })
+        });
+        if !used_as_value {
+            elided.push(import.span);
+        }
+    }
+    elided
+}
+
+fn read(path: &Path) -> Result<String, PipelineError> {
+    std::fs::read_to_string(path).map_err(|source| PipelineError::Io {
+        path: path.to_path_buf(),
+        source,
+    })
+}
+
+/// The forms in a file, as the chosen walker reports them, before resolution.
+fn forms(settings: &Settings, file: &str, flavour: Flavour) -> Result<Vec<Found>, PipelineError> {
+    let path = settings.on_disk(file);
+    let source = read(&path)?;
+    let source_type = source_type_for(file);
+    let parse_error = |e: walk::ParseError| PipelineError::Parse {
+        path: path.clone(),
+        reason: e.to_string(),
+    };
+    let options = settings.walk_options();
+    match flavour {
+        Flavour::Acorn if source_type.is_typescript() => {
+            // acorn reads TypeScript only after compiling it, which drops imports used as types.
+            let elided = elided_imports(&source, source_type);
+            let mut found = walk::walk_source(&source, source_type, Flavour::Acorn, &options)
+                .map_err(parse_error)?;
+            found.retain(|f| !elided.iter().any(|span| span.contains_inclusive(f.span)));
+            Ok(found)
+        }
+        _ => walk::walk_source(&source, source_type, flavour, &options).map_err(parse_error),
+    }
+}
+
+fn unique_key(found: &Found) -> String {
+    format!(
+        "{} {} {}",
+        found.module,
+        found.module_system,
+        found.dependency_types.contains(&DependencyType::TypeOnly)
+    )
+}
+
+/// Under `tsPreCompilationDeps: "specify"`, which forms the compiled JavaScript no longer has.
+fn pre_compilation_only(
+    settings: &Settings,
+    file: &str,
+    flavour: Flavour,
+    found: &[Found],
+) -> Result<Option<Vec<bool>>, PipelineError> {
+    if flavour != Flavour::Tsc || settings.pre_compilation != PreCompilation::Specify {
+        return Ok(None);
+    }
+    let compiled = forms(settings, file, Flavour::Acorn)?;
+    Ok(Some(
+        found
+            .iter()
+            .map(|ts| {
+                !compiled.iter().any(|js| {
+                    js.module == ts.module
+                        && js.dynamic == ts.dynamic
+                        && js.exotic_require == ts.exotic_require
+                })
+            })
+            .collect(),
+    ))
+}
+
+/// `extractDependencies` for one file: forms found, resolved, filtered and sorted.
+///
+/// # Errors
+/// When the file cannot be read or parsed.
+pub fn extract_dependencies(
+    file: &str,
+    settings: &Settings,
+    config: &ResolveConfig,
+) -> Result<Vec<Extracted>, PipelineError> {
+    if settings
+        .extra_extensions_to_scan
+        .iter()
+        .any(|e| e == node_extname(file))
+    {
+        return Ok(Vec::new());
+    }
+    let flavour = flavour_for(settings, file);
+    let mut found = forms(settings, file, flavour)?;
+    let pre_compilation = pre_compilation_only(settings, file, flavour, &found)?;
+    // Module attributes first, then unique by module, system and type-only-ness.
+    let mut seen = BTreeSet::new();
+    let mut extracted = Vec::new();
+    let file_dir = Path::new(file)
+        .parent()
+        .map_or_else(|| settings.base_dir.clone(), |d| settings.base_dir.join(d));
+    let context = Context {
+        cwd: &settings.cwd,
+        base_dir: &settings.base_dir,
+        file_dir: &file_dir,
+    };
+    for (index, mut form) in found.drain(..).enumerate() {
+        let only = pre_compilation.as_ref().and_then(|p| p.get(index).copied());
+        if only == Some(true) {
+            form.dependency_types
+                .push(DependencyType::PreCompilationOnly);
+        }
+        let (module, protocol, mime_type) = module_attributes(&form.module);
+        form.module = module;
+        if !seen.insert(unique_key(&form)) {
+            continue;
+        }
+        let resolution = resolve::resolve(
+            &form.module,
+            form.module_system,
+            &form.dependency_types,
+            &context,
+            config,
+        );
+        let matches_do_not_follow = settings.do_not_follow.as_ref().is_some_and(|f| {
+            f.path_matches(&resolution.resolved)
+                || resolution
+                    .dependency_types
+                    .iter()
+                    .any(|t| f.dependency_types.contains(t))
+        });
+        extracted.push(Extracted {
+            module: form.module,
+            module_system: form.module_system,
+            dynamic: form.dynamic,
+            exotically_required: form.exotically_required,
+            exotic_require: form.exotic_require,
+            dependency_types: resolution.dependency_types,
+            protocol,
+            mime_type,
+            pre_compilation_only: only,
+            followable: resolution.followable && !matches_do_not_follow,
+            resolved: resolution.resolved,
+            core_module: resolution.core_module,
+            could_not_resolve: resolution.could_not_resolve,
+            matches_do_not_follow,
+            license: resolution.license,
+            span: form.span,
+        });
+    }
+    extracted.retain(|d| {
+        !settings
+            .exclude
+            .as_ref()
+            .is_some_and(|f| f.path_matches(&d.resolved))
+            && settings
+                .include_only
+                .as_ref()
+                .is_none_or(|f| f.path.is_none() || f.path_matches(&d.resolved))
+    });
+    extracted.sort_by(|a, b| {
+        let key = |d: &Extracted| {
+            format!(
+                "{} {} {}",
+                d.module,
+                d.module_system,
+                d.dependency_types.contains(&DependencyType::TypeOnly)
+            )
+        };
+        collate::compare(&key(a), &key(b))
+    });
+    Ok(extracted)
+}
+
+fn is_glob(text: &str) -> bool {
+    text.contains(['*', '?', '[', '{', '!', '('])
+}
+
+fn scannable(settings: &Settings, file: &str) -> bool {
+    let ext = resolve::extension(file);
+    SCANNABLE_EXTENSIONS.contains(&ext)
+        || settings.extra_extensions_to_scan.iter().any(|e| e == ext)
+}
+
+fn gather_directory(
+    directory: &str,
+    settings: &Settings,
+    out: &mut Vec<String>,
+) -> Result<(), PipelineError> {
+    let on_disk = settings.on_disk(directory);
+    let mut entries: Vec<String> = std::fs::read_dir(&on_disk)
+        .map_err(|source| PipelineError::Io {
+            path: on_disk.clone(),
+            source,
+        })?
+        .filter_map(Result::ok)
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .collect();
+    entries.sort();
+    for name in entries {
+        let path = if directory.is_empty() || directory == "." {
+            name
+        } else {
+            format!("{}/{name}", directory.trim_end_matches('/'))
+        };
+        let excluded = settings
+            .exclude
+            .as_ref()
+            .is_some_and(|f| f.path_matches(&path))
+            || settings
+                .do_not_follow
+                .as_ref()
+                .is_some_and(|f| f.path_matches(&path));
+        if excluded {
+            continue;
+        }
+        let Ok(metadata) = std::fs::metadata(settings.on_disk(&path)) else {
+            continue;
+        };
+        if metadata.is_dir() {
+            gather_directory(&path, settings, out)?;
+        } else if scannable(settings, &path)
+            && settings
+                .include_only
+                .as_ref()
+                .is_none_or(|f| f.path.is_none() || f.path_matches(&path))
+        {
+            out.push(path);
+        }
+    }
+    Ok(())
+}
+
+fn normalise(path: &str) -> String {
+    let mut parts: Vec<&str> = Vec::new();
+    for part in path.split('/') {
+        match part {
+            "" | "." => {}
+            ".." if parts.last().is_some_and(|p| *p != "..") => {
+                parts.pop();
+            }
+            other => parts.push(other),
+        }
+    }
+    if parts.is_empty() {
+        ".".to_owned()
+    } else {
+        parts.join("/")
+    }
+}
+
+fn expand_glob(pattern: &str, settings: &Settings) -> Vec<String> {
+    let segments: Vec<&str> = pattern.split('/').collect();
+    let base_count = segments.iter().take_while(|s| !is_glob(s)).count();
+    let base = segments[..base_count].join("/");
+    let glob = segments[base_count..].join("/");
+    let Ok(matcher) = globset::GlobBuilder::new(&glob)
+        .literal_separator(true)
+        .build()
+        .map(|g| g.compile_matcher())
+    else {
+        return Vec::new();
+    };
+    let mut all = Vec::new();
+    let root = settings.on_disk(&base);
+    let mut stack = vec![root.clone()];
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path.clone());
+            }
+            let relative = resolve::relative(&root, &path);
+            if matcher.is_match(&relative) {
+                all.push(if base.is_empty() {
+                    relative
+                } else {
+                    format!("{base}/{relative}")
+                });
+            }
+        }
+    }
+    all
+}
+
+/// `gatherInitialSources`: files and folders expanded to scannable files, sorted.
+///
+/// # Errors
+/// When a named file or folder does not exist.
+pub fn gather_initial_sources(
+    inputs: &[String],
+    settings: &Settings,
+) -> Result<Vec<String>, PipelineError> {
+    let mut expanded = Vec::new();
+    for input in inputs {
+        if is_glob(input) {
+            expanded.extend(expand_glob(input, settings));
+        } else {
+            expanded.push(normalise(input));
+        }
+    }
+    let mut files = Vec::new();
+    for item in expanded {
+        let on_disk = settings.on_disk(&item);
+        let metadata = std::fs::metadata(&on_disk).map_err(|source| PipelineError::Io {
+            path: on_disk,
+            source,
+        })?;
+        if metadata.is_dir() {
+            gather_directory(&item, settings, &mut files)?;
+        } else {
+            files.push(item);
+        }
+    }
+    // JavaScript's default sort: UTF-16 code units, which for these paths is byte order.
+    files.sort();
+    Ok(files)
+}
+
+/// One module as `extract` returns it, before the rule engine sees it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExtractedModule {
+    /// The file, or the resolution of a dependency that is not followed.
+    pub source: String,
+    /// Its dependencies.
+    pub dependencies: Vec<Extracted>,
+    /// Statistics, when asked for.
+    pub experimental_stats: Option<ExperimentalStats>,
+    /// For a module standing for an unfollowed dependency: the dependency's attributes.
+    pub as_dependency: Option<Extracted>,
+}
+
+fn extract_recursive(
+    file: &str,
+    settings: &Settings,
+    config: &ResolveConfig,
+    visited: &mut BTreeSet<String>,
+    depth: u32,
+    out: &mut Vec<ExtractedModule>,
+) -> Result<(), PipelineError> {
+    visited.insert(file.to_owned());
+    let dependencies = if settings.max_depth == 0 || depth < settings.max_depth {
+        extract_dependencies(file, settings, config)?
+    } else {
+        Vec::new()
+    };
+    let experimental_stats = if settings.experimental_stats {
+        Some(stats(file, settings)?)
+    } else {
+        None
+    };
+    let follow: Vec<String> = dependencies
+        .iter()
+        .filter(|d| d.followable && !d.matches_do_not_follow && !visited.contains(&d.resolved))
+        .map(|d| d.resolved.clone())
+        .collect();
+    out.push(ExtractedModule {
+        source: file.to_owned(),
+        dependencies,
+        experimental_stats,
+        as_dependency: None,
+    });
+    for next in follow {
+        if !visited.contains(&next) {
+            extract_recursive(&next, settings, config, visited, depth + 1, out)?;
+        }
+    }
+    Ok(())
+}
+
+/// `extract`: every module reachable from the inputs, then the unfollowed dependencies as modules.
+///
+/// # Errors
+/// When an input is missing or a file cannot be read or parsed.
+pub fn extract(
+    inputs: &[String],
+    settings: &Settings,
+    config: &ResolveConfig,
+) -> Result<Vec<ExtractedModule>, PipelineError> {
+    let mut visited = BTreeSet::new();
+    let mut modules = Vec::new();
+    for file in gather_initial_sources(inputs, settings)? {
+        if !visited.contains(&file) {
+            extract_recursive(&file, settings, config, &mut visited, 0, &mut modules)?;
+        }
+    }
+    let mut complete: Vec<ExtractedModule> = Vec::new();
+    for module in modules {
+        let unfollowed: Vec<ExtractedModule> = module
+            .dependencies
+            .iter()
+            .filter(|d| !d.followable && !complete.iter().any(|m| m.source == d.resolved))
+            .map(|d| ExtractedModule {
+                source: d.resolved.clone(),
+                dependencies: Vec::new(),
+                experimental_stats: None,
+                as_dependency: Some(d.clone()),
+            })
+            .collect();
+        complete.push(module);
+        complete.extend(unfollowed);
+    }
+    if let Some(dynamic) = settings.exclude.as_ref().and_then(|f| f.dynamic) {
+        for module in &mut complete {
+            module.dependencies.retain(|d| d.dynamic != dynamic);
+        }
+    }
+    Ok(complete)
+}
+
+/// `experimentalStats` for one file: top-level statements and size.
+///
+/// # Errors
+/// When the file cannot be read or parsed.
+pub fn stats(file: &str, settings: &Settings) -> Result<ExperimentalStats, PipelineError> {
+    let path = settings.on_disk(file);
+    let source = read(&path)?;
+    let allocator = Allocator::default();
+    let parsed = OxcParser::new(&allocator, &source, source_type_for(file))
+        .with_options(ParseOptions {
+            allow_return_outside_function: true,
+            ..ParseOptions::default()
+        })
+        .parse();
+    if parsed.diagnostics.has_errors()
+        && parsed.program.body.is_empty()
+        && !source.trim().is_empty()
+    {
+        return Err(PipelineError::Parse {
+            path,
+            reason: parsed
+                .diagnostics
+                .errors()
+                .next()
+                .map_or_else(String::new, ToString::to_string),
+        });
+    }
+    Ok(ExperimentalStats {
+        top_level_statement_count: parsed.program.body.len() as u64,
+        size: u64::from(parsed.program.span().end),
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn module_attributes_follow_upstream() {
+        assert_eq!(
+            module_attributes("protodash"),
+            ("protodash".to_owned(), None, None)
+        );
+        assert_eq!(
+            module_attributes("node:fs"),
+            ("fs".to_owned(), Some(Protocol::Node), None)
+        );
+        assert_eq!(
+            module_attributes("bun:fs"),
+            ("fs".to_owned(), Some(Protocol::Bun), None)
+        );
+        assert_eq!(
+            module_attributes("node:sea"),
+            ("node:sea".to_owned(), Some(Protocol::Node), None)
+        );
+        assert_eq!(
+            module_attributes("file:x.js"),
+            ("file:x.js".to_owned(), Some(Protocol::File), None)
+        );
+        assert_eq!(
+            module_attributes("data:text/javascript,export default 1"),
+            (
+                "data:export default 1".to_owned(),
+                Some(Protocol::Data),
+                Some("text/javascript".to_owned())
+            )
+        );
+        assert_eq!(module_attributes("node:"), ("node:".to_owned(), None, None));
+    }
+
+    #[test]
+    fn extname_and_normalise_match_node() {
+        assert_eq!(node_extname("a/b.test.js"), ".js");
+        assert_eq!(node_extname("a/.hidden"), "");
+        assert_eq!(normalise("./a/../b/./c"), "b/c");
+        assert_eq!(normalise("../x"), "../x");
+        assert_eq!(normalise("."), ".");
+        assert!(is_glob("src/**/*.ts") && !is_glob("src/a.ts"));
+    }
+
+    #[test]
+    fn type_only_and_unused_imports_are_elided_as_compilation_would() {
+        let source = "import type A from './a';\nimport { B } from './b';\nimport { C } from './c';\nimport './d';\nimport { E } from './e';\nconst x: B = C;\n";
+        let spans = elided_imports(source, SourceType::ts());
+        let elided: Vec<&str> = spans
+            .iter()
+            .map(|s| &source[s.start as usize..s.end as usize])
+            .collect();
+        assert_eq!(
+            elided,
+            [
+                "import type A from './a';",
+                "import { B } from './b';",
+                "import { E } from './e';"
+            ]
+        );
+    }
+}

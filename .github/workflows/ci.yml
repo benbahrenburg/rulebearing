@@ -96,14 +96,15 @@ jobs:
       # Must match `rust-version` in Cargo.toml; the two are compared by the step below.
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
-          toolchain: "1.85"
+          toolchain: "1.96"
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: declared MSRV matches this job
         run: |
           declared="$(grep -m1 '^rust-version' Cargo.toml | cut -d'"' -f2)"
-          test "$declared" = "1.85" || { echo "::error::Cargo.toml says $declared, this job pins 1.85"; exit 1; }
-      # `+1.85` overrides rust-toolchain.toml, which pins the development toolchain.
-      - run: cargo +1.85 check --workspace --all-features --all-targets
+          test "$declared" = "1.96" || { echo "::error::Cargo.toml says $declared, this job pins 1.96"; exit 1; }
+      # `+1.96` overrides rust-toolchain.toml, which pins the development toolchain. 1.96 is what
+      # the pinned oxc crates require (docs/adr/0012-oxc-for-typescript.md).
+      - run: cargo +1.96 check --workspace --all-features --all-targets
 
   features:
     name: features

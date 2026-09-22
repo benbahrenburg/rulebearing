@@ -11,10 +11,22 @@ publish.workspace = true
 
 [dependencies]
 rb-model = { workspace = true }
-
-[dev-dependencies]
+oxc_allocator = { workspace = true }
+oxc_ast = { workspace = true }
+oxc_ast_visit = { workspace = true }
+oxc_diagnostics = { workspace = true }
+oxc_parser = { workspace = true }
+oxc_semantic = { workspace = true }
+oxc_span = { workspace = true }
+oxc_resolver = { workspace = true }
+regex = { workspace = true }
+globset = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+oxc_span = { workspace = true }
 
 [lints]
 workspace = true

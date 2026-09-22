@@ -25,6 +25,9 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
+# The binary is built with serde_json's insertion-ordered maps (oxc_resolver enables them), so the
+# tests run that way too; otherwise explicit key sorting would be untestable here.
+serde_json = { workspace = true, features = ["preserve_order"] }
 
 [lints]
 workspace = true

@@ -14,7 +14,7 @@
       "fileDir": "test/extract/resolve/__mocks__/ts-config-with-path",
       "resolveOptions": {
         "resolve": {
-          "tsConfig": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+          "tsConfig": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
           "bustTheCache": true
         },
         "cruise": {},
@@ -22,9 +22,9 @@
           "options": {
             "target": 2,
             "module": 1,
-            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "outDir": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/dist",
             "strict": true,
-            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "baseUrl": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src",
             "paths": {
               "*": [
                 "./typos/*"
@@ -37,13 +37,13 @@
               ]
             },
             "esModuleInterop": true,
-            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
-            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+            "configFilePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path"
           },
           "fileNames": [
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
           ],
           "typeAcquisition": {
             "enable": false,
@@ -74,7 +74,7 @@
           },
           "errors": [],
           "wildcardDirectories": {
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path": 1
           },
           "compileOnSave": false
         }
@@ -84,9 +84,9 @@
           "options": {
             "target": 2,
             "module": 1,
-            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "outDir": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/dist",
             "strict": true,
-            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "baseUrl": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src",
             "paths": {
               "*": [
                 "./typos/*"
@@ -99,13 +99,13 @@
               ]
             },
             "esModuleInterop": true,
-            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
-            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+            "configFilePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path"
           },
           "fileNames": [
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
           ],
           "typeAcquisition": {
             "enable": false,
@@ -136,7 +136,7 @@
           },
           "errors": [],
           "wildcardDirectories": {
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path": 1
           },
           "compileOnSave": false
         }
@@ -170,7 +170,7 @@
       "fileDir": "test/extract/resolve/__mocks__/ts-config-with-path",
       "resolveOptions": {
         "resolve": {
-          "tsConfig": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+          "tsConfig": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
           "bustTheCache": true
         },
         "cruise": {},
@@ -178,9 +178,9 @@
           "options": {
             "target": 2,
             "module": 1,
-            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "outDir": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/dist",
             "strict": true,
-            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "baseUrl": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src",
             "paths": {
               "*": [
                 "./typos/*"
@@ -193,13 +193,13 @@
               ]
             },
             "esModuleInterop": true,
-            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
-            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+            "configFilePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path"
           },
           "fileNames": [
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
           ],
           "typeAcquisition": {
             "enable": false,
@@ -230,7 +230,7 @@
           },
           "errors": [],
           "wildcardDirectories": {
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path": 1
           },
           "compileOnSave": false
         }
@@ -240,9 +240,9 @@
           "options": {
             "target": 2,
             "module": 1,
-            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "outDir": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/dist",
             "strict": true,
-            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "baseUrl": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src",
             "paths": {
               "*": [
                 "./typos/*"
@@ -255,13 +255,13 @@
               ]
             },
             "esModuleInterop": true,
-            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
-            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+            "configFilePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path"
           },
           "fileNames": [
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
           ],
           "typeAcquisition": {
             "enable": false,
@@ -292,7 +292,7 @@
           },
           "errors": [],
           "wildcardDirectories": {
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path": 1
           },
           "compileOnSave": false
         }
@@ -326,7 +326,7 @@
       "fileDir": "test/extract/resolve/__mocks__/ts-config-with-path",
       "resolveOptions": {
         "resolve": {
-          "tsConfig": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+          "tsConfig": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
           "bustTheCache": true
         },
         "cruise": {},
@@ -334,9 +334,9 @@
           "options": {
             "target": 2,
             "module": 1,
-            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "outDir": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/dist",
             "strict": true,
-            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "baseUrl": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src",
             "paths": {
               "*": [
                 "./typos/*"
@@ -349,13 +349,13 @@
               ]
             },
             "esModuleInterop": true,
-            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
-            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+            "configFilePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path"
           },
           "fileNames": [
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
           ],
           "typeAcquisition": {
             "enable": false,
@@ -386,7 +386,7 @@
           },
           "errors": [],
           "wildcardDirectories": {
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path": 1
           },
           "compileOnSave": false
         }
@@ -396,9 +396,9 @@
           "options": {
             "target": 2,
             "module": 1,
-            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "outDir": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/dist",
             "strict": true,
-            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "baseUrl": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src",
             "paths": {
               "*": [
                 "./typos/*"
@@ -411,13 +411,13 @@
               ]
             },
             "esModuleInterop": true,
-            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
-            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+            "configFilePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path"
           },
           "fileNames": [
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
           ],
           "typeAcquisition": {
             "enable": false,
@@ -448,7 +448,7 @@
           },
           "errors": [],
           "wildcardDirectories": {
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path": 1
           },
           "compileOnSave": false
         }
@@ -482,7 +482,7 @@
       "fileDir": "test/extract/resolve/__mocks__/ts-config-with-path/src/typos",
       "resolveOptions": {
         "resolve": {
-          "tsConfig": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig-no-paths.json",
+          "tsConfig": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig-no-paths.json",
           "bustTheCache": true
         },
         "cruise": {},
@@ -490,16 +490,16 @@
           "options": {
             "target": 2,
             "module": 1,
-            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "outDir": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/dist",
             "strict": true,
-            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "baseUrl": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src",
             "esModuleInterop": true,
-            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig-no-paths.json"
+            "configFilePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig-no-paths.json"
           },
           "fileNames": [
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
           ],
           "typeAcquisition": {
             "enable": false,
@@ -519,7 +519,7 @@
           },
           "errors": [],
           "wildcardDirectories": {
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path": 1
           },
           "compileOnSave": false
         }
@@ -529,16 +529,16 @@
           "options": {
             "target": 2,
             "module": 1,
-            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "outDir": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/dist",
             "strict": true,
-            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "baseUrl": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src",
             "esModuleInterop": true,
-            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig-no-paths.json"
+            "configFilePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig-no-paths.json"
           },
           "fileNames": [
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
           ],
           "typeAcquisition": {
             "enable": false,
@@ -558,7 +558,7 @@
           },
           "errors": [],
           "wildcardDirectories": {
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path": 1
           },
           "compileOnSave": false
         }
@@ -592,7 +592,7 @@
       "fileDir": "test/extract/resolve/__mocks__/ts-config-with-path-correct-resolution-prio",
       "resolveOptions": {
         "resolve": {
-          "tsConfig": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path-correct-resolution-prio/tsconfig.json",
+          "tsConfig": "<root>/test/extract/resolve/__mocks__/ts-config-with-path-correct-resolution-prio/tsconfig.json",
           "bustTheCache": true
         },
         "cruise": {},
@@ -600,9 +600,9 @@
           "options": {
             "target": 2,
             "module": 1,
-            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "outDir": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/dist",
             "strict": true,
-            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "baseUrl": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src",
             "paths": {
               "*": [
                 "./typos/*"
@@ -615,13 +615,13 @@
               ]
             },
             "esModuleInterop": true,
-            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
-            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+            "configFilePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path"
           },
           "fileNames": [
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
           ],
           "typeAcquisition": {
             "enable": false,
@@ -652,7 +652,7 @@
           },
           "errors": [],
           "wildcardDirectories": {
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path": 1
           },
           "compileOnSave": false
         }
@@ -662,9 +662,9 @@
           "options": {
             "target": 2,
             "module": 1,
-            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "outDir": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/dist",
             "strict": true,
-            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "baseUrl": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src",
             "paths": {
               "*": [
                 "./typos/*"
@@ -677,13 +677,13 @@
               ]
             },
             "esModuleInterop": true,
-            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
-            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+            "configFilePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path"
           },
           "fileNames": [
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
           ],
           "typeAcquisition": {
             "enable": false,
@@ -714,7 +714,7 @@
           },
           "errors": [],
           "wildcardDirectories": {
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path": 1
           },
           "compileOnSave": false
         }
@@ -748,7 +748,7 @@
       "fileDir": "test/extract/resolve/__mocks__/ts-config-with-path-correct-resolution-prio",
       "resolveOptions": {
         "resolve": {
-          "tsConfig": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path-correct-resolution-prio/tsconfig.json",
+          "tsConfig": "<root>/test/extract/resolve/__mocks__/ts-config-with-path-correct-resolution-prio/tsconfig.json",
           "bustTheCache": true
         },
         "cruise": {},
@@ -756,9 +756,9 @@
           "options": {
             "target": 2,
             "module": 1,
-            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "outDir": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/dist",
             "strict": true,
-            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "baseUrl": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src",
             "paths": {
               "*": [
                 "./typos/*"
@@ -771,13 +771,13 @@
               ]
             },
             "esModuleInterop": true,
-            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
-            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+            "configFilePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path"
           },
           "fileNames": [
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
           ],
           "typeAcquisition": {
             "enable": false,
@@ -808,7 +808,7 @@
           },
           "errors": [],
           "wildcardDirectories": {
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path": 1
           },
           "compileOnSave": false
         }
@@ -818,9 +818,9 @@
           "options": {
             "target": 2,
             "module": 1,
-            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "outDir": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/dist",
             "strict": true,
-            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "baseUrl": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src",
             "paths": {
               "*": [
                 "./typos/*"
@@ -833,13 +833,13 @@
               ]
             },
             "esModuleInterop": true,
-            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
-            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+            "configFilePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "<root>/test/extract/resolve/__mocks__/ts-config-with-path"
           },
           "fileNames": [
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
           ],
           "typeAcquisition": {
             "enable": false,
@@ -870,7 +870,7 @@
           },
           "errors": [],
           "wildcardDirectories": {
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+            "<root>/test/extract/resolve/__mocks__/ts-config-with-path": 1
           },
           "compileOnSave": false
         }

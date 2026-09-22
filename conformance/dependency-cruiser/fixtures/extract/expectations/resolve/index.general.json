@@ -43,7 +43,7 @@
       "baseDir": "test/extract/resolve/__mocks__",
       "fileDir": "test/extract/resolve/__mocks__/resolve",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {},
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -74,7 +74,7 @@
       "baseDir": "test/extract/resolve/__mocks__",
       "fileDir": "test/extract/resolve/__mocks__/resolve",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {},
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -105,7 +105,7 @@
       "baseDir": "test/extract/resolve/__mocks__",
       "fileDir": "test/extract/resolve/__mocks__/resolve",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {},
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -136,7 +136,9 @@
       "baseDir": "test/extract/resolve/__mocks__",
       "fileDir": "test/extract/resolve/__mocks__/followability",
       "resolveOptions": {
-        "resolve": null,
+        "resolve": {
+          "bustTheCache": true
+        },
         "cruise": null,
         "tsConfig": null,
         "untagged": true
@@ -274,7 +276,7 @@
       "resolveOptions": {
         "resolve": {
           "alias": {
-            "hoepla": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/i-got-aliased-to-hoepla"
+            "hoepla": "<root>/test/extract/resolve/__mocks__/i-got-aliased-to-hoepla"
           },
           "bustTheCache": true
         },
@@ -312,7 +314,7 @@
         "resolve": {
           "modules": [
             "node_modules",
-            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/localmodulesfix/localmoduleshere"
+            "<root>/test/extract/resolve/__mocks__/localmodulesfix/localmoduleshere"
           ],
           "bustTheCache": true
         },

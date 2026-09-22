@@ -2,6 +2,10 @@
 [licenses]
 allow = ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Zlib", "Unicode-3.0", "Unicode-DFS-2016", "MPL-2.0"]
 confidence-threshold = 0.9
+# One crate-scoped exception, not a wider allow-list: docs/adr/0026-bsl-exception-for-dragonbox.md.
+exceptions = [
+    { allow = ["BSL-1.0"], crate = "dragonbox_ecma" },
+]
 
 [bans]
 multiple-versions = "warn"
