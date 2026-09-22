@@ -1,0 +1,379 @@
+[
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#1",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports extracts type imports in const declarations",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "const tiepetjes: import('./types').T;",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./types",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#2",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports extracts type imports in const declarations (template literal argument)",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "const tiepetjes: import(`./types`).T;",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./types",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#3",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports extracts type imports in parameter declarations",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "function f(snort: import('./vypes').T){console.log(snort.bla)}",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./vypes",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#4",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports extracts type imports in class members",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "class Klass{ private membert: import('./wypes').T; constructor() { membert = 'x'}}",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./wypes",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#5",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports leaves type imports with template literals with placeholders alone",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "const tiepetjes: import(`./types/${lalala()}`).T;",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#6",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports leaves 'import equals' of variables alone",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "import protocol = ts.server.protocol",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#7",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports extracts imports that explicitly state they only import a type - default import",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "import type slork from './ts-typical';",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./ts-typical",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-only",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#8",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports extracts imports that explicitly state they only import a type - just a part of the module",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "import type {IZwabbernoot} from './ts-typical';",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./ts-typical",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-only",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#9",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports extracts imports that explicitly state they only import a type - default import plus parts",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "import type Robbedoes, {IZwabbernoot} from './ts-typical';",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./ts-typical",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-only",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#10",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports extracts imports with inline type imports - only type imports",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "import { type slork, type klaatu } from './ts-typical';",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./ts-typical",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-only",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#11",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports extracts imports with inline type imports - mixing type and non-type",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "import { type slork, klaatu } from './ts-typical';",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./ts-typical",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#12",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports extracts re-exports that explicitly state they only re-export a type",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "export type * as vehicles from './vehicles';",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./vehicles",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-only",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#13",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports extracts re-exports that explicitly state they only re-export a type (without aliases)",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "export type * from './vehicles';",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./vehicles",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-only",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#14",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports extracts re-exports with inline type re-exports - only type re-exports",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "export { type foobar, type baz } from './vehicles';",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./vehicles",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-only",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/type-imports-and-exports.spec.mjs#15",
+    "title": "[U] ast-extractors/extract-typescript - type imports and exports extracts re-exports with inline type re-exports - mixing type and non-type",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "export { type foobar, baz } from './vehicles';",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./vehicles",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "export"
+        ]
+      }
+    ]
+  }
+]

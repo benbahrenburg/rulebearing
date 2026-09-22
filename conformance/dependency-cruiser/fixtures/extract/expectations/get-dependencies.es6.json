@@ -1,0 +1,221 @@
+[
+  {
+    "id": "test/extract/get-dependencies.es6.spec.mjs#1",
+    "title": "[I] extract/getDependencies - ES6 -  es6 imports and exports (with 'acorn' as parser)",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/es6/imports-and-exports.js",
+      "cruiseOptions": {
+        "parser": "acorn"
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true,
+          "resolveLicenses": true
+        },
+        "cruise": {
+          "parser": "acorn"
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "module": "acorn",
+        "moduleSystem": "es6",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "npm",
+          "import"
+        ],
+        "resolved": "node_modules/acorn/dist/acorn.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "license": "MIT",
+        "matchesDoNotFollow": false
+      },
+      {
+        "module": "mocha",
+        "moduleSystem": "es6",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "npm-dev",
+          "export"
+        ],
+        "resolved": "node_modules/mocha/index.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "license": "MIT",
+        "matchesDoNotFollow": false
+      },
+      {
+        "module": "os",
+        "moduleSystem": "es6",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "core",
+          "import"
+        ],
+        "resolved": "os",
+        "coreModule": true,
+        "followable": false,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  },
+  {
+    "id": "test/extract/get-dependencies.es6.spec.mjs#2",
+    "title": "[I] extract/getDependencies - ES6 -  es6 imports and exports (with 'swc' as parser)",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/es6/imports-and-exports.js",
+      "cruiseOptions": {
+        "parser": "swc"
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true,
+          "resolveLicenses": true
+        },
+        "cruise": {
+          "parser": "swc"
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "acorn",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "npm",
+          "import"
+        ],
+        "resolved": "node_modules/acorn/dist/acorn.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "license": "MIT",
+        "matchesDoNotFollow": false
+      },
+      {
+        "dynamic": false,
+        "module": "mocha",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "npm-dev",
+          "export"
+        ],
+        "resolved": "node_modules/mocha/index.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "license": "MIT",
+        "matchesDoNotFollow": false
+      },
+      {
+        "dynamic": false,
+        "module": "os",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "core",
+          "import"
+        ],
+        "resolved": "os",
+        "coreModule": true,
+        "followable": false,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  },
+  {
+    "id": "test/extract/get-dependencies.es6.spec.mjs#3",
+    "title": "[I] extract/getDependencies - ES6 -  es6 imports and exports (with 'tsc' as parser)",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/es6/imports-and-exports.js",
+      "cruiseOptions": {
+        "parser": "tsc"
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true,
+          "resolveLicenses": true
+        },
+        "cruise": {
+          "parser": "tsc"
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "acorn",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "npm",
+          "import"
+        ],
+        "resolved": "node_modules/acorn/dist/acorn.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "license": "MIT",
+        "matchesDoNotFollow": false
+      },
+      {
+        "dynamic": false,
+        "module": "mocha",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "npm-dev",
+          "export"
+        ],
+        "resolved": "node_modules/mocha/index.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "license": "MIT",
+        "matchesDoNotFollow": false
+      },
+      {
+        "dynamic": false,
+        "module": "os",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "core",
+          "import"
+        ],
+        "resolved": "os",
+        "coreModule": true,
+        "followable": false,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  }
+]

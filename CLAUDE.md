@@ -133,8 +133,8 @@ cargo llvm-cov --workspace --all-features --fail-under-lines 70 && scripts/cover
 cargo mutants --package rb-model --package rb-rules --package xtask   # a survivor fails CI
 cargo deny check licenses advisories bans sources       # needs cargo-deny
 typos && actionlint && git ls-files '*.sh' | xargs shellcheck --severity=style
-conformance/dependency-cruiser/run.sh                   # gate 1 (needs Node 22)
-conformance/archunitnet/run.sh                          # gate 2 (needs .NET 10 SDK)
+conformance/dependency-cruiser/run.sh                   # gate 1, layers 1 and 2 (needs Node 22)
+scripts/gate2-check.sh && scripts/ratchets.sh           # gate 2 fixture check; the conformance ratchets
 ./target/release/rulebearing --help
 ```
 

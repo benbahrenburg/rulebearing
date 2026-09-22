@@ -1,0 +1,64 @@
+[
+  {
+    "id": "test/extract/swc/extract-with-swc-type-imports.spec.mjs#1",
+    "title": "[U] ast-extractors/extract-swc - type imports extracts type imports in class members",
+    "call": 1,
+    "surface": "walk-swc",
+    "cwd": ".",
+    "input": {
+      "parser": "swc",
+      "source": "class Klass{ private membert: import('./wypes').T; constructor() { membert = 'x'}}",
+      "extension": null,
+      "exoticRequireStrings": []
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./wypes",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/swc/extract-with-swc-type-imports.spec.mjs#2",
+    "title": "[U] ast-extractors/extract-swc - type imports leaves 'import equals' of variables alone",
+    "call": 1,
+    "surface": "walk-swc",
+    "cwd": ".",
+    "input": {
+      "parser": "swc",
+      "source": "import protocol = ts.server.protocol",
+      "extension": null,
+      "exoticRequireStrings": []
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/swc/extract-with-swc-type-imports.spec.mjs#3",
+    "title": "[U] ast-extractors/extract-swc - type imports extracts type imports (typescript 3.8+)",
+    "call": 1,
+    "surface": "walk-swc",
+    "cwd": ".",
+    "input": {
+      "parser": "swc",
+      "source": "import type { SomeType } from './some-module'",
+      "extension": null,
+      "exoticRequireStrings": []
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./some-module",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "import"
+        ]
+      }
+    ]
+  }
+]

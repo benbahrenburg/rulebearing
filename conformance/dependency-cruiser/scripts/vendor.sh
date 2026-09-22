@@ -19,7 +19,7 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 pin="$(tr -d '[:space:]' < "$here/PIN")"
-work="$(mktemp -d)"
+work="$(cd "$(mktemp -d)" && pwd -P)"
 trap 'rm -rf "$work"' EXIT
 
 # The clone lives in a directory named dependency-cruiser because some upstream fixtures address

@@ -1,0 +1,924 @@
+[
+  {
+    "id": "test/extract/resolve/index.tsconfig.spec.mjs#1",
+    "title": "[I] extract/resolve/index - typescript tsconfig processing considers a typescript config - non-* alias",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": ".",
+    "input": {
+      "module": {
+        "module": "@shared",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__",
+      "fileDir": "test/extract/resolve/__mocks__/ts-config-with-path",
+      "resolveOptions": {
+        "resolve": {
+          "tsConfig": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": {
+          "options": {
+            "target": 2,
+            "module": 1,
+            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "strict": true,
+            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "paths": {
+              "*": [
+                "./typos/*"
+              ],
+              "gewoon/*": [
+                "./common/*"
+              ],
+              "@shared": [
+                "./shared"
+              ]
+            },
+            "esModuleInterop": true,
+            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+          },
+          "fileNames": [
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+          ],
+          "typeAcquisition": {
+            "enable": false,
+            "include": [],
+            "exclude": []
+          },
+          "raw": {
+            "compilerOptions": {
+              "target": "ES2015",
+              "module": "commonjs",
+              "outDir": "./dist",
+              "strict": true,
+              "baseUrl": "./src",
+              "paths": {
+                "*": [
+                  "./typos/*"
+                ],
+                "gewoon/*": [
+                  "./common/*"
+                ],
+                "@shared": [
+                  "./shared"
+                ]
+              },
+              "esModuleInterop": true
+            },
+            "compileOnSave": false
+          },
+          "errors": [],
+          "wildcardDirectories": {
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+          },
+          "compileOnSave": false
+        }
+      },
+      "transpileOptions": {
+        "tsConfig": {
+          "options": {
+            "target": 2,
+            "module": 1,
+            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "strict": true,
+            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "paths": {
+              "*": [
+                "./typos/*"
+              ],
+              "gewoon/*": [
+                "./common/*"
+              ],
+              "@shared": [
+                "./shared"
+              ]
+            },
+            "esModuleInterop": true,
+            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+          },
+          "fileNames": [
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+          ],
+          "typeAcquisition": {
+            "enable": false,
+            "include": [],
+            "exclude": []
+          },
+          "raw": {
+            "compilerOptions": {
+              "target": "ES2015",
+              "module": "commonjs",
+              "outDir": "./dist",
+              "strict": true,
+              "baseUrl": "./src",
+              "paths": {
+                "*": [
+                  "./typos/*"
+                ],
+                "gewoon/*": [
+                  "./common/*"
+                ],
+                "@shared": [
+                  "./shared"
+                ]
+              },
+              "esModuleInterop": true
+            },
+            "compileOnSave": false
+          },
+          "errors": [],
+          "wildcardDirectories": {
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+          },
+          "compileOnSave": false
+        }
+      }
+    },
+    "expected": {
+      "resolved": "ts-config-with-path/src/shared/index.ts",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "aliased",
+        "aliased-tsconfig",
+        "aliased-tsconfig-paths",
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.tsconfig.spec.mjs#2",
+    "title": "[I] extract/resolve/index - typescript tsconfig processing considers a typescript config - combined/* alias",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": ".",
+    "input": {
+      "module": {
+        "module": "gewoon/wood/tree",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__",
+      "fileDir": "test/extract/resolve/__mocks__/ts-config-with-path",
+      "resolveOptions": {
+        "resolve": {
+          "tsConfig": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": {
+          "options": {
+            "target": 2,
+            "module": 1,
+            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "strict": true,
+            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "paths": {
+              "*": [
+                "./typos/*"
+              ],
+              "gewoon/*": [
+                "./common/*"
+              ],
+              "@shared": [
+                "./shared"
+              ]
+            },
+            "esModuleInterop": true,
+            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+          },
+          "fileNames": [
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+          ],
+          "typeAcquisition": {
+            "enable": false,
+            "include": [],
+            "exclude": []
+          },
+          "raw": {
+            "compilerOptions": {
+              "target": "ES2015",
+              "module": "commonjs",
+              "outDir": "./dist",
+              "strict": true,
+              "baseUrl": "./src",
+              "paths": {
+                "*": [
+                  "./typos/*"
+                ],
+                "gewoon/*": [
+                  "./common/*"
+                ],
+                "@shared": [
+                  "./shared"
+                ]
+              },
+              "esModuleInterop": true
+            },
+            "compileOnSave": false
+          },
+          "errors": [],
+          "wildcardDirectories": {
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+          },
+          "compileOnSave": false
+        }
+      },
+      "transpileOptions": {
+        "tsConfig": {
+          "options": {
+            "target": 2,
+            "module": 1,
+            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "strict": true,
+            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "paths": {
+              "*": [
+                "./typos/*"
+              ],
+              "gewoon/*": [
+                "./common/*"
+              ],
+              "@shared": [
+                "./shared"
+              ]
+            },
+            "esModuleInterop": true,
+            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+          },
+          "fileNames": [
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+          ],
+          "typeAcquisition": {
+            "enable": false,
+            "include": [],
+            "exclude": []
+          },
+          "raw": {
+            "compilerOptions": {
+              "target": "ES2015",
+              "module": "commonjs",
+              "outDir": "./dist",
+              "strict": true,
+              "baseUrl": "./src",
+              "paths": {
+                "*": [
+                  "./typos/*"
+                ],
+                "gewoon/*": [
+                  "./common/*"
+                ],
+                "@shared": [
+                  "./shared"
+                ]
+              },
+              "esModuleInterop": true
+            },
+            "compileOnSave": false
+          },
+          "errors": [],
+          "wildcardDirectories": {
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+          },
+          "compileOnSave": false
+        }
+      }
+    },
+    "expected": {
+      "resolved": "ts-config-with-path/src/common/wood/tree.ts",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "aliased",
+        "aliased-tsconfig",
+        "aliased-tsconfig-paths",
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.tsconfig.spec.mjs#3",
+    "title": "[I] extract/resolve/index - typescript tsconfig processing considers a typescript config - * alias",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": ".",
+    "input": {
+      "module": {
+        "module": "daddayaddaya",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__",
+      "fileDir": "test/extract/resolve/__mocks__/ts-config-with-path",
+      "resolveOptions": {
+        "resolve": {
+          "tsConfig": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": {
+          "options": {
+            "target": 2,
+            "module": 1,
+            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "strict": true,
+            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "paths": {
+              "*": [
+                "./typos/*"
+              ],
+              "gewoon/*": [
+                "./common/*"
+              ],
+              "@shared": [
+                "./shared"
+              ]
+            },
+            "esModuleInterop": true,
+            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+          },
+          "fileNames": [
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+          ],
+          "typeAcquisition": {
+            "enable": false,
+            "include": [],
+            "exclude": []
+          },
+          "raw": {
+            "compilerOptions": {
+              "target": "ES2015",
+              "module": "commonjs",
+              "outDir": "./dist",
+              "strict": true,
+              "baseUrl": "./src",
+              "paths": {
+                "*": [
+                  "./typos/*"
+                ],
+                "gewoon/*": [
+                  "./common/*"
+                ],
+                "@shared": [
+                  "./shared"
+                ]
+              },
+              "esModuleInterop": true
+            },
+            "compileOnSave": false
+          },
+          "errors": [],
+          "wildcardDirectories": {
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+          },
+          "compileOnSave": false
+        }
+      },
+      "transpileOptions": {
+        "tsConfig": {
+          "options": {
+            "target": 2,
+            "module": 1,
+            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "strict": true,
+            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "paths": {
+              "*": [
+                "./typos/*"
+              ],
+              "gewoon/*": [
+                "./common/*"
+              ],
+              "@shared": [
+                "./shared"
+              ]
+            },
+            "esModuleInterop": true,
+            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+          },
+          "fileNames": [
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+          ],
+          "typeAcquisition": {
+            "enable": false,
+            "include": [],
+            "exclude": []
+          },
+          "raw": {
+            "compilerOptions": {
+              "target": "ES2015",
+              "module": "commonjs",
+              "outDir": "./dist",
+              "strict": true,
+              "baseUrl": "./src",
+              "paths": {
+                "*": [
+                  "./typos/*"
+                ],
+                "gewoon/*": [
+                  "./common/*"
+                ],
+                "@shared": [
+                  "./shared"
+                ]
+              },
+              "esModuleInterop": true
+            },
+            "compileOnSave": false
+          },
+          "errors": [],
+          "wildcardDirectories": {
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+          },
+          "compileOnSave": false
+        }
+      }
+    },
+    "expected": {
+      "resolved": "ts-config-with-path/src/typos/daddayaddaya.ts",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "aliased",
+        "aliased-tsconfig",
+        "aliased-tsconfig-paths",
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.tsconfig.spec.mjs#4",
+    "title": "[I] extract/resolve/index - typescript tsconfig processing considers a typescript config - no paths, no aliases, resolves relative to baseUrl",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": ".",
+    "input": {
+      "module": {
+        "module": "common/wood/tree",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__",
+      "fileDir": "test/extract/resolve/__mocks__/ts-config-with-path/src/typos",
+      "resolveOptions": {
+        "resolve": {
+          "tsConfig": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig-no-paths.json",
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": {
+          "options": {
+            "target": 2,
+            "module": 1,
+            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "strict": true,
+            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "esModuleInterop": true,
+            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig-no-paths.json"
+          },
+          "fileNames": [
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+          ],
+          "typeAcquisition": {
+            "enable": false,
+            "include": [],
+            "exclude": []
+          },
+          "raw": {
+            "compilerOptions": {
+              "target": "ES2015",
+              "module": "commonjs",
+              "outDir": "./dist",
+              "strict": true,
+              "baseUrl": "./src",
+              "esModuleInterop": true
+            },
+            "compileOnSave": false
+          },
+          "errors": [],
+          "wildcardDirectories": {
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+          },
+          "compileOnSave": false
+        }
+      },
+      "transpileOptions": {
+        "tsConfig": {
+          "options": {
+            "target": 2,
+            "module": 1,
+            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "strict": true,
+            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "esModuleInterop": true,
+            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig-no-paths.json"
+          },
+          "fileNames": [
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+          ],
+          "typeAcquisition": {
+            "enable": false,
+            "include": [],
+            "exclude": []
+          },
+          "raw": {
+            "compilerOptions": {
+              "target": "ES2015",
+              "module": "commonjs",
+              "outDir": "./dist",
+              "strict": true,
+              "baseUrl": "./src",
+              "esModuleInterop": true
+            },
+            "compileOnSave": false
+          },
+          "errors": [],
+          "wildcardDirectories": {
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+          },
+          "compileOnSave": false
+        }
+      }
+    },
+    "expected": {
+      "resolved": "ts-config-with-path/src/common/wood/tree.ts",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "aliased",
+        "aliased-tsconfig",
+        "aliased-tsconfig-base-url",
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.tsconfig.spec.mjs#5",
+    "title": "[I] extract/resolve/index - typescript tsconfig processing for aliases resolves in the same fashion as the typescript compiler - dts-vs-ts",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": ".",
+    "input": {
+      "module": {
+        "module": "things/dts-before-ts",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__",
+      "fileDir": "test/extract/resolve/__mocks__/ts-config-with-path-correct-resolution-prio",
+      "resolveOptions": {
+        "resolve": {
+          "tsConfig": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path-correct-resolution-prio/tsconfig.json",
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": {
+          "options": {
+            "target": 2,
+            "module": 1,
+            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "strict": true,
+            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "paths": {
+              "*": [
+                "./typos/*"
+              ],
+              "gewoon/*": [
+                "./common/*"
+              ],
+              "@shared": [
+                "./shared"
+              ]
+            },
+            "esModuleInterop": true,
+            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+          },
+          "fileNames": [
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+          ],
+          "typeAcquisition": {
+            "enable": false,
+            "include": [],
+            "exclude": []
+          },
+          "raw": {
+            "compilerOptions": {
+              "target": "ES2015",
+              "module": "commonjs",
+              "outDir": "./dist",
+              "strict": true,
+              "baseUrl": "./src",
+              "paths": {
+                "*": [
+                  "./typos/*"
+                ],
+                "gewoon/*": [
+                  "./common/*"
+                ],
+                "@shared": [
+                  "./shared"
+                ]
+              },
+              "esModuleInterop": true
+            },
+            "compileOnSave": false
+          },
+          "errors": [],
+          "wildcardDirectories": {
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+          },
+          "compileOnSave": false
+        }
+      },
+      "transpileOptions": {
+        "tsConfig": {
+          "options": {
+            "target": 2,
+            "module": 1,
+            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "strict": true,
+            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "paths": {
+              "*": [
+                "./typos/*"
+              ],
+              "gewoon/*": [
+                "./common/*"
+              ],
+              "@shared": [
+                "./shared"
+              ]
+            },
+            "esModuleInterop": true,
+            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+          },
+          "fileNames": [
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+          ],
+          "typeAcquisition": {
+            "enable": false,
+            "include": [],
+            "exclude": []
+          },
+          "raw": {
+            "compilerOptions": {
+              "target": "ES2015",
+              "module": "commonjs",
+              "outDir": "./dist",
+              "strict": true,
+              "baseUrl": "./src",
+              "paths": {
+                "*": [
+                  "./typos/*"
+                ],
+                "gewoon/*": [
+                  "./common/*"
+                ],
+                "@shared": [
+                  "./shared"
+                ]
+              },
+              "esModuleInterop": true
+            },
+            "compileOnSave": false
+          },
+          "errors": [],
+          "wildcardDirectories": {
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+          },
+          "compileOnSave": false
+        }
+      }
+    },
+    "expected": {
+      "resolved": "ts-config-with-path-correct-resolution-prio/src/aliassed/dts-before-ts.ts",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "aliased",
+        "aliased-tsconfig",
+        "aliased-tsconfig-paths",
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.tsconfig.spec.mjs#6",
+    "title": "[I] extract/resolve/index - typescript tsconfig processing for aliases resolves in the same fashion as the typescript compiler - js-vs-ts",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": ".",
+    "input": {
+      "module": {
+        "module": "things/js-before-ts",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__",
+      "fileDir": "test/extract/resolve/__mocks__/ts-config-with-path-correct-resolution-prio",
+      "resolveOptions": {
+        "resolve": {
+          "tsConfig": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path-correct-resolution-prio/tsconfig.json",
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": {
+          "options": {
+            "target": 2,
+            "module": 1,
+            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "strict": true,
+            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "paths": {
+              "*": [
+                "./typos/*"
+              ],
+              "gewoon/*": [
+                "./common/*"
+              ],
+              "@shared": [
+                "./shared"
+              ]
+            },
+            "esModuleInterop": true,
+            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+          },
+          "fileNames": [
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+          ],
+          "typeAcquisition": {
+            "enable": false,
+            "include": [],
+            "exclude": []
+          },
+          "raw": {
+            "compilerOptions": {
+              "target": "ES2015",
+              "module": "commonjs",
+              "outDir": "./dist",
+              "strict": true,
+              "baseUrl": "./src",
+              "paths": {
+                "*": [
+                  "./typos/*"
+                ],
+                "gewoon/*": [
+                  "./common/*"
+                ],
+                "@shared": [
+                  "./shared"
+                ]
+              },
+              "esModuleInterop": true
+            },
+            "compileOnSave": false
+          },
+          "errors": [],
+          "wildcardDirectories": {
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+          },
+          "compileOnSave": false
+        }
+      },
+      "transpileOptions": {
+        "tsConfig": {
+          "options": {
+            "target": 2,
+            "module": 1,
+            "outDir": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/dist",
+            "strict": true,
+            "baseUrl": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src",
+            "paths": {
+              "*": [
+                "./typos/*"
+              ],
+              "gewoon/*": [
+                "./common/*"
+              ],
+              "@shared": [
+                "./shared"
+              ]
+            },
+            "esModuleInterop": true,
+            "configFilePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/tsconfig.json",
+            "pathsBasePath": "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path"
+          },
+          "fileNames": [
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/common/wood/tree.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/shared/index.ts",
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path/src/typos/daddayaddaya.ts"
+          ],
+          "typeAcquisition": {
+            "enable": false,
+            "include": [],
+            "exclude": []
+          },
+          "raw": {
+            "compilerOptions": {
+              "target": "ES2015",
+              "module": "commonjs",
+              "outDir": "./dist",
+              "strict": true,
+              "baseUrl": "./src",
+              "paths": {
+                "*": [
+                  "./typos/*"
+                ],
+                "gewoon/*": [
+                  "./common/*"
+                ],
+                "@shared": [
+                  "./shared"
+                ]
+              },
+              "esModuleInterop": true
+            },
+            "compileOnSave": false
+          },
+          "errors": [],
+          "wildcardDirectories": {
+            "/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/test/extract/resolve/__mocks__/ts-config-with-path": 1
+          },
+          "compileOnSave": false
+        }
+      }
+    },
+    "expected": {
+      "resolved": "ts-config-with-path-correct-resolution-prio/src/aliassed/js-before-ts.js",
+      "coreModule": false,
+      "followable": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "aliased",
+        "aliased-tsconfig",
+        "aliased-tsconfig-paths",
+        "local"
+      ]
+    }
+  },
+  {
+    "id": "test/extract/resolve/index.tsconfig.spec.mjs#7",
+    "title": "[I] extract/resolve/index - typescript tsconfig processing gives a different result for the same input without a webpack config",
+    "call": 1,
+    "surface": "resolve",
+    "cwd": ".",
+    "input": {
+      "module": {
+        "module": "shared",
+        "moduleSystem": "es6"
+      },
+      "baseDir": "test/extract/resolve/__mocks__",
+      "fileDir": "test/extract/resolve/__mocks__/ts-config-with-path",
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": {
+      "resolved": "shared",
+      "coreModule": false,
+      "followable": false,
+      "couldNotResolve": true,
+      "dependencyTypes": [
+        "unknown"
+      ]
+    }
+  }
+]

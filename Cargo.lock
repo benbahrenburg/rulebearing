@@ -318,6 +318,8 @@ name = "rb-extract-ts"
 version = "0.0.1"
 dependencies = [
  "rb-model",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

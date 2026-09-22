@@ -1,6 +1,6 @@
 # Plan 0000: Wave 0: Spike: TypeScript extractor, .NET metadata reader, conformance skeletons, foundation
 
-- **Status:** In progress (0A done)
+- **Status:** In progress (0A and 0B done)
 - **Owner:** Ben Bahrenburg (@benbahrenburg)
 - **Created:** 2026-09-20
 - **Calendar estimate:** 4 weeks at ~10 h/week (from design § Waves)
@@ -648,13 +648,13 @@ conformance/archunitnet/scripts/spike-b-attribution.sh     # needs the .NET SDK 
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 0B | `vendor.sh`, `export-expectations.mjs`, `fixtures/extract`, `INDEX.json` | Not started | |
-| 0B | `extract_fixtures.rs` harness with diff report and threshold | Not started | |
-| 0B | `shim.mjs`, `run-layer-2.mjs`, `excluded.json` at full count | Not started | |
-| 0B | Layers 3 to 5 stubs; schemas vendored | Not started | |
-| 0B | `TestAssembly` fixture, `NOTICE`, hashes, `ported.json`, `gate2-check.sh` | Not started | |
-| 0B | `ratchets` job | Not started | |
-| 0B | `manifest.yaml` pinned; `run.sh`; `nightly-testbeds.yml`; README markers | Not started | |
+| 0B | `vendor.sh`, `export-expectations.mjs`, `fixtures/extract`, `INDEX.json` | Done | Upstream's 480 `test/extract` tests run unmodified under a recording hook: 295 call an extraction surface and give 296 cases; the other 185 are listed in `INDEX.json` with the reason (transpiler output, acorn's AST, hand-built ASTs, internal helpers) ([PR #6](https://github.com/benbahrenburg/rulebearing/pull/6)) |
+| 0B | `extract_fixtures.rs` harness with diff report and threshold | Done | `layer1: passed=0 total=296` in `conformance-gate-1`, [run](https://github.com/benbahrenburg/rulebearing/actions/runs/35741332058); `threshold.json` is 0 until the extractor lands in 0C, and the `ratchets` job lets it only rise |
+| 0B | `shim.mjs`, `run-layer-2.mjs`, `excluded.json` at full count | Done | All 34 `test/validate` and `test/graph-utl` specs forwarded to `rulebearing validate` over the protocol in `shim.mjs`; 34 excluded with reason `wave-1`, [run](https://github.com/benbahrenburg/rulebearing/actions/runs/35741332058) |
+| 0B | Layers 3 to 5 stubs; schemas vendored | Done (schemas); stubs cut | Both 18.2.0 schemas vendored under `conformance/dependency-cruiser/fixtures/schemas/`. The empty layer 3 to 5 scripts are cut under § 3's cut order rather than added as placeholders; wave 1 adds the layers with the reporters |
+| 0B | `TestAssembly` fixture, `NOTICE`, hashes, `ported.json`, `gate2-check.sh` | Done | Built deterministically from ArchUnitNET `0.13.4` (a rebuild reproduces the bytes); `conformance-gate-2` green, [run](https://github.com/benbahrenburg/rulebearing/actions/runs/35741332058) |
+| 0B | `ratchets` job | Done | `scripts/ratchets.sh`, required on `main`; starting counts: 34 excluded, 0 ported, threshold 0, [run](https://github.com/benbahrenburg/rulebearing/actions/runs/35741332058) |
+| 0B | `manifest.yaml` pinned; `run.sh`; `nightly-testbeds.yml`; README markers | Done | 52 rows pinned on 2026-09-22, two of them `own`. First run: [nightly](https://github.com/benbahrenburg/rulebearing/actions/runs/35741341718), 33 incumbent rows with 25 `ok`, 4 `failed` (the incumbent's own tests or contracts fail at that commit) and 4 `error`; three error causes fixed in the runner. [Second run](https://github.com/benbahrenburg/rulebearing/actions/runs/35743901729): 27 `ok`, 4 `failed`, 2 `error`, both repositories that do not build at their pinned commit (DrJohnMelville/Pdf, onebeyond/monaco). The summary is published to the `testbeds-results` branch because `main` takes only reviewed pull requests; the README table is refreshed from it |
 
 **Size:** S. **LOE:** 6 h, 0.6 calendar weeks. **Roles:** maintainer.
 

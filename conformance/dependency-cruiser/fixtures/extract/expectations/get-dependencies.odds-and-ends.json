@@ -1,0 +1,722 @@
+[
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#1",
+    "title": "[I] extract/getDependencies - Vue with TypeScript -  vue (with 'tsc' as parser)",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/vue/vue.vue",
+      "cruiseOptions": {
+        "parser": "tsc"
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true,
+          "resolveLicenses": true
+        },
+        "cruise": {
+          "parser": "tsc"
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./javascriptThing",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "import"
+        ],
+        "resolved": "test/extract/__mocks__/vue/javascriptThing.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      },
+      {
+        "dynamic": false,
+        "module": "./sub",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "import"
+        ],
+        "resolved": "test/extract/__mocks__/vue/sub/index.ts",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      },
+      {
+        "dynamic": false,
+        "module": "./sub/kaching",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import"
+        ],
+        "resolved": "test/extract/__mocks__/vue/sub/kaching.ts",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      },
+      {
+        "dynamic": false,
+        "module": "path",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "core",
+          "import"
+        ],
+        "resolved": "path",
+        "coreModule": true,
+        "followable": false,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#2",
+    "title": "[I] extract/getDependencies - CoffeeScript -  kitchensink (with 'acorn' as parser)",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/coffee/index.coffee",
+      "cruiseOptions": {
+        "parser": "acorn"
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true,
+          "resolveLicenses": true
+        },
+        "cruise": {
+          "parser": "acorn"
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "module": "./javascriptThing",
+        "moduleSystem": "es6",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "import"
+        ],
+        "resolved": "test/extract/__mocks__/coffee/javascriptThing.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      },
+      {
+        "module": "./sub",
+        "moduleSystem": "es6",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "import"
+        ],
+        "resolved": "test/extract/__mocks__/coffee/sub/index.coffee",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      },
+      {
+        "module": "./sub/kaching",
+        "moduleSystem": "es6",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "import"
+        ],
+        "resolved": "test/extract/__mocks__/coffee/sub/kaching.litcoffee",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      },
+      {
+        "module": "./sub/willBeReExported",
+        "moduleSystem": "es6",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "export"
+        ],
+        "resolved": "test/extract/__mocks__/coffee/sub/willBeReExported.coffee.md",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      },
+      {
+        "module": "path",
+        "moduleSystem": "es6",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "core",
+          "import"
+        ],
+        "resolved": "path",
+        "coreModule": true,
+        "followable": false,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#3",
+    "title": "[I] extract/getDependencies - Error scenarios -  Does not raise an exception on syntax errors (because we're on the loose parser)",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/syntax-error.js",
+      "cruiseOptions": {},
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#4",
+    "title": "[I] extract/getDependencies - Error scenarios -  Raises an exception on non-existing files",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "non-existing-file.md",
+      "cruiseOptions": {},
+      "resolveOptions": {
+        "resolve": null,
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "transpileOptions": null
+    },
+    "throws": "Extracting dependencies ran afoul of...\n\n  ENOENT: no such file or directory, open '/private/var/folders/09/r0pxsmbj2rl1bskrgs4cz6fw0000gp/T/tmp.z9BB6fFG1e/dependency-cruiser/non-existing-file.md'\n... in non-existing-file.md\n\n"
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#5",
+    "title": "[I] extract/getDependencies - even when require gets non-string arguments, extract doesn't break Just skips require(481)",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/cjs-require-non-strings/require-a-number.js",
+      "cruiseOptions": {},
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "module": "./othermodule",
+        "moduleSystem": "cjs",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "require"
+        ],
+        "resolved": "test/extract/__mocks__/cjs-require-non-strings/othermodule.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#6",
+    "title": "[I] extract/getDependencies - even when require gets non-string arguments, extract doesn't break Just skips require(a function)",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/cjs-require-non-strings/require-a-function.js",
+      "cruiseOptions": {},
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {},
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "module": "./othermodule",
+        "moduleSystem": "cjs",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "require"
+        ],
+        "resolved": "test/extract/__mocks__/cjs-require-non-strings/othermodule.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#7",
+    "title": "[I] extract/getDependencies - even when require gets non-string arguments, extract doesn't break Just skips require(an iife)",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/cjs-require-non-strings/require-an-iife.js",
+      "cruiseOptions": {},
+      "resolveOptions": {
+        "resolve": null,
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "module": "./othermodule",
+        "moduleSystem": "cjs",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "require"
+        ],
+        "resolved": "test/extract/__mocks__/cjs-require-non-strings/othermodule.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#8",
+    "title": "[I] extract/getDependencies - include returns no dependencies when the includeOnly pattern is erroneous",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/include/src/index.js",
+      "cruiseOptions": {
+        "includeOnly": "will-not-match-dependencies-for-this-file"
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "includeOnly": "will-not-match-dependencies-for-this-file"
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#9",
+    "title": "[I] extract/getDependencies - include only includes dependencies matching the passed \"includeOnly\" (1)",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/include/src/index.js",
+      "cruiseOptions": {
+        "includeOnly": "/src/"
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "includeOnly": "/src/"
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "module": "./bla",
+        "moduleSystem": "cjs",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "require"
+        ],
+        "resolved": "test/extract/__mocks__/include/src/bla.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#10",
+    "title": "[I] extract/getDependencies - include only includes dependencies matching the passed \"includeOnly\" (2)",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/include/src/index.js",
+      "cruiseOptions": {
+        "includeOnly": "include"
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "includeOnly": "include"
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "module": "../di",
+        "moduleSystem": "cjs",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "require"
+        ],
+        "resolved": "test/extract/__mocks__/include/di.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      },
+      {
+        "module": "./bla",
+        "moduleSystem": "cjs",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "require"
+        ],
+        "resolved": "test/extract/__mocks__/include/src/bla.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#11",
+    "title": "[I] extract/getDependencies - include annotates the exotic require",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/exotic-require/index.js",
+      "cruiseOptions": {
+        "exoticRequireStrings": [
+          "need"
+        ]
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "exoticRequireStrings": [
+            "need"
+          ]
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "module": "./required-with-need",
+        "moduleSystem": "cjs",
+        "dynamic": false,
+        "exoticallyRequired": true,
+        "exoticRequire": "need",
+        "dependencyTypes": [
+          "local",
+          "exotic-require"
+        ],
+        "resolved": "test/extract/__mocks__/exotic-require/required-with-need.js",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#12",
+    "title": "[I] extract/getDependencies - include does not support nested exotic requires deeper than 3 (reallyGlobal.globalThis.process.getBuiltinModule)",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/exotic-require/index.js",
+      "cruiseOptions": {
+        "exoticRequireStrings": [
+          "reallyGlobal.globalThis.process.getBuiltinModule"
+        ]
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "exoticRequireStrings": [
+            "reallyGlobal.globalThis.process.getBuiltinModule"
+          ]
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#13",
+    "title": "[I] extract/getDependencies - include recognizes process.getBuiltinModule & annotates it",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/process-get-builtin-module/process-only.js",
+      "cruiseOptions": {
+        "detectProcessBuiltinModuleCalls": true
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "detectProcessBuiltinModuleCalls": true
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "module": "path",
+        "moduleSystem": "cjs",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "core",
+          "process-get-builtin-module"
+        ],
+        "protocol": "node:",
+        "resolved": "path",
+        "coreModule": true,
+        "followable": false,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#14",
+    "title": "[I] extract/getDependencies - include does not recognize process.getBuiltinModule when the detectProcessBuiltinModuleCalls is off",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/process-get-builtin-module/process-only.js",
+      "cruiseOptions": {
+        "detectProcessBuiltinModuleCalls": false
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "detectProcessBuiltinModuleCalls": false
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#15",
+    "title": "[I] extract/getDependencies - include recognizes globalThis.process.getBuiltinModule & annotates it",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/process-get-builtin-module/with-global-this.js",
+      "cruiseOptions": {
+        "detectProcessBuiltinModuleCalls": true
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "detectProcessBuiltinModuleCalls": true
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "module": "path",
+        "moduleSystem": "cjs",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "core",
+          "process-get-builtin-module"
+        ],
+        "protocol": "node:",
+        "resolved": "path",
+        "coreModule": true,
+        "followable": false,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#16",
+    "title": "[I] extract/getDependencies - include does not parse files matching extensions in the extraExtensionsToScan array",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/extra-extensions/not-parsed-when-in-extra-extensions.yolo",
+      "cruiseOptions": {
+        "extraExtensionsToScan": [
+          ".bentknee",
+          ".yolo"
+        ]
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "extraExtensionsToScan": [
+            ".bentknee",
+            ".yolo"
+          ]
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/get-dependencies.odds-and-ends.spec.mjs#17",
+    "title": "[I] extract/getDependencies - include adds a preCompilationOnly attribute when tsPreCompilationDeps === 'specify'",
+    "call": 1,
+    "surface": "extract-dependencies",
+    "cwd": ".",
+    "input": {
+      "fileName": "test/extract/__mocks__/specifyTsPreCompilationDeps/index.ts",
+      "cruiseOptions": {
+        "tsPreCompilationDeps": "specify"
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "tsPreCompilationDeps": "specify"
+        },
+        "tsConfig": null
+      },
+      "transpileOptions": null
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./pre-compilation-only",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ],
+        "preCompilationOnly": true,
+        "resolved": "test/extract/__mocks__/specifyTsPreCompilationDeps/pre-compilation-only.d.ts",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      },
+      {
+        "dynamic": false,
+        "module": "./real-deal",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "local",
+          "import"
+        ],
+        "preCompilationOnly": false,
+        "resolved": "test/extract/__mocks__/specifyTsPreCompilationDeps/real-deal.ts",
+        "coreModule": false,
+        "followable": true,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": false
+      }
+    ]
+  }
+]

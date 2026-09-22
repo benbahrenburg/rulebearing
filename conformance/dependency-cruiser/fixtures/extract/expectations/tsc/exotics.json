@@ -1,0 +1,184 @@
+[
+  {
+    "id": "test/extract/tsc/exotics.spec.mjs#1",
+    "title": "[U] ast-extractors/extract-typescript - exotics doesn't detects 'exotic' dependencies when no exoticRequireStrings were passed",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "const want = require; const yo = want('./required-with-want');",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/tsc/exotics.spec.mjs#2",
+    "title": "[U] ast-extractors/extract-typescript - exotics detects dependencies declared with one function names passed as exoticRequireStrings",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "const want = need = require; const yo = want('./required-with-want'); const nope = need('./required-with-need');",
+      "extension": null,
+      "exoticRequireStrings": [
+        "want"
+      ],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./required-with-want",
+        "moduleSystem": "cjs",
+        "exoticallyRequired": true,
+        "exoticRequire": "want",
+        "dependencyTypes": [
+          "exotic-require"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/exotics.spec.mjs#3",
+    "title": "[U] ast-extractors/extract-typescript - exotics detects dependencies declared with member expression passed as exoticRequireStrings",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "const yo = window.require('./required-with-window-require')",
+      "extension": null,
+      "exoticRequireStrings": [
+        "window.require"
+      ],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./required-with-window-require",
+        "moduleSystem": "cjs",
+        "exoticallyRequired": true,
+        "exoticRequire": "window.require",
+        "dependencyTypes": [
+          "exotic-require"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/exotics.spec.mjs#4",
+    "title": "[U] ast-extractors/extract-typescript - exotics detects dependencies declared with multiple function names passed as exoticRequireStrings",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "const want = need = require; const yo = want('./required-with-want'); const nope = need('./required-with-need');",
+      "extension": null,
+      "exoticRequireStrings": [
+        "want",
+        "need"
+      ],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./required-with-want",
+        "moduleSystem": "cjs",
+        "exoticallyRequired": true,
+        "exoticRequire": "want",
+        "dependencyTypes": [
+          "exotic-require"
+        ]
+      },
+      {
+        "dynamic": false,
+        "module": "./required-with-need",
+        "moduleSystem": "cjs",
+        "exoticallyRequired": true,
+        "exoticRequire": "need",
+        "dependencyTypes": [
+          "exotic-require"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/exotics.spec.mjs#5",
+    "title": "[U] ast-extractors/extract-typescript - exotics detects dependencies declared with process.getBuiltinModule",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "const path = process.getBuiltinModule('node:path');",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": true
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "node:path",
+        "moduleSystem": "cjs",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "process-get-builtin-module"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/exotics.spec.mjs#6",
+    "title": "[U] ast-extractors/extract-typescript - exotics detects dependencies declared with globalThis.process.getBuiltinModule",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "const path = globalThis.process.getBuiltinModule('node:path');",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": true
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "node:path",
+        "moduleSystem": "cjs",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "process-get-builtin-module"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/exotics.spec.mjs#7",
+    "title": "[U] ast-extractors/extract-typescript - exotics doesn't detect dependencies declared with process.getBuiltinModule when the feature switch is off",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "const path = process.getBuiltinModule('node:path');",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": []
+  }
+]

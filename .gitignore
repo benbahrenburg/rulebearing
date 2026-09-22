@@ -17,3 +17,8 @@ __pycache__/
 .DS_Store
 /conformance/**/upstream/
 /testbeds/checkouts/
+# Vendored upstream test inputs keep their node_modules, dist and bin directories: they are data
+# the conformance harness resolves against (conformance/dependency-cruiser/scripts/vendor.sh).
+!/conformance/dependency-cruiser/fixtures/**
+/conformance/dependency-cruiser/fixtures/extract/test/extract/__mocks__/symlinked
+/testbeds/out/
