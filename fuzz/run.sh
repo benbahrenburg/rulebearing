@@ -9,4 +9,7 @@ target="${1:-metadata_reader}"
 seconds="${2:-600}"
 mkdir -p "corpus/$target"
 cp ../conformance/archunitnet/fixtures/TestAssembly.dll ../conformance/archunitnet/fixtures/TestAssembly.pdb "corpus/$target/"
-cargo +nightly fuzz run "$target" "corpus/$target" -- -max_total_time="$seconds" -rss_limit_mb=2048
+# The host triple explicitly: a prebuilt cargo-fuzz (as CI installs it) is a musl binary and would
+# otherwise default to musl, where the address sanitizer cannot run.
+host="$(rustc +nightly -vV | sed -n 's/^host: //p')"
+cargo +nightly fuzz run --target "$host" "$target" "corpus/$target" -- -max_total_time="$seconds" -rss_limit_mb=2048

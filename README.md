@@ -138,7 +138,7 @@ Five waves of part-time work, TypeScript first because that is where the largest
 
 | Wave | Weeks | What lands for you | Exit criterion |
 | --- | --- | --- | --- |
-| **[0 Spike](docs/plans/pending/0000-wave-0-spike.md)** | 4 | The TypeScript extractor proven against dependency-cruiser's 546 fixtures; the .NET metadata reader; both conformance harnesses; the name held on four registries | Fixtures at 95%; 99% of .NET types attributed to a source file, or the fallback extractor is invoked |
+| **[0 Spike](docs/plans/pending/0000-wave-0-spike.md)** | 4 | The TypeScript extractor, matching dependency-cruiser on 292 of the 296 cases its own extraction suite records (0.9865); the .NET metadata reader, attributing 99.29% of the .NET oracles' types to a source file, so the C# fallback is not needed ([ADR-0022](docs/adr/0022-dotnet-reader-in-rust-confirmed.md)); both conformance harnesses; the nightly test beds; the name held on four registries | Fixtures at 95%; 99% of .NET types attributed to a source file, or the fallback extractor is invoked |
 | **[1 TypeScript](docs/plans/pending/0001-wave-1-typescript-parity.md)** | 10 | The drop-in: full dependency-cruiser parity, the `agent` reporter, `fix` and `examples`, line-precise findings, liveness by default, `init`, `adopt`, `hooks install`, `attest`, `can-import`, `explain`, `test`; npm package and GitHub Action | Zero difference against dependency-cruiser on its own repository, langfuse and FluidFramework |
 | **[2 .NET and Python](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md)** | 10 | Both extractors; ArchUnitNET's full vocabulary as declarative element rules; `propose`, `impact`, `place`, `docs`; importers; test-runner adapters; the ESLint rule; SARIF and JUnit | Every imported .NET test agrees with `dotnet test`; every Python contract reproduces |
 | **[3 Inner loop](docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md)** | 8 | Caching and `--affected`; a source mode for .NET that answers without a build; `guard --watch`; the Roslyn analyzer; MCP and LSP servers; framework presets; the public rule library | Stop hook under two seconds on a large .NET solution; all reporters byte-compared |
@@ -211,7 +211,7 @@ Rows: 52; error 2, failed 4, idle 19, ok 27. Zero-diff and the Rulebearing timin
 
 ## Built the way it asks you to build
 
-This repository holds itself to the bar it proposes for yours. Every gate below is required and green today, before any feature code exists, so the first feature pull request faces the finished harness.
+This repository holds itself to the bar it proposes for yours. Every gate below was required and green before the first extractor line was written, so the extractors were built against the finished harness rather than alongside it.
 
 | Gate | What it enforces |
 | --- | --- |

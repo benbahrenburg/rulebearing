@@ -8,4 +8,4 @@ Thin shells over the one static binary ([architecture § Distribution](../docs/a
 | [nuget/](nuget/) | NuGet | `Rulebearing` as a `dotnet tool`, binary under `runtimes/` | [Wave 2, 2H](../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md) |
 | [pip/](pip/) | PyPI | `rulebearing` wheel per platform | [Wave 2, 2H](../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md) |
 
-A placeholder `0.0.1` is published to all three registries and crates.io on the same day in [Wave 0, 0E](../docs/plans/pending/0000-wave-0-spike.md).
+Until those plans land, each directory holds the `0.0.1` name reservation: a README and the packaging metadata, no functionality. [`crates/rulebearing/`](crates/rulebearing/README.md) is the crates.io reservation. [`publish-placeholders.sh`](publish-placeholders.sh) publishes all four on one day ([Wave 0, 0E](../docs/plans/pending/0000-wave-0-spike.md); the procedure is in [docs/release.md](../docs/release.md)).

@@ -1,0 +1,16 @@
+# The crates.io name reservation (docs/adr/0020-single-name-across-registries.md). A package of its
+# own, outside the workspace, because every workspace crate is `rb-*` and publishes nothing.
+# Published by wrappers/publish-placeholders.sh (docs/release.md).
+[package]
+name = "rulebearing"
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+description = "Reserved name for Rulebearing, deterministic architecture guardrails for TypeScript, .NET and Python"
+repository = "https://github.com/benbahrenburg/rulebearing"
+readme = "README.md"
+keywords = ["architecture", "dependencies", "lint"]
+categories = ["development-tools"]
+
+[workspace]

@@ -1,0 +1,8 @@
+<!-- Every C# project in the repository, so `cargo xtask lint` runs one `dotnet format` over all of
+     them (docs/adr/0023-documentation-link-and-lint-gates.md). Wave 2 adds the test adapter and the
+     analyzer here (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md). -->
+<Solution>
+  <Folder Name="/wrappers/">
+    <Project Path="wrappers/nuget/Rulebearing.csproj" />
+  </Folder>
+</Solution>

@@ -23,6 +23,8 @@ The primary language is Rust (a Cargo workspace under `crates/`). TypeScript, C#
 | `rulebearing.yaml` | This repository's own rules, enforced from wave 1 | [ADR-0010](docs/adr/0010-crate-layout-and-extractor-boundary.md) |
 | `xtask/` | The documentation link check and the one lint entry point for all four languages | [ADR-0023](docs/adr/0023-documentation-link-and-lint-gates.md) |
 | `.githooks/`, `.cargo/` | Opt-in git hooks; the cargo aliases and the mutation-testing scope | [ADR-0025](docs/adr/0025-ci-and-supply-chain-hardening.md), [ADR-0024](docs/adr/0024-test-quality-gates.md) |
+| `fuzz/` | cargo-fuzz targets, a workspace of its own; run nightly | [fuzz/README.md](fuzz/README.md) |
+| `wrappers/` | The npm, PyPI and NuGet wrappers (the 0.0.1 name reservations until waves 1 and 2), and the crates.io reservation | [docs/release.md](docs/release.md), [ADR-0020](docs/adr/0020-single-name-across-registries.md) |
 
 ## How work is organised
 
@@ -135,6 +137,10 @@ cargo deny check licenses advisories bans sources       # needs cargo-deny
 typos && actionlint && git ls-files '*.sh' | xargs shellcheck --severity=style
 conformance/dependency-cruiser/run.sh                   # gate 1, layers 1 and 2 (needs Node 22)
 scripts/gate2-check.sh && scripts/ratchets.sh           # gate 2 fixture check; the conformance ratchets
+cargo test -p rb-extract-ts --test extract_fixtures -- --nocapture   # layer 1 alone: prints passed/total/ratio
+conformance/archunitnet/scripts/spike-b-attribution.sh # .NET attribution over the oracles (needs the .NET SDK)
+fuzz/run.sh metadata_reader 600                         # fuzz the metadata reader (nightly toolchain, cargo-fuzz)
+wrappers/publish-placeholders.sh --dry-run              # package the four 0.0.1 name reservations (docs/release.md)
 ./target/release/rulebearing --help
 ```
 

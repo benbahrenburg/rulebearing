@@ -689,7 +689,7 @@ Source: [design § Questions an agent can ask](artifacts/design.md#questions-an-
 
 #### NFR-CONF-01
 
-**Conformance gate 1.** dependency-cruiser 18.2.0's test suite MUST be a required, ratcheting CI check in five layers: extraction byte-compared over `test/extract` (546 fixtures); `test/validate` and `test/graph-utl` specs run unmodified through a shim; reporters byte-compared over `test/report`; schema validation of every `json` and every accepted config; live zero-diff on the TypeScript oracle repos plus a mutation branch of dependency-cruiser's repo with twelve deliberate violations. `conformance/excluded.json` MUST list any excluded spec with a reason and MAY only shrink.
+**Conformance gate 1.** dependency-cruiser 18.2.0's test suite MUST be a required, ratcheting CI check in five layers: extraction compared over `test/extract` (the design's 546 fixtures; at 18.2.0 the suite has 480 tests, of which 296 recorded cases exercise an extraction surface, accounted for in [conformance/README.md](../conformance/README.md)); `test/validate` and `test/graph-utl` specs run unmodified through a shim; reporters byte-compared over `test/report`; schema validation of every `json` and every accepted config; live zero-diff on the TypeScript oracle repos plus a mutation branch of dependency-cruiser's repo with twelve deliberate violations. `conformance/excluded.json` MUST list any excluded spec with a reason and MAY only shrink.
 
 Acceptance:
 - Required check from the first pull request; wave 1 exit: layers 1 to 5 green; wave 3 exit: `excluded.json` empty.

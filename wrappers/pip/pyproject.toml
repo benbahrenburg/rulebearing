@@ -1,0 +1,19 @@
+# The PyPI name reservation (docs/adr/0020-single-name-across-registries.md); no functionality.
+# Published by wrappers/publish-placeholders.sh (docs/release.md).
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rulebearing"
+version = "0.0.1"
+description = "Reserved name for Rulebearing, deterministic architecture guardrails for TypeScript, .NET and Python"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+
+[project.urls]
+Repository = "https://github.com/benbahrenburg/rulebearing"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rulebearing"]
