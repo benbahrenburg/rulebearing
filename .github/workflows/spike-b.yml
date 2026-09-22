@@ -1,0 +1,46 @@
+# Spike B: the share of the .NET oracle repositories' types the Rust metadata reader attributes to a
+# source file, measured weekly through the three-week window ADR-0003 sets (plan 0000, weeks 2 to 4).
+# The pooled line is printed in the job summary and every repository's JSON is uploaded; the plan's
+# 0D status table links the run for each week's figure.
+# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 9. Decision: docs/adr/0003-dotnet-extractor-fallback.md.
+# Actions pinned by SHA (docs/adr/0025-ci-and-supply-chain-hardening.md).
+name: spike-b
+
+on:
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spike-b
+  cancel-in-progress: false
+
+jobs:
+  attribution:
+    name: attribution over the .NET oracles
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+      - run: python3 -m pip install --quiet pyyaml
+      - name: measure
+        run: |
+          conformance/archunitnet/scripts/spike-b-attribution.sh | tee spike-b.log
+          grep '^spike-b: repos=' spike-b.log >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: spike-b-attribution
+          path: |
+            conformance/archunitnet/attribution
+            spike-b.log

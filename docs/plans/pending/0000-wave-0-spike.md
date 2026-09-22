@@ -1,6 +1,6 @@
 # Plan 0000: Wave 0: Spike: TypeScript extractor, .NET metadata reader, conformance skeletons, foundation
 
-- **Status:** In progress (0A and 0B done)
+- **Status:** In progress (0A, 0B and 0D done)
 - **Owner:** Ben Bahrenburg (@benbahrenburg)
 - **Created:** 2026-09-20
 - **Calendar estimate:** 4 weeks at ~10 h/week (from design § Waves)
@@ -687,15 +687,15 @@ conformance/archunitnet/scripts/spike-b-attribution.sh     # needs the .NET SDK 
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 0D | `pe.rs`, streams, table row readers, coded indices (unit tests on byte arrays) | Not started | |
-| 0D | `pdb.rs`: portable detection, `Document`, `MethodDebugInformation`, sequence points | Not started | |
-| 0D | `attribute.rs`: `pdb`, `inferred`, `none`; `SourceRoot` unmapping | Not started | |
-| 0D | `msbuild.rs`: locate built assemblies and PDBs per project | Not started | |
-| 0D | `TestAssembly` at 100% | Not started | |
-| 0D | Week 2 pooled figure | Not started | adjusted: , raw: , artefact: |
-| 0D | Week 3 pooled figure | Not started | adjusted: , raw: , artefact: |
-| 0D | Week 4 pooled figure (the trigger) | Not started | adjusted: , raw: , net4x: , non-portable types: , artefact: |
-| 0D | Fuzz target 10 minutes clean | Not started | |
+| 0D | `pe.rs`, streams, table row readers, coded indices (unit tests on byte arrays) | Done | `crates/rb-extract-dotnet/src/{bytes,pe,metadata/*,assembly}.rs`: every table 0x00 to 0x2C and 0x30 to 0x37 sized from its column list, coded indices per II.24.2.6, embedded portable PDBs inflated; unit tests on hand-built byte arrays and a truncation test at every offset |
+| 0D | `pdb.rs`: portable detection, `Document`, `MethodDebugInformation`, sequence points | Done | Also Roslyn's `TypeDefinitionDocuments` record, which gives interfaces and enums (no method bodies) a PDB attribution; a Windows PDB is reported as `NotPortable` |
+| 0D | `attribute.rs`: `pdb`, `inferred`, `none`; `SourceRoot` unmapping | Done | `/_/` paths mapped to the repository root. `inferred` covers a nested type taking its enclosing type's file and the `<TypeName>.cs` convention. The § 1.6 denominator rule is applied as written: `<Module>` and `CompilerGeneratedAttribute` types excluded, compiler-synthesised types without the attribute counted against the reader |
+| 0D | `msbuild.rs`: locate built assemblies and PDBs per project | Done | `.sln` and `.slnx`, project and `Directory.Build.props` properties with `$(MSBuildProjectName)` and similar expanded, `OutputPath`, `bin/<Configuration>/<tfm>`, the `artifacts/` layout, and a search fallback |
+| 0D | `TestAssembly` at 100% | Done | 45 of 45 types attributed by the PDB (the 46th is `<Module>`); `crates/rb-extract-dotnet/tests/test_assembly.rs` |
+| 0D | Week 2 pooled figure | Done | adjusted: **0.9929**, raw: 0.5584, over 10 of the 11 .NET oracles (4,495 attributable types, 32 unattributed), measured 2026-09-22; artefact: `conformance/archunitnet/attribution/*.json`. TNG/ArchUnitNET was not measured locally because its `global.json` requires a newer SDK than the measuring machine; the weekly `spike-b` workflow measures it with the current SDK |
+| 0D | Week 3 pooled figure | Scheduled | The weekly `spike-b` workflow (Mondays) records it; the decision does not wait on it, because the trigger was met in week 2 |
+| 0D | Week 4 pooled figure (the trigger) | Met early | ADR-0003's rule is 99% reached within the window, and the week 2 figure already clears it: adjusted 0.9929, net4x: 1 project (Nager.Date), non-portable types: 0. Weekly runs continue as monitoring |
+| 0D | Fuzz target 10 minutes clean | Done | The first run found a crash: a `NestedClass` row naming row 0 underflowed an index. It was fixed with checked arithmetic at every row-to-index site, and the input is kept as a regression test. After the fix: 4,002,105 runs in 601 s with no crash. The `fuzz` workflow runs nightly |
 
 **Size:** L. **LOE:** 14 h, 1.4 calendar weeks of budget spread over the three-week window (weeks 2 to 4). **Roles:** maintainer; a C# reviewer is welcome on the table readers, since [design § What Rust does not solve](../../artifacts/design.md#what-rust-does-not-solve) expects a C# engineer to recognise them from `System.Reflection.Metadata`.
 

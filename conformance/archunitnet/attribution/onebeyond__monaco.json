@@ -1,0 +1,257 @@
+{
+  "repo": "onebeyond/monaco",
+  "sha": "5700abab4d735e7accdcd0d1fde823845e8c99c3",
+  "buildExitCode": 1,
+  "solution": "src/Content/Backend/Solution/Monaco.Template.Backend.slnx",
+  "configuration": "Release",
+  "assemblies": [
+    {
+      "assembly": "Monaco.Template.Backend.Api",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Api/bin/Release/net10.0/Monaco.Template.Backend.Api.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 46,
+      "typesExcluded": 11,
+      "pdbAttributed": 21,
+      "inferred": 14,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Application",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Application/bin/Release/net10.0/Monaco.Template.Backend.Application.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 180,
+      "typesExcluded": 79,
+      "pdbAttributed": 67,
+      "inferred": 33,
+      "none": 1,
+      "unattributed": [
+        "<>y__InlineArray2`1"
+      ]
+    },
+    {
+      "assembly": "Monaco.Template.Backend.ArchitectureTests",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/bin/Release/net10.0/Monaco.Template.Backend.ArchitectureTests.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 31,
+      "typesExcluded": 12,
+      "pdbAttributed": 15,
+      "inferred": 4,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Common.Api",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Common.Api/bin/Release/net10.0/Monaco.Template.Backend.Common.Api.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 61,
+      "typesExcluded": 23,
+      "pdbAttributed": 21,
+      "inferred": 16,
+      "none": 1,
+      "unattributed": [
+        "<>z__ReadOnlySingleElementList`1+Enumerator"
+      ]
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Common.Api.Application",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Common.Api.Application/bin/Release/net10.0/Monaco.Template.Backend.Common.Api.Application.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 17,
+      "typesExcluded": 13,
+      "pdbAttributed": 2,
+      "inferred": 2,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Common.ApiGateway",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Common.ApiGateway/bin/Release/net10.0/Monaco.Template.Backend.Common.ApiGateway.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 19,
+      "typesExcluded": 7,
+      "pdbAttributed": 12,
+      "inferred": 0,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Common.Application",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Common.Application/bin/Release/net10.0/Monaco.Template.Backend.Common.Application.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 125,
+      "typesExcluded": 59,
+      "pdbAttributed": 36,
+      "inferred": 30,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Common.BlobStorage",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Common.BlobStorage/bin/Release/net10.0/Monaco.Template.Backend.Common.BlobStorage.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 13,
+      "typesExcluded": 5,
+      "pdbAttributed": 6,
+      "inferred": 2,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Common.BlobStorage.Tests",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Common.BlobStorage.Tests/bin/Release/net10.0/Monaco.Template.Backend.Common.BlobStorage.Tests.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 3,
+      "typesExcluded": 1,
+      "pdbAttributed": 2,
+      "inferred": 0,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Common.Domain",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Common.Domain/bin/Release/net10.0/Monaco.Template.Backend.Common.Domain.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 17,
+      "typesExcluded": 8,
+      "pdbAttributed": 9,
+      "inferred": 0,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Common.Domain.Tests",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Common.Domain.Tests/bin/Release/net10.0/Monaco.Template.Backend.Common.Domain.Tests.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 38,
+      "typesExcluded": 17,
+      "pdbAttributed": 15,
+      "inferred": 6,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Common.Infrastructure",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Common.Infrastructure/bin/Release/net10.0/Monaco.Template.Backend.Common.Infrastructure.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 85,
+      "typesExcluded": 48,
+      "pdbAttributed": 11,
+      "inferred": 20,
+      "none": 6,
+      "unattributed": [
+        "Monaco.Template.Backend.Common.Infrastructure.Context.Extensions.MediatorExtension+<G>$AFA1F8B15749B54596355617D809443E",
+        "Monaco.Template.Backend.Common.Infrastructure.Context.Extensions.SelectMapExtensions+<G>$3785FBE778EEAF4827883A9A2F0B4200`1",
+        "<PrivateImplementationDetails>+__StaticArrayInitTypeSize=12_Align=4",
+        "<>z__ReadOnlySingleElementList`1+Enumerator",
+        "Monaco.Template.Backend.Common.Infrastructure.Context.Extensions.MediatorExtension+<G>$AFA1F8B15749B54596355617D809443E+<M>$FF0006A98CE9876EA8C50563026811EB",
+        "Monaco.Template.Backend.Common.Infrastructure.Context.Extensions.SelectMapExtensions+<G>$3785FBE778EEAF4827883A9A2F0B4200`1+<M>$0EAAED632300EF2DEBDD90EC7F18D5F3"
+      ]
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Common.Serilog",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Common.Serilog/bin/Release/net10.0/Monaco.Template.Backend.Common.Serilog.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 9,
+      "typesExcluded": 3,
+      "pdbAttributed": 4,
+      "inferred": 2,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Common.Tests",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Common.Tests/bin/Release/net10.0/Monaco.Template.Backend.Common.Tests.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 11,
+      "typesExcluded": 7,
+      "pdbAttributed": 2,
+      "inferred": 2,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Domain",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Domain/bin/Release/net10.0/Monaco.Template.Backend.Domain.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 14,
+      "typesExcluded": 5,
+      "pdbAttributed": 9,
+      "inferred": 0,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Domain.Tests",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Domain.Tests/bin/Release/net10.0/Monaco.Template.Backend.Domain.Tests.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 96,
+      "typesExcluded": 60,
+      "pdbAttributed": 20,
+      "inferred": 16,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Messages",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Messages/bin/Release/net10.0/Monaco.Template.Backend.Messages.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 2,
+      "typesExcluded": 1,
+      "pdbAttributed": 1,
+      "inferred": 0,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "Monaco.Template.Backend.Worker",
+      "path": "src/Content/Backend/Solution/Monaco.Template.Backend.Worker/bin/Release/net10.0/Monaco.Template.Backend.Worker.dll",
+      "targetFramework": ".NETCoreApp,Version=v10.0",
+      "pdb": "portable",
+      "typesTotal": 7,
+      "typesExcluded": 4,
+      "pdbAttributed": 3,
+      "inferred": 0,
+      "none": 0,
+      "unattributed": []
+    }
+  ],
+  "errors": [
+    {
+      "project": "src/Content/Backend/Solution/Monaco.Template.Backend.Application.Tests/Monaco.Template.Backend.Application.Tests.csproj",
+      "reason": "no built Monaco.Template.Backend.Application.Tests.dll for Release"
+    },
+    {
+      "project": "src/Content/Backend/Solution/Monaco.Template.Backend.IntegrationTests/Monaco.Template.Backend.IntegrationTests.csproj",
+      "reason": "no built Monaco.Template.Backend.IntegrationTests.dll for Release"
+    }
+  ],
+  "pooled": {
+    "typesTotal": 774,
+    "typesExcluded": 363,
+    "pdbAttributed": 256,
+    "inferred": 147,
+    "none": 8
+  },
+  "raw": 0.520671834625323,
+  "adjusted": 0.9805352798053528,
+  "net4xProjects": 0,
+  "nonPortablePdbTypes": 0
+}

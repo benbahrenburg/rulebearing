@@ -1,0 +1,105 @@
+{
+  "repo": "BenMorris/NetArchTest",
+  "sha": "a761f63b694a6facd4be01fbc8fe2ae26579572e",
+  "buildExitCode": 0,
+  "solution": "NetArchTest - all projects.sln",
+  "configuration": "Release",
+  "assemblies": [
+    {
+      "assembly": "NetArchTest.SampleLibrary",
+      "path": "samples/NetArchTest.SampleLibrary/bin/Release/netstandard2.0/NetArchTest.SampleLibrary.dll",
+      "targetFramework": ".NETStandard,Version=v2.0",
+      "pdb": "portable",
+      "typesTotal": 11,
+      "typesExcluded": 5,
+      "pdbAttributed": 6,
+      "inferred": 0,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "NetArchTest.SampleRules",
+      "path": "samples/NetArchTest.SampleRules/bin/Release/net6.0/NetArchTest.SampleRules.dll",
+      "targetFramework": ".NETCoreApp,Version=v6.0",
+      "pdb": "portable",
+      "typesTotal": 7,
+      "typesExcluded": 3,
+      "pdbAttributed": 4,
+      "inferred": 0,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "NetArchTest.Rules",
+      "path": "src/NetArchTest.Rules/bin/Release/netstandard2.0/NetArchTest.Rules.dll",
+      "targetFramework": ".NETStandard,Version=v2.0",
+      "pdb": "portable",
+      "typesTotal": 83,
+      "typesExcluded": 49,
+      "pdbAttributed": 32,
+      "inferred": 2,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "NetArchTest.CrossAssemblyTest.A",
+      "path": "test/NetArchTest.CrossAssemblyTest.A/bin/Release/netstandard2.0/NetArchTest.CrossAssemblyTest.A.dll",
+      "targetFramework": ".NETStandard,Version=v2.0",
+      "pdb": "portable",
+      "typesTotal": 2,
+      "typesExcluded": 1,
+      "pdbAttributed": 1,
+      "inferred": 0,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "NetArchTest.CrossAssemblyTest.B",
+      "path": "test/NetArchTest.CrossAssemblyTest.B/bin/Release/netstandard2.0/NetArchTest.CrossAssemblyTest.B.dll",
+      "targetFramework": ".NETStandard,Version=v2.0",
+      "pdb": "portable",
+      "typesTotal": 3,
+      "typesExcluded": 1,
+      "pdbAttributed": 2,
+      "inferred": 0,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "NetArchTest.Rules.UnitTests",
+      "path": "test/NetArchTest.Rules.UnitTests/bin/Release/net6.0/NetArchTest.Rules.UnitTests.dll",
+      "targetFramework": ".NETCoreApp,Version=v6.0",
+      "pdb": "portable",
+      "typesTotal": 30,
+      "typesExcluded": 12,
+      "pdbAttributed": 18,
+      "inferred": 0,
+      "none": 0,
+      "unattributed": []
+    },
+    {
+      "assembly": "NetArchTest.TestStructure",
+      "path": "test/NetArchTest.TestStructure/bin/Release/netstandard2.1/NetArchTest.TestStructure.dll",
+      "targetFramework": ".NETStandard,Version=v2.1",
+      "pdb": "portable",
+      "typesTotal": 188,
+      "typesExcluded": 6,
+      "pdbAttributed": 160,
+      "inferred": 22,
+      "none": 0,
+      "unattributed": []
+    }
+  ],
+  "errors": [],
+  "pooled": {
+    "typesTotal": 324,
+    "typesExcluded": 77,
+    "pdbAttributed": 223,
+    "inferred": 24,
+    "none": 0
+  },
+  "raw": 0.7623456790123457,
+  "adjusted": 1.0,
+  "net4xProjects": 0,
+  "nonPortablePdbTypes": 0
+}
