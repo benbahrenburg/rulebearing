@@ -291,10 +291,17 @@ fn python_steps(root: &Path, fix: bool, strict: bool) -> Vec<Step> {
 
 /// C#: the test adapter, the Roslyn analyzer, the fallback extractor, conformance fixtures.
 fn csharp_steps(root: &Path, fix: bool, strict: bool) -> Vec<Step> {
-    const DIRS: &[&str] = &["adapters", "frontends", "conformance"];
+    const DIRS: &[&str] = &["wrappers", "adapters", "frontends", "conformance"];
     const EXTS: &[&str] = &["cs", "csproj", "sln", "slnx"];
-    const CHECK: &[&str] = &["format", "--verify-no-changes", "--severity", "warn"];
-    const FIX: &[&str] = &["format", "--severity", "warn"];
+    // One solution at the root lists every C# project, so one command covers them all.
+    const CHECK: &[&str] = &[
+        "format",
+        "Rulebearing.slnx",
+        "--verify-no-changes",
+        "--severity",
+        "warn",
+    ];
+    const FIX: &[&str] = &["format", "Rulebearing.slnx", "--severity", "warn"];
 
     if !any_file(root, DIRS, EXTS).unwrap_or(false) {
         return vec![not_applicable(

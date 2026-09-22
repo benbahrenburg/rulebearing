@@ -1,59 +1,91 @@
-# One tag releases the binary and the three wrappers with the same version
-# (docs/architecture.md#distribution, docs/adr/0020-single-name-across-registries.md).
-# Plan: docs/plans/pending/0000-wave-0-spike.md, sub-wave 0E (placeholder 0.0.1), then wave 1 (npm), wave 2 (NuGet, pip).
+# Builds the `rulebearing` binary for the six targets of docs/architecture.md#distribution and, on a
+# release tag, attaches them to a GitHub release. Registry publishing of the wrappers joins this
+# workflow with the plans that fill them (wave 1: npm; wave 2: NuGet, PyPI); the 0.0.1 name
+# reservations are a manual, one-day procedure in docs/release.md (docs/adr/0020).
+#
+# Dry run: a tag ending in `-rc.N` (for example v0.0.1-rc.1), or a manual run with `dry_run` left
+# on, builds every target and uploads the binaries as a workflow artefact without releasing.
+# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 11. Hardening: docs/adr/0025.
 name: release
 
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build every target without creating a release
+        type: boolean
+        default: true
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   binaries:
     name: build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest,  target: x86_64-unknown-linux-gnu }
-          - { os: ubuntu-latest,  target: x86_64-unknown-linux-musl }
-          - { os: ubuntu-latest,  target: aarch64-unknown-linux-gnu }
-          - { os: macos-latest,   target: aarch64-apple-darwin }
-          - { os: macos-latest,   target: x86_64-apple-darwin }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl }
+          - { os: ubuntu-latest, target: aarch64-unknown-linux-gnu }
+          - { os: macos-latest, target: aarch64-apple-darwin }
+          - { os: macos-latest, target: x86_64-apple-darwin }
           - { os: windows-latest, target: x86_64-pc-windows-msvc }
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      # Linux targets other than the host's get a cross linker; the others build natively.
+      - if: matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-gnu'
+        uses: taiki-e/setup-cross-toolchain-action@12b7ad4acfa95a1476779d6c06699b96ec1691f8 # v1.42.0
         with:
-          targets: ${{ matrix.target }}
-      - run: cargo build --release -p rb-cli --target ${{ matrix.target }}
-      - uses: actions/upload-artifact@v4
+          target: ${{ matrix.target }}
+      - if: runner.os != 'Linux'
+        run: rustup target add ${{ matrix.target }}
+      - run: cargo build --release --locked -p rb-cli --target ${{ matrix.target }}
+      - name: package
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          binary="rulebearing"
+          [ "$RUNNER_OS" = "Windows" ] && binary="rulebearing.exe"
+          mkdir -p dist
+          cp "target/$TARGET/release/$binary" "dist/$binary"
+          cp LICENSE README.md dist/
+          (cd dist && tar -czf "../rulebearing-$TARGET.tar.gz" .)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: rulebearing-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/rulebearing*
+          path: rulebearing-${{ matrix.target }}.tar.gz
+          if-no-files-found: error
 
-  publish:
+  release:
+    name: GitHub release
     needs: binaries
+    # Only a real tag releases: not a manual run, not an -rc tag.
+    if: github.event_name == 'push' && !contains(github.ref_name, '-rc')
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
+          pattern: rulebearing-*
           path: dist
-      - name: GitHub release
-        uses: softprops/action-gh-release@v2
+          merge-multiple: true
+      - run: (cd dist && sha256sum ./*.tar.gz > SHA256SUMS)
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
-          files: dist/**/*
-      - name: npm
-        run: wrappers/npm/publish.sh "$GITHUB_REF_NAME"
-        env: { NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}" }
-      - name: NuGet
-        run: wrappers/nuget/publish.sh "$GITHUB_REF_NAME"
-        env: { NUGET_API_KEY: "${{ secrets.NUGET_API_KEY }}" }
-      - name: PyPI
-        run: wrappers/pip/publish.sh "$GITHUB_REF_NAME"
-      - name: crates.io
-        run: cargo publish -p rb-cli --token "${{ secrets.CARGO_REGISTRY_TOKEN }}" || echo "::notice::crates.io publish is enabled in wave 0E"
+          files: |
+            dist/*.tar.gz
+            dist/SHA256SUMS

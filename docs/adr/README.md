@@ -8,7 +8,7 @@ A rule in `rulebearing.yaml` cites a decision with the token `adr:NNNN` in its `
 | --- | --- | --- |
 | [0001](0001-record-architecture-decisions.md) | Record architecture decisions, plans and artifacts in `docs/` | Accepted |
 | [0002](0002-rust-as-implementation-language.md) | Rust as the implementation language, one static binary | Accepted |
-| [0003](0003-dotnet-extractor-fallback.md) | The .NET extractor falls back to a C# `dotnet tool` on a measured trigger | Accepted |
+| [0003](0003-dotnet-extractor-fallback.md) | The .NET extractor falls back to a C# `dotnet tool` on a measured trigger | Superseded by [0022](0022-dotnet-reader-in-rust-confirmed.md) |
 | [0004](0004-graph-document-is-cruise-result-superset.md) | The graph document is an additive superset of dependency-cruiser's `cruise-result` schema | Accepted |
 | [0005](0005-native-config-superset-and-compat.md) | A native config format that is a strict superset, and dependency-cruiser's format accepted as is | Accepted |
 | [0006](0006-embedded-quickjs-config-evaluator.md) | JavaScript configs are evaluated in a sandboxed embedded QuickJS engine | Accepted |
@@ -27,7 +27,7 @@ A rule in `rulebearing.yaml` cites a decision with the token `adr:NNNN` in its `
 | [0019](0019-mit-licence.md) | MIT licence | Accepted |
 | [0020](0020-single-name-across-registries.md) | One name, `rulebearing`, on every registry | Accepted |
 | [0021](0021-agent-surface-cli-first.md) | The command line with the `agent` reporter is the primary agent surface; MCP and LSP are additive | Accepted |
-| 0022 | Reserved: the wave 0 .NET extractor decision, written from the spike's measurement ([ADR-0003](0003-dotnet-extractor-fallback.md), [wave 0 plan](../plans/pending/0000-wave-0-spike.md) step 10) | Reserved |
+| [0022](0022-dotnet-reader-in-rust-confirmed.md) | The .NET extractor stays the Rust metadata reader; the C# fallback is not invoked (trigger figure 0.9929) | Accepted |
 | [0023](0023-documentation-link-and-lint-gates.md) | Documentation links are checked on every compile, and every language has a configured linter behind one entry point | Accepted |
 | [0024](0024-test-quality-gates.md) | Test quality is gated by mutation testing, property tests and snapshots, not by coverage alone | Accepted |
 | [0025](0025-ci-and-supply-chain-hardening.md) | CI runs least-privileged, pinned and bounded, and the dependency supply chain is closed | Accepted |

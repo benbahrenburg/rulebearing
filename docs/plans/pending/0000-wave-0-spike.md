@@ -1,6 +1,6 @@
 # Plan 0000: Wave 0: Spike: TypeScript extractor, .NET metadata reader, conformance skeletons, foundation
 
-- **Status:** In progress (0A to 0D done)
+- **Status:** In progress: 0A to 0D done, 0E done except the registry day and the seven-night nightly record
 - **Owner:** Ben Bahrenburg (@benbahrenburg)
 - **Created:** 2026-09-20
 - **Calendar estimate:** 4 weeks at ~10 h/week (from design § Waves)
@@ -599,14 +599,14 @@ conformance/archunitnet/scripts/spike-b-attribution.sh     # needs the .NET SDK 
 
 **Checklist for moving this plan to `docs/plans/implemented/`**
 
-- [ ] Layer 1 ratio at or above 0.95 on `main`, artefact linked
-- [ ] ADR-0022 merged, ADR-0003 status updated, index updated
-- [ ] All CI jobs in § 1.5 required on `main` and green
-- [ ] Coverage at or above 70% on every crate, per-crate table linked
-- [ ] Nightly green seven nights; README table present
-- [ ] Four registry pages live; organisation and repository exist
-- [ ] `excluded.json` and `ported.json` committed with the ratchet job green
-- [ ] `CLAUDE.md`, `conformance/README.md`, `testbeds/README.md`, `docs/release.md` present
+- [x] Layer 1 ratio at or above 0.95 on `main`, artefact linked (0.9865; 0C row)
+- [x] ADR-0022 merged, ADR-0003 status updated, index updated
+- [x] All CI jobs in § 1.5 required on `main` and green (17 required checks in the `main` ruleset)
+- [x] Coverage at or above 70% on every crate, per-crate table linked (lowest: `rb-extract-dotnet` 88.0%)
+- [ ] Nightly green seven nights; README table present (table present; the seven nights run from 2026-09-22)
+- [ ] Four registry pages live; organisation and repository exist (repository exists; the publishes and the organisation need the maintainer's credentials, docs/release.md)
+- [x] `excluded.json` and `ported.json` committed with the ratchet job green
+- [x] `CLAUDE.md`, `conformance/README.md`, `testbeds/README.md`, `docs/release.md` present
 - [ ] Status line of this file changed to Implemented and the file moved, in one pull request that links every item above
 
 ## 3. Wave-based delivery plan
@@ -709,13 +709,13 @@ conformance/archunitnet/scripts/spike-b-attribution.sh     # needs the .NET SDK 
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 0E | ADR-0022 written from the week 4 figure; index and ADR-0003 status updated | Not started | |
-| 0E | crates.io `rulebearing` 0.0.1 | Not started | URL: |
-| 0E | npm `rulebearing` 0.0.1; `@rulebearing` checked | Not started | URL: , org: |
-| 0E | PyPI `rulebearing` 0.0.1 | Not started | URL: |
-| 0E | NuGet `Rulebearing` 0.0.1 | Not started | URL: |
-| 0E | `docs/release.md`; `release.yml` dry run | Not started | |
-| 0E | README, `CLAUDE.md`, module docs; move pull request | Not started | |
+| 0E | ADR-0022 written from the week 4 figure; index and ADR-0003 status updated | Done | [ADR-0022](../../adr/0022-dotnet-reader-in-rust-confirmed.md): the trigger was met in week 2 (adjusted 0.9929, locally and in the [`spike-b` run](https://github.com/benbahrenburg/rulebearing/actions/runs/35746468152)). The ADR records that a PDB-only reading (0.9335) would not have cleared the bar and sets a two-week reopening condition. ADR-0003 marked superseded; index updated |
+| 0E | crates.io `rulebearing` 0.0.1 | Ready, not published | Name free on 2026-09-22. `wrappers/crates/rulebearing` passes `cargo publish --dry-run`. Publishing needs the maintainer's `cargo login` (docs/release.md). URL: |
+| 0E | npm `rulebearing` 0.0.1; `@rulebearing` checked | Ready, not published | Name free; `npm publish --dry-run` clean. The scope check runs from the signed-in session in `publish-placeholders.sh`. URL: , org: |
+| 0E | PyPI `rulebearing` 0.0.1 | Ready, not published | Name free; wheel and sdist build, and `twine check` passes. URL: |
+| 0E | NuGet `Rulebearing` 0.0.1 | Ready, not published | Name free; `dotnet pack` builds `Rulebearing.0.0.1.nupkg`. URL: |
+| 0E | `docs/release.md`; `release.yml` dry run | Done (doc); dry run pending merge | [docs/release.md](../../release.md) is written. `release.yml` is rewritten to the ADR-0025 standard (it had unpinned actions and called echo-only publish scripts), builds the six targets, and dry-runs on an `-rc` tag or a manual run. The dry run is dispatched once this is on `main` |
+| 0E | README, `CLAUDE.md`, module docs; move pull request | Done (docs); move waits on the checklist | README, PRD and architecture carry the measured figures instead of the design's 546; `CLAUDE.md` lists the new harnesses. The move waits on the unticked checklist items below |
 
 **Size:** S. **LOE:** 4 h, 0.4 calendar weeks. **Roles:** maintainer.
 
@@ -736,6 +736,6 @@ conformance/archunitnet/scripts/spike-b-attribution.sh     # needs the .NET SDK 
 
 **Exit criterion checklist for moving this plan to `docs/plans/implemented/`** (the design's criterion, verbatim: "`test/extract` fixtures pass at 95% or better; 99% of the oracle repos' types attributed to a source file, or the C# extractor fallback is invoked")
 
-- [ ] `test/extract` fixtures pass at 95% or better (0C row "Layer 1 ratio", artefact linked)
-- [ ] 99% of the oracle repos' types attributed to a source file (0D week 4 row, adjusted ratio at or above 0.99), **or** the C# extractor fallback is invoked (ADR-0022 names `Rulebearing.Extract`)
+- [x] `test/extract` fixtures pass at 95% or better (0C row "Layer 1 ratio", artefact linked)
+- [x] 99% of the oracle repos' types attributed to a source file (0D week 4 row, adjusted ratio at or above 0.99), **or** the C# extractor fallback is invoked (ADR-0022 names `Rulebearing.Extract`)
 - [ ] Every foundation item in § 2 Step 12's checklist ticked

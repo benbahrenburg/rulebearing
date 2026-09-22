@@ -1,6 +1,6 @@
 # ADR-0003: The .NET extractor falls back to a C# `dotnet tool` on a measured trigger
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0022](0022-dotnet-reader-in-rust-confirmed.md)
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § The fallback, decided now rather than under pressure](../artifacts/design.md#the-fallback-decided-now-rather-than-under-pressure); [§ Waves](../artifacts/design.md#waves) (wave 0 exit criterion)
 - **Constrains:** [architecture.md § Extractors](../architecture.md#extractors), [§ Risks and their mitigations](../architecture.md#risks-and-their-mitigations)

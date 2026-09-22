@@ -390,7 +390,7 @@ documentation link check runs inside every compile; both are fixed by
 | Risk | Likelihood | Impact | Mitigation | Owner plan |
 | --- | --- | --- | --- | --- |
 | The Rust .NET metadata reader cannot attribute 99% of types | medium | high | Measured trigger and a pre-decided C# fallback ([ADR-0003](adr/0003-dotnet-extractor-fallback.md)) | [Wave 0](plans/pending/0000-wave-0-spike.md) |
-| `oxc_resolver` diverges from enhanced-resolve on an edge case | medium | medium | 546 extraction fixtures byte-compared; divergences filed upstream and pinned | [Wave 0](plans/pending/0000-wave-0-spike.md), [Wave 1](plans/pending/0001-wave-1-typescript-parity.md) |
+| `oxc_resolver` diverges from enhanced-resolve on an edge case | medium | medium | dependency-cruiser's own `test/extract` suite replayed case by case (296 recorded cases from its 480 tests, [conformance/README.md](../conformance/README.md)); divergences filed upstream and pinned | [Wave 0](plans/pending/0000-wave-0-spike.md), [Wave 1](plans/pending/0001-wave-1-typescript-parity.md) |
 | A JavaScript config needs more than the sandbox allows | low | medium | `--config-via-node`, `--webpack-config-json`, `defines` | [Wave 1](plans/pending/0001-wave-1-typescript-parity.md) |
 | Regex semantics differ between JavaScript and Rust | medium | medium | compatibility table, exit 3 on unsupported syntax, `--strict-compat` ([ADR-0016](adr/0016-linear-time-regex-and-strict-compat.md)) | [Wave 1](plans/pending/0001-wave-1-typescript-parity.md) |
 | .NET Framework projects without portable PDBs | medium | low | measured in the spike; `DebugType=portable` guidance; `attribution: none` handled | [Wave 0](plans/pending/0000-wave-0-spike.md) |

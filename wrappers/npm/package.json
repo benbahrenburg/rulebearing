@@ -1,0 +1,14 @@
+{
+  "name": "rulebearing",
+  "version": "0.0.1",
+  "description": "Reserved name for Rulebearing, deterministic architecture guardrails for TypeScript, .NET and Python",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benbahrenburg/rulebearing.git",
+    "directory": "wrappers/npm"
+  },
+  "files": [
+    "README.md"
+  ]
+}

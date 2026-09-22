@@ -1,0 +1,19 @@
+<!-- The NuGet name reservation (docs/adr/0020-single-name-across-registries.md): a package with a
+     README and no assemblies. Packed and pushed by wrappers/publish-placeholders.sh (docs/release.md). -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <PackageId>Rulebearing</PackageId>
+    <Version>0.0.1</Version>
+    <Authors>Ben Bahrenburg</Authors>
+    <Description>Reserved name for Rulebearing, deterministic architecture guardrails for TypeScript, .NET and Python.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/benbahrenburg/rulebearing</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+</Project>
