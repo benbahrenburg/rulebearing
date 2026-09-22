@@ -12,31 +12,14 @@
 //! - Requirements: [FR-RULE-01](../../../docs/prd.md#fr-rule-01) to [FR-RULE-10](../../../docs/prd.md#fr-rule-10)
 //! - Source: [design § The rule language](../../../docs/artifacts/design.md#the-rule-language)
 
-/// Severity of a rule, as dependency-cruiser defines it. Only `Error` counts toward the exit
-/// code ([ADR-0008](../../../docs/adr/0008-exit-code-contract.md)).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Severity {
-    /// Not reported.
-    Ignore,
-    /// Reported, does not affect the exit code.
-    Info,
-    /// Reported, does not affect the exit code.
-    Warn,
-    /// Reported and counted in the exit code.
-    Error,
-}
+/// A rule's severity. The vocabulary lives in `rb-model` so the document, the config and the
+/// engine share one declaration ([ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)).
+pub use rb_model::Severity;
 
-impl Severity {
-    /// Parses dependency-cruiser's severity strings.
-    pub fn parse(value: &str) -> Option<Self> {
-        match value {
-            "ignore" => Some(Self::Ignore),
-            "info" => Some(Self::Info),
-            "warn" => Some(Self::Warn),
-            "error" => Some(Self::Error),
-            _ => None,
-        }
-    }
+/// Whether a finding of this severity counts toward the exit code. Only `error` does
+/// ([ADR-0008](../../../docs/adr/0008-exit-code-contract.md)).
+pub fn counts_toward_exit(severity: Severity) -> bool {
+    severity == Severity::Error
 }
 
 /// The liveness verdict for one rule
@@ -65,22 +48,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn severity_parses_and_orders() {
+    fn severity_parses_and_only_error_counts() {
         // Every value dependency-cruiser defines, so deleting an arm cannot pass unnoticed.
-        assert_eq!(Severity::parse("ignore"), Some(Severity::Ignore));
-        assert_eq!(Severity::parse("info"), Some(Severity::Info));
-        assert_eq!(Severity::parse("warn"), Some(Severity::Warn));
-        assert_eq!(Severity::parse("error"), Some(Severity::Error));
-        assert_eq!(Severity::parse("bogus"), None);
-        assert_eq!(
-            Severity::parse("Error"),
-            None,
+        assert_eq!("ignore".parse(), Ok(Severity::Ignore));
+        assert_eq!("error".parse(), Ok(Severity::Error));
+        assert!(
+            "Error".parse::<Severity>().is_err(),
             "the vocabulary is lowercase"
         );
-        assert_eq!(Severity::parse(""), None);
-        assert!(Severity::Error > Severity::Warn);
-        assert!(Severity::Warn > Severity::Info);
-        assert!(Severity::Info > Severity::Ignore);
+        let counting: Vec<Severity> = Severity::ALL
+            .iter()
+            .copied()
+            .filter(|s| counts_toward_exit(*s))
+            .collect();
+        assert_eq!(counting, [Severity::Error]);
     }
 
     #[test]

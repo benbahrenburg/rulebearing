@@ -29,6 +29,8 @@ pub const SKIP_DIRS: &[&str] = &[
     "bin",
     ".venv",
     "__pycache__",
+    // Vendored upstream test data and built fixtures: data, never documentation or source.
+    "fixtures",
 ];
 
 /// Walks `dir` recursively, appending files whose extension is in `extensions`.

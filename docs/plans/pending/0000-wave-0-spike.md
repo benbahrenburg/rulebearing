@@ -1,6 +1,6 @@
 # Plan 0000: Wave 0: Spike: TypeScript extractor, .NET metadata reader, conformance skeletons, foundation
 
-- **Status:** Pending
+- **Status:** In progress (0A done)
 - **Owner:** Ben Bahrenburg (@benbahrenburg)
 - **Created:** 2026-09-20
 - **Calendar estimate:** 4 weeks at ~10 h/week (from design § Waves)
@@ -625,16 +625,16 @@ conformance/archunitnet/scripts/spike-b-attribution.sh     # needs the .NET SDK 
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 0A | Organisation, repository, `LICENSE`, `CLAUDE.md`, `docs-links` | Not started | |
-| 0A | `xtask`: link and anchor check, run by `rb-model/build.rs` on every compile | Not started | |
-| 0A | Linter configuration for Rust, TypeScript, Python and C#; `cargo xtask lint --strict` in CI | Not started | |
-| 0A | Test-quality gates: mutation testing at zero survivors, property tests, help snapshot, determinism ([ADR-0024](../../adr/0024-test-quality-gates.md)) | Not started | |
-| 0A | CI hardening: least privilege, SHA-pinned actions, timeouts, MSRV, feature powerset, `deny` sources, spelling, `actionlint`, `shellcheck`, Dependabot, hooks ([ADR-0025](../../adr/0025-ci-and-supply-chain-hardening.md)) | Not started | |
-| 0A | Workspace, ten crates, feature flags, boundary test | Not started | |
-| 0A | `rb-model` types, vocabularies, options, `Extractor` trait | Not started | |
-| 0A | `violation_id` with fixed-vector test | Not started | |
-| 0A | `schema/v1.json` and `schema-check` | Not started | |
-| 0A | `ci.yml`: `fmt`, `clippy`, `deny`, `test`, `coverage` (per-crate 70%) | Not started | |
+| 0A | Organisation, repository, `LICENSE`, `CLAUDE.md`, `docs-links` | Done, except the organisation | Repository `benbahrenburg/rulebearing` (private), `LICENSE`, `CLAUDE.md`; `docs-links` green in [run](https://github.com/benbahrenburg/rulebearing/actions/runs/35733265491); the link check also requires every crate header to link its architecture section and plan. The GitHub organisation cannot be created through the API and moves to the 0E registry day |
+| 0A | `xtask`: link and anchor check, run by `rb-model/build.rs` on every compile | Done | [ADR-0023](../../adr/0023-documentation-link-and-lint-gates.md); `docs-links` and `lint` in [run](https://github.com/benbahrenburg/rulebearing/actions/runs/35733265491) |
+| 0A | Linter configuration for Rust, TypeScript, Python and C#; `cargo xtask lint --strict` in CI | Done | `lint` in [run](https://github.com/benbahrenburg/rulebearing/actions/runs/35733265491); covers the Node scripts under `conformance/` and `testbeds/` too |
+| 0A | Test-quality gates: mutation testing at zero survivors, property tests, help snapshot, determinism ([ADR-0024](../../adr/0024-test-quality-gates.md)) | Done | `mutants` in [run](https://github.com/benbahrenburg/rulebearing/actions/runs/35733265491): no survivors over rb-model, rb-rules and xtask |
+| 0A | CI hardening: least privilege, SHA-pinned actions, timeouts, MSRV, feature powerset, `deny` sources, spelling, `actionlint`, `shellcheck`, Dependabot, hooks ([ADR-0025](../../adr/0025-ci-and-supply-chain-hardening.md)) | Done | `msrv`, `features`, `deny`, `typos`, `actionlint` in [run](https://github.com/benbahrenburg/rulebearing/actions/runs/35733265491); toolchain pinned in `rust-toolchain.toml` |
+| 0A | Workspace, ten crates, feature flags, boundary test | Done | `crates/rb-cli/tests/crate_boundary.rs` asserts [ADR-0010](../../adr/0010-crate-layout-and-extractor-boundary.md)'s table; the `features` job asserts a Python-only build links no `oxc` or metadata code. The `rb-cli` package keeps its name: [ADR-0020](../../adr/0020-single-name-across-registries.md) says every crate is `rb-*` and only the binary and wrappers carry the public name, so Step 2.3's rename is not applied and crates.io is reserved by a placeholder crate in 0E ([PR #5](https://github.com/benbahrenburg/rulebearing/pull/5)) |
+| 0A | `rb-model` types, vocabularies, options, `Extractor` trait | Done | `crates/rb-model/src/{document,code,vocab,options,extract}.rs`; round-trip test over the 34 dependency-cruiser report fixtures its own schema accepts, byte for byte after key sorting ([PR #5](https://github.com/benbahrenburg/rulebearing/pull/5)) |
+| 0A | `violation_id` with fixed-vector test | Done | `crates/rb-model/src/violation_id.rs`, vector `RB-a85578a3` |
+| 0A | `schema/v1.json` and `schema-check` | Done | `schema-check` in [run](https://github.com/benbahrenburg/rulebearing/actions/runs/35733265491) |
+| 0A | `ci.yml`: `fmt`, `clippy`, `deny`, `test`, `coverage` (per-crate 70%) | Done | `lint`, `deny`, `test` on three operating systems and `coverage` in [run](https://github.com/benbahrenburg/rulebearing/actions/runs/35733265491); lowest crate `xtask` at 89.9% |
 
 **Size:** S. **LOE:** 6 h, 0.6 calendar weeks. **Roles:** maintainer.
 

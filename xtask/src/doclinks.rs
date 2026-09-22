@@ -46,6 +46,8 @@ pub enum Reason {
     MissingFile,
     /// The path exists but holds no heading with that anchor.
     MissingAnchor,
+    /// A crate's root module doc does not link its architecture section and its plan.
+    MissingCrateHeader,
 }
 
 impl fmt::Display for Reason {
@@ -53,6 +55,10 @@ impl fmt::Display for Reason {
         match self {
             Self::MissingFile => write!(f, "no such file"),
             Self::MissingAnchor => write!(f, "no such heading"),
+            Self::MissingCrateHeader => write!(
+                f,
+                "the crate's //! header must link docs/architecture.md#<section> and docs/plans/"
+            ),
         }
     }
 }
@@ -327,10 +333,56 @@ pub fn check(root: &Path) -> io::Result<Report> {
             }
         }
     }
+    report.broken.extend(crate_headers(root)?);
     report
         .broken
         .sort_by(|a, b| a.file.cmp(&b.file).then(a.line.cmp(&b.line)));
     Ok(report)
+}
+
+/// Checks that every crate under `crates/` opens its root module (`src/lib.rs`, or `src/main.rs`
+/// for a binary-only crate) with a `//!` block that links its architecture section and its plan,
+/// the header [CLAUDE.md](../../CLAUDE.md) asks every crate to copy
+/// ([NFR-DOC-01](../../docs/prd.md#nfr-doc-01)). Whether those links resolve is the job of
+/// [`check`]; this only asserts they are there.
+///
+/// # Errors
+/// Returns the underlying error when `crates/` cannot be listed or a root module cannot be read.
+pub fn crate_headers(root: &Path) -> io::Result<Vec<Broken>> {
+    let crates = root.join("crates");
+    let mut missing = Vec::new();
+    if !crates.is_dir() {
+        return Ok(missing);
+    }
+    let mut dirs: Vec<PathBuf> = fs::read_dir(&crates)?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| path.join("Cargo.toml").is_file())
+        .collect();
+    dirs.sort();
+    for dir in dirs {
+        let lib = dir.join("src").join("lib.rs");
+        let module = if lib.is_file() {
+            lib
+        } else {
+            dir.join("src").join("main.rs")
+        };
+        let text = fs::read_to_string(&module).unwrap_or_default();
+        let header: String = text
+            .lines()
+            .take_while(|line| line.trim_start().starts_with("//!"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        if !(header.contains("architecture.md#") && header.contains("docs/plans/")) {
+            missing.push(Broken {
+                file: relative_to(root, &module),
+                line: 1,
+                target: "docs/architecture.md#..., docs/plans/...".to_owned(),
+                reason: Reason::MissingCrateHeader,
+            });
+        }
+    }
+    Ok(missing)
 }
 
 fn relative_to(root: &Path, file: &Path) -> PathBuf {
@@ -340,6 +392,83 @@ fn relative_to(root: &Path, file: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn scratch(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("rb-doclinks-{tag}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        let _ = fs::create_dir_all(&dir);
+        dir
+    }
+
+    fn write(path: &Path, text: &str) {
+        if let Some(parent) = path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+        let _ = fs::write(path, text);
+    }
+
+    #[test]
+    fn a_crate_without_the_linked_header_is_reported() {
+        let root = scratch("headers");
+        write(&root.join("crates/good/Cargo.toml"), "");
+        write(
+            &root.join("crates/good/src/lib.rs"),
+            "//! Good.\n//! - [a](../../../docs/architecture.md#x)\n//! - [p](../../../docs/plans/pending/p.md)\n",
+        );
+        write(&root.join("crates/bin/Cargo.toml"), "");
+        write(
+            &root.join("crates/bin/src/main.rs"),
+            "//! [a](docs/architecture.md#x) [p](docs/plans/x.md)\nfn main() {}\n",
+        );
+        write(&root.join("crates/noplan/Cargo.toml"), "");
+        write(
+            &root.join("crates/noplan/src/lib.rs"),
+            "//! [a](docs/architecture.md#x)\n",
+        );
+        write(&root.join("crates/noarch/Cargo.toml"), "");
+        write(
+            &root.join("crates/noarch/src/lib.rs"),
+            "//! [p](docs/plans/x.md)\n",
+        );
+        // A link below the header does not count: the header is the first `//!` block.
+        write(&root.join("crates/late/Cargo.toml"), "");
+        write(
+            &root.join("crates/late/src/lib.rs"),
+            "//! Late.\nuse x;\n//! [a](docs/architecture.md#x) [p](docs/plans/x.md)\n",
+        );
+        write(&root.join("crates/not-a-crate/README.md"), "");
+        let missing = crate_headers(&root).unwrap_or_default();
+        let files: Vec<String> = missing
+            .iter()
+            .map(|b| b.file.to_string_lossy().replace('\\', "/"))
+            .collect();
+        assert_eq!(
+            files,
+            [
+                "crates/late/src/lib.rs",
+                "crates/noarch/src/lib.rs",
+                "crates/noplan/src/lib.rs"
+            ]
+        );
+        assert!(
+            missing
+                .iter()
+                .all(|b| b.reason == Reason::MissingCrateHeader)
+        );
+        assert!(missing[0].to_string().contains("header must link"));
+        assert!(
+            crate_headers(&scratch("empty"))
+                .unwrap_or_default()
+                .is_empty()
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn every_crate_in_this_repository_has_its_header() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        assert_eq!(crate_headers(&root).ok(), Some(vec![]));
+    }
 
     #[test]
     fn slug_matches_github_rules() {

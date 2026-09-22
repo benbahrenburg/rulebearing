@@ -7,8 +7,10 @@
 //! - Requirement: [FR-DIST-02](../../../docs/prd.md#fr-dist-02)
 //! - Specification: [coverage § Programmatic API](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#programmatic-api)
 //!
-//! Wave 0 reserves the crate. The `napi` dependency and the `rb-cli` library target it calls
-//! into are added by the wave 3 plan; until then it depends on `rb-model` only.
+//! Wave 0 reserves the crate and fixes its dependency on the `rb-cli` library, the edge
+//! [ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md) names and the
+//! boundary test in `crates/rb-cli/tests/crate_boundary.rs` asserts. The `napi` dependency is
+//! added by the wave 3 plan.
 
 /// The exported function names, in the order dependency-cruiser documents them.
 pub const EXPORTS: &[&str] = &[

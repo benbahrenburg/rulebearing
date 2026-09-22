@@ -30,16 +30,22 @@ mod tests {
     fn reads_a_dependency_cruiser_shaped_document() {
         let json = r#"{
           "modules": [
-            {"source": "src/b.ts", "dependencies": [{"module": "./a", "resolved": "src/a.ts", "dependencyTypes": ["local"], "couldNotResolve": false}]},
-            {"source": "src/a.ts", "dependencies": []}
+            {"source": "src/b.ts", "valid": true, "dependencies": [{
+              "module": "./a", "resolved": "src/a.ts", "dependencyTypes": ["local"],
+              "couldNotResolve": false, "circular": false, "coreModule": false,
+              "exoticallyRequired": false, "dynamic": false, "followable": true,
+              "moduleSystem": "es6", "valid": true
+            }]},
+            {"source": "src/a.ts", "valid": true, "dependencies": []}
           ],
-          "summary": {"totalCruised": 0, "totalDependenciesCruised": 0}
+          "summary": {"violations": [], "error": 0, "warn": 0, "info": 0,
+                      "totalCruised": 0, "totalDependenciesCruised": 0, "optionsUsed": {}}
         }"#;
         let doc = read_cruise_result(json).unwrap_or_default();
         assert_eq!(doc.modules.len(), 2);
         assert_eq!(doc.modules[0].source, "src/a.ts");
         assert_eq!(doc.summary.total_cruised, 2);
-        assert_eq!(doc.summary.total_dependencies_cruised, 1);
+        assert_eq!(doc.summary.total_dependencies_cruised, Some(1));
     }
 
     #[test]

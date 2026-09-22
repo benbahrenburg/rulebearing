@@ -208,9 +208,16 @@ fn rust_steps(root: &Path, fix: bool, strict: bool) -> Vec<Step> {
     ]
 }
 
-/// TypeScript and JavaScript: the npm wrapper, the vitest reporter, the eslint plugin.
+/// TypeScript and JavaScript: the npm wrapper, the vitest reporter, the eslint plugin, and the
+/// Node scripts of the conformance harness and the test-bed runner.
 fn typescript_steps(root: &Path, fix: bool, strict: bool) -> Vec<Step> {
-    const DIRS: &[&str] = &["wrappers", "adapters", "frontends"];
+    const DIRS: &[&str] = &[
+        "wrappers",
+        "adapters",
+        "frontends",
+        "conformance",
+        "testbeds",
+    ];
     const EXTS: &[&str] = &["ts", "tsx", "mts", "cts", "js", "mjs", "cjs"];
     const ESLINT_CHECK: &[&str] = &["--no-install", "eslint", "."];
     const ESLINT_FIX: &[&str] = &["--no-install", "eslint", ".", "--fix"];
