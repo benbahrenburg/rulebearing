@@ -135,13 +135,14 @@ case "$tool" in
     fi
     ;;
   netarchtest | archunitnet)
-    solution="$(field solution)"
     test_project="$(field test)"
+    # Only the architecture-test project and what it references: that is all the incumbent runs,
+    # and it keeps unrelated projects (a Visual Studio extension, say) from failing the row.
     # EnableWindowsTargeting lets projects that target Windows build on a Linux runner, as a user
     # building in CI would. NuGet signature verification is off for these throwaway clones only:
     # the Linux runner's certificate bundle rejects some valid author signatures (NU3012).
     if ! (cd "$checkout" && DOTNET_NUGET_SIGNATURE_VERIFICATION=false \
-          dotnet build "$solution" -c Release -p:DebugType=portable -p:EnableWindowsTargeting=true) > "$out/build.log" 2>&1; then
+          dotnet build "$test_project" -c Release -p:DebugType=portable -p:EnableWindowsTargeting=true) > "$out/build.log" 2>&1; then
       result error "dotnet build failed (see build.log)"
       exit 0
     fi
