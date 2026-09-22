@@ -41,8 +41,9 @@ fn conformance() -> PathBuf {
 
 fn fixtures() -> PathBuf {
     let path = conformance().join("fixtures/extract");
-    // Canonical, so paths compared as strings (an absolute `modules` folder) agree.
-    path.canonicalize().unwrap_or(path)
+    // Canonical, so paths compared as strings (an absolute `modules` folder) agree; without the
+    // Windows verbatim prefix `canonicalize` adds, which no other path in a run carries.
+    rb_extract_ts::resolve::simplified(&path.canonicalize().unwrap_or(path))
 }
 
 #[derive(Deserialize)]

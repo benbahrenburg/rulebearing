@@ -197,8 +197,27 @@ pub fn strip_loaders(module: &str) -> &str {
     module.rsplit('!').next().unwrap_or(module)
 }
 
+/// A Windows path in the one spelling this crate compares: without the `\\?\` verbatim prefix
+/// that `canonicalize` adds, and with an upper-case drive letter. Other paths pass through.
+pub fn simplified(path: &Path) -> PathBuf {
+    let text = path.to_string_lossy();
+    if let Some(share) = text.strip_prefix(r"\\?\UNC\") {
+        return PathBuf::from(format!(r"\\{share}"));
+    }
+    let rest = text.strip_prefix(r"\\?\").unwrap_or(&text);
+    let mut chars = rest.chars();
+    match (chars.next(), chars.next()) {
+        (Some(drive), Some(':')) if drive.is_ascii_alphabetic() => {
+            PathBuf::from(format!("{}{}", drive.to_ascii_uppercase(), &rest[1..]))
+        }
+        _ if rest.len() != text.len() => PathBuf::from(rest),
+        _ => path.to_path_buf(),
+    }
+}
+
 /// Lexical normalisation, as Node's `path.normalize`.
 fn normalise(path: &Path) -> PathBuf {
+    let path = simplified(path);
     let mut out = PathBuf::new();
     for component in path.components() {
         match component {
@@ -620,6 +639,23 @@ mod tests {
         assert_eq!(relative(Path::new("/a/b"), Path::new("/a/x.js")), "../x.js");
         assert_eq!(relative(Path::new("/a/b"), Path::new("/a/b")), "");
         assert_eq!(relative(Path::new("/a/./b/../b"), Path::new("/a/b/y")), "y");
+    }
+
+    #[test]
+    fn windows_spellings_of_one_path_agree() {
+        assert_eq!(
+            simplified(Path::new(r"\\?\c:\repo\x.js")),
+            PathBuf::from(r"C:\repo\x.js")
+        );
+        assert_eq!(simplified(Path::new(r"d:\x")), PathBuf::from(r"D:\x"));
+        assert_eq!(
+            simplified(Path::new(r"\\?\UNC\server\share")),
+            PathBuf::from(r"\\server\share")
+        );
+        assert_eq!(
+            simplified(Path::new("/unix/path")),
+            PathBuf::from("/unix/path")
+        );
     }
 
     #[test]
