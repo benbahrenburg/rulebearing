@@ -50,7 +50,9 @@ pub fn walk(dir: &Path, extensions: &[&str], out: &mut Vec<PathBuf>) -> io::Resu
         let path = entry.path();
         let name = entry.file_name();
         let name = name.to_string_lossy();
-        if path.is_dir() {
+        // The entry's own type, not its target's: a symlinked directory is not entered, so a
+        // symlink cycle cannot recurse without end.
+        if entry.file_type()?.is_dir() {
             if !SKIP_DIRS.contains(&name.as_ref()) {
                 walk(&path, extensions, out)?;
             }
@@ -159,6 +161,28 @@ mod tests {
         assert_eq!(found.len(), 1, "a directory called decoy.md is not a file");
         assert!(found[0].ends_with("real.md"));
         let _ = fs::remove_dir_all(&root);
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn walk_does_not_follow_a_symlinked_directory() -> io::Result<()> {
+        let root = std::env::temp_dir().join(format!("rb-walk-link-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join("docs"))?;
+        fs::write(root.join("docs/a.md"), "# a\n")?;
+        std::os::unix::fs::symlink(root.join("docs"), root.join("docs/loop"))?;
+        std::os::unix::fs::symlink(root.join("docs/a.md"), root.join("docs/b.md"))?;
+        let mut found = Vec::new();
+        let walked = walk(&root.join("docs"), &["md"], &mut found);
+        let _ = fs::remove_dir_all(&root);
+        walked?;
+        let names: Vec<_> = found.iter().filter_map(|p| p.file_name()).collect();
+        assert_eq!(
+            names,
+            ["a.md", "b.md"],
+            "the cycle is not entered; a linked file is kept"
+        );
         Ok(())
     }
 

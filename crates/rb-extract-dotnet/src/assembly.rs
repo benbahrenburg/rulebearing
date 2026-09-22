@@ -107,7 +107,7 @@ impl TypeReader<'_, '_> {
     }
 
     /// The type that declares a custom attribute constructor.
-    fn attribute_type(&self, constructor: u32) -> Read<Option<(String, String)>> {
+    fn attribute_type(&self, constructor: u32, starts: &[u32]) -> Read<Option<(String, String)>> {
         let t = &self.metadata.tables;
         match Coded::CustomAttributeType.decode(constructor) {
             Some((id::MEMBER_REF, row)) => {
@@ -117,12 +117,9 @@ impl TypeReader<'_, '_> {
                     None => Ok(None),
                 }
             }
-            Some((id::METHOD_DEF, row)) => {
-                let owner = self.owner_of_method(row)?;
-                owner
-                    .map(|owner| self.type_name(id::TYPE_DEF, owner))
-                    .transpose()
-            }
+            Some((id::METHOD_DEF, row)) => Self::owner_of_method(starts, row)
+                .map(|owner| self.type_name(id::TYPE_DEF, owner))
+                .transpose(),
             _ => Ok(None),
         }
     }
@@ -131,17 +128,18 @@ impl TypeReader<'_, '_> {
         self.metadata.tables.cell(id::TYPE_DEF, type_row, 5)
     }
 
-    fn owner_of_method(&self, method: u32) -> Read<Option<u32>> {
-        let types = self.metadata.rows(id::TYPE_DEF);
-        let mut owner = None;
-        for row in 1..=types {
-            if self.method_start(row)? <= method {
-                owner = Some(row);
-            } else {
-                break;
-            }
-        }
-        Ok(owner)
+    /// Every type's first method row, in type order; the list is non-decreasing (II.22.37).
+    fn method_starts(&self) -> Read<Vec<u32>> {
+        (1..=self.metadata.rows(id::TYPE_DEF))
+            .map(|row| self.method_start(row))
+            .collect()
+    }
+
+    /// The type that owns method row `method`: the last type whose method list starts at or
+    /// before it. A binary search, so an assembly with many attributes stays linear overall.
+    fn owner_of_method(starts: &[u32], method: u32) -> Option<u32> {
+        let owners = starts.partition_point(|start| *start <= method);
+        u32::try_from(owners).ok().filter(|row| *row > 0)
     }
 
     /// Rows of types carrying `CompilerGeneratedAttribute`, and the target framework.
@@ -149,9 +147,11 @@ impl TypeReader<'_, '_> {
         let t = &self.metadata.tables;
         let mut generated = Vec::new();
         let mut framework = None;
+        let starts = self.method_starts()?;
         for row in 1..=self.metadata.rows(id::CUSTOM_ATTRIBUTE) {
             let parent = Coded::HasCustomAttribute.decode(t.cell(id::CUSTOM_ATTRIBUTE, row, 0)?);
-            let Some(declaring) = self.attribute_type(t.cell(id::CUSTOM_ATTRIBUTE, row, 1)?)?
+            let Some(declaring) =
+                self.attribute_type(t.cell(id::CUSTOM_ATTRIBUTE, row, 1)?, &starts)?
             else {
                 continue;
             };
@@ -252,6 +252,19 @@ fn first_string_argument(value: &[u8]) -> Read<Option<String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_method_belongs_to_the_last_type_starting_at_or_before_it() {
+        // Types 1..=4 start their method lists at rows 1, 1, 3 and 6 (type 1 has none).
+        let starts = [1, 1, 3, 6];
+        assert_eq!(TypeReader::owner_of_method(&starts, 1), Some(2));
+        assert_eq!(TypeReader::owner_of_method(&starts, 2), Some(2));
+        assert_eq!(TypeReader::owner_of_method(&starts, 3), Some(3));
+        assert_eq!(TypeReader::owner_of_method(&starts, 5), Some(3));
+        assert_eq!(TypeReader::owner_of_method(&starts, 9), Some(4));
+        assert_eq!(TypeReader::owner_of_method(&starts, 0), None);
+        assert_eq!(TypeReader::owner_of_method(&[], 1), None);
+    }
 
     #[test]
     fn row_zero_has_no_index() {

@@ -182,7 +182,8 @@ fn source_index(project: &Path) -> BTreeMap<String, Vec<PathBuf>> {
             let path = entry.path();
             let name = entry.file_name();
             let name = name.to_string_lossy();
-            if path.is_dir() {
+            // Not through symlinks: a cycle would recurse without end.
+            if entry.file_type().is_ok_and(|t| t.is_dir()) {
                 if !matches!(name.as_ref(), "bin" | "obj" | "node_modules" | ".git") {
                     walk(&path, index);
                 }
@@ -423,6 +424,20 @@ pub fn attribute_assembly(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn the_source_index_does_not_follow_a_symlink_cycle() {
+        let root = std::env::temp_dir().join(format!("rb-sources-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let _ = std::fs::create_dir_all(root.join("Domain"));
+        let _ = std::fs::write(root.join("Domain/Order.cs"), "");
+        let _ = std::os::unix::fs::symlink(&root, root.join("Domain/loop"));
+        let index = source_index(&root);
+        let _ = std::fs::remove_dir_all(&root);
+        assert_eq!(index.keys().collect::<Vec<_>>(), ["Order"]);
+        assert_eq!(index.get("Order").map(Vec::len), Some(1));
+    }
 
     #[test]
     fn normalises_deterministic_and_absolute_paths() {
