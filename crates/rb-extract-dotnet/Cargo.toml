@@ -11,6 +11,16 @@ publish.workspace = true
 
 [dependencies]
 rb-model = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+# Project and solution files (MIT OR Apache-2.0); embedded portable PDBs are deflate-compressed
+# (miniz_oxide: MIT OR Zlib OR Apache-2.0). Plan 0000, Step 9; docs/adr/0019-mit-licence.md.
+roxmltree = { workspace = true }
+miniz_oxide = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+serde_json = { workspace = true }
 
 [lints]
 workspace = true

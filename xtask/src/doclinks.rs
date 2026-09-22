@@ -37,7 +37,7 @@ pub const MARKDOWN_ROOTS: &[&str] = &[
 ];
 
 /// Directories scanned for Rust doc comments, relative to the repository root.
-pub const RUST_ROOTS: &[&str] = &["crates", "xtask"];
+pub const RUST_ROOTS: &[&str] = &["crates", "xtask", "fuzz"];
 
 /// Why a link did not resolve.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

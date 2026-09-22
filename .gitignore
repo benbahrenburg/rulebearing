@@ -22,3 +22,8 @@ __pycache__/
 !/conformance/dependency-cruiser/fixtures/**
 /conformance/dependency-cruiser/fixtures/extract/test/extract/__mocks__/symlinked
 /testbeds/out/
+/fuzz/corpus/
+/fuzz/artifacts/
+/fuzz/target/
+/fuzz/coverage/
+/conformance/archunitnet/attribution/*.log

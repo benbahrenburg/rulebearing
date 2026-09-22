@@ -49,6 +49,9 @@ sha2 = "0.10"
 thiserror = "2"
 # The graph document's schema is generated from the types (docs/adr/0004). MIT.
 schemars = "1"
+# The .NET reader (plan 0000, Step 9): solution and project XML, and embedded PDB inflation.
+roxmltree = "0.21"
+miniz_oxide = "0.9"
 
 # Test-only. Property tests state an invariant and let the runner look for a counterexample
 # (docs/adr/0024-test-quality-gates.md). MIT or Apache-2.0, so cargo deny is unaffected.

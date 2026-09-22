@@ -1,0 +1,37 @@
+# Nightly fuzzing of the parsers that read untrusted bytes: a crash, an overflow or a runaway
+# allocation fails the run and uploads the reproducing input.
+# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 9 (the metadata reader target, ten minutes).
+# Requirement: docs/prd.md#nfr-sec-01. Actions pinned by SHA (docs/adr/0025-ci-and-supply-chain-hardening.md).
+name: fuzz
+
+on:
+  schedule:
+    - cron: "41 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzz
+  cancel-in-progress: false
+
+jobs:
+  metadata-reader:
+    name: fuzz metadata_reader
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: nightly
+      - uses: taiki-e/install-action@94c31af3204a9f15ab40b35ad084410b905bbc73 # v2
+        with:
+          tool: cargo-fuzz
+      - run: fuzz/run.sh metadata_reader 600
+      - if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fuzz-artifacts
+          path: fuzz/artifacts
