@@ -5,7 +5,8 @@
 # Fields: repo, sha (pinned by testbeds/pin.sh), role (oracle | greenfield | scale | own), languages,
 # tool (the incumbent: dependency-cruiser | netarchtest | archunitnet | import-linter | none), and per
 # tool: config (dependency-cruiser config, repository-relative), solution and test (.NET: the solution
-# Spike B builds and the architecture-test project the incumbent runs). A row whose tool is none has
+# Spike B builds and the architecture-test project the incumbent runs), dir (import-linter: the package
+# folder holding the contracts, default the root). A row whose tool is none has
 # nothing to run until the Rulebearing column exists (wave 1), so the runner records it without cloning.
 # Every repository is a read-only test bed; nothing from it is committed.
 version: 2
@@ -41,7 +42,7 @@ rows:
   - { repo: online-ml/river, sha: d7085cde5bf90898b338d1ad522c71b9b9aa26f8, role: oracle, languages: [python], tool: import-linter }
   - { repo: wemake-services/wemake-python-styleguide, sha: b4d0171879edc9a6a71a1506a2ee5554f634e0ea, role: oracle, languages: [python], tool: import-linter }
   - { repo: google/langextract, sha: 62b933a2c757fd2bbb100498571b8d1692db4344, role: oracle, languages: [python], tool: import-linter }
-  - { repo: microsoft/promptflow, sha: 3928a727b406e66d64ff42621534bb58e0ca18ce, role: oracle, languages: [python], tool: import-linter }
+  - { repo: microsoft/promptflow, sha: 3928a727b406e66d64ff42621534bb58e0ca18ce, role: oracle, languages: [python], tool: import-linter, dir: src/promptflow-core }
   - { repo: HKUDS/DeepTutor, sha: 11f9c15f6d2727ce07ff8d66e511b1e7ae2f8463, role: oracle, languages: [python], tool: import-linter }
   - { repo: langgenius/dify, sha: 3a017e8cccb316f23f601af65d2e8ce92e68f788, role: oracle, languages: [typescript, python], tool: none }
   - { repo: open-metadata/OpenMetadata, sha: 325c3ee7af5176f615f48b89747f027018d6d61a, role: oracle, languages: [typescript, python], tool: none }

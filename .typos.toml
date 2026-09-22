@@ -10,6 +10,8 @@ extend-exclude = [
   "docs/artifacts/",
   "conformance/*/upstream/",
   "conformance/*/fixtures/",
+  # Generated measurement output naming third-party types.
+  "conformance/archunitnet/attribution/",
   "testbeds/checkouts/",
   # Tool output: compiler command lines, not prose.
   "mutants.out/",

@@ -15,4 +15,5 @@ conformance/**/fixtures/
 conformance/**/upstream/
 testbeds/checkouts/
 schema/*.json
+conformance/archunitnet/attribution/
 Cargo.lock

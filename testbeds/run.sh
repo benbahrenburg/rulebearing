@@ -109,12 +109,22 @@ case "$tool" in
         const p = path.join(d, "package.json");
         if (fs.existsSync(p)) {
           const m = JSON.parse(fs.readFileSync(p, "utf8"));
-          const v = (m.devDependencies || {})["dependency-cruiser"] || (m.dependencies || {})["dependency-cruiser"];
+          // dependency-cruiser cruising itself runs the version its own manifest declares.
+          const v = m.name === "dependency-cruiser" ? m.version
+            : (m.devDependencies || {})["dependency-cruiser"] || (m.dependencies || {})["dependency-cruiser"];
           if (v) { console.log(v.replace(/^[\^~]/, "")); break; }
         }
         if (d === path.dirname(d)) { console.log(fs.readFileSync(process.argv[1], "utf8").trim()); break; }
       }' "$here/../conformance/dependency-cruiser/PIN")"
-    timed "$dir" "$out/incumbent.json" npx --yes "dependency-cruiser@$version" \
+    # Installed into a tool folder rather than run through npx: inside dependency-cruiser's own
+    # repository npx would pick up the local, uninstalled package.
+    tools="$checkouts/.tools/dependency-cruiser-$version"
+    if [ ! -x "$tools/node_modules/.bin/depcruise" ] &&
+       ! npm install --silent --no-audit --no-fund --prefix "$tools" "dependency-cruiser@$version" > "$out/install.log" 2>&1; then
+      result error "installing dependency-cruiser@$version failed (see install.log)"
+      exit 0
+    fi
+    timed "$dir" "$out/incumbent.json" "$tools/node_modules/.bin/depcruise" \
       --config "$(basename "$config")" --output-type json --no-progress .
     status=$?
     if python3 -c 'import json, sys; json.load(open(sys.argv[1]))' "$out/incumbent.json" 2>/dev/null; then
@@ -127,7 +137,11 @@ case "$tool" in
   netarchtest | archunitnet)
     solution="$(field solution)"
     test_project="$(field test)"
-    if ! (cd "$checkout" && dotnet build "$solution" -c Release -p:DebugType=portable) > "$out/build.log" 2>&1; then
+    # EnableWindowsTargeting lets projects that target Windows build on a Linux runner, as a user
+    # building in CI would. NuGet signature verification is off for these throwaway clones only:
+    # the Linux runner's certificate bundle rejects some valid author signatures (NU3012).
+    if ! (cd "$checkout" && DOTNET_NUGET_SIGNATURE_VERIFICATION=false \
+          dotnet build "$solution" -c Release -p:DebugType=portable -p:EnableWindowsTargeting=true) > "$out/build.log" 2>&1; then
       result error "dotnet build failed (see build.log)"
       exit 0
     fi
@@ -141,13 +155,15 @@ case "$tool" in
     fi
     ;;
   import-linter)
+    # `dir` names the package folder that holds the contracts, for a repository with several.
+    dir="$checkout/$(field dir)"
     venv="$checkout/.rb-venv"
     if ! { python3 -m venv "$venv" && "$venv/bin/pip" install --quiet import-linter &&
-           (cd "$checkout" && "$venv/bin/pip" install --quiet -e .); } > "$out/install.log" 2>&1; then
+           (cd "$dir" && "$venv/bin/pip" install --quiet -e .); } > "$out/install.log" 2>&1; then
       result error "installing the package or import-linter failed (see install.log)"
       exit 0
     fi
-    timed "$checkout" "$out/incumbent.txt" "$venv/bin/lint-imports" --no-cache
+    timed "$dir" "$out/incumbent.txt" "$venv/bin/lint-imports" --no-cache
     status=$?
     case "$status" in
       0) result ok "import-linter contracts kept" ;;
