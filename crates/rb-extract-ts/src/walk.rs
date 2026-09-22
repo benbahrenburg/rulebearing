@@ -120,22 +120,22 @@ pub fn walk_source(
     flavour: Flavour,
     options: &WalkOptions,
 ) -> Result<Vec<Found>, ParseError> {
-    let loose = loosen(&plain_template_imports(source), source_type);
-    let source = loose.as_str();
+    let plain = plain_template_imports(source);
+    let loose: String;
     let allocator = Allocator::default();
-    let parse = |source_type: SourceType| {
-        Parser::new(&allocator, source, source_type)
-            .with_options(ParseOptions {
-                allow_return_outside_function: true,
-                ..ParseOptions::default()
-            })
-            .parse()
-    };
-    let mut parsed = parse(source_type);
+    let mut source = plain.as_str();
+    let mut parsed = parse(&allocator, source, source_type);
+    // Parsed once; a source whose program oxc could not recover at all is loosened and parsed
+    // again.
+    if parsed.program.body.is_empty() && parsed.diagnostics.errors().next().is_some() {
+        loose = loosen(source, source_type);
+        source = loose.as_str();
+        parsed = parse(&allocator, source, source_type);
+    }
     let errors = |p: &oxc_parser::ParserReturn<'_>| p.diagnostics.errors().count();
     if errors(&parsed) > 0 && source_type.is_module() && !source_type.is_typescript() {
         // acorn retries a module that fails to parse as a script.
-        let script = parse(source_type.with_script(true));
+        let script = parse(&allocator, source, source_type.with_script(true));
         if errors(&script) < errors(&parsed) {
             parsed = script;
         }
@@ -148,6 +148,20 @@ pub fn walk_source(
         Flavour::Swc => swc(program, options),
         Flavour::Acorn => acorn(program, options),
     })
+}
+
+/// oxc with the options every flavour shares.
+fn parse<'a>(
+    allocator: &'a Allocator,
+    source: &'a str,
+    source_type: SourceType,
+) -> oxc_parser::ParserReturn<'a> {
+    Parser::new(allocator, source, source_type)
+        .with_options(ParseOptions {
+            allow_return_outside_function: true,
+            ..ParseOptions::default()
+        })
+        .parse()
 }
 
 /// Rewrites `` import(`x`) `` without placeholders as `import('x')`, byte for byte the same length.
@@ -179,19 +193,14 @@ fn plain_template_imports(source: &str) -> String {
 }
 
 /// When oxc recovers nothing from a source, blanks the offending line, keeping every byte offset,
-/// and tries again, until a program comes back or nothing more can be blanked. This stands in for the recovering parsers upstream falls
-/// back to (acorn-loose, tsc's own recovery): `export default const x = 1` loses that line, not the
+/// and tries again, until a program comes back or nothing more can be blanked. This stands in for
+/// the recovering parsers upstream falls back to (acorn-loose, tsc's own recovery): `export default const x = 1` loses that line, not the
 /// imports around it.
 fn loosen(source: &str, source_type: SourceType) -> String {
     let mut text = source.to_owned();
     for _ in 0..32 {
         let allocator = Allocator::default();
-        let parsed = Parser::new(&allocator, &text, source_type)
-            .with_options(ParseOptions {
-                allow_return_outside_function: true,
-                ..ParseOptions::default()
-            })
-            .parse();
+        let parsed = parse(&allocator, &text, source_type);
         // Only a fatal error loses the program; oxc recovers from the rest by itself, as tsc does.
         if !parsed.program.body.is_empty() {
             break;

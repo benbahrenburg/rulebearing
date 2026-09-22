@@ -602,7 +602,7 @@ conformance/archunitnet/scripts/spike-b-attribution.sh     # needs the .NET SDK 
 - [x] Layer 1 ratio at or above 0.95 on `main`, artefact linked (0.9865; 0C row)
 - [x] ADR-0022 merged, ADR-0003 status updated, index updated
 - [x] All CI jobs in § 1.5 required on `main` and green (17 required checks in the `main` ruleset)
-- [x] Coverage at or above 70% on every crate, per-crate table linked (lowest: `rb-extract-dotnet` 88.0%)
+- [x] Coverage at or above 70% on every crate, per-crate table linked (lowest: `rb-extract-dotnet` 88.4% after the review)
 - [ ] Nightly green seven nights; README table present (table present; the seven nights run from 2026-09-22)
 - [ ] Four registry pages live; organisation and repository exist (repository exists; the publishes and the organisation need the maintainer's credentials, docs/release.md)
 - [x] `excluded.json` and `ported.json` committed with the ratchet job green
@@ -714,7 +714,8 @@ conformance/archunitnet/scripts/spike-b-attribution.sh     # needs the .NET SDK 
 | 0E | npm `rulebearing` 0.0.1; `@rulebearing` checked | Ready, not published | Name free; `npm publish --dry-run` clean. The scope check runs from the signed-in session in `publish-placeholders.sh`. URL: , org: |
 | 0E | PyPI `rulebearing` 0.0.1 | Ready, not published | Name free; wheel and sdist build, and `twine check` passes. URL: |
 | 0E | NuGet `Rulebearing` 0.0.1 | Ready, not published | Name free; `dotnet pack` builds `Rulebearing.0.0.1.nupkg`. URL: |
-| 0E | `docs/release.md`; `release.yml` dry run | Done (doc); dry run pending merge | [docs/release.md](../../release.md) is written. `release.yml` is rewritten to the ADR-0025 standard (it had unpinned actions and called echo-only publish scripts), builds the six targets, and dry-runs on an `-rc` tag or a manual run. The dry run is dispatched once this is on `main` |
+| 0E | `docs/release.md`; `release.yml` dry run | Done | [docs/release.md](../../release.md) is written. `release.yml` is rewritten to the ADR-0025 standard (it had unpinned actions and called echo-only publish scripts). [Dry run](https://github.com/benbahrenburg/rulebearing/actions/runs/35751466803) on `main` by manual dispatch: all six targets built and uploaded, the release job skipped as designed. Step 11 names an `-rc` tag; the manual run exercises the same jobs without pushing a tag |
+| 0E | Comprehensive review of waves 0A to 0E | Done | Four defects fixed with tests: the TypeScript directory and glob walks and the .NET source index recursed forever on a symlink cycle (the TypeScript walks still follow a symlinked folder as upstream does, and stop only at one that leads back to an ancestor; the .NET index and `xtask` no longer follow symlinked folders); `oxc_resolver` was rebuilt for every dependency, discarding its file system cache, and is now built once per option set; the owner of a custom attribute's constructor was found by a linear scan per attribute, now a binary search over method-list starts; every TypeScript source was parsed twice, now once, with the loosening re-parse only when oxc recovers nothing. Layer 1 unchanged at 292/296; mutants 12/12 caught in `xtask/src/lib.rs` |
 | 0E | README, `CLAUDE.md`, module docs; move pull request | Done (docs); move waits on the checklist | README, PRD and architecture carry the measured figures instead of the design's 546; `CLAUDE.md` lists the new harnesses. The move waits on the unticked checklist items below |
 
 **Size:** S. **LOE:** 4 h, 0.4 calendar weeks. **Roles:** maintainer.

@@ -15,6 +15,7 @@
 //! the dependency types.
 
 use std::path::{Component, Path, PathBuf};
+use std::sync::OnceLock;
 
 use oxc_resolver::{
     AliasValue, ResolveOptions, Resolver, TsconfigDiscovery, TsconfigOptions, TsconfigReferences,
@@ -95,6 +96,31 @@ pub struct ResolveConfig {
     pub resolve_licenses: bool,
     /// Whether to mark deprecated npm packages.
     pub resolve_deprecations: bool,
+    /// The resolvers built from these options, each made on first use and kept, so its file
+    /// system cache lives for the whole run. Set every option before the first resolution.
+    pub(crate) resolvers: Resolvers,
+}
+
+/// The resolvers one `ResolveConfig` uses: the main one, one per TypeScript retry extension set
+/// (see [`typescript_variants`]) and the one that finds a package's `package.json`.
+#[derive(Default)]
+pub(crate) struct Resolvers {
+    main: OnceLock<Resolver>,
+    retry: [OnceLock<Resolver>; 3],
+    manifest: OnceLock<Resolver>,
+}
+
+/// A copy starts with no resolvers: the copy's options may be changed before it resolves.
+impl Clone for Resolvers {
+    fn clone(&self) -> Self {
+        Self::default()
+    }
+}
+
+impl std::fmt::Debug for Resolvers {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Resolvers")
+    }
 }
 
 impl Default for ResolveConfig {
@@ -119,11 +145,37 @@ impl Default for ResolveConfig {
             combined_dependencies: false,
             resolve_licenses: false,
             resolve_deprecations: false,
+            resolvers: Resolvers::default(),
         }
     }
 }
 
 impl ResolveConfig {
+    /// The main resolver, built once.
+    fn main_resolver(&self) -> &Resolver {
+        self.resolvers.main.get_or_init(|| self.resolver(None))
+    }
+
+    /// The resolver for TypeScript retry set `index` of [`typescript_variants`], built once.
+    fn retry_resolver(&self, index: usize, variants: &[&str]) -> Option<&Resolver> {
+        let slot = self.resolvers.retry.get(index)?;
+        Some(slot.get_or_init(|| {
+            let extensions: Vec<String> = variants.iter().map(|s| (*s).to_owned()).collect();
+            self.resolver(Some(&extensions))
+        }))
+    }
+
+    /// The resolver that finds `<package>/package.json`: no export maps, no extensions.
+    fn manifest_resolver(&self) -> &Resolver {
+        self.resolvers.manifest.get_or_init(|| {
+            ResolveConfig {
+                exports_fields: Vec::new(),
+                ..self.clone()
+            }
+            .resolver(Some(&[String::new()]))
+        })
+    }
+
     /// The `oxc_resolver` for these options, with `extensions` replaced when given.
     pub fn resolver(&self, extensions: Option<&[String]>) -> Resolver {
         Resolver::new(ResolveOptions {
@@ -362,11 +414,12 @@ fn resolve_module(
     }
 }
 
-fn typescript_variants(ext: &str) -> Option<&'static [&'static str]> {
+/// The TypeScript extensions retried for a JavaScript one, with the set's index.
+fn typescript_variants(ext: &str) -> Option<(usize, &'static [&'static str])> {
     match ext {
-        ".js" | ".jsx" => Some(&[".ts", ".tsx", ".d.ts"]),
-        ".cjs" => Some(&[".cts", ".d.cts"]),
-        ".mjs" => Some(&[".mts", ".d.mts"]),
+        ".js" | ".jsx" => Some((0, &[".ts", ".tsx", ".d.ts"])),
+        ".cjs" => Some((1, &[".cts", ".d.cts"])),
+        ".mjs" => Some((2, &[".mts", ".d.mts"])),
         _ => None,
     }
 }
@@ -384,17 +437,16 @@ pub fn resolve(
     use rb_model::ModuleSystem as M;
     let stripped = strip_loaders(module);
     let commonjs = matches!(module_system, M::Cjs | M::Es6 | M::Tsd);
-    let resolver = config.resolver(None);
-    let mut resolution = resolve_module(stripped, commonjs, context, config, &resolver);
+    let mut resolution =
+        resolve_module(stripped, commonjs, context, config, config.main_resolver());
     if resolution.could_not_resolve
-        && let Some(variants) = typescript_variants(extension(stripped))
+        && let Some((index, variants)) = typescript_variants(extension(stripped))
+        && let Some(retry_resolver) = config.retry_resolver(index, variants)
     {
         let without = stripped
             .strip_suffix(extension(stripped))
             .unwrap_or(stripped);
-        let extensions: Vec<String> = variants.iter().map(|s| (*s).to_owned()).collect();
-        let retry_resolver = config.resolver(Some(&extensions));
-        let candidate = resolve_module(without, commonjs, context, config, &retry_resolver);
+        let candidate = resolve_module(without, commonjs, context, config, retry_resolver);
         // Node's `extname`, so `x.d.cts` counts as `.cts`.
         let last = candidate
             .resolved
@@ -450,13 +502,9 @@ fn package_json(
     context: &Context<'_>,
     config: &ResolveConfig,
 ) -> Option<serde_json::Value> {
-    let manifest_config = ResolveConfig {
-        exports_fields: Vec::new(),
-        ..config.clone()
-    };
-    let resolver = manifest_config.resolver(Some(&[String::new()]));
     let directory = absolute(context.cwd, context.file_dir);
-    let found = resolver
+    let found = config
+        .manifest_resolver()
         .resolve(
             &directory,
             &format!("{}/package.json", npm::package_root(module)),
@@ -668,9 +716,22 @@ mod tests {
         assert_eq!(posix_join("/base/", "../y/z"), "/y/z");
         assert_eq!(
             typescript_variants(".jsx"),
-            Some(&[".ts", ".tsx", ".d.ts"][..])
+            Some((0, &[".ts", ".tsx", ".d.ts"][..]))
+        );
+        assert_eq!(
+            typescript_variants(".cjs"),
+            Some((1, &[".cts", ".d.cts"][..]))
+        );
+        assert_eq!(
+            typescript_variants(".mjs"),
+            Some((2, &[".mts", ".d.mts"][..]))
         );
         assert_eq!(typescript_variants(".ts"), None);
+        // One retry resolver per set, and none past the last.
+        let config = ResolveConfig::default();
+        assert!(config.retry_resolver(2, &[".mts"]).is_some());
+        assert!(config.retry_resolver(3, &[".mts"]).is_none());
+        assert!(config.clone().resolvers.main.get().is_none());
     }
 
     #[test]

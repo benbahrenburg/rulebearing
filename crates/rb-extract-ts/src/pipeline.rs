@@ -522,9 +522,13 @@ fn scannable(settings: &Settings, file: &str) -> bool {
         || settings.extra_extensions_to_scan.iter().any(|e| e == ext)
 }
 
+/// `ancestors` are the canonical folders above `directory` on this walk, `directory`'s own
+/// included: a symlinked folder is followed as upstream's `readdirSync` walk follows it, unless it
+/// leads back to one of them, which would recurse without end.
 fn gather_directory(
     directory: &str,
     settings: &Settings,
+    ancestors: &mut Vec<PathBuf>,
     out: &mut Vec<String>,
 ) -> Result<(), PipelineError> {
     let on_disk = settings.on_disk(directory);
@@ -554,11 +558,18 @@ fn gather_directory(
         if excluded {
             continue;
         }
-        let Ok(metadata) = std::fs::metadata(settings.on_disk(&path)) else {
+        let on_disk = settings.on_disk(&path);
+        let Ok(metadata) = std::fs::metadata(&on_disk) else {
             continue;
         };
         if metadata.is_dir() {
-            gather_directory(&path, settings, out)?;
+            let Some(canonical) = not_a_cycle(&on_disk, ancestors) else {
+                continue;
+            };
+            ancestors.push(canonical);
+            let gathered = gather_directory(&path, settings, ancestors, out);
+            ancestors.pop();
+            gathered?;
         } else if scannable(settings, &path)
             && settings
                 .include_only
@@ -569,6 +580,12 @@ fn gather_directory(
         }
     }
     Ok(())
+}
+
+/// The canonical form of folder `path`, unless it is one of `ancestors` (a symlink cycle).
+fn not_a_cycle(path: &Path, ancestors: &[PathBuf]) -> Option<PathBuf> {
+    let canonical = std::fs::canonicalize(path).ok()?;
+    (!ancestors.contains(&canonical)).then_some(canonical)
 }
 
 fn normalise(path: &str) -> String {
@@ -603,15 +620,20 @@ fn expand_glob(pattern: &str, settings: &Settings) -> Vec<String> {
     };
     let mut all = Vec::new();
     let root = settings.on_disk(&base);
-    let mut stack = vec![root.clone()];
-    while let Some(dir) = stack.pop() {
+    let mut stack: Vec<(PathBuf, Vec<PathBuf>)> =
+        vec![(root.clone(), not_a_cycle(&root, &[]).into_iter().collect())];
+    while let Some((dir, ancestors)) = stack.pop() {
         let Ok(entries) = std::fs::read_dir(&dir) else {
             continue;
         };
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_dir() {
-                stack.push(path.clone());
+            if path.is_dir()
+                && let Some(canonical) = not_a_cycle(&path, &ancestors)
+            {
+                let mut below: Vec<PathBuf> = ancestors.clone();
+                below.push(canonical);
+                stack.push((path.clone(), below));
             }
             let relative = resolve::relative(&root, &path);
             if matcher.is_match(&relative) {
@@ -646,11 +668,12 @@ pub fn gather_initial_sources(
     for item in expanded {
         let on_disk = settings.on_disk(&item);
         let metadata = std::fs::metadata(&on_disk).map_err(|source| PipelineError::Io {
-            path: on_disk,
+            path: on_disk.clone(),
             source,
         })?;
         if metadata.is_dir() {
-            gather_directory(&item, settings, &mut files)?;
+            let mut ancestors: Vec<PathBuf> = not_a_cycle(&on_disk, &[]).into_iter().collect();
+            gather_directory(&item, settings, &mut ancestors, &mut files)?;
         } else {
             files.push(item);
         }
@@ -847,5 +870,30 @@ mod tests {
                 "import { E } from './e';"
             ]
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_symlink_cycle_is_walked_once_and_other_symlinked_folders_are_followed() {
+        use std::os::unix::fs::symlink;
+        let root = std::env::temp_dir().join(format!("rb-gather-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let _ = std::fs::create_dir_all(root.join("src/a"));
+        let _ = std::fs::create_dir_all(root.join("elsewhere"));
+        let _ = std::fs::write(root.join("src/a/x.js"), "");
+        let _ = std::fs::write(root.join("elsewhere/y.js"), "");
+        let _ = symlink(root.join("src"), root.join("src/a/loop"));
+        let _ = symlink(root.join("elsewhere"), root.join("src/linked"));
+        let settings = Settings::new(&TypeScriptOptions::default(), &root);
+        let gathered = settings
+            .as_ref()
+            .map(|s| gather_initial_sources(&["src".to_owned()], s));
+        let globbed = settings
+            .as_ref()
+            .map(|s| gather_initial_sources(&["src/**/*.js".to_owned()], s));
+        let _ = std::fs::remove_dir_all(&root);
+        let expected = vec!["src/a/x.js".to_owned(), "src/linked/y.js".to_owned()];
+        assert_eq!(gathered.ok().and_then(Result::ok), Some(expected.clone()));
+        assert_eq!(globbed.ok().and_then(Result::ok), Some(expected));
     }
 }
