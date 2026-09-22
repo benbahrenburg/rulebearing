@@ -1,6 +1,6 @@
 # Plan 0000: Wave 0: Spike: TypeScript extractor, .NET metadata reader, conformance skeletons, foundation
 
-- **Status:** In progress: 0A to 0D done, 0E done except the registry day and the seven-night nightly record
+- **Status:** In progress: 0A to 0D done; 0E done except the GitHub organisation and the seven-night nightly record
 - **Owner:** Ben Bahrenburg (@benbahrenburg)
 - **Created:** 2026-09-20
 - **Calendar estimate:** 4 weeks at ~10 h/week (from design § Waves)
@@ -604,7 +604,7 @@ conformance/archunitnet/scripts/spike-b-attribution.sh     # needs the .NET SDK 
 - [x] All CI jobs in § 1.5 required on `main` and green (17 required checks in the `main` ruleset)
 - [x] Coverage at or above 70% on every crate, per-crate table linked (lowest: `rb-extract-dotnet` 88.4% after the review)
 - [ ] Nightly green seven nights; README table present (table present; the seven nights run from 2026-09-22)
-- [ ] Four registry pages live; organisation and repository exist (repository exists; the publishes and the organisation need the maintainer's credentials, docs/release.md)
+- [ ] Four registry pages live; organisation and repository exist (all four published 2026-09-22; the GitHub organisation is outstanding, and the web interface is the only way to create one)
 - [x] `excluded.json` and `ported.json` committed with the ratchet job green
 - [x] `CLAUDE.md`, `conformance/README.md`, `testbeds/README.md`, `docs/release.md` present
 - [ ] Status line of this file changed to Implemented and the file moved, in one pull request that links every item above
@@ -710,10 +710,10 @@ conformance/archunitnet/scripts/spike-b-attribution.sh     # needs the .NET SDK 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
 | 0E | ADR-0022 written from the week 4 figure; index and ADR-0003 status updated | Done | [ADR-0022](../../adr/0022-dotnet-reader-in-rust-confirmed.md): the trigger was met in week 2 (adjusted 0.9929, locally and in the [`spike-b` run](https://github.com/benbahrenburg/rulebearing/actions/runs/35746468152)). The ADR records that a PDB-only reading (0.9335) would not have cleared the bar and sets a two-week reopening condition. ADR-0003 marked superseded; index updated |
-| 0E | crates.io `rulebearing` 0.0.1 | Ready, not published | Name free on 2026-09-22. `wrappers/crates/rulebearing` passes `cargo publish --dry-run`. Publishing needs the maintainer's `cargo login` (docs/release.md). URL: |
-| 0E | npm `rulebearing` 0.0.1; `@rulebearing` checked | Ready, not published | Name free; `npm publish --dry-run` clean. The scope check runs from the signed-in session in `publish-placeholders.sh`. URL: , org: |
-| 0E | PyPI `rulebearing` 0.0.1 | Ready, not published | Name free; wheel and sdist build, and `twine check` passes. URL: |
-| 0E | NuGet `Rulebearing` 0.0.1 | Ready, not published | Name free; `dotnet pack` builds `Rulebearing.0.0.1.nupkg`. URL: |
+| 0E | crates.io `rulebearing` 0.0.1 | Done | Published 2026-09-22: [crates.io/crates/rulebearing](https://crates.io/crates/rulebearing) 0.0.1, from `wrappers/crates/rulebearing` |
+| 0E | npm `rulebearing` 0.0.1; `@rulebearing` checked | Done | Published 2026-09-22: [npmjs.com/package/rulebearing](https://www.npmjs.com/package/rulebearing) 0.0.1. The `@rulebearing` scope is not held; wave 1's platform packages are therefore unscoped (`rulebearing-cli-<platform>`), the fallback [ADR-0020](../../adr/0020-single-name-across-registries.md) names |
+| 0E | PyPI `rulebearing` 0.0.1 | Done | Published 2026-09-22: [pypi.org/project/rulebearing](https://pypi.org/project/rulebearing/) 0.0.1, wheel and sdist |
+| 0E | NuGet `Rulebearing` 0.0.1 | Done | Published 2026-09-22: [nuget.org/packages/Rulebearing](https://www.nuget.org/packages/Rulebearing) 0.0.1. A trusted-publishing policy for `release.yml` exists on nuget.org and is unused until wave 2 pushes the wrapper from CI |
 | 0E | `docs/release.md`; `release.yml` dry run | Done | [docs/release.md](../../release.md) is written. `release.yml` is rewritten to the ADR-0025 standard (it had unpinned actions and called echo-only publish scripts). [Dry run](https://github.com/benbahrenburg/rulebearing/actions/runs/35751466803) on `main` by manual dispatch: all six targets built and uploaded, the release job skipped as designed. Step 11 names an `-rc` tag; the manual run exercises the same jobs without pushing a tag |
 | 0E | Comprehensive review of waves 0A to 0E | Done | Four defects fixed with tests: the TypeScript directory and glob walks and the .NET source index recursed forever on a symlink cycle (the TypeScript walks still follow a symlinked folder as upstream does, and stop only at one that leads back to an ancestor; the .NET index and `xtask` no longer follow symlinked folders); `oxc_resolver` was rebuilt for every dependency, discarding its file system cache, and is now built once per option set; the owner of a custom attribute's constructor was found by a linear scan per attribute, now a binary search over method-list starts; every TypeScript source was parsed twice, now once, with the loosening re-parse only when oxc recovers nothing. Layer 1 unchanged at 292/296; mutants 12/12 caught in `xtask/src/lib.rs` |
 | 0E | README, `CLAUDE.md`, module docs; move pull request | Done (docs); move waits on the checklist | README, PRD and architecture carry the measured figures instead of the design's 546; `CLAUDE.md` lists the new harnesses. The move waits on the unticked checklist items below |
