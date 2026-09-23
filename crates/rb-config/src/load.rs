@@ -95,6 +95,51 @@ fn canonical_of(
 /// # Errors
 /// Every [`ConfigError`]; the command line maps each to exit 3.
 pub fn load(path: &Path, opts: &LoadOptions) -> Result<Config, ConfigError> {
+    let file = read_canonical(path, opts)?;
+    let mut files = file.files;
+    let mut config = assemble(
+        file.canonical,
+        file.compat,
+        &file.dir,
+        &file.root,
+        opts,
+        &mut files,
+    )?;
+    config.origin = Some(file.path);
+    config.files = files.into_iter().collect();
+    config.via_node = opts.via_node;
+    Ok(config)
+}
+
+/// The configuration at `path` in the canonical shape with `extends` merged and nothing else
+/// applied: the stage dependency-cruiser's `assertRuleSetValid` checks against its schema, which
+/// is what conformance layer 4 validates.
+///
+/// # Errors
+/// See [`load`].
+pub fn merged(path: &Path, opts: &LoadOptions) -> Result<Map<String, Value>, ConfigError> {
+    let mut file = read_canonical(path, opts)?;
+    resolve_extends(
+        file.canonical,
+        &file.dir,
+        &file.root,
+        opts,
+        &mut Vec::new(),
+        &mut file.files,
+    )
+}
+
+/// A configuration file read and mapped onto the canonical shape, before `extends`.
+struct CanonicalFile {
+    path: PathBuf,
+    dir: PathBuf,
+    root: PathBuf,
+    canonical: Map<String, Value>,
+    compat: CompatMode,
+    files: BTreeSet<PathBuf>,
+}
+
+fn read_canonical(path: &Path, opts: &LoadOptions) -> Result<CanonicalFile, ConfigError> {
     let path = path.canonicalize().map_err(|e| ConfigError::Read {
         file: path.to_path_buf(),
         reason: e.to_string(),
@@ -109,12 +154,14 @@ pub fn load(path: &Path, opts: &LoadOptions) -> Result<Config, ConfigError> {
             .and_then(ConfigFormat::detect)
     });
     let (canonical, compat) = canonical_of(as_object(read.value, &path)?, format)?;
-    let mut files: BTreeSet<PathBuf> = read.files.into_iter().collect();
-    let mut config = assemble(canonical, compat, &dir, &root, opts, &mut files)?;
-    config.origin = Some(path);
-    config.files = files.into_iter().collect();
-    config.via_node = opts.via_node;
-    Ok(config)
+    Ok(CanonicalFile {
+        path,
+        dir,
+        root,
+        canonical,
+        compat,
+        files: read.files.into_iter().collect(),
+    })
 }
 
 /// Loads configuration text read from somewhere other than a file (`--config -`).
@@ -404,6 +451,39 @@ mod tests {
         fn drop(&mut self) {
             let _ = std::fs::remove_dir_all(&self.0);
         }
+    }
+
+    #[test]
+    fn merged_is_the_file_with_extends_and_nothing_else() -> Result<(), Box<dyn Error>> {
+        let repo = Repo::new(
+            "merged",
+            &[
+                (
+                    ".dependency-cruiser.cjs",
+                    r#"module.exports = {
+  extends: "./base.json",
+  forbidden: [{ name: "shared", severity: "error" }],
+};"#,
+                ),
+                (
+                    "base.json",
+                    r#"{ "forbidden": [{ "name": "shared", "from": {}, "to": { "circular": true } }], "options": { "maxDepth": 2 } }"#,
+                ),
+            ],
+        )?;
+        let merged = merged(
+            &repo.0.join(".dependency-cruiser.cjs"),
+            &LoadOptions::default(),
+        )?;
+        assert!(merged.get("extends").is_none());
+        assert_eq!(merged["options"]["maxDepth"], 2);
+        // The rule is merged by name and not normalised: no `scope` is added.
+        assert_eq!(
+            merged["forbidden"],
+            serde_json::json!([{ "name": "shared", "severity": "error", "from": {}, "to": { "circular": true } }])
+        );
+        assert!(super::merged(&repo.0.join("missing.json"), &LoadOptions::default()).is_err());
+        Ok(())
     }
 
     #[test]

@@ -44,6 +44,7 @@ regex = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
+jsonschema = { workspace = true }
 
 [lints]
 workspace = true

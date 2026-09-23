@@ -8,8 +8,10 @@
 #            ../excluded.json
 #   layer 3  harness/run-layer-3.mjs runs upstream's test/report specs for the wave 1 reporters with
 #            each reporter forwarded to `rulebearing report`; the specs byte-compare the output
+#   layer 4  scripts/run-layer-4.sh validates the JSON output (--strict-schema) and every accepted
+#            configuration against the vendored upstream schemas
 #
-# Layers 4 and 5 run from scripts/run-layer-4.sh and scripts/run-layer-5.sh
+# Layer 5 needs the test-bed checkouts and runs nightly from scripts/run-layer-5.sh
 # (docs/plans/pending/0001-wave-1-typescript-parity.md, Steps 12 and 18).
 # Plan: docs/plans/pending/0000-wave-0-spike.md, Step 5. Decision: docs/adr/0009-conformance-suites-as-specification.md.
 # Needs Node 22 or later and network access for the upstream clone (kept in upstream/, git-ignored).
@@ -40,3 +42,6 @@ node "$here/harness/run-layer-2.mjs" "$upstream"
 
 echo "gate 1, layer 3: upstream report specs through the shim"
 node "$here/harness/run-layer-3.mjs" "$upstream"
+
+echo "gate 1, layer 4: schemas"
+"$here/scripts/run-layer-4.sh"
