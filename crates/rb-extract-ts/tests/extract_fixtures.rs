@@ -598,6 +598,41 @@ fn prepare(root: &Path) {
     let _ = std::os::windows::fs::symlink_dir(mocks.join("symlinkTarget"), &link);
 }
 
+/// Upstream's cache-busting spec renames `cache-busting-first-tree` (call 1) or
+/// `cache-busting-second-tree` (call 2) to `cache-busting` around each `extract` call, to prove
+/// the resolver cache does not outlive a run. The guard does the same rename and undoes it when
+/// dropped, a failing assertion included.
+struct CacheBustingTree {
+    from: PathBuf,
+    to: PathBuf,
+}
+
+impl CacheBustingTree {
+    const SPEC: &'static str = "test/extract/index.cachebusting.spec.mjs#";
+
+    fn for_case(root: &Path, id: &str) -> Option<Self> {
+        let call = id.strip_prefix(Self::SPEC)?;
+        let tree = match call {
+            "1" => "first",
+            "2" => "second",
+            _ => return None,
+        };
+        let mocks = root.join("test/extract/__mocks__");
+        let guard = Self {
+            from: mocks.join(format!("cache-busting-{tree}-tree")),
+            to: mocks.join("cache-busting"),
+        };
+        std::fs::rename(&guard.from, &guard.to).ok()?;
+        Some(guard)
+    }
+}
+
+impl Drop for CacheBustingTree {
+    fn drop(&mut self) {
+        let _ = std::fs::rename(&self.to, &self.from);
+    }
+}
+
 #[test]
 fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
     let root = fixtures();
@@ -619,7 +654,9 @@ fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
     let started = Instant::now();
     let mut failures: Vec<(&Case, Failure)> = Vec::new();
     for case in &cases {
+        let tree = CacheBustingTree::for_case(&root, &case.id);
         let outcome = replay(&root, case);
+        drop(tree);
         let failure = match (outcome, &case.expected, &case.throws) {
             (Ok(actual), Some(expected), _) if &actual == expected => None,
             (Ok(actual), Some(expected), _) => Some(Failure {

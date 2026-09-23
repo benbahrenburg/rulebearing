@@ -20,6 +20,8 @@ __pycache__/
 # Vendored upstream test inputs keep their node_modules, dist and bin directories: they are data
 # the conformance harness resolves against (conformance/dependency-cruiser/scripts/vendor.sh).
 !/conformance/dependency-cruiser/fixtures/**
+# The option fixtures' mini-repositories carry node_modules for the same reason (plan 0001, 1C).
+!/crates/rb-extract-ts/tests/options/**
 /conformance/dependency-cruiser/fixtures/extract/test/extract/__mocks__/symlinked
 /testbeds/out/
 /fuzz/corpus/

@@ -14,8 +14,9 @@
 //! unresolvable `.js`/`.mjs`/`.cjs` specifier as its TypeScript variant; then add the licence and
 //! the dependency types.
 
+use std::collections::HashMap;
 use std::path::{Component, Path, PathBuf};
-use std::sync::OnceLock;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use oxc_resolver::{
     AliasValue, ResolveOptions, Resolver, TsconfigDiscovery, TsconfigOptions, TsconfigReferences,
@@ -96,18 +97,32 @@ pub struct ResolveConfig {
     pub resolve_licenses: bool,
     /// Whether to mark deprecated npm packages.
     pub resolve_deprecations: bool,
+    /// `externalModuleResolutionStrategy: yarn-pnp`: bare specifiers resolve through the Yarn
+    /// Plug'n'Play manifest (`.pnp.cjs`) found at or above `pnp_root`.
+    pub yarn_pnp: bool,
+    /// Where the search for `.pnp.cjs` starts; the working directory when `None`.
+    pub pnp_root: Option<PathBuf>,
+    /// Whether the tsconfig's project `references` apply to files inside the referenced
+    /// projects.
+    pub tsconfig_references: bool,
     /// The resolvers built from these options, each made on first use and kept, so its file
     /// system cache lives for the whole run. Set every option before the first resolution.
     pub(crate) resolvers: Resolvers,
 }
 
+/// Classifying manifests by (importing folder, base directory).
+type ManifestCache = Mutex<HashMap<(PathBuf, PathBuf), Option<Arc<Manifest>>>>;
+
 /// The resolvers one `ResolveConfig` uses: the main one, one per TypeScript retry extension set
-/// (see [`typescript_variants`]) and the one that finds a package's `package.json`.
+/// (see [`typescript_variants`]) and the one that finds a package's `package.json`; and the
+/// manifests and patterns read while classifying, which do not change during a run.
 #[derive(Default)]
 pub(crate) struct Resolvers {
     main: OnceLock<Resolver>,
     retry: [OnceLock<Resolver>; 3],
     manifest: OnceLock<Resolver>,
+    manifests: ManifestCache,
+    patterns: Mutex<HashMap<String, Option<regex::Regex>>>,
 }
 
 /// A copy starts with no resolvers: the copy's options may be changed before it resolves.
@@ -145,6 +160,9 @@ impl Default for ResolveConfig {
             combined_dependencies: false,
             resolve_licenses: false,
             resolve_deprecations: false,
+            yarn_pnp: false,
+            pnp_root: None,
+            tsconfig_references: false,
             resolvers: Resolvers::default(),
         }
     }
@@ -163,6 +181,41 @@ impl ResolveConfig {
             let extensions: Vec<String> = variants.iter().map(|s| (*s).to_owned()).collect();
             self.resolver(Some(&extensions))
         }))
+    }
+
+    /// The manifest that classifies dependencies from `folder`, read once per folder.
+    fn manifest(&self, folder: &Path, base_dir: &Path) -> Option<Arc<Manifest>> {
+        let key = (folder.to_path_buf(), base_dir.to_path_buf());
+        if let Ok(cache) = self.resolvers.manifests.lock()
+            && let Some(found) = cache.get(&key)
+        {
+            return found.clone();
+        }
+        let found = if self.combined_dependencies {
+            npm::combined(folder, base_dir).map(Arc::new)
+        } else {
+            npm::nearest(folder).map(Arc::new)
+        };
+        if let Ok(mut cache) = self.resolvers.manifests.lock() {
+            cache.insert(key, found.clone());
+        }
+        found
+    }
+
+    /// Whether `text` matches `pattern`, the pattern compiled once per run. An invalid pattern
+    /// matches nothing.
+    fn matches(&self, pattern: &str, text: &str) -> bool {
+        if let Ok(cache) = self.resolvers.patterns.lock()
+            && let Some(compiled) = cache.get(pattern)
+        {
+            return compiled.as_ref().is_some_and(|re| re.is_match(text));
+        }
+        let compiled = regex::Regex::new(pattern).ok();
+        let matched = compiled.as_ref().is_some_and(|re| re.is_match(text));
+        if let Ok(mut cache) = self.resolvers.patterns.lock() {
+            cache.insert(pattern.to_owned(), compiled);
+        }
+        matched
     }
 
     /// The resolver that finds `<package>/package.json`: no export maps, no extensions.
@@ -199,9 +252,15 @@ impl ResolveConfig {
             tsconfig: self.tsconfig.as_ref().map(|config_file| {
                 TsconfigDiscovery::Manual(TsconfigOptions {
                     config_file: config_file.clone(),
-                    references: TsconfigReferences::Disabled,
+                    references: if self.tsconfig_references {
+                        TsconfigReferences::Auto
+                    } else {
+                        TsconfigReferences::Disabled
+                    },
                 })
             }),
+            yarn_pnp: self.yarn_pnp,
+            cwd: self.pnp_root.clone(),
             node_path: false,
             ..ResolveOptions::default()
         })
@@ -464,7 +523,7 @@ pub fn resolve(
     }
     let manifest = manifest_for(context, config);
     resolution.dependency_types =
-        dependency_types(&resolution, stripped, manifest.as_ref(), context, config);
+        dependency_types(&resolution, stripped, manifest.as_deref(), context, config);
     // Upstream returns `["unknown"]` before appending the form's own types.
     if !resolution.could_not_resolve {
         resolution.dependency_types.extend_from_slice(form_types);
@@ -476,11 +535,11 @@ pub fn resolve(
 }
 
 /// The manifest that classifies a dependency from `file_dir`.
-pub fn manifest_for(context: &Context<'_>, config: &ResolveConfig) -> Option<Manifest> {
+pub fn manifest_for(context: &Context<'_>, config: &ResolveConfig) -> Option<Arc<Manifest>> {
     if config.combined_dependencies {
-        npm::combined(context.file_dir, context.base_dir)
+        config.manifest(context.file_dir, context.base_dir)
     } else {
-        npm::nearest(&absolute(context.cwd, context.file_dir))
+        config.manifest(&absolute(context.cwd, context.file_dir), Path::new(""))
     }
 }
 
@@ -524,10 +583,6 @@ fn deprecated(module: &str, context: &Context<'_>, config: &ResolveConfig) -> bo
     package_json(module, context, config)
         .and_then(|p| p.get("deprecated").cloned())
         .is_some_and(|d| !(d.is_null() || d.as_bool() == Some(false) || d.as_str() == Some("")))
-}
-
-fn regex_matches(pattern: &str, text: &str) -> bool {
-    regex::Regex::new(pattern).is_ok_and(|re| re.is_match(text))
 }
 
 fn strip_extension_and_index(path: &str) -> &str {
@@ -601,7 +656,7 @@ pub fn alias_types(
     if config
         .tsconfig_paths
         .iter()
-        .any(|key| regex_matches(&format!("^{}$", key.replace('*', ".+")), module))
+        .any(|key| config.matches(&format!("^{}$", key.replace('*', ".+")), module))
     {
         return vec![D::Aliased, D::AliasedTsconfig, D::AliasedTsconfigPaths];
     }
@@ -612,7 +667,7 @@ pub fn alias_types(
             .is_some_and(|imports| {
                 imports
                     .keys()
-                    .any(|k| regex_matches(&format!("^{}$", k.replace('*', ".+")), module))
+                    .any(|k| config.matches(&format!("^{}$", k.replace('*', ".+")), module))
             });
     if subpath {
         return vec![D::Aliased, D::AliasedSubpathImport];
