@@ -135,12 +135,18 @@ cargo llvm-cov --workspace --all-features --fail-under-lines 70 && scripts/cover
 cargo mutants --package rb-model --package rb-rules --package xtask   # a survivor fails CI
 cargo deny check licenses advisories bans sources       # needs cargo-deny
 typos && actionlint && git ls-files '*.sh' | xargs shellcheck --severity=style
-conformance/dependency-cruiser/run.sh                   # gate 1, layers 1 and 2 (needs Node 22)
+conformance/dependency-cruiser/run.sh                   # gate 1, layers 1 to 4 (needs Node 22)
+conformance/dependency-cruiser/scripts/run-layer-5.sh --all        # layer 5: zero-diff on the three oracles (clones them)
+conformance/dependency-cruiser/scripts/run-layer-5.sh --mutations  # layer 5: the twelve-mutation branch
 scripts/gate2-check.sh && scripts/ratchets.sh           # gate 2 fixture check; the conformance ratchets
 cargo test -p rb-extract-ts --test extract_fixtures -- --nocapture   # layer 1 alone: prints passed/total/ratio
 conformance/archunitnet/scripts/spike-b-attribution.sh # .NET attribution over the oracles (needs the .NET SDK)
 fuzz/run.sh metadata_reader 600                         # fuzz the metadata reader (nightly toolchain, cargo-fuzz)
 wrappers/publish-placeholders.sh --dry-run              # package the four 0.0.1 name reservations (docs/release.md)
+scripts/cargo-graph.sh > target/cargo-graph.json && ./target/release/rulebearing cruise --config rulebearing.yaml --require-comment-token --graph target/cargo-graph.json   # the self-check CI runs
+testbeds/synth/bench.sh                                 # NFR-PERF-01: the 5,500-module synthetic benchmark (docs/perf.md)
+testbeds/init/run.sh <checkout> <owner/name>            # regenerate an init fixture
+scripts/adoption-signals.sh <checkout> --repo <owner/name> --gate <check>   # NFR-ADOPT-01 signals (docs/adoption.md)
 ./target/release/rulebearing --help
 ```
 
