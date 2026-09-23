@@ -152,6 +152,8 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         Command::Summary(a) => cmd::summary::run(ctx, &a),
         Command::Impact(a) => cmd::impact::run(ctx, &a),
         Command::Attest(a) => cmd::attest::run(ctx, &a),
+        Command::Init(a) => cmd::init::run(ctx, &a),
+        Command::Adopt(a) => cmd::adopt::run(ctx, &a),
         Command::Validate(_) => match ctx.read_stdin() {
             Ok(text) => protocol::validate(&text),
             Err(e) => Outcome::failed(

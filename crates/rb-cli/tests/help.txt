@@ -15,6 +15,8 @@ Commands:
   summary     A brief for an agent starting a session
   impact      What a file is subject to, before an edit
   attest      Write or verify a receipt of the configuration, inputs and results
+  init        Write a first configuration from what the repository holds, passing on its first run
+  adopt       Put an existing dependency-cruiser configuration behind a green gate, with a baseline
 
 Options:
   -h, --help     Print help

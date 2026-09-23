@@ -3,6 +3,7 @@
 //! - Plan: [Wave 1 § 2](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#2-lead-developer-section-step-by-step-implementation)
 //! - Requirement: [FR-CLI-01](../../../../docs/prd.md#fr-cli-01)
 
+pub mod adopt;
 pub mod attest;
 pub mod can_import;
 pub mod config;
@@ -12,6 +13,7 @@ pub mod explain;
 pub mod fmt;
 pub mod hooks;
 pub mod impact;
+pub mod init;
 pub mod plain;
 pub mod rules;
 pub mod summary;
