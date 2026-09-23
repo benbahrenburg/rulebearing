@@ -386,15 +386,14 @@ fn stats_and_liveness(
                 .filter(|v| v.get("rule").and_then(|r| js::str_of(r, "name")) == Some(rule.name()))
                 .count();
             if liveness && from_matches == 0 && !rule.meta.allow_empty {
-                vacuous.push(VacuousRule {
-                    name: name.clone(),
-                    side: if rule.module.is_some() {
+                vacuous.push(VacuousRule::new(
+                    name.clone(),
+                    if rule.module.is_some() {
                         "module"
                     } else {
                         "from"
-                    }
-                    .to_owned(),
-                });
+                    },
+                ));
             }
             stats.push(RuleStats {
                 name,

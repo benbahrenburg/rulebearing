@@ -77,13 +77,21 @@ const CANONICAL_KEYS: &[&str] = &[
     "required",
     "options",
     "defines",
+    "allowEmpty",
     "languages",
     "ratchets",
     "layers",
     "independence",
 ];
 /// The native top-level additions, a warning in a dependency-cruiser file.
-const NATIVE_TOP_KEYS: &[&str] = &["defines", "languages", "ratchets", "layers", "independence"];
+const NATIVE_TOP_KEYS: &[&str] = &[
+    "defines",
+    "allowEmpty",
+    "languages",
+    "ratchets",
+    "layers",
+    "independence",
+];
 
 /// Every option key dependency-cruiser 18.2.0's schema defines, plus the command-line-only keys
 /// that reach `optionsUsed` (`focusDepth`, `outputType`, `outputTo`, `rulesFile`, `validate`,

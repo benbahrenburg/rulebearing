@@ -37,7 +37,21 @@ A capturing group in `from.path` is available in `to` as `$1` to `$9` (and `$0` 
 
 ## Liveness
 
-A rule whose selecting side matches no module checks nothing, and a gate that reads green because a rule went stale is worse than no rule. So a rule whose `from` (or `module`) matches nothing fails the run with exit 2 and is listed in `summary.vacuousRules` ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)). `allowEmpty: true` on the rule opts it out, and `--no-liveness` turns the check off for a run, which dependency-cruiser's own test suites need.
+A rule whose selecting side matches no module checks nothing, and a gate that reads green because a rule went stale is worse than no rule. So every rule whose `from` (or `module`) matches nothing is listed in `summary.vacuousRules` and named on stderr ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)). What that does to the run depends on the configuration ([ADR-0032](adr/0032-liveness-follows-the-configuration-format.md)):
+
+| Configuration | Default | A vacuous rule |
+| --- | --- | --- |
+| `rulebearing.*`, including one that `extends` a dependency-cruiser file | `strict` | fails the run with exit 2 |
+| `.dependency-cruiser.*`, run as it is | `warn` | a warning; the exit code is dependency-cruiser's, and the entry carries `"severity": "warn"` |
+
+`--liveness strict|warn|off` overrides the default, and `--no-liveness` is `off`, which dependency-cruiser's own test suites need. A rule that may match nothing is excused by name: `allowEmpty: true` on the rule, or, for a rule that lives in a dependency-cruiser file, its name in the native file's top-level list:
+
+```yaml
+extends: ./.dependency-cruiser.cjs
+allowEmpty: [plugins-stay-apart]   # matches nothing until the first plugin lands
+```
+
+A name in that list that is no rule is a configuration error. `rulebearing adopt` writes the list for the rules that match nothing on the day it runs.
 
 ## What Rulebearing adds to a rule
 

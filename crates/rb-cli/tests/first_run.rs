@@ -256,6 +256,48 @@ fn adopt_baselines_and_goes_green() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn adopt_names_a_rule_that_matches_nothing() -> Result<(), Box<dyn Error>> {
+    let stale = DEPENDENCY_CRUISER.replace(
+        "  forbidden: [\n",
+        "  forbidden: [\n    { name: \"stale\", severity: \"error\", from: { path: \"^legacy/\" }, to: {} },\n",
+    );
+    let mut files = BROWNFIELD.to_vec();
+    files[1] = (".dependency-cruiser.cjs", stale.as_str());
+    let dir = tree("adopt-stale", &files)?;
+    // dependency-cruiser's configuration, run as it is: the stale rule is a warning (ADR-0032).
+    let before = run(&dir, &["cruise", "src"])?;
+    assert_eq!(before.status.code(), Some(3), "three errors, no exit 2");
+    assert!(String::from_utf8_lossy(&before.stderr).contains("warning: rule `stale`"));
+    let adopted = run(&dir, &["adopt", "--no-pr", "--owner", "@team"])?;
+    assert_eq!(
+        adopted.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&adopted.stderr)
+    );
+    assert!(String::from_utf8(adopted.stdout)?.contains("listed under allowEmpty: stale"));
+    let config = std::fs::read_to_string(dir.join("rulebearing.yaml"))?;
+    assert!(config.contains("allowEmpty: [\"stale\"]"), "{config}");
+    // The adopted file is strict, and green with its named exception.
+    let gate = run(&dir, &["cruise", "--config", "rulebearing.yaml", "src"])?;
+    assert_eq!(
+        gate.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&gate.stderr)
+    );
+    let body = rb_cli::cmd::adopt::pr_body(
+        "./.dependency-cruiser.cjs",
+        (&[], &["stale".to_owned()]),
+        &["rulebearing.yaml".to_owned()],
+        "0.1.0",
+    );
+    assert!(body.contains("check nothing: `stale`"), "{body}");
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
 fn adopt_commits_on_a_branch_without_a_remote() -> Result<(), Box<dyn Error>> {
     let dir = tree("adopt-git", BROWNFIELD)?;
     git(&dir, &["init", "-q"])?;
@@ -334,7 +376,12 @@ fn the_pull_request_body_matches_the_snapshot() -> Result<(), Box<dyn Error>> {
         "docs/architecture/rulebearing.md",
     ]
     .map(str::to_owned);
-    let body = rb_cli::cmd::adopt::pr_body("./.dependency-cruiser.cjs", &entries, &files, "0.1.0");
+    let body = rb_cli::cmd::adopt::pr_body(
+        "./.dependency-cruiser.cjs",
+        (&entries, &[]),
+        &files,
+        "0.1.0",
+    );
     if std::env::var_os("RB_UPDATE_SNAPSHOTS").is_some() {
         std::fs::write(snapshot(), &body)?;
         return Ok(());
@@ -345,7 +392,7 @@ fn the_pull_request_body_matches_the_snapshot() -> Result<(), Box<dyn Error>> {
         expected.replace("\r\n", "\n"),
         "the PR body changed; if that was intended, regenerate with RB_UPDATE_SNAPSHOTS=1"
     );
-    let clean = rb_cli::cmd::adopt::pr_body("./x.json", &[], &files, "0.1.0");
+    let clean = rb_cli::cmd::adopt::pr_body("./x.json", (&[], &[]), &files, "0.1.0");
     assert!(clean.contains("no findings, so there is no baseline"));
     Ok(())
 }

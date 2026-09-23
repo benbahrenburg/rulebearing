@@ -111,11 +111,13 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         return failed(RunExit::Untrustworthy, &message);
     }
     let (exceeded, no_budget) = ratchets::from_summary(document.summary.ratchets.as_deref());
+    // An entry the run only warned about (liveness `warn`) does not fail it (ADR-0032).
     let vacuous = document
         .summary
         .vacuous_rules
-        .as_ref()
-        .is_some_and(|v| !v.is_empty());
+        .iter()
+        .flatten()
+        .any(rb_model::VacuousRule::fails);
     let expired = document.summary.expired.as_ref().map_or(0, Vec::len) as u64;
     // As depcruise-fmt: without --exit-code, 0; with it, the code the cruise gave for this
     // reporter, from what the saved result carries (ADR-0030, ADR-0031).

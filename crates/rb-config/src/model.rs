@@ -69,6 +69,10 @@ pub struct Config {
     pub files: Vec<PathBuf>,
     /// Whether JavaScript was evaluated by Node (`--config-via-node`), recorded in `optionsUsed`.
     pub via_node: bool,
+    /// `allowEmpty`, native only: the rules and ratchets named as allowed to match nothing,
+    /// already applied to each rule's `meta.allow_empty`
+    /// ([ADR-0032](../../../docs/adr/0032-liveness-follows-the-configuration-format.md)).
+    pub allow_empty: Vec<String>,
 }
 
 /// A problem found while loading that does not make the configuration invalid.

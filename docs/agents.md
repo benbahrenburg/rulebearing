@@ -43,7 +43,7 @@ An agent that adds a rule can make it wrong in ways that read green. Five checks
 
 | Guard | Catches |
 | --- | --- |
-| Liveness, on by default | A rule whose `from` matches nothing: exit 2, listed in `summary.vacuousRules` ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)) |
+| Liveness, on by default | A rule whose `from` matches nothing: exit 2 under a `rulebearing.yaml`, a warning under a dependency-cruiser file, listed in `summary.vacuousRules` either way ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md), [ADR-0032](adr/0032-liveness-follows-the-configuration-format.md)) |
 | `rulebearing test` | A rule that does not flag its own `forbidden` examples, or flags its `allowed` ones |
 | `rulebearing config lint` | Rules that can never match, shadowed rules, an `allowed` list that admits everything, missing or empty `fix` text |
 | `--require-comment-token` | A rule with no `adr:NNNN` or `plan:<slug>` in its comment |

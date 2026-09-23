@@ -22,7 +22,7 @@ use serde_json::{Map, Value};
 use crate::extends::{self, Target};
 use crate::js::{self, Kind, Limits};
 use crate::model::{
-    CompatMode, Config, Define, KnownViolation, Languages, Options, Ratchet, Rules,
+    CompatMode, Config, Define, DependencyRules, KnownViolation, Languages, Options, Ratchet, Rules,
 };
 use crate::read::{self, Evaluation, Syntax};
 use crate::{ConfigError, ConfigFormat, defines, native, normalize, shorthands};
@@ -356,7 +356,7 @@ fn assemble(
     let merged = canonical.clone();
     let expanded = shorthands::expand(&mut canonical)?;
     let keys = normalize::check_keys(&canonical, compat, opts.strict_compat)?;
-    let rules = normalize::rule_set(&canonical)?;
+    let mut rules = normalize::rule_set(&canonical)?;
     let mut warnings = keys.warnings;
     warnings.extend(normalize::check_patterns(&rules, opts.strict_compat)?);
 
@@ -393,6 +393,7 @@ fn assemble(
         .transpose()
         .map_err(|e| invalid("defines", e))?
         .unwrap_or_default();
+    let allow_empty = allow_empty(&canonical, &mut rules, &ratchets)?;
     Ok(Config {
         schema,
         extends: written_extends,
@@ -416,7 +417,58 @@ fn assemble(
         warnings,
         files: Vec::new(),
         via_node: false,
+        allow_empty,
     })
+}
+
+/// Reads `allowEmpty` (a native file's named liveness exceptions) and applies it: each named
+/// dependency rule gets `meta.allow_empty`, and `allowed[N]` names the Nth `allowed` entry. A name
+/// that is no rule or ratchet is an error, so an exception cannot outlive the rule it excused
+/// ([ADR-0032](../../../docs/adr/0032-liveness-follows-the-configuration-format.md)).
+fn allow_empty(
+    canonical: &Map<String, Value>,
+    rules: &mut DependencyRules,
+    ratchets: &[Ratchet],
+) -> Result<Vec<String>, ConfigError> {
+    let Some(value) = canonical.get("allowEmpty") else {
+        return Ok(Vec::new());
+    };
+    let names: Vec<String> = serde_json::from_value(value.clone()).map_err(|_| {
+        ConfigError::Invalid("`allowEmpty` must be a list of rule and ratchet names".into())
+    })?;
+    // Rules as written, before normalisation drops `ignore` rules: naming one is not an error.
+    let written: BTreeSet<&str> = ["forbidden", "required"]
+        .iter()
+        .filter_map(|list| canonical.get(*list).and_then(Value::as_array))
+        .flatten()
+        .filter_map(|rule| rule.get("name").and_then(Value::as_str))
+        .collect();
+    for name in &names {
+        let allowed_index = name
+            .strip_prefix("allowed[")
+            .and_then(|rest| rest.strip_suffix(']'))
+            .and_then(|index| index.parse::<usize>().ok());
+        let known = written.contains(name.as_str())
+            || ratchets.iter().any(|r| &r.name == name)
+            || allowed_index.is_some_and(|i| i < rules.allowed.len());
+        if !known {
+            return Err(ConfigError::Invalid(format!(
+                "`allowEmpty` names `{name}`, which is no rule or ratchet in this configuration; remove it from the list"
+            )));
+        }
+        if let Some(rule) = allowed_index.and_then(|i| rules.allowed.get_mut(i)) {
+            rule.meta.allow_empty = true;
+        }
+        for rule in rules
+            .forbidden
+            .iter_mut()
+            .chain(rules.required.iter_mut())
+            .filter(|r| r.name() == name)
+        {
+            rule.meta.allow_empty = true;
+        }
+    }
+    Ok(names)
 }
 
 #[cfg(test)]
@@ -451,6 +503,74 @@ mod tests {
         fn drop(&mut self) {
             let _ = std::fs::remove_dir_all(&self.0);
         }
+    }
+
+    #[test]
+    fn allow_empty_names_rules_across_extends() -> Result<(), Box<dyn Error>> {
+        let repo = Repo::new(
+            "allow-empty",
+            &[
+                (
+                    ".dependency-cruiser.json",
+                    r#"{ "forbidden": [
+                          { "name": "stale", "from": { "path": "^old/" }, "to": {} },
+                          { "name": "live", "from": { "path": "^src/" }, "to": {} },
+                          { "name": "quiet", "severity": "ignore", "from": {}, "to": {} } ],
+                        "allowed": [{ "from": {}, "to": {} }] }"#,
+                ),
+                (
+                    "rulebearing.yaml",
+                    "extends: ./.dependency-cruiser.json\nallowEmpty: [stale, quiet, \"allowed[0]\"]\n",
+                ),
+                (
+                    "wrong.yaml",
+                    "extends: ./.dependency-cruiser.json\nallowEmpty: [gone]\n",
+                ),
+                (
+                    "range.yaml",
+                    "extends: ./.dependency-cruiser.json\nallowEmpty: [\"allowed[1]\"]\n",
+                ),
+                ("shape.yaml", "allowEmpty: stale\n"),
+                (
+                    "dc-with-list.json",
+                    r#"{ "allowEmpty": ["x"], "forbidden": [{ "name": "x", "from": {}, "to": {} }] }"#,
+                ),
+            ],
+        )?;
+        let config = repo.load("rulebearing.yaml")?;
+        assert_eq!(config.allow_empty, ["stale", "quiet", "allowed[0]"]);
+        let excused = |name: &str| {
+            config
+                .rules
+                .dependencies
+                .forbidden
+                .iter()
+                .find(|r| r.name() == name)
+                .map(|r| r.meta.allow_empty)
+        };
+        assert_eq!(excused("stale"), Some(true));
+        assert_eq!(excused("live"), Some(false), "only the named rules");
+        assert_eq!(
+            excused("quiet"),
+            None,
+            "an ignore rule is dropped, and naming it is fine"
+        );
+        assert!(config.rules.dependencies.allowed[0].meta.allow_empty);
+        for (file, needle) in [
+            ("wrong.yaml", "`gone`"),
+            ("range.yaml", "`allowed[1]`"),
+            ("shape.yaml", "list of rule and ratchet names"),
+        ] {
+            let message = match repo.load(file) {
+                Err(ConfigError::Invalid(message)) => message,
+                other => return Err(format!("{file} should be invalid, got {other:?}").into()),
+            };
+            assert!(message.contains(needle), "{file}: {message}");
+        }
+        // In a dependency-cruiser file the key is a native addition: loaded, with a warning.
+        let dc = repo.load("dc-with-list.json")?;
+        assert!(dc.warnings.iter().any(|w| w.message.contains("allowEmpty")));
+        Ok(())
     }
 
     #[test]
