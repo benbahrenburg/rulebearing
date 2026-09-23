@@ -198,6 +198,51 @@ pub fn adopted_config(extends: &str, entries: &[Value], empty: &[String], today:
     out
 }
 
+/// How the configuration's folder installs its dependencies, read from its lockfile. The CI step
+/// installs them before the cruise when there is one, because a `tsconfig.json` that `extends` a
+/// workspace or npm package only resolves once `node_modules` exists. Scripts are skipped: the
+/// cruise needs the files, not a build.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Install {
+    /// `pnpm-lock.yaml`.
+    Pnpm,
+    /// `package-lock.json`.
+    Npm,
+    /// `yarn.lock` with `.yarnrc.yml` (Yarn 2 and later).
+    YarnBerry,
+    /// `yarn.lock` alone (Yarn 1).
+    YarnClassic,
+}
+
+impl Install {
+    /// The lockfile in `dir`, if any.
+    pub fn detect(dir: &Path) -> Option<Self> {
+        if dir.join("pnpm-lock.yaml").is_file() {
+            Some(Self::Pnpm)
+        } else if dir.join("package-lock.json").is_file() {
+            Some(Self::Npm)
+        } else if dir.join("yarn.lock").is_file() {
+            Some(if dir.join(".yarnrc.yml").is_file() {
+                Self::YarnBerry
+            } else {
+                Self::YarnClassic
+            })
+        } else {
+            None
+        }
+    }
+
+    /// The install command.
+    pub fn command(self) -> &'static str {
+        match self {
+            Self::Pnpm => "corepack enable && pnpm install --frozen-lockfile --ignore-scripts",
+            Self::Npm => "npm ci --ignore-scripts",
+            Self::YarnBerry => "corepack enable && yarn install --immutable --mode=skip-build",
+            Self::YarnClassic => "yarn install --frozen-lockfile --ignore-scripts",
+        }
+    }
+}
+
 /// Where the configuration sits in the repository: its folder relative to the git root (`web`,
 /// or empty at the root), and the way back up from it (`../`). The CI step and the pre-commit hook
 /// belong at the root, where GitHub, Azure Pipelines and Git look for them; `rulebearing.yaml`
@@ -228,7 +273,12 @@ impl Placement {
 }
 
 /// The CI step's file name, relative to the configuration's folder, and its text.
-pub fn ci_step(ci: Ci, paths: &[String], at: &Placement) -> (String, String) {
+pub fn ci_step(
+    ci: Ci,
+    paths: &[String],
+    at: &Placement,
+    install: Option<Install>,
+) -> (String, String) {
     let paths = paths.join(" ");
     let version = env!("CARGO_PKG_VERSION");
     match ci {
@@ -238,10 +288,21 @@ pub fn ci_step(ci: Ci, paths: &[String], at: &Placement) -> (String, String) {
             } else {
                 format!("          working-directory: {}\n", at.dir)
             };
+            let run_directory = if at.dir.is_empty() {
+                String::new()
+            } else {
+                format!("        working-directory: {}\n", at.dir)
+            };
+            let dependencies = install.map_or_else(String::new, |i| {
+                format!(
+                    "      - uses: actions/setup-node@v4\n        with:\n          node-version: 22\n      - run: {}\n{run_directory}",
+                    i.command()
+                )
+            });
             (
                 format!("{}.github/workflows/rulebearing.yml", at.up),
                 format!(
-                    "# The architecture gate, written by `rulebearing adopt`.\nname: rulebearing\n\non:\n  pull_request:\n  push:\n    branches: [main]\n\npermissions:\n  contents: read\n\njobs:\n  rulebearing:\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v4\n      - uses: benbahrenburg/rulebearing@v{version}\n        with:\n{directory}          args: --config rulebearing.yaml {paths}\n"
+                    "# The architecture gate, written by `rulebearing adopt`.\nname: rulebearing\n\non:\n  pull_request:\n  push:\n    branches: [main]\n\npermissions:\n  contents: read\n\njobs:\n  rulebearing:\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v4\n{dependencies}      - uses: benbahrenburg/rulebearing@v{version}\n        with:\n{directory}          args: --config rulebearing.yaml {paths}\n"
                 ),
             )
         }
@@ -251,13 +312,56 @@ pub fn ci_step(ci: Ci, paths: &[String], at: &Placement) -> (String, String) {
             } else {
                 format!("    workingDirectory: {}\n", at.dir)
             };
+            let dependencies = install.map_or_else(String::new, |i| {
+                format!(
+                    "  - task: NodeTool@0\n    inputs:\n      versionSpec: '22.x'\n  - script: {}\n    displayName: dependencies\n{directory}",
+                    i.command()
+                )
+            });
             (
                 format!("{}azure-pipelines.rulebearing.yml", at.up),
                 format!(
-                    "# The architecture gate, written by `rulebearing adopt`.\ntrigger:\n  branches:\n    include: [main]\npr:\n  branches:\n    include: ['*']\n\npool:\n  vmImage: ubuntu-latest\n\nsteps:\n  - checkout: self\n  - script: npx --yes rulebearing@{version} cruise --config rulebearing.yaml --output-type azure-devops {paths}\n    displayName: rulebearing\n{directory}"
+                    "# The architecture gate, written by `rulebearing adopt`.\ntrigger:\n  branches:\n    include: [main]\npr:\n  branches:\n    include: ['*']\n\npool:\n  vmImage: ubuntu-latest\n\nsteps:\n  - checkout: self\n{dependencies}  - script: npx --yes rulebearing@{version} cruise --config rulebearing.yaml --output-type azure-devops {paths}\n    displayName: rulebearing\n{directory}"
                 ),
             )
         }
+    }
+}
+
+/// A git-hook manager the repository already uses, which owns its hooks: `adopt` then writes no
+/// hook of its own (one in `.githooks/` would need `core.hooksPath`, which switches the manager's
+/// hooks off) and says what to add to it instead. Husky is not listed: `adopt` extends its
+/// `.husky/pre-commit` directly.
+pub fn hook_manager(root: &Path, cwd: &Path) -> Option<&'static str> {
+    let files = [
+        ("lefthook.yml", "lefthook"),
+        (".lefthook.yml", "lefthook"),
+        ("lefthook.yaml", "lefthook"),
+        (".lefthook.yaml", "lefthook"),
+        (".pre-commit-config.yaml", "pre-commit"),
+    ];
+    if let Some((_, name)) = files.iter().find(|(f, _)| root.join(f).is_file()) {
+        return Some(name);
+    }
+    let simple = |dir: &Path| {
+        std::fs::read_to_string(dir.join("package.json"))
+            .ok()
+            .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+            .is_some_and(|p| p.get("simple-git-hooks").is_some())
+    };
+    (simple(root) || simple(cwd)).then_some("simple-git-hooks")
+}
+
+/// The command a pre-commit hook runs, from the repository root.
+pub fn hook_command(paths: &[String], at: &Placement) -> String {
+    let command = format!(
+        "npx --no-install rulebearing cruise --config rulebearing.yaml --output-type err {}",
+        paths.join(" ")
+    );
+    if at.dir.is_empty() {
+        command
+    } else {
+        format!("(cd {} && {command})", at.dir)
     }
 }
 
@@ -266,15 +370,7 @@ pub fn ci_step(ci: Ci, paths: &[String], at: &Placement) -> (String, String) {
 /// An existing hook keeps every line it has and gains the gate as its last line; one that already
 /// runs the gate is left as it is.
 pub fn hook(cwd: &Path, paths: &[String], at: &Placement) -> (String, String) {
-    let command = format!(
-        "npx --no-install rulebearing cruise --config rulebearing.yaml --output-type err {}",
-        paths.join(" ")
-    );
-    let line = if at.dir.is_empty() {
-        format!("{command}\n")
-    } else {
-        format!("(cd {} && {command})\n", at.dir)
-    };
+    let line = format!("{}\n", hook_command(paths, at));
     let root = cwd.join(&at.up);
     let (path, relative) = if root.join(".husky").is_dir() {
         (format!("{}.husky/pre-commit", at.up), ".husky/pre-commit")
@@ -343,7 +439,7 @@ pub fn architecture_page(config: &Config, entries: &[Value], extends: &str) -> S
 /// The pull request's body.
 pub fn pr_body(
     extends: &str,
-    (entries, empty): (&[Value], &[String]),
+    (entries, empty, notes): (&[Value], &[String], &[String]),
     files: &[String],
     version: &str,
 ) -> String {
@@ -377,6 +473,9 @@ pub fn pr_body(
             "These rules match no module today, so they check nothing: {}. They are listed under `allowEmpty` in `rulebearing.yaml` so the gate can pass; fix their paths or delete them, then take them off the list.\n",
             names.join(", ")
         );
+    }
+    for note in notes {
+        let _ = writeln!(out, "{note}\n");
     }
     out.push_str("Files:\n\n");
     for f in files {
@@ -564,13 +663,19 @@ pub fn run(ctx: &mut Context<'_>, args: &AdoptArgs) -> Outcome {
         Err(o) => return o,
     };
     let at = Placement::of(ctx);
-    let (ci_file, ci_text) = ci_step(args.ci, &paths, &at);
+    let (ci_file, ci_text) = ci_step(args.ci, &paths, &at, Install::detect(&ctx.cwd));
     let (hook_file, hook_text) = hook(&ctx.cwd, &paths, &at);
     let hook_path = ctx.resolve(&hook_file);
-    let mut files = vec![
-        ("rulebearing.yaml".to_owned(), text),
-        (hook_file, hook_text),
-    ];
+    let manager = hook_manager(&ctx.cwd.join(&at.up), &ctx.cwd);
+    let mut files = vec![("rulebearing.yaml".to_owned(), text)];
+    let mut notes = Vec::new();
+    match manager {
+        Some(manager) => notes.push(format!(
+            "The repository runs its git hooks with {manager}, so no hook was added. To run the gate before each commit, add this to its pre-commit hook: `{}`",
+            hook_command(&paths, &at)
+        )),
+        None => files.push((hook_file, hook_text)),
+    }
     if !ctx.resolve(&ci_file).exists() {
         files.push((ci_file, ci_text));
     }
@@ -583,7 +688,9 @@ pub fn run(ctx: &mut Context<'_>, args: &AdoptArgs) -> Outcome {
             return o;
         }
     }
-    executable(&hook_path);
+    if manager.is_none() {
+        executable(&hook_path);
+    }
     let names: Vec<String> = files.into_iter().map(|(f, _)| f).collect();
     let mut report = format!(
         "baselined {} findings; a cruise with rulebearing.yaml exits 0\n",
@@ -596,6 +703,9 @@ pub fn run(ctx: &mut Context<'_>, args: &AdoptArgs) -> Outcome {
             adopted.allow_empty.join(", ")
         );
     }
+    for note in &notes {
+        let _ = writeln!(report, "{note}");
+    }
     report.push_str("wrote:\n");
     for n in &names {
         let _ = writeln!(report, "  {n}");
@@ -603,7 +713,7 @@ pub fn run(ctx: &mut Context<'_>, args: &AdoptArgs) -> Outcome {
     if !args.no_pr {
         let body = pr_body(
             &extends,
-            (&entries, &adopted.allow_empty),
+            (&entries, &adopted.allow_empty, &notes),
             &names,
             env!("CARGO_PKG_VERSION"),
         );
@@ -638,12 +748,12 @@ mod tests {
     fn ci_steps_and_hooks() {
         let paths = vec!["src".to_owned()];
         let root = Placement::default();
-        let (file, text) = ci_step(Ci::Github, &paths, &root);
+        let (file, text) = ci_step(Ci::Github, &paths, &root, None);
         assert_eq!(file, ".github/workflows/rulebearing.yml");
         assert!(
             text.contains("args: --config rulebearing.yaml src") && text.contains("contents: read")
         );
-        let (file, text) = ci_step(Ci::Azure, &paths, &root);
+        let (file, text) = ci_step(Ci::Azure, &paths, &root, None);
         assert_eq!(file, "azure-pipelines.rulebearing.yml");
         assert!(text.contains("--output-type azure-devops src"));
         let dir = std::env::temp_dir().join(format!("rb-adopt-hook-{}", std::process::id()));
@@ -690,7 +800,7 @@ mod tests {
             ("packages/dds/tree", "../../../")
         );
         let paths = vec!["apps".to_owned()];
-        let (file, text) = ci_step(Ci::Github, &paths, &web);
+        let (file, text) = ci_step(Ci::Github, &paths, &web, None);
         assert_eq!(file, "../.github/workflows/rulebearing.yml");
         assert!(
             text.contains(
@@ -698,7 +808,7 @@ mod tests {
             ),
             "{text}"
         );
-        let (file, text) = ci_step(Ci::Azure, &paths, &web);
+        let (file, text) = ci_step(Ci::Azure, &paths, &web, None);
         assert_eq!(file, "../azure-pipelines.rulebearing.yml");
         assert!(text.ends_with("    workingDirectory: web\n"), "{text}");
         let repo = std::env::temp_dir().join(format!("rb-adopt-sub-{}", std::process::id()));
@@ -713,5 +823,67 @@ mod tests {
             "../.husky/pre-commit"
         );
         let _ = std::fs::remove_dir_all(&repo);
+    }
+
+    #[test]
+    fn a_hook_manager_owns_the_hooks() {
+        let dir = std::env::temp_dir().join(format!("rb-adopt-mgr-{}", std::process::id()));
+        let web = dir.join("web");
+        let _ = std::fs::remove_dir_all(&dir);
+        let _ = std::fs::create_dir_all(&web);
+        assert_eq!(hook_manager(&dir, &web), None);
+        let _ = std::fs::write(web.join("package.json"), r#"{ "simple-git-hooks": {} }"#);
+        assert_eq!(hook_manager(&dir, &web), Some("simple-git-hooks"));
+        let _ = std::fs::write(dir.join(".pre-commit-config.yaml"), "repos: []\n");
+        assert_eq!(hook_manager(&dir, &web), Some("pre-commit"));
+        let _ = std::fs::write(dir.join("lefthook.yml"), "pre-commit: {}\n");
+        assert_eq!(hook_manager(&dir, &web), Some("lefthook"));
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(
+            hook_command(&["apps".to_owned()], &Placement::from_prefix("web/")),
+            "(cd web && npx --no-install rulebearing cruise --config rulebearing.yaml --output-type err apps)"
+        );
+    }
+
+    #[test]
+    fn dependencies_install_from_the_lockfile_before_the_cruise() {
+        let dir = std::env::temp_dir().join(format!("rb-adopt-lock-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let _ = std::fs::create_dir_all(&dir);
+        assert_eq!(Install::detect(&dir), None);
+        for (files, expected) in [
+            (&["yarn.lock"][..], Install::YarnClassic),
+            (&["yarn.lock", ".yarnrc.yml"][..], Install::YarnBerry),
+            (&["package-lock.json", "yarn.lock"][..], Install::Npm),
+            (&["pnpm-lock.yaml", "package-lock.json"][..], Install::Pnpm),
+        ] {
+            for f in files {
+                let _ = std::fs::write(dir.join(f), "");
+            }
+            assert_eq!(Install::detect(&dir), Some(expected), "{files:?}");
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+        for install in [
+            Install::Pnpm,
+            Install::Npm,
+            Install::YarnBerry,
+            Install::YarnClassic,
+        ] {
+            assert!(
+                install.command().contains("--ignore-scripts")
+                    || install.command().contains("--mode=skip-build"),
+                "{install:?} builds nothing"
+            );
+        }
+        let web = Placement::from_prefix("web/");
+        let paths = vec!["apps".to_owned()];
+        let (_, text) = ci_step(Ci::Github, &paths, &web, Some(Install::Pnpm));
+        let install = "      - uses: actions/setup-node@v4\n        with:\n          node-version: 22\n      - run: corepack enable && pnpm install --frozen-lockfile --ignore-scripts\n        working-directory: web\n      - uses: benbahrenburg/rulebearing@";
+        assert!(text.contains(install), "{text}");
+        let (_, text) = ci_step(Ci::Azure, &paths, &web, Some(Install::Npm));
+        assert!(
+            text.contains("  - script: npm ci --ignore-scripts\n    displayName: dependencies\n    workingDirectory: web\n  - script: npx"),
+            "{text}"
+        );
     }
 }

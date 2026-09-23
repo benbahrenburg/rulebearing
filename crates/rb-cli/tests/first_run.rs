@@ -288,7 +288,7 @@ fn adopt_names_a_rule_that_matches_nothing() -> Result<(), Box<dyn Error>> {
     );
     let body = rb_cli::cmd::adopt::pr_body(
         "./.dependency-cruiser.cjs",
-        (&[], &["stale".to_owned()]),
+        (&[], &["stale".to_owned()], &[]),
         &["rulebearing.yaml".to_owned()],
         "0.1.0",
     );
@@ -438,7 +438,7 @@ fn the_pull_request_body_matches_the_snapshot() -> Result<(), Box<dyn Error>> {
     .map(str::to_owned);
     let body = rb_cli::cmd::adopt::pr_body(
         "./.dependency-cruiser.cjs",
-        (&entries, &[]),
+        (&entries, &[], &[]),
         &files,
         "0.1.0",
     );
@@ -452,7 +452,7 @@ fn the_pull_request_body_matches_the_snapshot() -> Result<(), Box<dyn Error>> {
         expected.replace("\r\n", "\n"),
         "the PR body changed; if that was intended, regenerate with RB_UPDATE_SNAPSHOTS=1"
     );
-    let clean = rb_cli::cmd::adopt::pr_body("./x.json", (&[], &[]), &files, "0.1.0");
+    let clean = rb_cli::cmd::adopt::pr_body("./x.json", (&[], &[], &[]), &files, "0.1.0");
     assert!(clean.contains("no findings, so there is no baseline"));
     Ok(())
 }
