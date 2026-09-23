@@ -87,7 +87,12 @@ pub fn extract(
     } else {
         paths.iter().map(PathBuf::from).collect()
     };
-    let (settings, resolve) = rb_extract_ts::prepare(&config.languages.typescript, &ctx.cwd)?;
+    let (settings, mut resolve) = rb_extract_ts::prepare(&config.languages.typescript, &ctx.cwd)?;
+    // Licences and deprecations are read from package.json only when a rule asks for them, as
+    // upstream's ruleSetHasLicenseRule and ruleSetHasDeprecationRule decide.
+    resolve.resolve_licenses = rb_rules::derive::has_license_rule(&config.rules.dependencies);
+    resolve.resolve_deprecations =
+        rb_rules::derive::has_deprecation_rule(&config.rules.dependencies);
     let extraction = rb_extract_ts::extract_with(&roots, &settings, &resolve)?;
     Ok(GraphDocument {
         modules: extraction.modules,

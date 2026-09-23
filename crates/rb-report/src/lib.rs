@@ -64,6 +64,25 @@ pub const OUTPUT_TYPES: &[(&str, u8)] = &[
     ("plantuml", 3),
 ];
 
+/// The reporters whose exit code is the error count; every other reporter exits 0, as each of
+/// dependency-cruiser's reporters decides for itself
+/// ([ADR-0030](../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)).
+/// `github-annotations` and `agent` are Rulebearing's, and gate.
+pub const GATING: &[&str] = &[
+    "err",
+    "err-long",
+    "null",
+    "teamcity",
+    "azure-devops",
+    "github-annotations",
+    "agent",
+];
+
+/// Whether `output_type` gates: its exit code is the error count.
+pub fn gates(output_type: &str) -> bool {
+    GATING.contains(&output_type)
+}
+
 /// Whether `name` is a known output type. `plugin:<path>` is always accepted syntactically and
 /// resolved at run time ([coverage § Output types](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types)).
 pub fn is_output_type(name: &str) -> bool {
@@ -341,6 +360,14 @@ mod tests {
             assert!(render(t, &result, &o).is_ok(), "{t}");
         }
         assert_eq!(render("null", &result, &o).map(|r| r.exit_code), Ok(2));
+        // The gating table agrees with what each ported reporter returns.
+        for (t, wave) in OUTPUT_TYPES {
+            if *wave == 1 {
+                let code = render(t, &result, &o).map(|r| r.exit_code);
+                assert_eq!(code, Ok(if gates(t) { 2 } else { 0 }), "{t}");
+            }
+        }
+        assert!(!gates("json") && gates("err") && !gates("dot"));
         assert_eq!(
             render("dot", &result, &o),
             Err(ReportError::NotYet {

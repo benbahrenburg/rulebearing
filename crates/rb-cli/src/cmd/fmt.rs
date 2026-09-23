@@ -111,12 +111,15 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         return failed(RunExit::Untrustworthy, &message);
     }
     let (exceeded, no_budget) = ratchets::from_summary(document.summary.ratchets.as_deref());
+    // As depcruise-fmt: without --exit-code, 0; with it, the reporter's code (ADR-0030).
     let code = if !args.exit_code {
         RunExit::Violations(0)
     } else if no_budget {
         RunExit::Untrustworthy
-    } else {
+    } else if rb_report::gates(&args.output_type) {
         RunExit::Violations(document.summary.error + exceeded)
+    } else {
+        RunExit::Violations(0)
     };
     Outcome {
         stdout,

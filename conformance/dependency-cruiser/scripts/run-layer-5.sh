@@ -124,18 +124,25 @@ cruise_both() { # out, directory, config, incumbent script, roots...
   local out="$1" dir="$2" config="$3" incumbent="$4"
   shift 4
   mkdir -p "$out"
-  local started status
+  local started status incumbent_status
   started="$(date +%s)"
   status=0
   (cd "$dir" && node "$incumbent" --config "$config" --output-type json --no-progress "$@") \
     > "$out/incumbent.json" 2> "$out/incumbent.err" || status=$?
+  incumbent_status="$status"
   echo "layer5: dependency-cruiser exit $status in $(( $(date +%s) - started ))s"
   started="$(date +%s)"
   status=0
   (cd "$dir" && "$rulebearing" cruise --config "$config" --output-type json --no-liveness "$@") \
     > "$out/rulebearing.json" 2> "$out/rulebearing.err" || status=$?
   echo "layer5: rulebearing exit $status in $(( $(date +%s) - started ))s"
-  # Both exit with the number of error-severity violations; only unreadable output is a failure.
+  # The json reporter does not gate in either tool, so both exit 0 on a trustworthy run
+  # (docs/adr/0030-the-reporter-decides-the-error-count-exit.md); a different code is a difference.
+  if [ "$status" != "$incumbent_status" ]; then
+    echo "layer5: exit codes differ: dependency-cruiser $incumbent_status, rulebearing $status" >&2
+    head -c 2000 "$out/rulebearing.err" >&2
+    return 1
+  fi
   local tool
   for tool in incumbent rulebearing; do
     if ! node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$out/$tool.json" 2> /dev/null; then

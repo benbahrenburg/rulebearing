@@ -130,7 +130,11 @@ fn can_import_answers_from_the_saved_graph() -> Result<(), Box<dyn Error>> {
         &dir,
         &["cruise", "-T", "json", "-f", ".graph/cruise.json", "src"],
     )?;
-    assert_eq!(saved.status.code(), Some(1));
+    assert_eq!(
+        saved.status.code(),
+        Some(0),
+        "json does not gate (ADR-0030)"
+    );
     let no = run(
         &dir,
         &["can-import", "src/domain/model.ts", "src/web/view.ts"],
@@ -318,13 +322,21 @@ fn cruise_and_fmt_enforce_the_ratchets() -> Result<(), Box<dyn Error>> {
     assert!(strict["summary"].get("ratchets").is_none());
 
     std::fs::write(dir.join("budgets/domain-web.json"), "{\"ceiling\":0}\n")?;
-    let over = run(&dir, &["cruise", "-T", "json", "-f", "out.json", "src"])?;
+    let over = run(&dir, &["cruise", "-T", "err", "src"])?;
     assert_eq!(
         over.status.code(),
         Some(1),
         "an exceeded ratchet is one error"
     );
     assert!(String::from_utf8_lossy(&over.stderr).contains("over the ceiling of 0"));
+    let saved = run(&dir, &["cruise", "-T", "json", "-f", "out.json", "src"])?;
+    assert_eq!(
+        saved.status.code(),
+        Some(0),
+        "json does not gate (ADR-0030)"
+    );
+    let json_gate = run(&dir, &["fmt", "--exit-code", "-T", "json", "out.json"])?;
+    assert_eq!(json_gate.status.code(), Some(0), "nor does fmt -T json");
     let reported = run(&dir, &["fmt", "--exit-code", "-T", "err", "out.json"])?;
     assert_eq!(
         reported.status.code(),
