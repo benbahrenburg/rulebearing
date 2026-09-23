@@ -125,8 +125,8 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
             ),
         );
     }
-    let argv = std::iter::once("rulebearing".to_owned()).chain(args.iter().cloned());
-    let cli = match Cli::try_parse_from(argv) {
+    let command_line = std::iter::once("rulebearing".to_owned()).chain(args.iter().cloned());
+    let cli = match Cli::try_parse_from(command_line) {
         Ok(cli) => cli,
         Err(error) => {
             let text = error.render().to_string();

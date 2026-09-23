@@ -90,8 +90,8 @@ pub fn load(ctx: &mut Context<'_>, args: &ConfigArgs) -> Result<Option<Config>, 
     Ok(Some(config))
 }
 
-fn filter(pattern: &str) -> Option<PathFilter> {
-    Some(PathFilter::Patterns(Patterns::One(pattern.to_owned())))
+fn filter(pattern: &str) -> PathFilter {
+    PathFilter::Patterns(Patterns::One(pattern.to_owned()))
 }
 
 /// Parses `--module-systems cjs,es6`.
@@ -123,13 +123,13 @@ pub fn apply_flags(
 ) -> Result<(), ConfigError> {
     let ts = &mut config.languages.typescript;
     if let Some(p) = &args.include_only {
-        ts.include_only = filter(p);
+        ts.include_only = Some(filter(p));
     }
     if let Some(p) = &args.exclude {
-        ts.exclude = filter(p);
+        ts.exclude = Some(filter(p));
     }
     if let Some(p) = &args.do_not_follow {
-        ts.do_not_follow = filter(p);
+        ts.do_not_follow = Some(filter(p));
     }
     if let Some(depth) = args.max_depth {
         ts.max_depth = Some(depth);
@@ -355,6 +355,20 @@ mod tests {
             },
         )?;
         assert!(stdin.is_some());
+        let _ = std::fs::remove_dir_all(&dir);
+        Ok(())
+    }
+
+    #[test]
+    fn flags_apply() -> Result<(), Box<dyn std::error::Error>> {
+        let dir = std::env::temp_dir().join(format!("rb-cli-flags-{}", std::process::id()));
+        std::fs::create_dir_all(&dir)?;
+        std::fs::write(
+            dir.join(".dependency-cruiser.json"),
+            r#"{"forbidden":[{"name":"r","comment":"x","from":{},"to":{}}]}"#,
+        )?;
+        let mut empty: &[u8] = b"";
+        let mut c = ctx(&dir, &mut empty);
         let mut config = load(&mut c, &ConfigArgs::default())?.unwrap_or_default();
         std::fs::write(dir.join("webpack.json"), r#"{"alias":{}}"#)?;
         let args = CruiseArgs {

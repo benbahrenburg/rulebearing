@@ -48,13 +48,13 @@ pub fn strip(result: &mut Value) {
     each(result, "modules", &mut |module| {
         remove(module, MODULE_ADDITIONS);
         each(module, "dependencies", &mut |d| {
-            remove(d, DEPENDENCY_ADDITIONS)
+            remove(d, DEPENDENCY_ADDITIONS);
         });
     });
     if let Some(summary) = result.get_mut("summary") {
         remove(summary, SUMMARY_ADDITIONS);
         each(summary, "violations", &mut |v| {
-            remove(v, VIOLATION_ADDITIONS)
+            remove(v, VIOLATION_ADDITIONS);
         });
         if let Some(rules) = summary.get_mut("ruleSetUsed") {
             for list in ["forbidden", "allowed", "required"] {

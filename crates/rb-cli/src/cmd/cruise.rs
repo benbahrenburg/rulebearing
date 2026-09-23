@@ -57,7 +57,7 @@ pub fn color(choice: ColorChoice, terminal: bool) -> bool {
     }
 }
 
-fn failed(error: &RunError, stderr: String) -> Outcome {
+fn failed(error: &RunError, stderr: &str) -> Outcome {
     let code = match error {
         RunError::Config(_) => RunExit::InvalidConfig,
         RunError::Extract(_) | RunError::Engine(_) => RunExit::Untrustworthy,
@@ -85,12 +85,12 @@ pub fn run(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
     });
     let mut config = match configure::load(ctx, &args.config) {
         Ok(config) => config,
-        Err(e) => return failed(&RunError::Config(e), String::new()),
+        Err(e) => return failed(&RunError::Config(e), ""),
     };
     let has_config = config.is_some();
     let mut effective = config.take().unwrap_or_default();
     if let Err(e) = configure::apply_flags(&mut effective, args, ctx) {
-        return failed(&RunError::Config(e), String::new());
+        return failed(&RunError::Config(e), "");
     }
     progress.stage("configuration");
     let mut stderr = String::new();
@@ -115,7 +115,7 @@ pub fn run(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
     let options = RunOptions {
         liveness: !args.no_liveness && has_config,
         options_used: configure::options_used(
-            Some(&effective).filter(|_| has_config),
+            has_config.then_some(&effective),
             ctx,
             &output_type,
             &output_to,
@@ -124,7 +124,7 @@ pub fn run(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
     };
     let run = match pipeline::run(ctx, &effective, &options, &mut progress) {
         Ok(run) => run,
-        Err(e) => return failed(&e, stderr),
+        Err(e) => return failed(&e, &stderr),
     };
     report(
         ctx,
@@ -154,7 +154,7 @@ fn report(
 ) -> Outcome {
     let value = match serde_json::to_value(&run.document) {
         Ok(v) => v,
-        Err(e) => return failed(&RunError::Engine(e.into()), stderr),
+        Err(e) => return failed(&RunError::Engine(e.into()), &stderr),
     };
     let options = ReportOptions {
         color: color(args.color, ctx.color_terminal) && output_to == "-",
@@ -167,7 +167,7 @@ fn report(
         Err(e) => {
             return failed(
                 &RunError::Config(rb_config::ConfigError::Invalid(e.to_string())),
-                stderr,
+                &stderr,
             );
         }
     };
