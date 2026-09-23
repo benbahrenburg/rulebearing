@@ -13,6 +13,7 @@
 //! syntax requires.
 
 use serde_json::Value;
+use std::fmt::Write as _;
 
 use crate::{Rendered, edge_position, find_rule, severity, text};
 
@@ -76,11 +77,12 @@ pub fn render(result: &Value) -> Rendered {
             message.push_str(" Fix: ");
             message.push_str(fix);
         }
-        output.push_str(&format!(
-            "::{command} {}::{}\n",
+        let _ = writeln!(
+            output,
+            "::{command} {}::{}",
             properties.join(","),
             escape_data(&message)
-        ));
+        );
     }
     Rendered {
         output,

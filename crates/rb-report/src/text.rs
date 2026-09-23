@@ -8,6 +8,7 @@
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
 
 use std::collections::HashSet;
+use std::fmt::Write as _;
 
 use serde_json::Value;
 
@@ -45,11 +46,12 @@ pub fn render(result: &Value, highlight_focused: bool, color: bool) -> Rendered 
         {
             let resolved = text(dependency, "resolved");
             let to_highlight = highlight_focused && in_focus.contains(&resolved);
-            output.push_str(&format!(
-                "{} → {}\n",
+            let _ = writeln!(
+                output,
+                "{} → {}",
                 show(&source, from_highlight),
                 show(&resolved, to_highlight)
-            ));
+            );
         }
     }
     if output.is_empty() {

@@ -5,8 +5,6 @@
 //! - Plan: [Wave 1, Step 12](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
 
-use std::cmp::Ordering;
-
 use serde_json::Value;
 
 use crate::{Rendered, text, truthy};
@@ -35,8 +33,7 @@ fn incidence(module: &Value, column: &str) -> String {
             .get("rules")
             .and_then(Value::as_array)
             .and_then(|r| r.first())
-            .map(|r| text(r, "severity"))
-            .unwrap_or_else(|| "undefined".into()),
+            .map_or_else(|| "undefined".into(), |r| text(r, "severity")),
     }
 }
 
@@ -49,13 +46,7 @@ pub fn render(result: &Value) -> Rendered {
         .unwrap_or_default();
     modules.sort_by(|a, b| {
         let (ka, kb) = (sort_key(a), sort_key(b));
-        if ka > kb {
-            Ordering::Greater
-        } else if ka == kb {
-            Ordering::Equal
-        } else {
-            Ordering::Less
-        }
+        ka.cmp(&kb)
     });
     let sources: Vec<String> = modules.iter().map(|m| text(m, "source")).collect();
     let header: Vec<String> = sources.iter().map(|s| format!("\"{s}\"")).collect();

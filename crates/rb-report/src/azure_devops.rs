@@ -6,6 +6,7 @@
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
 
 use serde_json::Value;
+use std::fmt::Write as _;
 
 use crate::style::percentage;
 use crate::{Rendered, js_number, num, severity, text};
@@ -68,12 +69,13 @@ pub fn render(result: &Value) -> Rendered {
             "error" => "error",
             _ => "warning",
         };
-        output.push_str(&format!(
-            "##vso[task.logissue type={kind};sourcepath={};code={};]{}\n",
+        let _ = writeln!(
+            output,
+            "##vso[task.logissue type={kind};sourcepath={};code={};]{}",
             text(v, "from"),
             v.get("rule").map(|r| text(r, "name")).unwrap_or_default(),
             violators(v, true)
-        ));
+        );
     }
     let n = |k: &str| summary.get(k).and_then(Value::as_u64).unwrap_or(0);
     let total = n("error") + n("warn") + n("info");
@@ -104,12 +106,12 @@ pub fn render(result: &Value) -> Rendered {
         };
         format!("no dependency violations found{ignore} ({stats})")
     };
-    let status = if n("error") > 0 {
+    let result = if n("error") > 0 {
         "Failed"
     } else {
         "Succeeded"
     };
-    output.push_str(&format!("##vso[task.complete result={status};]{message}\n"));
+    let _ = writeln!(output, "##vso[task.complete result={result};]{message}");
     Rendered {
         output,
         exit_code: n("error"),

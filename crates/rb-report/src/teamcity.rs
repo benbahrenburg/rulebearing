@@ -1,4 +1,4 @@
-//! `teamcity`: TeamCity service messages. dependency-cruiser 18.2.0's `src/report/teamcity.mjs`,
+//! `teamcity`: `TeamCity` service messages. dependency-cruiser 18.2.0's `src/report/teamcity.mjs`,
 //! ported.
 //!
 //! - Specification: `test/report/teamcity/*.spec.mjs`, run by conformance gate 1 layer 3
@@ -10,13 +10,14 @@
 //! one the caller passes (the command line passes the time, or `SOURCE_DATE_EPOCH`).
 
 use serde_json::Value;
+use std::fmt::Write as _;
 
 use crate::azure_devops::violators;
 use crate::{Rendered, severity, text};
 
 const CATEGORY: &str = "dependency-cruiser";
 
-/// TeamCity's escaping.
+/// `TeamCity`'s escaping.
 pub fn escape(message: &str) -> String {
     message
         .replace('|', "||")
@@ -67,6 +68,34 @@ fn inspection(
     )
 }
 
+/// An `inspectionType` line for each rule of `key` that has a violation, the comment as its
+/// description (the name when there is none).
+fn rule_types(
+    rule_set: &Value,
+    key: &str,
+    violated: &dyn Fn(&str) -> bool,
+    flow: &str,
+    timestamp: &str,
+) -> Vec<String> {
+    rule_set
+        .get(key)
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|rule| {
+            let name = text(rule, "name");
+            violated(&name).then(|| {
+                let comment = rule
+                    .get("comment")
+                    .and_then(Value::as_str)
+                    .filter(|c| !c.is_empty())
+                    .unwrap_or(&name);
+                inspection_type(&name, comment, flow, timestamp)
+            })
+        })
+        .collect()
+}
+
 /// Renders `teamcity`; `timestamp` is ISO 8601 without the trailing `Z`.
 pub fn render(result: &Value, timestamp: &str) -> Rendered {
     let summary = result.get("summary").cloned().unwrap_or(Value::Null);
@@ -83,60 +112,22 @@ pub fn render(result: &Value, timestamp: &str) -> Rendered {
             .iter()
             .any(|v| v.get("rule").map(|r| text(r, "name")).as_deref() == Some(name))
     };
-    let mut lines = Vec::new();
-    let mut rules = |key: &str| {
-        for rule in rule_set
-            .get(key)
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-        {
-            let name = text(rule, "name");
-            if violated(&name) {
-                let comment = rule
-                    .get("comment")
-                    .and_then(Value::as_str)
-                    .filter(|c| !c.is_empty())
-                    .unwrap_or(&name)
-                    .to_owned();
-                lines.push(inspection_type(&name, &comment, &flow, timestamp));
-            }
-        }
-    };
-    rules("forbidden");
+    let mut lines = rule_types(&rule_set, "forbidden", &violated, &flow, timestamp);
     let allowed = rule_set
         .get("allowed")
         .and_then(Value::as_array)
         .is_some_and(|a| !a.is_empty());
-    let mut rest = Vec::new();
     if allowed && violated("not-in-allowed") {
-        rest.push(inspection_type(
+        lines.push(inspection_type(
             "not-in-allowed",
             "dependency is not in the 'allowed' set of rules",
             &flow,
             timestamp,
         ));
     }
-    lines.extend(rest);
-    let mut required = Vec::new();
-    for rule in rule_set
-        .get("required")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-    {
-        let name = text(rule, "name");
-        if violated(&name) {
-            let comment = rule
-                .get("comment")
-                .and_then(Value::as_str)
-                .filter(|c| !c.is_empty())
-                .unwrap_or(&name)
-                .to_owned();
-            required.push(inspection_type(&name, &comment, &flow, timestamp));
-        }
-    }
-    lines.extend(required);
+    lines.extend(rule_types(
+        &rule_set, "required", &violated, &flow, timestamp,
+    ));
     if ignored > 0 {
         lines.push(inspection_type(
             "ignored-known-violations",
@@ -171,7 +162,10 @@ pub fn render(result: &Value, timestamp: &str) -> Rendered {
             timestamp,
         ));
     }
-    let mut output: String = lines.iter().map(|l| format!("{l}\n")).collect();
+    let mut output = lines.iter().fold(String::new(), |mut out, l| {
+        let _ = writeln!(out, "{l}");
+        out
+    });
     if output.is_empty() {
         output.push('\n');
     }
