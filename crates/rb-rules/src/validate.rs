@@ -220,14 +220,20 @@ pub fn violates_required_rule(rule: &Rule, module: &Value) -> bool {
     violates
 }
 
-/// The rank `compareSeverity` in `validate/index.mjs` sorts by.
-fn rank(severity: Option<Severity>) -> u8 {
+/// The rank `compareSeverity` in `validate/index.mjs` sorts by. `ignore` and a missing severity
+/// have none: upstream's subtraction gives `NaN`, which compares equal to everything.
+fn rank(severity: Option<Severity>) -> Option<u8> {
     match severity {
-        Some(Severity::Error) => 1,
-        Some(Severity::Warn) => 2,
-        Some(Severity::Info) => 3,
-        _ => 4,
+        Some(Severity::Error) => Some(1),
+        Some(Severity::Warn) => Some(2),
+        Some(Severity::Info) => Some(3),
+        _ => None,
     }
+}
+
+/// `compareSeverity(a, b) < 0`.
+fn ranks_before(a: Option<Severity>, b: Option<Severity>) -> bool {
+    matches!((rank(a), rank(b)), (Some(x), Some(y)) if x < y)
 }
 
 fn summary(severity: Option<Severity>, name: &str) -> Value {
@@ -273,7 +279,7 @@ pub fn validate(rules: &DependencyRules, from: &Value, to: &Value, matcher: Matc
             summary(Some(rule.severity()), rule.name()),
         ));
     }
-    found.sort_by_key(|(severity, _)| rank(*severity));
+    js::sort(&mut found, |(a, _), (b, _)| ranks_before(*a, *b));
     if found.is_empty() {
         json!({ "valid": true })
     } else {
@@ -357,8 +363,93 @@ mod tests {
             .map(|r| r.iter().filter_map(|x| x["name"].as_str()).collect())
             .unwrap_or_default();
         assert_eq!(names, ["e", "w", "i"]);
-        assert_eq!(rank(None), 4);
-        assert_eq!(rank(Some(Severity::Ignore)), 4);
+        assert_eq!(rank(None), None);
+        assert_eq!(rank(Some(Severity::Ignore)), None);
+    }
+
+    #[test]
+    fn severities_sort_as_upstream_sorts_them() {
+        // Each case ran through dependency-cruiser 18.2.0's own `validateDependency` on Node:
+        // forbidden rules named by severity (e, w, i, g for ignore) and position, and, when the
+        // flag is set, a failing `allowed` list without `allowedSeverity` ("n", first). An entry
+        // without a rank compares equal to every other, so it can stay ahead of a worse one.
+        let cases = [
+            (false, "iwwieewgw", "e4 e5 w1 w2 w6 w8 i0 i3 g7"),
+            (false, "iiwgggieeg", "w2 i0 i1 g3 g4 g5 e7 e8 i6 g9"),
+            (false, "wgigggwe", "w0 g1 i2 g3 g4 g5 e7 w6"),
+            (false, "wiieewege", "e3 e4 e6 e8 w0 w5 i1 i2 g7"),
+            (false, "gegiigwi", "g0 e1 g2 i3 i4 g5 w6 i7"),
+            (false, "iwg", "w1 i0 g2"),
+            (false, "gw", "g0 w1"),
+            (false, "ew", "e0 w1"),
+            (false, "wigeiwii", "w0 i1 g2 e3 w5 i4 i6 i7"),
+            (false, "iwegiig", "e2 w1 i0 g3 i4 i5 g6"),
+            (false, "eeegegewg", "e0 e1 e2 g3 e4 g5 e6 w7 g8"),
+            (true, "iig", "n i0 i1 g2"),
+            (true, "eigiwigew", "n e0 w4 i1 g2 e7 w8 i3 i5 g6"),
+            (false, "eiieigeig", "e0 e3 e6 i1 i2 i4 g5 i7 g8"),
+            (false, "igee", "i0 g1 e2 e3"),
+            (false, "wiegeeie", "e2 e4 e5 e7 w0 i1 g3 i6"),
+            (false, "wiwge", "e4 w0 w2 i1 g3"),
+            (false, "wwggee", "w0 w1 g2 g3 e4 e5"),
+            (false, "iwgewi", "e3 w1 w4 i0 g2 i5"),
+            (false, "gigeig", "g0 i1 g2 e3 i4 g5"),
+            (false, "eegiiigeei", "e0 e1 g2 i3 i4 i5 g6 e7 e8 i9"),
+            (false, "iiwegii", "e3 w2 i0 i1 g4 i5 i6"),
+            (true, "iewegg", "n e1 e3 w2 i0 g4 g5"),
+            (false, "ggewgwwgiw", "g0 g1 e2 w3 g4 w5 w6 g7 w9 i8"),
+            (false, "ggw", "g0 g1 w2"),
+            (true, "egewii", "n e0 g1 e2 w3 i4 i5"),
+            (false, "wigiwe", "w0 i1 g2 e5 w4 i3"),
+            (false, "geiiiw", "g0 e1 w5 i2 i3 i4"),
+            (true, "wwwegiwegi", "n e3 e7 w0 w1 w2 g4 w6 i5 g8 i9"),
+            (false, "giweg", "g0 e3 w2 i1 g4"),
+            (false, "giieiiwiigg", "g0 e3 w6 i1 i2 i4 i5 i7 i8 g9 g10"),
+            (false, "iewigiggeg", "e1 w2 i0 i3 g4 i5 g6 g7 e8 g9"),
+            (true, "ei", "n e0 i1"),
+            (
+                false,
+                "iiieiwegeiwiiggggew",
+                "e3 e6 e8 e17 w5 w10 w18 i0 i1 i2 i4 g7 i9 i11 i12 g13 g14 g15 g16",
+            ),
+            (false, "giwewwg", "g0 e3 w2 w4 w5 i1 g6"),
+            (false, "eeiegwiww", "e0 e1 e3 w7 w8 i2 g4 w5 i6"),
+        ];
+        for (allowed, severities, expected) in cases {
+            let forbidden: Vec<Value> = severities
+                .chars()
+                .enumerate()
+                .map(|(index, s)| {
+                    let severity = match s {
+                        'e' => "error",
+                        'w' => "warn",
+                        'i' => "info",
+                        _ => "ignore",
+                    };
+                    json!({ "name": format!("{s}{index}"), "severity": severity, "from": {}, "to": {} })
+                })
+                .collect();
+            // As the spec calls it: the rule set as built, not normalised (which drops `ignore`).
+            let set = DependencyRules {
+                forbidden: forbidden.into_iter().map(rule).collect(),
+                allowed: if allowed {
+                    vec![rule(json!({ "from": { "path": "^x" }, "to": {} }))]
+                } else {
+                    Vec::new()
+                },
+                ..DependencyRules::default()
+            };
+            let result =
+                validate_dependency(&set, &json!({ "source": "a" }), &json!({ "resolved": "b" }));
+            let names: Vec<&str> = js::array(&result, "rules")
+                .iter()
+                .map(|r| match js::str_of(r, "name") {
+                    Some("not-in-allowed") => "n",
+                    other => other.unwrap_or_default(),
+                })
+                .collect();
+            assert_eq!(names.join(" "), expected, "{allowed} {severities}");
+        }
     }
 
     #[test]
@@ -588,6 +679,77 @@ mod tests {
             validate_module(&set, &json!({ "source": "src/a.ts", "dependencies": [] }))["rules"][0]
                 ["name"],
             "req"
+        );
+    }
+
+    #[test]
+    fn folder_matchers_take_folder_rules_that_are_not_module_only() {
+        let plain = rule(json!({ "from": {}, "to": { "circular": true } }));
+        assert!(!Matcher::Folder.is_interesting(&plain));
+        assert!(Matcher::Dependency.is_interesting(&plain));
+        let folder_orphans =
+            rule(json!({ "scope": "folder", "from": { "orphan": true }, "to": {} }));
+        assert!(!Matcher::Folder.is_interesting(&folder_orphans));
+        assert!(!Matcher::Module.is_interesting(&folder_orphans));
+    }
+
+    #[test]
+    fn reachable_records_count_only_for_their_rule_and_value() {
+        let unreachable =
+            rule(json!({ "name": "u", "from": {}, "to": { "path": "^src/", "reachable": false } }));
+        let record = |rule: &str, value: bool| json!({ "source": "src/x.ts", "reachable": [{ "value": value, "asDefinedInRule": rule, "matchedFrom": "src/main.ts" }] });
+        assert!(matches_reachable_rule(&unreachable, &record("u", false)));
+        assert!(!matches_reachable_rule(
+            &unreachable,
+            &record("other", false)
+        ));
+        assert!(!matches_reachable_rule(&unreachable, &record("u", true)));
+        // Only the reachable rule matches; the other three helpers do not.
+        assert!(module_match(&unreachable, &record("u", false)));
+        assert!(!module_match(&unreachable, &record("u", true)));
+    }
+
+    #[test]
+    fn reaches_need_the_rule_its_name_and_a_matching_module() {
+        let reaches = rule(
+            json!({ "name": "r", "from": {}, "to": { "path": "^b", "pathNot": "^b/private", "reachable": true } }),
+        );
+        let reaching = |target: &str| json!({ "source": "a", "reaches": [{ "asDefinedInRule": "r", "modules": [{ "source": target, "via": [] }] }] });
+        assert!(matches_reaches_rule(&reaches, &reaching("b.ts")));
+        assert!(module_match(&reaches, &reaching("b.ts")));
+        assert!(!matches_reaches_rule(&reaches, &reaching("c.ts")));
+        assert!(!matches_reaches_rule(&reaches, &reaching("b/private.ts")));
+        let named_without_reachable =
+            rule(json!({ "name": "r", "from": {}, "to": { "path": "^b" } }));
+        assert!(!matches_reaches_rule(
+            &named_without_reachable,
+            &reaching("b.ts")
+        ));
+    }
+
+    #[test]
+    fn more_than_is_strict() {
+        let more = rule(json!({ "from": {}, "module": { "numberOfDependentsMoreThan": 1 } }));
+        assert!(!matches_dependents_rule(
+            &more,
+            &json!({ "source": "x", "dependents": ["a"] })
+        ));
+        assert!(matches_dependents_rule(
+            &more,
+            &json!({ "source": "x", "dependents": ["a", "b"] })
+        ));
+    }
+
+    #[test]
+    fn required_rules_do_not_judge_dependencies() {
+        let set = rules(
+            json!({ "required": [{ "name": "req", "severity": "error", "module": { "path": "^src/" }, "to": { "path": "^lib/" } }] }),
+        );
+        let from = json!({ "source": "src/a.ts", "dependencies": [] });
+        assert_eq!(validate_module(&set, &from)["valid"], false);
+        assert_eq!(
+            validate_dependency(&set, &from, &json!({ "resolved": "x.ts" })),
+            json!({ "valid": true })
         );
     }
 
