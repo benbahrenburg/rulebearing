@@ -1,0 +1,24 @@
+# testbeds/init: `rulebearing init --dry-run` on sverweij/dependency-cruiser at 7c22858071cc4491321c735ff11894d90648ee6e
+# (a cruise of src with this configuration exits 0 (7 findings baselined)). Regenerate with testbeds/init/run.sh.
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: JavaScript.
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: rulebearing:recommended
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    # no-orphans: 7 (entries elided)
