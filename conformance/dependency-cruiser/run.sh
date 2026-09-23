@@ -6,9 +6,11 @@
 #   layer 2  harness/run-layer-2.mjs runs upstream's test/validate and test/graph-utl specs with the
 #            unit under test forwarded to `rulebearing validate`; fails on a failure not listed in
 #            ../excluded.json
+#   layer 3  harness/run-layer-3.mjs runs upstream's test/report specs for the wave 1 reporters with
+#            each reporter forwarded to `rulebearing report`; the specs byte-compare the output
 #
-# Layers 3 to 5 (report fixtures, schema validation, oracle zero-diff) arrive with the reporters in
-# wave 1 (docs/plans/pending/0001-wave-1-typescript-parity.md).
+# Layers 4 and 5 run from scripts/run-layer-4.sh and scripts/run-layer-5.sh
+# (docs/plans/pending/0001-wave-1-typescript-parity.md, Steps 12 and 18).
 # Plan: docs/plans/pending/0000-wave-0-spike.md, Step 5. Decision: docs/adr/0009-conformance-suites-as-specification.md.
 # Needs Node 22 or later and network access for the upstream clone (kept in upstream/, git-ignored).
 set -euo pipefail
@@ -35,3 +37,6 @@ if [ -z "${RULEBEARING_BIN:-}" ]; then
   (cd "$root" && cargo build --quiet --release -p rb-cli)
 fi
 node "$here/harness/run-layer-2.mjs" "$upstream"
+
+echo "gate 1, layer 3: upstream report specs through the shim"
+node "$here/harness/run-layer-3.mjs" "$upstream"

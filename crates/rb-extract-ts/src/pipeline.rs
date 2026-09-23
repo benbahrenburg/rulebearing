@@ -27,7 +27,7 @@ use oxc_allocator::Allocator;
 use oxc_ast::ast::{ImportDeclarationSpecifier, ImportOrExportKind, Statement};
 use oxc_parser::{ParseOptions, Parser as OxcParser};
 use oxc_semantic::SemanticBuilder;
-use oxc_span::{GetSpan, SourceType, Span};
+use oxc_span::{SourceType, Span};
 use rb_model::options::{PathFilter, TsPreCompilationDeps};
 use rb_model::{
     DependencyType, ExperimentalStats, ModuleSystem, Parser, Protocol, TypeScriptOptions,
@@ -1038,8 +1038,12 @@ pub fn extract(
 
 /// `experimentalStats` for one file: top-level statements and size.
 ///
+/// Upstream parses with acorn and falls back to acorn-loose, which never throws, so a file that
+/// is not JavaScript (a `.json` added by `extraExtensionsToScan`, say) still gets statistics.
+/// Here the recovering parser's result is used the same way: statistics never fail a run.
+///
 /// # Errors
-/// When the file cannot be read or parsed.
+/// When the file cannot be read.
 pub fn stats(file: &str, settings: &Settings) -> Result<ExperimentalStats, PipelineError> {
     let path = settings.on_disk(file);
     let source = read(&path)?;
@@ -1050,22 +1054,9 @@ pub fn stats(file: &str, settings: &Settings) -> Result<ExperimentalStats, Pipel
             ..ParseOptions::default()
         })
         .parse();
-    if parsed.diagnostics.has_errors()
-        && parsed.program.body.is_empty()
-        && !source.trim().is_empty()
-    {
-        return Err(PipelineError::Parse {
-            path,
-            reason: parsed
-                .diagnostics
-                .errors()
-                .next()
-                .map_or_else(String::new, ToString::to_string),
-        });
-    }
     Ok(ExperimentalStats {
         top_level_statement_count: parsed.program.body.len() as u64,
-        size: u64::from(parsed.program.span().end),
+        size: source.len() as u64,
     })
 }
 
