@@ -648,7 +648,7 @@ conformance/dependency-cruiser/scripts/run-layer-5.sh --repo sverweij/dependency
 | --- | --- | --- | --- |
 | 1G | Layer 5 and the twelve-mutation branch green | Not started | |
 | 1G | Zero-diff: dependency-cruiser, langfuse, FluidFramework | Not started | nightly rows: |
-| 1G | `v0.1.0`: Releases, npm, Action in use here | Not started | |
+| 1G | `v0.1.0`: Releases, npm, Action in use here | In progress | npm wrapper, staging script and install matrix: [wrappers/npm](../../../wrappers/npm/README.md), [release.yml](../../../.github/workflows/release.yml) (dry run; nothing published). Remaining: `action.yml`, the `v0.1.0` tag, the `NPM_TOKEN` secret |
 | 1G | `docs/perf.md`: private monorepo and synthetic figures | Not started | mean: , p95: |
 | 1G | Upstream offer issue; `docs/adoption.md` baseline | Not started | issue: |
 | 1G | Docs; move PR | Not started | |
