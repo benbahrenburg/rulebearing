@@ -113,22 +113,26 @@ So a repository with a TypeScript front end, a .NET service and a Python pipelin
 
 ## Try it
 
-**Today, in wave 0.** Nothing runs yet, and this README will not pretend otherwise. What you can do:
+**Now, from source.** Wave 1, the TypeScript drop-in, is built: dependency-cruiser's whole rule language and option set, both configuration formats, the wave 1 reporters, and the agent commands. It matches dependency-cruiser with zero differences on dependency-cruiser's own repository, langfuse and FluidFramework ([conformance](conformance/README.md)). Until the first release is published:
 
-1. Read the [rule language](docs/architecture.md#configuration-and-the-rule-language) and the [agent surface](docs/architecture.md#agent-surface), and open an issue if a rule you need has no way to be written.
-2. If you run dependency-cruiser, ArchUnitNET, NetArchTest or import-linter today, your repository may be a good [validation target](testbeds/manifest.yaml). Rulebearing must reproduce your tool's findings with zero difference; a repository that breaks that is the most useful kind.
-3. Star or watch. The first release is a drop-in, and this is where it will be announced.
+```sh
+cargo build --release                               # target/release/rulebearing
+./target/release/rulebearing init                   # reads the repo and proposes rules that already pass
+./target/release/rulebearing cruise src             # or: replace `depcruise` with it in your pipeline
+./target/release/rulebearing hooks install --claude-code
+```
 
-**Wave 1, the first release.** In a TypeScript repository:
+**From the first release, `v0.1.0`.** In a TypeScript repository:
 
 ```sh
 npm install --save-dev rulebearing
-npx rulebearing init                      # reads the repo and proposes rules that already pass
-npx rulebearing hooks install --claude-code
+npx rulebearing init
 npx rulebearing cruise --output-type agent
 ```
 
-Or, if you already have a dependency-cruiser config, replace `depcruise` with `rulebearing` in your pipeline and change nothing else.
+or in GitHub Actions, `uses: benbahrenburg/rulebearing@v0.1.0` with `args: --config rulebearing.yaml src`. A repository already on dependency-cruiser keeps its configuration: replace `depcruise` with `rulebearing cruise` and change nothing else, or run `rulebearing adopt` for a baseline, a CI step and one green pull request.
+
+The guides: [configuration](docs/config.md), [rules](docs/rules.md), [reporters](docs/reporters.md), [the command line](docs/cli.md) and [Rulebearing for coding agents](docs/agents.md).
 
 **Wave 2.** `dotnet tool install Rulebearing` and `pip install rulebearing`, with `rulebearing import archunit` and `rulebearing import import-linter` to bring existing rules across as a command rather than a rewrite.
 
@@ -234,6 +238,8 @@ The reasoning behind each is a numbered decision record in [docs/adr/](docs/adr/
 | [docs/architecture.md](docs/architecture.md) | Stages, crates, the graph document, extractors, security, performance |
 | [docs/adr/](docs/adr/README.md) | Every decision, numbered |
 | [docs/plans/](docs/plans/README.md) | One plan per wave |
+| [docs/config.md](docs/config.md), [rules.md](docs/rules.md), [reporters.md](docs/reporters.md), [cli.md](docs/cli.md), [agents.md](docs/agents.md) | The user guides |
+| [docs/perf.md](docs/perf.md), [docs/adoption.md](docs/adoption.md) | The performance and adoption measurements |
 | `crates/` | The Rust workspace: model, config, rules, three extractors, ingest, reporters, CLI, Node binding |
 | `conformance/`, `testbeds/` | The upstream suites and the pinned repositories validated nightly |
 | `wrappers/`, `adapters/`, `frontends/` | npm, NuGet and pip wrappers; test-runner adapters; the ESLint plugin and Roslyn analyzer |
