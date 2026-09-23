@@ -48,7 +48,7 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | 2 | The run cannot be trusted: no modules found, an unsupported file, a vacuous rule, a ratchet budget that cannot be read |
 | 3 | The configuration is invalid |
 
-A run with exactly two or three error violations also exits 2 or 3; the report says which it was ([ADR-0008](adr/0008-exit-code-contract.md), [ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). `fmt` exits 0 unless `--exit-code` is given, as `depcruise-fmt` does. `can-import` exits 1 for "no". `attest --verify` exits 1 when a hash differs.
+A run with exactly two or three error violations also exits 2 or 3; the report says which it was ([ADR-0008](adr/0008-exit-code-contract.md), [ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). `fmt` exits 0 unless `--exit-code` is given, as `depcruise-fmt` does; with it, the code comes from the saved result alone (`summary.error`, `summary.expired`, the exceeded ratchets, and 2 for `vacuousRules` or a ratchet without a budget), so a saved result gates as the cruise would have ([ADR-0031](adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)). `can-import` exits 1 for "no" and 2 when the target is unknown. `attest --verify` exits 1 when a hash differs. The `--from-hook` forms of `cruise` and `impact` always exit 0 ([agents.md](agents.md#the-hooks)).
 
 ## Pipelines
 
@@ -68,4 +68,4 @@ On GitHub, the Action runs `cruise` with annotations on the pull request:
     args: --config rulebearing.yaml src
 ```
 
-Its inputs are `version` (default: the version the action was referenced at), `args` (after `rulebearing cruise`) and `output-type` (default `github-annotations`). It checks the downloaded binary against the release's `SHA256SUMS` ([action.yml](../action.yml)).
+Its inputs are `version`, `args` (after `rulebearing cruise`, on one line or several) and `output-type` (default `github-annotations`). `version` defaults to the tag the action was referenced at; an action pinned by commit SHA, as [ADR-0025](adr/0025-ci-and-supply-chain-hardening.md) asks, must name it (`version: 0.1.0`, or `latest` to float on purpose), and the step fails rather than guess. It checks the downloaded binary against the release's `SHA256SUMS` ([action.yml](../action.yml)).

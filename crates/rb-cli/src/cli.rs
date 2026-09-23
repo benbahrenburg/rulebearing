@@ -249,6 +249,10 @@ pub struct CruiseArgs {
     /// Colour terminal output
     #[arg(long, value_enum, default_value_t = ColorChoice::Auto)]
     pub color: ColorChoice,
+    /// Answer as a Claude Code Stop hook: the agent report as the reason to keep going when
+    /// there are errors, exit 0 always
+    #[arg(long)]
+    pub from_hook: bool,
 }
 
 /// `fmt`.

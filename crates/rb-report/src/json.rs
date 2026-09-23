@@ -24,7 +24,7 @@ pub const DEPENDENCY_ADDITIONS: &[&str] = &[
 /// Violation keys Rulebearing adds.
 pub const VIOLATION_ADDITIONS: &[&str] = &["id", "fix", "decision"];
 /// Summary keys Rulebearing adds.
-pub const SUMMARY_ADDITIONS: &[&str] = &["inspected", "vacuousRules", "ratchets"];
+pub const SUMMARY_ADDITIONS: &[&str] = &["inspected", "vacuousRules", "ratchets", "expired"];
 /// Rule keys Rulebearing adds (inside `summary.ruleSetUsed`).
 pub const RULE_ADDITIONS: &[&str] = &["fix", "examples", "owner", "expires", "allowEmpty"];
 

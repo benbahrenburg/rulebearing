@@ -37,7 +37,7 @@ pub const SESSION_START: &str = "rulebearing summary --format agent";
 /// Before an edit: what the file is subject to.
 pub const PRE_TOOL_USE: &str = "rulebearing impact --from-hook";
 /// Before the turn ends: the findings, for the agent (wave 3 narrows it to `--affected HEAD`).
-pub const STOP: &str = "rulebearing cruise --output-type agent";
+pub const STOP: &str = "rulebearing cruise --output-type agent --from-hook";
 
 fn command(command: &str) -> Value {
     json!({ "type": "command", "command": command })

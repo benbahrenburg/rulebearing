@@ -467,6 +467,11 @@ pub struct Summary {
     /// ([ADR-0029](../../../docs/adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ratchets: Option<Vec<RatchetResult>>,
+    /// Additive: rules and known violations past their `expires` date, each one error, so a
+    /// saved result re-reported by `fmt --exit-code` fails as the cruise did
+    /// ([ADR-0031](../../../docs/adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expired: Option<Vec<ExpiredEntry>>,
 }
 
 /// One violation: `summary.violations[]`.
@@ -675,6 +680,19 @@ pub struct RatchetResult {
     pub ceiling: Option<u64>,
     /// How the count compares with the ceiling.
     pub status: RatchetStatus,
+}
+
+/// A rule or known violation past its date: `summary.expired[]`
+/// ([ADR-0031](../../../docs/adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ExpiredEntry {
+    /// The rule, or the known violation's id or `from -> to`.
+    pub name: String,
+    /// The last day it applied, `YYYY-MM-DD`.
+    pub expires: String,
+    /// `rule` or `knownViolation`.
+    pub kind: String,
 }
 
 /// `summary.ratchets[].status`.

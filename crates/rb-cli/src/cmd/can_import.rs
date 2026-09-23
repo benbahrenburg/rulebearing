@@ -9,6 +9,12 @@
 //! Reads the saved graph, adds the hypothetical edge (circular when `to` already reaches `from`),
 //! and evaluates the dependency rules for that edge alone. Prints `yes`, or `no` with the deciding
 //! rule, its comment and its `fix`; exits 0 for yes, 1 for no.
+//!
+//! Both paths are normalised the way the graph writes them (repository-relative, `/`, no `./`).
+//! The edge takes the target's attributes (`dependencyTypes`, `license`, `coreModule`, ...) from
+//! an edge to it already in the graph, so a rule on an npm dependency type answers as the gate
+//! would. A target the graph has never seen is a local file when it exists on disk; anything else
+//! exits 2, because answering `yes` for a module whose kind is unknown would be a silent false.
 
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt::Write as _;
@@ -52,8 +58,87 @@ struct LightModule {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct LightDependency {
     resolved: String,
+    #[serde(default)]
+    dependency_types: Option<Vec<String>>,
+    #[serde(default)]
+    core_module: Option<bool>,
+    #[serde(default)]
+    could_not_resolve: Option<bool>,
+    #[serde(default)]
+    license: Option<String>,
+    #[serde(default)]
+    instability: Option<f64>,
+}
+
+/// A path as the graph writes it: relative to the working folder, `/`-separated, no `./`.
+fn normalise(ctx: &Context<'_>, path: &str) -> String {
+    let as_path = std::path::Path::new(path);
+    let relative = if as_path.is_absolute() {
+        let cwd = ctx.cwd.canonicalize().unwrap_or_else(|_| ctx.cwd.clone());
+        as_path
+            .strip_prefix(&cwd)
+            .or_else(|_| as_path.strip_prefix(&ctx.cwd))
+            .unwrap_or(as_path)
+            .to_string_lossy()
+            .into_owned()
+    } else {
+        path.to_owned()
+    };
+    let mut text = relative.replace('\\', "/");
+    while let Some(rest) = text.strip_prefix("./") {
+        text = rest.to_owned();
+    }
+    text
+}
+
+/// The hypothetical edge's attributes: from an edge to `to` the graph already has, else a local
+/// file when `to` exists on disk, else `None`.
+fn target(ctx: &Context<'_>, graph: &LightGraph, to: &str) -> Option<Value> {
+    let known = graph
+        .modules
+        .iter()
+        .flat_map(|m| &m.dependencies)
+        .find(|d| d.resolved == to);
+    if let Some(d) = known {
+        let mut edge = json!({
+            "dependencyTypes": d.dependency_types.clone().unwrap_or_else(|| vec!["local".into()]),
+            "coreModule": d.core_module.unwrap_or(false),
+            "couldNotResolve": d.could_not_resolve.unwrap_or(false),
+        });
+        if let Some(license) = &d.license {
+            edge["license"] = json!(license);
+        }
+        if let Some(instability) = d.instability {
+            edge["instability"] = json!(instability);
+        }
+        return Some(edge);
+    }
+    let local = graph.modules.iter().any(|m| m.source == to)
+        || (!to.starts_with("node_modules/") && ctx.resolve(to).is_file());
+    local.then(
+        || json!({ "dependencyTypes": ["local"], "coreModule": false, "couldNotResolve": false }),
+    )
+}
+
+/// The saved graph, or exit 2 saying how to make one.
+fn load(ctx: &Context<'_>, file: &str) -> Result<LightGraph, Outcome> {
+    let text = std::fs::read_to_string(ctx.resolve(file)).map_err(|e| {
+        Outcome::failed(
+            RunExit::Untrustworthy,
+            format!(
+                "rulebearing can-import: cannot read {file}: {e}; run `rulebearing cruise -T json -f {SAVED_GRAPH}` first\n"
+            ),
+        )
+    })?;
+    serde_json::from_str(&text).map_err(|e| {
+        Outcome::failed(
+            RunExit::Untrustworthy,
+            format!("rulebearing can-import: {file} is not a cruise result: {e}\n"),
+        )
+    })
 }
 
 /// Whether `start` reaches `goal` over the saved edges.
@@ -78,25 +163,9 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
         Err(o) => return o,
     };
     let file = args.graph.clone().unwrap_or_else(|| SAVED_GRAPH.to_owned());
-    let text = match std::fs::read_to_string(ctx.resolve(&file)) {
-        Ok(t) => t,
-        Err(e) => {
-            return Outcome::failed(
-                RunExit::Untrustworthy,
-                format!(
-                    "rulebearing can-import: cannot read {file}: {e}; run `rulebearing cruise -T json -f {SAVED_GRAPH}` first\n"
-                ),
-            );
-        }
-    };
-    let graph: LightGraph = match serde_json::from_str(&text) {
+    let graph = match load(ctx, &file) {
         Ok(g) => g,
-        Err(e) => {
-            return Outcome::failed(
-                RunExit::Untrustworthy,
-                format!("rulebearing can-import: {file} is not a cruise result: {e}\n"),
-            );
-        }
+        Err(o) => return o,
     };
     let edges: HashMap<&str, Vec<&str>> = graph
         .modules
@@ -108,13 +177,28 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
             )
         })
         .collect();
-    let circular = args.from == args.to || reaches(&edges, &args.to, &args.from);
-    let from = json!({ "source": args.from });
-    let dependency = json!({
-        "module": args.to, "resolved": args.to, "coreModule": false, "couldNotResolve": false,
-        "dependencyTypes": ["local"], "dynamic": false, "exoticallyRequired": false,
-        "followable": true, "circular": circular, "moduleSystem": "es6",
-    });
+    let (from_path, to_path) = (normalise(ctx, &args.from), normalise(ctx, &args.to));
+    let Some(mut dependency) = target(ctx, &graph, &to_path) else {
+        return Outcome::failed(
+            RunExit::Untrustworthy,
+            format!(
+                "rulebearing can-import: {to_path} is not in {file} and is not a file here, so its kind of dependency is unknown; run `rulebearing cruise -T json -f {SAVED_GRAPH}` again after adding it\n"
+            ),
+        );
+    };
+    let circular = from_path == to_path || reaches(&edges, &to_path, &from_path);
+    let from = json!({ "source": from_path });
+    for (key, value) in [
+        ("module", json!(to_path)),
+        ("resolved", json!(to_path)),
+        ("dynamic", json!(false)),
+        ("exoticallyRequired", json!(false)),
+        ("followable", json!(true)),
+        ("circular", json!(circular)),
+        ("moduleSystem", json!("es6")),
+    ] {
+        dependency[key] = value;
+    }
     let verdict = validate_dependency(&config.rules.dependencies, &from, &dependency);
     let rules = verdict
         .get("rules")

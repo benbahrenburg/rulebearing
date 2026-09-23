@@ -9,9 +9,16 @@
 //! - Requirements: [FR-CORE-02](../../../../docs/prd.md#fr-core-02), [FR-CORE-06](../../../../docs/prd.md#fr-core-06),
 //!   [FR-CLI-08](../../../../docs/prd.md#fr-cli-08)
 //!
-//! The exit code is the error count whatever the reporter, 2 when the run cannot be trusted (an
-//! empty cruise, an unsupported file, a vacuous rule) and 3 for an invalid configuration. The
-//! report is still written for a vacuous run, so the reader sees which rules matched nothing.
+//! A gating reporter exits with the error count ([ADR-0030](../../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)),
+//! every reporter exits 2 when the run cannot be trusted (an empty cruise, an unsupported file,
+//! a vacuous rule) and 3 for an invalid configuration. The report is still written for a vacuous
+//! run, so the reader sees which rules matched nothing.
+//!
+//! `--from-hook` answers as a Claude Code `Stop` hook ([docs/agents.md](../../../../docs/agents.md#the-hooks)):
+//! with error findings it prints `{"decision": "block", "reason": <the agent report>}`, which
+//! hands the findings to the agent before the turn ends; otherwise nothing. It exits 0 always, and
+//! does nothing when the hook input says a `Stop` hook already kept the turn going
+//! (`stop_hook_active`), so the agent is never held in a loop.
 
 use std::fmt::Write as _;
 
@@ -72,6 +79,25 @@ fn failed(error: &RunError, stderr: &str) -> Outcome {
 
 /// Runs `cruise`.
 pub fn run(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
+    if !args.from_hook {
+        return cruise(ctx, args);
+    }
+    let input = ctx.read_stdin().unwrap_or_default();
+    let active = serde_json::from_str::<serde_json::Value>(&input)
+        .ok()
+        .and_then(|v| {
+            v.get("stop_hook_active")
+                .and_then(serde_json::Value::as_bool)
+        })
+        .unwrap_or(false);
+    if active {
+        return Outcome::printed(String::new());
+    }
+    let outcome = cruise(ctx, args);
+    Outcome { code: 0, ..outcome }
+}
+
+fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
     if args.info {
         return Outcome {
             stdout: info(),
@@ -103,16 +129,20 @@ pub fn run(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
             .unwrap_or_default();
         let _ = writeln!(stderr, "warning: {rule}{}", warning.message);
     }
-    let output_type = args
-        .output_type
-        .clone()
-        .or_else(|| effective.options.output_type.clone())
-        .unwrap_or_else(|| "err".into());
-    let output_to = args
-        .output_to
-        .clone()
-        .or_else(|| effective.options.output_to.clone())
-        .unwrap_or_else(|| "-".into());
+    let (output_type, output_to) = if args.from_hook {
+        ("agent".to_owned(), "-".to_owned())
+    } else {
+        (
+            args.output_type
+                .clone()
+                .or_else(|| effective.options.output_type.clone())
+                .unwrap_or_else(|| "err".into()),
+            args.output_to
+                .clone()
+                .or_else(|| effective.options.output_to.clone())
+                .unwrap_or_else(|| "-".into()),
+        )
+    };
     let options = RunOptions {
         liveness: !args.no_liveness && has_config,
         options_used: configure::options_used(
@@ -235,9 +265,41 @@ fn report(
     } else {
         RunExit::Violations(0)
     };
+    if args.from_hook {
+        return stop_hook(code, &stdout, stderr);
+    }
     Outcome {
         stdout,
         stderr,
         code: code.code(),
+    }
+}
+
+/// The `Stop` hook's answer: block, with the agent report and the run's errors as the reason,
+/// only when a trustworthy run found errors.
+fn stop_hook(code: RunExit, report: &str, stderr: String) -> Outcome {
+    let count = match code {
+        RunExit::Violations(count) if count > 0 => count,
+        _ => {
+            return Outcome {
+                stdout: String::new(),
+                stderr,
+                code: 0,
+            };
+        }
+    };
+    let mut errors = String::new();
+    for line in stderr.lines().filter(|l| l.starts_with("error:")) {
+        let _ = writeln!(errors, "{line}");
+    }
+    let reason = format!(
+        "rulebearing found {count} error(s) against the architecture rules; fix them before ending the turn. Each rule's `fix` says how.\n{errors}{report}"
+    );
+    let mut text = serde_json::json!({ "decision": "block", "reason": reason }).to_string();
+    text.push('\n');
+    Outcome {
+        stdout: text,
+        stderr,
+        code: 0,
     }
 }

@@ -444,9 +444,16 @@ pub fn run(ctx: &mut Context<'_>, args: &InitArgs) -> Outcome {
         );
     }
     let target = ctx.resolve(&args.output);
-    let existing = rb_config::DEFAULT_NAMES
-        .iter()
-        .find(|n| ctx.resolve(n).is_file());
+    // The file it would write counts, as well as any configuration found by the default names.
+    let existing = std::iter::once(args.output.as_str())
+        .filter(|_| target.is_file())
+        .chain(
+            rb_config::DEFAULT_NAMES
+                .iter()
+                .copied()
+                .filter(|n| ctx.resolve(n).is_file()),
+        )
+        .next();
     if !args.force
         && !args.dry_run
         && let Some(name) = existing

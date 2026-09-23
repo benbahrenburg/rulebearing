@@ -14,15 +14,18 @@ merges three hooks into `.claude/settings.json`, keeping every other setting and
 | --- | --- | --- |
 | `SessionStart` | `rulebearing summary --format agent` | The session starts with the open violations by rule, each with its `fix`, the ratchets' headroom and any vacuous rule |
 | `PreToolUse` on `Edit` and `Write` | `rulebearing impact --from-hook` | Before a file changes, the agent sees the rules that mention it, its dependents, whether it is on a cycle and the ratchets its edges count toward |
-| `Stop` | `rulebearing cruise --output-type agent` | Before the turn ends, the findings, cheapest fix first |
+| `Stop` | `rulebearing cruise --output-type agent --from-hook` | Before the turn ends, the findings, cheapest fix first |
 
-`impact --from-hook` reads the file from the hook's JSON on stdin (`tool_input.file_path`). The `Stop` hook cruises the repository; wave 3 narrows it to the changed files' closure with `--affected`.
+Both `--from-hook` commands answer in Claude Code's hook protocol and exit 0, so a hook never fails a turn by accident:
+
+- `impact --from-hook` reads the file from the hook's JSON on stdin (`tool_input.file_path`) and returns its report as `hookSpecificOutput.additionalContext`, the one place a `PreToolUse` hook's output reaches the agent. It never blocks the edit. When it cannot answer (no configuration, nothing extracted yet) it says why on stderr and the edit goes ahead.
+- `cruise --from-hook` cruises the repository with the `agent` reporter. When a trustworthy run finds errors it prints `{"decision": "block", "reason": ...}` with the report as the reason, which keeps the turn going with the findings in front of the agent. With no errors, or a run that cannot be trusted, it prints nothing. When the hook input carries `stop_hook_active: true` (the turn was already kept going once), it does nothing, so the agent is never held in a loop. Wave 3 narrows the cruise to the changed files' closure with `--affected`.
 
 ## Questions before the import is written
 
 | Command | Answers |
 | --- | --- |
-| `rulebearing can-import <from> <to>` | Would this import be allowed? `yes` (exit 0), or `no` with the rule, its comment and its `fix` (exit 1). It answers from the saved graph, so it is fast |
+| `rulebearing can-import <from> <to>` | Would this import be allowed? `yes` (exit 0), or `no` with the rule, its comment and its `fix` (exit 1). It answers from the saved graph, so it is fast. The target's kind (`npm-dev`, `core`, its licence) comes from the graph; a target the graph has never seen and that is not a file on disk exits 2 rather than guess |
 | `rulebearing impact <file> [--depth N]` | What the file is subject to, as JSON |
 | `rulebearing explain <rule> [--plain]` | The rule as one English sentence, why it exists, what to do, and the first edges it matched |
 | `rulebearing rules --json` | Every rule, its family, severity, `fix`, and how many modules each side matches |
