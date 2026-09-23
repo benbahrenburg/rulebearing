@@ -241,6 +241,10 @@ fn resolve_config(
             .get("resolveDeprecations")
             .and_then(Value::as_bool)
             .unwrap_or(false);
+        config.bust_the_cache = raw
+            .get("bustTheCache")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
     }
     let tsconfig_options = transpile
         .get("tsConfig")
@@ -431,6 +435,7 @@ fn replay_determine(root: &Path, cwd: &Path, input: &Value) -> Result<Value, Fai
             .unwrap_or(false),
         dependency_types: Vec::new(),
         license: None,
+        asked_with: None,
     };
     let manifest: Option<rb_extract_ts::npm::Manifest> = if field("manifest").is_object() {
         serde_json::from_value(field("manifest").clone()).ok()

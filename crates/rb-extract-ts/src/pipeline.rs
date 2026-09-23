@@ -25,6 +25,7 @@ use rayon::prelude::*;
 
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{ImportDeclarationSpecifier, ImportOrExportKind, Statement};
+use oxc_ast_visit::Visit;
 use oxc_parser::{ParseOptions, Parser as OxcParser};
 use oxc_semantic::SemanticBuilder;
 use oxc_span::{SourceType, Span};
@@ -333,15 +334,175 @@ pub fn flavour_for(settings: &Settings, file: &str) -> Flavour {
     }
 }
 
-/// The import declarations TypeScript's `transpileModule` removes: type-only ones, and ones
-/// whose every binding is used only as a type or not at all. Returns their spans.
-pub fn elided_imports(source: &str, source_type: SourceType) -> Vec<Span> {
+/// What TypeScript's `transpileModule` does to a module's declarations before upstream hands
+/// the JavaScript to acorn, as spans of the TypeScript source.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Transpiled {
+    /// Declarations the compiled JavaScript no longer has: `import type`, imports whose every
+    /// binding is used only as a type or not at all (an empty `{}` included), `export type ...
+    /// from`, and `export { ... } from` whose every specifier is type-only (or that has none).
+    pub elided: Vec<Span>,
+    /// `export * as ns from "x"`, which the ES2015 target lowers to `import * as ns_1 from "x"`
+    /// plus a local export, so acorn reads an import.
+    pub lowered_to_import: Vec<Span>,
+}
+
+/// [`Transpiled`] for a TypeScript source. `esm` is upstream's ESM flavour (`.mts`, `.d.mts`),
+/// which targets ES2022 and keeps `export * as ns` as it is.
+pub fn transpiled(source: &str, source_type: SourceType, esm: bool) -> Transpiled {
     let allocator = Allocator::default();
     let parsed = OxcParser::new(&allocator, source, source_type).parse();
-    let semantic = SemanticBuilder::new().build(&parsed.program).semantic;
-    let scoping = semantic.scoping();
-    let mut elided = Vec::new();
+    let mut result = Transpiled {
+        elided: elided_imports(&parsed.program),
+        lowered_to_import: Vec::new(),
+    };
     for statement in &parsed.program.body {
+        match statement {
+            Statement::ExportFromDeclaration(export) => {
+                if export.export_kind == ImportOrExportKind::Type
+                    || export
+                        .specifiers
+                        .iter()
+                        .all(|s| s.export_kind == ImportOrExportKind::Type)
+                {
+                    result.elided.push(export.span);
+                }
+            }
+            Statement::ExportAllDeclaration(export) => {
+                if export.export_kind == ImportOrExportKind::Type {
+                    result.elided.push(export.span);
+                } else if export.exported.is_some() && !esm {
+                    result.lowered_to_import.push(export.span);
+                }
+            }
+            _ => {}
+        }
+    }
+    result
+}
+
+/// The names read by computed property keys that TypeScript's checker marks as value uses and
+/// oxc's semantic does not: keys of type members (interfaces, type literals) and of abstract
+/// class members. Keys inside an ambient context (`declare`, `declare module`, `declare
+/// global`, a declaration file) are not checked as values, so they are not collected.
+#[derive(Default)]
+struct ComputedKeyNames {
+    ambient: u32,
+    names: BTreeSet<String>,
+}
+
+impl ComputedKeyNames {
+    fn collect(&mut self, computed: bool, key: &oxc_ast::ast::PropertyKey<'_>) {
+        struct Names<'n>(&'n mut BTreeSet<String>);
+        impl<'a> Visit<'a> for Names<'_> {
+            fn visit_identifier_reference(&mut self, it: &oxc_ast::ast::IdentifierReference<'a>) {
+                self.0.insert(it.name.to_string());
+            }
+        }
+        if computed
+            && self.ambient == 0
+            && let Some(expression) = key.as_expression()
+        {
+            Names(&mut self.names).visit_expression(expression);
+        }
+    }
+
+    fn ambient(&mut self, declare: bool, visit: impl FnOnce(&mut Self)) {
+        if declare {
+            self.ambient += 1;
+        }
+        visit(self);
+        if declare {
+            self.ambient -= 1;
+        }
+    }
+}
+
+impl<'a> Visit<'a> for ComputedKeyNames {
+    fn visit_ts_property_signature(&mut self, it: &oxc_ast::ast::TSPropertySignature<'a>) {
+        self.collect(it.computed, &it.key);
+        oxc_ast_visit::walk::walk_ts_property_signature(self, it);
+    }
+
+    fn visit_ts_method_signature(&mut self, it: &oxc_ast::ast::TSMethodSignature<'a>) {
+        self.collect(it.computed, &it.key);
+        oxc_ast_visit::walk::walk_ts_method_signature(self, it);
+    }
+
+    fn visit_method_definition(&mut self, it: &oxc_ast::ast::MethodDefinition<'a>) {
+        if it.r#type.is_abstract() {
+            self.collect(it.computed, &it.key);
+        }
+        oxc_ast_visit::walk::walk_method_definition(self, it);
+    }
+
+    fn visit_property_definition(&mut self, it: &oxc_ast::ast::PropertyDefinition<'a>) {
+        self.ambient(it.declare, |this| {
+            if it.r#type.is_abstract() {
+                this.collect(it.computed, &it.key);
+            }
+            oxc_ast_visit::walk::walk_property_definition(this, it);
+        });
+    }
+
+    fn visit_accessor_property(&mut self, it: &oxc_ast::ast::AccessorProperty<'a>) {
+        if it.r#type.is_abstract() {
+            self.collect(it.computed, &it.key);
+        }
+        oxc_ast_visit::walk::walk_accessor_property(self, it);
+    }
+
+    fn visit_variable_declaration(&mut self, it: &oxc_ast::ast::VariableDeclaration<'a>) {
+        self.ambient(it.declare, |this| {
+            oxc_ast_visit::walk::walk_variable_declaration(this, it);
+        });
+    }
+
+    fn visit_class(&mut self, it: &oxc_ast::ast::Class<'a>) {
+        self.ambient(it.declare, |this| oxc_ast_visit::walk::walk_class(this, it));
+    }
+
+    fn visit_function(&mut self, it: &oxc_ast::ast::Function<'a>, flags: oxc_semantic::ScopeFlags) {
+        self.ambient(it.declare, |this| {
+            oxc_ast_visit::walk::walk_function(this, it, flags);
+        });
+    }
+
+    fn visit_ts_namespace_declaration(&mut self, it: &oxc_ast::ast::TSNamespaceDeclaration<'a>) {
+        self.ambient(it.declare, |this| {
+            oxc_ast_visit::walk::walk_ts_namespace_declaration(this, it);
+        });
+    }
+
+    fn visit_ts_external_module_declaration(
+        &mut self,
+        it: &oxc_ast::ast::TSExternalModuleDeclaration<'a>,
+    ) {
+        self.ambient(true, |this| {
+            oxc_ast_visit::walk::walk_ts_external_module_declaration(this, it);
+        });
+    }
+
+    fn visit_ts_global_declaration(&mut self, it: &oxc_ast::ast::TSGlobalDeclaration<'a>) {
+        self.ambient(true, |this| {
+            oxc_ast_visit::walk::walk_ts_global_declaration(this, it);
+        });
+    }
+}
+
+/// The import declarations TypeScript's `transpileModule` removes: type-only ones, and ones
+/// whose every binding is used only as a type or not at all, `import {} from "x"` among them.
+/// Returns their spans.
+fn elided_imports(program: &oxc_ast::ast::Program<'_>) -> Vec<Span> {
+    let semantic = SemanticBuilder::new().build(program).semantic;
+    let scoping = semantic.scoping();
+    let mut computed = ComputedKeyNames {
+        ambient: u32::from(program.source_type.is_typescript_definition()),
+        names: BTreeSet::new(),
+    };
+    computed.visit_program(program);
+    let mut elided = Vec::new();
+    for statement in &program.body {
         let Statement::ImportDeclaration(import) = statement else {
             continue;
         };
@@ -352,9 +513,6 @@ pub fn elided_imports(source: &str, source_type: SourceType) -> Vec<Span> {
         let Some(specifiers) = &import.specifiers else {
             continue;
         };
-        if specifiers.is_empty() {
-            continue;
-        }
         let used_as_value = specifiers.iter().any(|specifier| {
             let local = match specifier {
                 ImportDeclarationSpecifier::ImportSpecifier(s)
@@ -366,11 +524,12 @@ pub fn elided_imports(source: &str, source_type: SourceType) -> Vec<Span> {
                 ImportDeclarationSpecifier::ImportDefaultSpecifier(s) => &s.local,
                 ImportDeclarationSpecifier::ImportNamespaceSpecifier(s) => &s.local,
             };
-            local.symbol_id.get().is_some_and(|symbol| {
-                scoping
-                    .get_resolved_references(symbol)
-                    .any(oxc_semantic::Reference::is_value)
-            })
+            computed.names.contains(local.name.as_str())
+                || local.symbol_id.get().is_some_and(|symbol| {
+                    scoping
+                        .get_resolved_references(symbol)
+                        .any(oxc_semantic::Reference::is_value)
+                })
         });
         if !used_as_value {
             elided.push(import.span);
@@ -475,11 +634,29 @@ fn forms(
     let options = settings.walk_options();
     match flavour {
         Flavour::Acorn if source_type.is_typescript() => {
-            // acorn reads TypeScript only after compiling it, which drops imports used as types.
-            let elided = elided_imports(source, source_type);
+            // acorn reads TypeScript only after compiling it, which drops imports used as types
+            // and type-only re-exports, and lowers `export * as ns` for the ES2015 target.
+            let esm = path
+                .to_str()
+                .is_some_and(|p| matches!(resolve::extension(p), ".mts" | ".d.mts"));
+            let compiled = transpiled(source, source_type, esm);
             let mut found = walk::walk_source(source, source_type, Flavour::Acorn, &options)
                 .map_err(parse_error)?;
-            found.retain(|f| !elided.iter().any(|span| span.contains_inclusive(f.span)));
+            let within =
+                |spans: &[Span], f: &Found| spans.iter().any(|s| s.contains_inclusive(f.span));
+            found.retain(|f| !within(&compiled.elided, f));
+            for f in &mut found {
+                if within(&compiled.lowered_to_import, f) {
+                    for t in &mut f.dependency_types {
+                        if *t == DependencyType::Export {
+                            *t = DependencyType::Import;
+                        }
+                    }
+                }
+            }
+            if esm {
+                commonjs_output(&mut found, &options.module_systems);
+            }
             Ok(found)
         }
         _ => walk::walk_source(source, source_type, flavour, &options).map_err(parse_error),
@@ -519,6 +696,22 @@ impl<'s> Lines<'s> {
             u32::try_from(column).unwrap_or(u32::MAX),
         )
     }
+}
+
+/// Upstream compiles `.mts` and `.d.mts` with `module: "nodenext"` through `transpileModule`,
+/// whose file is `module.ts`, so the output is CommonJS: every static import and re-export
+/// left after elision is a `require` to acorn. `import()` stays as it is. A form that becomes
+/// CommonJS is dropped when `moduleSystems` leaves `cjs` out.
+fn commonjs_output(found: &mut Vec<Found>, module_systems: &[ModuleSystem]) {
+    let keep = module_systems.is_empty() || module_systems.contains(&ModuleSystem::Cjs);
+    found.retain_mut(|f| {
+        if f.module_system != ModuleSystem::Es6 || f.dynamic {
+            return true;
+        }
+        f.module_system = ModuleSystem::Cjs;
+        f.dependency_types = vec![DependencyType::Require];
+        keep
+    });
 }
 
 fn unique_key(found: &Found) -> String {
@@ -589,13 +782,25 @@ pub fn extract_dependencies(
     settings: &Settings,
     config: &ResolveConfig,
 ) -> Result<Vec<Extracted>, PipelineError> {
+    resolved_dependencies(file, settings, config).map(|(extracted, _)| extracted)
+}
+
+/// [`extract_dependencies`], and the extension list of the file's first resolution that found
+/// a file, in upstream's resolving order (before filtering), for
+/// [`ResolveConfig::settle_followable`].
+fn resolved_dependencies(
+    file: &str,
+    settings: &Settings,
+    config: &ResolveConfig,
+) -> Result<(Vec<Extracted>, Option<resolve::ExtensionList>), PipelineError> {
     if settings
         .extra_extensions_to_scan
         .iter()
         .any(|e| e == node_extname(file))
     {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), None));
     }
+    let mut first_found = None;
     let flavour = flavour_for(settings, file);
     let path = settings.on_disk(file);
     let (source, vue_lang) = source_of(settings, file)?;
@@ -641,6 +846,7 @@ pub fn extract_dependencies(
             &context,
             config,
         );
+        first_found = first_found.or(resolution.asked_with);
         let (line, column) = lines.locate(form.span.start);
         let matches_do_not_follow = settings.stops(&resolution);
         extracted.push(Extracted {
@@ -685,7 +891,24 @@ pub fn extract_dependencies(
         };
         collate::compare(&key(a), &key(b))
     });
-    Ok(extracted)
+    Ok((extracted, first_found))
+}
+
+/// Settles which extension list decides `followable` for the run, as upstream's first
+/// successful resolution does ([`ResolveConfig::settle_followable`]): the initial sources in
+/// order, each file's resolutions in order, until one finds a file. Before that first success
+/// nothing is followable, so upstream's depth-first walk reaches no other file first. A file
+/// that fails to extract is passed over here; the walk reports it when it gets there.
+fn settle_followable(initial: &[String], settings: &Settings, config: &ResolveConfig) {
+    if config.bust_the_cache || config.settled_followable().is_some() {
+        return;
+    }
+    for file in initial {
+        if let Ok((_, Some(list))) = resolved_dependencies(file, settings, config) {
+            config.settle_followable(list);
+            return;
+        }
+    }
 }
 
 fn is_glob(text: &str) -> bool {
@@ -996,6 +1219,7 @@ pub fn extract(
     config: &ResolveConfig,
 ) -> Result<Vec<ExtractedModule>, PipelineError> {
     let initial = gather_initial_sources(inputs, settings)?;
+    settle_followable(&initial, settings, config);
     let found = reachable_dependencies(&initial, settings, config);
     let mut modules = replay(&initial, settings, config, found)?;
     if settings.experimental_stats {
@@ -1055,14 +1279,67 @@ pub fn stats(file: &str, settings: &Settings) -> Result<ExperimentalStats, Pipel
         })
         .parse();
     Ok(ExperimentalStats {
-        top_level_statement_count: parsed.program.body.len() as u64,
-        size: source.len() as u64,
+        top_level_statement_count: top_level_statement_count(
+            file,
+            &source,
+            parsed.program.directives.len() + parsed.program.body.len(),
+        ),
+        size: utf16_length(&source),
     })
+}
+
+/// The top-level statement count upstream reports, from the number oxc parsed. A directive
+/// prologue (`"use strict";`) is a statement to acorn and tsc alike, so the caller counts it. A
+/// JSON document that is not also JavaScript (`{"a": 1}`) stops oxc with nothing parsed, where
+/// acorn-loose recovers it as the one block statement it starts.
+fn top_level_statement_count(file: &str, source: &str, parsed: usize) -> u64 {
+    // Case-sensitive, as upstream's extension lookups are.
+    if parsed == 0 && node_extname(file) == ".json" && !source.trim().is_empty() {
+        1
+    } else {
+        parsed as u64
+    }
+}
+
+/// The length of `source` in UTF-16 code units: upstream's `size` is the parsed tree's `end`,
+/// an offset into a JavaScript string, so a character outside ASCII counts as one unit (two
+/// above U+FFFF), never as its UTF-8 bytes.
+pub fn utf16_length(source: &str) -> u64 {
+    source.chars().map(|c| c.len_utf16() as u64).sum()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn statements_count_directives_and_a_json_document_as_one() {
+        assert_eq!(top_level_statement_count("a.json", "{\"a\": 1}", 0), 1);
+        assert_eq!(top_level_statement_count("a.json", " \n", 0), 0);
+        assert_eq!(top_level_statement_count("a.json", "[1]", 1), 1);
+        assert_eq!(top_level_statement_count("a.mjs", "{\"a\": 1}", 0), 0);
+        assert_eq!(top_level_statement_count("a.mjs", "x", 3), 3);
+        let dir = std::env::temp_dir().join(format!("rb-stats-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        let file = dir.join("strict.mjs");
+        let _ = std::fs::write(&file, "\"use strict\";\nexport const a = 1;\n");
+        let counted = Settings::new(&rb_model::TypeScriptOptions::default(), &dir)
+            .ok()
+            .and_then(|settings| stats("strict.mjs", &settings).ok())
+            .map(|s| s.top_level_statement_count);
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(counted, Some(2));
+    }
+
+    #[test]
+    fn size_counts_utf16_code_units_as_javascript_does() {
+        assert_eq!(utf16_length(""), 0);
+        assert_eq!(utf16_length("abc"), 3);
+        // An em dash is three UTF-8 bytes and one UTF-16 unit; an emoji four bytes, two units.
+        assert_eq!(utf16_length("a\u{2014}b"), 3);
+        assert_eq!(utf16_length("\u{1f600}"), 2);
+        assert_eq!(utf16_length("\u{feff}x"), 2);
+    }
 
     #[test]
     fn module_attributes_follow_upstream() {
@@ -1148,8 +1425,9 @@ mod tests {
     #[test]
     fn type_only_and_unused_imports_are_elided_as_compilation_would() {
         let source = "import type A from './a';\nimport { B } from './b';\nimport { C } from './c';\nimport './d';\nimport { E } from './e';\nconst x: B = C;\n";
-        let spans = elided_imports(source, SourceType::ts());
-        let elided: Vec<&str> = spans
+        let compiled = transpiled(source, SourceType::ts(), false);
+        let elided: Vec<&str> = compiled
+            .elided
             .iter()
             .map(|s| &source[s.start as usize..s.end as usize])
             .collect();
@@ -1160,6 +1438,81 @@ mod tests {
                 "import { B } from './b';",
                 "import { E } from './e';"
             ]
+        );
+        assert!(compiled.lowered_to_import.is_empty());
+    }
+
+    /// A computed property name is an expression wherever it stands, so the import it names
+    /// survives compilation, types and abstract members included; not in an ambient context.
+    /// Each expectation is `typescript.transpileModule` 6.0.3's (target ES2015).
+    #[test]
+    fn computed_keys_keep_their_import_outside_ambient_contexts() {
+        let cases = [
+            (
+                "export abstract class C { abstract get [m](): number; }",
+                true,
+            ),
+            ("export abstract class C { abstract [m]: number; }", true),
+            ("export abstract class C { abstract [m](): void; }", true),
+            ("export interface I { [m]: number }", true),
+            ("export interface I { [m](): void }", true),
+            ("export type T = { [m]: number };", true),
+            ("export function f(a: { [m]: 1 }) {}", true),
+            ("export class C { [m]!: number; }", true),
+            ("export class C { [m]?(): void; }", true),
+            ("declare const x: { [m]: number };", false),
+            ("export class C { declare [m]: number; }", false),
+            ("export declare class C { [m]: number; }", false),
+            ("export declare function f(): { [m]: 1 };", false),
+            ("export type T = typeof m;", false),
+        ];
+        let wrong: Vec<&str> = cases
+            .iter()
+            .filter(|(body, kept)| {
+                let source = format!("import {{ m }} from './a';\n{body}\n");
+                transpiled(&source, SourceType::ts(), false)
+                    .elided
+                    .is_empty()
+                    != *kept
+            })
+            .map(|(body, _)| *body)
+            .collect();
+        assert!(wrong.is_empty(), "{wrong:#?}");
+    }
+
+    /// What `typescript.transpileModule` 6.0.3 does with target ES2015, as upstream calls it.
+    #[test]
+    fn re_exports_are_elided_and_lowered_as_compilation_would() {
+        let source = "export type { A } from './a';\nexport { type B } from './b';\nexport { type C, D } from './c';\nexport {} from './e';\nexport type * from './f';\nexport * from './g';\nexport * as ns from './h';\nexport { I } from './i';\nimport {} from './j';\nimport K, {} from './k';\nimport L, { type M } from './l';\nL();\n";
+        let text = |spans: &[Span]| -> Vec<String> {
+            spans
+                .iter()
+                .map(|s| source[s.start as usize..s.end as usize].to_owned())
+                .collect()
+        };
+        let compiled = transpiled(source, SourceType::ts(), false);
+        let mut elided = text(&compiled.elided);
+        elided.sort();
+        assert_eq!(
+            elided,
+            [
+                "export type * from './f';",
+                "export type { A } from './a';",
+                "export { type B } from './b';",
+                "export {} from './e';",
+                "import K, {} from './k';",
+                "import {} from './j';",
+            ]
+        );
+        assert_eq!(
+            text(&compiled.lowered_to_import),
+            ["export * as ns from './h';"]
+        );
+        // The ESM flavour targets ES2022, which has `export * as ns`.
+        assert!(
+            transpiled(source, SourceType::ts(), true)
+                .lowered_to_import
+                .is_empty()
         );
     }
 

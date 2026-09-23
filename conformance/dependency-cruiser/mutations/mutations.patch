@@ -1,0 +1,294 @@
+diff --git a/.dependency-cruiser.mutations.cjs b/.dependency-cruiser.mutations.cjs
+new file mode 100644
+--- /dev/null
++++ b/.dependency-cruiser.mutations.cjs
+@@ -0,0 +1,118 @@
++// Twelve rules, one per rule shape, each scoped to the folder its mutation lives in, so each
++// fires exactly on its mutation and nowhere else in dependency-cruiser's own tree. Applied by
++// Rulebearing's conformance gate 1 layer 5 (conformance/dependency-cruiser/mutations/README.md).
++module.exports = {
++  forbidden: [
++    {
++      name: "m01-forbidden",
++      comment: "Regular forbidden: a mutation module must not reach into the cli.",
++      severity: "error",
++      from: { path: "^src/mutation/01-forbidden/" },
++      to: { path: "^src/cli/" },
++    },
++    {
++      name: "m02-path-not",
++      comment: "pathNot: the only way out of the folder is to the utilities.",
++      severity: "error",
++      from: { path: "^src/mutation/02-path-not/" },
++      to: { pathNot: ["^src/mutation/02-path-not/", "^src/utl/"] },
++    },
++    {
++      name: "m03-fence",
++      comment: "A $1 fence: sibling folders stay independent of each other.",
++      severity: "error",
++      from: { path: "^src/mutation/03-fence/([^/]+)/" },
++      to: {
++        path: "^src/mutation/03-fence/",
++        pathNot: "^src/mutation/03-fence/$1/",
++      },
++    },
++    {
++      name: "m04-circular",
++      comment: "circular: no cycles.",
++      severity: "error",
++      from: { path: "^src/mutation/04-circular/" },
++      to: { circular: true },
++    },
++    {
++      name: "m05-orphan",
++      comment: "orphan: every module is used, or uses something.",
++      severity: "error",
++      from: { orphan: true, path: "^src/mutation/05-orphan/" },
++      to: {},
++    },
++    {
++      name: "m06-dependency-types-not",
++      comment: "dependencyTypesNot: local imports only.",
++      severity: "error",
++      from: { path: "^src/mutation/06-dependency-types-not/" },
++      to: { dependencyTypesNot: ["local"] },
++    },
++    {
++      name: "m07-reachable",
++      comment: "reachable, forbidden: entry must not reach forbidden, directly or not.",
++      severity: "error",
++      from: { path: "^src/mutation/07-reachable/entry[.]mjs$" },
++      to: {
++        path: "^src/mutation/07-reachable/forbidden[.]mjs$",
++        reachable: true,
++      },
++    },
++    {
++      name: "m09-dependents",
++      comment: "dependents: a shared module is shared by at least two.",
++      severity: "error",
++      from: { path: "^src/mutation/09-dependents/" },
++      module: {
++        path: "^src/mutation/09-dependents/shared[.]mjs$",
++        numberOfDependentsLessThan: 2,
++      },
++    },
++    {
++      name: "m11-via",
++      comment: "via: no cycle may run through the hub.",
++      severity: "error",
++      from: { path: "^src/mutation/11-via/", pathNot: "hub[.]mjs$" },
++      to: {
++        circular: true,
++        via: { path: "^src/mutation/11-via/hub[.]mjs$" },
++      },
++    },
++    {
++      name: "m12-could-not-resolve",
++      comment: "couldNotResolve: every import names a file.",
++      severity: "error",
++      from: { path: "^src/mutation/12-could-not-resolve/" },
++      to: { couldNotResolve: true },
++    },
++  ],
++  allowed: [
++    { from: { pathNot: "^src/mutation/10-allowed/" }, to: {} },
++    {
++      from: { path: "^src/mutation/10-allowed/" },
++      to: { path: "^src/mutation/10-allowed/" },
++    },
++  ],
++  allowedSeverity: "error",
++  required: [
++    {
++      name: "m08-required",
++      comment: "required: every module in the folder uses the bus.",
++      severity: "error",
++      module: { path: "^src/mutation/08-required/" },
++      to: { path: "^src/utl/bus[.]mjs$" },
++    },
++  ],
++  options: {
++    doNotFollow: { path: "node_modules" },
++    moduleSystems: ["es6", "cjs"],
++    tsPreCompilationDeps: true,
++    detectJSDocImports: true,
++    enhancedResolveOptions: {
++      exportsFields: ["exports"],
++      aliasFields: ["browser"],
++      conditionNames: ["import", "require"],
++      extensions: [".js", ".cjs", ".mjs", ".d.ts", ".d.mts"],
++    },
++  },
++};
+diff --git a/src/mutation/01-forbidden/uses-cli.mjs b/src/mutation/01-forbidden/uses-cli.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/01-forbidden/uses-cli.mjs
+@@ -0,0 +1,4 @@
++// Mutation 01, a regular forbidden rule (m01-forbidden): this module reaches into the cli.
++import * as metaInfo from "../../cli/format-meta-info.mjs";
++
++export const mutation = metaInfo;
+diff --git a/src/mutation/02-path-not/uses-graph-utl.mjs b/src/mutation/02-path-not/uses-graph-utl.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/02-path-not/uses-graph-utl.mjs
+@@ -0,0 +1,5 @@
++// Mutation 02, pathNot (m02-path-not): the utilities are allowed, graph-utl is not.
++import { bus } from "../../utl/bus.mjs";
++import { compareModules } from "../../graph-utl/compare.mjs";
++
++export const mutation = [bus, compareModules];
+diff --git a/src/mutation/03-fence/alpha/a.mjs b/src/mutation/03-fence/alpha/a.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/03-fence/alpha/a.mjs
+@@ -0,0 +1,4 @@
++// Mutation 03, a $1 fence (m03-fence): alpha reaches into its sibling beta.
++import { beta } from "../beta/b.mjs";
++
++export const alpha = `alpha-${beta}`;
+diff --git a/src/mutation/03-fence/beta/b.mjs b/src/mutation/03-fence/beta/b.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/03-fence/beta/b.mjs
+@@ -0,0 +1,2 @@
++// Mutation 03, a $1 fence (m03-fence): the sibling alpha reaches into.
++export const beta = "beta";
+diff --git a/src/mutation/04-circular/a.mjs b/src/mutation/04-circular/a.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/04-circular/a.mjs
+@@ -0,0 +1,4 @@
++// Mutation 04, circular (m04-circular): a and b import each other.
++import { b } from "./b.mjs";
++
++export const a = () => b();
+diff --git a/src/mutation/04-circular/b.mjs b/src/mutation/04-circular/b.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/04-circular/b.mjs
+@@ -0,0 +1,4 @@
++// Mutation 04, circular (m04-circular): a and b import each other.
++import { a } from "./a.mjs";
++
++export const b = () => a;
+diff --git a/src/mutation/05-orphan/lonely.mjs b/src/mutation/05-orphan/lonely.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/05-orphan/lonely.mjs
+@@ -0,0 +1,2 @@
++// Mutation 05, orphan (m05-orphan): nothing imports this module and it imports nothing.
++export const lonely = true;
+diff --git a/src/mutation/06-dependency-types-not/sibling.mjs b/src/mutation/06-dependency-types-not/sibling.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/06-dependency-types-not/sibling.mjs
+@@ -0,0 +1,2 @@
++// Mutation 06, dependencyTypesNot (m06-dependency-types-not): a local import, which is fine.
++export const sibling = "sibling";
+diff --git a/src/mutation/06-dependency-types-not/uses-core.mjs b/src/mutation/06-dependency-types-not/uses-core.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/06-dependency-types-not/uses-core.mjs
+@@ -0,0 +1,5 @@
++// Mutation 06, dependencyTypesNot (m06-dependency-types-not): only local imports belong here.
++import { join } from "node:path";
++import { sibling } from "./sibling.mjs";
++
++export const mutation = join(sibling, "x");
+diff --git a/src/mutation/07-reachable/entry.mjs b/src/mutation/07-reachable/entry.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/07-reachable/entry.mjs
+@@ -0,0 +1,4 @@
++// Mutation 07, reachable forbidden (m07-reachable): entry reaches forbidden through middle.
++import { middle } from "./middle.mjs";
++
++export const entry = middle;
+diff --git a/src/mutation/07-reachable/forbidden.mjs b/src/mutation/07-reachable/forbidden.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/07-reachable/forbidden.mjs
+@@ -0,0 +1,2 @@
++// Mutation 07, reachable forbidden (m07-reachable): what entry must not reach.
++export const forbidden = "forbidden";
+diff --git a/src/mutation/07-reachable/middle.mjs b/src/mutation/07-reachable/middle.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/07-reachable/middle.mjs
+@@ -0,0 +1,4 @@
++// Mutation 07, reachable forbidden (m07-reachable): the module in between.
++import { forbidden } from "./forbidden.mjs";
++
++export const middle = forbidden;
+diff --git a/src/mutation/08-required/skips-the-bus.mjs b/src/mutation/08-required/skips-the-bus.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/08-required/skips-the-bus.mjs
+@@ -0,0 +1,4 @@
++// Mutation 08, required (m08-required): every module here must use the bus; this one does not.
++import { uniq } from "../../utl/array-util.mjs";
++
++export const mutation = uniq([1, 1]);
+diff --git a/src/mutation/09-dependents/shared.mjs b/src/mutation/09-dependents/shared.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/09-dependents/shared.mjs
+@@ -0,0 +1,2 @@
++// Mutation 09, dependents (m09-dependents): a shared module with one dependent.
++export const shared = "shared";
+diff --git a/src/mutation/09-dependents/user.mjs b/src/mutation/09-dependents/user.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/09-dependents/user.mjs
+@@ -0,0 +1,4 @@
++// Mutation 09, dependents (m09-dependents): the one dependent.
++import { shared } from "./shared.mjs";
++
++export const user = shared;
+diff --git a/src/mutation/10-allowed/a.mjs b/src/mutation/10-allowed/a.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/10-allowed/a.mjs
+@@ -0,0 +1,5 @@
++// Mutation 10, allowed (not-in-allowed): local imports are allowed here, the bus is not.
++import { b } from "./b.mjs";
++import { bus } from "../../utl/bus.mjs";
++
++export const a = [b, bus];
+diff --git a/src/mutation/10-allowed/b.mjs b/src/mutation/10-allowed/b.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/10-allowed/b.mjs
+@@ -0,0 +1,2 @@
++// Mutation 10, allowed (not-in-allowed): an allowed local import.
++export const b = "b";
+diff --git a/src/mutation/11-via/a.mjs b/src/mutation/11-via/a.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/11-via/a.mjs
+@@ -0,0 +1,4 @@
++// Mutation 11, via (m11-via): a cycle that runs through the hub.
++import { hub } from "./hub.mjs";
++
++export const a = () => hub();
+diff --git a/src/mutation/11-via/hub.mjs b/src/mutation/11-via/hub.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/11-via/hub.mjs
+@@ -0,0 +1,4 @@
++// Mutation 11, via (m11-via): the hub the cycle runs through.
++import { a } from "./a.mjs";
++
++export const hub = () => a;
+diff --git a/src/mutation/12-could-not-resolve/imports-nothing.mjs b/src/mutation/12-could-not-resolve/imports-nothing.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/mutation/12-could-not-resolve/imports-nothing.mjs
+@@ -0,0 +1,4 @@
++// Mutation 12, couldNotResolve (m12-could-not-resolve): the import names no file.
++import { missing } from "./does-not-exist.mjs";
++
++export const mutation = missing;

@@ -105,6 +105,12 @@ pub struct ResolveConfig {
     /// Whether the tsconfig's project `references` apply to files inside the referenced
     /// projects.
     pub tsconfig_references: bool,
+    /// Upstream's `bustTheCache`: every resolution builds its resolver from the options it is
+    /// given. Off in a real cruise, where upstream keeps the first resolver it built for the
+    /// whole run, so the TypeScript-variant retry (see [`resolve`]) searches the configured
+    /// extensions rather than the variant set; on in the recorded `test/extract` cases, which
+    /// all pass `bustTheCache: true`.
+    pub bust_the_cache: bool,
     /// The resolvers built from these options, each made on first use and kept, so its file
     /// system cache lives for the whole run. Set every option before the first resolution.
     pub(crate) resolvers: Resolvers,
@@ -112,6 +118,9 @@ pub struct ResolveConfig {
 
 /// Classifying manifests by (importing folder, base directory).
 type ManifestCache = Mutex<HashMap<(PathBuf, PathBuf), Option<Arc<Manifest>>>>;
+
+/// Packages' own `package.json` files (licence, deprecation), by path, each read once.
+type PackageCache = Mutex<HashMap<PathBuf, Option<Arc<serde_json::Value>>>>;
 
 /// The resolvers one `ResolveConfig` uses: the main one, one per TypeScript retry extension set
 /// (see [`typescript_variants`]) and the one that finds a package's `package.json`; and the
@@ -123,6 +132,8 @@ pub(crate) struct Resolvers {
     manifest: OnceLock<Resolver>,
     manifests: ManifestCache,
     patterns: Mutex<HashMap<String, Option<regex::Regex>>>,
+    followable: OnceLock<ExtensionList>,
+    packages: PackageCache,
 }
 
 /// A copy starts with no resolvers: the copy's options may be changed before it resolves.
@@ -163,6 +174,7 @@ impl Default for ResolveConfig {
             yarn_pnp: false,
             pnp_root: None,
             tsconfig_references: false,
+            bust_the_cache: false,
             resolvers: Resolvers::default(),
         }
     }
@@ -282,6 +294,10 @@ pub struct Resolution {
     pub dependency_types: Vec<DependencyType>,
     /// The npm licence, when asked for and found.
     pub license: Option<String>,
+    /// For a CommonJS-style resolution that found a file: the extension list it asked with,
+    /// which the pipeline reads to settle upstream's followable cache
+    /// ([`ResolveConfig::settle_followable`]).
+    pub asked_with: Option<ExtensionList>,
 }
 
 /// Whether a specifier is relative: `./x`, `../x`, `.` or `..`.
@@ -385,9 +401,44 @@ pub struct Context<'p> {
     pub file_dir: &'p Path,
 }
 
-fn is_followable(resolved: &str, config: &ResolveConfig) -> bool {
+/// The extension list a resolution asked with: the configured one, or the TypeScript variants
+/// of [`typescript_variants`] set `n` for the retry of an unresolvable `.js`, `.cjs` or `.mjs`.
+/// Upstream's `isFollowable` reads the list from the options of the call it is made in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExtensionList {
+    /// `extensions` as configured.
+    Configured,
+    /// The TypeScript variants, by set.
+    TypeScriptVariants(usize),
+}
+
+impl ResolveConfig {
+    /// Fixes the list `followable` is decided with for the rest of the run: upstream caches the
+    /// followable extensions of the first successful resolution in a module-level variable
+    /// that nothing clears, so every later resolution is judged by that one's list. The
+    /// pipeline settles it from the first resolution in upstream's walking order; ignored
+    /// under [`ResolveConfig::bust_the_cache`], and once settled.
+    pub fn settle_followable(&self, list: ExtensionList) {
+        let _ = self.resolvers.followable.set(list);
+    }
+
+    /// The settled list, if any.
+    pub fn settled_followable(&self) -> Option<ExtensionList> {
+        self.resolvers.followable.get().copied()
+    }
+}
+
+fn is_followable(resolved: &str, list: ExtensionList, config: &ResolveConfig) -> bool {
     let ext = extension(resolved);
-    config.extensions.iter().any(|e| e == ext) && !UNFOLLOWABLE.contains(&ext)
+    let listed = match list {
+        ExtensionList::Configured => config.extensions.iter().any(|e| e == ext),
+        ExtensionList::TypeScriptVariants(index) => [".js", ".cjs", ".mjs"]
+            .iter()
+            .filter_map(|js| typescript_variants(js))
+            .find(|(set, _)| *set == index)
+            .is_some_and(|(_, variants)| variants.contains(&ext)),
+    };
+    listed && !UNFOLLOWABLE.contains(&ext)
 }
 
 fn strip_query(path: &str) -> &str {
@@ -401,7 +452,7 @@ fn resolve_commonjs(
     module: &str,
     context: &Context<'_>,
     config: &ResolveConfig,
-    resolver: &Resolver,
+    (resolver, list): (&Resolver, ExtensionList),
 ) -> Resolution {
     let mut resolution = Resolution {
         resolved: module.to_owned(),
@@ -410,6 +461,7 @@ fn resolve_commonjs(
         could_not_resolve: false,
         dependency_types: Vec::new(),
         license: None,
+        asked_with: None,
     };
     if is_builtin(module, config.built_in_modules.as_ref()) {
         resolution.core_module = true;
@@ -422,7 +474,13 @@ fn resolve_commonjs(
             let full = strip_query(&full);
             resolution.resolved =
                 relative(&absolute(context.cwd, context.base_dir), Path::new(full));
-            resolution.followable = is_followable(&resolution.resolved, config);
+            let judged_by = if config.bust_the_cache {
+                list
+            } else {
+                config.settled_followable().unwrap_or(list)
+            };
+            resolution.followable = is_followable(&resolution.resolved, judged_by, config);
+            resolution.asked_with = Some(list);
         }
         Err(_) => resolution.could_not_resolve = true,
     }
@@ -456,6 +514,7 @@ fn resolve_amd(module: &str, context: &Context<'_>, config: &ResolveConfig) -> R
         resolved,
         dependency_types: Vec::new(),
         license: None,
+        asked_with: None,
     }
 }
 
@@ -464,7 +523,7 @@ fn resolve_module(
     form_is_commonjs_resolvable: bool,
     context: &Context<'_>,
     config: &ResolveConfig,
-    resolver: &Resolver,
+    resolver: (&Resolver, ExtensionList),
 ) -> Resolution {
     if is_relative(module) || form_is_commonjs_resolvable {
         resolve_commonjs(module, context, config, resolver)
@@ -496,16 +555,33 @@ pub fn resolve(
     use rb_model::ModuleSystem as M;
     let stripped = strip_loaders(module);
     let commonjs = matches!(module_system, M::Cjs | M::Es6 | M::Tsd);
-    let mut resolution =
-        resolve_module(stripped, commonjs, context, config, config.main_resolver());
+    let mut resolution = resolve_module(
+        stripped,
+        commonjs,
+        context,
+        config,
+        (config.main_resolver(), ExtensionList::Configured),
+    );
     if resolution.could_not_resolve
         && let Some((index, variants)) = typescript_variants(extension(stripped))
-        && let Some(retry_resolver) = config.retry_resolver(index, variants)
+        && let Some(retry_resolver) = if config.bust_the_cache {
+            config.retry_resolver(index, variants)
+        } else {
+            // Upstream asks for the variant extensions, but its resolver cache is keyed on the
+            // run, not on the options, so the retry gets the first resolver the run built.
+            Some(config.main_resolver())
+        }
     {
         let without = stripped
             .strip_suffix(extension(stripped))
             .unwrap_or(stripped);
-        let candidate = resolve_module(without, commonjs, context, config, retry_resolver);
+        let candidate = resolve_module(
+            without,
+            commonjs,
+            context,
+            config,
+            (retry_resolver, ExtensionList::TypeScriptVariants(index)),
+        );
         // Node's `extname`, so `x.d.cts` counts as `.cts`.
         let last = candidate
             .resolved
@@ -560,7 +636,7 @@ fn package_json(
     module: &str,
     context: &Context<'_>,
     config: &ResolveConfig,
-) -> Option<serde_json::Value> {
+) -> Option<Arc<serde_json::Value>> {
     let directory = absolute(context.cwd, context.file_dir);
     let found = config
         .manifest_resolver()
@@ -569,7 +645,20 @@ fn package_json(
             &format!("{}/package.json", npm::package_root(module)),
         )
         .ok()?;
-    serde_json::from_str(&std::fs::read_to_string(found.path()).ok()?).ok()
+    let path = found.path().to_path_buf();
+    if let Ok(cache) = config.resolvers.packages.lock()
+        && let Some(read) = cache.get(&path)
+    {
+        return read.clone();
+    }
+    let read = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .map(Arc::new);
+    if let Ok(mut cache) = config.resolvers.packages.lock() {
+        cache.insert(path, read.clone());
+    }
+    read
 }
 
 fn license(module: &str, context: &Context<'_>, config: &ResolveConfig) -> Option<String> {
@@ -787,6 +876,42 @@ mod tests {
         assert!(config.retry_resolver(2, &[".mts"]).is_some());
         assert!(config.retry_resolver(3, &[".mts"]).is_none());
         assert!(config.clone().resolvers.main.get().is_none());
+    }
+
+    #[test]
+    fn the_followable_list_settles_once_and_decides_followable() {
+        let config = ResolveConfig::default();
+        assert_eq!(config.settled_followable(), None);
+        config.settle_followable(ExtensionList::TypeScriptVariants(0));
+        config.settle_followable(ExtensionList::Configured);
+        assert_eq!(
+            config.settled_followable(),
+            Some(ExtensionList::TypeScriptVariants(0))
+        );
+        assert!(config.clone().settled_followable().is_none());
+        let variants = ExtensionList::TypeScriptVariants(0);
+        assert!(is_followable("src/a.ts", variants, &config));
+        assert!(is_followable("src/a.d.ts", variants, &config));
+        assert!(!is_followable("src/a.cts", variants, &config));
+        assert!(!is_followable("src/a.js", variants, &config));
+        assert!(is_followable(
+            "src/a.cts",
+            ExtensionList::Configured,
+            &config
+        ));
+        assert!(is_followable(
+            "src/a.d.mts",
+            ExtensionList::TypeScriptVariants(2),
+            &config
+        ));
+        assert!(!is_followable(
+            "src/a.json",
+            ExtensionList::Configured,
+            &ResolveConfig {
+                extensions: vec![".json".to_owned()],
+                ..ResolveConfig::default()
+            }
+        ));
     }
 
     #[test]

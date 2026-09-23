@@ -41,14 +41,14 @@ fn tags(content: &str) -> Vec<(&str, &str)> {
         .collect()
 }
 
-/// A quoted string at the start of `text`, and nothing but whitespace and `*` after it.
+/// A quoted string at the start of `text`. What follows it (a `;`, import attributes, prose) is
+/// the tag's comment to tsc's JSDoc parser, which reads the module specifier and stops.
 fn string_literal(text: &str) -> Option<&str> {
     let text = text.trim();
     let quote = text.chars().next().filter(|q| *q == '\'' || *q == '"')?;
     let rest = &text[1..];
     let end = rest.find(quote)?;
-    let trailing = rest[end + 1..].trim_matches(|c: char| c.is_whitespace() || c == '*');
-    (!rest[..end].is_empty() && trailing.is_empty()).then(|| &rest[..end])
+    (!rest[..end].is_empty()).then(|| &rest[..end])
 }
 
 /// `@import clause from 'module'`: the module, when it is a string literal.
@@ -122,19 +122,114 @@ pub fn imports(content: &str) -> Vec<(String, &'static [DependencyType])> {
         .filter_map(|(_, text)| import_tag(text))
         .map(|module| (module.to_owned(), IMPORT_TAG))
         .collect();
-    for (name, text) in &tags {
-        if *name == "import" {
-            continue;
-        }
-        if let Some(expression) = type_expression(text) {
-            found.extend(
-                bracket_imports(expression)
-                    .into_iter()
-                    .map(|m| (m, BRACKET_IMPORT)),
-            );
-        }
+    for expression in tag_type_expressions(&tags) {
+        found.extend(
+            bracket_imports(expression)
+                .into_iter()
+                .map(|m| (m, BRACKET_IMPORT)),
+        );
     }
     found
+}
+
+/// The type expression of every tag tsc gives a `JSDocTypeExpression`, in order. Upstream reads
+/// `import('x')` only there (`tag.typeExpression.kind === JSDocTypeExpression`), so a tag with
+/// no type expression slot (`@template`, `@see`, an unknown tag) contributes nothing, and neither
+/// does a `@typedef` whose `@property` children tsc folds into a type literal, nor a `@callback`
+/// or `@overload` whose `@param` and `@returns` children become a signature.
+fn tag_type_expressions<'c>(tags: &[(&str, &'c str)]) -> Vec<&'c str> {
+    let mut expressions = Vec::new();
+    let mut index = 0;
+    while let Some((name, text)) = tags.get(index) {
+        index += 1;
+        match *name {
+            "param" | "arg" | "argument" | "property" | "prop" => {
+                expressions.extend(type_expression(text).or_else(|| name_first_type(text)));
+            }
+            "returns" | "return" | "throws" | "exception" => {
+                expressions.extend(type_expression(text));
+            }
+            "type" | "this" | "enum" | "satisfies" => {
+                expressions.extend(type_expression(text).or_else(|| braceless_type(text)));
+            }
+            "typedef" => {
+                let own = type_expression(text);
+                let children = count_children(&tags[index..], &["property", "prop", "type"]);
+                if children == 0 {
+                    expressions.extend(own);
+                    continue;
+                }
+                let child_type = tags[index..index + children]
+                    .iter()
+                    .find(|(child, _)| *child == "type")
+                    .and_then(|(_, text)| type_expression(text).or_else(|| braceless_type(text)));
+                index += children;
+                if own.is_some_and(|e| !is_object_type(e)) {
+                    expressions.extend(own);
+                } else if let Some(child) = child_type.filter(|e| !is_object_type(e)) {
+                    expressions.push(child);
+                }
+            }
+            "callback" | "overload" => {
+                index += count_children(&tags[index..], &["param", "arg", "argument", "template"]);
+                if tags
+                    .get(index)
+                    .is_some_and(|(child, _)| matches!(*child, "returns" | "return"))
+                {
+                    index += 1;
+                }
+            }
+            _ => {}
+        }
+    }
+    expressions
+}
+
+/// How many of the leading `tags` are named in `children`.
+fn count_children(tags: &[(&str, &str)], children: &[&str]) -> usize {
+    tags.iter()
+        .take_while(|(name, _)| children.contains(name))
+        .count()
+}
+
+/// tsc's `isObjectOrObjectArrayTypeReference`: `Object`, `object`, and arrays of them.
+fn is_object_type(expression: &str) -> bool {
+    let mut expression = expression.trim();
+    while let Some(element) = expression.strip_suffix("[]") {
+        expression = element.trim_end();
+    }
+    matches!(expression, "Object" | "object")
+}
+
+/// `@param name {type}`: tsc tries the type again after the name when it did not come first.
+fn name_first_type(text: &str) -> Option<&str> {
+    let text = text.trim_start();
+    let name_end = if text.starts_with('[') {
+        text.find(']').map_or(text.len(), |at| at + 1)
+    } else {
+        text.find(char::is_whitespace).unwrap_or(text.len())
+    };
+    type_expression(&text[name_end..])
+}
+
+/// A type written without braces (`@type import('x').T`), which tsc accepts for `@type`,
+/// `@this`, `@enum` and `@satisfies`: the text up to the first white space outside brackets.
+fn braceless_type(text: &str) -> Option<&str> {
+    let text = text.trim_start_matches(|c: char| c.is_whitespace() || c == '*');
+    let mut depth = 0usize;
+    let mut end = text.len();
+    for (at, c) in text.char_indices() {
+        match c {
+            '(' | '<' | '[' | '{' => depth += 1,
+            ')' | '>' | ']' | '}' => depth = depth.saturating_sub(1),
+            c if c.is_whitespace() && depth == 0 => {
+                end = at;
+                break;
+            }
+            _ => {}
+        }
+    }
+    (end > 0).then(|| &text[..end])
 }
 
 #[cfg(test)]
@@ -155,6 +250,13 @@ mod tests {
         assert_eq!(
             modules(" @import thing from './hello.mjs' "),
             ["./hello.mjs"]
+        );
+        // What follows the specifier is the tag's comment: a semicolon, several tags in a row.
+        assert_eq!(
+            modules(
+                "\n * @import { A, B } from \"../x.mjs\";\n * @import { C } from \"./y.mjs\"; and prose\n "
+            ),
+            ["../x.mjs", "./y.mjs"]
         );
         for rejected in [
             " @import {thing} from anIdentifier ",
@@ -190,6 +292,67 @@ mod tests {
         assert!(modules(" @type {import(x)} ").is_empty());
         assert!(modules(" just prose, import('./x') ").is_empty());
         assert_eq!(imports(" @type {import('a')} ")[0].1, BRACKET_IMPORT);
+    }
+
+    #[test]
+    fn only_tags_with_a_type_expression_slot_count() {
+        // @type, @this, @enum and @satisfies may omit the braces.
+        assert_eq!(
+            modules(" @type import('watskeburt').changeType "),
+            ["watskeburt"]
+        );
+        assert_eq!(modules(" @this import('./a').B more "), ["./a"]);
+        assert_eq!(modules(" @satisfies {import('./s')} "), ["./s"]);
+        assert_eq!(modules(" @throws {import('./e').E} "), ["./e"]);
+        // The others need them.
+        assert!(modules(" @returns import('./r').R ").is_empty());
+        // @param with the name first.
+        assert_eq!(modules(" @param thing {import('./p').P} "), ["./p"]);
+        assert_eq!(modules(" @param [thing=1] {import('./q').Q} "), ["./q"]);
+        // No type expression slot: @template's constraint, unknown tags.
+        assert!(modules(" @template {import('./t').T} T ").is_empty());
+        assert!(modules(" @default {import('./d')} ").is_empty());
+    }
+
+    #[test]
+    fn typedef_children_fold_into_a_type_literal() {
+        // Object with @property children: a type literal, not a type expression.
+        assert!(
+            modules(
+                "\n * @typedef {Object} Shape\n * @property {import('./a').A} a\n * @prop {import('./b').B} b\n "
+            )
+            .is_empty()
+        );
+        assert!(modules("\n * @typedef Shape\n * @property {import('./a').A} a\n ").is_empty());
+        // A typedef with a real type keeps it; its @property tags are children all the same.
+        assert_eq!(
+            modules("\n * @typedef {import('./x').X} Shape\n * @property {import('./a').A} a\n "),
+            ["./x"]
+        );
+        // A child @type that is not Object becomes the typedef's type.
+        assert_eq!(
+            modules(
+                "\n * @typedef Shape\n * @type {import('./t').T}\n * @property {import('./a').A} a\n "
+            ),
+            ["./t"]
+        );
+        // Without children, the typedef's own expression, and later tags as usual.
+        assert_eq!(
+            modules("\n * @typedef {import('./x').X} Shape\n * @returns {import('./r')} r\n "),
+            ["./x", "./r"]
+        );
+        assert!(is_object_type(" Object[] []") && !is_object_type("Objects"));
+    }
+
+    #[test]
+    fn callback_and_overload_signatures_are_not_type_expressions() {
+        assert_eq!(
+            modules(
+                "\n * @callback Done\n * @param {import('./a').A} a\n * @returns {import('./r').R}\n * @type {import('./t').T}\n "
+            ),
+            ["./t"]
+        );
+        assert!(modules(" @overload\n * @param {import('./a').A} a ").is_empty());
     }
 
     #[test]
