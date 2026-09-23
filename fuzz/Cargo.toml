@@ -15,10 +15,25 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 rb-extract-dotnet = { path = "../crates/rb-extract-dotnet" }
+rb-config = { path = "../crates/rb-config" }
 
 [[bin]]
 name = "metadata_reader"
 path = "fuzz_targets/metadata_reader.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "config_js"
+path = "fuzz_targets/config_js.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "config_data"
+path = "fuzz_targets/config_data.rs"
 test = false
 doc = false
 bench = false

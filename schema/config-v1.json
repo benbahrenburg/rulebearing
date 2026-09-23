@@ -1,0 +1,1997 @@
+{
+  "$id": "https://benbahrenburg.github.io/rulebearing/schema/config-v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Rulebearing configuration",
+  "description": "A native configuration file: `rulebearing.yaml`, `.json`, `.jsonc` or `.toml`.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "The schema this file is written against.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "allowed": {
+      "description": "dependency-cruiser's `allowed`, legal at the same place.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "default": null,
+      "items": {
+        "$ref": "#/$defs/Rule"
+      }
+    },
+    "allowedSeverity": {
+      "description": "dependency-cruiser's `allowedSeverity`, legal at the same place.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Severity"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "defines": {
+      "description": "Named values read from JSON files, substituted into patterns as `${name}`.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "$ref": "#/$defs/Define"
+      },
+      "default": null
+    },
+    "extends": {
+      "description": "Files, npm packages, `dependency-cruiser/configs/<preset>` or `rulebearing:<preset>` to\nextend; later entries are merged under earlier ones and this file wins.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ExtendsValue"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "forbidden": {
+      "description": "dependency-cruiser's `forbidden`, legal at the same place.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "default": null,
+      "items": {
+        "$ref": "#/$defs/Rule"
+      }
+    },
+    "languages": {
+      "description": "Per-language settings.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/NativeLanguages"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "options": {
+      "description": "Every dependency-cruiser option, unchanged.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OptionsSchema"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "required": {
+      "description": "dependency-cruiser's `required`, legal at the same place.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "default": null,
+      "items": {
+        "$ref": "#/$defs/Rule"
+      }
+    },
+    "rules": {
+      "description": "The rule families.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/NativeRules"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "BuiltInModules": {
+      "description": "`builtInModules`.",
+      "type": "object",
+      "properties": {
+        "add": {
+          "description": "Adds to the runtime's list.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "override": {
+          "description": "Replaces the runtime's list.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "CachedInputFileSystem": {
+      "description": "`enhancedResolveOptions.cachedInputFileSystem`.",
+      "type": "object",
+      "properties": {
+        "cacheDuration": {
+          "description": "Milliseconds a cached entry stays valid.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "CompoundFilter": {
+      "description": "The compound form of a path filter.",
+      "type": "object",
+      "properties": {
+        "dependencyTypes": {
+          "description": "Dependency types to match (`doNotFollow`).",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/DependencyType"
+          }
+        },
+        "dynamic": {
+          "description": "Whether to match dynamic imports (`exclude`).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "path": {
+          "description": "Paths to match.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Define": {
+      "description": "`defines.<name>`: a value read from a JSON file\n([FR-CFG-04](../../../docs/prd.md#fr-cfg-04)).",
+      "type": "object",
+      "properties": {
+        "fromJson": {
+          "description": "The JSON file, relative to the configuration file.",
+          "type": "string"
+        },
+        "joinWith": {
+          "description": "Joins an array of strings. Default `|`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "select": {
+          "description": "A path expression: keys, `[*]`, `[n]`, separated by dots.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "fromJson"
+      ]
+    },
+    "DependencyRulesSchema": {
+      "description": "`rules.dependencies`.",
+      "type": "object",
+      "properties": {
+        "allowed": {
+          "description": "The only edges that may exist.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "default": null,
+          "items": {
+            "$ref": "#/$defs/Rule"
+          }
+        },
+        "allowedSeverity": {
+          "description": "The severity of an edge outside `allowed`. Default `warn`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Severity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "forbidden": {
+          "description": "Edges that must not exist.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "default": null,
+          "items": {
+            "$ref": "#/$defs/Rule"
+          }
+        },
+        "required": {
+          "description": "Edges that must exist.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "default": null,
+          "items": {
+            "$ref": "#/$defs/Rule"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "DependencyType": {
+      "type": "string",
+      "enum": [
+        "aliased-subpath-import",
+        "aliased-tsconfig-base-url",
+        "aliased-tsconfig-paths",
+        "aliased-tsconfig",
+        "aliased-webpack",
+        "aliased-workspace",
+        "aliased",
+        "amd-define",
+        "amd-require",
+        "amd-exotic-require",
+        "core",
+        "deprecated",
+        "dynamic-import",
+        "exotic-require",
+        "export",
+        "import-equals",
+        "import",
+        "jsdoc",
+        "jsdoc-bracket-import",
+        "jsdoc-import-tag",
+        "local",
+        "localmodule",
+        "npm-bundled",
+        "npm-dev",
+        "npm-no-pkg",
+        "npm-optional",
+        "npm-peer",
+        "npm-unknown",
+        "npm",
+        "pre-compilation-only",
+        "process-get-builtin-module",
+        "require",
+        "triple-slash-amd-dependency",
+        "triple-slash-directive",
+        "triple-slash-file-reference",
+        "triple-slash-type-reference",
+        "type-import",
+        "type-only",
+        "undetermined",
+        "unknown",
+        "project",
+        "package",
+        "framework",
+        "test-only",
+        "signature-only",
+        "unresolved",
+        "stdlib",
+        "site",
+        "dynamic"
+      ]
+    },
+    "DotnetOptions": {
+      "description": "`languages.dotnet`.",
+      "type": "object",
+      "properties": {
+        "configuration": {
+          "description": "The build configuration whose output is read. Default: `Debug`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "excludeProjects": {
+          "description": "Project paths to leave out, as patterns.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "solution": {
+          "description": "The `.sln` or `.slnx` to read. Default: the only one in the working directory.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "targetFramework": {
+          "description": "The target framework to read when a project has several. Default: the first listed.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "EnhancedResolveOptions": {
+      "description": "`enhancedResolveOptions`: the resolver settings `oxc_resolver` receives.",
+      "type": "object",
+      "properties": {
+        "aliasFields": {
+          "description": "`package.json` fields holding browser-style alias maps.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "cachedInputFileSystem": {
+          "description": "The file-system cache settings.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CachedInputFileSystem"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "conditionNames": {
+          "description": "Conditions to match in an export map.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "exportsFields": {
+          "description": "`package.json` fields holding export maps.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "extensions": {
+          "description": "Extensions to try.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "mainFields": {
+          "description": "`package.json` fields naming the entry point.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "mainFiles": {
+          "description": "File names tried for a directory.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Examples": {
+      "description": "`examples`: `\"from -> to\"` strings.",
+      "type": "object",
+      "properties": {
+        "allowed": {
+          "description": "Edges the rule must allow.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forbidden": {
+          "description": "Edges the rule must flag.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ExtendsValue": {
+      "description": "`extends`: one entry or several.",
+      "anyOf": [
+        {
+          "description": "One entry.",
+          "type": "string"
+        },
+        {
+          "description": "Several, merged in order.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "ExternalModuleResolutionStrategy": {
+      "type": "string",
+      "enum": [
+        "node_modules",
+        "yarn-pnp"
+      ]
+    },
+    "FileReference": {
+      "description": "A configuration file the extractor reads: `tsConfig`, `babelConfig`.",
+      "type": "object",
+      "properties": {
+        "fileName": {
+          "description": "Path, relative to the working directory.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "FilterOption": {
+      "description": "`focus`, `reaches`, `highlight`: the pattern form or the compound form.",
+      "type": "object",
+      "properties": {
+        "depth": {
+          "description": "`focus.depth`: how many steps of neighbours to show. Default 1.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "path": {
+          "description": "The paths the filter matches, joined.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "FilterValue": {
+      "description": "A filter in any of its three forms.",
+      "anyOf": [
+        {
+          "description": "One pattern.",
+          "type": "string"
+        },
+        {
+          "description": "Several patterns, joined with `|`.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "description": "The object form.",
+          "$ref": "#/$defs/FilterOption"
+        }
+      ]
+    },
+    "FromRestriction": {
+      "description": "`from`.",
+      "type": "object",
+      "properties": {
+        "orphan": {
+          "description": "Match modules with no edges in or out.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "path": {
+          "description": "Paths the source must match.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pathNot": {
+          "description": "Paths the source must not match.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "IndependenceShorthand": {
+      "description": "`rules.independence[]`: one `$1` fence\n([design § Shorthands](../../../docs/artifacts/design.md#shorthands)).",
+      "type": "object",
+      "properties": {
+        "allowEmpty": {
+          "description": "Opt out of liveness.",
+          "type": "boolean"
+        },
+        "comment": {
+          "description": "Why the modules are independent.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fix": {
+          "description": "The fix.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The rule name.",
+          "type": "string"
+        },
+        "pattern": {
+          "description": "A path pattern with exactly one capturing group naming the module, for example\n`^apps/web/src/features/([^/]+)/`.",
+          "type": "string"
+        },
+        "severity": {
+          "description": "Severity. Default `error`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Severity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "pattern"
+      ]
+    },
+    "KnownRule": {
+      "description": "The rule of a `knownViolations` entry.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The rule name.",
+          "type": "string"
+        },
+        "severity": {
+          "description": "The severity it had.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Severity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "KnownViolation": {
+      "description": "One `knownViolations` entry: dependency-cruiser's shape, or a Rulebearing id with lifecycle\nfields.",
+      "type": "object",
+      "properties": {
+        "cycle": {
+          "description": "The cycle, for a cycle violation.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": true
+        },
+        "expires": {
+          "description": "The last day the exception applies.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "from": {
+          "description": "The violating module.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "The stable id, when Rulebearing wrote the entry.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "owner": {
+          "description": "Who answers for the exception.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rule": {
+          "description": "The rule.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/KnownRule"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "to": {
+          "description": "The module depended on.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "via": {
+          "description": "The via chain, for a reachability violation.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": true
+        }
+      }
+    },
+    "LayersShorthand": {
+      "description": "`rules.layers[]`: one `forbidden` rule per lower-to-higher pair\n([design § Shorthands](../../../docs/artifacts/design.md#shorthands)).",
+      "type": "object",
+      "properties": {
+        "allowEmpty": {
+          "description": "Opt out of liveness for every expanded rule.",
+          "type": "boolean"
+        },
+        "comment": {
+          "description": "Why the layering exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fix": {
+          "description": "The fix shared by every expanded rule.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "layers": {
+          "description": "Path patterns from the highest layer to the lowest; a lower layer may not depend on a\nhigher one.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "description": "The rule name; each expanded rule is `<name>:<lower>-to-<higher>`.",
+          "type": "string"
+        },
+        "severity": {
+          "description": "Severity of every expanded rule. Default `error`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Severity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "layers"
+      ]
+    },
+    "ModuleRestriction": {
+      "description": "`module`: the restriction of a dependents rule or a required rule.",
+      "type": "object",
+      "properties": {
+        "numberOfDependentsLessThan": {
+          "description": "Match modules with fewer matching dependents than this.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "numberOfDependentsMoreThan": {
+          "description": "Match modules with more matching dependents than this.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "path": {
+          "description": "Modules to match.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pathNot": {
+          "description": "Modules not to match.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "ModuleSystem": {
+      "type": "string",
+      "enum": [
+        "cjs",
+        "es6",
+        "amd",
+        "tsd",
+        "clr",
+        "py"
+      ]
+    },
+    "NativeLanguages": {
+      "description": "`languages`.",
+      "type": "object",
+      "properties": {
+        "dotnet": {
+          "description": "The .NET extractor's options (wave 2).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DotnetOptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "python": {
+          "description": "The Python extractor's options (wave 2).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PythonOptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "typescript": {
+          "description": "The TypeScript and JavaScript extractor's options (dependency-cruiser's flat option names).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TypeScriptOptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "additionalProperties": false
+    },
+    "NativeRules": {
+      "description": "`rules`.",
+      "type": "object",
+      "properties": {
+        "dependencies": {
+          "description": "dependency-cruiser's rule set.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DependencyRulesSchema"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "independence": {
+          "description": "Independence contracts, expanded to one `$1` fence each.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "default": null,
+          "items": {
+            "$ref": "#/$defs/IndependenceShorthand"
+          }
+        },
+        "layers": {
+          "description": "Layer models, expanded to one `forbidden` rule per lower-to-higher pair.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "default": null,
+          "items": {
+            "$ref": "#/$defs/LayersShorthand"
+          }
+        },
+        "ratchets": {
+          "description": "Counts of direct edges that may only fall.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "default": null,
+          "items": {
+            "$ref": "#/$defs/Ratchet"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "OptionsSchema": {
+      "description": "`options`: the TypeScript block's keys and every other dependency-cruiser option.",
+      "type": "object",
+      "properties": {
+        "babelConfig": {
+          "description": "The Babel config whose aliases apply.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FileReference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "baseDir": {
+          "description": "Paths in the output are relative to this directory. Default: the working directory.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "builtInModules": {
+          "description": "Changes to the runtime's built-in module list.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BuiltInModules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cache": {
+          "description": "Accepted and recorded; the content-addressed cache is wave 3.",
+          "default": null
+        },
+        "collapse": {
+          "description": "`collapse`: a pattern or a folder depth.",
+          "default": null
+        },
+        "combinedDependencies": {
+          "description": "Whether every `package.json` up the tree counts for npm classification. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "detectJSDocImports": {
+          "description": "Whether JSDoc imports are dependencies. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "detectProcessBuiltinModuleCalls": {
+          "description": "Whether `process.getBuiltinModule` calls are dependencies. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "doNotFollow": {
+          "description": "Modules to record but not follow.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PathFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enhancedResolveOptions": {
+          "description": "Resolver settings.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EnhancedResolveOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exclude": {
+          "description": "Modules to leave out entirely.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PathFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exoticRequireStrings": {
+          "description": "Names other than `require` that load a module.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "experimentalStats": {
+          "description": "Whether to record size and statement counts. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "externalModuleResolutionStrategy": {
+          "description": "`node_modules` or Yarn Plug'n'Play. Default: `node_modules`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExternalModuleResolutionStrategy"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extraExtensionsToScan": {
+          "description": "Extensions to scan beyond the parser's own.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "focus": {
+          "description": "`focus`: a pattern, a list, or `{ path, depth }`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FilterValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "forceDeriveDependents": {
+          "description": "Always derive `dependents[]`.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        },
+        "highlight": {
+          "description": "`highlight`: a pattern, a list, or `{ path }`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FilterValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "includeOnly": {
+          "description": "The only modules to include.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PathFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "knownViolations": {
+          "description": "Violations to report at a lower severity, keyed by stable id or by rule, from and to.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "default": null,
+          "items": {
+            "$ref": "#/$defs/KnownViolation"
+          }
+        },
+        "maxDepth": {
+          "description": "How deep to follow from the roots; `0` is unlimited. Default: `0`.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "metrics": {
+          "description": "Compute instability metrics (wave 2).",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        },
+        "moduleSystems": {
+          "description": "Which dependency forms to extract. Default: `es6`, `cjs`, `tsd`, `amd`.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ModuleSystem"
+          }
+        },
+        "parser": {
+          "description": "Which parser dependency-cruiser would have used. Default: `acorn`, or `tsc` for\nTypeScript sources.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Parser"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prefix": {
+          "description": "The link prefix reporters put before a path.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "preserveSymlinks": {
+          "description": "Whether symlinks keep their own path. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "progress": {
+          "description": "`{ type: none | cli-feedback | performance-log | ndjson }`.",
+          "default": null
+        },
+        "reaches": {
+          "description": "`reaches`: a pattern, a list, or `{ path }`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FilterValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reporterOptions": {
+          "description": "Per-reporter settings.",
+          "default": null
+        },
+        "skipAnalysisNotInRules": {
+          "description": "Skip derivations no rule reads.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        },
+        "suffix": {
+          "description": "The link suffix reporters put after a path.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "tsConfig": {
+          "description": "The tsconfig to resolve `paths` and `baseUrl` from.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FileReference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tsPreCompilationDeps": {
+          "description": "Whether edges that disappear after compilation are kept. Default: `false`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TsPreCompilationDeps"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "webpackConfig": {
+          "description": "The webpack config whose `resolve` applies.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WebpackConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "Parser": {
+      "type": "string",
+      "enum": [
+        "acorn",
+        "tsc",
+        "swc"
+      ]
+    },
+    "PathFilter": {
+      "description": "`doNotFollow`, `exclude` and `includeOnly`: either patterns or the compound form.",
+      "anyOf": [
+        {
+          "description": "The short form, patterns only.",
+          "$ref": "#/$defs/Patterns"
+        },
+        {
+          "description": "The compound form.",
+          "$ref": "#/$defs/CompoundFilter"
+        }
+      ]
+    },
+    "Patterns": {
+      "description": "One regular expression or several, dependency-cruiser's `REAsStringsType`.",
+      "anyOf": [
+        {
+          "description": "A single expression.",
+          "type": "string"
+        },
+        {
+          "description": "Several expressions, matched as an alternation.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "PythonOptions": {
+      "description": "`languages.python`.",
+      "type": "object",
+      "properties": {
+        "roots": {
+          "description": "Import roots. Default: `src` when it exists, else the working directory.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "stubs": {
+          "description": "Whether `.pyi` stubs are modules. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "The Python version whose standard library is `stdlib`. Default: `3.13`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Ratchet": {
+      "description": "`rules.ratchets[]`: a count of direct edges that may only fall\n([FR-RULE-06](../../../docs/prd.md#fr-rule-06)).",
+      "type": "object",
+      "properties": {
+        "budget": {
+          "description": "The budget file, `{ \"ceiling\": n }`.",
+          "type": "string"
+        },
+        "comment": {
+          "description": "Why it exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fix": {
+          "description": "The imperative to follow when the count rises.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "from": {
+          "description": "Sources to count from.",
+          "$ref": "#/$defs/FromRestriction"
+        },
+        "name": {
+          "description": "The ratchet name.",
+          "type": "string"
+        },
+        "owner": {
+          "description": "Who answers for it.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "to": {
+          "description": "Targets to count to; `$1` substitutes from `from.path`.",
+          "$ref": "#/$defs/ToRestriction"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "from",
+        "to",
+        "budget"
+      ]
+    },
+    "Rule": {
+      "description": "One dependency rule, in dependency-cruiser's shape plus the native metadata.",
+      "type": "object",
+      "properties": {
+        "allowEmpty": {
+          "description": "Opt out of liveness ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
+          "type": "boolean"
+        },
+        "comment": {
+          "description": "Why the rule exists; carries the decision token.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "examples": {
+          "description": "Edges that must pass and edges that must fail; `rulebearing test` runs them.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Examples"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires": {
+          "description": "The last day the rule applies; the run fails the day after.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fix": {
+          "description": "The imperative to follow when the rule fires.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "from": {
+          "description": "The selecting side of a dependency rule.",
+          "$ref": "#/$defs/FromRestriction",
+          "default": {}
+        },
+        "module": {
+          "description": "The module restriction of a dependents or required rule.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModuleRestriction"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "description": "The rule name. Default `unnamed`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "owner": {
+          "description": "Who answers for the rule.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scope": {
+          "description": "`module` or `folder`. Default `module`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Scope"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "severity": {
+          "description": "`error`, `warn`, `info` or `ignore`. Default `warn`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Severity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "to": {
+          "description": "The target side.",
+          "$ref": "#/$defs/ToRestriction",
+          "default": {}
+        }
+      }
+    },
+    "Scope": {
+      "description": "`scope`: module or folder.",
+      "oneOf": [
+        {
+          "description": "The default: the rule compares modules.",
+          "type": "string",
+          "const": "module"
+        },
+        {
+          "description": "The rule compares folders.",
+          "type": "string",
+          "const": "folder"
+        }
+      ]
+    },
+    "Severity": {
+      "type": "string",
+      "enum": [
+        "ignore",
+        "info",
+        "warn",
+        "error"
+      ]
+    },
+    "SpecifyLiteral": {
+      "description": "The literal string `\"specify\"`.",
+      "oneOf": [
+        {
+          "description": "`\"specify\"`.",
+          "type": "string",
+          "const": "specify"
+        }
+      ]
+    },
+    "ToRestriction": {
+      "description": "`to`: every restriction dependency-cruiser 18.2.0 defines.",
+      "type": "object",
+      "properties": {
+        "ancestor": {
+          "description": "Match targets in a folder above the source.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "circular": {
+          "description": "Match edges on a cycle.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "couldNotResolve": {
+          "description": "Match unresolvable targets.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "dependencyTypes": {
+          "description": "Dependency types, any of which matches.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/DependencyType"
+          }
+        },
+        "dependencyTypesNot": {
+          "description": "Dependency types, none of which may be present.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/DependencyType"
+          }
+        },
+        "dynamic": {
+          "description": "Match `import()` edges.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "exoticRequire": {
+          "description": "The exotic require names to match.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exoticRequireNot": {
+          "description": "The exotic require names not to match.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exoticallyRequired": {
+          "description": "Match edges formed by an exotic require.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "license": {
+          "description": "Licences to match (wave 2).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "licenseNot": {
+          "description": "Licences not to match (wave 2).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "moreThanOneDependencyType": {
+          "description": "Match edges whose target is depended on in more than one way.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "moreUnstable": {
+          "description": "Match targets more unstable than the source (needs `metrics`, wave 2).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "path": {
+          "description": "Paths the target must match; `$0` to `$9` substitute captures from `from.path`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pathNot": {
+          "description": "Paths the target must not match.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preCompilationOnly": {
+          "description": "Match edges that disappear after compilation.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "reachable": {
+          "description": "Reachability: match modules the `from` modules reach (or do not reach).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "via": {
+          "description": "Cycle members, some of which match.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ViaRestriction"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "viaNot": {
+          "description": "Shorthand for `viaOnly.pathNot`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "viaOnly": {
+          "description": "Cycle members, all of which match.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ViaRestriction"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "viaSomeNot": {
+          "description": "Shorthand for `via.pathNot`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "TsPreCompilationDeps": {
+      "description": "`tsPreCompilationDeps`: `true`, `false` or `\"specify\"`.",
+      "anyOf": [
+        {
+          "description": "Include (`true`) or drop (`false`) edges that vanish after compilation.",
+          "type": "boolean"
+        },
+        {
+          "description": "Include them and mark each with `preCompilationOnly`.",
+          "$ref": "#/$defs/SpecifyLiteral"
+        }
+      ]
+    },
+    "TypeScriptOptions": {
+      "description": "`languages.typescript`, and dependency-cruiser's flat options that alias into it.",
+      "type": "object",
+      "properties": {
+        "babelConfig": {
+          "description": "The Babel config whose aliases apply.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FileReference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "baseDir": {
+          "description": "Paths in the output are relative to this directory. Default: the working directory.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "builtInModules": {
+          "description": "Changes to the runtime's built-in module list.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BuiltInModules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "combinedDependencies": {
+          "description": "Whether every `package.json` up the tree counts for npm classification. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "detectJSDocImports": {
+          "description": "Whether JSDoc imports are dependencies. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "detectProcessBuiltinModuleCalls": {
+          "description": "Whether `process.getBuiltinModule` calls are dependencies. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "doNotFollow": {
+          "description": "Modules to record but not follow.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PathFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enhancedResolveOptions": {
+          "description": "Resolver settings.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EnhancedResolveOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exclude": {
+          "description": "Modules to leave out entirely.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PathFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exoticRequireStrings": {
+          "description": "Names other than `require` that load a module.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "experimentalStats": {
+          "description": "Whether to record size and statement counts. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "externalModuleResolutionStrategy": {
+          "description": "`node_modules` or Yarn Plug'n'Play. Default: `node_modules`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExternalModuleResolutionStrategy"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extraExtensionsToScan": {
+          "description": "Extensions to scan beyond the parser's own.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "includeOnly": {
+          "description": "The only modules to include.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PathFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "maxDepth": {
+          "description": "How deep to follow from the roots; `0` is unlimited. Default: `0`.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "moduleSystems": {
+          "description": "Which dependency forms to extract. Default: `es6`, `cjs`, `tsd`, `amd`.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ModuleSystem"
+          }
+        },
+        "parser": {
+          "description": "Which parser dependency-cruiser would have used. Default: `acorn`, or `tsc` for\nTypeScript sources.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Parser"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preserveSymlinks": {
+          "description": "Whether symlinks keep their own path. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "tsConfig": {
+          "description": "The tsconfig to resolve `paths` and `baseUrl` from.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FileReference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tsPreCompilationDeps": {
+          "description": "Whether edges that disappear after compilation are kept. Default: `false`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TsPreCompilationDeps"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "webpackConfig": {
+          "description": "The webpack config whose `resolve` applies.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WebpackConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "ViaObject": {
+      "description": "The object form of `via`.",
+      "type": "object",
+      "properties": {
+        "dependencyTypes": {
+          "description": "Dependency types a step must have.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/DependencyType"
+          }
+        },
+        "dependencyTypesNot": {
+          "description": "Dependency types a step must not have.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/DependencyType"
+          }
+        },
+        "path": {
+          "description": "Cycle members to match.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pathNot": {
+          "description": "Cycle members not to match.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "ViaRestriction": {
+      "description": "`via` and `viaOnly`: the pattern form or the object form.",
+      "anyOf": [
+        {
+          "description": "`via: \"pattern\"` or `via: [\"a\", \"b\"]`.",
+          "$ref": "#/$defs/Patterns"
+        },
+        {
+          "description": "`via: { path, pathNot, dependencyTypes, dependencyTypesNot }`.",
+          "$ref": "#/$defs/ViaObject"
+        }
+      ]
+    },
+    "WebpackConfig": {
+      "description": "`webpackConfig`.",
+      "type": "object",
+      "properties": {
+        "arguments": {
+          "description": "The `arguments` passed to a function-shaped config."
+        },
+        "env": {
+          "description": "The `env` passed to a function-shaped config."
+        },
+        "fileName": {
+          "description": "Path, relative to the working directory.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

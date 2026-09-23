@@ -1,0 +1,15 @@
+# rulebearing:typescript. Original to Rulebearing. The recommended rules plus the TypeScript
+# settings a monorepo usually needs: type-only imports kept as edges, and export maps resolved
+# the way Node and bundlers resolve them. Plan: docs/plans/pending/0001-wave-1-typescript-parity.md,
+# Step 3. Requirement: FR-CFG-06.
+extends: rulebearing:recommended
+languages:
+  typescript:
+    tsPreCompilationDeps: true
+    enhancedResolveOptions:
+      exportsFields: [exports]
+      conditionNames: [import, require, node, default, types]
+      mainFields: [module, main, types, typings]
+options:
+  exclude:
+    path: "(^|/)(node_modules|dist|build|coverage|\\.next|out)/"

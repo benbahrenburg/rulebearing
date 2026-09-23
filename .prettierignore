@@ -13,6 +13,7 @@ dist/
 docs/artifacts/
 conformance/**/fixtures/
 conformance/**/upstream/
+presets/dependency-cruiser/
 testbeds/checkouts/
 schema/*.json
 conformance/archunitnet/attribution/

@@ -1,6 +1,7 @@
 # Nightly fuzzing of the parsers that read untrusted bytes: a crash, an overflow or a runaway
 # allocation fails the run and uploads the reproducing input.
-# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 9 (the metadata reader target, ten minutes).
+# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 9 (the metadata reader target, ten minutes);
+# docs/plans/pending/0001-wave-1-typescript-parity.md, Step 2 and § 1.7 (the configuration targets).
 # Requirement: docs/prd.md#nfr-sec-01. Actions pinned by SHA (docs/adr/0025-ci-and-supply-chain-hardening.md).
 name: fuzz
 
@@ -17,8 +18,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  metadata-reader:
-    name: fuzz metadata_reader
+  fuzz:
+    name: fuzz ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [metadata_reader, config_js, config_data]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -29,9 +34,9 @@ jobs:
       - uses: taiki-e/install-action@94c31af3204a9f15ab40b35ad084410b905bbc73 # v2
         with:
           tool: cargo-fuzz
-      - run: fuzz/run.sh metadata_reader 600
+      - run: fuzz/run.sh "${{ matrix.target }}" 600
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: fuzz-artifacts
+          name: fuzz-artifacts-${{ matrix.target }}
           path: fuzz/artifacts

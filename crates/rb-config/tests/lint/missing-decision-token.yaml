@@ -1,0 +1,1 @@
+rules: { dependencies: { forbidden: [ { name: untokened, comment: "because", fix: "Move it.", severity: error, from: {}, to: { circular: true } } ] } }
