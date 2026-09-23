@@ -22,6 +22,9 @@ export default defineConfig([
         'presets/dependency-cruiser/**',
         // The extractor's option fixtures are inputs, kept verbatim (plan 0001, sub-wave 1C).
         'crates/rb-extract-ts/tests/options/**',
+        // Local only: fuzzing corpora (fuzz/README.md) and the worktrees of parallel agent sessions.
+        'fuzz/corpus/**',
+        '.claude/worktrees/**',
     ]),
     js.configs.recommended,
     tseslint.configs.strictTypeChecked,
@@ -63,6 +66,12 @@ export default defineConfig([
         extends: [tseslint.configs.disableTypeChecked],
         languageOptions: { globals: globals.node },
         rules: { 'no-console': 'off' },
+    },
+    {
+        // The synthetic benchmark's dependency-cruiser configuration (plan 0001, Step 20).
+        files: ['testbeds/**/*.cjs'],
+        extends: [tseslint.configs.disableTypeChecked],
+        languageOptions: { sourceType: 'commonjs', globals: globals.node },
     },
     {
         // The npm wrapper's two thin entry points, which only import compiled code from dist/
