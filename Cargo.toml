@@ -56,6 +56,9 @@ miniz_oxide = "0.9"
 # Test-only. Property tests state an invariant and let the runner look for a counterexample
 # (docs/adr/0024-test-quality-gates.md). MIT or Apache-2.0, so cargo deny is unaffected.
 proptest = "1"
+# Layer 4 of gate 1 validates results and configs against the vendored upstream schemas
+# (docs/plans/pending/0001-wave-1-typescript-parity.md, Step 12).
+jsonschema = { version = "0.57", default-features = false }
 
 # The TypeScript extractor (plan 0000, Step 8). oxc is pinned to exact versions and bumped only by a
 # pull request that re-runs conformance gate 1 (docs/adr/0012-oxc-for-typescript.md). All MIT.
