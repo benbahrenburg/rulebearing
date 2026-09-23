@@ -96,6 +96,7 @@ pub enum ColorChoice {
 
 /// The configuration flags `cruise` and the agent commands share.
 #[derive(Debug, Clone, Default, Args)]
+#[allow(clippy::struct_excessive_bools)] // each is a command-line flag; dependency-cruiser names them
 pub struct ConfigArgs {
     /// Read rules and options from FILE (`-` for stdin); without a value, look for
     /// rulebearing.{yaml,yml,json,jsonc,toml} or .dependency-cruiser.{js,cjs,mjs,json,yaml,yml}
@@ -116,7 +117,7 @@ pub struct ConfigArgs {
     /// Refuse what dependency-cruiser would refuse (nested quantifiers, Rulebearing additions)
     #[arg(long)]
     pub strict_compat: bool,
-    /// Require a decision token (adr:NNNN or plan:<slug>) in every rule's comment
+    /// Require a decision token (`adr:NNNN` or `plan:<slug>`) in every rule's comment
     #[arg(long)]
     pub require_comment_token: bool,
 }
@@ -124,6 +125,7 @@ pub struct ConfigArgs {
 /// `cruise`.
 #[derive(Debug, Clone, Default, Args)]
 #[command(after_help = EXIT_CODES)]
+#[allow(clippy::struct_excessive_bools)] // each is one of dependency-cruiser's flags, a parity promise
 pub struct CruiseArgs {
     /// Files, directories and globs to cruise
     #[arg(value_name = "FILES-OR-DIRECTORIES")]
