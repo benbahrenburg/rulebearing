@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # Runs one test-bed row: clones the repository at its pinned SHA (shallow), runs the incumbent tool
 # with the repository's own configuration, and records the output, the wall-clock time and the
-# peak memory. The Rulebearing column is added by wave 1.
+# peak memory. For a dependency-cruiser row it then times `rulebearing cruise` with the same
+# configuration and roots (the median of three runs); the binary is $RULEBEARING_BIN, else
+# target/release/rulebearing, and without one the Rulebearing column stays empty. The zero diff is
+# not taken here: these clones have no dependencies installed, so the incumbent runs without
+# TypeScript. Layer 5 installs them and diffs the three named oracles, and the summary takes their
+# zero diff from it (conformance/dependency-cruiser/scripts/run-layer-5.sh).
 #
-# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 7 item 2. Requirement: docs/prd.md#nfr-conf-03.
+# Plans: docs/plans/pending/0000-wave-0-spike.md, Step 7 item 2; docs/plans/pending/0001-wave-1-typescript-parity.md, Step 18.
+# Requirement: docs/prd.md#nfr-conf-03.
 # Usage: testbeds/run.sh <owner/repo> [out-dir]   (default out-dir: testbeds/out)
 # Checkouts go to $RB_TESTBED_CHECKOUTS (default: rulebearing-testbeds under the temp directory).
 #
@@ -50,8 +56,12 @@ import json, os, sys
 path, repo, sha, role, tool, status, detail = sys.argv[1:8]
 timing_path = os.path.join(os.path.dirname(path), "timing.json")
 timing = json.load(open(timing_path)) if os.path.exists(timing_path) else None
+def optional(name):
+    p = os.path.join(os.path.dirname(path), name)
+    return json.load(open(p)) if os.path.exists(p) else None
+rulebearing = optional("rulebearing-timing.json")
 json.dump({"repo": repo, "sha": sha, "role": role, "tool": tool, "status": status,
-           "detail": detail, "incumbent": timing, "rulebearing": None},
+           "detail": detail, "incumbent": timing, "rulebearing": rulebearing},
           open(path, "w"), indent=2)
 open(path, "a").write("\n")
 print(f"run: {repo}: {status} {detail}".rstrip())
@@ -74,9 +84,10 @@ if ! { git -C "$checkout" init --quiet &&
   exit 0
 fi
 
-# Runs a command in a directory under /usr/bin/time, recording wall-clock and peak RSS.
-timed() { # dir, log, command...
-  local dir="$1" log="$2"; shift 2
+# Runs a command in a directory under /usr/bin/time, recording wall-clock and peak RSS in the
+# timing file.
+timed() { # timing file, dir, log, command...
+  local timing="$1" dir="$2" log="$3"; shift 3
   local started ended status rss
   started="$(python3 -c 'import time; print(time.time())')"
   if [ "$(uname)" = "Darwin" ]; then
@@ -94,8 +105,33 @@ import json, sys
 json.dump({"wall_seconds": round(float(sys.argv[2]) - float(sys.argv[1]), 2),
            "max_rss_kb": int(sys.argv[3]) if sys.argv[3] else None,
            "exit_code": int(sys.argv[4])}, open(sys.argv[5], "w"), indent=2)
-' "$started" "$ended" "${rss:-}" "$status" "$out/timing.json"
+' "$started" "$ended" "${rss:-}" "$status" "$timing"
   return "$status"
+}
+
+# The Rulebearing time for a dependency-cruiser row: three timed runs with the incumbent's
+# configuration and roots, the median kept. A run that cannot complete (exit 2 or 3, say an extended
+# tsconfig from an uninstalled package) records no time and says why in rulebearing.err.
+rulebearing_column() { # dir, config
+  local dir="$1" config="$2" bin run
+  bin="${RULEBEARING_BIN:-$here/../target/release/rulebearing}"
+  [ -x "$bin" ] || return 0
+  for run in 1 2 3; do
+    # json does not gate (docs/adr/0030-the-reporter-decides-the-error-count-exit.md): 0 is a
+    # completed run whatever it found.
+    if ! timed "$out/rulebearing-timing-$run.json" "$dir" "$out/rulebearing.json" \
+         "$bin" cruise --config "$config" --output-type json --no-progress --no-liveness .; then
+      cp "$out/rulebearing.json.time" "$out/rulebearing.err"
+      return 0
+    fi
+  done
+  python3 - "$out" <<'PY'
+import json, os, sys
+out = sys.argv[1]
+runs = [json.load(open(os.path.join(out, f"rulebearing-timing-{n}.json"))) for n in (1, 2, 3)]
+runs.sort(key=lambda r: r["wall_seconds"])
+json.dump(runs[1], open(os.path.join(out, "rulebearing-timing.json"), "w"), indent=2)
+PY
 }
 
 case "$tool" in
@@ -124,10 +160,11 @@ case "$tool" in
       result error "installing dependency-cruiser@$version failed (see install.log)"
       exit 0
     fi
-    timed "$dir" "$out/incumbent.json" "$tools/node_modules/.bin/depcruise" \
+    timed "$out/timing.json" "$dir" "$out/incumbent.json" "$tools/node_modules/.bin/depcruise" \
       --config "$(basename "$config")" --output-type json --no-progress .
     status=$?
     if python3 -c 'import json, sys; json.load(open(sys.argv[1]))' "$out/incumbent.json" 2>/dev/null; then
+      rulebearing_column "$dir" "$(basename "$config")"
       # dependency-cruiser exits with the number of error-severity violations.
       if [ "$status" -eq 0 ]; then result ok "dependency-cruiser@$version"; else result failed "dependency-cruiser@$version reported $status errors"; fi
     else
@@ -146,7 +183,7 @@ case "$tool" in
       result error "dotnet build failed (see build.log)"
       exit 0
     fi
-    timed "$checkout" "$out/incumbent.log" dotnet test "$test_project" -c Release --no-build \
+    timed "$out/timing.json" "$checkout" "$out/incumbent.log" dotnet test "$test_project" -c Release --no-build \
       --logger "trx;LogFileName=incumbent.trx" --results-directory "$out"
     status=$?
     if [ -f "$out/incumbent.trx" ]; then
@@ -164,7 +201,7 @@ case "$tool" in
       result error "installing the package or import-linter failed (see install.log)"
       exit 0
     fi
-    timed "$dir" "$out/incumbent.txt" "$venv/bin/lint-imports" --no-cache
+    timed "$out/timing.json" "$dir" "$out/incumbent.txt" "$venv/bin/lint-imports" --no-cache
     status=$?
     case "$status" in
       0) result ok "import-linter contracts kept" ;;

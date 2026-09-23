@@ -18,7 +18,7 @@ rulebearing cruise --config .dependency-cruiser.cjs --output-type json apps pack
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-09-22 | Apple M2 Pro, 12 threads | sub-wave 1C | about 0.35 s | | extraction only | `extract-timing`, the extractor alone ([testbeds/synth](../testbeds/synth/README.md#the-first-measurement-sub-wave-1c)) |
 | 2026-09-23 | Apple M2 Pro, 12 threads | sub-wave 1G | 1.97 s | 3.23 s | configuration 2 ms, extract 1,046 ms, evaluate 197 ms, report 143 ms | End to end, timed by `bench.sh` without hyperfine, on a machine with a load average of 24 (two parallel builds and an antivirus scan). Not a clean figure: the runner's is the one that counts |
-| | ubuntu-latest | | | | | The first `bench` run records it here |
+| 2026-09-23 | GitHub `ubuntu-latest` (Ubuntu 24.04, image 20260920.314) | `f2e4804` (wave 1 merged) | 0.966 s | 1.005 s | configuration 2 ms, extract 176 ms, evaluate 385 ms, report 334 ms | `hyperfine --warmup 2 --runs 10`, σ 22 ms, range 0.942 to 1.005 s, in the [`bench` run](https://github.com/benbahrenburg/rulebearing/actions/runs/35894230077). Meets the 2-second target with half of it to spare |
 
 ## The private monorepo
 
