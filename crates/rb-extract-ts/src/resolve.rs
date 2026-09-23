@@ -402,7 +402,7 @@ pub struct Context<'p> {
 }
 
 /// The extension list a resolution asked with: the configured one, or the TypeScript variants
-/// of [`typescript_variants`] set `n` for the retry of an unresolvable `.js`, `.cjs` or `.mjs`.
+/// of `typescript_variants` set `n` for the retry of an unresolvable `.js`, `.cjs` or `.mjs`.
 /// Upstream's `isFollowable` reads the list from the options of the call it is made in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExtensionList {
