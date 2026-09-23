@@ -1,0 +1,12 @@
+{
+  "//": "Compiles src/ to dist/ for the published package (npm run build). Linting uses the root tsconfig.json; this file is not named tsconfig.json so the eslint project service keeps using the root one.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": false,
+    "sourceMap": false,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"]
+}

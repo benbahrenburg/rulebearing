@@ -1,14 +1,45 @@
 {
   "name": "rulebearing",
   "version": "0.0.1",
-  "description": "Reserved name for Rulebearing, deterministic architecture guardrails for TypeScript, .NET and Python",
+  "description": "One architecture rule set for TypeScript, .NET and Python: deterministic guardrails an agent can check its own changes against",
+  "keywords": [
+    "architecture",
+    "dependency-cruiser",
+    "dependencies",
+    "boundaries",
+    "lint"
+  ],
   "license": "MIT",
+  "homepage": "https://github.com/benbahrenburg/rulebearing",
+  "bugs": "https://github.com/benbahrenburg/rulebearing/issues",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/benbahrenburg/rulebearing.git",
     "directory": "wrappers/npm"
   },
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "rulebearing": "bin/rulebearing.js"
+  },
   "files": [
-    "README.md"
-  ]
+    "bin/rulebearing.js",
+    "dist/launcher.js",
+    "dist/platforms.js"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run --coverage",
+    "stage": "npm run build && node scripts/stage.mjs"
+  },
+  "optionalDependencies": {
+    "rulebearing-cli-linux-x64-gnu": "0.0.1",
+    "rulebearing-cli-linux-x64-musl": "0.0.1",
+    "rulebearing-cli-linux-arm64-gnu": "0.0.1",
+    "rulebearing-cli-darwin-arm64": "0.0.1",
+    "rulebearing-cli-darwin-x64": "0.0.1",
+    "rulebearing-cli-win32-x64-msvc": "0.0.1"
+  }
 }

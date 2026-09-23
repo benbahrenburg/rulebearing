@@ -3,6 +3,7 @@
 Cargo.lock.orig
 /.graph/
 /coverage/
+/wrappers/npm/coverage/
 /lcov.info
 # cargo-mutants working output (docs/adr/0024-test-quality-gates.md)
 /mutants.out/
@@ -10,6 +11,8 @@ Cargo.lock.orig
 node_modules/
 dist/
 bin/
+# The npm wrapper's launcher entry point is source, not build output (plan 0001, Step 19).
+!/wrappers/npm/bin/
 obj/
 .venv/
 __pycache__/
