@@ -139,7 +139,8 @@ fn flags_shape_the_run() -> Result<(), Box<dyn Error>> {
     let metrics = json(&["-m", "src"])?;
     assert!(metrics["folders"].is_array());
     let shallow = sources(&json(&["--max-depth", "1", "src/main.ts"])?);
-    assert_eq!(shallow, ["src/domain/model.ts", "src/main.ts"]);
+    // dependency-cruiser's visiting order: the initial source, then what it reaches.
+    assert_eq!(shallow, ["src/main.ts", "src/domain/model.ts"]);
 
     let progress = run(
         &dir,
