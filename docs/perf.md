@@ -26,4 +26,14 @@ The design's 13-second figure comes from a private monorepo of 5,574 modules. On
 
 | Date | Machine | Commit | Modules | dependency-cruiser | Rulebearing mean | p95 |
 | --- | --- | --- | --- | --- | --- | --- |
-| | | | 5,574 | 13 s | | |
+| (design) | | | 5,574 | 13 s | | |
+| 2026-09-23 | Apple M2 Pro, 12 threads, load average 5.6 to 6.9 | `4bb7d96` (0.1.0) | 5,838 | 10.64 s (18.2.0, mean of 10) | 3.07 s | 3.36 s |
+
+How the 2026-09-23 row was taken, with `hyperfine --warmup 2 --runs 10` over the roots the repository's own graph script cruises:
+
+- **Same configuration for both.** One rule uses a negative lookahead, which Rulebearing refuses with exit 3 because it has no linear-time equivalent ([ADR-0016](adr/0016-linear-time-regex-and-strict-compat.md)). That rule's pattern had two alternatives, `X(?!Y)` and `XY`, which together match exactly `X`, so both tools ran a scratch copy of the configuration with that one equivalent substitution. The repository itself was not changed.
+- **`--no-liveness`.** One rule matches no module and Rulebearing would exit 2 ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)). dependency-cruiser has no such check, so it was off, as in layer 5.
+- **Parity.** The two results were diffed with layer 5's harness: 5,838 modules and 1 violation in each, 0 differences.
+- **Stage split, one run.** Configuration 9 ms, extract 2,044 ms, evaluate 686 ms, report 122 ms. The run spent 10.2 s of system time against 3.3 s of user time.
+
+3.46 times faster than dependency-cruiser, but over the 2-second target, and the miss is in extraction: 2.0 s here against 0.18 s for the synthetic tree's 5,500 modules on the runner. The high system time points at file-system work in resolution, which the synthetic tree does not exercise. Finding and fixing it is a wave 2 performance item; the synthetic figure above meets [NFR-PERF-01](prd.md#nfr-perf-01).
