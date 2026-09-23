@@ -265,6 +265,7 @@ mod tests {
         let out = exclude(graph(), &filter("node_modules", None));
         assert_eq!(sources(&out), ["src/main.ts", "src/a.ts", "src/b.ts"]);
         assert_eq!(out[0]["dependencies"].as_array().map(Vec::len), Some(1));
+        assert_eq!(out[0]["dependencies"][0]["resolved"], "src/a.ts");
         let out = include_only(graph(), &filter("^src/(main|a)", None));
         assert_eq!(sources(&out), ["src/main.ts", "src/a.ts"]);
         assert_eq!(out[1]["dependencies"].as_array().map(Vec::len), Some(0));
@@ -309,6 +310,16 @@ mod tests {
         };
         assert!(!filters.is_empty());
         assert!(Filters::default().is_empty());
+        let one = |set: fn(&mut Filters)| {
+            let mut filters = Filters::default();
+            set(&mut filters);
+            filters.is_empty()
+        };
+        assert!(!one(|f| f.exclude = Some(Filter::default())));
+        assert!(!one(|f| f.include_only = Some(Filter::default())));
+        assert!(!one(|f| f.focus = Some(Filter::default())));
+        assert!(!one(|f| f.reaches = Some(Filter::default())));
+        assert!(!one(|f| f.highlight = Some(Filter::default())));
         let out = apply(graph(), &filters);
         assert_eq!(sources(&out), ["src/a.ts", "src/b.ts"]);
         assert_eq!(apply(graph(), &Filters::default()).len(), 4);

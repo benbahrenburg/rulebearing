@@ -435,6 +435,11 @@ mod tests {
             &json!({ "source": "src/a/c.ts" }),
             &groups
         ));
+        assert!(!match_to_module_path_not(
+            &r,
+            &json!({ "source": "src/a/private.ts" }),
+            &groups
+        ));
         assert!(
             !matches_from_path(&r, &json!({})),
             "a missing source tests as \"undefined\""
@@ -512,6 +517,10 @@ mod tests {
         let d = json!({ "instability": 0.8 });
         assert!(matches_to_is_more_unstable(&more, &m, &d));
         assert!(!matches_to_is_more_unstable(&more, &d, &m));
+        assert!(
+            !matches_to_is_more_unstable(&more, &m, &m),
+            "equally unstable is not more unstable"
+        );
         assert!(matches_to_is_more_unstable(&less, &d, &m));
         assert!(matches_to_is_more_unstable(&less, &m, &m));
         assert!(!matches_to_is_more_unstable(&less, &m, &d));

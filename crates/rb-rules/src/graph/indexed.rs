@@ -84,9 +84,12 @@ impl IndexedGraph {
     }
 
     /// Tarjan's algorithm, iterative, over the edges that lead to a known vertex.
+    ///
+    /// Each frame of the work stack holds its own edge iterator, so no counter can stall, and
+    /// an unvisited vertex is `None` rather than a sentinel number.
     fn components(&self) -> Vec<usize> {
         let n = self.vertices.len();
-        let mut index = vec![usize::MAX; n];
+        let mut index: Vec<Option<usize>> = vec![None; n];
         let mut low = vec![0; n];
         let mut on_stack = vec![false; n];
         let mut component = vec![usize::MAX; n];
@@ -104,27 +107,29 @@ impl IndexedGraph {
             })
             .collect();
         for root in 0..n {
-            if index[root] != usize::MAX {
+            if index[root].is_some() {
                 continue;
             }
-            let mut work: Vec<(usize, usize)> = vec![(root, 0)];
-            index[root] = next;
+            index[root] = Some(next);
             low[root] = next;
             next += 1;
             stack.push(root);
             on_stack[root] = true;
-            while let Some(&mut (v, ref mut edge)) = work.last_mut() {
-                if let Some(&w) = targets[v].get(*edge) {
-                    *edge += 1;
-                    if index[w] == usize::MAX {
-                        index[w] = next;
-                        low[w] = next;
-                        next += 1;
-                        stack.push(w);
-                        on_stack[w] = true;
-                        work.push((w, 0));
-                    } else if on_stack[w] {
-                        low[v] = low[v].min(index[w]);
+            let mut work = vec![(root, targets[root].iter())];
+            while let Some((v, edges)) = work.last_mut() {
+                let v = *v;
+                if let Some(&w) = edges.next() {
+                    match index[w] {
+                        None => {
+                            index[w] = Some(next);
+                            low[w] = next;
+                            next += 1;
+                            stack.push(w);
+                            on_stack[w] = true;
+                            work.push((w, targets[w].iter()));
+                        }
+                        Some(at) if on_stack[w] => low[v] = low[v].min(at),
+                        Some(_) => {}
                     }
                     continue;
                 }
@@ -132,7 +137,7 @@ impl IndexedGraph {
                 if let Some(&(parent, _)) = work.last() {
                     low[parent] = low[parent].min(low[v]);
                 }
-                if low[v] == index[v] {
+                if Some(low[v]) == index[v] {
                     while let Some(w) = stack.pop() {
                         on_stack[w] = false;
                         component[w] = count;
@@ -410,6 +415,91 @@ mod tests {
         );
         assert_eq!(graph.cycle("f", "g").len(), 2);
         assert_eq!(graph.cycle("f", "g")[0]["dependencyTypes"], json!([]));
+    }
+
+    fn graph_of(edges: &[(&str, &[&str])]) -> IndexedGraph {
+        let modules: Vec<Value> = edges
+            .iter()
+            .map(|(source, to)| {
+                let dependencies: Vec<Value> =
+                    to.iter().map(|t| json!({ "resolved": t })).collect();
+                json!({ "source": source, "dependencies": dependencies })
+            })
+            .collect();
+        IndexedGraph::new(&modules, "source")
+    }
+
+    fn names(steps: &[Step]) -> Vec<&str> {
+        steps.iter().filter_map(|s| s["name"].as_str()).collect()
+    }
+
+    #[test]
+    fn components_are_the_strongly_connected_ones() {
+        // A cycle through the first root, a cycle below a root, a chain, a lone vertex, and a
+        // cross edge.
+        let graph = graph_of(&[
+            ("r", &["s"]),
+            ("s", &["r", "t"]),
+            ("t", &["u"]),
+            ("u", &["v"]),
+            ("v", &["u", "w"]),
+            ("w", &[]),
+            ("lone", &[]),
+            ("p", &["q"]),
+            ("q", &["p"]),
+            // A cross edge, z to the finished y, lowers nothing: y is off the stack.
+            ("x", &["y", "z"]),
+            ("y", &[]),
+            ("z", &["y"]),
+        ]);
+        let pairs = [
+            ("r", "s", true),
+            ("u", "v", true),
+            ("p", "q", true),
+            ("r", "t", false),
+            ("s", "t", false),
+            ("t", "u", false),
+            ("v", "w", false),
+            ("r", "u", false),
+            ("w", "lone", false),
+            ("lone", "p", false),
+            ("r", "p", false),
+            ("u", "p", false),
+            ("x", "z", false),
+            ("x", "y", false),
+            ("y", "z", false),
+        ];
+        for (a, b, same) in pairs {
+            assert_eq!(graph.same_component(a, b), same, "{a} {b}");
+            assert_eq!(graph.same_component(b, a), same, "{b} {a}");
+        }
+        assert!(graph.same_component("lone", "lone"));
+        assert_eq!(names(&graph.cycle("r", "s")), ["s", "r"]);
+        assert_eq!(names(&graph.cycle("u", "v")), ["v", "u"]);
+        assert_eq!(names(&graph.cycle("p", "q")), ["q", "p"]);
+        assert!(graph.cycle("s", "t").is_empty());
+    }
+
+    #[test]
+    fn a_cycle_that_revisits_the_current_vertex_is_skipped() {
+        // Upstream's getCycle: the search from b through c comes back through b, so that
+        // cycle is dropped and the next edge, d, gives the answer.
+        let graph = graph_of(&[
+            ("a", &["b"]),
+            ("b", &["c", "d"]),
+            ("c", &["b"]),
+            ("d", &["a"]),
+        ]);
+        assert_eq!(names(&graph.cycle("a", "b")), ["b", "d", "a"]);
+    }
+
+    #[test]
+    fn lookups_answer_for_known_names_only() {
+        let graph = IndexedGraph::new(&modules(), "source");
+        assert!(!graph.contains("missing"));
+        assert_eq!(graph.position("a"), Some(0));
+        assert_eq!(graph.position("x"), Some(3));
+        assert_eq!(graph.position("missing"), None);
     }
 
     #[test]
