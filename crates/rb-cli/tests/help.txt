@@ -1,32 +1,18 @@
 rulebearing: one architecture rule set for TypeScript, .NET and Python
 
-Usage: rulebearing <subcommand> [options]
+Usage: rulebearing <COMMAND>
 
-Subcommands:
-  cruise
-  fmt
-  baseline
-  rules
-  count
-  diff
-  explain
-  can-import
-  place
-  impact
-  test
-  docs
-  config
-  init
-  adopt
-  hooks
-  attest
-  import
-  propose
-  decisions
-  guard
-  snapshot
-  changelog
-  serve
+Commands:
+  cruise  Extract, evaluate and report: dependency-cruiser's `depcruise`
+  fmt     Re-report a saved result without extracting: dependency-cruiser's `depcruise-fmt`
 
-Exit codes: 0 no error violations; 1-255 error count; 2 untrustworthy run; 3 invalid config.
-See docs/architecture.md and docs/plans/README.md.
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+
+Exit codes:
+  0       no error-severity violation
+  1-255   the number of error-severity violations, capped at 255
+  2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule
+  3       the configuration is invalid
+A run with exactly 2 or 3 error violations also exits 2 or 3; the report says which it was.

@@ -7,6 +7,12 @@
 //! - Plans: [Wave 1](../../../docs/plans/pending/0001-wave-1-typescript-parity.md) (`fmt --from dependency-cruiser`),
 //!   [Wave 2](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md) (importers)
 //! - Requirements: [FR-CLI-01](../../../docs/prd.md#fr-cli-01), [FR-CLI-04](../../../docs/prd.md#fr-cli-04)
+//!
+//! | Module | Reads |
+//! | --- | --- |
+//! | [`dependency_cruiser`] | a result dependency-cruiser wrote (`fmt --from dependency-cruiser`) |
+
+pub mod dependency_cruiser;
 
 use rb_model::GraphDocument;
 

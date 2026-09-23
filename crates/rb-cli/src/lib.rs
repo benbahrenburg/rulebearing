@@ -11,74 +11,49 @@
 //! binding (`rb-node`, [ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md))
 //! share one implementation; `main.rs` only moves bytes to the process.
 //!
-//! Wave 0 ships `--version`, `--help` and the exit-code function. Subcommands arrive with the
-//! plans that specify them; until then every subcommand reports that it is not implemented and
-//! exits with the "untrustworthy run" code so no pipeline mistakes a stub for a passing gate.
+//! | Module | Does |
+//! | --- | --- |
+//! | [`cli`] | every flag, declared once |
+//! | [`cmd`] | one module per subcommand |
+//! | [`pipeline`] | the five stages as one call |
+//! | [`configure`] | the configuration and the flags laid over it |
+//! | [`context`] | the working directory, the clock, the terminal |
+//! | [`exit`] | the exit-code table |
+//! | [`progress`] | `--progress` |
+//! | [`protocol`] | the conformance harness's `validate` and `report` |
 
-/// The exit code for a run, from [ADR-0008](../../../docs/adr/0008-exit-code-contract.md).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RunExit {
-    /// Zero or more error-severity violations; the code is the count, capped at 255.
-    Violations(u32),
-    /// The run cannot be trusted: zero modules, missing assemblies, non-portable PDB, a file
-    /// the sidecar could not handle, or a vacuous rule.
-    Untrustworthy,
-    /// The configuration is invalid, or a predicate names a concept the language lacks.
-    InvalidConfig,
-}
+pub mod cli;
+pub mod cmd;
+pub mod configure;
+pub mod context;
+pub mod exit;
+pub mod pipeline;
+pub mod progress;
+pub mod protocol;
 
-impl RunExit {
-    /// Maps the outcome to a process exit code.
-    pub fn code(self) -> u8 {
-        match self {
-            Self::Violations(n) => u8::try_from(n).unwrap_or(u8::MAX),
-            Self::Untrustworthy => 2,
-            Self::InvalidConfig => 3,
-        }
-    }
-}
+use std::fmt::Write as _;
 
-/// Every subcommand the design names, in the order `--help` lists them.
-pub const SUBCOMMANDS: &[&str] = &[
-    "cruise",
-    "fmt",
-    "baseline",
-    "rules",
-    "count",
-    "diff",
-    "explain",
-    "can-import",
-    "place",
-    "impact",
-    "test",
-    "docs",
-    "config",
-    "init",
-    "adopt",
-    "hooks",
-    "attest",
-    "import",
-    "propose",
-    "decisions",
-    "guard",
-    "snapshot",
-    "changelog",
-    "serve",
+use clap::Parser;
+
+use crate::cli::{Cli, Command};
+pub use crate::context::Context;
+pub use crate::exit::RunExit;
+
+/// Subcommands later waves deliver, with the wave. Asking for one says so and exits 2, so no
+/// pipeline mistakes a missing command for a passing gate.
+pub const LATER: &[(&str, u8)] = &[
+    ("baseline", 2),
+    ("diff", 3),
+    ("place", 2),
+    ("docs", 2),
+    ("import", 2),
+    ("propose", 2),
+    ("decisions", 2),
+    ("guard", 3),
+    ("snapshot", 3),
+    ("changelog", 3),
+    ("serve", 3),
 ];
-
-/// The usage text `--help` prints.
-pub fn usage() -> String {
-    let mut s = String::from(
-        "rulebearing: one architecture rule set for TypeScript, .NET and Python\n\nUsage: rulebearing <subcommand> [options]\n\nSubcommands:\n",
-    );
-    for c in SUBCOMMANDS {
-        s.push_str("  ");
-        s.push_str(c);
-        s.push('\n');
-    }
-    s.push_str("\nExit codes: 0 no error violations; 1-255 error count; 2 untrustworthy run; 3 invalid config.\nSee docs/architecture.md and docs/plans/README.md.\n");
-    s
-}
 
 /// What a run printed and how it exited; separated from `main` so the dispatch is unit-tested.
 #[derive(Debug, PartialEq, Eq)]
@@ -91,88 +66,143 @@ pub struct Outcome {
     pub code: u8,
 }
 
-/// `rulebearing validate --rules - --module - --no-liveness`: one request of conformance gate 1
-/// layer 2 on stdin, answered on stdout ([Wave 1, Step 8](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-8-rulebearing-validate-for-gate-1-layer-2-1b)).
-/// Hidden from `--help`: it is the conformance harness's protocol, not a user command.
-pub fn validate(stdin: &str) -> Outcome {
-    match rb_rules::conformance::answer(stdin) {
-        Ok(reply) => Outcome {
-            stdout: reply,
+impl Outcome {
+    /// A successful run that printed `stdout`.
+    pub fn printed(stdout: impl Into<String>) -> Self {
+        Self {
+            stdout: stdout.into(),
             stderr: String::new(),
             code: 0,
-        },
-        Err(error) => Outcome {
+        }
+    }
+
+    /// A failed run.
+    pub fn failed(code: RunExit, stderr: impl Into<String>) -> Self {
+        Self {
             stdout: String::new(),
-            stderr: format!("rulebearing validate: {error}\n"),
-            code: RunExit::InvalidConfig.code(),
-        },
+            stderr: stderr.into(),
+            code: code.code(),
+        }
     }
 }
 
-/// Dispatches the command line, reading stdin only for the commands that take it.
-pub fn run_with_input(args: &[String], stdin: &mut dyn std::io::Read) -> Outcome {
-    if args.first().map(String::as_str) == Some("validate") {
-        let mut text = String::new();
-        if let Err(error) = stdin.read_to_string(&mut text) {
-            return Outcome {
-                stdout: String::new(),
-                stderr: format!("rulebearing validate: cannot read stdin: {error}\n"),
-                code: RunExit::Untrustworthy.code(),
+/// Writes a report to `-` (stdout, collected in `stdout`) or to a file under the working
+/// directory, creating its folder.
+///
+/// # Errors
+/// A message naming the file when it cannot be written.
+pub fn write_output(
+    ctx: &Context<'_>,
+    to: &str,
+    text: &str,
+    stdout: &mut String,
+) -> Result<(), String> {
+    if to == "-" || to.is_empty() {
+        stdout.push_str(text);
+        return Ok(());
+    }
+    let path = ctx.resolve(to);
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("cannot create {}: {e}", parent.display()))?;
+    }
+    std::fs::write(&path, text).map_err(|e| format!("cannot write {}: {e}", path.display()))
+}
+
+/// Dispatches the command line in `ctx`.
+pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
+    if args.is_empty() {
+        return Outcome::printed(help());
+    }
+    if let Some((name, wave)) = LATER
+        .iter()
+        .find(|(n, _)| args.first().map(String::as_str) == Some(*n))
+    {
+        return Outcome::failed(
+            RunExit::Untrustworthy,
+            format!(
+                "rulebearing {name}: arrives in wave {wave}; see docs/plans/pending/ for the plan that delivers it\n"
+            ),
+        );
+    }
+    let argv = std::iter::once("rulebearing".to_owned()).chain(args.iter().cloned());
+    let cli = match Cli::try_parse_from(argv) {
+        Ok(cli) => cli,
+        Err(error) => {
+            let text = error.render().to_string();
+            return match error.kind() {
+                clap::error::ErrorKind::DisplayHelp | clap::error::ErrorKind::DisplayVersion => {
+                    Outcome::printed(text)
+                }
+                _ => Outcome::failed(RunExit::InvalidConfig, text),
             };
         }
-        return validate(&text);
+    };
+    match cli.command {
+        Command::Cruise(a) => cmd::cruise::run(ctx, &a),
+        Command::Fmt(a) => cmd::fmt::run(ctx, &a),
+        Command::Validate(_) => match ctx.read_stdin() {
+            Ok(text) => protocol::validate(&text),
+            Err(e) => Outcome::failed(
+                RunExit::Untrustworthy,
+                format!("rulebearing validate: cannot read stdin: {e}\n"),
+            ),
+        },
+        Command::Report(a) => match ctx.read_stdin() {
+            Ok(text) => protocol::report(a.output_type.as_deref().unwrap_or("err"), &text),
+            Err(e) => Outcome::failed(
+                RunExit::Untrustworthy,
+                format!("rulebearing report: cannot read stdin: {e}\n"),
+            ),
+        },
     }
-    run(args)
 }
 
-/// Dispatches the command line. Wave 0 knows `--version`, `--help` and the subcommand names.
+/// The top-level help.
+pub fn help() -> String {
+    let mut command = <Cli as clap::CommandFactory>::command();
+    command.render_help().to_string()
+}
+
+/// Dispatches the command line in the process's environment.
+pub fn run_with_input(args: &[String], stdin: &mut dyn std::io::Read) -> Outcome {
+    use std::io::IsTerminal as _;
+    let (today, timestamp) = context::clock();
+    let mut ctx = Context {
+        cwd: std::env::current_dir().unwrap_or_default(),
+        stdin,
+        today,
+        timestamp,
+        color_terminal: std::io::stdout().is_terminal(),
+    };
+    run_in(&mut ctx, args)
+}
+
+/// Kept for callers that pass no stdin.
 pub fn run(args: &[String]) -> Outcome {
-    match args.first().map(String::as_str) {
-        Some("--version" | "-V") => Outcome {
-            stdout: format!("rulebearing {}\n", env!("CARGO_PKG_VERSION")),
-            stderr: String::new(),
-            code: 0,
-        },
-        None | Some("--help" | "-h") => Outcome {
-            stdout: usage(),
-            stderr: String::new(),
-            code: 0,
-        },
-        Some(cmd) if SUBCOMMANDS.contains(&cmd) => Outcome {
-            stdout: String::new(),
-            stderr: format!(
-                "rulebearing {cmd}: not implemented yet; see docs/plans/pending/ for the plan that delivers it\n"
-            ),
-            code: RunExit::Untrustworthy.code(),
-        },
-        Some(other) => Outcome {
-            stdout: String::new(),
-            stderr: format!("rulebearing: unknown subcommand `{other}`\n\n{}", usage()),
-            code: RunExit::InvalidConfig.code(),
-        },
-    }
+    let mut empty: &[u8] = &[];
+    run_with_input(args, &mut empty)
+}
+
+/// Every subcommand name `--help` lists, then the later-wave ones.
+pub fn subcommands() -> Vec<String> {
+    let command = <Cli as clap::CommandFactory>::command();
+    let mut names: Vec<String> = command
+        .get_subcommands()
+        .filter(|c| !c.is_hide_set())
+        .map(|c| c.get_name().to_owned())
+        .collect();
+    names.extend(LATER.iter().map(|(n, _)| (*n).to_owned()));
+    let _ = names.iter().fold(String::new(), |mut s, n| {
+        let _ = write!(s, "{n} ");
+        s
+    });
+    names
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn exit_code_table_matches_adr_0008() {
-        assert_eq!(RunExit::Violations(0).code(), 0);
-        assert_eq!(RunExit::Violations(7).code(), 7);
-        assert_eq!(RunExit::Violations(1_000).code(), 255);
-        assert_eq!(RunExit::Untrustworthy.code(), 2);
-        assert_eq!(RunExit::InvalidConfig.code(), 3);
-    }
-
-    #[test]
-    fn usage_lists_every_subcommand() {
-        let u = usage();
-        for c in SUBCOMMANDS {
-            assert!(u.contains(c));
-        }
-    }
 
     fn args(list: &[&str]) -> Vec<String> {
         list.iter().map(|s| (*s).to_owned()).collect()
@@ -185,22 +215,29 @@ mod tests {
         assert!(v.stdout.starts_with("rulebearing "));
         let h = run(&args(&["--help"]));
         assert_eq!(h.code, 0);
-        assert!(h.stdout.contains("Subcommands"));
+        assert!(h.stdout.contains("cruise"));
+        assert!(h.stdout.contains("Exit codes"));
         assert_eq!(run(&[]).code, 0);
     }
 
     #[test]
-    fn known_subcommand_is_untrustworthy_until_implemented() {
-        let o = run(&args(&["cruise", "--config", "rulebearing.yaml"]));
+    fn later_subcommands_name_their_wave() {
+        let o = run(&args(&["diff", "a.json", "b.json"]));
         assert_eq!(o.code, 2);
-        assert!(o.stderr.contains("not implemented"));
-        assert!(o.stdout.is_empty());
+        assert!(o.stderr.contains("wave 3"));
+        assert!(subcommands().contains(&"cruise".to_owned()));
+        assert!(subcommands().contains(&"serve".to_owned()));
     }
 
     #[test]
-    fn unknown_subcommand_is_invalid_config() {
-        let o = run(&args(&["frobnicate"]));
-        assert_eq!(o.code, 3);
-        assert!(o.stderr.contains("unknown subcommand"));
+    fn unknown_subcommands_and_flags_are_invalid() {
+        assert_eq!(run(&args(&["frobnicate"])).code, 3);
+        assert_eq!(run(&args(&["cruise", "--no-such-flag"])).code, 3);
+    }
+
+    #[test]
+    fn outcomes() {
+        assert_eq!(Outcome::printed("x").code, 0);
+        assert_eq!(Outcome::failed(RunExit::InvalidConfig, "e").code, 3);
     }
 }

@@ -55,15 +55,21 @@ fn version_names_the_tool_and_the_crate_version() -> Result<(), Box<dyn Error>> 
 
 #[test]
 fn exit_codes_follow_the_contract() -> Result<(), Box<dyn Error>> {
-    // A subcommand that exists but is not implemented: the run cannot be trusted, so 2 rather
-    // than 0. A pipeline must never read a stub as a passing gate.
-    let known = Command::new(BIN).arg("cruise").output()?;
-    assert_eq!(
-        known.status.code(),
-        Some(2),
-        "a known subcommand should exit 2 until implemented"
-    );
-    assert!(String::from_utf8(known.stderr)?.contains("not implemented"));
+    // An empty cruise cannot be trusted: 2, never a silent 0 (ADR-0008).
+    let empty = std::env::temp_dir().join(format!("rb-cli-empty-{}", std::process::id()));
+    std::fs::create_dir_all(&empty)?;
+    let cruise = Command::new(BIN)
+        .args(["cruise", "--no-config", "."])
+        .current_dir(&empty)
+        .output()?;
+    assert_eq!(cruise.status.code(), Some(2), "an empty cruise exits 2");
+    assert!(String::from_utf8(cruise.stderr)?.contains("no modules found"));
+    let _ = std::fs::remove_dir_all(&empty);
+
+    // A subcommand a later wave delivers says so and exits 2.
+    let later = Command::new(BIN).arg("serve").output()?;
+    assert_eq!(later.status.code(), Some(2));
+    assert!(String::from_utf8(later.stderr)?.contains("wave 3"));
 
     // An unknown subcommand is a configuration error.
     let unknown = Command::new(BIN).arg("frobnicate").output()?;

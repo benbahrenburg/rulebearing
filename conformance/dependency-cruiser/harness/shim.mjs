@@ -61,6 +61,25 @@ export function call(request) {
     return JSON.parse(run.stdout).result;
 }
 
+/**
+ * Renders a cruise result with one of Rulebearing's reporters (conformance gate 1 layer 3):
+ * `rulebearing report --output-type <type>` with { result, options } on stdin.
+ */
+export function report(outputType, result, options) {
+    const run = spawnSync(binary(), ['report', '--output-type', outputType], {
+        input: JSON.stringify({ result, options: options ?? null }),
+        encoding: 'utf8',
+        maxBuffer: 64 * 1024 * 1024,
+    });
+    if (run.error) {
+        throw new Error(`rulebearing report could not start: ${run.error.message}`);
+    }
+    if (run.status !== 0) {
+        throw new Error(`rulebearing report exited ${run.status}: ${run.stderr.trim()}`);
+    }
+    return JSON.parse(run.stdout);
+}
+
 function isClass(value) {
     return (
         typeof value === 'function' && /^class[\s{]/u.test(Function.prototype.toString.call(value))
