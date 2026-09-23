@@ -569,7 +569,7 @@ conformance/dependency-cruiser/scripts/run-layer-5.sh --repo sverweij/dependency
 | 1B | Graph analysis and filters | Done | `graph/{indexed,consolidate,filters}.rs`, `derive.rs`, `folders.rs`: upstream's cycle search kept for its path order, run only inside a strongly connected component (Tarjan), which prunes nothing but time; folder metrics derived whenever a `scope: folder` or `moreUnstable` rule asks, as upstream's `shouldCalculateMetrics` |
 | 1B | Liveness, ids, receipts, `expires`, ratchets, known violations | Done | `evaluate.rs` (liveness per [ADR-0007](../../adr/0007-vacuous-rules-fail-by-default.md), ids per [ADR-0015](../../adr/0015-stable-violation-id.md), `fix` and decision token, rule and known-violation expiry, known violations by id and by dependency-cruiser's shape), `ratchet.rs` (`--write` refuses to raise), `rewrap.rs` (`fmt`'s re-summary) |
 | 1B | `validate` subcommand; `excluded.json` sidecar-only | Done | layer 2: `specs=34 failing=0`; `conformance/excluded.json` is empty (no layer 2 spec needs the sidecar). The protocol answers `undefined` as a reply without `result` |
-| 1B | `rulebearing.yaml` self-check in CI | Not started | |
+| 1B | `rulebearing.yaml` self-check in CI | Done | The `self-check` job: [`scripts/cargo-graph.sh`](../../../scripts/cargo-graph.sh) writes the crate graph, `cruise --require-comment-token --graph` evaluates [`rulebearing.yaml`](../../../rulebearing.yaml) through the repository's own [Action](../../../action.yml), then `attest` and `attest --verify`; locally 11 modules, 18 dependencies, no violations. It is not yet a required check in the ruleset |
 
 **Size:** L. **LOE:** 18 h, 1.8 weeks. **Roles:** maintainer.
 **Entry:** 1A exit. **Exit:** layer 2 green with only sidecar exclusions; self-check green. **Gating metric for 1D:** `excluded.json` count equals the sidecar spec count.
@@ -598,11 +598,11 @@ conformance/dependency-cruiser/scripts/run-layer-5.sh --repo sverweij/dependency
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 1D | `rb-ingest` dependency-cruiser JSON | Not started | |
-| 1D | `json`, `err`, `err-long`, `text`, `csv`, `null`, `teamcity`, `azure-devops` byte-compared | Not started | layer 3: |
-| 1D | `github-annotations`, `agent` with fix-cost ordering and `--max-findings` | Not started | |
-| 1D | `--strict-schema`; layer 4 green | Not started | |
-| 1D | `cruise` and `fmt` flags, exit codes, progress, determinism | Not started | |
+| 1D | `rb-ingest` dependency-cruiser JSON | Done | `crates/rb-ingest/src/dependency_cruiser.rs`; `fmt --from dependency-cruiser`; layer 4 re-reports the 34 upstream results the pinned schema accepts |
+| 1D | `json`, `err`, `err-long`, `text`, `csv`, `null`, `teamcity`, `azure-devops` byte-compared | Done | layer 3: 7 specs, 49 tests, byte for byte; `json` has no wave 1 byte-compare spec upstream and is proven by layer 4 (schema) and layer 5 (every field, parsed) |
+| 1D | `github-annotations`, `agent` with fix-cost ordering and `--max-findings` | Done | `crates/rb-report/src/{github_annotations,agent}.rs` with exact-output tests; the gating table `rb_report::GATING` ([ADR-0030](../../adr/0030-the-reporter-decides-the-error-count-exit.md)) |
+| 1D | `--strict-schema`; layer 4 green | Done | [`crates/rb-cli/tests/layer4.rs`](../../../crates/rb-cli/tests/layer4.rs): 34 of 34 upstream results after `fmt --strict-schema`, a fresh cruise, and 14 of 14 configurations at the stage upstream validates them (one more needs its repository and is left to layer 5) |
+| 1D | `cruise` and `fmt` flags, exit codes, progress, determinism | Done | The help snapshot; the exit-code table test; [`tests/pipelines.rs`](../../../crates/rb-cli/tests/pipelines.rs) runs the design's pipeline line for line and asserts byte-identical output for six reporters. Layer 5 found that dependency-cruiser's `json` reporter exits 0: [ADR-0030](../../adr/0030-the-reporter-decides-the-error-count-exit.md) |
 
 **Size:** L. **LOE:** 16 h, 1.6 weeks. **Roles:** maintainer.
 **Entry:** 1B exit. **Exit:** layers 3 and 4 green; exit-code table test green. **Gating metric for 1E:** layer 3 at 100% for the wave 1 reporters.
@@ -615,11 +615,11 @@ conformance/dependency-cruiser/scripts/run-layer-5.sh --repo sverweij/dependency
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 1E | `rules --json`, `explain`, `explain --plain` snapshots | Not started | |
-| 1E | `test` over `examples` | Not started | |
-| 1E | `can-import` under 50 ms | Not started | timing: |
-| 1E | Hooks, `summary --format agent`, `impact` | Not started | |
-| 1E | `attest` and CI verification; `--require-comment-token` | Not started | |
+| 1E | `rules --json`, `explain`, `explain --plain` snapshots | Done | `cmd/plain.rs` holds one exact sentence per rule shape; [`tests/agent.rs`](../../../crates/rb-cli/tests/agent.rs) asserts the `rules --json` fields, the table's alignment and `explain`'s output |
+| 1E | `test` over `examples` | Done | `cmd/test_rules.rs`; this repository's `rulebearing.yaml` carries examples for every rule |
+| 1E | `can-import` under 50 ms | Done | timing: median 41 ms, minimum 38 ms over 15 runs on langfuse `web/`'s saved graph (3,832 modules, 12,941 edges, 13 MB), on an Apple M2 Pro at a load average of 25, where process start alone took 13 to 22 ms |
+| 1E | Hooks, `summary --format agent`, `impact` | Done | `cmd/{hooks,summary,impact}.rs`; merging is idempotent and keeps other settings; `impact --from-hook` reads the hook's JSON |
+| 1E | `attest` and CI verification; `--require-comment-token` | Done | `cmd/attest.rs` with a tamper test; the `self-check` job runs `attest --verify`; ratchets enforced by `cruise` and reported in `summary.ratchets` ([ADR-0029](../../adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)) |
 
 **Size:** L. **LOE:** 16 h, 1.6 weeks. **Roles:** maintainer.
 **Entry:** 1D exit. **Exit:** all commands with CLI tests; `attest --verify` in CI. **Gating metric for 1F:** the hooks run end to end in the maintainer's own repository.
@@ -632,8 +632,8 @@ conformance/dependency-cruiser/scripts/run-layer-5.sh --repo sverweij/dependency
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 1F | `init` repo-aware, passing config; fixtures committed | Not started | |
-| 1F | `adopt`: baseline, CI step, hook, doc, green PR | Not started | PR: |
+| 1F | `init` repo-aware, passing config; fixtures committed | Done | `cmd/init.rs`; [`testbeds/init/`](../../../testbeds/init/README.md) holds the proposals for dependency-cruiser, langfuse and ignite, each converging to exit 0; FluidFramework's sparse checkout lacks its parent tsconfig, and the README says so |
+| 1F | `adopt`: baseline, CI step, hook, doc, green PR | In progress | `cmd/adopt.rs` and [`tests/first_run.rs`](../../../crates/rb-cli/tests/first_run.rs): a three-violation repository goes green, the branch is committed, and the PR body is a snapshot. PR: not yet opened. Opening one on the maintainer's repository is an action on someone's repository and waits for the maintainer |
 
 **Size:** M. **LOE:** 10 h, 1.0 week. **Roles:** maintainer.
 **Entry:** 1E exit. **Exit:** `adopt` PR open and green on a repository with a non-empty baseline. **Gating metric for 1G:** that PR link.
@@ -646,12 +646,12 @@ conformance/dependency-cruiser/scripts/run-layer-5.sh --repo sverweij/dependency
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 1G | Layer 5 and the twelve-mutation branch green | Not started | |
-| 1G | Zero-diff: dependency-cruiser, langfuse, FluidFramework | Not started | nightly rows: |
-| 1G | `v0.1.0`: Releases, npm, Action in use here | In progress | npm wrapper, staging script and install matrix: [wrappers/npm](../../../wrappers/npm/README.md), [release.yml](../../../.github/workflows/release.yml) (dry run; nothing published). Remaining: `action.yml`, the `v0.1.0` tag, the `NPM_TOKEN` secret |
-| 1G | `docs/perf.md`: private monorepo and synthetic figures | Not started | mean: , p95: |
-| 1G | Upstream offer issue; `docs/adoption.md` baseline | Not started | issue: |
-| 1G | Docs; move PR | Not started | |
+| 1G | Layer 5 and the twelve-mutation branch green | Done | Local run 2026-09-23: three oracles at zero differences with equal exit codes; the mutation branch 12 of 12 in both tools; [`conformance/divergences.md`](../../../conformance/divergences.md) empty. The `conformance-gate-1-layer-5` job runs on push to `main` |
+| 1G | Zero-diff: dependency-cruiser, langfuse, FluidFramework | In progress | 573, 3,832 and 656 modules; 26, 369 and 1 violations; 0 differences each (local, 2026-09-23). nightly rows: after the first nightly on `main` |
+| 1G | `v0.1.0`: Releases, npm, Action in use here | In progress | npm wrapper, staging script and install matrix: [wrappers/npm](../../../wrappers/npm/README.md) (73 tests, 96.7% of lines), [release.yml](../../../.github/workflows/release.yml) (dry run; nothing published); [action.yml](../../../action.yml), which the self-check runs through. Remaining: the `NPM_TOKEN` secret and the `v0.1.0` tag, both the maintainer's |
+| 1G | `docs/perf.md`: private monorepo and synthetic figures | In progress | mean: 1.97 s, p95: 3.23 s on a laptop at load average 24, recorded as not clean ([docs/perf.md](../../perf.md)); the `bench` workflow's runner figure and the private monorepo's are still to come |
+| 1G | Upstream offer issue; `docs/adoption.md` baseline | In progress | The baseline is in [docs/adoption.md](../../adoption.md), with `scripts/adoption-signals.sh`. issue: not opened; the offer is the maintainer's decision |
+| 1G | Docs; move PR | In progress | [config](../../config.md), [rules](../../rules.md), [reporters](../../reporters.md), [cli](../../cli.md), [agents](../../agents.md), [perf](../../perf.md), [adoption](../../adoption.md), the README, CLAUDE.md and the conformance README. The move waits for the exit criteria |
 
 **Size:** L. **LOE:** 12 h, 1.2 weeks. **Roles:** maintainer.
 **Entry:** 1C, 1D, 1F exit. **Exit:** the checklist at the end of § 2. **Gating metric for Plan 0002:** this plan in `implemented/`.
