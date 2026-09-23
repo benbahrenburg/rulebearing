@@ -35,3 +35,4 @@ A rule in `rulebearing.yaml` cites a decision with the token `adr:NNNN` in its `
 | [0027](0027-pure-path-and-url-modules-in-the-config-sandbox.md) | The configuration sandbox offers pure `path` and `url` modules; every other Node built-in stays behind `--config-via-node` | Accepted |
 | [0028](0028-backreferences-by-instantiation-on-the-linear-engine.md) | Backreferences are matched by instantiation on the linear-time engine; lookaround stays refused | Accepted |
 | [0029](0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md) | Ratchets are enforced by `cruise` and reported in `summary.ratchets[]`; a missing budget exits 2 | Accepted |
+| [0030](0030-the-reporter-decides-the-error-count-exit.md) | The reporter decides whether the error count is the exit code, as in dependency-cruiser; 2 and 3 do not depend on it | Accepted |

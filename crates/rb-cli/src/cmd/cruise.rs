@@ -220,19 +220,20 @@ fn report(
         );
     }
     stderr.push_str(&ratchets::messages(config, ratchets));
-    let code = if ratchets.untrustworthy() && run.evaluation.vacuous.is_empty() {
+    for v in &run.evaluation.vacuous {
+        let _ = writeln!(
+            stderr,
+            "error: rule `{}` is vacuous: its {} side matched no module, so it checks nothing. Fix the pattern, delete the rule, or set allowEmpty: true (ADR-0007)",
+            v.name, v.side
+        );
+    }
+    // 2 whatever the reporter; the error count only for a reporter that gates (ADR-0030).
+    let code = if !run.evaluation.vacuous.is_empty() || ratchets.untrustworthy() {
         RunExit::Untrustworthy
-    } else if run.evaluation.vacuous.is_empty() {
+    } else if rb_report::gates(output_type) {
         RunExit::Violations(run.evaluation.error_count() + ratchets.exceeded())
     } else {
-        for v in &run.evaluation.vacuous {
-            let _ = writeln!(
-                stderr,
-                "error: rule `{}` is vacuous: its {} side matched no module, so it checks nothing. Fix the pattern, delete the rule, or set allowEmpty: true (ADR-0007)",
-                v.name, v.side
-            );
-        }
-        RunExit::Untrustworthy
+        RunExit::Violations(0)
     };
     Outcome {
         stdout,

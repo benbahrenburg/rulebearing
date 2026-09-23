@@ -157,7 +157,7 @@ fn a_fresh_cruise_validates_with_strict_schema() -> Result<(), Box<dyn Error>> {
     for extra in [&[][..], &["--strict-schema"][..]] {
         let args = [&["cruise", "-T", "json", "src"][..], extra].concat();
         let (code, value, stderr) = run(&dir, &args)?;
-        assert_eq!(code, Some(2), "two errors, so the exit code is 2: {stderr}");
+        assert_eq!(code, Some(0), "json does not gate (ADR-0030): {stderr}");
         let found = errors(&schema, &value);
         if extra.is_empty() {
             // Without the flag the additions are present, which the upstream schema refuses.

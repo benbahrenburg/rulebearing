@@ -14,10 +14,12 @@
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 /// The exit-code table, printed under every help text
-/// ([ADR-0008](../../../docs/adr/0008-exit-code-contract.md)).
+/// ([ADR-0008](../../../docs/adr/0008-exit-code-contract.md), [ADR-0030](../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)).
 pub const EXIT_CODES: &str = "Exit codes:
   0       no error-severity violation
-  1-255   the number of error-severity violations, capped at 255
+  1-255   the number of error-severity violations, capped at 255, from a reporter that gates:
+          err, err-long, null, teamcity, azure-devops, github-annotations, agent
+          (json, csv and text exit 0, as in dependency-cruiser)
   2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule
   3       the configuration is invalid
 A run with exactly 2 or 3 error violations also exits 2 or 3; the report says which it was.";

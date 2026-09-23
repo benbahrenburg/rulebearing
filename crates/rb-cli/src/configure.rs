@@ -196,9 +196,9 @@ pub fn apply_flags(
     if let Some(suffix) = &args.suffix {
         options.suffix = Some(suffix.clone());
     }
-    if args.metrics {
-        options.metrics = Some(true);
-    }
+    // dependency-cruiser's `--metrics` defaults to false and its command-line options are spread
+    // over the configuration's, so `options.metrics: true` alone computes nothing.
+    options.metrics = Some(args.metrics);
     if let Some(file) = &args.webpack_config_json {
         let path = ctx.resolve(file);
         let text = std::fs::read_to_string(&path).map_err(|e| ConfigError::Read {
@@ -412,6 +412,12 @@ mod tests {
         assert!(config.languages.typescript.keeps_pre_compilation_deps());
         assert_eq!(config.options.focus.as_ref().and_then(|f| f.depth), Some(2));
         assert!(config.options.webpack_config_json.is_some());
+        assert_eq!(config.options.metrics, Some(true));
+        // Without the flag, metrics are off whatever the configuration says, as upstream's
+        // commander default overrides `options.metrics`.
+        let mut plain = config.clone();
+        apply_flags(&mut plain, &CruiseArgs::default(), &c)?;
+        assert_eq!(plain.options.metrics, Some(false));
         let used = options_used(Some(&config), &c, "json", "-");
         assert_eq!(used["outputType"], "json");
         assert_eq!(used["rulesFile"], ".dependency-cruiser.json");
