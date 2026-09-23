@@ -254,17 +254,94 @@ fn fmt_exit_code_counts_what_the_saved_result_carries() -> Result<(), Box<dyn Er
     let stripped: Value = serde_json::from_slice(&strict.stdout)?;
     assert!(stripped["summary"].get("expired").is_none());
 
-    // A vacuous rule makes the run untrustworthy, in cruise and in fmt alike.
+    // A rule that matches nothing: in a dependency-cruiser file a warning, as dependency-cruiser
+    // gives none (ADR-0032); under --liveness strict the run cannot be trusted. cruise and fmt
+    // agree either way.
     let vacuous = r#"{ "forbidden": [
       { "name": "stale", "from": { "path": "^nowhere/" }, "to": {} } ] }"#;
     std::fs::write(dir.join(".dependency-cruiser.json"), vacuous)?;
-    assert_eq!(
-        run(&dir, &["cruise", "-T", "err", "src"])?.status.code(),
-        Some(2)
+    let warned = run(&dir, &["cruise", "-T", "err", "src"])?;
+    assert_eq!(warned.status.code(), Some(0));
+    assert!(
+        String::from_utf8_lossy(&warned.stderr).contains("warning: rule `stale` is vacuous"),
+        "{}",
+        String::from_utf8_lossy(&warned.stderr)
     );
-    run(&dir, &["cruise", "-T", "json", "-f", "vacuous.json", "src"])?;
+    run(&dir, &["cruise", "-T", "json", "-f", "warned.json", "src"])?;
+    let saved: Value = serde_json::from_slice(&std::fs::read(dir.join("warned.json"))?)?;
+    assert_eq!(saved["summary"]["vacuousRules"][0]["name"], "stale");
+    assert_eq!(saved["summary"]["vacuousRules"][0]["severity"], "warn");
+    let gate = run(&dir, &["fmt", "-e", "-T", "err", "warned.json"])?;
+    assert_eq!(gate.status.code(), Some(0));
+
+    let strict = ["cruise", "--liveness", "strict", "-T", "err", "src"];
+    assert_eq!(run(&dir, &strict)?.status.code(), Some(2));
+    run(
+        &dir,
+        &[
+            "cruise",
+            "--liveness",
+            "strict",
+            "-T",
+            "json",
+            "-f",
+            "vacuous.json",
+            "src",
+        ],
+    )?;
+    let saved: Value = serde_json::from_slice(&std::fs::read(dir.join("vacuous.json"))?)?;
+    assert!(
+        saved["summary"]["vacuousRules"][0]
+            .get("severity")
+            .is_none()
+    );
     let gate = run(&dir, &["fmt", "-e", "-T", "err", "vacuous.json"])?;
     assert_eq!(gate.status.code(), Some(2));
+    let off = run(&dir, &["cruise", "--liveness", "off", "-T", "json", "src"])?;
+    let value: Value = serde_json::from_slice(&off.stdout)?;
+    assert!(value["summary"].get("vacuousRules").is_none());
+    let both = run(
+        &dir,
+        &["cruise", "--liveness", "warn", "--no-liveness", "src"],
+    )?;
+    assert_ne!(both.status.code(), Some(0), "the two flags conflict");
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn a_native_file_is_strict_and_names_its_exceptions() -> Result<(), Box<dyn Error>> {
+    let dir = tree("liveness-native")?;
+    std::fs::write(
+        dir.join(".dependency-cruiser.json"),
+        r#"{ "forbidden": [{ "name": "stale", "from": { "path": "^nowhere/" }, "to": {} }] }"#,
+    )?;
+    std::fs::write(
+        dir.join("rulebearing.yaml"),
+        "extends: ./.dependency-cruiser.json\n",
+    )?;
+    let native = ["cruise", "--config", "rulebearing.yaml", "-T", "err", "src"];
+    let strict = run(&dir, &native)?;
+    assert_eq!(strict.status.code(), Some(2), "a native file is strict");
+    assert!(String::from_utf8_lossy(&strict.stderr).contains("error: rule `stale` is vacuous"));
+    std::fs::write(
+        dir.join("rulebearing.yaml"),
+        "extends: ./.dependency-cruiser.json\nallowEmpty: [stale]\n",
+    )?;
+    let excused = run(&dir, &native)?;
+    assert_eq!(excused.status.code(), Some(0), "named in allowEmpty");
+    assert!(
+        excused.stderr.is_empty(),
+        "{}",
+        String::from_utf8_lossy(&excused.stderr)
+    );
+    std::fs::write(
+        dir.join("rulebearing.yaml"),
+        "extends: ./.dependency-cruiser.json\nallowEmpty: [stale, gone]\n",
+    )?;
+    let stale_exception = run(&dir, &native)?;
+    assert_eq!(stale_exception.status.code(), Some(3));
+    assert!(String::from_utf8_lossy(&stale_exception.stderr).contains("`gone`"));
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }

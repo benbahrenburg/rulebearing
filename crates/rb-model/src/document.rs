@@ -662,6 +662,27 @@ pub struct VacuousRule {
     pub name: String,
     /// The side that matched nothing: `from`, `module` or `select`.
     pub side: String,
+    /// `warn` when the run's liveness mode only warns, so the entry does not make the run
+    /// untrustworthy; absent when it does
+    /// ([ADR-0032](../../../docs/adr/0032-liveness-follows-the-configuration-format.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub severity: Option<String>,
+}
+
+impl VacuousRule {
+    /// A vacuous rule that makes the run untrustworthy.
+    pub fn new(name: impl Into<String>, side: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            side: side.into(),
+            severity: None,
+        }
+    }
+
+    /// Whether this entry makes the run untrustworthy (exit 2): every entry but a warning.
+    pub fn fails(&self) -> bool {
+        self.severity.as_deref() != Some("warn")
+    }
 }
 
 /// One ratchet's result: `summary.ratchets[]`
@@ -792,6 +813,32 @@ mod tests {
             fix: None,
             decision: None,
         }
+    }
+
+    #[test]
+    fn a_vacuous_rule_fails_unless_it_is_a_warning() -> Result<(), serde_json::Error> {
+        let strict = VacuousRule::new("r", "from");
+        assert_eq!((strict.name.as_str(), strict.side.as_str()), ("r", "from"));
+        assert!(strict.fails());
+        assert_eq!(
+            serde_json::to_value(&strict)?,
+            serde_json::json!({ "name": "r", "side": "from" })
+        );
+        let warned = VacuousRule {
+            severity: Some("warn".into()),
+            ..strict.clone()
+        };
+        assert!(!warned.fails());
+        assert_eq!(
+            serde_json::to_value(&warned)?,
+            serde_json::json!({ "name": "r", "side": "from", "severity": "warn" })
+        );
+        let other = VacuousRule {
+            severity: Some("error".into()),
+            ..strict
+        };
+        assert!(other.fails(), "only a warning is excused");
+        Ok(())
     }
 
     #[test]

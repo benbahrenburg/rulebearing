@@ -37,13 +37,11 @@ impl Ratchets {
             .count() as u64
     }
 
-    /// Whether a ratchet makes the run untrustworthy: a missing budget or a vacuous `from`.
-    pub fn untrustworthy(&self) -> bool {
-        !self.vacuous.is_empty()
-            || self
-                .results
-                .iter()
-                .any(|r| r.status == RatchetStatus::NoBudget)
+    /// Whether a ratchet's budget cannot be read, which makes the run untrustworthy.
+    pub fn no_budget(&self) -> bool {
+        self.results
+            .iter()
+            .any(|r| r.status == RatchetStatus::NoBudget)
     }
 }
 
@@ -65,16 +63,14 @@ pub fn evaluate(
             Err(_) => (None, RatchetStatus::NoBudget),
         };
         if liveness
+            && !config.allow_empty.contains(&r.name)
             && let Some(from) = pattern(r.from.path.as_ref())
             && !document
                 .modules
                 .iter()
                 .any(|m| rb_rules::patterns::test(&from, &m.source))
         {
-            out.vacuous.push(VacuousRule {
-                name: r.name.clone(),
-                side: "from".into(),
-            });
+            out.vacuous.push(VacuousRule::new(r.name.clone(), "from"));
         }
         out.results.push(RatchetResult {
             name: r.name.clone(),
@@ -88,7 +84,7 @@ pub fn evaluate(
 }
 
 /// The stderr lines for the ratchets that fail a run, each with its `fix`.
-pub fn messages(config: &Config, ratchets: &Ratchets) -> String {
+pub fn messages(config: &Config, ratchets: &Ratchets, strict: bool) -> String {
     let fix = |name: &str| {
         config
             .rules
@@ -124,7 +120,8 @@ pub fn messages(config: &Config, ratchets: &Ratchets) -> String {
     for v in &ratchets.vacuous {
         let _ = writeln!(
             out,
-            "error: ratchet `{}` is vacuous: its from side matched no module, so it counts nothing. Fix the pattern or delete the ratchet (ADR-0007)",
+            "{}: ratchet `{}` is vacuous: its from side matched no module, so it counts nothing. Fix the pattern, delete the ratchet, or excuse it with allowEmpty (ADR-0007, ADR-0032)",
+            if strict { "error" } else { "warning" },
             v.name
         );
     }
@@ -172,7 +169,7 @@ mod tests {
                 vacuous: Vec::new(),
             };
             assert_eq!(r.exceeded(), exceeded, "{status:?}");
-            assert_eq!(r.untrustworthy(), untrusted, "{status:?}");
+            assert_eq!(r.no_budget(), untrusted, "{status:?}");
             assert_eq!(
                 from_summary(Some(&r.results)),
                 (exceeded, untrusted),
@@ -182,17 +179,21 @@ mod tests {
         assert_eq!(from_summary(None), (0, false));
         let vacuous = Ratchets {
             results: Vec::new(),
-            vacuous: vec![VacuousRule {
-                name: "v".into(),
-                side: "from".into(),
-            }],
+            vacuous: vec![VacuousRule::new("v", "from")],
         };
-        assert!(vacuous.untrustworthy());
-        assert!(messages(&Config::default(), &vacuous).contains("`v` is vacuous"));
+        assert!(
+            messages(&Config::default(), &vacuous, true)
+                .starts_with("error: ratchet `v` is vacuous")
+        );
+        assert!(messages(&Config::default(), &vacuous, false).starts_with("warning: ratchet `v`"));
+        assert!(
+            !vacuous.no_budget(),
+            "a vacuous from is not a missing budget"
+        );
         let held = Ratchets {
             results: vec![result(RatchetStatus::Held)],
             vacuous: Vec::new(),
         };
-        assert_eq!(messages(&Config::default(), &held), "");
+        assert_eq!(messages(&Config::default(), &held, true), "");
     }
 }

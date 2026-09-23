@@ -275,6 +275,17 @@ pub fn merge(extended: &Map<String, Value>, base: &Map<String, Value>) -> Map<St
             out.insert(key.into(), Value::Array(merged));
         }
     }
+    // The named liveness exceptions of both files, in order, each once.
+    let allow_empty = unique_deep(
+        list(extended, "allowEmpty")
+            .into_iter()
+            .chain(list(base, "allowEmpty"))
+            .cloned()
+            .collect(),
+    );
+    if !allow_empty.is_empty() {
+        out.insert("allowEmpty".into(), Value::Array(allow_empty));
+    }
     for key in ["defines", "languages"] {
         let merged = spread(base.get(key), extended.get(key));
         if !merged.is_empty() {

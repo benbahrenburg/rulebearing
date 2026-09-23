@@ -37,3 +37,4 @@ A rule in `rulebearing.yaml` cites a decision with the token `adr:NNNN` in its `
 | [0029](0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md) | Ratchets are enforced by `cruise` and reported in `summary.ratchets[]`; a missing budget exits 2 | Accepted |
 | [0030](0030-the-reporter-decides-the-error-count-exit.md) | The reporter decides whether the error count is the exit code, as in dependency-cruiser; 2 and 3 do not depend on it | Accepted |
 | [0031](0031-a-saved-result-carries-what-the-exit-code-counts.md) | A saved result carries everything the exit code counts: `summary.expired[]`; `fmt --exit-code` reads it and `vacuousRules` | Accepted |
+| [0032](0032-liveness-follows-the-configuration-format.md) | Liveness follows the configuration's format: `warn` for a dependency-cruiser file, `strict` for a native one; named exceptions in `allowEmpty` | Accepted |

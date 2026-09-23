@@ -25,7 +25,7 @@ use std::fmt::Write as _;
 use rb_config::Config;
 use rb_report::ReportOptions;
 
-use crate::cli::{ColorChoice, CruiseArgs};
+use crate::cli::{ColorChoice, CruiseArgs, Liveness};
 use crate::context::Context;
 use crate::exit::RunExit;
 use crate::pipeline::{self, RunError, RunOptions};
@@ -115,6 +115,7 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
         Err(e) => return failed(&RunError::Config(e), ""),
     };
     let has_config = config.is_some();
+    let liveness = Liveness::of(args.liveness, args.no_liveness, config.as_ref());
     let mut effective = config.take().unwrap_or_default();
     if let Err(e) = configure::apply_flags(&mut effective, args, ctx) {
         return failed(&RunError::Config(e), "");
@@ -144,7 +145,7 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
         )
     };
     let options = RunOptions {
-        liveness: !args.no_liveness && has_config,
+        liveness: liveness != Liveness::Off,
         options_used: configure::options_used(
             has_config.then_some(&effective),
             ctx,
@@ -174,22 +175,13 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
         Err(e) => return failed(&e, &stderr),
     };
     let ratchets = ratchets::evaluate(ctx, &effective, &run.evaluation.document, options.liveness);
-    if !ratchets.results.is_empty() {
-        run.document.summary.ratchets = Some(ratchets.results.clone());
-    }
-    if !ratchets.vacuous.is_empty() {
-        run.document
-            .summary
-            .vacuous_rules
-            .get_or_insert_with(Vec::new)
-            .extend(ratchets.vacuous.iter().cloned());
-    }
+    summarise(&mut run.document.summary, &ratchets, liveness);
     report(
         ctx,
         &effective,
         &run,
         &ratchets,
-        args,
+        (args, liveness),
         &output_type,
         &output_to,
         progress,
@@ -206,7 +198,7 @@ fn report(
     config: &Config,
     run: &pipeline::Run,
     ratchets: &Ratchets,
-    args: &CruiseArgs,
+    (args, liveness): (&CruiseArgs, Liveness),
     output_type: &str,
     output_to: &str,
     mut progress: Progress,
@@ -249,16 +241,15 @@ fn report(
             expired.kind, expired.name, expired.expires
         );
     }
-    stderr.push_str(&ratchets::messages(config, ratchets));
+    let strict = liveness == Liveness::Strict;
+    stderr.push_str(&ratchets::messages(config, ratchets, strict));
     for v in &run.evaluation.vacuous {
-        let _ = writeln!(
-            stderr,
-            "error: rule `{}` is vacuous: its {} side matched no module, so it checks nothing. Fix the pattern, delete the rule, or set allowEmpty: true (ADR-0007)",
-            v.name, v.side
-        );
+        let _ = writeln!(stderr, "{}", vacuous_message(&v.name, &v.side, strict));
     }
-    // 2 whatever the reporter; the error count only for a reporter that gates (ADR-0030).
-    let code = if !run.evaluation.vacuous.is_empty() || ratchets.untrustworthy() {
+    let vacuous = !run.evaluation.vacuous.is_empty() || !ratchets.vacuous.is_empty();
+    // 2 whatever the reporter; the error count only for a reporter that gates (ADR-0030). A rule
+    // that matches nothing counts under strict liveness only (ADR-0032).
+    let code = if (strict && vacuous) || ratchets.no_budget() {
         RunExit::Untrustworthy
     } else if rb_report::gates(output_type) {
         RunExit::Violations(run.evaluation.error_count() + ratchets.exceeded())
@@ -272,6 +263,40 @@ fn report(
         stdout,
         stderr,
         code: code.code(),
+    }
+}
+
+/// Adds the ratchets and their vacuous entries to the summary. Under `warn` every vacuous entry
+/// stays in the result, marked, so `fmt --exit-code` reads the same verdict from the saved file
+/// (ADR-0029, ADR-0031, ADR-0032).
+fn summarise(summary: &mut rb_model::Summary, ratchets: &Ratchets, liveness: Liveness) {
+    if !ratchets.results.is_empty() {
+        summary.ratchets = Some(ratchets.results.clone());
+    }
+    if !ratchets.vacuous.is_empty() {
+        summary
+            .vacuous_rules
+            .get_or_insert_with(Vec::new)
+            .extend(ratchets.vacuous.iter().cloned());
+    }
+    if liveness == Liveness::Warn {
+        for entry in summary.vacuous_rules.iter_mut().flatten() {
+            entry.severity = Some("warn".into());
+        }
+    }
+}
+
+/// The line for a rule that matches nothing: an error under strict liveness, else a warning that
+/// says how to make it one.
+pub fn vacuous_message(name: &str, side: &str, strict: bool) -> String {
+    if strict {
+        format!(
+            "error: rule `{name}` is vacuous: its {side} side matched no module, so it checks nothing. Fix the pattern, delete the rule, or excuse it with allowEmpty (ADR-0007, ADR-0032)"
+        )
+    } else {
+        format!(
+            "warning: rule `{name}` is vacuous: its {side} side matched no module, so it checks nothing. dependency-cruiser does not check this and the run goes on; --liveness strict fails it (ADR-0032)"
+        )
     }
 }
 

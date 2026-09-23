@@ -78,6 +78,7 @@ The top level holds `$schema`, `extends`, `defines`, `languages`, `options`, `ru
 | `rules.ratchets` | A count of direct edges that may only fall, against a budget file `{ "ceiling": n }` ([ADR-0029](adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)) |
 | `defines.<name>` | A value read from a JSON file (`fromJson`), selected with dot-separated keys, `[*]` and `[n]` (`select`), escaped, and joined with `joinWith` (default `\|`); `${name}` in any pattern is replaced by it |
 | `options` | Everything else of dependency-cruiser's `options`, including `knownViolations` |
+| `allowEmpty` | Rules and ratchets allowed to match nothing, by name (`allowed[N]` for the Nth `allowed` entry), including rules from an extended dependency-cruiser file, which cannot carry the key itself. A name that is no rule is an error, so an exception cannot outlive its rule ([ADR-0032](adr/0032-liveness-follows-the-configuration-format.md)) |
 
 `rulebearing config expand FILE` prints a native file with `defines` substituted and the shorthands expanded into the rules they stand for.
 
@@ -91,7 +92,7 @@ Every rule, in either format, may carry five fields dependency-cruiser does not 
 | `examples` | `forbidden` and `allowed` edges, `from -> to`, that `rulebearing test` checks against the rule |
 | `owner` | Who answers for the rule |
 | `expires` | A date after which the rule fails the run: for a temporary exception |
-| `allowEmpty` | Opt the rule out of liveness: it may match nothing without failing the run ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)) |
+| `allowEmpty` | Opt the rule out of liveness: it may match nothing without failing the run ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)). dependency-cruiser's schema refuses it on a rule, so a rule in a `.dependency-cruiser.*` file is named in the native file's top-level `allowEmpty` list instead ([ADR-0032](adr/0032-liveness-follows-the-configuration-format.md)) |
 
 A decision token in `comment`, `adr:NNNN` or `plan:<slug>`, links the rule to the decision behind it. `--require-comment-token` makes a rule without one a configuration error (exit 3).
 

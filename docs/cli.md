@@ -31,6 +31,7 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | --- | --- |
 | `-c, --config [FILE]` | The configuration; `-` for stdin; no value finds it ([config.md](config.md#finding-the-file)) |
 | `--no-config` | Run without one |
+| `--liveness strict\|warn\|off` | `cruise` only. What a rule that matches nothing does: fail (exit 2), warn, or nothing. Default `strict` for a `rulebearing.*` file, `warn` for a dependency-cruiser one ([rules.md](rules.md#liveness)). `--no-liveness` is `off` |
 | `--config-format native\|dependency-cruiser` | When the name does not say |
 | `--config-via-node` | Evaluate a JavaScript configuration with the local Node, not the sandbox |
 | `--strict-compat` | Refuse what dependency-cruiser would refuse |
@@ -45,7 +46,7 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | --- | --- |
 | 0 | No error-severity violation, or a reporter that does not gate |
 | 1 to 255 | The number of error-severity violations (plus expired entries and exceeded ratchets), capped at 255, from a gating reporter: `err`, `err-long`, `null`, `teamcity`, `azure-devops`, `github-annotations`, `agent` |
-| 2 | The run cannot be trusted: no modules found, an unsupported file, a vacuous rule, a ratchet budget that cannot be read |
+| 2 | The run cannot be trusted: no modules found, an unsupported file, a vacuous rule under `strict` liveness, a ratchet budget that cannot be read |
 | 3 | The configuration is invalid |
 
 A run with exactly two or three error violations also exits 2 or 3; the report says which it was ([ADR-0008](adr/0008-exit-code-contract.md), [ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). `fmt` exits 0 unless `--exit-code` is given, as `depcruise-fmt` does; with it, the code comes from the saved result alone (`summary.error`, `summary.expired`, the exceeded ratchets, and 2 for `vacuousRules` or a ratchet without a budget), so a saved result gates as the cruise would have ([ADR-0031](adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)). `can-import` exits 1 for "no" and 2 when the target is unknown. `attest --verify` exits 1 when a hash differs. The `--from-hook` forms of `cruise` and `impact` always exit 0 ([agents.md](agents.md#the-hooks)).

@@ -86,7 +86,7 @@ Source: [design § Test beds](artifacts/design.md#test-beds-open-source-reposito
 | **Superset, precisely** | Every dependency-cruiser 18.2.0 and ArchUnitNET 0.13.4 feature has a coverage row; a row cannot say Parity until the pinned test suite says so | Two required conformance gates ([ADR-0009](adr/0009-conformance-suites-as-specification.md)) |
 | **Drop-in** | The config file, the JSON field names, `fmt`, the `err` reporter and the exit code are identical on day one | Both formats load into one model ([ADR-0005](adr/0005-native-config-superset-and-compat.md)); JavaScript configs run in a sandbox ([ADR-0006](adr/0006-embedded-quickjs-config-evaluator.md)) |
 | **The graph is a first-class artefact** | Other guards read it; a tool that only prints violations covers a third of the use | One extraction feeds the gate, every ratchet, the MCP server and `fmt` ([ADR-0004](adr/0004-graph-document-is-cruise-result-superset.md)) |
-| **Liveness is checked** | A rule matching nothing fails | Vacuous rules exit 2 by default ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)) |
+| **Liveness is checked** | A rule matching nothing fails | Vacuous rules exit 2 by default in a native configuration and warn in a dependency-cruiser one ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md), [ADR-0032](adr/0032-liveness-follows-the-configuration-format.md)) |
 | **One binary, no runtime** | Must run in a TypeScript, a .NET and a Python pipeline | Rust, thin wrappers ([ADR-0002](adr/0002-rust-as-implementation-language.md), [ADR-0020](adr/0020-single-name-across-registries.md)) |
 | **Agent-shaped** | Line-precise findings, `fix` text, a token-budgeted reporter, sub-two-second affected runs; the CLI is the primary surface | Stable ids ([ADR-0015](adr/0015-stable-violation-id.md)); CLI first ([ADR-0021](adr/0021-agent-surface-cli-first.md)) |
 | **Hermetic** | No network, no code execution outside the sandbox, deterministic ordering | A local run and CI agree byte for byte; `attest` can hash the run ([architecture § Security posture](architecture.md#security-posture)) |
@@ -143,14 +143,15 @@ Source: [design § Precision an agent can act on](artifacts/design.md#precision-
 
 #### FR-CORE-05
 
-**Vacuous rules fail by default.** A rule of any family whose selecting side (`from`, `module` or `select`) matches nothing MUST be listed in `summary.vacuousRules[]` and MUST make the run exit 2. `allowEmpty: true` on a rule (`WithoutRequiringPositiveResults` in compatibility mode) MUST turn the check off for that rule; `--no-liveness` MUST turn it off globally for a repository with its own guard. The check MUST remain on in dependency-cruiser compatibility mode, because it is a run-trust condition rather than a rule violation.
+**Vacuous rules fail by default.** A rule of any family whose selecting side (`from`, `module` or `select`) matches nothing MUST be listed in `summary.vacuousRules[]` and MUST make the run exit 2. `allowEmpty: true` on a rule (`WithoutRequiringPositiveResults` in compatibility mode), or the rule's name in a native file's top-level `allowEmpty` list, MUST turn the check off for that rule; `--no-liveness` MUST turn it off globally for a repository with its own guard. A dependency-cruiser configuration run as it is MUST report a vacuous rule as a warning without changing the exit code, as dependency-cruiser does, and `--liveness strict` MUST make it fail ([ADR-0032](adr/0032-liveness-follows-the-configuration-format.md)).
 
 Acceptance:
-- A config with one rule whose `from.path` matches no file exits 2 and names the rule; with `allowEmpty: true` it exits 0.
+- A native config with one rule whose `from.path` matches no file exits 2 and names the rule; with `allowEmpty: true`, or the rule named in `allowEmpty`, it exits 0.
+- The same rule in a `.dependency-cruiser.*` file exits as dependency-cruiser does, with a warning naming the rule; `--liveness strict` exits 2.
 - Conformance gate 1 runs the upstream specs with `--no-liveness`, documented in `conformance/README.md`.
 - `rules --json` reports `fromMatches` and `toMatches` for every rule.
 
-Source: [design § Why](artifacts/design.md#why), [§ The five stages](artifacts/design.md#the-five-stages) | Wave: 1 | ADRs: [0007](adr/0007-vacuous-rules-fail-by-default.md)
+Source: [design § Why](artifacts/design.md#why), [§ The five stages](artifacts/design.md#the-five-stages) | Wave: 1 | ADRs: [0007](adr/0007-vacuous-rules-fail-by-default.md), [0032](adr/0032-liveness-follows-the-configuration-format.md)
 
 #### FR-CORE-06
 

@@ -122,6 +122,34 @@ pub enum ColorChoice {
     Never,
 }
 
+/// What a rule that matches nothing does to a run
+/// ([ADR-0032](../../../docs/adr/0032-liveness-follows-the-configuration-format.md)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum Liveness {
+    /// Fails the run with exit 2 (the default for a native configuration).
+    Strict,
+    /// Reported in `summary.vacuousRules` and on stderr, without changing the exit code (the
+    /// default for a dependency-cruiser configuration, which dependency-cruiser does not check).
+    Warn,
+    /// Not checked.
+    Off,
+}
+
+impl Liveness {
+    /// The mode of a run: `--no-liveness` or `--liveness` when given, else by the format of the
+    /// root configuration file; off without a configuration.
+    pub fn of(flag: Option<Self>, no_liveness: bool, config: Option<&rb_config::Config>) -> Self {
+        match (config, no_liveness, flag) {
+            (None, _, _) | (_, true, _) => Self::Off,
+            (_, false, Some(mode)) => mode,
+            (Some(config), false, None) => match config.compat {
+                rb_config::CompatMode::Native => Self::Strict,
+                rb_config::CompatMode::DependencyCruiser => Self::Warn,
+            },
+        }
+    }
+}
+
 /// The configuration flags `cruise` and the agent commands share.
 #[derive(Debug, Clone, Default, Args)]
 #[allow(clippy::struct_excessive_bools)] // each is a command-line flag; dependency-cruiser names them
@@ -237,9 +265,14 @@ pub struct CruiseArgs {
     /// Show the languages, extensions and parsers this build supports
     #[arg(short = 'i', long)]
     pub info: bool,
-    /// Do not fail a run whose rules match nothing (ADR-0007)
+    /// Do not check whether rules match anything; the same as --liveness off
     #[arg(long)]
     pub no_liveness: bool,
+    /// Rules that match nothing: strict fails the run (exit 2), warn reports them, off skips the
+    /// check. Default: strict for a rulebearing.* configuration, warn for a dependency-cruiser one
+    /// (ADR-0032)
+    #[arg(long, value_enum, value_name = "MODE", conflicts_with = "no_liveness")]
+    pub liveness: Option<Liveness>,
     /// json: strip every Rulebearing addition so the output validates against cruise-result 18.2.0
     #[arg(long)]
     pub strict_schema: bool,
@@ -307,4 +340,45 @@ pub struct FmtArgs {
     /// Colour terminal output
     #[arg(long, value_enum, default_value_t = ColorChoice::Auto)]
     pub color: ColorChoice,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rb_config::{CompatMode, Config};
+
+    #[test]
+    fn liveness_follows_the_flags_then_the_root_file() {
+        let native = Config {
+            compat: CompatMode::Native,
+            ..Config::default()
+        };
+        let cruiser = Config {
+            compat: CompatMode::DependencyCruiser,
+            ..Config::default()
+        };
+        let table = [
+            (None, false, None, Liveness::Off),
+            (Some(Liveness::Strict), false, None, Liveness::Off),
+            (None, false, Some(&native), Liveness::Strict),
+            (None, false, Some(&cruiser), Liveness::Warn),
+            (None, true, Some(&native), Liveness::Off),
+            (Some(Liveness::Warn), false, Some(&native), Liveness::Warn),
+            (
+                Some(Liveness::Strict),
+                false,
+                Some(&cruiser),
+                Liveness::Strict,
+            ),
+            (Some(Liveness::Off), false, Some(&cruiser), Liveness::Off),
+        ];
+        for (flag, no_liveness, config, expected) in table {
+            assert_eq!(
+                Liveness::of(flag, no_liveness, config),
+                expected,
+                "{flag:?} {no_liveness} {:?}",
+                config.map(|c| c.compat)
+            );
+        }
+    }
 }

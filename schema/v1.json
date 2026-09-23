@@ -1724,6 +1724,13 @@
           "description": "The rule name.",
           "type": "string"
         },
+        "severity": {
+          "description": "`warn` when the run's liveness mode only warns, so the entry does not make the run\nuntrustworthy; absent when it does\n([ADR-0032](../../../docs/adr/0032-liveness-follows-the-configuration-format.md)).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "side": {
           "description": "The side that matched nothing: `from`, `module` or `select`.",
           "type": "string"

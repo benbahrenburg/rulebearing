@@ -18,7 +18,7 @@
 //! | `rules.ratchets`, `rules.layers`, `rules.independence` | `ratchets`, `layers`, `independence` |
 //! | `languages.typescript.*` and the flat names at the top level | `options.*` |
 //! | `languages.dotnet`, `languages.python` | `languages.dotnet`, `languages.python` |
-//! | `options`, `extends`, `defines`, `$schema` | unchanged |
+//! | `options`, `extends`, `defines`, `$schema`, `allowEmpty` | unchanged |
 
 use serde_json::{Map, Value};
 
@@ -44,6 +44,7 @@ pub const NATIVE_TOP_LEVEL: &[&str] = &[
     "$schema",
     "extends",
     "defines",
+    "allowEmpty",
     "languages",
     "options",
     "rules",
@@ -80,7 +81,7 @@ pub fn to_canonical(native: &Map<String, Value>) -> Result<Map<String, Value>, C
     };
     for (key, value) in native {
         match key.as_str() {
-            "$schema" | "extends" | "defines" => {
+            "$schema" | "extends" | "defines" | "allowEmpty" => {
                 out.insert(key.clone(), value.clone());
             }
             "options" | "rules" | "languages" => {}

@@ -156,7 +156,7 @@ pub fn baseline(
 }
 
 /// The `rulebearing.yaml` that extends the repository's configuration and holds the baseline.
-pub fn adopted_config(extends: &str, entries: &[Value], today: &str) -> String {
+pub fn adopted_config(extends: &str, entries: &[Value], empty: &[String], today: &str) -> String {
     let mut out = String::new();
     let _ = writeln!(
         out,
@@ -175,6 +175,16 @@ pub fn adopted_config(extends: &str, entries: &[Value], today: &str) -> String {
         "extends: {}",
         serde_json::to_string(extends).unwrap_or_default()
     );
+    if !empty.is_empty() {
+        out.push_str(
+            "# These rules match no module today, so they check nothing. They are named here so the\n# gate can pass; fix their paths or delete them, then remove them from this list (ADR-0032).\n",
+        );
+        let _ = writeln!(
+            out,
+            "allowEmpty: {}",
+            serde_json::to_string(empty).unwrap_or_default()
+        );
+    }
     if !entries.is_empty() {
         out.push_str("options:\n  knownViolations:\n");
         for entry in entries {
@@ -279,7 +289,12 @@ pub fn architecture_page(config: &Config, entries: &[Value], extends: &str) -> S
 }
 
 /// The pull request's body.
-pub fn pr_body(extends: &str, entries: &[Value], files: &[String], version: &str) -> String {
+pub fn pr_body(
+    extends: &str,
+    (entries, empty): (&[Value], &[String]),
+    files: &[String],
+    version: &str,
+) -> String {
     let mut by_rule: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
     for e in entries {
         *by_rule
@@ -302,6 +317,14 @@ pub fn pr_body(extends: &str, entries: &[Value], files: &[String], version: &str
             let _ = writeln!(out, "| `{rule}` | {count} |");
         }
         out.push('\n');
+    }
+    if !empty.is_empty() {
+        let names: Vec<String> = empty.iter().map(|n| format!("`{n}`")).collect();
+        let _ = writeln!(
+            out,
+            "These rules match no module today, so they check nothing: {}. They are listed under `allowEmpty` in `rulebearing.yaml` so the gate can pass; fix their paths or delete them, then take them off the list.\n",
+            names.join(", ")
+        );
     }
     out.push_str("Files:\n\n");
     for f in files {
@@ -436,28 +459,20 @@ fn baselined(
 ) -> Result<(String, Config, Vec<Value>), Outcome> {
     let original = configure::required(ctx, &args.config)?;
     let first = cruise(ctx, &original, paths)?;
-    if !first.evaluation.vacuous.is_empty() {
-        let names: Vec<&str> = first
-            .evaluation
-            .vacuous
-            .iter()
-            .map(|v| v.name.as_str())
-            .collect();
-        return Err(Outcome::failed(
-            RunExit::Untrustworthy,
-            format!(
-                "rulebearing adopt: rules {} match no module in {}, so they check nothing. Fix their paths or pass the right folders, then run adopt again (ADR-0007)\n",
-                names.join(", "),
-                paths.join(" ")
-            ),
-        ));
-    }
+    // A rule that matches nothing is named in `allowEmpty`, so the gate goes green while the
+    // written file says, rule by rule, which fences are not standing (ADR-0032).
+    let empty: Vec<String> = first
+        .evaluation
+        .vacuous
+        .iter()
+        .map(|v| v.name.clone())
+        .collect();
     let entries = baseline(
         ctx,
         &first.evaluation.document.summary.violations,
         &args.baseline,
     )?;
-    let text = adopted_config(extends, &entries, &ctx.today.to_string());
+    let text = adopted_config(extends, &entries, &empty, &ctx.today.to_string());
     let options = LoadOptions {
         via_node: args.config.config_via_node,
         ..LoadOptions::default()
@@ -518,14 +533,27 @@ pub fn run(ctx: &mut Context<'_>, args: &AdoptArgs) -> Outcome {
     executable(&hook_path);
     let names: Vec<String> = files.into_iter().map(|(f, _)| f).collect();
     let mut report = format!(
-        "baselined {} findings; a cruise with rulebearing.yaml exits 0\nwrote:\n",
+        "baselined {} findings; a cruise with rulebearing.yaml exits 0\n",
         entries.len()
     );
+    if !adopted.allow_empty.is_empty() {
+        let _ = writeln!(
+            report,
+            "these rules match no module, so they check nothing, and are listed under allowEmpty: {}",
+            adopted.allow_empty.join(", ")
+        );
+    }
+    report.push_str("wrote:\n");
     for n in &names {
         let _ = writeln!(report, "  {n}");
     }
     if !args.no_pr {
-        let body = pr_body(&extends, &entries, &names, env!("CARGO_PKG_VERSION"));
+        let body = pr_body(
+            &extends,
+            (&entries, &adopted.allow_empty),
+            &names,
+            env!("CARGO_PKG_VERSION"),
+        );
         report.push_str(&open_pull_request(ctx, &names, &body));
     }
     Outcome::printed(report)
