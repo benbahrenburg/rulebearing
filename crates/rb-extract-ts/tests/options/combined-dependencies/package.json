@@ -1,0 +1,5 @@
+{
+  "name": "monorepo",
+  "private": true,
+  "dependencies": { "left-pad": "1.3.0" }
+}

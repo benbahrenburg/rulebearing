@@ -18,3 +18,5 @@ testbeds/checkouts/
 schema/*.json
 conformance/archunitnet/attribution/
 Cargo.lock
+# Extractor option fixtures: mini-repositories kept byte for byte, since line and column are asserted.
+crates/rb-extract-ts/tests/options/

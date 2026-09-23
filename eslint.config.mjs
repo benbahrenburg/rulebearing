@@ -19,6 +19,8 @@ export default defineConfig([
         'conformance/**/fixtures/**',
         // Vendored verbatim from dependency-cruiser 18.2.0 (MIT) as the bundled presets.
         'presets/dependency-cruiser/**',
+        // The extractor's option fixtures are inputs, kept verbatim (plan 0001, sub-wave 1C).
+        'crates/rb-extract-ts/tests/options/**',
     ]),
     js.configs.recommended,
     tseslint.configs.strictTypeChecked,

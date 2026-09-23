@@ -684,7 +684,10 @@ fn acorn(program: &Program<'_>, options: &WalkOptions) -> Vec<Found> {
         found.extend(cjs.found);
     }
     if systems.contains(&ModuleSystem::Es6) {
-        let mut es6 = AcornEs6 { found: Vec::new() };
+        let mut es6 = AcornEs6 {
+            loose: program.source_type.is_jsx() && beyond_es2020(program),
+            found: Vec::new(),
+        };
         es6.visit_program(program);
         found.extend(es6.found);
     }
@@ -778,12 +781,104 @@ impl<'a> Visit<'a> for AcornCjs<'_> {
     }
 }
 
+/// Whether a program uses syntax newer than ECMAScript 2020, the `ecmaVersion: 11` upstream's
+/// acorn parses with. Such a source fails acorn's strict parse and falls back to acorn-loose,
+/// which has no JSX support (see `AcornEs6::loose`).
+fn beyond_es2020(program: &Program<'_>) -> bool {
+    let mut detector = BeyondEs2020(program.hashbang.is_some());
+    if !detector.0 {
+        detector.visit_program(program);
+    }
+    detector.0
+}
+
+/// Finds class fields, private names, static blocks, accessors, logical assignment, numeric
+/// separators and import attributes: the ECMAScript 2021 to 2025 syntax acorn 11 rejects.
+struct BeyondEs2020(bool);
+
+impl<'a> Visit<'a> for BeyondEs2020 {
+    fn visit_property_definition(&mut self, _: &oxc_ast::ast::PropertyDefinition<'a>) {
+        self.0 = true;
+    }
+
+    fn visit_private_identifier(&mut self, _: &oxc_ast::ast::PrivateIdentifier<'a>) {
+        self.0 = true;
+    }
+
+    fn visit_static_block(&mut self, _: &oxc_ast::ast::StaticBlock<'a>) {
+        self.0 = true;
+    }
+
+    fn visit_accessor_property(&mut self, _: &oxc_ast::ast::AccessorProperty<'a>) {
+        self.0 = true;
+    }
+
+    fn visit_with_clause(&mut self, _: &oxc_ast::ast::WithClause<'a>) {
+        self.0 = true;
+    }
+
+    fn visit_assignment_expression(&mut self, it: &oxc_ast::ast::AssignmentExpression<'a>) {
+        if it.operator.is_logical() {
+            self.0 = true;
+        } else if !self.0 {
+            walk::walk_assignment_expression(self, it);
+        }
+    }
+
+    fn visit_numeric_literal(&mut self, it: &oxc_ast::ast::NumericLiteral<'a>) {
+        if it.raw.is_some_and(|raw| raw.contains('_')) {
+            self.0 = true;
+        }
+    }
+}
+
+/// The offsets of `import` as a whole word in `text`, not followed by `(` or `.`: where
+/// acorn-loose, reading JSX text as script, starts an import declaration.
+fn loose_import_keywords(text: &str) -> Vec<usize> {
+    let word = |c: char| c.is_alphanumeric() || c == '_' || c == '$';
+    text.match_indices("import")
+        .filter(|(at, keyword)| {
+            let rest = &text[at + keyword.len()..];
+            !text[..*at].chars().next_back().is_some_and(word)
+                && !rest.chars().next().is_some_and(word)
+                && !matches!(rest.trim_start().chars().next(), Some('(' | '.'))
+        })
+        .map(|(at, _)| at)
+        .collect()
+}
+
 /// acorn's ES module pass: import and re-export declarations and `import()`.
 struct AcornEs6 {
+    /// Whether upstream's strict acorn parse would fail, so acorn-loose reads the file: JSX text
+    /// is then script, and every `import` word in it starts an import declaration whose source
+    /// is acorn-loose's placeholder, `✖`. Upstream's `extract-es6-deps` spec records this as a
+    /// known limitation ("does a.t.m. NOT handle certain ways of jsx notation correctly").
+    loose: bool,
     found: Vec<Found>,
 }
 
+/// acorn-loose's placeholder for a missing string.
+const LOOSE_PLACEHOLDER: &str = "\u{2716}";
+
 impl<'a> Visit<'a> for AcornEs6 {
+    fn visit_jsx_text(&mut self, text: &oxc_ast::ast::JSXText<'a>) {
+        if !self.loose {
+            return;
+        }
+        for at in loose_import_keywords(&text.value) {
+            let start = text
+                .span
+                .start
+                .saturating_add(u32::try_from(at).unwrap_or(u32::MAX));
+            self.found.push(Found::new(
+                LOOSE_PLACEHOLDER,
+                ModuleSystem::Es6,
+                &[D::Import],
+                Span::new(start, start.saturating_add(6)),
+            ));
+        }
+    }
+
     fn visit_import_declaration(&mut self, import: &ImportDeclaration<'a>) {
         walk::walk_import_declaration(self, import);
         if !import.source.value.is_empty() {
@@ -899,6 +994,45 @@ mod tests {
             "const t: import('./types').T; import(`x/${y}`); import( 'z' )"
         );
         assert_eq!(plain.len(), source.len());
+    }
+
+    #[test]
+    fn import_words_in_jsx_text_count_only_when_acorn_would_go_loose() {
+        let options = WalkOptions {
+            module_systems: vec![ModuleSystem::Es6],
+            ..WalkOptions::default()
+        };
+        let modules = |source: &str| {
+            walk_source(source, SourceType::jsx(), Flavour::Acorn, &options)
+                .map(|found| found.into_iter().map(|f| f.module).collect::<Vec<_>>())
+                .ok()
+        };
+        let fields = "import R from 'r';\nclass C { x = () => <>an import here</>; }";
+        assert_eq!(
+            modules(fields),
+            Some(vec!["r".to_owned(), LOOSE_PLACEHOLDER.to_owned()])
+        );
+        let es2020 = "import R from 'r';\nconst x = () => <>an import here</>;";
+        assert_eq!(modules(es2020), Some(vec!["r".to_owned()]));
+        for newer in [
+            "#!/usr/bin/env node\nconst x = <>import</>;",
+            "a ||= <>import</>;",
+            "const n = 1_000; const x = <>import</>;",
+            "class A { static { } } const x = <>import</>;",
+            "class A { #p() {} } const x = <>import</>;",
+            "import j from './j.json' with { type: 'json' }; const x = <>import</>;",
+            "class A { accessor a = 1 } const x = <>import</>;",
+        ] {
+            assert!(
+                modules(newer).is_some_and(|m| m.contains(&LOOSE_PLACEHOLDER.to_owned())),
+                "{newer}"
+            );
+        }
+        assert_eq!(
+            loose_import_keywords("import imports reimport import( import.x"),
+            [0]
+        );
+        assert_eq!(loose_import_keywords("an import"), [3]);
     }
 
     #[test]

@@ -21,6 +21,7 @@ oxc_span = { workspace = true }
 oxc_resolver = { workspace = true }
 regex = { workspace = true }
 globset = { workspace = true }
+rayon = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

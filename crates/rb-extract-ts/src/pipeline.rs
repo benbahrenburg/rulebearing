@@ -7,11 +7,21 @@
 //!   1 and 2; [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)
 //!   (`doNotFollow`, `exclude`, `includeOnly`, `maxDepth`, `tsPreCompilationDeps`,
 //!   `extraExtensionsToScan`, `experimentalStats`)
+//! - Plan: [Wave 1, Step 10](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-10-rb-extract-ts-to-100-and-the-option-set-1c)
+//!   (`.vue` scripts, `babelConfig` aliases, `line` and `column`, file-level parallelism)
 //! - Specification: dependency-cruiser 18.2.0 `src/extract/{extract-dependencies,
-//!   gather-initial-sources,index,extract-stats}.mjs`
+//!   gather-initial-sources,index,extract-stats}.mjs`, `src/extract/transpile/vue-template-wrap.cjs`
+//!
+//! [`extract`] runs in two phases. The first finds every file the run can reach and extracts
+//! each one's dependencies in parallel, a breadth-first frontier at a time, with `rayon`. The
+//! second replays upstream's depth-first walk over those results, so the module order, the depth
+//! `maxDepth` counts and the first error reported are the ones the sequential walk gives. Output
+//! is therefore identical however many threads ran.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
+
+use rayon::prelude::*;
 
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{ImportDeclarationSpecifier, ImportOrExportKind, Statement};
@@ -24,6 +34,7 @@ use rb_model::{
 };
 use regex::Regex;
 
+use crate::babel::BabelAliases;
 use crate::collate;
 use crate::resolve::{self, Context, ResolveConfig, SCANNABLE_EXTENSIONS};
 use crate::walk::{self, Flavour, Found, WalkOptions};
@@ -138,6 +149,8 @@ pub struct Settings {
     pub max_depth: u32,
     /// `experimentalStats`.
     pub experimental_stats: bool,
+    /// `babelConfig`'s module-resolver aliases, applied to what the acorn walker finds.
+    pub babel: Option<BabelAliases>,
 }
 
 impl Settings {
@@ -170,6 +183,18 @@ impl Settings {
             include_only: Filter::compile(options.include_only.as_ref())?,
             max_depth: u32::from(options.max_depth()),
             experimental_stats: options.experimental_stats.unwrap_or(false),
+            babel: None,
+        })
+    }
+
+    /// Whether `doNotFollow` matches a resolution, by path or by dependency type.
+    fn stops(&self, resolution: &resolve::Resolution) -> bool {
+        self.do_not_follow.as_ref().is_some_and(|f| {
+            f.path_matches(&resolution.resolved)
+                || resolution
+                    .dependency_types
+                    .iter()
+                    .any(|t| f.dependency_types.contains(t))
         })
     }
 
@@ -231,6 +256,10 @@ pub struct Extracted {
     pub license: Option<String>,
     /// Where the form is.
     pub span: Span,
+    /// The 1-based line the form starts on.
+    pub line: u32,
+    /// The 1-based column, in characters, the form starts at.
+    pub column: u32,
 }
 
 const TS_COMPATIBLE: &[&str] = &[".ts", ".tsx", ".mts", ".cts", ".js", ".mjs", ".cjs", ".vue"];
@@ -357,26 +386,138 @@ fn read(path: &Path) -> Result<String, PipelineError> {
     })
 }
 
-/// The forms in a file, as the chosen walker reports them, before resolution.
-fn forms(settings: &Settings, file: &str, flavour: Flavour) -> Result<Vec<Found>, PipelineError> {
-    let path = settings.on_disk(file);
-    let source = read(&path)?;
-    let source_type = source_type_for(file);
+/// The script of a Vue single-file component, as `@vue/compiler-sfc` hands it to upstream's
+/// parsers: the `<script>` and `<script setup>` contents. Everything else is blanked to spaces,
+/// newlines kept, so every byte offset (and so every line and column) is the one in the file.
+/// Also returns the first script's `lang`.
+pub fn vue_script(source: &str) -> (String, Option<String>) {
+    let mut out: Vec<u8> = source
+        .bytes()
+        .map(|b| if b == b'\n' || b == b'\r' { b } else { b' ' })
+        .collect();
+    let mut lang = None;
+    let mut from = 0;
+    while let Some(at) = source[from..].find("<script").map(|i| i + from) {
+        let after_name = at + "<script".len();
+        let boundary = source[after_name..].chars().next();
+        let Some(open_end) = source[after_name..].find('>').map(|i| i + after_name) else {
+            break;
+        };
+        if !matches!(boundary, Some(c) if c == '>' || c.is_whitespace()) {
+            from = after_name;
+            continue;
+        }
+        let attributes = &source[after_name..open_end];
+        if lang.is_none() {
+            lang = attribute(attributes, "lang");
+        }
+        let body_start = open_end + 1;
+        let body_end = source[body_start..]
+            .find("</script>")
+            .map_or(source.len(), |i| i + body_start);
+        out[body_start..body_end].copy_from_slice(&source.as_bytes()[body_start..body_end]);
+        from = body_end;
+    }
+    // Only ASCII bytes were replaced, and whole script bodies copied back, so this is UTF-8
+    // unless a multi-byte character straddled a tag, which the tags' ASCII delimiters rule out.
+    (String::from_utf8(out).unwrap_or_default(), lang)
+}
+
+/// The value of `name="..."` (or `'...'`, or unquoted) in a tag's attribute text.
+fn attribute(attributes: &str, name: &str) -> Option<String> {
+    let at = attributes.find(&format!("{name}="))? + name.len() + 1;
+    let rest = &attributes[at..];
+    let value = match rest.chars().next()? {
+        quote @ ('"' | '\'') => rest[1..].split(quote).next()?,
+        _ => rest.split(|c: char| c.is_whitespace() || c == '/').next()?,
+    };
+    Some(value.to_owned())
+}
+
+/// A file's source as the walker reads it: a `.vue` file's script, anything else whole. The
+/// second value is the Vue script's `lang`.
+fn source_of(settings: &Settings, file: &str) -> Result<(String, Option<String>), PipelineError> {
+    let source = read(&settings.on_disk(file))?;
+    if node_extname(file) == ".vue" {
+        Ok(vue_script(&source))
+    } else {
+        Ok((source, None))
+    }
+}
+
+/// The syntax a file is parsed with. A Vue script is TypeScript when it says so, or when tsc
+/// reads it (tsc parses an unknown extension as TypeScript).
+fn syntax_for(file: &str, vue_lang: Option<&str>, flavour: Flavour) -> SourceType {
+    if node_extname(file) != ".vue" {
+        return source_type_for(file);
+    }
+    match vue_lang {
+        Some("tsx") => SourceType::tsx(),
+        Some("ts") => SourceType::ts(),
+        Some("jsx") => SourceType::mjs().with_jsx(true),
+        _ if flavour == Flavour::Tsc => SourceType::ts(),
+        _ => SourceType::mjs(),
+    }
+}
+
+/// The forms in a source, as the chosen walker reports them, before resolution.
+fn forms(
+    settings: &Settings,
+    path: &Path,
+    source: &str,
+    source_type: SourceType,
+    flavour: Flavour,
+) -> Result<Vec<Found>, PipelineError> {
     let parse_error = |e: walk::ParseError| PipelineError::Parse {
-        path: path.clone(),
+        path: path.to_path_buf(),
         reason: e.to_string(),
     };
     let options = settings.walk_options();
     match flavour {
         Flavour::Acorn if source_type.is_typescript() => {
             // acorn reads TypeScript only after compiling it, which drops imports used as types.
-            let elided = elided_imports(&source, source_type);
-            let mut found = walk::walk_source(&source, source_type, Flavour::Acorn, &options)
+            let elided = elided_imports(source, source_type);
+            let mut found = walk::walk_source(source, source_type, Flavour::Acorn, &options)
                 .map_err(parse_error)?;
             found.retain(|f| !elided.iter().any(|span| span.contains_inclusive(f.span)));
             Ok(found)
         }
-        _ => walk::walk_source(&source, source_type, flavour, &options).map_err(parse_error),
+        _ => walk::walk_source(source, source_type, flavour, &options).map_err(parse_error),
+    }
+}
+
+/// Line starts of a source, for turning byte offsets into 1-based lines and columns.
+#[derive(Debug, Clone)]
+pub struct Lines<'s> {
+    source: &'s str,
+    starts: Vec<usize>,
+}
+
+impl<'s> Lines<'s> {
+    /// Indexes `source`.
+    pub fn new(source: &'s str) -> Self {
+        let mut starts = vec![0];
+        starts.extend(source.match_indices('\n').map(|(at, _)| at + 1));
+        Self { source, starts }
+    }
+
+    /// The 1-based line and column (in characters) of byte `offset`, clamped to the source.
+    pub fn locate(&self, offset: u32) -> (u32, u32) {
+        let mut offset = (offset as usize).min(self.source.len());
+        while !self.source.is_char_boundary(offset) {
+            offset -= 1;
+        }
+        let line = self.starts.partition_point(|start| *start <= offset);
+        let start = self
+            .starts
+            .get(line.saturating_sub(1))
+            .copied()
+            .unwrap_or(0);
+        let column = self.source[start..offset].chars().count() + 1;
+        (
+            u32::try_from(line).unwrap_or(u32::MAX),
+            u32::try_from(column).unwrap_or(u32::MAX),
+        )
     }
 }
 
@@ -392,14 +533,21 @@ fn unique_key(found: &Found) -> String {
 /// Under `tsPreCompilationDeps: "specify"`, which forms the compiled JavaScript no longer has.
 fn pre_compilation_only(
     settings: &Settings,
-    file: &str,
+    (file, path): (&str, &Path),
+    (source, vue_lang): (&str, Option<&str>),
     flavour: Flavour,
     found: &[Found],
 ) -> Result<Option<Vec<bool>>, PipelineError> {
     if flavour != Flavour::Tsc || settings.pre_compilation != PreCompilation::Specify {
         return Ok(None);
     }
-    let compiled = forms(settings, file, Flavour::Acorn)?;
+    let compiled = forms(
+        settings,
+        path,
+        source,
+        syntax_for(file, vue_lang, Flavour::Acorn),
+        Flavour::Acorn,
+    )?;
     Ok(Some(
         found
             .iter()
@@ -412,6 +560,24 @@ fn pre_compilation_only(
             })
             .collect(),
     ))
+}
+
+/// Babel runs before acorn reads a file, so the acorn walker sees the specifiers
+/// `babel-plugin-module-resolver` rewrote.
+fn apply_babel_aliases(settings: &Settings, path: &Path, found: &mut [Found]) {
+    let Some(babel) = settings.babel.as_ref().filter(|b| !b.is_empty()) else {
+        return;
+    };
+    let absolute = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        settings.cwd.join(path)
+    };
+    for form in found {
+        if let Some(rewritten) = babel.rewrite(&form.module, &absolute) {
+            form.module = rewritten;
+        }
+    }
 }
 
 /// `extractDependencies` for one file: forms found, resolved, filtered and sorted.
@@ -431,8 +597,21 @@ pub fn extract_dependencies(
         return Ok(Vec::new());
     }
     let flavour = flavour_for(settings, file);
-    let mut found = forms(settings, file, flavour)?;
-    let pre_compilation = pre_compilation_only(settings, file, flavour, &found)?;
+    let path = settings.on_disk(file);
+    let (source, vue_lang) = source_of(settings, file)?;
+    let source_type = syntax_for(file, vue_lang.as_deref(), flavour);
+    let mut found = forms(settings, &path, &source, source_type, flavour)?;
+    if flavour == Flavour::Acorn {
+        apply_babel_aliases(settings, &path, &mut found);
+    }
+    let pre_compilation = pre_compilation_only(
+        settings,
+        (file, &path),
+        (&source, vue_lang.as_deref()),
+        flavour,
+        &found,
+    )?;
+    let lines = Lines::new(&source);
     // Module attributes first, then unique by module, system and type-only-ness.
     let mut seen = BTreeSet::new();
     let mut extracted = Vec::new();
@@ -462,13 +641,8 @@ pub fn extract_dependencies(
             &context,
             config,
         );
-        let matches_do_not_follow = settings.do_not_follow.as_ref().is_some_and(|f| {
-            f.path_matches(&resolution.resolved)
-                || resolution
-                    .dependency_types
-                    .iter()
-                    .any(|t| f.dependency_types.contains(t))
-        });
+        let (line, column) = lines.locate(form.span.start);
+        let matches_do_not_follow = settings.stops(&resolution);
         extracted.push(Extracted {
             module: form.module,
             module_system: form.module_system,
@@ -486,6 +660,8 @@ pub fn extract_dependencies(
             matches_do_not_follow,
             license: resolution.license,
             span: form.span,
+            line,
+            column,
         });
     }
     extracted.retain(|d| {
@@ -696,42 +872,118 @@ pub struct ExtractedModule {
     pub as_dependency: Option<Extracted>,
 }
 
-fn extract_recursive(
-    file: &str,
+/// Whether a dependency leads to a file the walk extracts in turn.
+fn followed(dependency: &Extracted) -> bool {
+    dependency.followable && !dependency.matches_do_not_follow
+}
+
+/// Phase one of [`extract`]: the dependencies of every file the walk can extract, keyed by file,
+/// found in parallel one breadth-first frontier at a time. A file at breadth-first depth `d` is
+/// at depth `d` or more in upstream's depth-first walk, so extracting every file with `d` below
+/// `maxDepth` covers every file the depth-first walk extracts. A failure is kept, not raised: the
+/// replay raises it only if the depth-first walk reaches that file.
+fn reachable_dependencies(
+    initial: &[String],
     settings: &Settings,
     config: &ResolveConfig,
-    visited: &mut BTreeSet<String>,
-    depth: u32,
-    out: &mut Vec<ExtractedModule>,
-) -> Result<(), PipelineError> {
-    visited.insert(file.to_owned());
-    let dependencies = if settings.max_depth == 0 || depth < settings.max_depth {
-        extract_dependencies(file, settings, config)?
-    } else {
-        Vec::new()
-    };
-    let experimental_stats = if settings.experimental_stats {
-        Some(stats(file, settings)?)
-    } else {
-        None
-    };
-    let follow: Vec<String> = dependencies
+) -> BTreeMap<String, Result<Vec<Extracted>, PipelineError>> {
+    let mut done: BTreeMap<String, Result<Vec<Extracted>, PipelineError>> = BTreeMap::new();
+    let mut seen: BTreeSet<&str> = BTreeSet::new();
+    let mut frontier: Vec<String> = initial
         .iter()
-        .filter(|d| d.followable && !d.matches_do_not_follow && !visited.contains(&d.resolved))
-        .map(|d| d.resolved.clone())
+        .filter(|f| seen.insert(f.as_str()))
+        .cloned()
         .collect();
-    out.push(ExtractedModule {
-        source: file.to_owned(),
-        dependencies,
-        experimental_stats,
-        as_dependency: None,
-    });
-    for next in follow {
-        if !visited.contains(&next) {
-            extract_recursive(&next, settings, config, visited, depth + 1, out)?;
+    let mut depth = 0u32;
+    while !frontier.is_empty() && (settings.max_depth == 0 || depth < settings.max_depth) {
+        let results: Vec<(String, Result<Vec<Extracted>, PipelineError>)> = frontier
+            .into_par_iter()
+            .map(|file| {
+                let result = extract_dependencies(&file, settings, config);
+                (file, result)
+            })
+            .collect();
+        let mut next = BTreeSet::new();
+        for (_, result) in &results {
+            for dependency in result.iter().flatten().filter(|d| followed(d)) {
+                next.insert(dependency.resolved.clone());
+            }
+        }
+        done.extend(results);
+        frontier = next
+            .into_iter()
+            .filter(|f| !done.contains_key(f) && !seen.contains(f.as_str()))
+            .collect();
+        depth += 1;
+    }
+    done
+}
+
+/// Phase two of [`extract`]: upstream's `extractRecursive`, depth first from each initial
+/// source, over the dependencies phase one found.
+fn replay(
+    initial: &[String],
+    settings: &Settings,
+    config: &ResolveConfig,
+    mut found: BTreeMap<String, Result<Vec<Extracted>, PipelineError>>,
+) -> Result<Vec<ExtractedModule>, PipelineError> {
+    struct Frame {
+        follow: Vec<String>,
+        next: usize,
+        depth: u32,
+    }
+    let mut visited: BTreeSet<String> = BTreeSet::new();
+    let mut out = Vec::new();
+    let mut visit = |file: &str,
+                     depth: u32,
+                     visited: &mut BTreeSet<String>,
+                     out: &mut Vec<ExtractedModule>|
+     -> Result<Frame, PipelineError> {
+        visited.insert(file.to_owned());
+        let dependencies = if settings.max_depth == 0 || depth < settings.max_depth {
+            match found.remove(file) {
+                Some(result) => result?,
+                None => extract_dependencies(file, settings, config)?,
+            }
+        } else {
+            Vec::new()
+        };
+        let follow = dependencies
+            .iter()
+            .filter(|d| followed(d))
+            .map(|d| d.resolved.clone())
+            .collect();
+        out.push(ExtractedModule {
+            source: file.to_owned(),
+            dependencies,
+            experimental_stats: None,
+            as_dependency: None,
+        });
+        Ok(Frame {
+            follow,
+            next: 0,
+            depth,
+        })
+    };
+    for file in initial {
+        if visited.contains(file) {
+            continue;
+        }
+        let mut stack = vec![visit(file, 0, &mut visited, &mut out)?];
+        while let Some(frame) = stack.last_mut() {
+            let Some(next) = frame.follow.get(frame.next).cloned() else {
+                stack.pop();
+                continue;
+            };
+            frame.next += 1;
+            let depth = frame.depth + 1;
+            if !visited.contains(&next) {
+                let child = visit(&next, depth, &mut visited, &mut out)?;
+                stack.push(child);
+            }
         }
     }
-    Ok(())
+    Ok(out)
 }
 
 /// `extract`: every module reachable from the inputs, then the unfollowed dependencies as modules.
@@ -743,19 +995,25 @@ pub fn extract(
     settings: &Settings,
     config: &ResolveConfig,
 ) -> Result<Vec<ExtractedModule>, PipelineError> {
-    let mut visited = BTreeSet::new();
-    let mut modules = Vec::new();
-    for file in gather_initial_sources(inputs, settings)? {
-        if !visited.contains(&file) {
-            extract_recursive(&file, settings, config, &mut visited, 0, &mut modules)?;
+    let initial = gather_initial_sources(inputs, settings)?;
+    let found = reachable_dependencies(&initial, settings, config);
+    let mut modules = replay(&initial, settings, config, found)?;
+    if settings.experimental_stats {
+        let all: Vec<Result<ExperimentalStats, PipelineError>> = modules
+            .par_iter()
+            .map(|m| stats(&m.source, settings))
+            .collect();
+        for (module, result) in modules.iter_mut().zip(all) {
+            module.experimental_stats = Some(result?);
         }
     }
-    let mut complete: Vec<ExtractedModule> = Vec::new();
+    let mut complete: Vec<ExtractedModule> = Vec::with_capacity(modules.len());
+    let mut sources: BTreeSet<String> = BTreeSet::new();
     for module in modules {
         let unfollowed: Vec<ExtractedModule> = module
             .dependencies
             .iter()
-            .filter(|d| !d.followable && !complete.iter().any(|m| m.source == d.resolved))
+            .filter(|d| !d.followable && !sources.contains(&d.resolved))
             .map(|d| ExtractedModule {
                 source: d.resolved.clone(),
                 dependencies: Vec::new(),
@@ -763,6 +1021,10 @@ pub fn extract(
                 as_dependency: Some(d.clone()),
             })
             .collect();
+        // Upstream compares with the modules before this one only, so one module's duplicate
+        // unfollowed dependencies each become a module.
+        sources.insert(module.source.clone());
+        sources.extend(unfollowed.iter().map(|m| m.source.clone()));
         complete.push(module);
         complete.extend(unfollowed);
     }
@@ -842,6 +1104,44 @@ mod tests {
             )
         );
         assert_eq!(module_attributes("node:"), ("node:".to_owned(), None, None));
+    }
+
+    #[test]
+    fn a_vue_file_is_read_as_its_scripts_at_their_own_offsets() {
+        let source = "<template>\n  <div>é</div>\n</template>\n<script lang=\"ts\">\nimport a from './a';\n</script>\n<script setup>\nimport b from './b';\n</script>\n<scripts>x</scripts>\n";
+        let (script, lang) = vue_script(source);
+        assert_eq!(lang.as_deref(), Some("ts"));
+        assert_eq!(script.len(), source.len());
+        assert_eq!(script.matches('\n').count(), source.matches('\n').count());
+        let at = source.find("import a").unwrap_or_default();
+        assert_eq!(&script[at..at + 20], "import a from './a';");
+        assert!(script.contains("import b from './b';"));
+        assert!(!script.contains("template") && !script.contains("<script"));
+        assert_eq!(vue_script("<script>x").0, "        x");
+        assert_eq!(
+            attribute("setup lang='tsx'", "lang").as_deref(),
+            Some("tsx")
+        );
+        assert_eq!(attribute("lang=js setup", "lang").as_deref(), Some("js"));
+        assert_eq!(attribute("setup", "lang"), None);
+        let check = |lang: Option<&str>, flavour: Flavour| syntax_for("a.vue", lang, flavour);
+        assert!(check(Some("tsx"), Flavour::Acorn).is_jsx());
+        assert!(check(Some("ts"), Flavour::Acorn).is_typescript());
+        assert!(check(None, Flavour::Tsc).is_typescript());
+        assert!(check(Some("jsx"), Flavour::Acorn).is_jsx());
+        assert!(!check(None, Flavour::Acorn).is_typescript());
+        assert!(syntax_for("a.ts", None, Flavour::Acorn).is_typescript());
+    }
+
+    #[test]
+    fn lines_locate_offsets_in_characters() {
+        let lines = Lines::new("ab\ncé\nd");
+        assert_eq!(lines.locate(0), (1, 1));
+        assert_eq!(lines.locate(3), (2, 1));
+        assert_eq!(lines.locate(5), (2, 2));
+        assert_eq!(lines.locate(6), (2, 3));
+        assert_eq!(lines.locate(7), (3, 1));
+        assert_eq!(lines.locate(99), (3, 2));
     }
 
     #[test]

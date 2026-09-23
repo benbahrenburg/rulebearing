@@ -66,11 +66,16 @@ oxc_diagnostics = "=0.151.0"
 oxc_parser = "=0.151.0"
 oxc_semantic = "=0.151.0"
 oxc_span = "=0.151.0"
-oxc_resolver = "=11.24.3"
+# `yarn_pnp` resolves through a Yarn Plug'n'Play manifest for `externalModuleResolutionStrategy:
+# yarn-pnp` (plan 0001, sub-wave 1C); it adds the BSD-2-Clause `pnp` crate.
+oxc_resolver = { version = "=11.24.3", features = ["yarn_pnp"] }
 # Path patterns are regular expressions with linear-time matching only (docs/adr/0016). MIT/Apache-2.0.
 regex = "1"
 # Workspace and initial-source globs, as picomatch matches them. MIT (dual Unlicense).
 globset = "0.4"
+# File-level parallelism in the extractors (docs/architecture.md#technology-choices; plan 0001,
+# sub-wave 1C). MIT/Apache-2.0.
+rayon = "1"
 
 # Wave 1 (docs/plans/pending/0001-wave-1-typescript-parity.md § 1.8). All MIT or MIT/Apache-2.0.
 # The configuration evaluator is QuickJS, sandboxed (docs/adr/0006-embedded-quickjs-config-evaluator.md).
