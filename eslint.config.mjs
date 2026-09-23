@@ -13,6 +13,7 @@ export default defineConfig([
     globalIgnores([
         '**/node_modules/**',
         '**/dist/**',
+        '**/coverage/**',
         'target/**',
         'testbeds/checkouts/**',
         'conformance/**/upstream/**',
@@ -62,6 +63,13 @@ export default defineConfig([
         extends: [tseslint.configs.disableTypeChecked],
         languageOptions: { globals: globals.node },
         rules: { 'no-console': 'off' },
+    },
+    {
+        // The npm wrapper's two thin entry points, which only import compiled code from dist/
+        // (plan 0001, Step 19); the logic they call is linted type-checked in src/.
+        files: ['wrappers/npm/bin/*.js', 'wrappers/npm/scripts/*.mjs'],
+        extends: [tseslint.configs.disableTypeChecked],
+        languageOptions: { globals: globals.node },
     },
     {
         // The configuration sandbox's module system: a classic script QuickJS evaluates, with no
