@@ -136,6 +136,10 @@ jobs:
           mkdir packages
           for dir in staged/*/; do npm pack "./$dir" --pack-destination packages; done
           ls -l packages
+      # The publish step's own command, as a dry run on every trigger (no credentials needed), so
+      # a dry run proves the publish command line and not only the tarballs.
+      - name: publish dry run
+        run: for tarball in ./packages/*.tgz; do npm publish --dry-run --access public "$tarball"; done
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: npm-packages
@@ -208,12 +212,25 @@ jobs:
           VERSION: ${{ needs.npm-pack.outputs.version }}
         run: |
           shopt -s nullglob
-          platforms=(packages/rulebearing-cli-*-"$VERSION".tgz)
+          # `./` matters: npm reads a bare `packages/<file>.tgz` as a GitHub `owner/repo` shorthand
+          # and tries to clone it, which failed the v0.1.0 run before anything was published.
+          platforms=(./packages/rulebearing-cli-*-"$VERSION".tgz)
           if [ "${#platforms[@]}" -ne 6 ]; then
             echo "::error::expected 6 platform packages, found ${#platforms[@]}"
             exit 1
           fi
+          # A version already on the registry is skipped, so re-running after a partial publish
+          # finishes the release instead of failing on the packages that made it.
+          publish() { # tarball
+            local name
+            name="$(basename "$1" "-$VERSION.tgz")"
+            if npm view "$name@$VERSION" version > /dev/null 2>&1; then
+              echo "$name@$VERSION is already published; skipped"
+            else
+              npm publish "$1" --provenance --access public
+            fi
+          }
           for tarball in "${platforms[@]}"; do
-            npm publish "$tarball" --provenance --access public
+            publish "$tarball"
           done
-          npm publish "packages/rulebearing-$VERSION.tgz" --provenance --access public
+          publish "./packages/rulebearing-$VERSION.tgz"
