@@ -582,10 +582,10 @@ conformance/dependency-cruiser/scripts/run-layer-5.sh --repo sverweij/dependency
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 1C | `layer1-open.json` cleared; threshold 100 | Not started | ratio: |
-| 1C | Option fixtures for every § Options Wave 1 row | Not started | |
-| 1C | `tsPreCompilationDeps: specify`, npm classification, core modules, exit 2 reasons | Not started | |
-| 1C | Synthetic bench first run | Not started | mean: , stage split: |
+| 1C | `layer1-open.json` cleared; threshold 100 | Done | ratio: 296/296 = 1.0; `threshold.json` layer1 = 1.0, `layer1-open.json` empty; `conformance-gate-1` on [#15](https://github.com/benbahrenburg/rulebearing/pull/15) |
+| 1C | Option fixtures for every § Options Wave 1 row | Done | one mini-repo per row under `crates/rb-extract-ts/tests/options/`, asserted by `tests/options.rs` |
+| 1C | `tsPreCompilationDeps: specify`, npm classification, core modules, exit 2 reasons | Done | fixtures `ts-pre-compilation-deps`, `combined-dependencies`, `built-in-modules`, `process-builtin`, `sidecar` (`UnsupportedFile`, exit 2) |
+| 1C | Synthetic bench first run | Done | mean: about 350 ms to extract 5,500 modules and 21,550 edges (release, Apple M2 Pro, [testbeds/synth](../../../testbeds/synth/README.md)); stage split: with `cruise` in 1G |
 
 **Size:** L. **LOE:** 12 h, 1.2 weeks. **Roles:** maintainer.
 **Entry:** Plan 0000's `layer1-open.json`; `rb-model` options. **Exit:** layer 1 at 100%; option fixtures green. **Gating metric for 1G:** the synthetic mean, recorded.
