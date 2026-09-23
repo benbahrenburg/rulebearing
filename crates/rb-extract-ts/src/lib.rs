@@ -259,7 +259,9 @@ pub fn prepare(
             );
     }
     if config.yarn_pnp {
-        let base = absolute(cwd, &settings.base_dir);
+        // In the spelling the resolver gives importing files: a verbatim `\\?\` root would never
+        // contain them, and the manifest would answer for none of them.
+        let base = resolve::simplified(&absolute(cwd, &settings.base_dir));
         pnp_manifest(&base)?;
         config.pnp_root = Some(base);
     }
