@@ -26,12 +26,19 @@ const EXTRA_PATH_INDENT: usize = 6;
 pub struct ErrOptions {
     /// `err-long`: print each rule's comment and `fix`.
     pub long: bool,
-    /// Print the specifier rather than the resolved path for unresolved npm modules.
-    pub show_external_modules_unresolved: bool,
-    /// Print the specifier rather than the resolved path for unresolved aliases.
-    pub show_aliased_modules_unresolved: bool,
+    /// How unresolved dependencies are printed.
+    pub unresolved: Unresolved,
     /// Colour the output.
     pub color: bool,
+}
+
+/// `showExternalModulesUnresolved` and `showAliasedModulesUnresolved`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Unresolved {
+    /// Print the specifier rather than the resolved path for unresolved npm modules.
+    pub external: bool,
+    /// Print the specifier rather than the resolved path for unresolved aliases.
+    pub aliased: bool,
 }
 
 impl ErrOptions {
@@ -45,8 +52,10 @@ impl ErrOptions {
         };
         Self {
             long,
-            show_external_modules_unresolved: flag("showExternalModulesUnresolved"),
-            show_aliased_modules_unresolved: flag("showAliasedModulesUnresolved"),
+            unresolved: Unresolved {
+                external: flag("showExternalModulesUnresolved"),
+                aliased: flag("showAliasedModulesUnresolved"),
+            },
             color,
         }
     }
@@ -83,7 +92,7 @@ pub fn dependency_to(violation: &Value, show_external: bool, show_aliased: bool)
     text(violation, "to")
 }
 
-fn format_violators(v: &Value, o: &ErrOptions) -> String {
+fn format_violators(v: &Value, o: ErrOptions) -> String {
     let bold = |t: &str| styled(Some(Style::Bold), t, o.color);
     let from = bold(&text(v, "from"));
     let dependency = || {
@@ -91,8 +100,8 @@ fn format_violators(v: &Value, o: &ErrOptions) -> String {
             "{from} → {}",
             bold(&dependency_to(
                 v,
-                o.show_external_modules_unresolved,
-                o.show_aliased_modules_unresolved
+                o.unresolved.external,
+                o.unresolved.aliased
             ))
         )
     };
@@ -124,7 +133,7 @@ fn format_violators(v: &Value, o: &ErrOptions) -> String {
     }
 }
 
-fn format_violation(v: &Value, comment: Option<&str>, fix: Option<&str>, o: &ErrOptions) -> String {
+fn format_violation(v: &Value, comment: Option<&str>, fix: Option<&str>, o: ErrOptions) -> String {
     let sev = severity(v);
     let mut out = format!(
         "{} {}: {}",
@@ -206,7 +215,7 @@ fn environment_issues(summary: &Value, color: bool) -> String {
 }
 
 /// Renders `err` or `err-long`.
-pub fn render(result: &Value, o: &ErrOptions) -> Rendered {
+pub fn render(result: &Value, o: ErrOptions) -> Rendered {
     let summary = result.get("summary").cloned().unwrap_or(Value::Null);
     let rule_set = summary.get("ruleSetUsed");
     let violations: Vec<&Value> = summary
@@ -278,10 +287,10 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    fn result(violations: Value, extra: Value) -> Value {
-        let mut summary = json!({ "violations": violations, "error": 1, "warn": 0, "info": 0, "totalCruised": 3, "totalDependenciesCruised": 4 });
-        if let (Value::Object(s), Value::Object(e)) = (&mut summary, extra) {
-            s.extend(e);
+    fn result(violations: &Value, extra: &Value) -> Value {
+        let mut summary = json!({ "violations": violations.clone(), "error": 1, "warn": 0, "info": 0, "totalCruised": 3, "totalDependenciesCruised": 4 });
+        if let (Value::Object(s), Some(e)) = (&mut summary, extra.as_object()) {
+            s.extend(e.clone());
         }
         json!({ "modules": [], "summary": summary })
     }
@@ -295,15 +304,15 @@ mod tests {
 
     #[test]
     fn nothing_found() {
-        let r = render(&result(json!([]), json!({ "error": 0 })), &plain(false));
+        let r = render(&result(&json!([]), &json!({ "error": 0 })), plain(false));
         assert_eq!(
             r.output,
             "\n✔ no dependency violations found (3 modules, 4 dependencies cruised)\n\n"
         );
         assert_eq!(r.exit_code, 0);
         let ignored = render(
-            &result(json!([]), json!({ "error": 0, "ignore": 2 })),
-            &plain(false),
+            &result(&json!([]), &json!({ "error": 0, "ignore": 2 })),
+            plain(false),
         );
         assert!(ignored.output.contains("‼ 2 known violations ignored"));
     }
@@ -319,7 +328,7 @@ mod tests {
             { "from": "x", "to": "y", "rule": { "name": "untyped", "severity": "error" } },
             { "type": "dependency", "from": "q", "to": "z", "rule": { "name": "gone", "severity": "ignore" } }
         ]);
-        let out = render(&result(v, json!({})), &plain(false)).output;
+        let out = render(&result(&v, &json!({})), plain(false)).output;
         assert!(out.contains("error dep: a → b\n"));
         assert!(out.contains("warn orphan: m\n"));
         assert!(
@@ -343,13 +352,13 @@ mod tests {
             { "type": "dependency", "from": "c", "to": "d", "rule": { "name": "bare", "severity": "error" } }
         ]);
         let rules = json!({ "ruleSetUsed": { "forbidden": [{ "name": "dep", "comment": "why adr:0001" }] } });
-        let out = render(&result(v, rules), &plain(true)).output;
+        let out = render(&result(&v, &rules), plain(true)).output;
         assert!(
             out.contains("error dep: a → b\n    why adr:0001\n    fix: Move it.\n"),
             "{out}"
         );
         assert!(out.contains("error bare: c → d\n    -\n"), "{out}");
-        let short = render(&result(json!([{ "type": "dependency", "from": "a", "to": "b", "rule": { "name": "dep", "severity": "error" }, "fix": "x" }]), json!({})), &plain(false)).output;
+        let short = render(&result(&json!([{ "type": "dependency", "from": "a", "to": "b", "rule": { "name": "dep", "severity": "error" }, "fix": "x" }]), &json!({})), plain(false)).output;
         assert!(!short.contains("fix:"));
     }
 
@@ -366,7 +375,7 @@ mod tests {
             true,
             false,
         );
-        assert!(o.show_external_modules_unresolved && o.long && !o.show_aliased_modules_unresolved);
+        assert!(o.unresolved.external && o.long && !o.unresolved.aliased);
     }
 
     #[test]
@@ -374,10 +383,10 @@ mod tests {
         let issues = json!({ "environment": { "issues": [{ "severity": "warn", "name": "missing-typescript", "description": "d" }] } });
         let colored = render(
             &result(
-                json!([{ "type": "module", "from": "m", "to": "m", "rule": { "name": "r", "severity": "error" } }]),
-                issues,
+                &json!([{ "type": "module", "from": "m", "to": "m", "rule": { "name": "r", "severity": "error" } }]),
+                &issues,
             ),
-            &ErrOptions {
+            ErrOptions {
                 color: true,
                 ..ErrOptions::default()
             },

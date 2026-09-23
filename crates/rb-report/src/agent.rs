@@ -57,12 +57,15 @@ fn steps(v: &Value, key: &str) -> usize {
     v.get(key).and_then(Value::as_array).map_or(0, Vec::len)
 }
 
+/// One rule's findings: name, severity, and each finding with its weight.
+type Group = (String, String, Vec<(u64, Value)>);
+
 /// Renders `agent`.
 pub fn render(result: &Value, max_findings: usize) -> Rendered {
     let summary = result.get("summary").cloned().unwrap_or(Value::Null);
     let rule_set = summary.get("ruleSetUsed");
     let fan = fan_in(result);
-    let mut groups: Vec<(String, String, Vec<(u64, Value)>)> = Vec::new();
+    let mut groups: Vec<Group> = Vec::new();
     for v in summary
         .get("violations")
         .and_then(Value::as_array)

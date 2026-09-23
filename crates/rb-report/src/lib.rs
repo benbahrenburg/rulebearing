@@ -149,7 +149,7 @@ pub fn render_with(
             let section = reporter_options(output_type);
             err::render(
                 result,
-                &err::ErrOptions::from_reporter_options(section.as_ref(), long, options.color),
+                err::ErrOptions::from_reporter_options(section.as_ref(), long, options.color),
             )
         }
         "json" => json::render(result, options.strict_schema),
