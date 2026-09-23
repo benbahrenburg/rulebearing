@@ -30,6 +30,7 @@ pub mod exit;
 pub mod pipeline;
 pub mod progress;
 pub mod protocol;
+pub mod ratchets;
 
 use std::fmt::Write as _;
 
@@ -141,6 +142,16 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
     match cli.command {
         Command::Cruise(a) => cmd::cruise::run(ctx, &a),
         Command::Fmt(a) => cmd::fmt::run(ctx, &a),
+        Command::Rules(a) => cmd::rules::run(ctx, &a),
+        Command::Explain(a) => cmd::explain::run(ctx, &a),
+        Command::Test(a) => cmd::test_rules::run(ctx, &a),
+        Command::CanImport(a) => cmd::can_import::run(ctx, &a),
+        Command::Count(a) => cmd::count::run(ctx, &a),
+        Command::Config(c) => cmd::config::run(ctx, &c),
+        Command::Hooks(c) => cmd::hooks::run(ctx, &c),
+        Command::Summary(a) => cmd::summary::run(ctx, &a),
+        Command::Impact(a) => cmd::impact::run(ctx, &a),
+        Command::Attest(a) => cmd::attest::run(ctx, &a),
         Command::Validate(_) => match ctx.read_stdin() {
             Ok(text) => protocol::validate(&text),
             Err(e) => Outcome::failed(

@@ -1153,6 +1153,70 @@
       ],
       "type": "string"
     },
+    "RatchetResult": {
+      "additionalProperties": false,
+      "description": "One ratchet's result: `summary.ratchets[]`\n([ADR-0029](../../../docs/adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)).",
+      "properties": {
+        "budget": {
+          "description": "The budget file.",
+          "type": "string"
+        },
+        "ceiling": {
+          "description": "The budget's ceiling; absent when the budget cannot be read.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "count": {
+          "description": "Matching direct edges.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "name": {
+          "description": "The ratchet name.",
+          "type": "string"
+        },
+        "status": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/RatchetStatus"
+            }
+          ],
+          "description": "How the count compares with the ceiling."
+        }
+      },
+      "required": [
+        "name",
+        "budget",
+        "count",
+        "status"
+      ],
+      "type": "object"
+    },
+    "RatchetStatus": {
+      "description": "`summary.ratchets[].status`.",
+      "oneOf": [
+        {
+          "const": "held",
+          "description": "At or under the ceiling.",
+          "type": "string"
+        },
+        {
+          "const": "exceeded",
+          "description": "Over the ceiling: one error.",
+          "type": "string"
+        },
+        {
+          "const": "no-budget",
+          "description": "The budget cannot be read: the run is untrustworthy.",
+          "type": "string"
+        }
+      ]
+    },
     "Reachable": {
       "additionalProperties": false,
       "description": "A reachability verdict for one rule.",
@@ -1376,6 +1440,16 @@
           "additionalProperties": true,
           "description": "The options, verbatim.",
           "type": "object"
+        },
+        "ratchets": {
+          "description": "Additive: each ratchet's count against its budget\n([ADR-0029](../../../docs/adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)).",
+          "items": {
+            "$ref": "#/definitions/RatchetResult"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
         },
         "ruleSetUsed": {
           "additionalProperties": true,

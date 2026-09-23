@@ -19,7 +19,7 @@ use crate::cli::FmtArgs;
 use crate::cmd::cruise::color;
 use crate::context::Context;
 use crate::exit::RunExit;
-use crate::{Outcome, write_output};
+use crate::{Outcome, ratchets, write_output};
 
 fn failed(code: RunExit, message: &str) -> Outcome {
     Outcome {
@@ -110,10 +110,13 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
     if let Err(message) = write_output(ctx, &args.output_to, &rendered.output, &mut stdout) {
         return failed(RunExit::Untrustworthy, &message);
     }
-    let code = if args.exit_code {
-        RunExit::Violations(document.summary.error)
-    } else {
+    let (exceeded, no_budget) = ratchets::from_summary(document.summary.ratchets.as_deref());
+    let code = if !args.exit_code {
         RunExit::Violations(0)
+    } else if no_budget {
+        RunExit::Untrustworthy
+    } else {
+        RunExit::Violations(document.summary.error + exceeded)
     };
     Outcome {
         stdout,

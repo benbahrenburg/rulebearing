@@ -44,6 +44,28 @@ pub enum Command {
     Cruise(CruiseArgs),
     /// Re-report a saved result without extracting: dependency-cruiser's `depcruise-fmt`.
     Fmt(FmtArgs),
+    /// Every rule, its family, severity and statistics
+    Rules(crate::cmd::rules::RulesArgs),
+    /// One rule: its sentence, its violations and the edges it matched
+    Explain(crate::cmd::explain::ExplainArgs),
+    /// Run each rule's examples against a synthetic graph
+    Test(crate::cmd::test_rules::TestArgs),
+    /// Would this import be allowed? Answers from the graph, before the import is written
+    CanImport(crate::cmd::can_import::CanImportArgs),
+    /// The edges a ratchet counts, against its budget
+    Count(crate::cmd::count::CountArgs),
+    /// Convert, expand or lint a configuration
+    #[command(subcommand)]
+    Config(crate::cmd::config::ConfigCommand),
+    /// Install agent hooks
+    #[command(subcommand)]
+    Hooks(crate::cmd::hooks::HooksCommand),
+    /// A brief for an agent starting a session
+    Summary(crate::cmd::summary::SummaryArgs),
+    /// What a file is subject to, before an edit
+    Impact(crate::cmd::impact::ImpactArgs),
+    /// Write or verify a receipt of the configuration, inputs and results
+    Attest(crate::cmd::attest::AttestArgs),
     /// Conformance gate 1 layer 2's protocol (hidden).
     #[command(hide = true)]
     Validate(ProtocolArgs),
@@ -122,6 +144,18 @@ pub struct ConfigArgs {
     pub require_comment_token: bool,
 }
 
+/// Where a query command finds the graph.
+#[derive(Debug, Clone, Default, Args)]
+pub struct GraphArgs {
+    /// A saved cruise result to query (default: .graph/cruise.json when it exists, else a fresh
+    /// extraction of the paths)
+    #[arg(long, value_name = "FILE")]
+    pub graph: Option<String>,
+    /// Files, directories and globs to extract when there is no saved graph
+    #[arg(value_name = "FILES-OR-DIRECTORIES")]
+    pub paths: Vec<String>,
+}
+
 /// `cruise`.
 #[derive(Debug, Clone, Default, Args)]
 #[command(after_help = EXIT_CODES)]
@@ -133,6 +167,10 @@ pub struct CruiseArgs {
     /// Configuration
     #[command(flatten)]
     pub config: ConfigArgs,
+    /// Evaluate the rules over this graph document instead of extracting (a cruise result, or a
+    /// graph built by another tool, such as scripts/cargo-graph.sh for this repository)
+    #[arg(long, value_name = "FILE")]
+    pub graph: Option<String>,
     /// Output type: err, err-long, json, text, csv, teamcity, azure-devops, github-annotations, agent, null
     #[arg(short = 'T', long, value_name = "TYPE")]
     pub output_type: Option<String>,

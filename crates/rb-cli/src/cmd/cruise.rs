@@ -23,6 +23,7 @@ use crate::context::Context;
 use crate::exit::RunExit;
 use crate::pipeline::{self, RunError, RunOptions};
 use crate::progress::Progress;
+use crate::ratchets::{self, Ratchets};
 use crate::{Outcome, configure, write_output};
 
 /// The languages and extensions this build reads (`--info`).
@@ -122,14 +123,42 @@ pub fn run(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
         ),
         paths: args.paths.clone(),
     };
-    let run = match pipeline::run(ctx, &effective, &options, &mut progress) {
+    let result = match &args.graph {
+        Some(file) => match pipeline::load_graph(ctx, file) {
+            Ok(mut document) => {
+                pipeline::reset(&mut document);
+                progress.stage("read graph");
+                pipeline::evaluate_document(ctx, &effective, document, &options, &mut progress)
+            }
+            Err(message) => {
+                return Outcome::failed(
+                    RunExit::Untrustworthy,
+                    format!("{stderr}rulebearing cruise: {message}\n"),
+                );
+            }
+        },
+        None => pipeline::run(ctx, &effective, &options, &mut progress),
+    };
+    let mut run = match result {
         Ok(run) => run,
         Err(e) => return failed(&e, &stderr),
     };
+    let ratchets = ratchets::evaluate(ctx, &effective, &run.evaluation.document, options.liveness);
+    if !ratchets.results.is_empty() {
+        run.document.summary.ratchets = Some(ratchets.results.clone());
+    }
+    if !ratchets.vacuous.is_empty() {
+        run.document
+            .summary
+            .vacuous_rules
+            .get_or_insert_with(Vec::new)
+            .extend(ratchets.vacuous.iter().cloned());
+    }
     report(
         ctx,
         &effective,
         &run,
+        &ratchets,
         args,
         &output_type,
         &output_to,
@@ -146,6 +175,7 @@ fn report(
     ctx: &Context<'_>,
     config: &Config,
     run: &pipeline::Run,
+    ratchets: &Ratchets,
     args: &CruiseArgs,
     output_type: &str,
     output_to: &str,
@@ -189,8 +219,11 @@ fn report(
             expired.kind, expired.name, expired.expires
         );
     }
-    let code = if run.evaluation.vacuous.is_empty() {
-        RunExit::Violations(run.evaluation.error_count())
+    stderr.push_str(&ratchets::messages(config, ratchets));
+    let code = if ratchets.untrustworthy() && run.evaluation.vacuous.is_empty() {
+        RunExit::Untrustworthy
+    } else if run.evaluation.vacuous.is_empty() {
+        RunExit::Violations(run.evaluation.error_count() + ratchets.exceeded())
     } else {
         for v in &run.evaluation.vacuous {
             let _ = writeln!(
@@ -201,7 +234,6 @@ fn report(
         }
         RunExit::Untrustworthy
     };
-    let _ = config;
     Outcome {
         stdout,
         stderr,

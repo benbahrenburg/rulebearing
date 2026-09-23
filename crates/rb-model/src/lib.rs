@@ -38,8 +38,8 @@ pub use code::{AttributeElement, CallElement, CodeLayer, Location, MemberElement
 pub use document::{
     Change, Dependency, Environment, EnvironmentIssue, ExperimentalStats, ExtensionFound, Folder,
     FolderDependency, FolderDependent, GraphDocument, Inspected, InstabilityMetric, MiniDependency,
-    Module, Reachable, ReachedModule, Reaches, Receipt, RevisionData, RuleSummary, Summary,
-    TranspilerFound, VacuousRule, Violation, ViolationMetrics,
+    Module, RatchetResult, RatchetStatus, Reachable, ReachedModule, Reaches, Receipt, RevisionData,
+    RuleSummary, Summary, TranspilerFound, VacuousRule, Violation, ViolationMetrics,
 };
 pub use extract::{ExtractError, Extraction, Extractor, Warning};
 pub use options::{DotnetOptions, PythonOptions, TypeScriptOptions};

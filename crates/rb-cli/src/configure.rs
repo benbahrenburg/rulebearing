@@ -90,6 +90,24 @@ pub fn load(ctx: &mut Context<'_>, args: &ConfigArgs) -> Result<Option<Config>, 
     Ok(Some(config))
 }
 
+/// Loads the configuration a command cannot run without.
+///
+/// # Errors
+/// An [`crate::Outcome`] to return: exit 3 with the reason, or when there is no configuration.
+pub fn required(ctx: &mut Context<'_>, args: &ConfigArgs) -> Result<Config, crate::Outcome> {
+    match load(ctx, args) {
+        Ok(Some(config)) => Ok(config),
+        Ok(None) => Err(crate::Outcome::failed(
+            crate::RunExit::InvalidConfig,
+            "rulebearing: no configuration found; pass --config, or create rulebearing.yaml (`rulebearing init`)\n",
+        )),
+        Err(e) => Err(crate::Outcome::failed(
+            crate::RunExit::InvalidConfig,
+            format!("rulebearing: {e}\n"),
+        )),
+    }
+}
+
 fn filter(pattern: &str) -> PathFilter {
     PathFilter::Patterns(Patterns::One(pattern.to_owned()))
 }
