@@ -41,4 +41,29 @@ The workspace version in `Cargo.toml` is the release version; tag the commit tha
 
 ## Wrappers (from waves 1 and 2)
 
-The npm wrapper (wave 1) and the NuGet and PyPI wrappers (wave 2) replace the placeholders with packages that carry the platform binary and nothing else ([wrappers/README.md](../wrappers/README.md)). Their publishing steps join `release.yml` with the plans that build them, so one tag releases the binary and every wrapper at one version.
+The npm wrapper (wave 1) and the NuGet and PyPI wrappers (wave 2) replace the placeholders with packages that carry the platform binary and nothing else ([wrappers/README.md](../wrappers/README.md)). Their publishing steps join `release.yml` with the plans that build them, so one tag releases the binary and every wrapper at one version ([FR-DIST-01](prd.md#fr-dist-01)).
+
+## The npm wrapper (from wave 1)
+
+[`wrappers/npm/`](../wrappers/npm/README.md) is the `rulebearing` package: a launcher that runs the binary from one of six unscoped platform packages, `rulebearing-cli-<platform>`, listed under `optionalDependencies` ([plan 0001 Step 19](plans/pending/0001-wave-1-typescript-parity.md#step-19-npm-package-github-action-release-1g), [ADR-0020](adr/0020-single-name-across-registries.md); the `@rulebearing` scope is not held). The committed `package.json` carries the workspace version; the release version is stamped at staging time and the source tree is never edited.
+
+[`release.yml`](../.github/workflows/release.yml) adds three jobs after `binaries`:
+
+| Job | Runs on | What it does |
+| --- | --- | --- |
+| `npm-pack` | every trigger | checks that a tag carries the workspace version, builds the launcher, runs `wrappers/npm/scripts/stage.mjs` over the six archives, and packs the seven packages with `npm pack` into the `npm-packages` artefact |
+| `npm-install-check` | every trigger | on macOS arm64, Linux x64 and Windows x64, installs `rulebearing` and the host's platform package from those tarballs into an empty project and asserts that `npx rulebearing --version` prints `rulebearing <version>` |
+| `npm-publish` | a `vX.Y.Z` tag only, after `release` and the install check | `npm publish --provenance --access public` for the six platform packages, then `rulebearing`, from the same tarballs |
+
+A dry run (a manual run or an `-rc` tag) therefore packs and install-checks exactly what a release would publish, and publishes nothing. `npm-publish` alone holds `id-token: write`, which provenance needs; every other job keeps `contents: read` ([ADR-0025](adr/0025-ci-and-supply-chain-hardening.md)). It reads the `NPM_TOKEN` repository secret, an npm automation token with publish rights on the seven package names; the platform names are created by the first publish.
+
+To stage and install the packages by hand on one machine, without publishing:
+
+```sh
+cargo build --release -p rb-cli
+mkdir -p /tmp/rb/dist /tmp/rb/content && cp target/release/rulebearing LICENSE README.md /tmp/rb/content/
+tar -czf /tmp/rb/dist/rulebearing-aarch64-apple-darwin.tar.gz -C /tmp/rb/content .   # the host's target
+(cd wrappers/npm && npm run stage -- /tmp/rb/dist 0.0.1 /tmp/rb/staged --partial)
+npm pack /tmp/rb/staged/rulebearing /tmp/rb/staged/rulebearing-cli-darwin-arm64 --pack-destination /tmp/rb
+(mkdir -p /tmp/rb/project && cd /tmp/rb/project && npm init -y && npm install /tmp/rb/*.tgz && npx rulebearing --version)
+```

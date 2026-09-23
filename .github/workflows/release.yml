@@ -1,11 +1,13 @@
 # Builds the `rulebearing` binary for the six targets of docs/architecture.md#distribution and, on a
-# release tag, attaches them to a GitHub release. Registry publishing of the wrappers joins this
-# workflow with the plans that fill them (wave 1: npm; wave 2: NuGet, PyPI); the 0.0.1 name
-# reservations are a manual, one-day procedure in docs/release.md (docs/adr/0020).
+# release tag, attaches them to a GitHub release and publishes the npm wrapper at the same version
+# (wave 1; NuGet and PyPI join with wave 2). The 0.0.1 name reservations were a manual, one-day
+# procedure in docs/release.md (docs/adr/0020).
 #
 # Dry run: a tag ending in `-rc.N` (for example v0.0.1-rc.1), or a manual run with `dry_run` left
-# on, builds every target and uploads the binaries as a workflow artefact without releasing.
-# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 11. Hardening: docs/adr/0025.
+# on, builds every target, stages and packs the npm packages, runs the npm install matrix from the
+# packed tarballs, and uploads everything as workflow artefacts without releasing or publishing.
+# Plans: docs/plans/pending/0000-wave-0-spike.md, Step 11 (binaries);
+# docs/plans/pending/0001-wave-1-typescript-parity.md, Step 19 (npm). Hardening: docs/adr/0025.
 name: release
 
 on:
@@ -89,3 +91,129 @@ jobs:
           files: |
             dist/*.tar.gz
             dist/SHA256SUMS
+
+  npm-pack:
+    name: npm packages
+    needs: binaries
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: rulebearing-*
+          path: dist
+          merge-multiple: true
+      # The workspace version is the release version (docs/release.md); a tag must carry it.
+      - name: version
+        id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          version="$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' Cargo.toml)"
+          if [ "$REF_TYPE" = tag ]; then
+            case "${REF_NAME#v}" in
+              "$version" | "$version"-rc.*) ;;
+              *) echo "::error::tag $REF_NAME does not carry the workspace version $version"; exit 1 ;;
+            esac
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - run: npm ci --no-audit --no-fund --ignore-scripts
+      - run: npm run build
+        working-directory: wrappers/npm
+      # Six platform packages and the main package, version stamped (wrappers/npm/src/stage.ts).
+      - run: node wrappers/npm/scripts/stage.mjs dist "$VERSION" staged
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+      - name: pack
+        run: |
+          mkdir packages
+          for dir in staged/*/; do npm pack "./$dir" --pack-destination packages; done
+          ls -l packages
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: npm-packages
+          path: packages/*.tgz
+          if-no-files-found: error
+
+  # The install matrix of plan 0001 Step 19: install the packed tarballs into an empty project and
+  # run the command npm puts on the path. Runs on every trigger, so a dry run proves it too.
+  npm-install-check:
+    name: npx rulebearing (${{ matrix.os }})
+    needs: npm-pack
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, package: rulebearing-cli-darwin-arm64 }
+          - { os: ubuntu-latest, package: rulebearing-cli-linux-x64-gnu }
+          - { os: windows-latest, package: rulebearing-cli-win32-x64-msvc }
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: npm-packages
+          path: packages
+      - name: install and run
+        shell: bash
+        env:
+          VERSION: ${{ needs.npm-pack.outputs.version }}
+          PLATFORM_PACKAGE: ${{ matrix.package }}
+        run: |
+          packages="$PWD/packages"
+          project="$RUNNER_TEMP/npx-check"
+          mkdir -p "$project"
+          cd "$project"
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund "$packages/rulebearing-$VERSION.tgz" "$packages/$PLATFORM_PACKAGE-$VERSION.tgz"
+          out="$(npx --no-install rulebearing --version | tr -d '\r')"
+          echo "$out"
+          test "$out" = "rulebearing $VERSION"
+
+  npm-publish:
+    name: npm publish
+    needs: [npm-pack, npm-install-check, release]
+    # Only a real tag publishes: not a manual run, not an -rc tag (the same rule as `release`).
+    if: github.event_name == 'push' && !contains(github.ref_name, '-rc')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # `npm publish --provenance` signs with the job's OIDC token, so this job alone may request
+    # one (plan 0001, Step 19; docs/adr/0025 keeps every other job at contents: read).
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: npm-packages
+          path: packages
+      # The six platform packages first, so the main package never points at a missing version.
+      - name: publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ needs.npm-pack.outputs.version }}
+        run: |
+          shopt -s nullglob
+          platforms=(packages/rulebearing-cli-*-"$VERSION".tgz)
+          if [ "${#platforms[@]}" -ne 6 ]; then
+            echo "::error::expected 6 platform packages, found ${#platforms[@]}"
+            exit 1
+          fi
+          for tarball in "${platforms[@]}"; do
+            npm publish "$tarball" --provenance --access public
+          done
+          npm publish "packages/rulebearing-$VERSION.tgz" --provenance --access public
