@@ -16,25 +16,20 @@
 
 use std::cmp::Ordering;
 
-/// The primary weight of a character: its position in the root order, case folded.
-fn primary(c: char) -> u32 {
-    // The CLDR root order of ASCII punctuation, which differs from code point order.
-    const ORDER: &[char] = &[
-        '\t', '\n', '\r', ' ', '_', '-', ',', ';', ':', '!', '?', '.', '\'', '"', '(', ')', '[',
-        ']', '{', '}', '@', '*', '/', '\\', '&', '#', '%', '`', '^', '+', '<', '=', '>', '|', '~',
-        '$',
-    ];
-    if let Some(at) = ORDER.iter().position(|p| *p == c) {
-        return u32::try_from(at).unwrap_or(0);
-    }
-    let base = u32::try_from(ORDER.len()).unwrap_or(0);
-    if c.is_ascii_digit() {
-        return base + (c as u32 - '0' as u32);
-    }
-    if c.is_ascii_alphabetic() {
-        return base + 10 + (c.to_ascii_lowercase() as u32 - 'a' as u32);
-    }
-    0x1000 + c as u32
+/// The CLDR root order of ASCII: punctuation and symbols (which differ from code point order),
+/// then digits, then letters, case folded.
+const ORDER: &str = "\t\n\r _-,;:!?.'\"()[]{}@*/\\&#%`^+<=>|~$0123456789abcdefghijklmnopqrstuvwxyz";
+
+/// The primary weight of a character: the root order's class (0 for ASCII in [`ORDER`], 1 for
+/// anything else) and the position within it (for anything else, its code point).
+fn primary(c: char) -> (u8, u32) {
+    let folded = c.to_ascii_lowercase();
+    ORDER
+        .chars()
+        .position(|o| o == folded)
+        .map_or((1, u32::from(c)), |at| {
+            (0, u32::try_from(at).unwrap_or(u32::MAX))
+        })
 }
 
 /// `a.localeCompare(b)` for the strings dependency-cruiser sorts.
@@ -58,6 +53,39 @@ mod tests {
     fn sorted(mut items: Vec<&str>) -> Vec<&str> {
         items.sort_by(|a, b| compare(a, b));
         items
+    }
+
+    #[test]
+    fn weights_order_punctuation_digits_letters_then_the_rest() {
+        // Each class in order, and each class in order within itself: punctuation by the root
+        // table, digits 0 to 9, letters a to z without case, then anything else by code point.
+        let chain = [
+            "$", "0", "1", "5", "9", "a", "B", "m", "Z", "\u{e9}", "\u{ff}", "\u{4e00}",
+        ];
+        for pair in chain.windows(2) {
+            assert_eq!(
+                compare(pair[0], pair[1]),
+                Ordering::Less,
+                "{} < {}",
+                pair[0],
+                pair[1]
+            );
+            assert_eq!(
+                compare(pair[1], pair[0]),
+                Ordering::Greater,
+                "{} > {}",
+                pair[1],
+                pair[0]
+            );
+        }
+        assert!(primary('~') < primary('0') && primary('9') < primary('a'));
+        assert_eq!(
+            compare("1b", "5a"),
+            Ordering::Less,
+            "digits weigh before the next character"
+        );
+        assert_eq!(primary('A'), primary('a'));
+        assert_eq!(compare("abc", "abc"), Ordering::Equal);
     }
 
     #[test]

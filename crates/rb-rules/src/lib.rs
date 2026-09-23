@@ -17,10 +17,10 @@
 //!
 //! | Module | Does |
 //! | --- | --- |
-//! | [`evaluate`] | the entry point: derivations, validation, summary, liveness, ids |
+//! | [`mod@evaluate`] | the entry point: derivations, validation, summary, liveness, ids |
 //! | [`validate`] | one module, dependency or folder against the rules |
 //! | [`matchers`] | the restriction matchers |
-//! | [`derive`] | cycles, dependents, orphans, reachability, instability |
+//! | [`mod@derive`] | cycles, dependents, orphans, reachability, instability |
 //! | [`folders`] | the folder layer |
 //! | [`summarize`] | violations, counts, `ruleSetUsed`, `optionsUsed` |
 //! | [`compare`] | the orderings output is sorted by |
