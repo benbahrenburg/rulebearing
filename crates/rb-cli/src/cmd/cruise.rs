@@ -213,6 +213,11 @@ fn report(
         strict_schema: args.strict_schema,
         max_findings: args.max_findings,
         timestamp: ctx.timestamp.clone(),
+        path_prefix: if output_type == "github-annotations" {
+            ctx.repository_prefix()
+        } else {
+            String::new()
+        },
     };
     let rendered = match rb_report::render(output_type, &value, &options) {
         Ok(r) => r,

@@ -63,4 +63,4 @@ The receipt holds SHA-256 hashes of the configuration files, of every extracted 
 | Situation | Command |
 | --- | --- |
 | No rules yet | `rulebearing init` proposes a `rulebearing.yaml` from what the repository holds (apps and packages, feature folders, framework entry points), baselines what fails today, and writes it only when a cruise with it exits 0 |
-| Already on dependency-cruiser | `rulebearing adopt` keeps the configuration as it is, writes a `rulebearing.yaml` that extends it with a baseline (each entry with an owner and an expiry), adds the CI step, the pre-commit hook and `docs/architecture/rulebearing.md`, and opens one pull request that is green |
+| Already on dependency-cruiser | `rulebearing adopt` keeps the configuration as it is, writes a `rulebearing.yaml` that extends it with a baseline (each entry with an owner and an expiry), adds the CI step and the pre-commit hook at the repository root (running in the configuration's folder when it is below the root) and `docs/architecture/rulebearing.md` beside the configuration, and opens one pull request that is green |
