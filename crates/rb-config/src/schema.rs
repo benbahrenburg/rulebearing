@@ -179,14 +179,29 @@ pub struct DependencyRulesSchema {
     pub required: Option<Vec<Rule>>,
 }
 
-/// The schema as pretty JSON with a trailing newline.
+/// Rebuilds every object with its keys sorted, so the output does not depend on whether a
+/// dependency enabled `serde_json`'s `preserve_order` (feature unification differs between
+/// `cargo test -p rb-config` and `cargo test --workspace`).
+fn sorted(value: Value) -> Value {
+    match value {
+        Value::Object(map) => {
+            let mut entries: Vec<(String, Value)> = map.into_iter().collect();
+            entries.sort_by(|a, b| a.0.cmp(&b.0));
+            Value::Object(entries.into_iter().map(|(k, v)| (k, sorted(v))).collect())
+        }
+        Value::Array(items) => Value::Array(items.into_iter().map(sorted).collect()),
+        other => other,
+    }
+}
+
+/// The schema as pretty JSON with sorted keys and a trailing newline.
 pub fn generate() -> String {
     let mut schema = schemars::schema_for!(NativeFile);
     schema.insert(
         "$id".into(),
         Value::String("https://benbahrenburg.github.io/rulebearing/schema/config-v1.json".into()),
     );
-    let mut text = serde_json::to_string_pretty(&schema).unwrap_or_default();
+    let mut text = serde_json::to_string_pretty(&sorted(schema.to_value())).unwrap_or_default();
     text.push('\n');
     text
 }
