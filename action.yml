@@ -29,6 +29,10 @@ inputs:
     description: The reporter. github-annotations puts each finding on the line it concerns.
     required: false
     default: github-annotations
+  working-directory:
+    description: The folder to run in, where the configuration and the paths in `args` are, such as `web` in a monorepo whose dependency-cruiser configuration is not at the root. Module paths are relative to it, as they are for dependency-cruiser run there.
+    required: false
+    default: "."
   binary:
     description: A rulebearing binary already on the runner, used instead of downloading one (this repository's CI tests the action with its own build).
     required: false
@@ -83,6 +87,7 @@ runs:
         echo "$dir" >> "$GITHUB_PATH"
     - name: rulebearing cruise
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       env:
         ARGS: ${{ inputs.args }}
         OUTPUT_TYPE: ${{ inputs.output-type }}
@@ -92,4 +97,10 @@ runs:
         # -d '' reads every line of a multi-line args block; read returns 1 at the end of input.
         read -r -d '' -a extra <<< "$ARGS" || true
         # The ${x+...} form keeps an empty list working under set -u on macOS's bash 3.2.
-        "${BINARY:-rulebearing}" cruise --output-type "$OUTPUT_TYPE" ${extra[@]+"${extra[@]}"}
+        # A relative binary path is the workspace's, whatever the working directory.
+        case "$BINARY" in
+          "") binary=rulebearing ;;
+          /*) binary="$BINARY" ;;
+          *) binary="$GITHUB_WORKSPACE/$BINARY" ;;
+        esac
+        "$binary" cruise --output-type "$OUTPUT_TYPE" ${extra[@]+"${extra[@]}"}

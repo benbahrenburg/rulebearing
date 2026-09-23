@@ -127,6 +127,10 @@ pub struct ReportOptions {
     pub max_findings: Option<usize>,
     /// The timestamp `teamcity` writes, ISO 8601 without `Z`.
     pub timestamp: String,
+    /// `github-annotations`: the run's folder relative to the repository root (`web/`), put before
+    /// each `file=`, because GitHub places an annotation by its path from the root. Empty at the
+    /// root.
+    pub path_prefix: String,
 }
 
 /// Renders `result` as `output_type`.
@@ -182,7 +186,7 @@ pub fn render_with(
         "csv" => csv::render(result),
         "teamcity" => teamcity::render(result, &options.timestamp),
         "azure-devops" => azure_devops::render(result),
-        "github-annotations" => github_annotations::render(result),
+        "github-annotations" => github_annotations::render(result, &options.path_prefix),
         "agent" => agent::render(
             result,
             options.max_findings.unwrap_or(agent::DEFAULT_MAX_FINDINGS),

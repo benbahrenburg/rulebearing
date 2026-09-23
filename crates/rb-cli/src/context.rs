@@ -43,6 +43,19 @@ impl Context<'_> {
             self.cwd.join(path)
         }
     }
+
+    /// The working directory relative to the root of its git repository, with a trailing `/`
+    /// (`web/`), or empty at the root or outside a repository.
+    pub fn repository_prefix(&self) -> String {
+        std::process::Command::new("git")
+            .args(["rev-parse", "--show-prefix"])
+            .current_dir(&self.cwd)
+            .output()
+            .ok()
+            .filter(|o| o.status.success())
+            .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned())
+            .unwrap_or_default()
+    }
 }
 
 /// Today and now from the clock, or from `SOURCE_DATE_EPOCH` when set, so a reproducible build

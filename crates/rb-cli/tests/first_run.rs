@@ -361,6 +361,66 @@ fn adopt_commits_on_a_branch_without_a_remote() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn adopt_below_the_git_root_puts_ci_and_the_hook_at_the_root() -> Result<(), Box<dyn Error>> {
+    let nested: Vec<(String, &str)> = BROWNFIELD
+        .iter()
+        .map(|(file, text)| (format!("web/{file}"), *text))
+        .collect();
+    let files: Vec<(&str, &str)> = nested.iter().map(|(f, t)| (f.as_str(), *t)).collect();
+    let dir = tree("adopt-nested", &files)?;
+    git(&dir, &["init", "-q"])?;
+    git(&dir, &["config", "user.name", "Tester"])?;
+    git(&dir, &["config", "user.email", "tester@example.com"])?;
+    git(&dir, &["add", "-A"])?;
+    git(&dir, &["commit", "-qm", "start"])?;
+    let web = dir.join("web");
+    let adopted = run(&web, &["adopt", "src"])?;
+    assert_eq!(
+        adopted.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&adopted.stderr)
+    );
+    let committed = git(&dir, &["show", "--name-only", "--format=", "HEAD"])?;
+    assert_eq!(
+        String::from_utf8(committed.stdout)?
+            .lines()
+            .collect::<Vec<_>>(),
+        [
+            ".githooks/pre-commit",
+            ".github/workflows/rulebearing.yml",
+            "web/docs/architecture/rulebearing.md",
+            "web/rulebearing.yaml"
+        ]
+    );
+    let workflow = std::fs::read_to_string(dir.join(".github/workflows/rulebearing.yml"))?;
+    assert!(workflow.contains("working-directory: web"), "{workflow}");
+    let hook = std::fs::read_to_string(dir.join(".githooks/pre-commit"))?;
+    assert!(
+        hook.contains("(cd web && npx --no-install rulebearing cruise"),
+        "{hook}"
+    );
+    // Annotations are placed by their path from the repository root.
+    let annotations = run(
+        &web,
+        &[
+            "cruise",
+            "--config",
+            ".dependency-cruiser.cjs",
+            "-T",
+            "github-annotations",
+            "src",
+        ],
+    )?;
+    assert!(
+        String::from_utf8(annotations.stdout)?.contains("file=web/src/a/a.js,"),
+        "annotations carry the folder"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
 fn the_pull_request_body_matches_the_snapshot() -> Result<(), Box<dyn Error>> {
     let entries: Vec<Value> = serde_json::from_str(
         r#"[

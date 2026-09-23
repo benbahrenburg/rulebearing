@@ -29,8 +29,9 @@ pub fn escape_property(text: &str) -> String {
     escape_data(text).replace(':', "%3A").replace(',', "%2C")
 }
 
-/// Renders `github-annotations`.
-pub fn render(result: &Value) -> Rendered {
+/// Renders `github-annotations`, each `file=` behind `path_prefix` (the run's folder from the
+/// repository root, empty at the root).
+pub fn render(result: &Value, path_prefix: &str) -> Rendered {
     let summary = result.get("summary").cloned().unwrap_or(Value::Null);
     let rule_set = summary.get("ruleSetUsed");
     let mut output = String::new();
@@ -50,7 +51,10 @@ pub fn render(result: &Value) -> Rendered {
         let to = text(v, "to");
         let name = v.get("rule").map(|r| text(r, "name")).unwrap_or_default();
         let rule = find_rule(rule_set, &name);
-        let mut properties = vec![format!("file={}", escape_property(&from))];
+        let mut properties = vec![format!(
+            "file={}",
+            escape_property(&format!("{path_prefix}{from}"))
+        )];
         if let Some((line, column)) = edge_position(result, &from, &to) {
             properties.push(format!("line={line}"));
             properties.push(format!("col={column}"));
@@ -110,7 +114,7 @@ mod tests {
                 "ruleSetUsed": { "forbidden": [{ "name": "no-cross-app", "comment": "Apps share packages. adr:0003" }] }
             }
         });
-        let out = render(&result);
+        let out = render(&result, "");
         assert_eq!(
             out.output,
             "::error file=apps/web/x.ts,line=3,col=1,title=no-cross-app::apps/web/x.ts -> apps/api/y.ts: Apps share packages. adr:0003 Fix: Call the API.\n\
@@ -118,6 +122,13 @@ mod tests {
              ::notice file=a%2Cb.ts,title=info-rule::a,b.ts -> c\n"
         );
         assert_eq!(out.exit_code, 1);
+        // Run below the repository root, each file is placed by its path from the root; the
+        // message keeps the paths the rules speak in.
+        let nested = render(&result, "web/");
+        assert!(nested.output.starts_with(
+            "::error file=web/apps/web/x.ts,line=3,col=1,title=no-cross-app::apps/web/x.ts -> apps/api/y.ts"
+        ));
+        assert!(nested.output.contains("::warning file=web/lonely.ts,"));
         assert_eq!(escape_data("50%\n"), "50%25%0A");
         assert_eq!(escape_property("a:b\r"), "a%3Ab%0D");
     }

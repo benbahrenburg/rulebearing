@@ -198,49 +198,101 @@ pub fn adopted_config(extends: &str, entries: &[Value], empty: &[String], today:
     out
 }
 
-/// The CI step's file name and text.
-pub fn ci_step(ci: Ci, paths: &[String]) -> (&'static str, String) {
-    let paths = paths.join(" ");
-    match ci {
-        Ci::Github => (
-            ".github/workflows/rulebearing.yml",
-            format!(
-                "# The architecture gate, written by `rulebearing adopt`.\nname: rulebearing\n\non:\n  pull_request:\n  push:\n    branches: [main]\n\npermissions:\n  contents: read\n\njobs:\n  rulebearing:\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v4\n      - uses: benbahrenburg/rulebearing@v{}\n        with:\n          args: --config rulebearing.yaml {paths}\n",
-                env!("CARGO_PKG_VERSION")
-            ),
-        ),
-        Ci::Azure => (
-            "azure-pipelines.rulebearing.yml",
-            format!(
-                "# The architecture gate, written by `rulebearing adopt`.\ntrigger:\n  branches:\n    include: [main]\npr:\n  branches:\n    include: ['*']\n\npool:\n  vmImage: ubuntu-latest\n\nsteps:\n  - checkout: self\n  - script: npx --yes rulebearing@{} cruise --config rulebearing.yaml --output-type azure-devops {paths}\n    displayName: rulebearing\n",
-                env!("CARGO_PKG_VERSION")
-            ),
-        ),
+/// Where the configuration sits in the repository: its folder relative to the git root (`web`,
+/// or empty at the root), and the way back up from it (`../`). The CI step and the pre-commit hook
+/// belong at the root, where GitHub, Azure Pipelines and Git look for them; `rulebearing.yaml`
+/// and the page stay beside the configuration.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Placement {
+    /// The configuration's folder relative to the git root, without a trailing `/`.
+    pub dir: String,
+    /// `../` once per level of `dir`.
+    pub up: String,
+}
+
+impl Placement {
+    /// From `git rev-parse --show-prefix` (`web/`, or empty at the root).
+    pub fn from_prefix(prefix: &str) -> Self {
+        let dir = prefix.trim().trim_end_matches('/').to_owned();
+        let up = dir
+            .split('/')
+            .filter(|s| !s.is_empty())
+            .map(|_| "../")
+            .collect();
+        Self { dir, up }
+    }
+
+    fn of(ctx: &Context<'_>) -> Self {
+        Self::from_prefix(&ctx.repository_prefix())
     }
 }
 
-/// The pre-commit hook: Husky's folder when the repository uses Husky, else `.githooks/`. An
-/// existing hook keeps every line it has and gains the gate as its last line; one that already
+/// The CI step's file name, relative to the configuration's folder, and its text.
+pub fn ci_step(ci: Ci, paths: &[String], at: &Placement) -> (String, String) {
+    let paths = paths.join(" ");
+    let version = env!("CARGO_PKG_VERSION");
+    match ci {
+        Ci::Github => {
+            let directory = if at.dir.is_empty() {
+                String::new()
+            } else {
+                format!("          working-directory: {}\n", at.dir)
+            };
+            (
+                format!("{}.github/workflows/rulebearing.yml", at.up),
+                format!(
+                    "# The architecture gate, written by `rulebearing adopt`.\nname: rulebearing\n\non:\n  pull_request:\n  push:\n    branches: [main]\n\npermissions:\n  contents: read\n\njobs:\n  rulebearing:\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v4\n      - uses: benbahrenburg/rulebearing@v{version}\n        with:\n{directory}          args: --config rulebearing.yaml {paths}\n"
+                ),
+            )
+        }
+        Ci::Azure => {
+            let directory = if at.dir.is_empty() {
+                String::new()
+            } else {
+                format!("    workingDirectory: {}\n", at.dir)
+            };
+            (
+                format!("{}azure-pipelines.rulebearing.yml", at.up),
+                format!(
+                    "# The architecture gate, written by `rulebearing adopt`.\ntrigger:\n  branches:\n    include: [main]\npr:\n  branches:\n    include: ['*']\n\npool:\n  vmImage: ubuntu-latest\n\nsteps:\n  - checkout: self\n  - script: npx --yes rulebearing@{version} cruise --config rulebearing.yaml --output-type azure-devops {paths}\n    displayName: rulebearing\n{directory}"
+                ),
+            )
+        }
+    }
+}
+
+/// The pre-commit hook, at the git root: Husky's folder when the repository uses Husky, else
+/// `.githooks/`. From a configuration below the root, the command changes into its folder first.
+/// An existing hook keeps every line it has and gains the gate as its last line; one that already
 /// runs the gate is left as it is.
-pub fn hook(root: &Path, paths: &[String]) -> (String, String) {
-    let line = format!(
-        "npx --no-install rulebearing cruise --config rulebearing.yaml --output-type err {}\n",
+pub fn hook(cwd: &Path, paths: &[String], at: &Placement) -> (String, String) {
+    let command = format!(
+        "npx --no-install rulebearing cruise --config rulebearing.yaml --output-type err {}",
         paths.join(" ")
     );
-    let path = if root.join(".husky").is_dir() {
-        ".husky/pre-commit"
+    let line = if at.dir.is_empty() {
+        format!("{command}\n")
     } else {
-        ".githooks/pre-commit"
+        format!("(cd {} && {command})\n", at.dir)
     };
-    match std::fs::read_to_string(root.join(path)) {
-        Ok(existing) if existing.contains("rulebearing cruise") => (path.into(), existing),
+    let root = cwd.join(&at.up);
+    let (path, relative) = if root.join(".husky").is_dir() {
+        (format!("{}.husky/pre-commit", at.up), ".husky/pre-commit")
+    } else {
+        (
+            format!("{}.githooks/pre-commit", at.up),
+            ".githooks/pre-commit",
+        )
+    };
+    match std::fs::read_to_string(root.join(relative)) {
+        Ok(existing) if existing.contains("rulebearing cruise") => (path, existing),
         Ok(existing) if !existing.is_empty() => {
             let separator = if existing.ends_with('\n') { "" } else { "\n" };
-            (path.into(), format!("{existing}{separator}{line}"))
+            (path, format!("{existing}{separator}{line}"))
         }
-        _ if path == ".husky/pre-commit" => (path.into(), line),
+        _ if relative == ".husky/pre-commit" => (path, line),
         _ => (
-            path.into(),
+            path,
             format!(
                 "#!/bin/sh\n# The architecture gate before each commit, written by `rulebearing adopt`.\n# Enable it once per clone: git config core.hooksPath .githooks\n{line}"
             ),
@@ -511,15 +563,16 @@ pub fn run(ctx: &mut Context<'_>, args: &AdoptArgs) -> Outcome {
         Ok(v) => v,
         Err(o) => return o,
     };
-    let (ci_file, ci_text) = ci_step(args.ci, &paths);
-    let (hook_file, hook_text) = hook(&ctx.cwd, &paths);
+    let at = Placement::of(ctx);
+    let (ci_file, ci_text) = ci_step(args.ci, &paths, &at);
+    let (hook_file, hook_text) = hook(&ctx.cwd, &paths, &at);
     let hook_path = ctx.resolve(&hook_file);
     let mut files = vec![
         ("rulebearing.yaml".to_owned(), text),
         (hook_file, hook_text),
     ];
-    if !ctx.resolve(ci_file).exists() {
-        files.push((ci_file.to_owned(), ci_text));
+    if !ctx.resolve(&ci_file).exists() {
+        files.push((ci_file, ci_text));
     }
     files.push((
         "docs/architecture/rulebearing.md".into(),
@@ -584,40 +637,81 @@ mod tests {
     #[test]
     fn ci_steps_and_hooks() {
         let paths = vec!["src".to_owned()];
-        let (file, text) = ci_step(Ci::Github, &paths);
+        let root = Placement::default();
+        let (file, text) = ci_step(Ci::Github, &paths, &root);
         assert_eq!(file, ".github/workflows/rulebearing.yml");
         assert!(
             text.contains("args: --config rulebearing.yaml src") && text.contains("contents: read")
         );
-        let (file, text) = ci_step(Ci::Azure, &paths);
+        let (file, text) = ci_step(Ci::Azure, &paths, &root);
         assert_eq!(file, "azure-pipelines.rulebearing.yml");
         assert!(text.contains("--output-type azure-devops src"));
         let dir = std::env::temp_dir().join(format!("rb-adopt-hook-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let _ = std::fs::create_dir_all(dir.join(".husky"));
-        let (file, text) = hook(&dir, &paths);
+        let (file, text) = hook(&dir, &paths, &root);
         assert_eq!(file, ".husky/pre-commit");
         assert!(text.starts_with("npx --no-install rulebearing cruise"));
         let _ = std::fs::write(dir.join(".husky/pre-commit"), &text);
-        assert_eq!(hook(&dir, &paths).1, text, "a second run adds nothing");
+        assert_eq!(
+            hook(&dir, &paths, &root).1,
+            text,
+            "a second run adds nothing"
+        );
         // An existing Husky hook without a final newline keeps its last command whole.
         let _ = std::fs::write(dir.join(".husky/pre-commit"), "npm test");
         assert_eq!(
-            hook(&dir, &paths).1,
+            hook(&dir, &paths, &root).1,
             format!("npm test\n{text}"),
             "appended on a line of its own"
         );
         let _ = std::fs::remove_dir_all(dir.join(".husky"));
-        assert_eq!(hook(&dir, &paths).0, ".githooks/pre-commit");
-        assert!(hook(&dir, &paths).1.starts_with("#!/bin/sh\n"));
+        assert_eq!(hook(&dir, &paths, &root).0, ".githooks/pre-commit");
+        assert!(hook(&dir, &paths, &root).1.starts_with("#!/bin/sh\n"));
         // An existing .githooks/pre-commit is extended, never replaced.
         let _ = std::fs::create_dir_all(dir.join(".githooks"));
         let _ = std::fs::write(
             dir.join(".githooks/pre-commit"),
             "#!/bin/sh\ncargo fmt --check\n",
         );
-        let (_, merged) = hook(&dir, &paths);
+        let (_, merged) = hook(&dir, &paths, &root);
         assert!(merged.starts_with("#!/bin/sh\ncargo fmt --check\nnpx --no-install rulebearing"));
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_configuration_below_the_git_root() {
+        assert_eq!(Placement::from_prefix(""), Placement::default());
+        let web = Placement::from_prefix("web/\n");
+        assert_eq!((web.dir.as_str(), web.up.as_str()), ("web", "../"));
+        let deep = Placement::from_prefix("packages/dds/tree/");
+        assert_eq!(
+            (deep.dir.as_str(), deep.up.as_str()),
+            ("packages/dds/tree", "../../../")
+        );
+        let paths = vec!["apps".to_owned()];
+        let (file, text) = ci_step(Ci::Github, &paths, &web);
+        assert_eq!(file, "../.github/workflows/rulebearing.yml");
+        assert!(
+            text.contains(
+                "          working-directory: web\n          args: --config rulebearing.yaml apps\n"
+            ),
+            "{text}"
+        );
+        let (file, text) = ci_step(Ci::Azure, &paths, &web);
+        assert_eq!(file, "../azure-pipelines.rulebearing.yml");
+        assert!(text.ends_with("    workingDirectory: web\n"), "{text}");
+        let repo = std::env::temp_dir().join(format!("rb-adopt-sub-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&repo);
+        let _ = std::fs::create_dir_all(repo.join("web"));
+        let (file, text) = hook(&repo.join("web"), &paths, &web);
+        assert_eq!(file, "../.githooks/pre-commit");
+        assert!(text.ends_with("(cd web && npx --no-install rulebearing cruise --config rulebearing.yaml --output-type err apps)\n"), "{text}");
+        let _ = std::fs::create_dir_all(repo.join(".husky"));
+        assert_eq!(
+            hook(&repo.join("web"), &paths, &web).0,
+            "../.husky/pre-commit"
+        );
+        let _ = std::fs::remove_dir_all(&repo);
     }
 }
