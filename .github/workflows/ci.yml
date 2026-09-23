@@ -164,10 +164,16 @@ jobs:
           name: lcov
           path: lcov.info
 
-  mutants:
-    name: mutants
+  # Mutation testing runs in eight shards so the rule engine's mutants fit the time limit; the
+  # `mutants` job below is the required check and passes only when every shard did.
+  mutants-shard:
+    name: mutants shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
@@ -177,12 +183,21 @@ jobs:
           tool: cargo-mutants
       # Coverage says a line ran; this says a test would notice if it were wrong.
       # Scope and policy: docs/adr/0024-test-quality-gates.md.
-      - run: cargo mutants --no-shuffle --package rb-model --package rb-rules --package xtask
+      - run: cargo mutants --no-shuffle --package rb-model --package rb-rules --package xtask --shard ${{ matrix.shard }}/8 --jobs 2
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: mutants-out
+          name: mutants-out-${{ matrix.shard }}
           path: mutants.out
+
+  mutants:
+    name: mutants
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: mutants-shard
+    if: always()
+    steps:
+      - run: test "${{ needs.mutants-shard.result }}" = success
 
   typos:
     name: typos
