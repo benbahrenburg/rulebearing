@@ -32,7 +32,7 @@ The design's 13-second figure comes from a private monorepo of 5,574 modules. On
 How the 2026-09-23 row was taken, with `hyperfine --warmup 2 --runs 10` over the roots the repository's own graph script cruises:
 
 - **Same configuration for both.** One rule uses a negative lookahead, which Rulebearing refuses with exit 3 because it has no linear-time equivalent ([ADR-0016](adr/0016-linear-time-regex-and-strict-compat.md)). That rule's pattern had two alternatives, `X(?!Y)` and `XY`, which together match exactly `X`, so both tools ran a scratch copy of the configuration with that one equivalent substitution. The repository itself was not changed.
-- **`--no-liveness`.** One rule matches no module and Rulebearing would exit 2 ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)). dependency-cruiser has no such check, so it was off, as in layer 5.
+- **`--no-liveness`.** One rule matches no module. At `4bb7d96` that made Rulebearing exit 2 ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)); since [ADR-0032](adr/0032-liveness-follows-the-configuration-format.md) a dependency-cruiser configuration only warns about it. dependency-cruiser has no such check, so it was off, as in layer 5, and both tools did the same work.
 - **Parity.** The two results were diffed with layer 5's harness: 5,838 modules and 1 violation in each, 0 differences.
 - **Stage split, one run.** Configuration 9 ms, extract 2,044 ms, evaluate 686 ms, report 122 ms. The run spent 10.2 s of system time against 3.3 s of user time.
 
