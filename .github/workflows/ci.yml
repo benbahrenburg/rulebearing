@@ -243,6 +243,40 @@ jobs:
           name: layer1-report
           path: target/conformance/layer1.md
 
+  # Gate 1, layer 5: the oracle zero-diff over the three repositories plan 0001 names, and the
+  # mutation branch. It clones those repositories and installs their dependencies, so it runs on
+  # every push to main and nightly, not on pull requests (plan 0001 § 1.11, Operational impact).
+  # conformance/dependency-cruiser/scripts/run-layer-5.sh documents the roots and set-up per
+  # repository; conformance/divergences.md is the only place a difference may be accepted.
+  conformance-layer-5:
+    name: conformance-gate-1-layer-5
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python3 -m pip install --quiet pyyaml
+      - run: cargo build --release -p rb-cli
+      - name: oracle zero-diff
+        run: conformance/dependency-cruiser/scripts/run-layer-5.sh --all
+      - name: mutation branch
+        if: success() || failure()
+        run: conformance/dependency-cruiser/scripts/run-layer-5.sh --mutations
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: layer5
+          path: target/conformance/layer5
+          if-no-files-found: ignore
+
   conformance-archunitnet:
     name: conformance-gate-2
     runs-on: ubuntu-latest

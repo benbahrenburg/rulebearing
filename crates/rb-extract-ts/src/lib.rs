@@ -299,8 +299,9 @@ pub fn line_column(source: &str, offset: u32) -> (u32, u32) {
     pipeline::Lines::new(source).locate(offset)
 }
 
-/// Extracts with `settings` and `config` from [`prepare`]: the modules the inputs reach, sorted
-/// by source.
+/// Extracts with `settings` and `config` from [`prepare`]: the modules the inputs reach, in
+/// dependency-cruiser's visiting order (depth first from the sorted initial sources, each
+/// module's unfollowed dependencies right after it).
 ///
 /// # Errors
 /// Any [`ExtractError`]: a missing input, an unreadable or unparsable file, a file only the
@@ -353,9 +354,10 @@ pub fn extract_with(
     if files == 0 {
         return Err(ExtractError::NoModulesFound);
     }
-    // Stable, so a source that appears twice (an unfollowed dependency reached from two
-    // modules) keeps upstream's relative order.
-    modules.sort_by(|a, b| a.source.cmp(&b.source));
+    // Upstream's order, not sorted: the cruise visits the initial sources depth first and
+    // appends each module's unfollowed dependencies after it. The engine derives `dependents[]`
+    // and enumerates cycles in module order, so sorting here would reorder both. The order is
+    // a function of the inputs alone, so two runs still serialise byte for byte.
     let count = modules.len() as u64;
     Ok(Extraction {
         modules,

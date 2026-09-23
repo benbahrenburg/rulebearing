@@ -275,28 +275,34 @@ fn callee_path(callee: &Expression<'_>) -> Option<Vec<String>> {
 // ---------------------------------------------------------------------------------------------
 // tsc
 
-fn is_type_only_import(import: &ImportDeclaration<'_>) -> bool {
+/// Upstream's `isTypeOnlyImport`: `import type ...`, or a clause whose named bindings
+/// (`{ ... }`) are all type-only. The default binding is not looked at, so
+/// `import D, { type T } from "x"` counts as type-only, and so does an empty `{}`, because
+/// `every` holds on no elements; a namespace binding (`* as ns`) has no elements to test and
+/// does not count.
+fn is_type_only_import(import: &ImportDeclaration<'_>, source: &str) -> bool {
     if import.import_kind == ImportOrExportKind::Type {
         return true;
     }
-    match &import.specifiers {
-        Some(specifiers) if !specifiers.is_empty() => {
-            // tsc: only when every *named* binding is type-only and there is no default or
-            // namespace binding, i.e. the clause is `{ type a, type b }`.
-            let named: Vec<_> = specifiers
-                .iter()
-                .filter_map(|s| match s {
-                    ImportDeclarationSpecifier::ImportSpecifier(s) => Some(s),
-                    _ => None,
-                })
-                .collect();
-            named.len() == specifiers.len()
-                && named
-                    .iter()
-                    .all(|s| s.import_kind == ImportOrExportKind::Type)
-        }
-        _ => false,
-    }
+    let Some(specifiers) = &import.specifiers else {
+        return false;
+    };
+    let named: Vec<_> = specifiers
+        .iter()
+        .filter_map(|s| match s {
+            ImportDeclarationSpecifier::ImportSpecifier(s) => Some(s),
+            _ => None,
+        })
+        .collect();
+    // oxc keeps no node for an empty `{}`, so its braces are looked for in the clause's text.
+    let clause = source
+        .get(import.span.start as usize..import.source.span.start as usize)
+        .unwrap_or_default();
+    let has_named_bindings = !named.is_empty() || clause.contains('{');
+    has_named_bindings
+        && named
+            .iter()
+            .all(|s| s.import_kind == ImportOrExportKind::Type)
 }
 
 fn tsc(program: &Program<'_>, source: &str, options: &WalkOptions) -> Vec<Found> {
@@ -306,7 +312,7 @@ fn tsc(program: &Program<'_>, source: &str, options: &WalkOptions) -> Vec<Found>
     for statement in &program.body {
         match statement {
             Statement::ImportDeclaration(import) => {
-                let types: &[D] = if is_type_only_import(import) {
+                let types: &[D] = if is_type_only_import(import, source) {
                     &[D::TypeOnly, D::Import]
                 } else {
                     &[D::Import]
@@ -984,6 +990,27 @@ impl<'a> Visit<'a> for AcornAmd<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tsc_type_only_imports_look_at_named_bindings_only() {
+        let options = WalkOptions::default();
+        let type_only = |source: &str| {
+            walk_source(source, SourceType::ts(), Flavour::Tsc, &options)
+                .ok()
+                .and_then(|found| found.into_iter().next())
+                .map(|f| f.dependency_types.contains(&D::TypeOnly))
+        };
+        // As upstream's isTypeOnlyImport: the default binding is not considered.
+        assert_eq!(type_only("import D, { type T } from 'x';"), Some(true));
+        assert_eq!(type_only("import { type T, type U } from 'x';"), Some(true));
+        assert_eq!(type_only("import type D from 'x';"), Some(true));
+        assert_eq!(type_only("import {} from 'x';"), Some(true));
+        assert_eq!(type_only("import D, {} from 'x';"), Some(true));
+        assert_eq!(type_only("import D, { type T, U } from 'x';"), Some(false));
+        assert_eq!(type_only("import D from 'x';"), Some(false));
+        assert_eq!(type_only("import * as N from 'x';"), Some(false));
+        assert_eq!(type_only("import 'x';"), Some(false));
+    }
 
     #[test]
     fn template_imports_become_plain_strings_of_the_same_length() {

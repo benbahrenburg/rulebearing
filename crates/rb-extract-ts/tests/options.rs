@@ -45,6 +45,8 @@ fn module<'e>(extraction: &'e Extraction, source: &str) -> Option<&'e Module> {
     extraction.modules.iter().find(|m| m.source == source)
 }
 
+/// The module sources in extraction order, which is dependency-cruiser's: the expected lists
+/// below are what 18.2.0's `cruise()` returns for the same fixture and options.
 fn sources(extraction: &Extraction) -> Vec<&str> {
     extraction
         .modules
@@ -260,6 +262,121 @@ fn detect_jsdoc_imports_reads_import_tags_and_bracket_imports() {
     );
 }
 
+/// A `.js` specifier that does not exist is retried without its extension. Upstream asks for the
+/// TypeScript variants, but its resolver cache is per run, so outside its own tests (which bust
+/// the cache) the retry searches the configured extensions and finds a `.d.mts` for a `.js`, as
+/// 18.2.0's `cruise()` does on this fixture and on dependency-cruiser's own `src/`.
+#[test]
+fn an_unresolvable_js_specifier_is_retried_with_the_configured_extensions() {
+    let found = run(
+        "ts-variant-retry",
+        r#"{"parser": "tsc", "detectJSDocImports": true,
+            "enhancedResolveOptions": {"extensions": [".js", ".mjs", ".d.mts"]}}"#,
+        &["src/index.mjs"],
+    );
+    let Ok(found) = found else {
+        unreachable!("{found:?}");
+    };
+    assert_eq!(sources(&found), ["src/index.mjs", "types/thing.d.mts"]);
+    assert_eq!(
+        edges(&found, "src/index.mjs"),
+        [(
+            "../types/thing.js".to_owned(),
+            "types/thing.d.mts".to_owned(),
+            types(&["local", "type-only", "import", "jsdoc", "jsdoc-import-tag"])
+        )]
+    );
+}
+
+/// `(module, resolved, module system, types, followable, dynamic)` of each dependency of `source`.
+fn details(
+    extraction: &Extraction,
+    source: &str,
+) -> Vec<(String, String, String, Vec<String>, bool, bool)> {
+    module(extraction, source)
+        .map(|m| {
+            m.dependencies
+                .iter()
+                .map(|d| {
+                    (
+                        d.module.clone(),
+                        d.resolved.clone(),
+                        d.module_system.to_string(),
+                        d.dependency_types
+                            .iter()
+                            .map(|t| t.as_str().to_owned())
+                            .collect(),
+                        d.followable,
+                        d.dynamic,
+                    )
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Upstream caches the followable extensions of the run's first successful resolution. Here
+/// that is the retry of `./a.js` as TypeScript, so `.cts` is not followable for the rest of the
+/// run: 18.2.0's `cruise(["src"], {})` on this fixture reports `./c.cjs` as not followable.
+#[test]
+fn the_first_successful_resolution_decides_what_is_followable() {
+    let found = run("followable-settles", "{}", &["src"]);
+    let Ok(found) = found else {
+        unreachable!("{found:?}");
+    };
+    assert_eq!(sources(&found), ["src/a.ts", "src/c.cts", "src/index.ts"]);
+    let followable: Vec<(String, bool)> = details(&found, "src/index.ts")
+        .into_iter()
+        .map(|d| (d.1, d.4))
+        .collect();
+    assert_eq!(
+        followable,
+        [
+            ("src/a.ts".to_owned(), true),
+            ("src/c.cts".to_owned(), false)
+        ]
+    );
+}
+
+/// Without `tsPreCompilationDeps`, upstream compiles `.mts` for acorn with `module: nodenext`
+/// into CommonJS: static imports and re-exports become `require`, `import()` stays, and a
+/// type-only import is gone. The expectations are 18.2.0's `cruise(["src"], {})` on the fixture.
+#[test]
+fn an_mts_file_compiled_for_acorn_requires_what_it_imports() {
+    let found = run("mts-compiled", "{}", &["src"]);
+    let Ok(found) = found else {
+        unreachable!("{found:?}");
+    };
+    assert_eq!(
+        sources(&found),
+        [
+            "src/a.js",
+            "src/b.js",
+            "src/c.js",
+            "src/index.mts",
+            "src/t.ts"
+        ]
+    );
+    let entry = |module: &str, system: &str, kinds: &[&str], dynamic: bool| {
+        (
+            module.to_owned(),
+            format!("src/{}", &module[2..]),
+            system.to_owned(),
+            types(kinds),
+            true,
+            dynamic,
+        )
+    };
+    assert_eq!(
+        details(&found, "src/index.mts"),
+        [
+            entry("./a.js", "cjs", &["local", "require"], false),
+            entry("./b.js", "cjs", &["local", "require"], false),
+            entry("./c.js", "es6", &["local", "dynamic-import"], true),
+        ]
+    );
+}
+
 #[test]
 fn detect_process_builtin_module_calls_finds_both_spellings() {
     let edge = |options: &str| {
@@ -318,8 +435,8 @@ fn do_not_follow_by_path_and_by_dependency_type() {
     assert_eq!(
         sources(&by_type),
         [
-            "node_modules/dep/index.js",
             "src/index.js",
+            "node_modules/dep/index.js",
             "src/lib/a.js",
             "src/lib/b.js"
         ]
@@ -390,7 +507,7 @@ fn exclude_drops_paths_and_dynamic_imports() {
     assert_eq!(
         run_with("{}"),
         Some((
-            "src/excluded/x.js,src/index.js,src/kept.js,src/lazy.js".to_owned(),
+            "src/index.js,src/excluded/x.js,src/kept.js,src/lazy.js".to_owned(),
             types(&["src/excluded/x.js", "src/kept.js", "src/lazy.js"])
         ))
     );
@@ -515,7 +632,7 @@ fn extra_extensions_are_discovered_and_carry_no_dependencies() {
     };
     assert_eq!(
         sources(&with),
-        ["src/index.js", "src/notes.md", "src/other.js"]
+        ["src/index.js", "src/other.js", "src/notes.md"]
     );
     assert_eq!(
         module(&with, "src/notes.md").map(|m| m.dependencies.len()),

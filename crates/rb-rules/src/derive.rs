@@ -39,6 +39,26 @@ pub fn has_dependents_rule(rules: &DependencyRules) -> bool {
     })
 }
 
+/// `ruleSetHasLicenseRule`: whether extraction must read each npm package's licence
+/// (upstream's `resolveLicenses`), because a `forbidden` or `allowed` rule restricts `to.license`
+/// or `to.licenseNot`.
+pub fn has_license_rule(rules: &DependencyRules) -> bool {
+    any_rule(rules, |r| {
+        r.to.license.is_some() || r.to.license_not.is_some()
+    })
+}
+
+/// `ruleSetHasDeprecationRule`: whether extraction must mark deprecated npm packages (upstream's
+/// `resolveDeprecations`), because a `forbidden` or `allowed` rule names the `deprecated`
+/// dependency type in `to.dependencyTypes`.
+pub fn has_deprecation_rule(rules: &DependencyRules) -> bool {
+    any_rule(rules, |r| {
+        r.to.dependency_types
+            .as_ref()
+            .is_some_and(|types| types.contains(&rb_model::DependencyType::Deprecated))
+    })
+}
+
 /// `hasOrphanRule`.
 pub fn has_orphan_rule(rules: &DependencyRules) -> bool {
     any_rule(rules, |r| r.from.orphan.is_some())
@@ -368,6 +388,27 @@ mod tests {
             json!({ "source": "lonely.ts", "dependencies": [] }),
             json!({ "source": "fs", "dependencies": [], "coreModule": true }),
         ]
+    }
+
+    #[test]
+    fn licence_and_deprecation_rules_are_found_in_forbidden_and_allowed() {
+        let none =
+            rules(json!({ "forbidden": [{ "from": {}, "to": { "dependencyTypes": ["npm"] } }] }));
+        assert!(!has_license_rule(&none));
+        assert!(!has_deprecation_rule(&none));
+        for to in [json!({ "license": "GPL" }), json!({ "licenseNot": "MIT" })] {
+            let forbidden = rules(json!({ "forbidden": [{ "from": {}, "to": to.clone() }] }));
+            assert!(has_license_rule(&forbidden), "{to}");
+            assert!(!has_deprecation_rule(&forbidden), "{to}");
+            let allowed = rules(json!({ "allowed": [{ "from": {}, "to": to.clone() }] }));
+            assert!(has_license_rule(&allowed), "{to}");
+        }
+        let deprecated = json!({ "dependencyTypes": ["npm", "deprecated"] });
+        let forbidden = rules(json!({ "forbidden": [{ "from": {}, "to": deprecated.clone() }] }));
+        assert!(has_deprecation_rule(&forbidden));
+        assert!(!has_license_rule(&forbidden));
+        let allowed = rules(json!({ "allowed": [{ "from": {}, "to": deprecated }] }));
+        assert!(has_deprecation_rule(&allowed));
     }
 
     #[test]
