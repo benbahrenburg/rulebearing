@@ -31,8 +31,21 @@ fn tree(name: &str, files: &[(&str, &str)]) -> Result<PathBuf, Box<dyn Error>> {
     Ok(dir)
 }
 
+/// A command that cannot reach the repository the tests run in. Under a git hook (`pre-push`)
+/// git exports `GIT_DIR`, `GIT_INDEX_FILE` and others, and a `git` started with them acts on the
+/// host repository instead of the temporary one.
+fn isolated(program: &str) -> Command {
+    let mut command = Command::new(program);
+    for (key, _) in std::env::vars_os() {
+        if key.to_string_lossy().starts_with("GIT_") {
+            command.env_remove(key);
+        }
+    }
+    command
+}
+
 fn run(dir: &Path, args: &[&str]) -> Result<Output, Box<dyn Error>> {
-    Ok(Command::new(BIN)
+    Ok(isolated(BIN)
         .args(args)
         .current_dir(dir)
         .env("SOURCE_DATE_EPOCH", "1790000000")
@@ -40,7 +53,7 @@ fn run(dir: &Path, args: &[&str]) -> Result<Output, Box<dyn Error>> {
 }
 
 fn git(dir: &Path, args: &[&str]) -> Result<Output, Box<dyn Error>> {
-    Ok(Command::new("git")
+    Ok(isolated("git")
         .args(args)
         .current_dir(dir)
         .env("GIT_AUTHOR_NAME", "Tester")
