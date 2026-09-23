@@ -195,7 +195,7 @@ pub fn ci_step(ci: Ci, paths: &[String]) -> (&'static str, String) {
         Ci::Github => (
             ".github/workflows/rulebearing.yml",
             format!(
-                "# The architecture gate, written by `rulebearing adopt`.\nname: rulebearing\n\non:\n  pull_request:\n  push:\n    branches: [main]\n\npermissions:\n  contents: read\n\njobs:\n  rulebearing:\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v4\n      - uses: benbahrenburg/rulebearing@v{}\n        with:\n          args: cruise --config rulebearing.yaml --output-type github-annotations {paths}\n",
+                "# The architecture gate, written by `rulebearing adopt`.\nname: rulebearing\n\non:\n  pull_request:\n  push:\n    branches: [main]\n\npermissions:\n  contents: read\n\njobs:\n  rulebearing:\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v4\n      - uses: benbahrenburg/rulebearing@v{}\n        with:\n          args: --config rulebearing.yaml {paths}\n",
                 env!("CARGO_PKG_VERSION")
             ),
         ),
@@ -547,8 +547,7 @@ mod tests {
         let (file, text) = ci_step(Ci::Github, &paths);
         assert_eq!(file, ".github/workflows/rulebearing.yml");
         assert!(
-            text.contains("--output-type github-annotations src")
-                && text.contains("contents: read")
+            text.contains("args: --config rulebearing.yaml src") && text.contains("contents: read")
         );
         let (file, text) = ci_step(Ci::Azure, &paths);
         assert_eq!(file, "azure-pipelines.rulebearing.yml");
