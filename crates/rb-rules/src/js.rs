@@ -91,25 +91,39 @@ pub fn sort<T>(items: &mut [T], less: impl Fn(&T, &T) -> bool) {
         return;
     }
     let descending = less(&items[1], &items[0]);
-    let mut run = 2;
-    while run < n && less(&items[run], &items[run - 1]) == descending {
-        run += 1;
-    }
+    let run = 2 + items[1..]
+        .windows(2)
+        .take_while(|pair| less(&pair[1], &pair[0]) == descending)
+        .count();
     if descending {
         items[..run].reverse();
     }
     for start in run..n {
-        let (mut left, mut right) = (0, start);
-        while left < right {
-            let mid = left + (right - left) / 2;
-            if less(&items[start], &items[mid]) {
-                right = mid;
-            } else {
-                left = mid + 1;
-            }
-        }
-        items[left..=start].rotate_right(1);
+        let at = insertion_point(&items[..=start], &less);
+        items[at..=start].rotate_right(1);
     }
+}
+
+/// V8's `BinaryInsertionSort` probe for the last element of `items` among the others: its exact
+/// probe order, because with an inconsistent comparator a different order finds a different
+/// place. Each probe halves the range, so `usize::BITS` probes always finish it.
+fn insertion_point<T>(items: &[T], less: impl Fn(&T, &T) -> bool) -> usize {
+    let Some((pivot, sorted)) = items.split_last() else {
+        return 0;
+    };
+    let (mut left, mut right) = (0, sorted.len());
+    for _ in 0..usize::BITS {
+        if left >= right {
+            break;
+        }
+        let mid = left + (right - left) / 2;
+        if less(pivot, &sorted[mid]) {
+            right = mid;
+        } else {
+            left = mid + 1;
+        }
+    }
+    left
 }
 
 #[cfg(test)]
