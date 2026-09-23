@@ -1521,7 +1521,7 @@ dependencies = [
 
 [[package]]
 name = "rb-cli"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "clap",
@@ -1545,7 +1545,7 @@ dependencies = [
 
 [[package]]
 name = "rb-config"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "proptest",
@@ -1563,7 +1563,7 @@ dependencies = [
 
 [[package]]
 name = "rb-extract-dotnet"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "miniz_oxide",
  "proptest",
@@ -1576,14 +1576,14 @@ dependencies = [
 
 [[package]]
 name = "rb-extract-python"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "rb-model",
 ]
 
 [[package]]
 name = "rb-extract-ts"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "globset",
  "oxc_allocator",
@@ -1604,7 +1604,7 @@ dependencies = [
 
 [[package]]
 name = "rb-ingest"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "rb-model",
  "serde_json",
@@ -1612,7 +1612,7 @@ dependencies = [
 
 [[package]]
 name = "rb-model"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "proptest",
  "schemars",
@@ -1625,14 +1625,14 @@ dependencies = [
 
 [[package]]
 name = "rb-node"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "rb-cli",
 ]
 
 [[package]]
 name = "rb-report"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "proptest",
  "rb-model",
@@ -1644,7 +1644,7 @@ dependencies = [
 
 [[package]]
 name = "rb-rules"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "proptest",
@@ -2515,7 +2515,7 @@ checksum = "3ad82d2a33cdc9674dc7465672f271e096168fcdbe0f799d9e6db8c5892679dc"
 
 [[package]]
 name = "xtask"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "proptest",
 ]
