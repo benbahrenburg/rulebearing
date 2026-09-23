@@ -547,12 +547,12 @@ conformance/dependency-cruiser/scripts/run-layer-5.sh --repo sverweij/dependency
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 1A | Model, dependency-cruiser front-end, native front-end, detection | Not started | |
-| 1A | QuickJS runtime, shim, sandbox tests, `--config-via-node` | Not started | |
-| 1A | `extends`, bundled and native presets | Not started | |
-| 1A | `defines`, captures, regex table, `--strict-compat` | Not started | |
-| 1A | `config convert`, `expand`, `lint`; shorthands | Not started | |
-| 1A | Every manifest config loads | Not started | test run: |
+| 1A | Model, dependency-cruiser front-end, native front-end, detection | Done | `crates/rb-config/src/{model,load,read,native,normalize}.rs`; YAML, JSON/JSON5, JSONC, TOML, JavaScript; `tests/keys_at_the_same_place.rs` (every option key of the 18.2.0 schema; both formats load to the same model); `schema/config-v1.json` generated and checked by `schema::tests::schema_is_current`. `serde_yaml` 0.9 kept: `cargo deny check advisories` raises nothing |
+| 1A | QuickJS runtime, shim, sandbox tests, `--config-via-node` | Done | `crates/rb-config/src/js/`: escape tests (`fs`, `node:fs`, `child_process`, `../../etc/passwd`, a symlink out of the repository, `process`, timers, `fetch`, an infinite loop hits the time limit, a memory bomb hits the heap limit); `via_node.rs`; fuzz targets `config_js` and `config_data` (60 s each locally, no crash; nightly in `fuzz.yml`); [ADR-0027](../../adr/0027-pure-path-and-url-modules-in-the-config-sandbox.md) adds pure `path` and `url` |
+| 1A | `extends`, bundled and native presets | Done | `extends.rs`: files, npm packages, `dependency-cruiser/configs/*` (vendored under `presets/dependency-cruiser/` with its `LICENSE`), `rulebearing:recommended` and `rulebearing:typescript`; merge ported from `merge-configs.mjs`, circular chains refused |
+| 1A | `defines`, captures, regex table, `--strict-compat` | Done | `defines.rs`; `pattern.rs` (compatibility table as tests, safe-regex heuristics, escaped `$0` to `$9`); backreferences by instantiation, [ADR-0028](../../adr/0028-backreferences-by-instantiation-on-the-linear-engine.md) (langfuse needs one) |
+| 1A | `config convert`, `expand`, `lint`; shorthands | Done | `convert.rs` (dc to native to dc is identity), `shorthands.rs`, `lint.rs` with one fixture per finding under `crates/rb-config/tests/lint/` |
+| 1A | Every manifest config loads | Done | `tests/oracle_configs.rs` over `scripts/fetch-oracle-configs.sh`: 10 of 10 rows; 9 load in the sandbox, `invertase/react-native-firebase` (reads and writes `fs`) is refused naming `--config-via-node`. `rb-config` line coverage 95.85% |
 
 **Size:** L. **LOE:** 16 h, 1.6 weeks. **Roles:** maintainer.
 **Entry:** Plan 0000 implemented. **Exit:** `oracle_configs` test green over every manifest config; sandbox tests green; coverage above 70%. **Gating metric for 1B:** the config model is frozen (a `#[non_exhaustive]` review) and `rules --json` can be built on it.

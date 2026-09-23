@@ -32,3 +32,5 @@ A rule in `rulebearing.yaml` cites a decision with the token `adr:NNNN` in its `
 | [0024](0024-test-quality-gates.md) | Test quality is gated by mutation testing, property tests and snapshots, not by coverage alone | Accepted |
 | [0025](0025-ci-and-supply-chain-hardening.md) | CI runs least-privileged, pinned and bounded, and the dependency supply chain is closed | Accepted |
 | [0026](0026-bsl-exception-for-dragonbox.md) | One crate-scoped licence exception: BSL-1.0 for `dragonbox_ecma`, which oxc requires | Accepted |
+| [0027](0027-pure-path-and-url-modules-in-the-config-sandbox.md) | The configuration sandbox offers pure `path` and `url` modules; every other Node built-in stays behind `--config-via-node` | Accepted |
+| [0028](0028-backreferences-by-instantiation-on-the-linear-engine.md) | Backreferences are matched by instantiation on the linear-time engine; lookaround stays refused | Accepted |

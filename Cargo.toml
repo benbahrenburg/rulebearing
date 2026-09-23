@@ -72,10 +72,21 @@ regex = "1"
 # Workspace and initial-source globs, as picomatch matches them. MIT (dual Unlicense).
 globset = "0.4"
 
-# Wave 1+ dependencies are added by the plan that needs them, not in advance:
+# Wave 1 (docs/plans/pending/0001-wave-1-typescript-parity.md § 1.8). All MIT or MIT/Apache-2.0.
+# The configuration evaluator is QuickJS, sandboxed (docs/adr/0006-embedded-quickjs-config-evaluator.md).
+rquickjs = { version = "0.14", default-features = false, features = ["std", "loader"] }
+# Configuration formats (docs/adr/0005-native-config-superset-and-compat.md).
+serde_yaml = "0.9"
+toml = "1"
+# The JavaScript-pattern compatibility table walks the parsed pattern (docs/adr/0016).
+regex-syntax = "0.8"
+# `expires` on rules and known violations.
+chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
+# The command line (docs/architecture.md#technology-choices).
+clap = { version = "4", features = ["derive", "wrap_help"] }
+
+# Wave 2+ dependencies are added by the plan that needs them, not in advance:
 #   ruff_python_parser              docs/adr/0013-ruff-parser-for-python.md
-#   rquickjs                        docs/adr/0006-embedded-quickjs-config-evaluator.md
-#   clap, rayon                     docs/architecture.md#technology-choices
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

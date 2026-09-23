@@ -1,0 +1,52 @@
+# rulebearing:recommended. Original to Rulebearing (not copied from dependency-cruiser's presets,
+# which live beside this file under presets/dependency-cruiser/). Every rule has a `fix`, and every
+# rule selects every module on its `from` side, so none is vacuous on a repository that has files.
+# Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 3. Requirement: FR-CFG-06.
+rules:
+  dependencies:
+    forbidden:
+      - name: no-circular
+        comment: "A module that is part of a cycle cannot be changed, tested or moved on its own."
+        fix: "Break the cycle: move the shared code into a module both sides import, or invert one edge behind an interface. Type-only imports do not count."
+        severity: error
+        from: {}
+        to: { circular: true, dependencyTypesNot: [type-only] }
+      - name: not-to-unresolvable
+        comment: "An import that resolves to nothing fails at run time or hides a missing package."
+        fix: "Fix the specifier, or add the package to package.json; for a path alias, check tsConfig and enhancedResolveOptions."
+        severity: error
+        from: {}
+        to: { couldNotResolve: true }
+      - name: no-non-package-json
+        comment: "An npm import missing from package.json works only by accident of hoisting."
+        fix: "Add the package to dependencies (or devDependencies for test and build code) of the nearest package.json."
+        severity: error
+        from: {}
+        to: { dependencyTypes: [npm-no-pkg, npm-unknown] }
+      - name: no-deprecated-core
+        comment: "A deprecated Node built-in will be removed."
+        fix: "Replace the module: punycode with the url API, domain with async hooks or try/catch, constants with os.constants or fs.constants, sys with util."
+        severity: error
+        from: {}
+        to: { dependencyTypes: [core], path: "^(?:punycode|domain|constants|sys|_linklist|_stream_wrap)$" }
+      - name: no-duplicate-dep-types
+        comment: "A package listed in more than one dependencies section installs unpredictably."
+        fix: "Keep the package in exactly one section of package.json: dependencies for run-time code, devDependencies otherwise."
+        severity: warn
+        from: {}
+        to: { moreThanOneDependencyType: true, dependencyTypesNot: [type-only] }
+      - name: no-orphans
+        comment: "A module nothing imports and that imports nothing is usually dead code."
+        fix: "Delete the module, import it from where it belongs, or add its path to this rule's from.pathNot if it is an entry point or a configuration file."
+        severity: warn
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+        to: {}
+options:
+  doNotFollow:
+    path: node_modules

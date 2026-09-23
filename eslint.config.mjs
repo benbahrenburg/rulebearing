@@ -17,6 +17,8 @@ export default defineConfig([
         'testbeds/checkouts/**',
         'conformance/**/upstream/**',
         'conformance/**/fixtures/**',
+        // Vendored verbatim from dependency-cruiser 18.2.0 (MIT) as the bundled presets.
+        'presets/dependency-cruiser/**',
     ]),
     js.configs.recommended,
     tseslint.configs.strictTypeChecked,
@@ -58,6 +60,14 @@ export default defineConfig([
         extends: [tseslint.configs.disableTypeChecked],
         languageOptions: { globals: globals.node },
         rules: { 'no-console': 'off' },
+    },
+    {
+        // The configuration sandbox's module system: a classic script QuickJS evaluates, with no
+        // Node globals (docs/adr/0006-embedded-quickjs-config-evaluator.md). It defines `console`
+        // as a no-op, so its own console use is a definition, not output.
+        files: ['crates/rb-config/src/js/shim.js'],
+        extends: [tseslint.configs.disableTypeChecked],
+        languageOptions: { sourceType: 'script', globals: { globalThis: 'readonly' } },
     },
     {
         // Tests may reach for the console and for fixtures typed loosely.
