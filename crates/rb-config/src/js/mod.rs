@@ -227,8 +227,9 @@ impl Policy {
         }
         if let Some(from_preset) = from.strip_prefix(PRESET_PREFIX) {
             let dir = Path::new(from_preset).parent().unwrap_or(Path::new(""));
+            // Preset names are virtual and always use `/`, whatever the host separator.
             let joined = normalise(&dir.join(specifier));
-            return preset_target(&joined.to_string_lossy()).ok_or_else(|| {
+            return preset_target(&joined.to_string_lossy().replace('\\', "/")).ok_or_else(|| {
                 format!("`{specifier}` is not a bundled dependency-cruiser preset")
             });
         }
