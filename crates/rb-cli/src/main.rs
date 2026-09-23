@@ -8,7 +8,7 @@ use std::process::ExitCode;
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let outcome = rb_cli::run(&args);
+    let outcome = rb_cli::run_with_input(&args, &mut std::io::stdin());
     print!("{}", outcome.stdout);
     eprint!("{}", outcome.stderr);
     ExitCode::from(outcome.code)

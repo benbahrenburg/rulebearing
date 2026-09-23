@@ -91,6 +91,40 @@ pub struct Outcome {
     pub code: u8,
 }
 
+/// `rulebearing validate --rules - --module - --no-liveness`: one request of conformance gate 1
+/// layer 2 on stdin, answered on stdout ([Wave 1, Step 8](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-8-rulebearing-validate-for-gate-1-layer-2-1b)).
+/// Hidden from `--help`: it is the conformance harness's protocol, not a user command.
+pub fn validate(stdin: &str) -> Outcome {
+    match rb_rules::conformance::answer(stdin) {
+        Ok(reply) => Outcome {
+            stdout: reply,
+            stderr: String::new(),
+            code: 0,
+        },
+        Err(error) => Outcome {
+            stdout: String::new(),
+            stderr: format!("rulebearing validate: {error}\n"),
+            code: RunExit::InvalidConfig.code(),
+        },
+    }
+}
+
+/// Dispatches the command line, reading stdin only for the commands that take it.
+pub fn run_with_input(args: &[String], stdin: &mut dyn std::io::Read) -> Outcome {
+    if args.first().map(String::as_str) == Some("validate") {
+        let mut text = String::new();
+        if let Err(error) = stdin.read_to_string(&mut text) {
+            return Outcome {
+                stdout: String::new(),
+                stderr: format!("rulebearing validate: cannot read stdin: {error}\n"),
+                code: RunExit::Untrustworthy.code(),
+            };
+        }
+        return validate(&text);
+    }
+    run(args)
+}
+
 /// Dispatches the command line. Wave 0 knows `--version`, `--help` and the subcommand names.
 pub fn run(args: &[String]) -> Outcome {
     match args.first().map(String::as_str) {

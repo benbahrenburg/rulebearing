@@ -5,12 +5,49 @@
 //! - Architecture: [`docs/architecture.md#the-rule-engine`](../../../docs/architecture.md#the-rule-engine)
 //! - Decisions: [ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md),
 //!   [ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md),
+//!   [ADR-0015](../../../docs/adr/0015-stable-violation-id.md),
 //!   [ADR-0016](../../../docs/adr/0016-linear-time-regex-and-strict-compat.md)
-//! - Plans: [Wave 1, sub-wave 1B](../../../docs/plans/pending/0001-wave-1-typescript-parity.md)
+//! - Plans: [Wave 1, sub-wave 1B](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#wave-1b-rb-rules)
 //!   (dependency rules), [Wave 2, sub-wave 2C](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md)
 //!   (element, slice, diagram rules)
 //! - Requirements: [FR-RULE-01](../../../docs/prd.md#fr-rule-01) to [FR-RULE-10](../../../docs/prd.md#fr-rule-10)
 //! - Source: [design § The rule language](../../../docs/artifacts/design.md#the-rule-language)
+//! - Specification: dependency-cruiser 18.2.0's `test/validate` and `test/graph-utl`, run
+//!   unmodified against this crate by conformance gate 1 layer 2 through [`conformance`]
+//!
+//! | Module | Does |
+//! | --- | --- |
+//! | [`evaluate`] | the entry point: derivations, validation, summary, liveness, ids |
+//! | [`validate`] | one module, dependency or folder against the rules |
+//! | [`matchers`] | the restriction matchers |
+//! | [`derive`] | cycles, dependents, orphans, reachability, instability |
+//! | [`folders`] | the folder layer |
+//! | [`summarize`] | violations, counts, `ruleSetUsed`, `optionsUsed` |
+//! | [`compare`] | the orderings output is sorted by |
+//! | [`graph`] | the indexed graph, consolidation and filters |
+//! | [`rewrap`] | `fmt`'s re-summary of a saved result |
+//! | [`ratchet`] | ratchet counts |
+//! | [`conformance`] | the `rulebearing validate` protocol layer 2 speaks |
+//! | [`js`], [`patterns`] | JavaScript's value and pattern semantics |
+
+pub mod compare;
+pub mod conformance;
+pub mod derive;
+pub mod evaluate;
+pub mod folders;
+pub mod graph;
+pub mod js;
+pub mod matchers;
+pub mod patterns;
+pub mod ratchet;
+pub mod rewrap;
+pub mod summarize;
+pub mod validate;
+
+pub use evaluate::{EngineError, EvalOptions, Evaluation, Expired, RuleStats, evaluate};
+/// The JavaScript-to-Rust pattern compatibility table
+/// ([ADR-0016](../../../docs/adr/0016-linear-time-regex-and-strict-compat.md)).
+pub use rb_config::pattern::COMPATIBILITY;
 
 /// A rule's severity. The vocabulary lives in `rb-model` so the document, the config and the
 /// engine share one declaration ([ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)).
@@ -49,7 +86,6 @@ mod tests {
 
     #[test]
     fn severity_parses_and_only_error_counts() {
-        // Every value dependency-cruiser defines, so deleting an arm cannot pass unnoticed.
         assert_eq!("ignore".parse(), Ok(Severity::Ignore));
         assert_eq!("error".parse(), Ok(Severity::Error));
         assert!(
@@ -69,5 +105,6 @@ mod tests {
         assert_eq!(liveness(0, false), Liveness::Vacuous);
         assert_eq!(liveness(0, true), Liveness::AllowedEmpty);
         assert_eq!(liveness(3, false), Liveness::Live);
+        assert!(!COMPATIBILITY.is_empty());
     }
 }

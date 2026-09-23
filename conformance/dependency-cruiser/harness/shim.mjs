@@ -13,8 +13,9 @@
 // path ["match"]); `calls` holds one argument list per application, so a curried call
 // `match(module)(rule)` sends two. A method of a class export adds the constructor arguments:
 //   { "module": "...", "export": "default", "constructorArgs": [...], "path": ["findTransitiveDependencies"], "calls": [[...]] }
-// The binary answers on stdout with { "result": <value> } and exit code 0. Any other exit code is
-// a failed call and its stderr is the error message. Liveness is off because the upstream specs
+// The binary answers on stdout with { "result": <value> } and exit code 0; a reply without
+// "result" ({}) is JavaScript's undefined. Any other exit code is a failed call and its stderr is
+// the error message. Liveness is off because the upstream specs
 // do not expect it (ADR-0007). Every call is stateless: a class instance is replayed from its
 // constructor arguments.
 //

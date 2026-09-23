@@ -565,10 +565,10 @@ conformance/dependency-cruiser/scripts/run-layer-5.sh --repo sverweij/dependency
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 1B | Matchers and families | Not started | |
-| 1B | Graph analysis and filters | Not started | |
-| 1B | Liveness, ids, receipts, `expires`, ratchets, known violations | Not started | |
-| 1B | `validate` subcommand; `excluded.json` sidecar-only | Not started | count: |
+| 1B | Matchers and families | Done | `crates/rb-rules/src/{matchers,validate}.rs`: `src/validate` of 18.2.0 ported over JSON values so presence (`Object.hasOwn`), `undefined` and spread semantics match; captures substituted escaped |
+| 1B | Graph analysis and filters | Done | `graph/{indexed,consolidate,filters}.rs`, `derive.rs`, `folders.rs`: upstream's cycle search kept for its path order, run only inside a strongly connected component (Tarjan), which prunes nothing but time; folder metrics derived whenever a `scope: folder` or `moreUnstable` rule asks, as upstream's `shouldCalculateMetrics` |
+| 1B | Liveness, ids, receipts, `expires`, ratchets, known violations | Done | `evaluate.rs` (liveness per [ADR-0007](../../adr/0007-vacuous-rules-fail-by-default.md), ids per [ADR-0015](../../adr/0015-stable-violation-id.md), `fix` and decision token, rule and known-violation expiry, known violations by id and by dependency-cruiser's shape), `ratchet.rs` (`--write` refuses to raise), `rewrap.rs` (`fmt`'s re-summary) |
+| 1B | `validate` subcommand; `excluded.json` sidecar-only | Done | layer 2: `specs=34 failing=0`; `conformance/excluded.json` is empty (no layer 2 spec needs the sidecar). The protocol answers `undefined` as a reply without `result` |
 | 1B | `rulebearing.yaml` self-check in CI | Not started | |
 
 **Size:** L. **LOE:** 18 h, 1.8 weeks. **Roles:** maintainer.
