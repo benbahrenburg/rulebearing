@@ -66,6 +66,10 @@ pub enum Command {
     Impact(crate::cmd::impact::ImpactArgs),
     /// Write or verify a receipt of the configuration, inputs and results
     Attest(crate::cmd::attest::AttestArgs),
+    /// Write a first configuration from what the repository holds, passing on its first run
+    Init(crate::cmd::init::InitArgs),
+    /// Put an existing dependency-cruiser configuration behind a green gate, with a baseline
+    Adopt(crate::cmd::adopt::AdoptArgs),
     /// Conformance gate 1 layer 2's protocol (hidden).
     #[command(hide = true)]
     Validate(ProtocolArgs),

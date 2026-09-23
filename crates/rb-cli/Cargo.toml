@@ -35,6 +35,7 @@ rb-extract-ts = { workspace = true, optional = true }
 rb-extract-dotnet = { workspace = true, optional = true }
 rb-extract-python = { workspace = true, optional = true }
 serde_json = { workspace = true }
+serde_yaml = { workspace = true }
 serde = { workspace = true }
 clap = { workspace = true }
 thiserror = { workspace = true }
