@@ -1,0 +1,66 @@
+# Rules
+
+The rule language is dependency-cruiser 18.2.0's, whole: every rule shape and attribute it accepts is accepted here with the same meaning, and its own test suites prove it ([conformance gate 1](../conformance/README.md)). The exhaustive list, with each row's status, is the [coverage tab § Rules](artifacts/dependency-cruiser-18.2.0-coverage.md#rules); this page explains the shapes and what Rulebearing adds. Source: [design § Dependency rules](artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820). Where rules live and how files are found is in [config.md](config.md).
+
+## The four families
+
+| Family | A violation is | Example |
+| --- | --- | --- |
+| `forbidden` | an edge, or a module, that matches the rule | `from: { path: "^src/domain/" }, to: { path: "^src/web/" }` |
+| `allowed` | an edge that no `allowed` entry covers; one rule, `not-in-allowed`, with `allowedSeverity` | `from: { path: "^src/" }, to: { path: "^(src\|node_modules)/" }` |
+| `required` | a module matching `module` that does not import (or, with `to.reachable: true`, does not reach) a module matching `to` | every page must reach `src/auth.ts` |
+| `rules.ratchets` (native) | a count of matching edges above the ceiling in the budget file | route files importing server code, counted per app |
+
+`forbidden` has three variants beside the plain `from` and `to` edge rule:
+
+- **Cycles**: `to.circular: true`, optionally narrowed with `via`, `viaOnly`, `viaNot` or `viaSomeNot`, and `dependencyTypesNot: [type-only]` to ignore type imports.
+- **Reachability**: `to.reachable: true` forbids reaching a module through any chain; `to.reachable: false` requires every matching module to be reachable from `from`.
+- **Dependents**: `module` with `numberOfDependentsLessThan` or `numberOfDependentsMoreThan`, for "a shared module used by fewer than two others" and the like.
+
+`from.orphan: true` matches modules that import nothing and are imported by nothing. `scope: folder` applies `circular` to folders rather than modules.
+
+## Captures
+
+A capturing group in `from.path` is available in `to` as `$1` to `$9` (and `$0` for the whole match), escaped so it matches only itself. The common fence is one rule:
+
+```yaml
+- name: apps-are-independent
+  from: { path: "^apps/([^/]+)/" }
+  to: { path: "^apps/([^/]+)/", pathNot: "^apps/$1/" }
+```
+
+`rulebearing explain apps-are-independent --plain` says it back as "Files under `apps/<x>/` may not import files under `apps/<y>/` unless x = y."
+
+## Severity and the exit code
+
+`error`, `warn`, `info` and `ignore`. A gating reporter (`err`, `err-long`, `null`, `teamcity`, `azure-devops`, `github-annotations`, `agent`) exits with the number of `error` violations, capped at 255; `json`, `csv` and `text` exit 0, as dependency-cruiser's do, so a pipeline can save JSON in one step and gate in the next ([ADR-0008](adr/0008-exit-code-contract.md), [ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). Exit 2 means the run cannot be trusted and exit 3 means the configuration is invalid, whatever the reporter.
+
+## Liveness
+
+A rule whose selecting side matches no module checks nothing, and a gate that reads green because a rule went stale is worse than no rule. So a rule whose `from` (or `module`) matches nothing fails the run with exit 2 and is listed in `summary.vacuousRules` ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)). `allowEmpty: true` on the rule opts it out, and `--no-liveness` turns the check off for a run, which dependency-cruiser's own test suites need.
+
+## What Rulebearing adds to a rule
+
+| Addition | What it does |
+| --- | --- |
+| `fix` | The imperative printed under every finding by `err-long`, `explain`, `can-import` and the `agent` reporter |
+| `examples.forbidden`, `examples.allowed` | Edges `rulebearing test` builds into a graph and checks the rule against, so a rule's regex is tested like code |
+| `owner`, `expires` | Who answers for a temporary rule, and the day after which it fails the run |
+| A decision token in `comment` | `adr:NNNN` or `plan:<slug>`; required by `--require-comment-token` |
+| A stable `id` on every violation | `RB-` and eight hex digits from the rule, the two ends and the kind of edge ([ADR-0015](adr/0015-stable-violation-id.md)), so a baseline entry survives unrelated edits |
+| `line` and `column` on every TypeScript edge | Where the import is, so a finding points at a line |
+
+## Baselines and ratchets
+
+**Known violations.** `options.knownViolations` lists findings that are accepted for now. An entry written by `rulebearing adopt` or `init` carries the violation's `id`, its `type` and, for a cycle or a reachability chain, the modules in it, plus `expires` and `owner`; an entry written by dependency-cruiser (`from`, `to`, `rule`, `cycle`, `via`) matches the way dependency-cruiser matches it. A known finding is reported with severity `ignore`. An entry past its `expires` date fails the run the day after.
+
+**Ratchets.** A `rules.ratchets` entry counts the direct edges that match its `from` and `to` (with `$1` captures) and compares the count with `{ "ceiling": n }` in its budget file. `cruise` reports every ratchet in `summary.ratchets`: an exceeded one is one error, and a missing budget exits 2 ([ADR-0029](adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)). `rulebearing count --from ... --to ... --budget FILE --write` lowers the ceiling to the current count and refuses to raise it.
+
+## Checking the rules themselves
+
+| Command | Answers |
+| --- | --- |
+| `rulebearing test` | Does each rule flag its `forbidden` examples and pass its `allowed` ones? |
+| `rulebearing config lint` | Can a rule never match? Is it shadowed by an earlier one? Does an `allowed` list admit everything? Does every rule have a `fix` that says more than its name? |
+| `rulebearing rules --json` | Every rule with its family, severity, and how many modules each side matched |
+| `rulebearing explain <rule>` | The rule in a sentence, its reason and fix, and the first edges it matched |

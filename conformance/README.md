@@ -4,7 +4,7 @@ The upstream tools' test suites are Rulebearing's specification ([ADR-0009](../d
 
 | Gate | Upstream | Pinned | What runs today | CI job |
 | --- | --- | --- | --- | --- |
-| 1 | [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) (MIT) | [18.2.0](dependency-cruiser/PIN) | Layer 1: the recorded `test/extract` cases replayed against the Rust extractor. Layer 2: upstream's `test/validate` and `test/graph-utl` specs, unmodified, with the unit under test forwarded to `rulebearing validate` | `conformance-gate-1` |
+| 1 | [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) (MIT) | [18.2.0](dependency-cruiser/PIN) | Layer 1: 296 of 296 recorded `test/extract` cases. Layer 2: 34 of 34 `test/validate` and `test/graph-utl` specs, unmodified. Layer 3: the wave 1 `test/report` specs, byte for byte. Layer 4: output and configurations against the upstream schemas. Layer 5: zero difference on three oracle repositories and the mutation branch | `conformance-gate-1`, `conformance-gate-1-layer-5` |
 | 2 | [ArchUnitNET](https://github.com/TNG/ArchUnitNET) (Apache-2.0) | [0.13.4](archunitnet/PIN) | The committed `TestAssembly` fixture verified (hashes, portable PDB, notice) and `ported.json` validated; the reader's end-to-end test over it lives in `rb-extract-dotnet` | `conformance-gate-2` |
 
 The ratchets are checked by `scripts/ratchets.sh` in the `ratchets` job against the base branch:
@@ -32,9 +32,11 @@ Liveness ([ADR-0007](../docs/adr/0007-vacuous-rules-fail-by-default.md)) is disa
 
 This split is what makes the denominator auditable.
 
-**Layer 2, rules.** [`harness/run-layer-2.mjs`](dependency-cruiser/harness/run-layer-2.mjs) runs the 34 specs with [`layer2-hooks.mjs`](dependency-cruiser/harness/layer2-hooks.mjs) replacing each `#validate` and `#graph-utl` import made by a spec with [`shim.mjs`](dependency-cruiser/harness/shim.mjs). Every function, method and curried application is forwarded to the binary over the JSON protocol documented at the top of `shim.mjs`; the original module is consulted only for shape. Until `validate` exists (wave 1) every spec fails and is listed in `excluded.json` with reason `wave-1`. In gate mode, a failure in a spec that is not listed fails the job, and a listed spec that passes is reported so the list can shrink. `--record` rewrites the list.
+**Layer 2, rules.** [`harness/run-layer-2.mjs`](dependency-cruiser/harness/run-layer-2.mjs) runs the 34 specs with [`layer2-hooks.mjs`](dependency-cruiser/harness/layer2-hooks.mjs) replacing each `#validate` and `#graph-utl` import made by a spec with [`shim.mjs`](dependency-cruiser/harness/shim.mjs). Every function, method and curried application is forwarded to the binary over the JSON protocol documented at the top of `shim.mjs`; the original module is consulted only for shape. All 34 specs pass, and `excluded.json` lists none. In gate mode, a failure in a spec that is not listed fails the job, and a listed spec that passes is reported so the list can shrink. `--record` rewrites the list.
 
-**Layers 3 and 4** (report fixtures byte-compared, schema validation) arrive with the reporters in [wave 1](../docs/plans/pending/0001-wave-1-typescript-parity.md). The two 18.2.0 schemas layer 4 needs are already vendored under `dependency-cruiser/fixtures/schemas/`.
+**Layer 3, reporters.** [`harness/run-layer-3.mjs`](dependency-cruiser/harness/run-layer-3.mjs) runs upstream's `test/report` specs for the wave 1 reporters (`err`, `err-long`, `text`, `csv`, `teamcity`, `azure-devops`, `null`) unmodified, with [`layer3-hooks.mjs`](dependency-cruiser/harness/layer3-hooks.mjs) forwarding each reporter to `rulebearing report`. The specs compare output byte for byte, so a pass is a byte-compare pass.
+
+**Layer 4, schemas.** [`crates/rb-cli/tests/layer4.rs`](../crates/rb-cli/tests/layer4.rs), run alone by [`scripts/run-layer-4.sh`](dependency-cruiser/scripts/run-layer-4.sh), validates against the vendored 18.2.0 schemas in `dependency-cruiser/fixtures/schemas/`. It checks every upstream result the pinned schema accepts, re-reported with `fmt --strict-schema`; a fresh `cruise --strict-schema`; layer 5's results when present; and every bundled preset and fetched oracle configuration at the stage dependency-cruiser validates it (`extends` merged, rules not yet normalised).
 
 **Layer 5, oracle zero-diff and the mutation branch** ([plan 0001, Step 18](../docs/plans/pending/0001-wave-1-typescript-parity.md#step-18-gate-1-layer-5-the-mutation-branch-oracle-zero-diff-1g)). [`scripts/run-layer-5.sh`](dependency-cruiser/scripts/run-layer-5.sh) clones `sverweij/dependency-cruiser`, `langfuse/langfuse` and `microsoft/FluidFramework` at their [manifest](../testbeds/manifest.yaml) SHAs, runs dependency-cruiser and `rulebearing cruise` with each repository's own configuration and roots (the script records which, and why), and [`harness/zero-diff.mjs`](dependency-cruiser/harness/zero-diff.mjs) compares every module, every dependency field and every violation after sorting. A difference fails the job unless [divergences.md](divergences.md) records it with a reason. `--mutations` applies [the mutation branch](dependency-cruiser/mutations/README.md) to dependency-cruiser's repository and requires both tools to report exactly its twelve violations, one per rule shape. The job, `conformance-gate-1-layer-5`, runs on every push to `main` and nightly, not on pull requests, because it clones and installs three repositories.
 
@@ -42,7 +44,8 @@ This split is what makes the denominator auditable.
 
 ```sh
 conformance/dependency-cruiser/scripts/vendor.sh          # once, or after a PIN bump: fixtures and expectations
-conformance/dependency-cruiser/run.sh                     # layers 1 and 2 (clones upstream into dependency-cruiser/upstream/)
+conformance/dependency-cruiser/run.sh                     # layers 1 to 4 (clones upstream into dependency-cruiser/upstream/)
+conformance/dependency-cruiser/scripts/run-layer-4.sh     # layer 4 alone
 cargo test -p rb-extract-ts --test extract_fixtures -- --nocapture   # layer 1 alone
 RB_UPDATE_LAYER1_OPEN=1 cargo test -p rb-extract-ts --test extract_fixtures   # rewrite layer1-open.json
 node conformance/dependency-cruiser/harness/run-layer-2.mjs <checkout> --record   # shrink excluded.json
@@ -63,9 +66,10 @@ conformance/
 │   ├── threshold.json               # layer 1 minimum ratio; may only rise
 │   ├── run.sh                       # the conformance-gate-1 job
 │   ├── scripts/vendor.sh            # fetches the tag, vendors inputs, records expectations
+│   ├── scripts/run-layer-4.sh       # the schema checks, crates/rb-cli/tests/layer4.rs
 │   ├── scripts/run-layer-5.sh       # the oracle zero-diff and the mutation branch
 │   ├── mutations/                   # the mutation branch as a patch, and its expected violations
-│   ├── harness/                     # the recorder, the layer 2 shim and runner (Node)
+│   ├── harness/                     # the recorder, the layer 2 and 3 shims and runners, zero-diff (Node)
 │   └── fixtures/
 │       ├── extract/                 # test/extract inputs, INDEX.json, expectations/*.json
 │       ├── report/, report-json/    # test/report verbatim; its cruise results as JSON (rb-model round trip)
