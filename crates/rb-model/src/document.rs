@@ -463,6 +463,10 @@ pub struct Summary {
     /// ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub vacuous_rules: Option<Vec<VacuousRule>>,
+    /// Additive: each ratchet's count against its budget
+    /// ([ADR-0029](../../../docs/adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ratchets: Option<Vec<RatchetResult>>,
 }
 
 /// One violation: `summary.violations[]`.
@@ -653,6 +657,36 @@ pub struct VacuousRule {
     pub name: String,
     /// The side that matched nothing: `from`, `module` or `select`.
     pub side: String,
+}
+
+/// One ratchet's result: `summary.ratchets[]`
+/// ([ADR-0029](../../../docs/adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct RatchetResult {
+    /// The ratchet name.
+    pub name: String,
+    /// The budget file.
+    pub budget: String,
+    /// Matching direct edges.
+    pub count: u64,
+    /// The budget's ceiling; absent when the budget cannot be read.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ceiling: Option<u64>,
+    /// How the count compares with the ceiling.
+    pub status: RatchetStatus,
+}
+
+/// `summary.ratchets[].status`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum RatchetStatus {
+    /// At or under the ceiling.
+    Held,
+    /// Over the ceiling: one error.
+    Exceeded,
+    /// The budget cannot be read: the run is untrustworthy.
+    NoBudget,
 }
 
 impl GraphDocument {

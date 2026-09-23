@@ -536,11 +536,11 @@ pub fn evaluate(
                 .map(|m| js::array(m, "dependencies").len() as u64)
                 .sum(),
         ),
-        environment: None,
         rule_set_used: (!used.is_empty()).then_some(used),
         options_used: options_used(&opts.options_used, &opts.args),
-        inspected: None,
         vacuous_rules: (!vacuous.is_empty()).then(|| vacuous.clone()),
+        // `environment`, `inspected` and `ratchets` belong to the command line.
+        ..Summary::default()
     };
     let modules: Vec<Module> = modules
         .into_iter()

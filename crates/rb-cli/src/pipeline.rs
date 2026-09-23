@@ -178,3 +178,63 @@ pub fn evaluate_document(
         document,
     })
 }
+
+/// The default place a cruise result is saved, and where the agent commands look for it.
+pub const SAVED_GRAPH: &str = ".graph/cruise.json";
+
+/// Clears what an earlier evaluation wrote, so a saved graph is evaluated as if just extracted.
+pub fn reset(document: &mut GraphDocument) {
+    for module in &mut document.modules {
+        module.valid = true;
+        module.rules = None;
+        module.dependents = None;
+        module.orphan = None;
+        module.reachable = None;
+        module.reaches = None;
+        module.instability = None;
+        module.matches_focus = None;
+        module.matches_reaches = None;
+        module.matches_highlight = None;
+        for dependency in &mut module.dependencies {
+            dependency.valid = true;
+            dependency.rules = None;
+            dependency.circular = false;
+            dependency.cycle = None;
+            dependency.instability = None;
+        }
+    }
+    document.folders = None;
+    document.summary = rb_model::Summary::default();
+}
+
+/// Reads a saved graph (a Rulebearing or dependency-cruiser result).
+///
+/// # Errors
+/// A message naming the file when it is missing or not a result.
+pub fn load_graph(ctx: &Context<'_>, file: &str) -> Result<GraphDocument, String> {
+    let path = ctx.resolve(file);
+    let text = std::fs::read_to_string(&path).map_err(|e| format!("cannot read the graph {}: {e}; run `rulebearing cruise -T json -f {SAVED_GRAPH}` first, or pass --graph", path.display()))?;
+    rb_ingest::dependency_cruiser::read(&text)
+        .map_err(|e| format!("{} is not a cruise result: {e}", path.display()))
+}
+
+/// The graph a query command works on: `--graph FILE`, else the saved graph when there is one,
+/// else a fresh extraction of `paths`. The result is un-annotated and ready to evaluate.
+///
+/// # Errors
+/// A message when the graph cannot be read or extracted.
+pub fn query_graph(
+    ctx: &Context<'_>,
+    config: &Config,
+    graph: Option<&str>,
+    paths: &[String],
+) -> Result<GraphDocument, String> {
+    let saved = ctx.resolve(SAVED_GRAPH);
+    let mut document = match graph {
+        Some(file) => load_graph(ctx, file)?,
+        None if paths.is_empty() && saved.is_file() => load_graph(ctx, SAVED_GRAPH)?,
+        None => extract(ctx, config, paths).map_err(|e| e.to_string())?,
+    };
+    reset(&mut document);
+    Ok(document)
+}

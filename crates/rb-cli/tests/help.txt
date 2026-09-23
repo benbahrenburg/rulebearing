@@ -3,8 +3,18 @@ rulebearing: one architecture rule set for TypeScript, .NET and Python
 Usage: rulebearing <COMMAND>
 
 Commands:
-  cruise  Extract, evaluate and report: dependency-cruiser's `depcruise`
-  fmt     Re-report a saved result without extracting: dependency-cruiser's `depcruise-fmt`
+  cruise      Extract, evaluate and report: dependency-cruiser's `depcruise`
+  fmt         Re-report a saved result without extracting: dependency-cruiser's `depcruise-fmt`
+  rules       Every rule, its family, severity and statistics
+  explain     One rule: its sentence, its violations and the edges it matched
+  test        Run each rule's examples against a synthetic graph
+  can-import  Would this import be allowed? Answers from the graph, before the import is written
+  count       The edges a ratchet counts, against its budget
+  config      Convert, expand or lint a configuration
+  hooks       Install agent hooks
+  summary     A brief for an agent starting a session
+  impact      What a file is subject to, before an edit
+  attest      Write or verify a receipt of the configuration, inputs and results
 
 Options:
   -h, --help     Print help
