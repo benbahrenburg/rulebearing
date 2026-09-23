@@ -23,7 +23,7 @@ use chrono::NaiveDate;
 use rb_config::model::{DependencyRules, Family, KnownViolation};
 use rb_config::{Config, Rule, decision_token};
 use rb_model::violation_id::violation_id;
-use rb_model::{Folder, GraphDocument, Module, Summary, VacuousRule, Violation};
+use rb_model::{ExpiredEntry, Folder, GraphDocument, Module, Summary, VacuousRule, Violation};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
@@ -105,6 +105,18 @@ pub struct Expired {
     pub expires: NaiveDate,
     /// `rule` or `knownViolation`.
     pub kind: String,
+}
+
+impl Expired {
+    /// The entry `summary.expired[]` carries
+    /// ([ADR-0031](../../../docs/adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)).
+    pub fn entry(&self) -> ExpiredEntry {
+        ExpiredEntry {
+            name: self.name.clone(),
+            expires: self.expires.format("%Y-%m-%d").to_string(),
+            kind: self.kind.clone(),
+        }
+    }
 }
 
 /// The result of an evaluation.
@@ -539,6 +551,7 @@ pub fn evaluate(
         rule_set_used: (!used.is_empty()).then_some(used),
         options_used: options_used(&opts.options_used, &opts.args),
         vacuous_rules: (!vacuous.is_empty()).then(|| vacuous.clone()),
+        expired: (!expired.is_empty()).then(|| expired.iter().map(Expired::entry).collect()),
         // `environment`, `inspected` and `ratchets` belong to the command line.
         ..Summary::default()
     };
@@ -743,6 +756,15 @@ mod tests {
                 kind: "rule".into()
             }]
         );
+        assert_eq!(
+            result.document.summary.expired,
+            Some(vec![ExpiredEntry {
+                name: "temp".into(),
+                expires: "2026-09-21".into(),
+                kind: "rule".into()
+            }]),
+            "the saved result carries it, so fmt --exit-code counts it (ADR-0031)"
+        );
         let on_the_day = evaluate(
             document(),
             &cfg,
@@ -752,6 +774,7 @@ mod tests {
             },
         )?;
         assert!(on_the_day.expired.is_empty());
+        assert_eq!(on_the_day.document.summary.expired, None);
         Ok(())
     }
 

@@ -145,6 +145,13 @@ fn init_writes_a_configuration_that_passes() -> Result<(), Box<dyn Error>> {
             .code(),
         Some(0)
     );
+    // A file named by --output is not overwritten either.
+    std::fs::write(dir.join("custom.yaml"), "mine\n")?;
+    std::fs::remove_file(dir.join("rulebearing.yaml"))?;
+    let custom = run(&dir, &["init", "--output", "custom.yaml"])?;
+    assert_eq!(custom.status.code(), Some(3));
+    assert!(String::from_utf8_lossy(&custom.stderr).contains("custom.yaml already exists"));
+    assert_eq!(std::fs::read_to_string(dir.join("custom.yaml"))?, "mine\n");
 
     let empty = tree("init-empty", &[("README.md", "nothing here\n")])?;
     assert_eq!(run(&empty, &["init"])?.status.code(), Some(2));
@@ -256,6 +263,9 @@ fn adopt_commits_on_a_branch_without_a_remote() -> Result<(), Box<dyn Error>> {
     git(&dir, &["config", "user.email", "tester@example.com"])?;
     git(&dir, &["add", "-A"])?;
     git(&dir, &["commit", "-qm", "start"])?;
+    // Work the user had staged stays staged, out of the adopt commit.
+    std::fs::write(dir.join("notes.txt"), "mine\n")?;
+    git(&dir, &["add", "notes.txt"])?;
     let adopted = run(&dir, &["adopt"])?;
     let stdout = String::from_utf8(adopted.stdout)?;
     assert_eq!(
@@ -284,6 +294,20 @@ fn adopt_commits_on_a_branch_without_a_remote() -> Result<(), Box<dyn Error>> {
             "docs/architecture/rulebearing.md",
             "rulebearing.yaml"
         ]
+    );
+    let staged = git(&dir, &["diff", "--cached", "--name-only"])?;
+    assert_eq!(String::from_utf8(staged.stdout)?.trim(), "notes.txt");
+    let adopt_head = git(&dir, &["rev-parse", "HEAD"])?.stdout;
+    git(&dir, &["checkout", "-q", "-"])?;
+    let again = run(&dir, &["adopt"])?;
+    assert!(
+        String::from_utf8(again.stdout)?.contains("does it exist already?"),
+        "an earlier adopt branch is never reset: {}",
+        String::from_utf8_lossy(&again.stderr)
+    );
+    assert_eq!(
+        git(&dir, &["rev-parse", "rulebearing/adopt"])?.stdout,
+        adopt_head
     );
     let config = std::fs::read_to_string(dir.join("rulebearing.yaml"))?;
     assert!(

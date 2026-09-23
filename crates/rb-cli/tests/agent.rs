@@ -14,6 +14,8 @@ use std::process::{Command, Output, Stdio};
 use serde_json::Value;
 
 const BIN: &str = env!("CARGO_BIN_EXE_rulebearing");
+/// The command `hooks install --claude-code` writes for `Stop`.
+const STOP_HOOK: &str = "rulebearing cruise --output-type agent --from-hook";
 
 const CONFIG: &str = r#"forbidden:
   - name: domain-not-to-web
@@ -147,6 +149,60 @@ fn can_import_answers_from_the_saved_graph() -> Result<(), Box<dyn Error>> {
     )?;
     assert_eq!(yes.status.code(), Some(0));
     assert_eq!(stdout(&yes), "yes\n");
+    // Paths are read the way the graph writes them.
+    let root = dir.canonicalize()?;
+    let absolute = root
+        .join("src/domain/model.ts")
+        .to_string_lossy()
+        .into_owned();
+    for from in ["./src/domain/model.ts", absolute.as_str()] {
+        let spelled = run(&dir, &["can-import", from, "./src/web/view.ts"])?;
+        assert_eq!(spelled.status.code(), Some(1), "{from}");
+    }
+    // A target the graph has never seen and that is not a file here is not a silent yes.
+    let unknown = run(
+        &dir,
+        &[
+            "can-import",
+            "src/web/view.ts",
+            "node_modules/left-pad/index.js",
+        ],
+    )?;
+    assert_eq!(unknown.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&unknown.stderr).contains("not in .graph/cruise.json"));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn can_import_takes_the_targets_kind_from_the_graph() -> Result<(), Box<dyn Error>> {
+    let dir = tree("can-import-kind")?;
+    let graph = serde_json::json!({
+        "modules": [
+            { "source": "src/test/a.test.ts", "dependencies": [
+                { "module": "vitest", "resolved": "node_modules/vitest/index.js",
+                  "dependencyTypes": ["npm-dev"], "coreModule": false, "couldNotResolve": false } ] },
+            { "source": "src/domain/model.ts", "dependencies": [] }
+        ],
+        "summary": {}
+    });
+    std::fs::write(dir.join("graph.json"), graph.to_string())?;
+    std::fs::write(
+        dir.join("dev.yaml"),
+        "forbidden:\n  - name: no-dev-deps-in-src\n    severity: error\n    from: { path: \"^src/domain/\" }\n    to: { dependencyTypes: [npm-dev] }\n",
+    )?;
+    let args = [
+        "can-import",
+        "--graph",
+        "graph.json",
+        "--config",
+        "dev.yaml",
+        "src/domain/model.ts",
+        "node_modules/vitest/index.js",
+    ];
+    let no = run(&dir, &args)?;
+    assert_eq!(no.status.code(), Some(1), "{}", stdout(&no));
+    assert!(stdout(&no).contains("no-dev-deps-in-src"));
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
@@ -231,6 +287,10 @@ fn hooks_summary_and_impact_serve_an_agent() -> Result<(), Box<dyn Error>> {
         Some(1)
     );
     assert_eq!(settings["hooks"]["PreToolUse"][0]["matcher"], "Edit|Write");
+    assert_eq!(
+        settings["hooks"]["Stop"][0]["hooks"][0]["command"],
+        STOP_HOOK
+    );
 
     let summary = json(&run(&dir, &["summary"])?)?;
     assert_eq!(summary["openViolations"][0]["name"], "domain-not-to-web");
@@ -247,12 +307,56 @@ fn hooks_summary_and_impact_serve_an_agent() -> Result<(), Box<dyn Error>> {
     let root = dir.canonicalize()?;
     let hook =
         serde_json::json!({ "tool_input": { "file_path": root.join("src/domain/model.ts") } });
+    // A PreToolUse hook's plain stdout never reaches the agent and exit 2 blocks the edit, so
+    // the report goes back as additionalContext and the hook exits 0, even when it cannot answer.
     let from_hook = run_with_stdin(&dir, &["impact", "--from-hook"], &hook.to_string())?;
-    let value = json(&from_hook)?;
+    assert_eq!(from_hook.status.code(), Some(0));
+    let answer = json(&from_hook)?;
+    assert_eq!(answer["hookSpecificOutput"]["hookEventName"], "PreToolUse");
+    let context = answer["hookSpecificOutput"]["additionalContext"]
+        .as_str()
+        .unwrap_or_default();
+    let value: Value = serde_json::from_str(
+        context
+            .strip_prefix("rulebearing impact:\n")
+            .unwrap_or_default(),
+    )?;
     assert_eq!(value["file"], "src/domain/model.ts");
     assert_eq!(value["rules"][0]["side"], "from");
     let bad = run_with_stdin(&dir, &["impact", "--from-hook"], "{}")?;
-    assert_eq!(bad.status.code(), Some(3));
+    assert_eq!(
+        bad.status.code(),
+        Some(0),
+        "a hook that cannot answer does not block"
+    );
+    assert!(bad.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&bad.stderr).contains("tool_input.file_path"));
+
+    // The Stop hook says nothing while the run cannot be trusted (here the ratchet has no
+    // budget yet), then blocks with the findings as the reason, once.
+    let stop: Vec<&str> = STOP_HOOK.split(' ').skip(1).collect();
+    let untrusted = run_with_stdin(&dir, &stop, "{}")?;
+    assert_eq!(untrusted.status.code(), Some(0));
+    assert!(untrusted.stdout.is_empty());
+    std::fs::create_dir_all(dir.join("budgets"))?;
+    std::fs::write(dir.join("budgets/domain-web.json"), r#"{ "ceiling": 1 }"#)?;
+    let blocked = run_with_stdin(&dir, &stop, "{}")?;
+    assert_eq!(blocked.status.code(), Some(0));
+    let answer = json(&blocked)?;
+    assert_eq!(answer["decision"], "block");
+    assert!(
+        answer["reason"]
+            .as_str()
+            .is_some_and(|r| r.contains("domain-not-to-web") && r.contains("\"cost\"")),
+        "{answer}"
+    );
+    let again = run_with_stdin(&dir, &stop, r#"{"stop_hook_active": true}"#)?;
+    assert_eq!(again.status.code(), Some(0));
+    assert!(again.stdout.is_empty(), "never holds the agent in a loop");
+    std::fs::write(dir.join("rulebearing.yaml"), "forbidden: []\n")?;
+    let clean = run_with_stdin(&dir, &stop, "{}")?;
+    assert_eq!(clean.status.code(), Some(0));
+    assert!(clean.stdout.is_empty(), "no errors, nothing to say");
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }

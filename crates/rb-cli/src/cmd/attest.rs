@@ -70,16 +70,27 @@ fn hex(digest: &[u8]) -> String {
     })
 }
 
-/// SHA-256 over each (name, bytes) pair, in the order given.
+/// SHA-256 over each (name, bytes) pair, in the order given. Each field is preceded by its length
+/// (eight bytes, big-endian), so no two different lists of pairs hash the same way.
 pub fn hash_files<'a>(files: impl Iterator<Item = (String, &'a [u8])>) -> String {
     let mut hasher = Sha256::new();
     for (name, bytes) in files {
-        hasher.update(name.as_bytes());
-        hasher.update([0]);
-        hasher.update(bytes);
-        hasher.update([0]);
+        for field in [name.as_bytes(), bytes] {
+            hasher.update((field.len() as u64).to_be_bytes());
+            hasher.update(field);
+        }
     }
     hex(&hasher.finalize())
+}
+
+/// A file's bytes, or exit 2 naming it: a receipt over a file it could not read proves nothing.
+fn read(path: &std::path::Path, name: &str) -> Result<Vec<u8>, Outcome> {
+    std::fs::read(path).map_err(|e| {
+        Outcome::failed(
+            RunExit::Untrustworthy,
+            format!("rulebearing attest: cannot read {name}: {e}\n"),
+        )
+    })
 }
 
 fn head(ctx: &Context<'_>) -> String {
@@ -95,10 +106,17 @@ fn head(ctx: &Context<'_>) -> String {
         )
 }
 
-fn inputs_hash(ctx: &Context<'_>, document: &GraphDocument, graph: Option<&str>) -> String {
+fn inputs_hash(
+    ctx: &Context<'_>,
+    document: &GraphDocument,
+    graph: Option<&str>,
+) -> Result<String, Outcome> {
     if let Some(file) = graph {
-        let bytes = std::fs::read(ctx.resolve(file)).unwrap_or_default();
-        return hash_files(std::iter::once((file.to_owned(), bytes.as_slice())));
+        let bytes = read(&ctx.resolve(file), file)?;
+        return Ok(hash_files(std::iter::once((
+            file.to_owned(),
+            bytes.as_slice(),
+        ))));
     }
     let mut sources: Vec<&str> = document
         .modules
@@ -109,14 +127,11 @@ fn inputs_hash(ctx: &Context<'_>, document: &GraphDocument, graph: Option<&str>)
     sources.sort_unstable();
     let contents: Vec<(String, Vec<u8>)> = sources
         .iter()
-        .map(|s| {
-            (
-                (*s).to_owned(),
-                std::fs::read(ctx.resolve(s)).unwrap_or_default(),
-            )
-        })
-        .collect();
-    hash_files(contents.iter().map(|(n, b)| (n.clone(), b.as_slice())))
+        .map(|s| Ok(((*s).to_owned(), read(&ctx.resolve(s), s)?)))
+        .collect::<Result<_, Outcome>>()?;
+    Ok(hash_files(
+        contents.iter().map(|(n, b)| (n.clone(), b.as_slice())),
+    ))
 }
 
 /// Computes the receipt for the current tree.
@@ -139,7 +154,7 @@ pub fn compute(ctx: &mut Context<'_>, args: &AttestArgs) -> Result<Receipt, Outc
             Outcome::failed(RunExit::Untrustworthy, format!("rulebearing attest: {e}\n"))
         })?,
     };
-    let inputs = inputs_hash(ctx, &document, args.graph.as_deref());
+    let inputs = inputs_hash(ctx, &document, args.graph.as_deref())?;
     let mut document = document;
     pipeline::reset(&mut document);
     let run = pipeline::evaluate_document(ctx, &config, document, &options, &mut progress)
@@ -150,12 +165,11 @@ pub fn compute(ctx: &mut Context<'_>, args: &AttestArgs) -> Result<Receipt, Outc
         .files
         .iter()
         .map(|p| {
-            (
-                p.to_string_lossy().replace('\\', "/"),
-                std::fs::read(p).unwrap_or_default(),
-            )
+            let name = p.to_string_lossy().replace('\\', "/");
+            let bytes = read(p, &name)?;
+            Ok((name, bytes))
         })
-        .collect();
+        .collect::<Result<_, Outcome>>()?;
     config_files.sort();
     let cwd = ctx
         .cwd
@@ -257,6 +271,21 @@ mod tests {
         );
         assert_ne!(a, b);
         assert_eq!(a.len(), 64);
+        // A separator byte inside the content cannot forge a second file.
+        let one = hash_files([("a".to_owned(), b"x\0y\0".as_slice())].into_iter());
+        let two = hash_files(
+            [
+                ("a".to_owned(), b"x".as_slice()),
+                ("y".to_owned(), b"".as_slice()),
+            ]
+            .into_iter(),
+        );
+        assert_ne!(one, two);
+        // The fixed vector: one pair, ("a", "xy"), with its eight-byte big-endian lengths.
+        assert_eq!(
+            a,
+            "72537a55d218ea5ba1d356d39a01f13b10c277da97d6a8fdeff1cfeed191f100"
+        );
         assert_eq!(
             a,
             hash_files([("a".to_owned(), b"xy".as_slice())].into_iter())

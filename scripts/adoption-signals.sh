@@ -48,23 +48,22 @@ graph_args=()
 [ -n "$graph" ] && graph_args=(--graph "$graph")
 rules="$(cd "$checkout" && "$bin" rules --json ${graph_args[@]+"${graph_args[@]}"} 2> /dev/null || echo '{}')"
 budgets="$(cd "$checkout" && "$bin" config expand rulebearing.yaml --json 2> /dev/null || echo '{}')"
-# Merged pull requests in the window, 40 at a time: with commits and files in one query, a larger
-# page exceeds GitHub's GraphQL node limit. A failed query stops the run rather than reporting zero.
-pulls="[]"
-cursor="$since"
-while :; do
-  page="$(gh pr list --repo "$repo" --state merged --limit 40 --search "merged:>=$cursor sort:updated-asc" \
-    --json number,author,body,files,commits,mergedAt)" || { echo "adoption-signals: gh pr list failed for $repo" >&2; exit 2; }
-  pulls="$(PULLS="$pulls" PAGE="$page" python3 -c 'import json, os
-seen = {p["number"]: p for p in json.loads(os.environ["PULLS"])}
-seen.update({p["number"]: p for p in json.loads(os.environ["PAGE"])})
-print(json.dumps(list(seen.values())))')"
-  count="$(PAGE="$page" python3 -c 'import json, os; print(len(json.loads(os.environ["PAGE"])))')"
-  [ "$count" -lt 40 ] && break
-  next="$(PAGE="$page" python3 -c 'import json, os; print(max(p["mergedAt"] for p in json.loads(os.environ["PAGE"]))[:10])')"
-  [ "$next" = "$cursor" ] && break
-  cursor="$next"
+# Merged pull requests in the window. First the numbers alone, which gh pages through itself (up
+# to search's 1,000 results); then each pull request's commits and files, one query each, because
+# with those fields a page of many exceeds GitHub's GraphQL node limit. Search cannot sort by merge
+# date, so a cursor over pages would skip pull requests. A failed query stops the run rather than
+# reporting zero.
+numbers="$(gh pr list --repo "$repo" --state merged --limit 1000 --search "merged:>=$since" \
+  --json number --jq '.[].number')" || { echo "adoption-signals: gh pr list failed for $repo" >&2; exit 2; }
+pulls="["
+separator=""
+for number in $numbers; do
+  pull="$(gh pr view "$number" --repo "$repo" --json number,author,body,files,commits,mergedAt)" \
+    || { echo "adoption-signals: gh pr view $number failed for $repo" >&2; exit 2; }
+  pulls="$pulls$separator$pull"
+  separator=","
 done
+pulls="$pulls]"
 
 RULES="$rules" BUDGETS="$budgets" PULLS="$pulls" REPO="$repo" GATE="$gate" AGENTS="$agents" \
   SINCE="$since" CHECKOUT="$checkout" python3 - <<'PY'

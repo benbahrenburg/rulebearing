@@ -18,7 +18,7 @@ branding:
 
 inputs:
   version:
-    description: The release to run, such as 0.1.0. Default is the version this action was referenced at, else the latest release.
+    description: The release to run, such as 0.1.0, or `latest`. Default is the version this action was referenced at (`@v0.1.0`); an action pinned by commit SHA must name the version, so the pin cannot float.
     required: false
     default: ""
   args:
@@ -58,8 +58,11 @@ runs:
         esac
         if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
           base="https://github.com/benbahrenburg/rulebearing/releases/download/v$version"
-        else
+        elif [ "$version" = "latest" ]; then
           base="https://github.com/benbahrenburg/rulebearing/releases/latest/download"
+        else
+          echo "::error::rulebearing: cannot tell which release to run from '${version}'. Reference the action at a version tag (@v0.1.0), or set with: version: 0.1.0 (or latest)"
+          exit 2
         fi
         dir="$RUNNER_TEMP/rulebearing"
         mkdir -p "$dir"
@@ -86,6 +89,7 @@ runs:
         BINARY: ${{ inputs.binary }}
       run: |
         set -euo pipefail
-        read -r -a extra <<< "$ARGS"
+        # -d '' reads every line of a multi-line args block; read returns 1 at the end of input.
+        read -r -d '' -a extra <<< "$ARGS" || true
         # The ${x+...} form keeps an empty list working under set -u on macOS's bash 3.2.
         "${BINARY:-rulebearing}" cruise --output-type "$OUTPUT_TYPE" ${extra[@]+"${extra[@]}"}

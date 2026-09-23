@@ -209,26 +209,33 @@ pub fn ci_step(ci: Ci, paths: &[String]) -> (&'static str, String) {
     }
 }
 
-/// The pre-commit hook: Husky's folder when the repository uses Husky, else `.githooks/`.
+/// The pre-commit hook: Husky's folder when the repository uses Husky, else `.githooks/`. An
+/// existing hook keeps every line it has and gains the gate as its last line; one that already
+/// runs the gate is left as it is.
 pub fn hook(root: &Path, paths: &[String]) -> (String, String) {
     let line = format!(
         "npx --no-install rulebearing cruise --config rulebearing.yaml --output-type err {}\n",
         paths.join(" ")
     );
-    if root.join(".husky").is_dir() {
-        let path = ".husky/pre-commit".to_owned();
-        let existing = std::fs::read_to_string(root.join(&path)).unwrap_or_default();
-        if existing.contains("rulebearing cruise") {
-            return (path, existing);
+    let path = if root.join(".husky").is_dir() {
+        ".husky/pre-commit"
+    } else {
+        ".githooks/pre-commit"
+    };
+    match std::fs::read_to_string(root.join(path)) {
+        Ok(existing) if existing.contains("rulebearing cruise") => (path.into(), existing),
+        Ok(existing) if !existing.is_empty() => {
+            let separator = if existing.ends_with('\n') { "" } else { "\n" };
+            (path.into(), format!("{existing}{separator}{line}"))
         }
-        return (path, format!("{existing}{line}"));
-    }
-    (
-        ".githooks/pre-commit".into(),
-        format!(
-            "#!/bin/sh\n# The architecture gate before each commit, written by `rulebearing adopt`.\n# Enable it once per clone: git config core.hooksPath .githooks\n{line}"
+        _ if path == ".husky/pre-commit" => (path.into(), line),
+        _ => (
+            path.into(),
+            format!(
+                "#!/bin/sh\n# The architecture gate before each commit, written by `rulebearing adopt`.\n# Enable it once per clone: git config core.hooksPath .githooks\n{line}"
+            ),
         ),
-    )
+    }
 }
 
 /// `docs/architecture/rulebearing.md`: every rule in a sentence, with its reason, its fix and
@@ -338,18 +345,23 @@ fn open_pull_request(ctx: &Context<'_>, files: &[String], body: &str) -> String 
     if git(ctx, &["rev-parse", "--is-inside-work-tree"]).as_deref() != Some("true") {
         return "not a git repository: commit the files above yourself\n".into();
     }
-    if git(ctx, &["checkout", "-B", BRANCH]).is_none() {
-        return format!("could not create the branch {BRANCH}; commit the files above yourself\n");
+    // `-b`, not `-B`: an adopt branch from an earlier run is never reset.
+    if git(ctx, &["checkout", "-b", BRANCH]).is_none() {
+        return format!(
+            "could not create the branch {BRANCH} (does it exist already?); commit the files above yourself\n"
+        );
     }
     let mut add = vec!["add", "--"];
     add.extend(files.iter().map(String::as_str));
-    if git(ctx, &add).is_none()
-        || git(
-            ctx,
-            &["commit", "-m", "Adopt the rulebearing architecture gate"],
-        )
-        .is_none()
-    {
+    // Only the files adopt wrote: anything the user had staged stays staged, out of this commit.
+    let mut commit = vec![
+        "commit",
+        "-m",
+        "Adopt the rulebearing architecture gate",
+        "--",
+    ];
+    commit.extend(files.iter().map(String::as_str));
+    if git(ctx, &add).is_none() || git(ctx, &commit).is_none() {
         return format!("could not commit on {BRANCH}; commit the files above yourself\n");
     }
     let has_remote = git(ctx, &["remote"]).is_some_and(|r| !r.is_empty());
@@ -560,8 +572,24 @@ mod tests {
         assert!(text.starts_with("npx --no-install rulebearing cruise"));
         let _ = std::fs::write(dir.join(".husky/pre-commit"), &text);
         assert_eq!(hook(&dir, &paths).1, text, "a second run adds nothing");
+        // An existing Husky hook without a final newline keeps its last command whole.
+        let _ = std::fs::write(dir.join(".husky/pre-commit"), "npm test");
+        assert_eq!(
+            hook(&dir, &paths).1,
+            format!("npm test\n{text}"),
+            "appended on a line of its own"
+        );
         let _ = std::fs::remove_dir_all(dir.join(".husky"));
         assert_eq!(hook(&dir, &paths).0, ".githooks/pre-commit");
+        assert!(hook(&dir, &paths).1.starts_with("#!/bin/sh\n"));
+        // An existing .githooks/pre-commit is extended, never replaced.
+        let _ = std::fs::create_dir_all(dir.join(".githooks"));
+        let _ = std::fs::write(
+            dir.join(".githooks/pre-commit"),
+            "#!/bin/sh\ncargo fmt --check\n",
+        );
+        let (_, merged) = hook(&dir, &paths);
+        assert!(merged.starts_with("#!/bin/sh\ncargo fmt --check\nnpx --no-install rulebearing"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

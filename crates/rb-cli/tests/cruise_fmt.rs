@@ -228,3 +228,43 @@ fn fmt_rereports_a_saved_result() -> Result<(), Box<dyn Error>> {
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
+
+#[test]
+fn fmt_exit_code_counts_what_the_saved_result_carries() -> Result<(), Box<dyn Error>> {
+    let dir = tree("fmt-saved")?;
+    // An expired warn rule fails the run; the JSON step exits 0 and the gate step must fail.
+    let expired = r#"{ "forbidden": [
+      { "name": "temp", "severity": "warn", "expires": "2020-01-01",
+        "from": { "path": "^src/main" }, "to": { "path": "^src/domain/" } } ] }"#;
+    std::fs::write(dir.join(".dependency-cruiser.json"), expired)?;
+    assert_eq!(
+        run(&dir, &["cruise", "-T", "err", "src"])?.status.code(),
+        Some(1)
+    );
+    let saved = run(&dir, &["cruise", "-T", "json", "-f", "expired.json", "src"])?;
+    assert_eq!(saved.status.code(), Some(0));
+    let value: Value = serde_json::from_slice(&std::fs::read(dir.join("expired.json"))?)?;
+    assert_eq!(value["summary"]["expired"][0]["name"], "temp");
+    let gate = run(&dir, &["fmt", "-e", "-T", "err", "expired.json"])?;
+    assert_eq!(gate.status.code(), Some(1), "the expired rule still fails");
+    let strict = run(
+        &dir,
+        &["fmt", "-T", "json", "--strict-schema", "expired.json"],
+    )?;
+    let stripped: Value = serde_json::from_slice(&strict.stdout)?;
+    assert!(stripped["summary"].get("expired").is_none());
+
+    // A vacuous rule makes the run untrustworthy, in cruise and in fmt alike.
+    let vacuous = r#"{ "forbidden": [
+      { "name": "stale", "from": { "path": "^nowhere/" }, "to": {} } ] }"#;
+    std::fs::write(dir.join(".dependency-cruiser.json"), vacuous)?;
+    assert_eq!(
+        run(&dir, &["cruise", "-T", "err", "src"])?.status.code(),
+        Some(2)
+    );
+    run(&dir, &["cruise", "-T", "json", "-f", "vacuous.json", "src"])?;
+    let gate = run(&dir, &["fmt", "-e", "-T", "err", "vacuous.json"])?;
+    assert_eq!(gate.status.code(), Some(2));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}

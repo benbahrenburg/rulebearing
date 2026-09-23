@@ -8,7 +8,10 @@
 //!
 //! Prints the rules whose `from` or `to` matches the file, its dependents to `--depth`, whether it
 //! sits on a cycle, and the ratchets its edges count toward. `--from-hook` reads the file from a
-//! Claude Code hook's JSON on stdin (`tool_input.file_path`), relative to the working directory.
+//! Claude Code hook's JSON on stdin (`tool_input.file_path`), relative to the working directory,
+//! and answers as a `PreToolUse` hook must: the report as `hookSpecificOutput.additionalContext`,
+//! which reaches the agent, and exit 0 always, because exit 2 would block the edit and plain
+//! stdout never reaches the agent ([docs/agents.md](../../../../docs/agents.md#the-hooks)).
 
 use std::collections::{BTreeSet, VecDeque};
 
@@ -91,31 +94,56 @@ fn hook_file(ctx: &mut Context<'_>) -> Result<String, String> {
 
 /// Runs `impact`.
 pub fn run(ctx: &mut Context<'_>, args: &ImpactArgs) -> Outcome {
-    let file = if args.from_hook {
-        match hook_file(ctx) {
-            Ok(f) => f,
-            Err(m) => {
-                return Outcome::failed(
-                    RunExit::InvalidConfig,
-                    format!("rulebearing impact: {m}\n"),
-                );
-            }
+    if args.from_hook {
+        return from_hook(ctx, args);
+    }
+    let file = args.file.clone().unwrap_or_default();
+    match report(ctx, args, &file) {
+        Ok(report) => {
+            let mut text = serde_json::to_string_pretty(&report).unwrap_or_default();
+            text.push('\n');
+            Outcome::printed(text)
         }
-    } else {
-        args.file.clone().unwrap_or_default()
-    };
-    let config = match configure::required(ctx, &args.config) {
-        Ok(c) => c,
-        Err(o) => return o,
-    };
+        Err(outcome) => outcome,
+    }
+}
+
+/// The `PreToolUse` answer: never blocks. A report that cannot be made (no configuration, nothing
+/// extracted) is left out, and the reason goes to stderr, which Claude Code logs.
+fn from_hook(ctx: &mut Context<'_>, args: &ImpactArgs) -> Outcome {
+    let result = hook_file(ctx)
+        .map_err(|m| Outcome::failed(RunExit::InvalidConfig, format!("rulebearing impact: {m}\n")))
+        .and_then(|file| report(ctx, args, &file));
+    match result {
+        Ok(report) => {
+            let context = serde_json::to_string_pretty(&report).unwrap_or_default();
+            let answer = json!({
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "additionalContext": format!("rulebearing impact:\n{context}"),
+                }
+            });
+            let mut text = answer.to_string();
+            text.push('\n');
+            Outcome::printed(text)
+        }
+        Err(outcome) => Outcome {
+            stdout: String::new(),
+            stderr: outcome.stderr,
+            code: 0,
+        },
+    }
+}
+
+/// What `file` is subject to.
+fn report(ctx: &mut Context<'_>, args: &ImpactArgs, file: &str) -> Result<Value, Outcome> {
+    let file = file.to_owned();
+    let config = configure::required(ctx, &args.config)?;
     let graph_args = GraphArgs {
         graph: args.graph.clone(),
         paths: Vec::new(),
     };
-    let evaluation = match rules::statistics(ctx, &config, &graph_args) {
-        Ok(e) => e,
-        Err(o) => return o,
-    };
+    let evaluation = rules::statistics(ctx, &config, &graph_args)?;
     let document = &evaluation.document;
     let mut dependents = BTreeSet::new();
     let mut queue = VecDeque::from([(file.clone(), 0usize)]);
@@ -149,7 +177,7 @@ pub fn run(ctx: &mut Context<'_>, args: &ImpactArgs) -> Outcome {
         })
         .map(|r| summary::ratchet_state(ctx, r, document))
         .collect();
-    let report = json!({
+    Ok(json!({
         "file": file,
         "known": module.is_some(),
         "rules": mentioned,
@@ -157,8 +185,5 @@ pub fn run(ctx: &mut Context<'_>, args: &ImpactArgs) -> Outcome {
         "depth": args.depth,
         "onCycle": on_cycle,
         "ratchets": ratchets,
-    });
-    let mut text = serde_json::to_string_pretty(&report).unwrap_or_default();
-    text.push('\n');
-    Outcome::printed(text)
+    }))
 }

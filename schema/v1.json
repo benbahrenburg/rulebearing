@@ -609,6 +609,30 @@
       ],
       "type": "object"
     },
+    "ExpiredEntry": {
+      "additionalProperties": false,
+      "description": "A rule or known violation past its date: `summary.expired[]`\n([ADR-0031](../../../docs/adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)).",
+      "properties": {
+        "expires": {
+          "description": "The last day it applied, `YYYY-MM-DD`.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "`rule` or `knownViolation`.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The rule, or the known violation's id or `from -> to`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "expires",
+        "kind"
+      ],
+      "type": "object"
+    },
     "ExtensionFound": {
       "additionalProperties": false,
       "description": "One extension in [`Environment`].",
@@ -1398,6 +1422,16 @@
           "format": "uint64",
           "minimum": 0,
           "type": "integer"
+        },
+        "expired": {
+          "description": "Additive: rules and known violations past their `expires` date, each one error, so a\nsaved result re-reported by `fmt --exit-code` fails as the cruise did\n([ADR-0031](../../../docs/adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)).",
+          "items": {
+            "$ref": "#/definitions/ExpiredEntry"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
         },
         "ignore": {
           "description": "Ignore-severity violations.",
