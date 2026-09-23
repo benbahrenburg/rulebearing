@@ -17,6 +17,7 @@
 //! | --- | --- |
 //! | [`document`] | the module layer: `modules`, `folders`, `summary`, `revisionData` |
 //! | [`code`] | the additive code layer: types, members, attributes, calls |
+//! | [`collate`] | JavaScript's `localeCompare` order, which dependency-cruiser sorts with |
 //! | [`vocab`] | the closed string vocabularies, one declaration each |
 //! | [`options`] | the per-language options an extractor receives |
 //! | [`extract`] | the [`Extractor`] trait and its errors |
@@ -24,6 +25,7 @@
 //! | [`schema`] | the generated JSON schema for `schema/v1.json` |
 
 pub mod code;
+pub mod collate;
 pub mod document;
 pub mod extract;
 pub mod js_number;

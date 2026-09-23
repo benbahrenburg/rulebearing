@@ -33,9 +33,12 @@ register('./layer2-hooks.mjs', import.meta.url);
 
 const Mocha = createRequire(join(upstream, 'package.json'))('mocha');
 const { globSync } = await import('node:fs');
+// Spec paths on the command line narrow the run (for investigating one spec); the gate runs all.
+const only = args.filter((arg) => arg.endsWith('.spec.mjs'));
 const specs = ['test/validate', 'test/graph-utl']
     .flatMap((dir) => globSync(`${dir}/**/*.spec.mjs`, { cwd: upstream }))
     .map((spec) => spec.split('\\').join('/'))
+    .filter((spec) => only.length === 0 || only.includes(spec))
     .sort();
 
 const excludedFile = JSON.parse(readFileSync(excludedPath, 'utf8'));
@@ -48,11 +51,13 @@ for (const spec of specs) {
 }
 await mocha.loadFilesAsync();
 const runner = mocha.run();
-runner.on('fail', (test) => {
+runner.on('fail', (test, error) => {
     const file = test.file ?? test.parent?.file;
     if (file) {
         failedSpecs.add(relative(upstream, file).split('\\').join('/'));
     }
+    const message = String(error?.message ?? error).slice(0, 600);
+    console.log(`layer2: FAIL ${test.fullTitle()}\n    ${message.split('\n').join('\n    ')}`);
 });
 await new Promise((done) => {
     runner.on('end', done);

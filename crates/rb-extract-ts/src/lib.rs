@@ -27,7 +27,8 @@
 //! (`src/cache/`), never during extraction, and the cache is a later wave's surface.
 
 pub mod babel;
-pub mod collate;
+/// JavaScript's `localeCompare` order, shared with the engine through `rb-model`.
+pub use rb_model::collate;
 pub mod core;
 pub mod jsdoc;
 pub mod npm;

@@ -1306,16 +1306,26 @@ dependencies = [
 name = "rb-report"
 version = "0.0.1"
 dependencies = [
+ "proptest",
  "rb-model",
  "rb-rules",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
 name = "rb-rules"
 version = "0.0.1"
 dependencies = [
+ "chrono",
+ "proptest",
  "rb-config",
  "rb-model",
+ "regex",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
