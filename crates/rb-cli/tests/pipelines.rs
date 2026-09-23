@@ -214,8 +214,12 @@ fn two_runs_serialise_byte_for_byte() -> Result<(), Box<dyn Error>> {
             "{output_type}: two runs in one tree differ"
         );
         // `optionsUsed.baseDir` is the working folder, an input like the files, as upstream writes it.
+        // JSON escapes a Windows path's backslashes, so both spellings are replaced.
         let placeholder = |out: &Output, dir: &Path| {
-            String::from_utf8_lossy(&out.stdout).replace(&*dir.to_string_lossy(), "<dir>")
+            let raw = dir.to_string_lossy();
+            String::from_utf8_lossy(&out.stdout)
+                .replace(&raw.replace('\\', "\\\\"), "<dir>")
+                .replace(&*raw, "<dir>")
         };
         assert_eq!(
             placeholder(&a, &first),
