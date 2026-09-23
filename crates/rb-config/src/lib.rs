@@ -13,7 +13,7 @@
 //! | Module | Does |
 //! | --- | --- |
 //! | [`model`] | the configuration model both formats load into |
-//! | [`load`] | one file in, one [`Config`] out |
+//! | [`mod@load`] | one file in, one [`Config`] out |
 //! | [`read`] | YAML, JSON, JSON5, JSONC, TOML and JavaScript into JSON |
 //! | [`js`] | the sandboxed QuickJS evaluator and `--config-via-node` |
 //! | [`native`] | the native shape onto dependency-cruiser's and back |

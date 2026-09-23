@@ -785,18 +785,16 @@ export default { extends: path.basename(base), forbidden: [] };"#,
         Ok(())
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_symlink_out_of_the_repository_is_refused() -> Result<(), Box<dyn Error>> {
         let outside = repo(&[("secret.json", r#"{"token": "x"}"#)])?;
         let dir = repo(&[("cfg.cjs", "module.exports = require('./link.json');")])?;
-        #[cfg(unix)]
-        {
-            std::os::unix::fs::symlink(
-                outside.path().join("secret.json"),
-                dir.path().join("link.json"),
-            )?;
-            assert!(refused(&dir, "cfg.cjs").contains("inside the repository"));
-        }
+        std::os::unix::fs::symlink(
+            outside.path().join("secret.json"),
+            dir.path().join("link.json"),
+        )?;
+        assert!(refused(&dir, "cfg.cjs").contains("inside the repository"));
         Ok(())
     }
 
