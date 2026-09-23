@@ -200,6 +200,10 @@ mod tests {
             Verdict::Over { excess: 1 }
         );
         assert_eq!(
+            verdict(9, Some(Budget { ceiling: 3 })),
+            Verdict::Over { excess: 6 }
+        );
+        assert_eq!(
             lowered(3, Some(Budget { ceiling: 5 })),
             Ok(Budget { ceiling: 3 })
         );

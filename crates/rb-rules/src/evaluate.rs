@@ -821,6 +821,158 @@ mod tests {
     }
 
     #[test]
+    fn known_violations_soften_only_their_own_kind() -> Result<(), EngineError> {
+        let cfg = config(json!({
+            "forbidden": [
+                { "name": "no-orphans", "severity": "error", "from": { "orphan": true }, "to": {} },
+                { "name": "no-packages", "severity": "error", "from": {}, "to": { "path": "^packages/" } }
+            ],
+            "options": { "knownViolations": [
+                { "type": "module", "from": "lonely.ts", "to": "lonely.ts", "rule": { "name": "other", "severity": "error" } },
+                { "type": "module", "from": "elsewhere.ts", "to": "elsewhere.ts", "rule": { "name": "no-orphans", "severity": "error" } },
+                { "type": "dependency", "from": "lonely.ts", "to": "lonely.ts", "rule": { "name": "no-orphans", "severity": "error" } },
+                { "type": "module", "from": "apps/web/a.ts", "to": "packages/x.ts", "rule": { "name": "no-packages", "severity": "error" } },
+                { "id": "RB-00000000", "expires": "2026-09-22" }
+            ] }
+        }));
+        let result = evaluate(
+            document(),
+            &cfg,
+            &EvalOptions {
+                today: today(),
+                ..EvalOptions::default()
+            },
+        )?;
+        let found: Vec<(&str, &str, Severity)> = result
+            .violations()
+            .iter()
+            .map(|v| (v.rule.name.as_str(), v.from.as_str(), v.rule.severity))
+            .collect();
+        assert_eq!(
+            found,
+            [
+                ("no-orphans", "lonely.ts", Severity::Error),
+                ("no-packages", "apps/web/a.ts", Severity::Error),
+            ]
+        );
+        assert_eq!(result.document.summary.ignore, Some(0));
+        assert!(
+            result.expired.is_empty(),
+            "an entry expiring today still applies today"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn metrics_are_needed_only_for_instability_and_folders() {
+        let plain = config(
+            json!({ "forbidden": [{ "name": "p", "from": {}, "to": { "circular": true } }] }),
+        );
+        assert!(!needs_metrics(&plain.rules.dependencies));
+        let unstable =
+            config(json!({ "allowed": [{ "from": {}, "to": { "moreUnstable": true } }] }));
+        assert!(needs_metrics(&unstable.rules.dependencies));
+    }
+
+    #[test]
+    fn the_summary_counts_each_severity_and_records_the_options() -> Result<(), EngineError> {
+        let cfg = config(json!({ "forbidden": [
+            { "name": "w", "severity": "warn", "from": {}, "to": { "path": "^packages/" } },
+            { "name": "i", "severity": "info", "from": {}, "to": { "path": "^apps/api" } }
+        ] }));
+        let result = evaluate(
+            document(),
+            &cfg,
+            &EvalOptions {
+                args: vec!["apps".into(), "packages".into()],
+                options_used: json!({ "outputType": "json", "progress": "none" })
+                    .as_object()
+                    .cloned()
+                    .unwrap_or_default(),
+                ..EvalOptions::default()
+            },
+        )?;
+        let summary = &result.document.summary;
+        assert_eq!(
+            (summary.error, summary.warn, summary.info, summary.ignore),
+            (0, 1, 1, Some(0))
+        );
+        assert_eq!(
+            Value::Object(summary.options_used.clone()),
+            json!({ "outputType": "json", "args": "apps packages" })
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn rule_set_used_only_when_there_are_rules() -> Result<(), EngineError> {
+        let bare = evaluate(document(), &config(json!({})), &EvalOptions::default())?;
+        assert_eq!(bare.document.summary.rule_set_used, None);
+        assert_eq!(bare.document.folders, None, "no metrics, no folders");
+        let ruled = evaluate(
+            document(),
+            &config(json!({ "forbidden": [{ "name": "p", "from": {}, "to": {} }] })),
+            &EvalOptions::default(),
+        )?;
+        assert!(ruled.document.summary.rule_set_used.is_some());
+        Ok(())
+    }
+
+    #[test]
+    fn placeholders_are_a_dollar_and_a_digit() {
+        assert!(has_placeholder("^apps/$1/"));
+        assert!(!has_placeholder("^apps/v2/"));
+        assert!(!has_placeholder("x$|^$a"));
+        assert!(!has_placeholder("$"));
+    }
+
+    #[test]
+    fn stats_count_selected_modules_and_matched_targets() {
+        let modules: Vec<Value> = document()
+            .modules
+            .iter()
+            .filter_map(|m| serde_json::to_value(m).ok())
+            .collect();
+        let rule = |value: Value| -> Rule { serde_json::from_value(value).unwrap_or_default() };
+        let fence = rule(
+            json!({ "from": {}, "to": { "path": "^(apps|packages)/", "pathNot": "^apps/api" } }),
+        );
+        assert_eq!(to_matches(&fence, Family::Forbidden, &modules), 2);
+        let captured = rule(
+            json!({ "from": {}, "to": { "path": "^(apps|packages)/", "pathNot": "^apps/$1" } }),
+        );
+        assert_eq!(
+            to_matches(&captured, Family::Forbidden, &modules),
+            3,
+            "a pathNot with a placeholder cannot be counted without a from, so it is left out"
+        );
+        assert_eq!(
+            to_matches(
+                &rule(json!({ "from": {}, "to": { "path": "^$1" } })),
+                Family::Forbidden,
+                &modules
+            ),
+            0
+        );
+        // Dependencies for a dependency rule; modules for reachability and required rules.
+        let apps_or_lonely = rule(json!({ "from": {}, "to": { "path": "^(apps|lonely)" } }));
+        assert_eq!(to_matches(&apps_or_lonely, Family::Forbidden, &modules), 2);
+        assert_eq!(to_matches(&apps_or_lonely, Family::Required, &modules), 3);
+        let reachable =
+            rule(json!({ "from": {}, "to": { "path": "^(apps|lonely)", "reachable": true } }));
+        assert_eq!(to_matches(&reachable, Family::Forbidden, &modules), 3);
+
+        let not_api =
+            rule(json!({ "from": { "path": "^apps/", "pathNot": "^apps/api" }, "to": {} }));
+        assert!(selects(&not_api, &modules[0]));
+        assert!(!selects(&not_api, &modules[1]));
+        assert!(!selects(&not_api, &modules[2]));
+        let module_not = rule(json!({ "module": { "pathNot": "^apps/" }, "to": {} }));
+        assert!(!selects(&module_not, &modules[0]));
+        assert!(selects(&module_not, &modules[3]));
+    }
+
+    #[test]
     fn focus_narrows_the_graph() -> Result<(), EngineError> {
         let cfg = config(json!({ "options": { "focus": "^packages/" } }));
         let result = evaluate(document(), &cfg, &EvalOptions::default())?;

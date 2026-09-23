@@ -273,6 +273,26 @@ mod tests {
     }
 
     #[test]
+    fn the_rule_set_is_recorded_only_when_it_has_rules() -> Result<(), EngineError> {
+        let empty = DependencyRules::default();
+        let out = rewrap(document(), &FormatOptions::default(), Some(&empty))?;
+        assert_eq!(out.summary.rule_set_used, None);
+        let rules = rb_config::normalize::rule_set(
+            json!({ "forbidden": [{ "name": "r", "from": {}, "to": {} }] })
+                .as_object()
+                .unwrap_or(&Map::new()),
+        )
+        .unwrap_or_default();
+        let out = rewrap(document(), &FormatOptions::default(), Some(&rules))?;
+        assert!(
+            out.summary
+                .rule_set_used
+                .is_some_and(|used| used.contains_key("forbidden"))
+        );
+        Ok(())
+    }
+
+    #[test]
     fn collapse_depths_become_patterns() {
         assert_eq!(
             collapse_pattern(&json!(2)).as_deref(),
@@ -283,6 +303,9 @@ mod tests {
             Some("node_modules/[^/]+|^[^/]+/")
         );
         assert_eq!(collapse_pattern(&json!("^src")).as_deref(), Some("^src"));
+        // Only a single digit (`/^\d$/`) is a depth; any other string is a pattern.
+        assert_eq!(collapse_pattern(&json!("12")).as_deref(), Some("12"));
+        assert_eq!(collapse_pattern(&json!("a")).as_deref(), Some("a"));
         assert_eq!(collapse_pattern(&json!(true)), None);
     }
 }

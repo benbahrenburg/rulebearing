@@ -301,7 +301,8 @@ fn dispatch_graph_utl(
             }
         }
         ("#graph-utl/add-focus.mjs", "default", "") => {
-            if js::truthy(Some(arg(1))) && js::truthy(arg(1).get("path")) {
+            // `pFilter?.path`: `get` on a non-object is `None`, as the optional chain is.
+            if js::truthy(arg(1).get("path")) {
                 Value::Array(add_focus(modules(arg(0)), &Filter::from_value(arg(1))))
             } else {
                 arg(0).clone()
@@ -778,6 +779,29 @@ mod tests {
         assert_eq!(string(None), "undefined");
         assert_eq!(string(Some(&json!(null))), "null");
         assert_eq!(string(Some(&json!(3))), "3");
+        assert_eq!(depth(Some(&json!(2))), 2);
+        assert_eq!(depth(Some(&json!("2"))), 0);
+        assert_eq!(depth(None), 0);
+        let neither = json!({ "forbidden": [{ "to": { "path": "x" } }, { "from": {} }], "allowed": [{ "to": {} }] });
+        assert_eq!(
+            call(
+                "#graph-utl/rule-set.mjs",
+                "ruleSetHasLicenseRule",
+                &[],
+                json!([[neither]])
+            )?,
+            json!(false)
+        );
+        let license_not = json!({ "allowed": [{ "to": { "licenseNot": "MIT" } }] });
+        assert_eq!(
+            call(
+                "#graph-utl/rule-set.mjs",
+                "ruleSetHasLicenseRule",
+                &[],
+                json!([[license_not]])
+            )?,
+            json!(true)
+        );
         Ok(())
     }
 }

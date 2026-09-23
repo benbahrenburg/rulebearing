@@ -18,7 +18,7 @@ use serde_json::{Value, json};
 
 use crate::graph::indexed::{DependencySet, IndexedGraph};
 use crate::js;
-use crate::matchers::{from_groups, match_to_module_path, match_to_module_path_not, pattern};
+use crate::matchers::{match_to_module_path, match_to_module_path_not, pattern};
 use crate::patterns;
 
 fn any_rule(rules: &DependencyRules, f: impl Fn(&Rule) -> bool) -> bool {
@@ -140,9 +140,10 @@ fn reachable_rules(rules: &DependencyRules) -> Vec<&Rule> {
         .collect()
 }
 
-/// The selecting side of a reachability rule: `from`, or `module` for a required rule.
+/// The selecting side of a reachability rule: `from`, or `module` for a required rule
+/// (`pRule.from ?? pRule.module`). With neither, both branches give no patterns.
 fn selecting(rule: &Rule) -> (Option<String>, Option<String>) {
-    if rule.module.is_some() && rule.from == rb_config::model::FromRestriction::default() {
+    if rule.from == rb_config::model::FromRestriction::default() {
         let m = rule.module.as_ref();
         (
             pattern(m.and_then(|m| m.path.as_ref())),
@@ -164,13 +165,10 @@ fn in_rule_from(rule: &Rule, module: &Value) -> bool {
         && path_not.is_none_or(|p| !patterns::test(&p, &source))
 }
 
+/// `extractGroups(pRule.from ?? pRule.module, source)`.
 fn groups_for(rule: &Rule, from_source: &str) -> Vec<String> {
     let (path, _) = selecting(rule);
-    if rule.module.is_some() && rule.from == rb_config::model::FromRestriction::default() {
-        path.map_or_else(Vec::new, |p| patterns::groups(&p, from_source))
-    } else {
-        from_groups(rule, from_source)
-    }
+    path.map_or_else(Vec::new, |p| patterns::groups(&p, from_source))
 }
 
 /// `isModuleInRuleTo`.
@@ -504,6 +502,88 @@ mod tests {
         assert_eq!(modules[0]["reaches"][0]["asDefinedInRule"], "req");
         assert!(has_capturing_groups(&set.forbidden[0]));
         assert!(!has_capturing_groups(&set.required[0]));
+    }
+
+    #[test]
+    fn only_the_selected_modules_get_reaches() {
+        let set = rules(json!({
+            "forbidden": [
+                { "name": "reaches", "from": { "path": "^src/a" }, "to": { "path": "^lib/", "reachable": true } },
+                { "name": "both", "from": { "path": "^src", "pathNot": "^src/b" }, "to": { "path": "^(src/b|lib/)", "reachable": true } }
+            ],
+            "required": [{ "name": "req", "module": { "path": "^src/a" }, "to": { "path": "^lib/", "reachable": true } }]
+        }));
+        let mut modules = graph();
+        reachables(&mut modules, &set);
+        let b = json!({ "name": "src/b.ts", "dependencyTypes": ["local"] });
+        let c = json!({ "name": "lib/c.ts", "dependencyTypes": ["local"] });
+        assert_eq!(
+            modules[0]["reaches"],
+            json!([
+                { "asDefinedInRule": "reaches", "modules": [{ "source": "lib/c.ts", "via": [b, c] }] },
+                { "asDefinedInRule": "both", "modules": [
+                    { "source": "src/b.ts", "via": [b] },
+                    { "source": "lib/c.ts", "via": [b, c] }
+                ] },
+                { "asDefinedInRule": "req", "modules": [{ "source": "lib/c.ts", "via": [b, c] }] }
+            ])
+        );
+        assert!(
+            !js::has(&modules[1], "reaches"),
+            "src/b reaches lib/c, but no rule selects it"
+        );
+        // A required rule asks for reachable[] too, whatever its to.reachable says.
+        assert_eq!(
+            modules[2]["reachable"],
+            json!([{ "value": true, "asDefinedInRule": "req", "matchedFrom": "src/a.ts" }])
+        );
+        assert!(!js::has(&modules[1], "reachable"));
+    }
+
+    #[test]
+    fn reachable_records_merge_per_rule() {
+        let modules = || {
+            vec![
+                json!({ "source": "island.ts", "dependencies": [] }),
+                json!({ "source": "src/a.ts", "dependencies": [{ "resolved": "lib/c.ts" }] }),
+                json!({ "source": "lib/c.ts", "dependencies": [] }),
+            ]
+        };
+        let set = rules(json!({ "forbidden": [
+            { "name": "r1", "from": { "path": "^(island|src/a)" }, "to": { "path": "^lib/", "reachable": false } },
+            { "name": "r2", "from": { "path": "^src/a" }, "to": { "path": "^lib/", "reachable": false } }
+        ] }));
+        let mut m = modules();
+        reachables(&mut m, &set);
+        // island.ts is tried first and does not reach lib/c.ts; src/a.ts then does, which turns
+        // the value true and keeps the first matchedFrom.
+        assert_eq!(
+            m[2]["reachable"],
+            json!([
+                { "value": true, "asDefinedInRule": "r1", "matchedFrom": "island.ts" },
+                { "value": true, "asDefinedInRule": "r2", "matchedFrom": "src/a.ts" }
+            ])
+        );
+        let own = rules(json!({ "forbidden": [
+            { "name": "own", "from": { "path": "^lib/" }, "to": { "path": "^lib/", "reachable": false } }
+        ] }));
+        let mut m = modules();
+        reachables(&mut m, &own);
+        assert!(
+            !js::has(&m[2], "reachable"),
+            "a module is never asked whether it reaches itself"
+        );
+    }
+
+    #[test]
+    fn capturing_groups_are_a_dollar_and_a_digit() {
+        let to =
+            |path: &str| rules(json!({ "forbidden": [{ "from": {}, "to": { "path": path } }] }));
+        assert!(has_capturing_groups(&to("^src/$1/").forbidden[0]));
+        assert!(!has_capturing_groups(&to("^v2/").forbidden[0]));
+        assert!(!has_capturing_groups(&to("x$|^$a").forbidden[0]));
+        let not = rules(json!({ "forbidden": [{ "from": {}, "to": { "pathNot": "$2" } }] }));
+        assert!(has_capturing_groups(&not.forbidden[0]));
     }
 
     #[test]

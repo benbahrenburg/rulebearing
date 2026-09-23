@@ -242,6 +242,36 @@ mod tests {
     }
 
     #[test]
+    fn couplings_count_every_edge_and_list_each_folder_once() {
+        let edge = |to: &str| json!({ "resolved": to });
+        let modules = [
+            json!({ "source": "src/a/x.ts", "dependencies": [edge("src/b/y.ts"), edge("src/c/w.ts")], "dependents": [] }),
+            json!({ "source": "src/a/z.ts", "dependencies": [edge("src/b/y.ts")], "dependents": [] }),
+            json!({ "source": "src/b/y.ts", "dependencies": [edge("src/c/w.ts")], "dependents": ["src/a/x.ts", "src/a/z.ts"] }),
+            json!({ "source": "src/c/w.ts", "dependencies": [], "dependents": ["src/a/x.ts", "src/b/y.ts"] }),
+        ];
+        let out = folders(&modules, false, &DependencyRules::default());
+        let a = &out[1];
+        assert_eq!(a["name"], "src/a");
+        // Three module-level edges leave src/a, two of them to the same module: upstream counts
+        // each edge, and lists each target folder once.
+        assert_eq!(a["efferentCouplings"], 3);
+        let names: Vec<&str> = js::array(a, "dependencies")
+            .iter()
+            .filter_map(|d| d["name"].as_str())
+            .collect();
+        assert_eq!(names, ["src/b", "src/c"]);
+        let b = &out[2];
+        assert_eq!(b["afferentCouplings"], 2);
+        assert_eq!(b["instability"], json!(1.0 / 3.0));
+        assert_eq!(
+            a["dependencies"][0]["instability"],
+            json!(1.0 / 3.0),
+            "a folder dependency carries its target's instability"
+        );
+    }
+
+    #[test]
     fn parents_are_every_prefix() {
         assert_eq!(parent_folders("a/b/c"), ["a", "a/b", "a/b/c"]);
         assert_eq!(parent_folders("."), ["."]);

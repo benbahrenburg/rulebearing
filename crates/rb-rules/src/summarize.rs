@@ -356,6 +356,29 @@ mod tests {
     }
 
     #[test]
+    fn reaches_of_a_non_reachable_rule_leave_a_module_violation() {
+        let set = rules(json!({ "forbidden": [
+            { "name": "no-orphans", "severity": "ignore", "from": { "orphan": true }, "to": {} },
+            { "name": "reach", "from": {}, "to": { "path": "b", "reachable": true } }
+        ] }));
+        let modules = vec![json!({
+            "source": "o", "valid": false, "dependencies": [],
+            "rules": [{ "name": "no-orphans", "severity": "ignore" }],
+            "reaches": [{ "asDefinedInRule": "reach", "modules": [{ "source": "b", "via": [] }] }]
+        })];
+        let violations = summarize_modules(&modules, Some(&set));
+        assert_eq!(
+            violations,
+            [
+                json!({ "type": "module", "from": "o", "to": "o", "rule": { "name": "no-orphans", "severity": "ignore" } })
+            ]
+        );
+        let stats = violation_stats(&violations);
+        assert_eq!(stats["ignore"], 1);
+        assert_eq!(stats["error"], 0);
+    }
+
+    #[test]
     fn instability_violations() {
         let set = rules(
             json!({ "forbidden": [{ "name": "sdp", "from": {}, "to": { "moreUnstable": true } }] }),
@@ -368,6 +391,36 @@ mod tests {
         let v = summarize_modules(&modules, Some(&set));
         assert_eq!(v[0]["type"], "instability");
         assert_eq!(v[0]["metrics"]["to"]["instability"], 0.9);
+        // All three are needed: the module's instability, the dependency's, and a moreUnstable
+        // rule.
+        let sdp = json!([{ "name": "sdp", "severity": "warn" }]);
+        let plain =
+            rules(json!({ "forbidden": [{ "name": "sdp", "from": {}, "to": { "path": "b" } }] }));
+        let both = vec![
+            json!({ "source": "a", "instability": 0.1, "valid": true, "dependencies": [
+            { "resolved": "b", "instability": 0.9, "valid": false, "rules": sdp }
+        ] }),
+        ];
+        assert_eq!(
+            summarize_modules(&both, Some(&plain))[0]["type"],
+            "dependency"
+        );
+        let module_only = vec![
+            json!({ "source": "a", "instability": 0.1, "valid": true, "dependencies": [
+            { "resolved": "b", "valid": false, "rules": sdp }
+        ] }),
+        ];
+        assert_eq!(
+            summarize_modules(&module_only, Some(&set))[0]["type"],
+            "dependency"
+        );
+        let dependency_only = vec![json!({ "source": "a", "valid": true, "dependencies": [
+            { "resolved": "b", "instability": 0.9, "valid": false, "rules": sdp }
+        ] })];
+        assert_eq!(
+            summarize_modules(&dependency_only, Some(&set))[0]["type"],
+            "dependency"
+        );
     }
 
     #[test]
@@ -378,13 +431,15 @@ mod tests {
             { "name": "f", "scope": "folder", "from": {}, "to": { "path": "x" } }
         ] }));
         let folders = vec![json!({ "name": "a", "instability": 0.1, "dependencies": [
-            { "name": "b", "valid": false, "cycle": [], "instability": 0.5, "rules": [{ "name": "c" }, { "name": "u" }, { "name": "f" }] },
+            { "name": "b", "valid": false, "cycle": [{ "name": "b" }, { "name": "a" }], "instability": 0.5, "rules": [{ "name": "c" }, { "name": "u" }, { "name": "f" }] },
             { "name": "z", "valid": true, "rules": [] }
         ] })];
         let v = summarize_folders(&folders, Some(&set));
         let kinds: Vec<&str> = v.iter().filter_map(|x| x["type"].as_str()).collect();
         assert_eq!(kinds, ["cycle", "instability", "folder"]);
         assert_eq!(v[1]["metrics"]["from"]["instability"], 0.1);
+        assert_eq!(v[0]["cycle"], json!([{ "name": "b" }, { "name": "a" }]));
+        assert!(!js::has(&v[2], "cycle"));
     }
 
     #[test]
@@ -406,6 +461,11 @@ mod tests {
         let mut w2 = v("a", "b");
         w2["via"] = json!([{ "name": "r" }]);
         assert!(!is_same_violation(&w1, &w2));
+        // A cycle or via on one side only is not compared: from and to decide.
+        assert!(is_same_violation(&c1, &v("a", "b")));
+        assert!(is_same_violation(&v("a", "b"), &c1));
+        assert!(is_same_violation(&w1, &v("a", "b")));
+        assert!(is_same_violation(&v("a", "b"), &w1));
     }
 
     #[test]
@@ -427,6 +487,13 @@ mod tests {
         assert_eq!(
             Value::Object(used),
             json!({ "exclude": { "path": "x" }, "includeOnly": "^src", "tsPreCompilationDeps": true, "args": "src lib" })
+        );
+        // Only doNotFollow and exclude drop an empty object, only knownViolations an empty array.
+        let kept = json!({ "reporterOptions": {}, "moduleSystems": [], "knownViolations": [{ "from": "a" }] });
+        let used = options_used(kept.as_object().unwrap_or(&Map::new()), &[]);
+        assert_eq!(
+            Value::Object(used),
+            json!({ "knownViolations": [{ "from": "a" }], "moduleSystems": [], "reporterOptions": {}, "args": "" })
         );
         assert!(find_rule_by_name(None, "f").is_none());
     }
