@@ -76,9 +76,46 @@ pub fn object() -> Value {
     Value::Object(Map::new())
 }
 
+/// `Array.prototype.sort(comparefn)` as V8 runs it, where `less(a, b)` is `comparefn(a, b) < 0`.
+///
+/// The order matters when the comparator is inconsistent, as `compareSeverity` in
+/// dependency-cruiser's `validate/index.mjs` is: a severity it has no rank for compares as `NaN`,
+/// which the specification's `SortCompare` turns into `+0`, so such an entry is "equal" to every
+/// other. V8's `TimSort` first takes the run at the start of the array (reversed when strictly
+/// descending), then binary-inserts every further element. Below 64 elements that is the whole
+/// algorithm; from 64 V8 sorts runs of that length and merges them, which gives the same order
+/// whenever the comparator is consistent.
+pub fn sort<T>(items: &mut [T], less: impl Fn(&T, &T) -> bool) {
+    let n = items.len();
+    if n < 2 {
+        return;
+    }
+    let descending = less(&items[1], &items[0]);
+    let mut run = 2;
+    while run < n && less(&items[run], &items[run - 1]) == descending {
+        run += 1;
+    }
+    if descending {
+        items[..run].reverse();
+    }
+    for start in run..n {
+        let (mut left, mut right) = (0, start);
+        while left < right {
+            let mid = left + (right - left) / 2;
+            if less(&items[start], &items[mid]) {
+                right = mid;
+            } else {
+                left = mid + 1;
+            }
+        }
+        items[left..=start].rotate_right(1);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
     use serde_json::json;
 
     #[test]
@@ -111,5 +148,44 @@ mod tests {
         let mut n = json!(1);
         set(&mut n, "k", json!(1));
         assert_eq!(n, json!(1));
+    }
+
+    /// `Some(rank)`, or `None` for an entry the comparator answers `NaN` (so `+0`) for.
+    fn by_rank(a: &(Option<u8>, usize), b: &(Option<u8>, usize)) -> bool {
+        matches!((a.0, b.0), (Some(x), Some(y)) if x < y)
+    }
+
+    #[test]
+    fn sort_follows_v8_when_the_comparator_is_inconsistent() {
+        // Each expectation is what `[...].sort((a, b) => a.r - b.r)` gives on Node 24, with
+        // `undefined` ranks written `None`.
+        let run = |ranks: &[Option<u8>]| -> Vec<usize> {
+            let mut items: Vec<(Option<u8>, usize)> = ranks.iter().copied().zip(0..).collect();
+            sort(&mut items, by_rank);
+            items.into_iter().map(|(_, i)| i).collect()
+        };
+        // A strictly descending first run is reversed, and it ends at the first "equal".
+        assert_eq!(run(&[Some(3), Some(2), None]), [1, 0, 2]);
+        assert_eq!(run(&[None, Some(2)]), [0, 1]);
+        assert_eq!(run(&[Some(2), None, Some(1)]), [0, 1, 2]);
+        assert_eq!(run(&[None, Some(2), Some(1)]), [0, 2, 1]);
+        assert_eq!(run(&[Some(3), Some(2), Some(1), Some(1)]), [2, 3, 1, 0]);
+        assert_eq!(run(&[Some(1), None, Some(3), Some(2)]), [0, 1, 3, 2]);
+        assert!(run(&[]).is_empty());
+        assert_eq!(run(&[Some(5)]), [0]);
+        assert_eq!(run(&[Some(2), Some(1)]), [1, 0]);
+    }
+
+    proptest! {
+        #[test]
+        fn with_a_consistent_comparator_sort_is_a_stable_sort(
+            keys in proptest::collection::vec(0u8..6, 0..80)
+        ) {
+            let mut ours: Vec<(Option<u8>, usize)> = keys.iter().map(|k| Some(*k)).zip(0..).collect();
+            let mut stable = ours.clone();
+            sort(&mut ours, by_rank);
+            stable.sort_by_key(|(k, _)| *k);
+            prop_assert_eq!(ours, stable);
+        }
     }
 }
