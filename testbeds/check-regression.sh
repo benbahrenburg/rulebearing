@@ -7,7 +7,8 @@
 #
 # Only rows with a Rulebearing timing in both summaries are compared, so until wave 1 records one
 # the check reports that there is nothing to compare and passes. A missing previous summary (the
-# first night) passes the same way.
+# first night) passes the same way. Each timing is the median of three runs, and a change under
+# 0.1 s is not counted: most rows take well under a second, where runner noise alone exceeds 20%.
 set -euo pipefail
 previous="${1:?usage: check-regression.sh <previous summary.json> <current summary.json> [threshold]}"
 current="${2:?usage: check-regression.sh <previous summary.json> <current summary.json> [threshold]}"
@@ -29,7 +30,7 @@ if not common:
     print("regression: no row has a Rulebearing timing in both summaries; nothing to compare")
     sys.exit(0)
 worse = [(repo, before[repo], after[repo]) for repo in common
-         if after[repo] > before[repo] * (1 + threshold / 100)]
+         if after[repo] > before[repo] * (1 + threshold / 100) and after[repo] - before[repo] >= 0.1]
 for repo, was, now in worse:
     print(f"::error::{repo}: Rulebearing took {now} s, was {was} s (over {threshold:g}% slower)")
 print(f"regression: compared {len(common)} rows, {len(worse)} regressed")

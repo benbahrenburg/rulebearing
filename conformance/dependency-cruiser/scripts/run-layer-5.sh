@@ -195,8 +195,41 @@ run_oracle() { # owner/name
       return 2
       ;;
   esac
-  cruise_both "$out" "$dir/$config_dir" "$(basename "$config")" "$incumbent" "${roots[@]}"
-  zero_diff "$out" "$name"
+  local verdict status=0
+  if cruise_both "$out" "$dir/$config_dir" "$(basename "$config")" "$incumbent" "${roots[@]}"; then
+    zero_diff "$out" "$name" | tee "$out/zero-diff.txt" || status=1
+    if [ "$status" -eq 0 ]; then
+      verdict="yes"
+    else
+      verdict="$(sed -nE 's/.*; ([0-9]+) differences, .*/\1 differences/p' "$out/zero-diff.txt" | tail -1)"
+    fi
+  else
+    status=1
+    verdict="no result"
+  fi
+  row "$out" "$name" "$sha" "${verdict:-no result}" "$dir/$config_dir" "$(basename "$config")" "${roots[@]}"
+  return "$status"
+}
+
+# The nightly table's row for an oracle (testbeds/summarise.mjs reads it): the zero diff, and
+# Rulebearing's wall-clock time as the median of three runs over the same tree and roots.
+row() { # out, repo, sha, verdict, directory, config, roots...
+  local out="$1" name="$2" sha="$3" verdict="$4" dir="$5" config="$6"
+  shift 6
+  local times=() started
+  for _ in 1 2 3; do
+    started="$(python3 -c 'import time; print(time.time())')"
+    (cd "$dir" && "$rulebearing" cruise --config "$config" --output-type json --no-liveness "$@") \
+      > /dev/null 2>&1 || true
+    times+=("$(python3 -c 'import sys, time; print(round(time.time() - float(sys.argv[1]), 2))' "$started")")
+  done
+  python3 - "$out/row.json" "$name" "$sha" "$verdict" "${times[@]}" <<'PY'
+import json, sys
+path, repo, sha, verdict, *times = sys.argv[1:]
+json.dump({"repo": repo, "sha": sha, "zeroDiff": verdict,
+           "rulebearing": {"wall_seconds": sorted(float(t) for t in times)[1]}},
+          open(path, "w"), indent=2)
+PY
 }
 
 run_mutations() {
