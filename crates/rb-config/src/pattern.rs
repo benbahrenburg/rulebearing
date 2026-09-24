@@ -664,6 +664,13 @@ pub fn matcher(pattern: &str) -> Result<Matcher, PatternError> {
         pattern: pattern.to_owned(),
         construct: r"\1 to \9, \k<name> backreferences to a missing or enclosing group",
     };
+    // An unclosed group has no content range to instantiate; the pattern is invalid as written.
+    if groups.iter().any(|g| g.close < g.content) {
+        return Err(PatternError::Invalid {
+            pattern: pattern.to_owned(),
+            reason: "a group is opened with `(` and never closed".into(),
+        });
+    }
     let mut references = Vec::new();
     for (start, end, target) in found {
         let group = match target.strip_prefix('<') {
@@ -1039,6 +1046,17 @@ mod tests {
                 "{bad}"
             );
         }
+        // The fuzzer's find (fuzz run 35949008654): pathNot entries joined with `|`, where `\6`
+        // names a group that is opened and never closed. Invalid, not a panic.
+        for unclosed in [
+            r"(a|\1",
+            r"(^|/)\.(js)$|(^|/)(babel|v(ite|jest)\.config\6(js|ts)$",
+        ] {
+            assert!(
+                matches!(matcher(unclosed), Err(PatternError::Invalid { .. })),
+                "{unclosed}"
+            );
+        }
         let plain = matcher("^src/(.+)$")?;
         assert_eq!(plain.groups("src/a"), ["src/a", "a"]);
         assert_eq!(plain.find("x/src/a"), None);
@@ -1069,6 +1087,7 @@ mod tests {
         #[test]
         fn translation_never_panics(pattern in "\\PC{0,24}") {
             let _ = compile(&pattern);
+            let _ = matcher(&pattern);
             let _ = safety(&pattern, OPTION_REPETITION_LIMIT);
         }
 
