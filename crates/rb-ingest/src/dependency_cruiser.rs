@@ -48,27 +48,13 @@ pub fn read(json: &str) -> Result<GraphDocument, serde_json::Error> {
         let total = document.summary.total_cruised;
         let mut add = |language, files: u64| {
             if files > 0 {
-                inspected.insert(
-                    language,
-                    Receipt {
-                        files,
-                        assemblies: 0,
-                        modules: files,
-                    },
-                );
+                inspected.insert(language, Receipt::counts(files, 0, files));
             }
         };
         add(Language::Typescript, typescript);
         add(Language::Javascript, javascript);
         if inspected.is_empty() && total > 0 {
-            inspected.insert(
-                Language::Javascript,
-                Receipt {
-                    files: 0,
-                    assemblies: 0,
-                    modules: total,
-                },
-            );
+            inspected.insert(Language::Javascript, Receipt::counts(0, 0, total));
         }
         document.summary.inspected = Some(inspected);
     }

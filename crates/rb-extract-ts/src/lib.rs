@@ -362,11 +362,7 @@ pub fn extract_with(
     Ok(Extraction {
         modules,
         code: None,
-        inspected: Receipt {
-            files,
-            assemblies: 0,
-            modules: count,
-        },
+        inspected: Receipt::counts(files, 0, count),
         warnings: Vec::new(),
     })
 }
