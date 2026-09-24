@@ -767,6 +767,50 @@ fn vue_and_svelte_scripts_are_extracted_where_they_stand() -> Result<(), Box<dyn
 }
 
 #[test]
+fn a_webpack_resolve_block_reaches_the_resolver() -> Result<(), Box<dyn std::error::Error>> {
+    let cwd = fixture("webpack-resolve");
+    let (settings, mut config) = prepare(&TypeScriptOptions::default(), &cwd)?;
+    let src = cwd.join("src").to_string_lossy().into_owned();
+    let block = serde_json::json!({
+        "alias": { "@": src, "gone": false },
+        "modules": ["node_modules", "lib"],
+        "extensions": [".ts", ".js"]
+    });
+    let unread = rb_extract_ts::resolve::apply_resolve_block(
+        &mut config,
+        block.as_object().ok_or("an object")?,
+    );
+    assert!(unread.is_empty());
+    let extraction = extract_with(&[PathBuf::from("src/index.js")], &settings, &config)?;
+    assert_eq!(
+        edges(&extraction, "src/index.js"),
+        [
+            (
+                "@/util".to_owned(),
+                "src/util/index.ts".to_owned(),
+                vec![
+                    "aliased".to_owned(),
+                    "aliased-webpack".to_owned(),
+                    "local".to_owned(),
+                    "import".to_owned()
+                ]
+            ),
+            (
+                "gone".to_owned(),
+                "gone".to_owned(),
+                vec!["unknown".to_owned()]
+            ),
+            (
+                "thing".to_owned(),
+                "lib/thing.js".to_owned(),
+                vec!["localmodule".to_owned(), "import".to_owned()]
+            ),
+        ]
+    );
+    Ok(())
+}
+
+#[test]
 fn include_only_keeps_matching_modules() {
     let extraction = run("include-only", r#"{"includeOnly": "^src/keep"}"#, &["src"]);
     assert_eq!(

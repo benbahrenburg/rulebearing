@@ -69,7 +69,7 @@ pub fn load(ctx: &mut Context<'_>, args: &ConfigArgs) -> Result<Option<Config>, 
         via_node: args.config_via_node,
         limits: rb_config::js::Limits::default(),
     };
-    let config = match source(ctx, args) {
+    let mut config = match source(ctx, args) {
         Source::None => return Ok(None),
         Source::File(path) => rb_config::load(&path, &options)?,
         Source::Stdin => {
@@ -87,7 +87,67 @@ pub fn load(ctx: &mut Context<'_>, args: &ConfigArgs) -> Result<Option<Config>, 
     if args.require_comment_token {
         rb_config::require_comment_tokens(&config)?;
     }
+    evaluate_webpack(ctx, &mut config, args)?;
+    check_report_patterns(&config)?;
     Ok(Some(config))
+}
+
+/// Refuses a `highlight` or `collapse` pattern that does not compile, as upstream's
+/// `assertCruiseOptionsValid` does, rather than letting it match nothing.
+///
+/// # Errors
+/// [`ConfigError::Invalid`] naming the option and the pattern.
+pub fn check_report_patterns(config: &Config) -> Result<(), ConfigError> {
+    let highlight = config
+        .options
+        .highlight
+        .as_ref()
+        .and_then(|h| h.path.clone());
+    let collapse = config
+        .options
+        .collapse
+        .as_ref()
+        .and_then(rb_rules::rewrap::collapse_pattern);
+    for (option, pattern) in [("highlight", highlight), ("collapse", collapse)] {
+        if let Some(pattern) = pattern {
+            rb_config::pattern::compile(&pattern).map_err(|e| {
+                ConfigError::Invalid(format!("{option} `{pattern}` is not a usable pattern: {e}"))
+            })?;
+        }
+    }
+    Ok(())
+}
+
+/// Evaluates `webpackConfig.fileName`, when set, into the `resolve` block the extractor applies
+/// ([`rb_config::webpack`]), in the sandbox or under `--config-via-node` as the configuration
+/// itself was, and records the files it read.
+///
+/// # Errors
+/// [`ConfigError`] when the webpack configuration cannot be evaluated.
+pub fn evaluate_webpack(
+    ctx: &Context<'_>,
+    config: &mut Config,
+    args: &ConfigArgs,
+) -> Result<(), ConfigError> {
+    let Some(reference) = config.languages.typescript.webpack_config.clone() else {
+        return Ok(());
+    };
+    let evaluation = rb_config::read::Evaluation {
+        via_node: args.config_via_node,
+        limits: rb_config::js::Limits::default(),
+    };
+    if let Some(block) = rb_config::webpack::resolve_block(
+        &reference,
+        &ctx.cwd,
+        &repository_root(&ctx.cwd),
+        evaluation,
+    )? {
+        config.files.extend(block.files);
+        config.files.sort();
+        config.files.dedup();
+        config.options.webpack_config_json = Some(block.value);
+    }
+    Ok(())
 }
 
 /// Loads the configuration a command cannot run without.
@@ -190,6 +250,15 @@ pub fn apply_flags(
             depth: None,
         });
     }
+    if let Some(p) = &args.highlight {
+        options.highlight = Some(FilterOption {
+            path: Some(p.clone()),
+            depth: None,
+        });
+    }
+    if let Some(collapse) = &args.collapse {
+        options.collapse = Some(Value::String(collapse.clone()));
+    }
     if let Some(prefix) = &args.prefix {
         options.prefix = Some(prefix.clone());
     }
@@ -199,6 +268,18 @@ pub fn apply_flags(
     // dependency-cruiser's `--metrics` defaults to false and its command-line options are spread
     // over the configuration's, so `options.metrics: true` alone computes nothing.
     options.metrics = Some(args.metrics);
+    if let Some(file) = &args.webpack_config {
+        // As upstream's `--webpack-config`: the named file replaces the configuration's.
+        let reference = config
+            .languages
+            .typescript
+            .webpack_config
+            .get_or_insert_with(Default::default);
+        reference.file_name = Some(file.clone());
+        if args.webpack_config_json.is_none() {
+            evaluate_webpack(ctx, config, &args.config)?;
+        }
+    }
     if let Some(file) = &args.webpack_config_json {
         let path = ctx.resolve(file);
         let text = std::fs::read_to_string(&path).map_err(|e| ConfigError::Read {
@@ -206,12 +287,15 @@ pub fn apply_flags(
             reason: e.to_string(),
         })?;
         let value: Value = serde_json::from_str(&text).map_err(|e| ConfigError::Parse {
-            file: path,
+            file: path.clone(),
             reason: e.to_string(),
         })?;
-        options.webpack_config_json = Some(value);
+        config.options.webpack_config_json = Some(rb_config::webpack::from_json(
+            value,
+            &path.display().to_string(),
+        )?);
     }
-    Ok(())
+    check_report_patterns(config)
 }
 
 /// dependency-cruiser's option defaults, which `optionsUsed` carries.

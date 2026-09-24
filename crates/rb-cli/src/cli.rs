@@ -43,7 +43,7 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 pub enum Command {
     /// Extract, evaluate and report: dependency-cruiser's `depcruise`.
-    Cruise(CruiseArgs),
+    Cruise(Box<CruiseArgs>),
     /// Re-report a saved result without extracting: dependency-cruiser's `depcruise-fmt`.
     Fmt(FmtArgs),
     /// Every rule, its family, severity and statistics
@@ -226,9 +226,15 @@ pub struct CruiseArgs {
     /// Only include modules matching the regex and every module that reaches them
     #[arg(short = 'R', long, value_name = "REGEX")]
     pub reaches: Option<String>,
+    /// Mark modules matching the regex as highlighted
+    #[arg(short = 'H', long, value_name = "REGEX")]
+    pub highlight: Option<String>,
     /// Exclude all modules matching the regex
     #[arg(short = 'x', long, value_name = "REGEX")]
     pub exclude: Option<String>,
+    /// Collapse modules to a folder depth (a single digit) or to the first match of a regex
+    #[arg(short = 'S', long, value_name = "REGEX-OR-DEPTH")]
+    pub collapse: Option<String>,
     /// Include modules matching the regex but do not follow their dependencies
     #[arg(short = 'X', long, value_name = "REGEX")]
     pub do_not_follow: Option<String>,
@@ -253,7 +259,12 @@ pub struct CruiseArgs {
     /// Keep symlinked paths rather than their targets
     #[arg(long)]
     pub preserve_symlinks: bool,
-    /// A webpack `resolve` block already evaluated to JSON (its consumer arrives in wave 2)
+    /// Resolve as the webpack configuration FILE does (default webpack.config.js), evaluated in
+    /// the sandbox
+    #[arg(long, value_name = "FILE", num_args = 0..=1, default_missing_value = "webpack.config.js")]
+    pub webpack_config: Option<String>,
+    /// A webpack configuration, or its `resolve` block, already evaluated to JSON; wins over
+    /// --webpack-config and webpackConfig
     #[arg(long, value_name = "FILE")]
     pub webpack_config_json: Option<String>,
     /// Show progress on stderr

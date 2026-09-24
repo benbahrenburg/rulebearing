@@ -486,6 +486,69 @@ pub fn evaluate_text(
     root: &Path,
     limits: Limits,
 ) -> Result<Evaluated, JsError> {
+    run(entry, text, kind, root, limits, None)
+}
+
+/// dependency-cruiser 18.2.0's `pryConfigFromTheConfig` and the `resolve` read after it
+/// (`src/config-utl/extract-webpack-resolve-config.mjs`), as a function of the loaded module, the
+/// `env` and the `arguments`: a function-shaped config is called with both, an array's first
+/// element is taken, and the result's `resolve` block (or `{}`) is returned. As upstream, a
+/// config that comes out `undefined` or `null` is an error, and a promise is not awaited.
+pub const WEBPACK_PICK: &str = r"(function pick(m, env, args) {
+  function pry(c) {
+    let r = c;
+    if (typeof c === 'function') r = c(env, args);
+    if (Array.isArray(c)) r = pry(c[0]);
+    return r;
+  }
+  const config = pry(m);
+  if (config === undefined || config === null) {
+    throw new TypeError('the webpack config evaluated to ' + config + ', which has no resolve block');
+  }
+  return config.resolve ? config.resolve : {};
+})";
+
+/// What a function-shaped webpack configuration is called with: `webpackConfig.env` and
+/// `webpackConfig.arguments`, `null` when absent (as upstream passes them).
+#[derive(Debug, Clone, Copy)]
+pub struct WebpackCall<'a> {
+    /// `webpackConfig.env`.
+    pub env: &'a serde_json::Value,
+    /// `webpackConfig.arguments`.
+    pub arguments: &'a serde_json::Value,
+}
+
+/// Evaluates the webpack configuration at `entry` inside the sandbox and returns its `resolve`
+/// block ([`WEBPACK_PICK`]). The sandbox is the one every JavaScript configuration gets: the
+/// same `require`, the same pure `path` and `url`, the same time and memory limits.
+///
+/// # Errors
+/// [`JsError`] as for [`evaluate`]; [`JsError::Thrown`] when the configuration or its function
+/// throws, or when it comes out `undefined`.
+pub fn evaluate_webpack(
+    entry: &Path,
+    root: &Path,
+    limits: Limits,
+    call: WebpackCall<'_>,
+) -> Result<Evaluated, JsError> {
+    let entry = canonical(entry);
+    let text = std::fs::read_to_string(&entry).map_err(|e| JsError::Read {
+        file: entry.clone(),
+        reason: e.to_string(),
+    })?;
+    let kind = kind_of(&entry, &text, root);
+    run(&entry, &text, kind, root, limits, Some(call))
+}
+
+/// The evaluation behind [`evaluate_text`] and [`evaluate_webpack`].
+fn run(
+    entry: &Path,
+    text: &str,
+    kind: Kind,
+    root: &Path,
+    limits: Limits,
+    webpack: Option<WebpackCall<'_>>,
+) -> Result<Evaluated, JsError> {
     let thrown = |message: String| JsError::Thrown {
         file: entry.to_path_buf(),
         message,
@@ -545,6 +608,19 @@ pub fn evaluate_text(
                 promise.finish::<()>().map_err(|e| caught(&ctx, e))?;
                 let namespace = evaluated.namespace().map_err(|e| caught(&ctx, e))?;
                 namespace.get("default").map_err(|e| caught(&ctx, e))?
+            }
+        };
+        let value = match webpack {
+            None => value,
+            Some(call) => {
+                let pick: Function = ctx.eval(WEBPACK_PICK).map_err(|e| caught(&ctx, e))?;
+                let json = |v: &serde_json::Value| {
+                    ctx.json_parse(serde_json::to_string(v).unwrap_or_else(|_| "null".into()))
+                };
+                let env = json(call.env).map_err(|e| caught(&ctx, e))?;
+                let arguments = json(call.arguments).map_err(|e| caught(&ctx, e))?;
+                pick.call((value, env, arguments))
+                    .map_err(|e| caught(&ctx, e))?
             }
         };
         if !value.is_object() || value.is_array() || value.is_function() {
@@ -783,6 +859,182 @@ export default { extends: path.basename(base), forbidden: [] };"#,
         assert!(refused(&dir, "array.cjs").contains("not a JSON-shaped object"));
         assert!(refused(&dir, "throws.cjs").contains("boom"));
         assert!(!refused(&dir, "syntax.cjs").is_empty());
+        Ok(())
+    }
+
+    fn webpack(
+        dir: &tempdir::Dir,
+        entry: &str,
+        env: &serde_json::Value,
+        arguments: &serde_json::Value,
+    ) -> Result<serde_json::Value, JsError> {
+        evaluate_webpack(
+            &dir.path().join(entry),
+            dir.path(),
+            Limits::default(),
+            WebpackCall { env, arguments },
+        )
+        .map(|e| e.value)
+    }
+
+    #[test]
+    fn webpack_configs_are_pried_as_upstream_pries_them() -> Result<(), Box<dyn Error>> {
+        let dir = repo(&[
+            (
+                "object.cjs",
+                "const path = require('path'); module.exports = { entry: './x', resolve: { alias: { '@': path.join(__dirname, 'src') }, modules: ['node_modules', 'lib'], extensions: ['.ts', '.js'] } };",
+            ),
+            (
+                "function.cjs",
+                "module.exports = (env, argv) => ({ resolve: { alias: { app: env.production ? './dist' : './src' }, extensions: [argv.mode] } });",
+            ),
+            (
+                "array.mjs",
+                "export default [{ resolve: { modules: ['first'] } }, { resolve: { modules: ['second'] } }];",
+            ),
+            (
+                "array-of-functions.cjs",
+                "module.exports = [() => ({ resolve: { modules: ['made'] } })];",
+            ),
+            ("no-resolve.cjs", "module.exports = { entry: './x' };"),
+            (
+                "config.json",
+                r#"{ "resolve": { "extensions": [".json5"] } }"#,
+            ),
+            ("undefined.cjs", "module.exports = () => undefined;"),
+            ("empty-array.cjs", "module.exports = [];"),
+            (
+                "promise.cjs",
+                "module.exports = async () => ({ resolve: { modules: ['late'] } });",
+            ),
+        ])?;
+        let null = serde_json::Value::Null;
+        let object = webpack(&dir, "object.cjs", &null, &null)?;
+        assert_eq!(
+            object["modules"],
+            serde_json::json!(["node_modules", "lib"])
+        );
+        assert!(
+            object["alias"]["@"]
+                .as_str()
+                .is_some_and(|a| a.ends_with("/src")),
+            "{object}"
+        );
+        let env = serde_json::json!({ "production": true });
+        let arguments = serde_json::json!({ "mode": ".mjs" });
+        assert_eq!(
+            webpack(&dir, "function.cjs", &env, &arguments)?,
+            serde_json::json!({ "alias": { "app": "./dist" }, "extensions": [".mjs"] })
+        );
+        assert_eq!(
+            webpack(&dir, "array.mjs", &null, &null)?,
+            serde_json::json!({ "modules": ["first"] })
+        );
+        assert_eq!(
+            webpack(&dir, "array-of-functions.cjs", &null, &null)?,
+            serde_json::json!({ "modules": ["made"] })
+        );
+        assert_eq!(
+            webpack(&dir, "no-resolve.cjs", &null, &null)?,
+            serde_json::json!({})
+        );
+        assert_eq!(
+            webpack(&dir, "config.json", &null, &null)?,
+            serde_json::json!({ "extensions": [".json5"] })
+        );
+        for entry in ["undefined.cjs", "empty-array.cjs"] {
+            let error = webpack(&dir, entry, &null, &null)
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default();
+            assert!(error.contains("no resolve block"), "{entry}: {error}");
+        }
+        // As upstream, a promise is not awaited: it has no `resolve`.
+        assert_eq!(
+            webpack(&dir, "promise.cjs", &null, &null)?,
+            serde_json::json!({})
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_webpack_config_gets_the_same_sandbox() -> Result<(), Box<dyn Error>> {
+        let dir = repo(&[
+            (
+                "webpack.fs.cjs",
+                "module.exports = () => { require('fs'); return { resolve: {} }; };",
+            ),
+            (
+                "webpack.plugin.cjs",
+                "const Html = require('html-webpack-plugin'); module.exports = { plugins: [new Html()], resolve: {} };",
+            ),
+            (
+                "webpack.passwd.cjs",
+                "module.exports = { resolve: { alias: require('../../../../../../../../etc/passwd') } };",
+            ),
+            (
+                "webpack.process.cjs",
+                "module.exports = (env) => ({ resolve: { modules: [process.cwd()] } });",
+            ),
+            (
+                "webpack.env.cjs",
+                "module.exports = (env) => ({ resolve: { modules: [String(env.constructor.constructor('return typeof process')())] } });",
+            ),
+            (
+                "webpack.loop.cjs",
+                "module.exports = () => { for (;;) {} };",
+            ),
+            (
+                "webpack.throws.cjs",
+                "module.exports = () => { throw new Error('bad env'); };",
+            ),
+        ])?;
+        let null = serde_json::Value::Null;
+        let refused = |entry: &str| {
+            webpack(&dir, entry, &null, &null)
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default()
+        };
+        assert!(refused("webpack.fs.cjs").contains("--config-via-node"));
+        assert!(
+            !refused("webpack.plugin.cjs").is_empty(),
+            "a package is not loaded"
+        );
+        assert!(refused("webpack.passwd.cjs").contains("inside the repository"));
+        assert!(refused("webpack.process.cjs").contains("process"));
+        // The env object is plain JSON parsed inside the sandbox: its constructor chain reaches
+        // the sandbox's own Function, which still has no `process`.
+        let env = serde_json::json!({});
+        assert_eq!(
+            webpack(&dir, "webpack.env.cjs", &env, &null)?,
+            serde_json::json!({ "modules": ["undefined"] })
+        );
+        assert!(refused("webpack.throws.cjs").contains("bad env"));
+        let limits = Limits {
+            time: Duration::from_millis(200),
+            ..Limits::default()
+        };
+        let looped = evaluate_webpack(
+            &dir.path().join("webpack.loop.cjs"),
+            dir.path(),
+            limits,
+            WebpackCall {
+                env: &null,
+                arguments: &null,
+            },
+        );
+        assert!(matches!(looped, Err(JsError::Timeout { .. })), "{looped:?}");
+        let missing = evaluate_webpack(
+            &dir.path().join("nope.cjs"),
+            dir.path(),
+            Limits::default(),
+            WebpackCall {
+                env: &null,
+                arguments: &null,
+            },
+        );
+        assert!(matches!(missing, Err(JsError::Read { .. })), "{missing:?}");
         Ok(())
     }
 

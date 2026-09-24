@@ -171,8 +171,11 @@ pub struct Options {
     /// `affected`, accepted and recorded (wave 3).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub affected: Option<Value>,
-    /// `webpackConfig` read from `--webpack-config-json`; its consumer is wave 2.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    /// The `resolve` block of the webpack configuration, evaluated: from `--webpack-config-json`,
+    /// or from `webpackConfig.fileName` in the sandbox ([`crate::webpack`]). The TypeScript
+    /// extractor lays it over its resolver. Never read from or written to a file: `optionsUsed`
+    /// reports `webpackConfig` as written, as upstream does.
+    #[serde(skip)]
     pub webpack_config_json: Option<Value>,
 }
 

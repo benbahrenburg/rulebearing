@@ -192,37 +192,9 @@ fn resolve_config(
         .unwrap_or(cruise_fallback);
     let mut config = rb_extract_ts::resolve_config(&typescript_options(cruise)?);
     if let Some(raw) = resolve_options.get("resolve").and_then(Value::as_object) {
-        let list = |key: &str| raw.get(key).map(strings);
-        if let Some(v) = list("extensions") {
-            config.extensions = v;
-        }
-        if let Some(v) = list("modules") {
-            config.modules = v;
-        }
-        if let Some(v) = list("exportsFields") {
-            config.exports_fields = v;
-        }
-        if let Some(v) = list("conditionNames") {
-            config.condition_names = v;
-        }
-        if let Some(v) = list("mainFields") {
-            config.main_fields = v;
-        }
-        if let Some(v) = list("mainFiles") {
-            config.main_files = v;
-        }
-        if let Some(v) = list("aliasFields") {
-            config.alias_fields = v;
-        }
-        if let Some(alias) = raw.get("alias").and_then(Value::as_object) {
-            config.alias = alias
-                .iter()
-                .filter_map(|(k, v)| v.as_str().map(|v| (k.clone(), v.to_owned())))
-                .collect();
-        }
-        if let Some(symlinks) = raw.get("symlinks").and_then(Value::as_bool) {
-            config.symlinks = symlinks;
-        }
+        // The enhanced-resolve keys through the production mapping a webpack `resolve` block
+        // takes; the rest are dependency-cruiser's own resolve options.
+        rb_extract_ts::resolve::apply_resolve_block(&mut config, raw);
         if let Some(tsconfig) = raw.get("tsConfig").and_then(Value::as_str) {
             config.tsconfig = Some(PathBuf::from(tsconfig));
         }
