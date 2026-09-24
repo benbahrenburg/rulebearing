@@ -1,0 +1,546 @@
+# Ported from ArchUnitNET 0.13.4 ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs by hand: its assertions are C#, with no Verify snapshot for port.py to read.
+# VisibilityTest only: the file's other tests have snapshots and are in ObjectSyntaxElementsTests.yaml. `passes` is HasNoViolations.
+source: ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs
+architecture:
+- VisibilityAssembly
+cases:
+- id: VisibilityTest#1
+  query: 'Types that are private: should be private'
+  csharp: Types().That().ArePrivate().Should().BePrivate().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        arePrivate: true
+    should:
+      bePrivate: true
+  expect:
+    passes: true
+- id: VisibilityTest#2
+  query: 'Types that are private: should be types that are private'
+  csharp: Types().That().ArePrivate().Should().BeTypesThat().ArePrivate().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        arePrivate: true
+    should:
+      beTypesThat:
+        kind: type
+        where:
+          arePrivate: true
+  expect:
+    passes: true
+- id: VisibilityTest#3
+  query: 'Types that are public: should be public'
+  csharp: Types().That().ArePublic().Should().BePublic().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        arePublic: true
+    should:
+      bePublic: true
+  expect:
+    passes: true
+- id: VisibilityTest#4
+  query: 'Types that are public: should be types that are public'
+  csharp: Types().That().ArePublic().Should().BeTypesThat().ArePublic().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        arePublic: true
+    should:
+      beTypesThat:
+        kind: type
+        where:
+          arePublic: true
+  expect:
+    passes: true
+- id: VisibilityTest#5
+  query: 'Types that are protected: should be protected'
+  csharp: Types().That().AreProtected().Should().BeProtected().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areProtected: true
+    should:
+      beProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#6
+  query: 'Types that are protected: should be types that are protected'
+  csharp: Types().That().AreProtected().Should().BeTypesThat().AreProtected().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areProtected: true
+    should:
+      beTypesThat:
+        kind: type
+        where:
+          areProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#7
+  query: 'Types that are internal: should be internal'
+  csharp: Types().That().AreInternal().Should().BeInternal().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areInternal: true
+    should:
+      beInternal: true
+  expect:
+    passes: true
+- id: VisibilityTest#8
+  query: 'Types that are internal: should be types that are internal'
+  csharp: Types().That().AreInternal().Should().BeTypesThat().AreInternal().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areInternal: true
+    should:
+      beTypesThat:
+        kind: type
+        where:
+          areInternal: true
+  expect:
+    passes: true
+- id: VisibilityTest#9
+  query: 'Types that are protected internal: should be protected internal'
+  csharp: Types().That().AreProtectedInternal().Should().BeProtectedInternal().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areProtectedInternal: true
+    should:
+      beProtectedInternal: true
+  expect:
+    passes: true
+- id: VisibilityTest#10
+  query: 'Types that are protected internal: should be types that are protected internal'
+  csharp: Types().That().AreProtectedInternal().Should().BeTypesThat().AreProtectedInternal().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areProtectedInternal: true
+    should:
+      beTypesThat:
+        kind: type
+        where:
+          areProtectedInternal: true
+  expect:
+    passes: true
+- id: VisibilityTest#11
+  query: 'Types that are private protected: should be private protected'
+  csharp: Types().That().ArePrivateProtected().Should().BePrivateProtected().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        arePrivateProtected: true
+    should:
+      bePrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#12
+  query: 'Types that are private protected: should be types that are private protected'
+  csharp: Types().That().ArePrivateProtected().Should().BeTypesThat().ArePrivateProtected().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        arePrivateProtected: true
+    should:
+      beTypesThat:
+        kind: type
+        where:
+          arePrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#13
+  query: 'Types that are not private: should not be private'
+  csharp: Types().That().AreNotPrivate().Should().NotBePrivate().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotPrivate: true
+    should:
+      notBePrivate: true
+  expect:
+    passes: true
+- id: VisibilityTest#14
+  query: 'Types that are not private: should be types that are not private'
+  csharp: Types().That().AreNotPrivate().Should().BeTypesThat().AreNotPrivate().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotPrivate: true
+    should:
+      beTypesThat:
+        kind: type
+        where:
+          areNotPrivate: true
+  expect:
+    passes: true
+- id: VisibilityTest#15
+  query: 'Types that are not public: should not be public'
+  csharp: Types().That().AreNotPublic().Should().NotBePublic().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotPublic: true
+    should:
+      notBePublic: true
+  expect:
+    passes: true
+- id: VisibilityTest#16
+  query: 'Types that are not public: should be types that are not public'
+  csharp: Types().That().AreNotPublic().Should().BeTypesThat().AreNotPublic().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotPublic: true
+    should:
+      beTypesThat:
+        kind: type
+        where:
+          areNotPublic: true
+  expect:
+    passes: true
+- id: VisibilityTest#17
+  query: 'Types that are not protected: should not be protected'
+  csharp: Types().That().AreNotProtected().Should().NotBeProtected().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotProtected: true
+    should:
+      notBeProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#18
+  query: 'Types that are not protected: should be types that are not protected'
+  csharp: Types().That().AreNotProtected().Should().BeTypesThat().AreNotProtected().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotProtected: true
+    should:
+      beTypesThat:
+        kind: type
+        where:
+          areNotProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#19
+  query: 'Types that are not internal: should not be internal'
+  csharp: Types().That().AreNotInternal().Should().NotBeInternal().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotInternal: true
+    should:
+      notBeInternal: true
+  expect:
+    passes: true
+- id: VisibilityTest#20
+  query: 'Types that are not internal: should be types that are not internal'
+  csharp: Types().That().AreNotInternal().Should().BeTypesThat().AreNotInternal().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotInternal: true
+    should:
+      beTypesThat:
+        kind: type
+        where:
+          areNotInternal: true
+  expect:
+    passes: true
+- id: VisibilityTest#21
+  query: 'Types that are not protected internal: should not be protected internal'
+  csharp: Types().That().AreNotProtectedInternal().Should().NotBeProtectedInternal().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotProtectedInternal: true
+    should:
+      notBeProtectedInternal: true
+  expect:
+    passes: true
+- id: VisibilityTest#22
+  query: 'Types that are not protected internal: should be types that are not protected internal'
+  csharp: Types().That().AreNotProtectedInternal().Should().BeTypesThat().AreNotProtectedInternal().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotProtectedInternal: true
+    should:
+      beTypesThat:
+        kind: type
+        where:
+          areNotProtectedInternal: true
+  expect:
+    passes: true
+- id: VisibilityTest#23
+  query: 'Types that are not private protected: should not be private protected'
+  csharp: Types().That().AreNotPrivateProtected().Should().NotBePrivateProtected().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotPrivateProtected: true
+    should:
+      notBePrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#24
+  query: 'Types that are not private protected: should be types that are not private protected'
+  csharp: Types().That().AreNotPrivateProtected().Should().BeTypesThat().AreNotPrivateProtected().HasNoViolations(VisibilityArchitecture) is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotPrivateProtected: true
+    should:
+      beTypesThat:
+        kind: type
+        where:
+          areNotPrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#25
+  query: 'Types that are private: should not be public and not be protected and not be internal and not be protected internal and not be private protected'
+  csharp: Types().That().ArePrivate().Should().NotBePublic().AndShould().NotBeProtected().AndShould().NotBeInternal().AndShould().NotBeProtectedInternal().AndShould().NotBePrivateProtected().HasNoViolations(VisibilityArchitecture)
+    is true
+  rule:
+    select:
+      kind: type
+      where:
+        arePrivate: true
+    should:
+      all:
+      - notBePublic: true
+      - notBeProtected: true
+      - notBeInternal: true
+      - notBeProtectedInternal: true
+      - notBePrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#26
+  query: 'Types that are public: should not be private and not be protected and not be internal and not be protected internal and not be private protected'
+  csharp: Types().That().ArePublic().Should().NotBePrivate().AndShould().NotBeProtected().AndShould().NotBeInternal().AndShould().NotBeProtectedInternal().AndShould().NotBePrivateProtected().HasNoViolations(VisibilityArchitecture)
+    is true
+  rule:
+    select:
+      kind: type
+      where:
+        arePublic: true
+    should:
+      all:
+      - notBePrivate: true
+      - notBeProtected: true
+      - notBeInternal: true
+      - notBeProtectedInternal: true
+      - notBePrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#27
+  query: 'Types that are protected: should not be public and not be private and not be internal and not be protected internal and not be private protected'
+  csharp: Types().That().AreProtected().Should().NotBePublic().AndShould().NotBePrivate().AndShould().NotBeInternal().AndShould().NotBeProtectedInternal().AndShould().NotBePrivateProtected().HasNoViolations(VisibilityArchitecture)
+    is true
+  rule:
+    select:
+      kind: type
+      where:
+        areProtected: true
+    should:
+      all:
+      - notBePublic: true
+      - notBePrivate: true
+      - notBeInternal: true
+      - notBeProtectedInternal: true
+      - notBePrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#28
+  query: 'Types that are internal: should not be public and not be protected and not be private and not be protected internal and not be private protected'
+  csharp: Types().That().AreInternal().Should().NotBePublic().AndShould().NotBeProtected().AndShould().NotBePrivate().AndShould().NotBeProtectedInternal().AndShould().NotBePrivateProtected().HasNoViolations(VisibilityArchitecture)
+    is true
+  rule:
+    select:
+      kind: type
+      where:
+        areInternal: true
+    should:
+      all:
+      - notBePublic: true
+      - notBeProtected: true
+      - notBePrivate: true
+      - notBeProtectedInternal: true
+      - notBePrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#29
+  query: 'Types that are protected internal: should not be public and not be protected and not be internal and not be private and not be private protected'
+  csharp: Types().That().AreProtectedInternal().Should().NotBePublic().AndShould().NotBeProtected().AndShould().NotBeInternal().AndShould().NotBePrivate().AndShould().NotBePrivateProtected().HasNoViolations(VisibilityArchitecture)
+    is true
+  rule:
+    select:
+      kind: type
+      where:
+        areProtectedInternal: true
+    should:
+      all:
+      - notBePublic: true
+      - notBeProtected: true
+      - notBeInternal: true
+      - notBePrivate: true
+      - notBePrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#30
+  query: 'Types that are private protected: should not be public and not be protected and not be internal and not be protected internal and not be private'
+  csharp: Types().That().ArePrivateProtected().Should().NotBePublic().AndShould().NotBeProtected().AndShould().NotBeInternal().AndShould().NotBeProtectedInternal().AndShould().NotBePrivate().HasNoViolations(VisibilityArchitecture)
+    is true
+  rule:
+    select:
+      kind: type
+      where:
+        arePrivateProtected: true
+    should:
+      all:
+      - notBePublic: true
+      - notBeProtected: true
+      - notBeInternal: true
+      - notBeProtectedInternal: true
+      - notBePrivate: true
+  expect:
+    passes: true
+- id: VisibilityTest#31
+  query: 'Types that are not private: should be public or be protected or be internal or be protected internal or be private protected'
+  csharp: Types().That().AreNotPrivate().Should().BePublic().OrShould().BeProtected().OrShould().BeInternal().OrShould().BeProtectedInternal().OrShould().BePrivateProtected().HasNoViolations(VisibilityArchitecture)
+    is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotPrivate: true
+    should:
+      any:
+      - bePublic: true
+      - beProtected: true
+      - beInternal: true
+      - beProtectedInternal: true
+      - bePrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#32
+  query: 'Types that are not public: should be private or be protected or be internal or be protected internal or be private protected'
+  csharp: Types().That().AreNotPublic().Should().BePrivate().OrShould().BeProtected().OrShould().BeInternal().OrShould().BeProtectedInternal().OrShould().BePrivateProtected().HasNoViolations(VisibilityArchitecture)
+    is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotPublic: true
+    should:
+      any:
+      - bePrivate: true
+      - beProtected: true
+      - beInternal: true
+      - beProtectedInternal: true
+      - bePrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#33
+  query: 'Types that are not protected: should be public or be private or be internal or be protected internal or be private protected'
+  csharp: Types().That().AreNotProtected().Should().BePublic().OrShould().BePrivate().OrShould().BeInternal().OrShould().BeProtectedInternal().OrShould().BePrivateProtected().HasNoViolations(VisibilityArchitecture)
+    is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotProtected: true
+    should:
+      any:
+      - bePublic: true
+      - bePrivate: true
+      - beInternal: true
+      - beProtectedInternal: true
+      - bePrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#34
+  query: 'Types that are not internal: should be public or be protected or be private or be protected internal or be private protected'
+  csharp: Types().That().AreNotInternal().Should().BePublic().OrShould().BeProtected().OrShould().BePrivate().OrShould().BeProtectedInternal().OrShould().BePrivateProtected().HasNoViolations(VisibilityArchitecture)
+    is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotInternal: true
+    should:
+      any:
+      - bePublic: true
+      - beProtected: true
+      - bePrivate: true
+      - beProtectedInternal: true
+      - bePrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#35
+  query: 'Types that are not protected internal: should be public or be protected or be internal or be private or be private protected'
+  csharp: Types().That().AreNotProtectedInternal().Should().BePublic().OrShould().BeProtected().OrShould().BeInternal().OrShould().BePrivate().OrShould().BePrivateProtected().HasNoViolations(VisibilityArchitecture)
+    is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotProtectedInternal: true
+    should:
+      any:
+      - bePublic: true
+      - beProtected: true
+      - beInternal: true
+      - bePrivate: true
+      - bePrivateProtected: true
+  expect:
+    passes: true
+- id: VisibilityTest#36
+  query: 'Types that are not private protected: should be public or be protected or be internal or be protected internal or be private'
+  csharp: Types().That().AreNotPrivateProtected().Should().BePublic().OrShould().BeProtected().OrShould().BeInternal().OrShould().BeProtectedInternal().OrShould().BePrivate().HasNoViolations(VisibilityArchitecture)
+    is true
+  rule:
+    select:
+      kind: type
+      where:
+        areNotPrivateProtected: true
+    should:
+      any:
+      - bePublic: true
+      - beProtected: true
+      - beInternal: true
+      - beProtectedInternal: true
+      - bePrivate: true
+  expect:
+    passes: true
