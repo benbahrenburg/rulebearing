@@ -106,6 +106,21 @@
       ],
       "type": "object"
     },
+    "DependencyKind": {
+      "enum": [
+        "import",
+        "inherits",
+        "implements",
+        "field",
+        "signature",
+        "body",
+        "attribute",
+        "generic-argument",
+        "typeof",
+        "call"
+      ],
+      "type": "string"
+    },
     "DependencyRulesSchema": {
       "additionalProperties": false,
       "description": "`rules.dependencies`.",
@@ -3508,6 +3523,61 @@
     "FromRestriction": {
       "description": "`from`.",
       "properties": {
+        "assembly": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the .NET assembly name must\nmatch (`CleanArchitecture.Web`, not the file name): the `assembly` of the types the code\nlayer declares in the module's file."
+        },
+        "assemblyNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the assembly name must not\nmatch; a module the code layer places no type in does not match."
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OneOrMany_Language"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. The languages the module must be in\n(`typescript`, `javascript`, `dotnet`, `python`), one or a list; compared with the\nmodule's `language`."
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns, any of which one of the\nmodule's `namespaces[]` must match (.NET namespaces; Python dotted module names)."
+        },
+        "namespaceNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns none of the module's\n`namespaces[]` may match; a module without `namespaces` does not match."
+        },
         "orphan": {
           "description": "Match modules with no edges in or out.",
           "type": [
@@ -3536,6 +3606,28 @@
             }
           ],
           "description": "Paths the source must not match."
+        },
+        "project": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the module's `project` must\nmatch: the `.csproj` (or loaded assembly) path for .NET, the top-level package for Python."
+        },
+        "projectNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the module's `project` must\nnot match; a module without `project` does not match."
         }
       },
       "type": "object"
@@ -3679,6 +3771,15 @@
         }
       },
       "type": "object"
+    },
+    "Language": {
+      "enum": [
+        "typescript",
+        "javascript",
+        "dotnet",
+        "python"
+      ],
+      "type": "string"
     },
     "LayersShorthand": {
       "additionalProperties": false,
@@ -4065,6 +4166,32 @@
         }
       },
       "type": "object"
+    },
+    "OneOrMany_DependencyKind": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DependencyKind"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/DependencyKind"
+          },
+          "type": "array"
+        }
+      ]
+    },
+    "OneOrMany_Language": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Language"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/Language"
+          },
+          "type": "array"
+        }
+      ]
     },
     "OptionsSchema": {
       "description": "`options`: the TypeScript block's keys and every other dependency-cruiser option.",
@@ -4639,6 +4766,28 @@
             "null"
           ]
         },
+        "assembly": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the .NET assembly name must\nmatch (`CleanArchitecture.Web`, not the file name): the `assembly` of the types the code\nlayer declares in the module's file."
+        },
+        "assemblyNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the assembly name must not\nmatch; a module the code layer places no type in does not match."
+        },
         "circular": {
           "description": "Match edges on a cycle.",
           "type": [
@@ -4652,6 +4801,28 @@
             "boolean",
             "null"
           ]
+        },
+        "dependencyKind": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OneOrMany_DependencyKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. The kinds of reference, any of which\nthe edge's `dependencyKind` must be (`import`, `inherits`, `implements`, `field`,\n`signature`, `body`, `attribute`, `generic-argument`, `typeof`, `call`), one or a list.\nA property of the edge, so it sits on `to` only."
+        },
+        "dependencyKindNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OneOrMany_DependencyKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. The kinds of reference the edge's\n`dependencyKind` may not be; an edge without `dependencyKind` does not match."
         },
         "dependencyTypes": {
           "description": "Dependency types, any of which matches.",
@@ -4709,6 +4880,17 @@
             "null"
           ]
         },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OneOrMany_Language"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. The languages the module must be in\n(`typescript`, `javascript`, `dotnet`, `python`), one or a list; compared with the\nmodule's `language`."
+        },
         "license": {
           "anyOf": [
             {
@@ -4745,6 +4927,28 @@
             "null"
           ]
         },
+        "namespace": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns, any of which one of the\nmodule's `namespaces[]` must match (.NET namespaces; Python dotted module names)."
+        },
+        "namespaceNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns none of the module's\n`namespaces[]` may match; a module without `namespaces` does not match."
+        },
         "path": {
           "anyOf": [
             {
@@ -4773,6 +4977,28 @@
             "boolean",
             "null"
           ]
+        },
+        "project": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the module's `project` must\nmatch: the `.csproj` (or loaded assembly) path for .NET, the top-level package for Python."
+        },
+        "projectNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the module's `project` must\nnot match; a module without `project` does not match."
         },
         "reachable": {
           "description": "Reachability: match modules the `from` modules reach (or do not reach).",

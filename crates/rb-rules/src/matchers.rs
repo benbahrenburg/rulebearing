@@ -12,12 +12,25 @@
 //! knowing: in `via` and `viaOnly`, a `pathNot` replaces the result of `path` rather than being
 //! combined with it; and `ancestor` compares directories resolved against a working directory,
 //! which here is a fixed virtual one deep enough that `../` never runs out of parents.
+//!
+//! **Cross-language keys** ([Wave 2, Step 8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d),
+//! [FR-RULE-02](../../../docs/prd.md#fr-rule-02),
+//! [design § Dependency rules](../../../docs/artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820))
+//! have no upstream. [`ModuleFacts`] indexes what they read about each module, from the document
+//! alone: `language`, `namespaces[]` and `project` as the extractor wrote them, and the
+//! assemblies of the types the code layer declares in the file. [`matches_cross_language`]
+//! answers `language`, `namespace(Not)`, `project(Not)` and `assembly(Not)` for one side;
+//! [`matches_dependency_kind`] answers `dependencyKind(Not)` over the edge. Every comparison is
+//! a string the document carries; no language is special here
+//! ([ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md)).
+
+use std::collections::{BTreeMap, BTreeSet};
 
 use rb_config::Rule;
-use rb_config::model::ViaRestriction;
+use rb_config::model::{CrossLanguageKeys, ToRestriction, ViaRestriction};
 use rb_config::pattern::replace_group_placeholders;
-use rb_model::DependencyType;
 use rb_model::options::Patterns;
+use rb_model::{CodeLayer, DependencyType, Module};
 use serde_json::Value;
 
 use crate::js;
@@ -271,6 +284,129 @@ pub fn matches_ancestor(rule: &Rule, module: &Value, dependency: &Value) -> bool
     let is_ancestor =
         module_dir.starts_with(&dependency_dir) && module_dir.len() > dependency_dir.len();
     is_ancestor == ancestor
+}
+
+/// What the cross-language keys read about one module.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Facts {
+    /// `language`, as the document spells it.
+    pub language: Option<String>,
+    /// `namespaces[]`, absent when the module carries none.
+    pub namespaces: Option<Vec<String>>,
+    /// `project`.
+    pub project: Option<String>,
+    /// The distinct `assembly` of every code-layer type declared in the module's file, sorted;
+    /// empty when the code layer places no type there.
+    pub assemblies: Vec<String>,
+}
+
+/// [`Facts`] for every module of a document, by `source`.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ModuleFacts {
+    by_source: BTreeMap<String, Facts>,
+}
+
+impl ModuleFacts {
+    /// Indexes the modules, joining the code layer's types to the files that declare them (a
+    /// partial type's `files[]` included).
+    pub fn new(modules: &[Module], code: Option<&CodeLayer>) -> Self {
+        let mut assemblies: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
+        for ty in code.map(|c| c.types.as_slice()).unwrap_or_default() {
+            let Some(assembly) = ty.assembly.as_deref() else {
+                continue;
+            };
+            for file in ty.location.file.iter().chain(&ty.files) {
+                assemblies.entry(file).or_default().insert(assembly);
+            }
+        }
+        let by_source = modules
+            .iter()
+            .map(|m| {
+                let facts = Facts {
+                    language: m.language.map(|l| l.as_str().to_owned()),
+                    namespaces: m.namespaces.clone(),
+                    project: m.project.clone(),
+                    assemblies: assemblies
+                        .get(m.source.as_str())
+                        .map(|a| a.iter().map(|s| (*s).to_owned()).collect())
+                        .unwrap_or_default(),
+                };
+                (m.source.clone(), facts)
+            })
+            .collect();
+        Self { by_source }
+    }
+
+    /// Adds or replaces one module's facts.
+    pub fn insert(&mut self, source: impl Into<String>, facts: Facts) {
+        self.by_source.insert(source.into(), facts);
+    }
+
+    /// The facts of the module at `source`.
+    pub fn get(&self, source: &str) -> Option<&Facts> {
+        self.by_source.get(source)
+    }
+}
+
+/// `key` against one optional string: the value must be present and match.
+fn one_matches(p: Option<&Patterns>, value: Option<&str>) -> bool {
+    pattern(p).is_none_or(|p| value.is_some_and(|v| patterns::test(&p, v)))
+}
+
+/// `keyNot` against one optional string: the value must be present and not match.
+fn one_matches_not(p: Option<&Patterns>, value: Option<&str>) -> bool {
+    pattern(p).is_none_or(|p| value.is_some_and(|v| !patterns::test(&p, v)))
+}
+
+/// `key` against a list: the list must be present and one entry match.
+fn any_matches(p: Option<&Patterns>, values: Option<&[String]>) -> bool {
+    pattern(p).is_none_or(|p| values.is_some_and(|v| v.iter().any(|x| patterns::test(&p, x))))
+}
+
+/// `keyNot` against a list: the list must be present and no entry match.
+fn none_matches(p: Option<&Patterns>, values: Option<&[String]>) -> bool {
+    pattern(p).is_none_or(|p| values.is_some_and(|v| !v.iter().any(|x| patterns::test(&p, x))))
+}
+
+/// `language`, `namespace(Not)`, `project(Not)` and `assembly(Not)` of one side against the
+/// module's facts. A module with no facts, or without the property a key reads, matches neither
+/// the key nor its `Not` form.
+pub fn matches_cross_language(keys: &CrossLanguageKeys, facts: Option<&Facts>) -> bool {
+    let language = facts.and_then(|f| f.language.as_deref());
+    let namespaces = facts.and_then(|f| f.namespaces.as_deref());
+    let project = facts.and_then(|f| f.project.as_deref());
+    let assemblies = facts
+        .map(|f| f.assemblies.as_slice())
+        .filter(|a| !a.is_empty());
+    keys.language.as_ref().is_none_or(|wanted| {
+        language.is_some_and(|l| wanted.as_slice().iter().any(|w| w.as_str() == l))
+    }) && any_matches(keys.namespace.as_ref(), namespaces)
+        && none_matches(keys.namespace_not.as_ref(), namespaces)
+        && one_matches(keys.project.as_ref(), project)
+        && one_matches_not(keys.project_not.as_ref(), project)
+        && any_matches(keys.assembly.as_ref(), assemblies)
+        && none_matches(keys.assembly_not.as_ref(), assemblies)
+}
+
+/// `to.dependencyKind` and `to.dependencyKindNot` against the edge's `dependencyKind`; an edge
+/// without one matches neither.
+pub fn matches_dependency_kind(to: &ToRestriction, kind: Option<&str>) -> bool {
+    to.dependency_kind.as_ref().is_none_or(|wanted| {
+        kind.is_some_and(|k| wanted.as_slice().iter().any(|w| w.as_str() == k))
+    }) && to.dependency_kind_not.as_ref().is_none_or(|unwanted| {
+        kind.is_some_and(|k| !unwanted.as_slice().iter().any(|w| w.as_str() == k))
+    })
+}
+
+/// The cross-language keys of `from` against the module.
+pub fn matches_from_cross_language(rule: &Rule, module: &Value, facts: &ModuleFacts) -> bool {
+    matches_cross_language(&rule.from.cross, facts.get(&js::text(module, "source")))
+}
+
+/// The cross-language keys of `to` against the dependency's target module and the edge.
+pub fn matches_to_cross_language(rule: &Rule, dependency: &Value, facts: &ModuleFacts) -> bool {
+    matches_dependency_kind(&rule.to, js::str_of(dependency, "dependencyKind"))
+        && matches_cross_language(&rule.to.cross, facts.get(&js::text(dependency, "resolved")))
 }
 
 /// dependency-cruiser's `extractGroups(rule.from, source)`.
@@ -529,6 +665,212 @@ mod tests {
             &rule(json!({})),
             &json!({}),
             &json!({})
+        ));
+    }
+
+    fn dotnet_facts() -> Facts {
+        Facts {
+            language: Some("dotnet".into()),
+            namespaces: Some(vec!["App.Web".into(), "App.Web.Controllers".into()]),
+            project: Some("src/Web/Web.csproj".into()),
+            assemblies: vec!["App.Web".into()],
+        }
+    }
+
+    fn keys(value: Value) -> CrossLanguageKeys {
+        serde_json::from_value(value).unwrap_or_default()
+    }
+
+    #[test]
+    fn each_cross_language_key_is_a_table() {
+        let web = dotnet_facts();
+        let bare = Facts::default();
+        let empty_namespaces = Facts {
+            namespaces: Some(Vec::new()),
+            ..Facts::default()
+        };
+        // (keys, facts, expected): each key and its Not form, matching, not matching, and
+        // against a module that does not carry the property.
+        let cases = [
+            (json!({}), Some(&bare), true),
+            (json!({}), None, true),
+            (json!({ "language": "dotnet" }), Some(&web), true),
+            (
+                json!({ "language": ["python", "dotnet"] }),
+                Some(&web),
+                true,
+            ),
+            (json!({ "language": "python" }), Some(&web), false),
+            (json!({ "language": "dotnet" }), Some(&bare), false),
+            (json!({ "language": "dotnet" }), None, false),
+            (json!({ "namespace": "^App\\.Web$" }), Some(&web), true),
+            (json!({ "namespace": "Controllers$" }), Some(&web), true),
+            (json!({ "namespace": "^App\\.Domain" }), Some(&web), false),
+            (json!({ "namespace": "." }), Some(&bare), false),
+            (json!({ "namespace": "." }), Some(&empty_namespaces), false),
+            (json!({ "namespaceNot": "^App\\.Domain" }), Some(&web), true),
+            (json!({ "namespaceNot": "Controllers$" }), Some(&web), false),
+            (json!({ "namespaceNot": "." }), Some(&bare), false),
+            (
+                json!({ "namespaceNot": "." }),
+                Some(&empty_namespaces),
+                true,
+            ),
+            (json!({ "project": "Web\\.csproj$" }), Some(&web), true),
+            (json!({ "project": "Domain" }), Some(&web), false),
+            (json!({ "project": "." }), Some(&bare), false),
+            (json!({ "projectNot": "Domain" }), Some(&web), true),
+            (json!({ "projectNot": "^src/Web/" }), Some(&web), false),
+            (json!({ "projectNot": "." }), Some(&bare), false),
+            (json!({ "assembly": "^App\\.Web$" }), Some(&web), true),
+            (json!({ "assembly": "^Web$" }), Some(&web), false),
+            (json!({ "assembly": "." }), Some(&bare), false),
+            (json!({ "assemblyNot": "^App\\.Domain$" }), Some(&web), true),
+            (json!({ "assemblyNot": "Web" }), Some(&web), false),
+            (json!({ "assemblyNot": "." }), Some(&bare), false),
+            (
+                json!({ "language": "dotnet", "namespace": "Web", "project": "Web", "assembly": "Web" }),
+                Some(&web),
+                true,
+            ),
+            (
+                json!({ "language": "dotnet", "namespace": "Web", "project": "Web", "assembly": "Domain" }),
+                Some(&web),
+                false,
+            ),
+        ];
+        for (value, facts, expected) in cases {
+            assert_eq!(
+                matches_cross_language(&keys(value.clone()), facts),
+                expected,
+                "{value} against {facts:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn dependency_kind_is_a_table() {
+        let to =
+            |value: Value| -> ToRestriction { serde_json::from_value(value).unwrap_or_default() };
+        let cases = [
+            (json!({}), None, true),
+            (
+                json!({ "dependencyKind": "inherits" }),
+                Some("inherits"),
+                true,
+            ),
+            (
+                json!({ "dependencyKind": ["inherits", "implements"] }),
+                Some("implements"),
+                true,
+            ),
+            (json!({ "dependencyKind": "inherits" }), Some("body"), false),
+            (json!({ "dependencyKind": "inherits" }), None, false),
+            (json!({ "dependencyKindNot": "body" }), Some("field"), true),
+            (
+                json!({ "dependencyKindNot": ["body", "field"] }),
+                Some("field"),
+                false,
+            ),
+            (json!({ "dependencyKindNot": "body" }), None, false),
+            (
+                json!({ "dependencyKind": "import", "dependencyKindNot": "call" }),
+                Some("import"),
+                true,
+            ),
+        ];
+        for (value, kind, expected) in cases {
+            assert_eq!(
+                matches_dependency_kind(&to(value.clone()), kind),
+                expected,
+                "{value} against {kind:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn module_facts_join_the_code_layer() -> Result<(), serde_json::Error> {
+        let modules: Vec<Module> = serde_json::from_value(json!([
+            { "source": "src/Web/Home.cs", "language": "dotnet", "project": "src/Web/Web.csproj", "namespaces": ["App.Web"], "dependencies": [], "valid": true },
+            { "source": "src/Web/Part.cs", "language": "dotnet", "dependencies": [], "valid": true },
+            { "source": "web/a.ts", "language": "typescript", "dependencies": [], "valid": true },
+            { "source": "System.Runtime", "dependencies": [], "valid": true }
+        ]))?;
+        let code: CodeLayer = serde_json::from_value(json!({ "types": [
+            { "fullName": "App.Web.Home", "name": "Home", "kind": "class", "language": "dotnet", "file": "src/Web/Home.cs", "assembly": "App.Web", "files": ["src/Web/Part.cs"] },
+            { "fullName": "App.Web.Other", "name": "Other", "kind": "class", "language": "dotnet", "file": "src/Web/Home.cs", "assembly": "App.Web.Views" },
+            { "fullName": "System.Object", "name": "Object", "kind": "unavailable", "language": "dotnet", "referenced": true }
+        ] }))?;
+        let facts = ModuleFacts::new(&modules, Some(&code));
+        assert_eq!(
+            facts.get("src/Web/Home.cs"),
+            Some(&Facts {
+                language: Some("dotnet".into()),
+                namespaces: Some(vec!["App.Web".into()]),
+                project: Some("src/Web/Web.csproj".into()),
+                assemblies: vec!["App.Web".into(), "App.Web.Views".into()],
+            })
+        );
+        assert_eq!(
+            facts.get("src/Web/Part.cs").map(|f| f.assemblies.clone()),
+            Some(vec!["App.Web".to_owned()]),
+            "a partial type's other file declares it too"
+        );
+        assert_eq!(
+            facts.get("web/a.ts").and_then(|f| f.language.as_deref()),
+            Some("typescript")
+        );
+        assert_eq!(facts.get("System.Runtime"), Some(&Facts::default()));
+        assert_eq!(facts.get("nowhere"), None);
+        let without_code = ModuleFacts::new(&modules, None);
+        assert!(
+            without_code
+                .get("src/Web/Home.cs")
+                .is_some_and(|f| f.assemblies.is_empty())
+        );
+        let mut added = ModuleFacts::default();
+        added.insert("x", dotnet_facts());
+        assert_eq!(added.get("x"), Some(&dotnet_facts()));
+        Ok(())
+    }
+
+    #[test]
+    fn each_side_reads_its_own_module() {
+        let r = rule(json!({
+            "from": { "language": "dotnet", "namespace": "^App\\.Web" },
+            "to": { "assembly": "^App\\.Infrastructure$", "dependencyKind": ["inherits", "implements"] }
+        }));
+        let mut facts = ModuleFacts::default();
+        facts.insert("Web/Home.cs", dotnet_facts());
+        facts.insert(
+            "Infra/Repo.cs",
+            Facts {
+                assemblies: vec!["App.Infrastructure".into()],
+                ..Facts::default()
+            },
+        );
+        let from = json!({ "source": "Web/Home.cs" });
+        let edge = |to: &str, kind: &str| json!({ "resolved": to, "dependencyKind": kind });
+        assert!(matches_from_cross_language(&r, &from, &facts));
+        assert!(!matches_from_cross_language(
+            &r,
+            &json!({ "source": "Infra/Repo.cs" }),
+            &facts
+        ));
+        assert!(matches_to_cross_language(
+            &r,
+            &edge("Infra/Repo.cs", "inherits"),
+            &facts
+        ));
+        assert!(!matches_to_cross_language(
+            &r,
+            &edge("Infra/Repo.cs", "body"),
+            &facts
+        ));
+        assert!(!matches_to_cross_language(
+            &r,
+            &edge("Web/Home.cs", "inherits"),
+            &facts
         ));
     }
 
