@@ -9,14 +9,16 @@
 //!
 //! Counting is pure; the budget file (`{ "ceiling": n }`) is read and written by the command
 //! line. `$1` in `to` takes the capture from `from.path`, as a dependency rule does, so
-//! "each app's routes into that same app's server code" is one ratchet.
+//! "each app's routes into that same app's server code" is one ratchet. The cross-language keys
+//! of a native configuration narrow a ratchet as they narrow a dependency rule
+//! ([Wave 2, Step 8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)).
 
 use rb_config::model::{FromRestriction, ToRestriction};
 use rb_config::pattern::replace_group_placeholders;
 use rb_model::GraphDocument;
 use serde::{Deserialize, Serialize};
 
-use crate::matchers::pattern;
+use crate::matchers::{ModuleFacts, matches_cross_language, matches_dependency_kind, pattern};
 use crate::patterns;
 
 /// One counted edge.
@@ -34,6 +36,7 @@ pub fn edges(document: &GraphDocument, from: &FromRestriction, to: &ToRestrictio
     let from_not = pattern(from.path_not.as_ref());
     let to_path = pattern(to.path.as_ref());
     let to_not = pattern(to.path_not.as_ref());
+    let facts = ModuleFacts::new(&document.modules, document.code.as_ref());
     let mut out = Vec::new();
     for module in &document.modules {
         let source = module.source.as_str();
@@ -41,6 +44,7 @@ pub fn edges(document: &GraphDocument, from: &FromRestriction, to: &ToRestrictio
             .as_ref()
             .is_some_and(|p| !patterns::test(p, source))
             || from_not.as_ref().is_some_and(|p| patterns::test(p, source))
+            || !matches_cross_language(&from.cross, facts.get(source))
         {
             continue;
         }
@@ -49,12 +53,17 @@ pub fn edges(document: &GraphDocument, from: &FromRestriction, to: &ToRestrictio
             .map_or_else(Vec::new, |p| patterns::groups(p, source));
         for dependency in &module.dependencies {
             let target = dependency.resolved.as_str();
-            let hit = to_path
-                .as_ref()
-                .is_none_or(|p| patterns::test(&replace_group_placeholders(p, &groups), target))
-                && to_not.as_ref().is_none_or(|p| {
+            let hit =
+                to_path.as_ref().is_none_or(|p| {
+                    patterns::test(&replace_group_placeholders(p, &groups), target)
+                }) && to_not.as_ref().is_none_or(|p| {
                     !patterns::test(&replace_group_placeholders(p, &groups), target)
-                });
+                }) && matches_dependency_kind(
+                    to,
+                    dependency
+                        .dependency_kind
+                        .map(rb_model::DependencyKind::as_str),
+                ) && matches_cross_language(&to.cross, facts.get(target));
             if hit {
                 out.push(Edge {
                     from: source.to_owned(),
@@ -182,6 +191,66 @@ mod tests {
             serde_json::from_value(serde_json::json!({ "pathNot": "^apps/web" }))
                 .unwrap_or_default();
         assert_eq!(edges(&document(), &from_not, &all_to).len(), 1);
+    }
+
+    #[test]
+    fn cross_language_keys_narrow_a_ratchet() -> Result<(), serde_json::Error> {
+        let value = serde_json::json!({
+            "modules": [
+                { "source": "Web/Home.cs", "language": "dotnet", "namespaces": ["App.Web"], "valid": true, "dependencies": [
+                    { "module": "App.Domain.Order", "resolved": "Domain/Order.cs", "dependencyKind": "field", "dependencyTypes": ["project"], "followable": true, "dynamic": false, "exoticallyRequired": false, "couldNotResolve": false, "coreModule": false, "circular": false, "moduleSystem": "clr", "valid": true },
+                    { "module": "App.Domain.Base", "resolved": "Domain/Base.cs", "dependencyKind": "inherits", "dependencyTypes": ["project"], "followable": true, "dynamic": false, "exoticallyRequired": false, "couldNotResolve": false, "coreModule": false, "circular": false, "moduleSystem": "clr", "valid": true }
+                ] },
+                { "source": "web/a.ts", "language": "typescript", "valid": true, "dependencies": [
+                    { "module": "./b", "resolved": "web/b.ts", "dependencyKind": "import", "dependencyTypes": ["local"], "followable": true, "dynamic": false, "exoticallyRequired": false, "couldNotResolve": false, "coreModule": false, "circular": false, "moduleSystem": "es6", "valid": true }
+                ] },
+                { "source": "Domain/Order.cs", "language": "dotnet", "namespaces": ["App.Domain"], "valid": true, "dependencies": [] },
+                { "source": "Domain/Base.cs", "language": "dotnet", "namespaces": ["App.Domain"], "valid": true, "dependencies": [] },
+                { "source": "web/b.ts", "language": "typescript", "valid": true, "dependencies": [] }
+            ],
+            "code": { "types": [
+                { "fullName": "App.Domain.Order", "name": "Order", "kind": "class", "language": "dotnet", "file": "Domain/Order.cs", "assembly": "App.Domain" }
+            ] }
+        });
+        let document = GraphDocument {
+            modules: serde_json::from_value(value["modules"].clone())?,
+            code: serde_json::from_value(value["code"].clone())?,
+            ..GraphDocument::default()
+        };
+        let side = |value: serde_json::Value| -> (FromRestriction, ToRestriction) {
+            (
+                serde_json::from_value(value["from"].clone()).unwrap_or_default(),
+                serde_json::from_value(value["to"].clone()).unwrap_or_default(),
+            )
+        };
+        let count = |value: serde_json::Value| {
+            let (from, to) = side(value);
+            edges(&document, &from, &to)
+                .into_iter()
+                .map(|e| e.to)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            count(serde_json::json!({ "from": { "language": "dotnet" }, "to": {} })),
+            ["Domain/Order.cs", "Domain/Base.cs"]
+        );
+        assert_eq!(
+            count(
+                serde_json::json!({ "from": {}, "to": { "namespace": "^App\\.Domain$", "dependencyKind": "inherits" } })
+            ),
+            ["Domain/Base.cs"]
+        );
+        assert_eq!(
+            count(serde_json::json!({ "from": {}, "to": { "assembly": "^App\\.Domain$" } })),
+            ["Domain/Order.cs"]
+        );
+        assert_eq!(
+            count(
+                serde_json::json!({ "from": { "language": "typescript" }, "to": { "dependencyKindNot": "import" } })
+            ),
+            Vec::<String>::new()
+        );
+        Ok(())
     }
 
     #[test]

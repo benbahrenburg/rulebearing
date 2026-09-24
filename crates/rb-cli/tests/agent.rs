@@ -208,6 +208,57 @@ fn can_import_takes_the_targets_kind_from_the_graph() -> Result<(), Box<dyn Erro
 }
 
 #[test]
+fn can_import_reads_the_cross_language_facts() -> Result<(), Box<dyn Error>> {
+    // Wave 2, Step 8: the saved graph's `language`, `namespaces`, `project` and code-layer
+    // assemblies answer the cross-language keys, and the hypothetical edge is an `import`.
+    let dir = tree("can-import-cross")?;
+    let graph = serde_json::json!({
+        "modules": [
+            { "source": "py/app/core.py", "language": "python", "namespaces": ["app.core"], "project": "app", "dependencies": [
+                { "module": "app.util", "resolved": "py/app/util.py", "dependencyTypes": ["local"], "coreModule": false, "couldNotResolve": false } ] },
+            { "source": "py/app/util.py", "language": "python", "namespaces": ["app.util"], "project": "app", "dependencies": [] },
+            { "source": "py/app/web.py", "language": "python", "namespaces": ["app.web"], "project": "app", "dependencies": [] }
+        ],
+        "code": { "types": [
+            { "fullName": "app.util.Helper", "name": "Helper", "kind": "class", "language": "python", "file": "py/app/util.py", "assembly": "app" }
+        ] },
+        "summary": {}
+    });
+    std::fs::write(dir.join("graph.json"), graph.to_string())?;
+    std::fs::write(
+        dir.join("cross.yaml"),
+        "rules:\n  dependencies:\n    forbidden:\n      - name: web-not-to-util\n        severity: error\n        from: { language: python, namespace: \"^app\\\\.web$\", project: \"^app$\" }\n        to: { namespace: \"^app\\\\.util$\", assembly: \"^app$\", dependencyKind: import }\n",
+    )?;
+    let ask = |from: &str| {
+        run(
+            &dir,
+            &[
+                "can-import",
+                "--graph",
+                "graph.json",
+                "--config",
+                "cross.yaml",
+                from,
+                "py/app/util.py",
+            ],
+        )
+    };
+    let no = ask("py/app/web.py")?;
+    assert_eq!(
+        no.status.code(),
+        Some(1),
+        "{}{}",
+        stdout(&no),
+        String::from_utf8_lossy(&no.stderr)
+    );
+    assert!(stdout(&no).contains("web-not-to-util"));
+    let yes = ask("py/app/core.py")?;
+    assert_eq!(yes.status.code(), Some(0), "{}", stdout(&yes));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
 fn count_writes_and_holds_the_budget() -> Result<(), Box<dyn Error>> {
     let dir = tree("count")?;
     let count = ["count", "--from", "^src/domain/", "--to", "^src/web/"];

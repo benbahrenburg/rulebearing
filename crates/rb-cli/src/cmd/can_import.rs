@@ -15,11 +15,15 @@
 //! an edge to it already in the graph, so a rule on an npm dependency type answers as the gate
 //! would. A target the graph has never seen is a local file when it exists on disk; anything else
 //! exits 2, because answering `yes` for a module whose kind is unknown would be a silent false.
+//! The cross-language keys read each module's `language`, `namespaces`, `project` and the
+//! assemblies of its code-layer types from the same graph, and the hypothetical edge is an
+//! `import` ([Wave 2, Step 8](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)).
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 use std::fmt::Write as _;
 
 use clap::Args;
+use rb_rules::matchers::{Facts, ModuleFacts};
 use rb_rules::validate::validate_dependency;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -48,6 +52,8 @@ pub struct CanImportArgs {
 #[derive(Debug, Deserialize)]
 struct LightGraph {
     modules: Vec<LightModule>,
+    #[serde(default)]
+    code: Option<LightCode>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -55,6 +61,57 @@ struct LightModule {
     source: String,
     #[serde(default)]
     dependencies: Vec<LightDependency>,
+    #[serde(default)]
+    language: Option<String>,
+    #[serde(default)]
+    namespaces: Option<Vec<String>>,
+    #[serde(default)]
+    project: Option<String>,
+}
+
+/// The code layer's types, for the assembly each file declares.
+#[derive(Debug, Deserialize)]
+struct LightCode {
+    #[serde(default)]
+    types: Vec<LightType>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LightType {
+    #[serde(default)]
+    file: Option<String>,
+    #[serde(default)]
+    files: Vec<String>,
+    #[serde(default)]
+    assembly: Option<String>,
+}
+
+/// The facts the cross-language keys read, from the light graph.
+fn facts(graph: &LightGraph) -> ModuleFacts {
+    let mut assemblies: HashMap<&str, BTreeSet<&str>> = HashMap::new();
+    for ty in graph.code.iter().flat_map(|c| &c.types) {
+        if let Some(assembly) = ty.assembly.as_deref() {
+            for file in ty.file.iter().chain(&ty.files) {
+                assemblies.entry(file).or_default().insert(assembly);
+            }
+        }
+    }
+    let mut out = ModuleFacts::default();
+    for m in &graph.modules {
+        out.insert(
+            m.source.clone(),
+            Facts {
+                language: m.language.clone(),
+                namespaces: m.namespaces.clone(),
+                project: m.project.clone(),
+                assemblies: assemblies
+                    .get(m.source.as_str())
+                    .map(|a| a.iter().map(|s| (*s).to_owned()).collect())
+                    .unwrap_or_default(),
+            },
+        );
+    }
+    out
 }
 
 #[derive(Debug, Deserialize)]
@@ -196,10 +253,16 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
         ("followable", json!(true)),
         ("circular", json!(circular)),
         ("moduleSystem", json!("es6")),
+        ("dependencyKind", json!("import")),
     ] {
         dependency[key] = value;
     }
-    let verdict = validate_dependency(&config.rules.dependencies, &from, &dependency);
+    let verdict = validate_dependency(
+        &config.rules.dependencies,
+        &from,
+        &dependency,
+        &facts(&graph),
+    );
     let rules = verdict
         .get("rules")
         .and_then(Value::as_array)
