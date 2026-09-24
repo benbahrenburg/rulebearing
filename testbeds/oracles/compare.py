@@ -25,8 +25,9 @@ what the re-check edits), self-imports left out. An edge on one side
 only is counted by kind: `notGrimpModule` (a file in a folder grimp does not walk, having no
 `__init__.py`), `dynamic` (a literal `importlib.import_module`, which grimp does not read),
 `allReexport` (a submodule an `__init__.py` lists in `__all__`, a dependency by design, plan
-0002 Step 4), `ancestorOfMissing` (grimp gives an import of a missing submodule to its nearest
-package; Rulebearing reports it unresolved), else `unexplained`.
+0002 Step 4), `ancestorOfMissing` (grimp gives an import of a module it does not know, missing
+or in a folder it does not walk, to its nearest package; Rulebearing reports it unresolved or
+resolves it to its file), else `unexplained`.
 
 `dotnet`: each architecture test in the incumbent's TRX file (a test whose class is declared in
 a file under the imported folder that uses ArchUnitNET or NetArchTest) beside the verdict of the
@@ -299,20 +300,25 @@ def root_inside(incumbent: dict[str, Any]) -> Callable[[str], bool]:
 
 def our_edges(
     incumbent: dict[str, Any], cruise: dict[str, Any]
-) -> tuple[dict[tuple[str, str], set[str]], dict[str, list[str]]]:
-    """Rulebearing's local edges under the roots with their types, and each file's unresolved."""
+) -> tuple[dict[tuple[str, str], set[str]], dict[str, list[tuple[str, str]]]]:
+    """Rulebearing's local edges under the roots with their types, and each file's imports.
+
+    The second map holds, per file, each import's module name and what it resolved to, for
+    telling apart the edges grimp gives to a package because it does not know the module.
+    """
     inside = root_inside(incumbent)
     skip_type_only = bool(incumbent["excludeTypeCheckingImports"])
     types: dict[tuple[str, str], set[str]] = {}
-    unresolved: dict[str, list[str]] = {}
+    unresolved: dict[str, list[tuple[str, str]]] = {}
     for module in cruise["modules"]:
         if module.get("language") != "python" or not inside(module["source"]):
             continue
         for dependency in module.get("dependencies", []):
             edge = (module["source"], dependency["resolved"])
             kinds = set(dependency["dependencyTypes"])
-            if "unresolved" in kinds:
-                unresolved.setdefault(module["source"], []).append(dependency["module"])
+            unresolved.setdefault(module["source"], []).append(
+                (dependency["module"], dependency["resolved"])
+            )
             local = "local" in kinds and inside(edge[1]) and edge[0] != edge[1]
             if local and not (skip_type_only and kinds == {"local", "type-only"}):
                 types.setdefault(edge, set()).update(kinds)
@@ -351,13 +357,16 @@ def python_graph(incumbent: dict[str, Any], cruise: dict[str, Any], cwd: Path) -
         else:
             kind = "unexplained"
         only_ours.setdefault(kind, []).append(edge)
-    # Edges grimp has where Rulebearing reports the import unresolved: grimp gives an import of a
-    # missing submodule (a generated `_version`, a deleted module) to its nearest package.
+    # Edges grimp has to a package where the import names a module grimp does not know: missing
+    # (a generated `_version`, a deleted module), which Rulebearing reports unresolved, or in a
+    # folder grimp does not walk, which Rulebearing resolves to its file. grimp gives the import
+    # to the nearest package it knows.
     only_theirs: dict[str, list[tuple[str, str]]] = {}
     for edge in sorted(theirs - ours):
         target = by_file.get(edge[1], "")
         missing = any(
-            target and name.startswith(target + ".") for name in unresolved.get(edge[0], [])
+            target and name.startswith(target + ".") and resolved not in by_file
+            for name, resolved in unresolved.get(edge[0], [])
         )
         only_theirs.setdefault("ancestorOfMissing" if missing else "unexplained", []).append(edge)
     unexplained = len(only_ours.get("unexplained", [])) + len(only_theirs.get("unexplained", []))

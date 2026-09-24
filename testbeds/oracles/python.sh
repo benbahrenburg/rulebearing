@@ -69,17 +69,21 @@ else
   fi
 fi
 
-# The interpreter that runs import-linter also runs compare.py, so it carries PyYAML. An
-# environment is reused only when it was made for the same version and the same `pip` packages.
+# The interpreter that runs import-linter also runs compare.py, so it carries PyYAML. The
+# environment is made with $RB_ORACLE_PYTHON (default python3; the nightly's is 3.12, which a
+# row's `pip` packages may need), and reused only when it was made with the same interpreter for
+# the same version and packages.
+python="${RB_ORACLE_PYTHON:-python3}"
 wanted="import-linter==$import_linter_version pyyaml $(tr ',' ' ' <<< "$extras")"
-if [ "$(cat "$venv/.rb-oracle" 2> /dev/null)" != "$wanted" ]; then
+made="$("$python" --version 2>&1) $wanted"
+if [ "$(cat "$venv/.rb-oracle" 2> /dev/null)" != "$made" ]; then
   rm -rf "$venv"
   # shellcheck disable=SC2086 # the packages are one word each, split on purpose
-  if ! { python3 -m venv "$venv" && "$venv/bin/pip" install --quiet $wanted; } > "$out/install.log" 2>&1; then
+  if ! { "$python" -m venv "$venv" && "$venv/bin/pip" install --quiet $wanted; } > "$out/install.log" 2>&1; then
     oracle_error "$result" "$repo" "$sha" "$tool" "installing $wanted failed (see install.log)"
     exit 2
   fi
-  echo "$wanted" > "$venv/.rb-oracle"
+  echo "$made" > "$venv/.rb-oracle"
 fi
 
 roots=()
