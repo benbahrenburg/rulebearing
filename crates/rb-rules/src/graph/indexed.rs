@@ -259,39 +259,46 @@ impl IndexedGraph {
     }
 
     /// `getPath(from, to)`: the first path found depth first, or empty.
+    ///
+    /// Upstream's depth-first search, by vertex index: the edges in order, a visited vertex
+    /// skipped, the first edge that names `to` ending the search. An edge to a name no module has
+    /// is only compared with `to`, since searching from it finds nothing. The search is
+    /// iterative, one frame per step of the path being tried (the vertex and the position of
+    /// the edge it is following), so a chain through every module of a large repository cannot
+    /// exhaust the call stack; when `to` is found, the edges the frames are following are the
+    /// path.
     pub fn path(&self, from: &str, to: &str) -> Vec<Step> {
         let Some(&start) = self.index.get(from) else {
             return Vec::new();
         };
         let mut visited = vec![false; self.vertices.len()];
-        let mut reversed = Vec::new();
-        self.path_from(start, to, &mut visited, &mut reversed);
-        reversed.reverse();
-        reversed
-    }
-
-    /// Upstream's depth-first search, by vertex index: the edges in order, a visited vertex
-    /// skipped, the first edge that names `to` ending the search. An edge to a name no module has
-    /// is only compared with `to`, since searching from it finds nothing. When `to` is found the
-    /// path's steps are pushed last step first; otherwise nothing is pushed.
-    fn path_from(&self, at: usize, to: &str, visited: &mut [bool], reversed: &mut Vec<Step>) {
-        visited[at] = true;
-        for ((name, types), &target) in self.vertices[at].edges.iter().zip(&self.targets[at]) {
+        visited[start] = true;
+        // `(vertex, index of the next edge to try)`; the edge being followed is the one before.
+        let mut frames: Vec<(usize, usize)> = vec![(start, 0)];
+        while let Some((at, next)) = frames.last_mut() {
+            let at = *at;
+            let Some((name, _)) = self.vertices[at].edges.get(*next) else {
+                frames.pop();
+                continue;
+            };
+            let target = self.targets[at][*next];
+            *next += 1;
             if target.is_some_and(|t| visited[t]) {
                 continue;
             }
             if name == to {
-                reversed.push(Self::step(name, types));
-                return;
+                return frames
+                    .iter()
+                    .filter_map(|&(v, n)| self.vertices[v].edges.get(n.checked_sub(1)?))
+                    .map(|(name, types)| Self::step(name, types))
+                    .collect();
             }
-            if let Some(next) = target {
-                self.path_from(next, to, visited, reversed);
-                if !reversed.is_empty() {
-                    reversed.push(Self::step(name, types));
-                    return;
-                }
+            if let Some(t) = target {
+                visited[t] = true;
+                frames.push((t, 0));
             }
         }
+        Vec::new()
     }
 
     /// `getCycle(initial, current)`: the first cycle from `initial` through its edge to
@@ -604,6 +611,42 @@ mod tests {
             }
         }
         Vec::new()
+    }
+
+    #[test]
+    fn a_path_along_a_hundred_thousand_module_chain_does_not_exhaust_the_stack() {
+        const N: usize = 100_000;
+        let found = std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn(|| {
+                let modules: Vec<Value> = (0..N)
+                    .map(|i| {
+                        json!({ "source": format!("m{i}"),
+                                "dependencies": [{ "resolved": format!("m{}", (i + 1) % N) }] })
+                    })
+                    .collect();
+                let graph = IndexedGraph::new(&modules, "source");
+                let path = graph.path("m0", &format!("m{}", N - 1));
+                let back = graph.path("m1", "m0");
+                (
+                    path.len(),
+                    path.first().cloned(),
+                    path.last().cloned(),
+                    back.len(),
+                    graph.path("m0", "nowhere").len(),
+                )
+            })
+            .ok()
+            .and_then(|t| t.join().ok());
+        let (len, first, last, back, none) = found.unwrap_or_default();
+        assert_eq!(len, N - 1, "one step per edge of the chain");
+        assert_eq!(first, Some(json!({ "name": "m1", "dependencyTypes": [] })));
+        assert_eq!(
+            last,
+            Some(json!({ "name": format!("m{}", N - 1), "dependencyTypes": [] }))
+        );
+        assert_eq!(back, N - 1, "round the cycle back to the start");
+        assert_eq!(none, 0);
     }
 
     proptest::proptest! {
