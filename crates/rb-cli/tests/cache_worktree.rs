@@ -1,0 +1,201 @@
+//! Two worktrees of one repository at different commits keep separate cache entries, and a
+//! question asked in one is answered from its own graph.
+//!
+//! - Plan: [Wave 2, Step 13](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)
+//!   (the two-worktree integration test)
+//! - Source: [design § The agentic engineering hat](../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two)
+//!   ("parallel agents in separate worktrees do not invalidate each other's caches or share stale
+//!   graphs")
+//! - Requirement: [FR-CLI-05](../../../docs/prd.md#fr-cli-05)
+//!
+//! At the first commit `src/web/view.ts` imports the domain, so a new import from the domain to the
+//! web layer would close a cycle; at the second it does not. The linked worktree sits at the first
+//! commit and asks first, filling its cache; the main worktree, at the second, must still answer
+//! `yes`, which it cannot do from the other's graph.
+
+use std::error::Error;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Output};
+
+type Result<T = ()> = std::result::Result<T, Box<dyn Error>>;
+
+const BIN: &str = env!("CARGO_BIN_EXE_rulebearing");
+
+const CONFIG: &str = "forbidden:
+  - name: no-cycles
+    severity: error
+    comment: \"adr:0010\"
+    from: {}
+    to: { circular: true }
+";
+
+fn git(dir: &Path, args: &[&str]) -> Result<String> {
+    let output = Command::new("git")
+        .args([
+            "-c",
+            "user.name=rulebearing",
+            "-c",
+            "user.email=rulebearing@example.invalid",
+            "-c",
+            "commit.gpgsign=false",
+            "-c",
+            "core.hooksPath=/dev/null",
+            "-c",
+            "init.defaultBranch=main",
+        ])
+        .args(args)
+        .current_dir(dir)
+        .output()?;
+    if !output.status.success() {
+        return Err(format!(
+            "git {}: {}",
+            args.join(" "),
+            String::from_utf8_lossy(&output.stderr)
+        )
+        .into());
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
+}
+
+fn write(dir: &Path, file: &str, text: &str) -> Result {
+    let path = dir.join(file);
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(path, text)?;
+    Ok(())
+}
+
+fn can_import(dir: &Path) -> Result<Output> {
+    Ok(Command::new(BIN)
+        .args(["can-import", "src/domain/model.ts", "src/web/view.ts"])
+        .current_dir(dir)
+        .output()?)
+}
+
+/// The cache entries under a worktree, by folder name.
+fn entries(dir: &Path) -> Result<Vec<String>> {
+    let mut names: Vec<String> = std::fs::read_dir(dir.join(".graph/cache"))?
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    Ok(names)
+}
+
+fn recorded_head(dir: &Path, entry: &str) -> Result<String> {
+    let text = std::fs::read_to_string(dir.join(".graph/cache").join(entry).join("key.json"))?;
+    let value: serde_json::Value = serde_json::from_str(&text)?;
+    Ok(value["head"].as_str().unwrap_or_default().to_owned())
+}
+
+fn repository() -> Result<(PathBuf, PathBuf, String, String)> {
+    let base = std::env::temp_dir().join(format!("rb-cli-worktrees-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&base);
+    let main = base.join("main");
+    let linked = base.join("linked");
+    std::fs::create_dir_all(&main)?;
+    git(&main, &["init", "--quiet"])?;
+    write(&main, ".gitignore", ".graph/\n")?;
+    write(&main, "rulebearing.yaml", CONFIG)?;
+    write(&main, "src/domain/model.ts", "export const d = 1;\n")?;
+    write(
+        &main,
+        "src/web/view.ts",
+        "import { d } from \"../domain/model\";\nexport const w = d;\n",
+    )?;
+    git(&main, &["add", "."])?;
+    git(
+        &main,
+        &["commit", "--quiet", "-m", "web imports the domain"],
+    )?;
+    let first = git(&main, &["rev-parse", "HEAD"])?;
+    write(&main, "src/web/view.ts", "export const w = 1;\n")?;
+    git(&main, &["commit", "--quiet", "-am", "web stands alone"])?;
+    let second = git(&main, &["rev-parse", "HEAD"])?;
+    let linked_arg = linked.to_string_lossy().into_owned();
+    git(
+        &main,
+        &[
+            "worktree",
+            "add",
+            "--quiet",
+            "--detach",
+            &linked_arg,
+            &first,
+        ],
+    )?;
+    Ok((main, linked, first, second))
+}
+
+#[test]
+fn two_worktrees_at_different_heads_keep_separate_graphs() -> Result {
+    let (main, linked, first, second) = repository()?;
+    assert!(
+        linked.join(".git").is_file(),
+        "a linked worktree's .git is a file"
+    );
+
+    let old = can_import(&linked)?;
+    assert_eq!(
+        old.status.code(),
+        Some(1),
+        "at the first commit the import closes a cycle: {}{}",
+        String::from_utf8_lossy(&old.stdout),
+        String::from_utf8_lossy(&old.stderr)
+    );
+    assert!(String::from_utf8_lossy(&old.stdout).contains("rule: no-cycles"));
+
+    let new = can_import(&main)?;
+    assert_eq!(
+        new.status.code(),
+        Some(0),
+        "the main worktree answers from its own graph: {}",
+        String::from_utf8_lossy(&new.stdout)
+    );
+
+    let (linked_entries, main_entries) = (entries(&linked)?, entries(&main)?);
+    assert_eq!(linked_entries.len(), 1);
+    assert_eq!(main_entries.len(), 1);
+    assert_ne!(linked_entries, main_entries, "different cache directories");
+    for name in linked_entries.iter().chain(&main_entries) {
+        assert_eq!(name.len(), 16);
+        assert!(name.bytes().all(|b| b.is_ascii_hexdigit()));
+    }
+    // HEAD came from the files, through the linked worktree's `gitdir` for the second.
+    assert_eq!(recorded_head(&linked, &linked_entries[0])?, first);
+    assert_eq!(recorded_head(&main, &main_entries[0])?, second);
+
+    // Asked again, each answers the same from its own entry, and neither grows another.
+    assert_eq!(can_import(&linked)?.status.code(), Some(1));
+    assert_eq!(can_import(&main)?.status.code(), Some(0));
+    assert_eq!(entries(&linked)?, linked_entries);
+    assert_eq!(entries(&main)?, main_entries);
+
+    // A new commit is a new HEAD: a new entry, extracted afresh, never the stale graph.
+    write(
+        &main,
+        "src/web/view.ts",
+        "import { d } from \"../domain/model\";\nexport const w = d;\n",
+    )?;
+    git(
+        &main,
+        &["commit", "--quiet", "-am", "web imports the domain again"],
+    )?;
+    assert_eq!(can_import(&main)?.status.code(), Some(1));
+    assert_eq!(entries(&main)?.len(), 2);
+
+    // After `git pack-refs`, HEAD still resolves from the files alone.
+    git(&main, &["pack-refs", "--all"])?;
+    assert_eq!(can_import(&main)?.status.code(), Some(1));
+    assert_eq!(entries(&main)?.len(), 2, "the same HEAD, the same entry");
+
+    let _ = git(
+        &main,
+        &["worktree", "remove", "--force", &linked.to_string_lossy()],
+    );
+    if let Some(base) = main.parent() {
+        let _ = std::fs::remove_dir_all(base);
+    }
+    Ok(())
+}

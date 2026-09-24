@@ -121,11 +121,13 @@ fn rules_explain_and_test_describe_the_rule_set() -> Result<(), Box<dyn Error>> 
 #[test]
 fn can_import_answers_from_the_saved_graph() -> Result<(), Box<dyn Error>> {
     let dir = tree("can-import")?;
-    let missing = run(
+    // With no cache entry yet, the first question extracts and writes one (plan 0002, Step 13).
+    let first = run(
         &dir,
         &["can-import", "src/domain/model.ts", "src/web/view.ts"],
     )?;
-    assert_eq!(missing.status.code(), Some(2), "no saved graph yet");
+    assert_eq!(first.status.code(), Some(1), "{}", stdout(&first));
+    assert!(dir.join(".graph/cache").is_dir());
     std::fs::create_dir_all(dir.join("budgets"))?;
     std::fs::write(dir.join("budgets/domain-web.json"), "{\"ceiling\":1}\n")?;
     let saved = run(
@@ -169,7 +171,18 @@ fn can_import_answers_from_the_saved_graph() -> Result<(), Box<dyn Error>> {
         ],
     )?;
     assert_eq!(unknown.status.code(), Some(2));
-    assert!(String::from_utf8_lossy(&unknown.stderr).contains("not in .graph/cruise.json"));
+    assert!(String::from_utf8_lossy(&unknown.stderr).contains("is not in the graph"));
+    let saved = run(
+        &dir,
+        &[
+            "can-import",
+            "--graph",
+            ".graph/cruise.json",
+            "src/web/view.ts",
+            "node_modules/left-pad/index.js",
+        ],
+    )?;
+    assert!(String::from_utf8_lossy(&saved.stderr).contains("not in .graph/cruise.json"));
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
@@ -298,7 +311,10 @@ fn hooks_summary_and_impact_serve_an_agent() -> Result<(), Box<dyn Error>> {
     assert!(summary["ratchets"][0]["error"].is_string(), "no budget yet");
     assert!(stdout(&run(&dir, &["summary", "--format", "text"])?).contains("1 error violations"));
 
-    let impact = json(&run(&dir, &["impact", "src/web/view.ts", "--depth", "2"])?)?;
+    let impact = json(&run(
+        &dir,
+        &["impact", "src/web/view.ts", "--depth", "2", "--json"],
+    )?)?;
     assert_eq!(impact["rules"][0]["side"], "to");
     assert_eq!(
         impact["dependents"],

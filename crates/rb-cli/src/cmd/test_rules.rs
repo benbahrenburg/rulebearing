@@ -28,6 +28,22 @@ pub struct TestArgs {
     /// Configuration
     #[command(flatten)]
     pub config: ConfigArgs,
+    /// Write each rule's examples from the edges it matches and does not match today, instead of
+    /// running them
+    #[arg(long)]
+    pub generate: bool,
+    /// With --generate: only this rule (`allowed[n]` for an allowed entry)
+    #[arg(value_name = "RULE", requires = "generate")]
+    pub rule: Option<String>,
+    /// With --generate: replace examples a rule already has
+    #[arg(long, requires = "generate")]
+    pub force: bool,
+    /// With --generate: a graph document to take the edges from instead of the cache
+    #[arg(long, value_name = "FILE", requires = "generate")]
+    pub graph: Option<String>,
+    /// With --generate: extract afresh, neither reading nor writing the cache
+    #[arg(long, requires = "generate")]
+    pub no_cache: bool,
 }
 
 /// Splits `"a.ts -> b.ts"`.
@@ -64,7 +80,8 @@ pub fn synthetic(edges: &[(String, String)]) -> GraphDocument {
     }
 }
 
-fn only(rule: &Rule, family: Family, config: &Config) -> Config {
+/// A configuration holding `rule` alone, in its family.
+pub fn only(rule: &Rule, family: Family, config: &Config) -> Config {
     let mut dependencies = DependencyRules::default();
     match family {
         Family::Forbidden => dependencies.forbidden.push(rule.clone()),
@@ -80,7 +97,7 @@ fn only(rule: &Rule, family: Family, config: &Config) -> Config {
 }
 
 /// Whether evaluating `rule` over the one edge flags it.
-fn flags(
+pub fn flags(
     rule: &Rule,
     family: Family,
     config: &Config,
@@ -101,8 +118,11 @@ fn flags(
     })
 }
 
-/// Runs `test`.
+/// Runs `test`, or `test --generate`.
 pub fn run(ctx: &mut Context<'_>, args: &TestArgs) -> Outcome {
+    if args.generate {
+        return crate::cmd::generate::run(ctx, args);
+    }
     let config = match configure::required(ctx, &args.config) {
         Ok(c) => c,
         Err(o) => return o,
