@@ -27,7 +27,7 @@
 //! | a provider (`Types().That()...`, held in a field) | a nested selector |
 //! | `Because(...)`, `WithoutRequiringPositiveResults()` | `because`, `allowEmpty: true` |
 //! | `Slices().Matching(p)` ... | a slice rule |
-//! | `Types.InAssembly(typeof(X).Assembly)` (NetArchTest) | `resideInAssembly` on X's assembly, then the README table |
+//! | `Types.InAssembly(typeof(X).Assembly)` (NetArchTest) | `resideInAssembly` on X's assembly, then the README table; the assembly also joins `languages.dotnet.assemblies` |
 //! | `new ArchLoader().LoadAssemblies(...)` | `languages.dotnet` |
 //!
 //! A chain is written commented out, with the reason, when it holds a custom predicate (`stays in
@@ -2011,7 +2011,46 @@ fn dotnet_block(program: &Program) -> (Option<Node>, Vec<String>) {
             loaders.len()
         ));
     }
+    netarchtest_assemblies(program, &mut loaded, &mut comments);
     (loaded.node(), comments)
+}
+
+/// NetArchTest has no loader: `Types.InAssembly(typeof(X).Assembly)` loads X's assembly for the
+/// rule that follows, so each assembly a NetArchTest chain names is loaded too. Without it an
+/// imported NetArchTest rule selects from nothing and is vacuous (found by the .NET oracle
+/// harness on phongnguyend/Practical.CleanArchitecture).
+fn netarchtest_assemblies(program: &Program, loaded: &mut Loaded, comments: &mut Vec<String>) {
+    let mut named = Vec::new();
+    let mut refused = Vec::new();
+    for candidate in program.candidates() {
+        let Ok(Chain {
+            root: Root::NetArchTest { method, args },
+            ..
+        }) = &candidate.chain
+        else {
+            continue;
+        };
+        if !matches!(method.as_str(), "InAssembly" | "InAssemblies") {
+            continue;
+        }
+        match flatten(args).and_then(|vals| {
+            vals.iter()
+                .map(assembly_glob)
+                .collect::<Result<Vec<_>, _>>()
+        }) {
+            Ok(globs) => named.extend(globs),
+            Err(reason) => refused.push(format!("  not loaded: {reason}")),
+        }
+    }
+    if named.is_empty() && refused.is_empty() {
+        return;
+    }
+    comments
+        .push("NetArchTest's Types.InAssembly(...) loads the assemblies its tests name".to_owned());
+    refused.sort();
+    refused.dedup();
+    comments.extend(refused);
+    loaded.assemblies.extend(named);
 }
 
 /// The imported rules, their names made unique.

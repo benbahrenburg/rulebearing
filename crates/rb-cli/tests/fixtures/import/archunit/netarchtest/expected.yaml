@@ -2,6 +2,10 @@
 # Each rule is preceded by the C# chain it came from; a chain that cannot be translated is kept, commented out, with the reason.
 # 11 rule chains read: 5 imported, 6 commented out.
 $schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+# NetArchTest's Types.InAssembly(...) loads the assemblies its tests name
+languages:
+  dotnet:
+    assemblies: ["src/Shop.Core/bin/**/Shop.Core.dll"]
 rules:
   elements:
     # Types.InAssembly(CoreAssembly).That().ResideInNamespace("Shop.Core.Domain")
