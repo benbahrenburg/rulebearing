@@ -23,3 +23,9 @@ Cargo.lock          linguist-generated=true
 schema/*.json       linguist-generated=true
 docs/artifacts/**   linguist-documentation=true
 conformance/**/fixtures/**  linguist-vendored=true
+
+# Left out of the source archives GitHub serves, which is what a workflow's
+# `uses: benbahrenburg/rulebearing@<ref>` downloads and unpacks: the vendored upstream fixtures
+# hold a deliberately broken symlink (test/extract/__mocks__/invalid-symlink) that the runner
+# cannot unpack, and nothing under them is needed to run the Action (plan 0001, Step 19).
+conformance/**/fixtures/**  export-ignore
