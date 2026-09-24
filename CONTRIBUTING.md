@@ -38,6 +38,25 @@ The pull request template is the definition of done as a checklist. Name the pla
 
 An accepted ADR is never edited except to change its status; a reversal is a new ADR that supersedes it. If your change makes a decision, write the ADR in the same pull request.
 
+## A second maintainer
+
+The project has one maintainer, and a second is the goal by the end of wave 2 ([design § Open questions](docs/artifacts/design.md#open-questions)). The criterion is fixed in advance ([plan 0002 § 1.7](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#17-decisions-this-wave-must-make), "Second maintainer"):
+
+| Criterion | What counts |
+| --- | --- |
+| An external contributor | Someone other than the current maintainer |
+| With merge rights | Granted on this repository once the pull request below has merged |
+| Who has landed a pull request that passed both gates | Merged, with conformance gate 1 (dependency-cruiser's suite) and conformance gate 2 (ArchUnitNET's and NetArchTest's suites) green on it ([ADR-0009](docs/adr/0009-conformance-suites-as-specification.md)), alongside the rest of the definition of done |
+
+Two parts of the tree are the safest first pull request, because a committed specification tells you when you are right and a reviewer does not have to:
+
+| If you are | Start in | Why it is safe |
+| --- | --- | --- |
+| A Python engineer | [`crates/rb-extract-python`](crates/rb-extract-python/src/lib.rs) | It depends on `rb-model` only ([ADR-0010](docs/adr/0010-crate-layout-and-extractor-boundary.md)), so a change cannot reach the engine; its fixture package is compared byte for byte with a committed expectation, and the import-linter oracles in [the test beds](testbeds/README.md) say whether a graph agrees with the tool Python teams already run |
+| A C# engineer | the adapters under [`adapters/dotnet`](adapters/dotnet/README.md) | They never evaluate a rule, only report what the binary found, and each of the seven packages has its own test project at the 70% line floor; gate 2's ported cases fix what a finding looks like |
+
+The invitation is made in the upstream-offer issues of [plan 0002, Step 15](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-upstream-offers-second-maintainer-2i): the ones that offer evolutionary-architecture-by-example, RiverBooks, kedro and sqlfluff a pull request adding Rulebearing beside their incumbent tool. Whether the criterion is met by the end of wave 2 is recorded in that plan's status table; not meeting it does not block the plan, and it is carried to wave 3.
+
 ## Reporting
 
 Bugs and questions belong in issues. Security reports go through the [security policy](SECURITY.md), not an issue.

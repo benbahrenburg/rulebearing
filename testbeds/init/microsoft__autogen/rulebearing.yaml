@@ -1,0 +1,56 @@
+# testbeds/init: `rulebearing init --dry-run` on microsoft/autogen at 027ecf0a379bcc1d09956d46d12d44a3ad9cee14
+# (a cruise of . with this configuration exits 0 (1437 findings baselined)). Regenerate with testbeds/init/run.sh.
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: .NET (dotnet/AutoGen.sln), Python (python/packages/agbench/src, python/packages/autogen-agentchat/src, python/packages/autogen-core/src, python/packages/autogen-ext/src, python/packages/autogen-studio, python/packages/autogen-test-utils/src, python/packages/component-schema-gen/src, python/packages/magentic-one-cli/src, python/packages/pyautogen/src).
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: rulebearing:recommended
+languages:
+  dotnet: { solution: "dotnet/AutoGen.sln" }
+  python:
+    roots: ["python/packages/agbench/src", "python/packages/autogen-agentchat/src", "python/packages/autogen-core/src", "python/packages/autogen-ext/src", "python/packages/autogen-studio", "python/packages/autogen-test-utils/src", "python/packages/component-schema-gen/src", "python/packages/magentic-one-cli/src", "python/packages/pyautogen/src"]
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "(^|/)(Program|Startup|AssemblyInfo)\\.cs$"
+            - "(^|/)Migrations/"
+            - "(^|/)__main__\\.py$"
+            - "(^|/)conftest\\.py$"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+      - name: autogen_agentchat-not-to-its-dependents
+        comment: "autogen_ext, autogenstudio, tests, component_schema_gen, magentic_one_cli import autogen_agentchat, so it sits below them: autogen_agentchat importing one of them back would make a cycle between top-level packages."
+        fix: "Move what autogen_agentchat needs from them down into autogen_agentchat (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^python/packages/autogen-agentchat/src/autogen_agentchat/" }
+        to: { path: "^(python/packages/autogen-ext/src/autogen_ext|python/packages/autogen-studio/autogenstudio|python/packages/autogen-studio/tests|python/packages/component-schema-gen/src/component_schema_gen|python/packages/magentic-one-cli/src/magentic_one_cli)/" }
+      - name: autogen_core-not-to-its-dependents
+        comment: "autogen_agentchat, autogen_ext, autogenstudio, tests, autogen_test_utils, component_schema_gen, magentic_one_cli import autogen_core, so it sits below them: autogen_core importing one of them back would make a cycle between top-level packages."
+        fix: "Move what autogen_core needs from them down into autogen_core (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^python/packages/autogen-core/src/autogen_core/" }
+        to: { path: "^(python/packages/autogen-agentchat/src/autogen_agentchat|python/packages/autogen-ext/src/autogen_ext|python/packages/autogen-studio/autogenstudio|python/packages/autogen-studio/tests|python/packages/autogen-test-utils/src/autogen_test_utils|python/packages/component-schema-gen/src/component_schema_gen|python/packages/magentic-one-cli/src/magentic_one_cli)/" }
+      - name: autogen_ext-not-to-its-dependents
+        comment: "autogenstudio, tests, component_schema_gen, magentic_one_cli import autogen_ext, so it sits below them: autogen_ext importing one of them back would make a cycle between top-level packages."
+        fix: "Move what autogen_ext needs from them down into autogen_ext (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^python/packages/autogen-ext/src/autogen_ext/" }
+        to: { path: "^(python/packages/autogen-studio/autogenstudio|python/packages/autogen-studio/tests|python/packages/component-schema-gen/src/component_schema_gen|python/packages/magentic-one-cli/src/magentic_one_cli)/" }
+      - name: autogenstudio-not-to-its-dependents
+        comment: "tests import autogenstudio, so it sits below them: autogenstudio importing one of them back would make a cycle between top-level packages."
+        fix: "Move what autogenstudio needs from them down into autogenstudio (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^python/packages/autogen-studio/autogenstudio/" }
+        to: { path: "^python/packages/autogen-studio/tests/" }
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    # no-circular: 25, no-orphans: 31, not-to-unresolvable: 1381 (entries elided)
