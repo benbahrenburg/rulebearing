@@ -39,7 +39,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -814,8 +814,17 @@ class World:
     def resolve_type(self, type_name: TypeName, namespaces: list[str]) -> TypeVal:
         """The full name of a C# type as ArchUnitNET prints it, found in the graphs."""
         if type_name.args:
-            message = f"not-yet: closed generic type argument typeof({type_name.text()})"
-            raise UnportableError(message)
+            # A closed generic type: `MatchesType` compares the open type, then each argument,
+            # which is the instantiation's full name as the graphs spell it (`G`1<A>`).
+            open_name = replace(type_name, args=(), arity=len(type_name.args))
+            open_type = self.resolve_type(open_name, namespaces)
+            args = ",".join(self.resolve_type(a, namespaces).full_name for a in type_name.args)
+            return TypeVal(
+                f"{open_type.full_name}<{args}>",
+                open_type.name,
+                open_type.namespace,
+                open_type.assembly,
+            )
         if type_name.items or type_name.array:
             message = f"not-yet: type argument {type_name.text()}"
             raise UnportableError(message)
@@ -1493,8 +1502,8 @@ def expectation(block: Block, assert_call: Call, objects_: list[str]) -> dict[st
     if len(block.results) == 1 and block.results[0][1].startswith(VACUOUS):
         return {"vacuous": True}
     if len(block.results) == 1 and block.results[0][1] == NO_OBJECTS:
-        message = "not-yet: an expect shape for a failure with no object (Exist, empty selection)"
-        raise UnportableError(message)
+        # "There are no objects matching the criteria": the rule fails with no object to name.
+        return {"passes": False}
     passed: set[str] = set()
     failed: set[str] = set()
     for ok, description in block.results:
