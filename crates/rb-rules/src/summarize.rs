@@ -158,15 +158,115 @@ impl End {
     }
 }
 
-/// Where a kept violation can be found again: every candidate `isSameViolation` could accept.
+/// Which side of [`is_same_violation`] a probe takes against the indexed violations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Side {
+    /// `is_same_violation(probe, indexed)`.
+    Left,
+    /// `is_same_violation(indexed, probe)`.
+    Right,
+}
+
+/// Violations indexed so that [`SameIndex::candidates`] returns, for a probe, every indexed
+/// violation [`is_same_violation`] could accept, and few others; the caller decides each
+/// candidate with [`is_same_violation`] itself, so the answer is a pairwise scan's.
+///
+/// `is_same_violation(l, r)` needs equal rule names, and then either both cycles truthy with
+/// equally long name lists, every name of `l`'s in `r`'s, or equal `from` and `to` (the `via`
+/// branch compares `from` and `to` too). The second is a lookup by `(rule, from, to)`. For the
+/// first: when `l`'s names do not repeat, `r`'s list of the same length holds all of them, so
+/// both name sets are equal and `r`'s do not repeat either, a lookup by the sorted names. When
+/// `l`'s names repeat, any `r` of the rule may match: a probe on the left is then compared with
+/// every indexed cycle of its rule, and an indexed violation on the left with every probe.
 #[derive(Debug, Default)]
-struct Kept {
+pub(crate) struct SameIndex {
     /// By rule name and `(from, to)`; a non-string end collapses into one bucket per rule.
     by_ends: HashMap<(Option<String>, End, End), Vec<usize>>,
     /// By rule name and then the sorted cycle names, for cycles without a repeated name.
     by_cycle: HashMap<Option<String>, HashMap<Vec<String>, Vec<usize>>>,
-    /// Every kept violation with a truthy `cycle`, by rule name.
+    /// Every indexed violation with a truthy `cycle`, by rule name.
     cycles: HashMap<Option<String>, Vec<usize>>,
+    /// The indexed violations whose truthy `cycle` repeats a name, by rule name.
+    repeating: HashMap<Option<String>, Vec<usize>>,
+}
+
+/// The keys [`SameIndex`] files a violation under.
+struct Keys {
+    rule: Option<String>,
+    ends: (Option<String>, End, End),
+    has_cycle: bool,
+    distinct: Option<Vec<String>>,
+}
+
+impl Keys {
+    fn of(v: &Value) -> Self {
+        let rule = rule_of(v).map(str::to_owned);
+        let ends = ends_key(v, rule.clone());
+        let has_cycle = js::truthy(v.get("cycle"));
+        let distinct = if has_cycle { distinct_cycle(v) } else { None };
+        Self {
+            rule,
+            ends,
+            has_cycle,
+            distinct,
+        }
+    }
+}
+
+impl SameIndex {
+    /// Files `v` as the violation numbered `at`.
+    pub(crate) fn insert(&mut self, at: usize, v: &Value) {
+        self.insert_keys(at, Keys::of(v));
+    }
+
+    fn insert_keys(&mut self, at: usize, keys: Keys) {
+        self.by_ends.entry(keys.ends).or_default().push(at);
+        if keys.has_cycle {
+            match keys.distinct {
+                Some(sorted) => self
+                    .by_cycle
+                    .entry(keys.rule.clone())
+                    .or_default()
+                    .entry(sorted)
+                    .or_default()
+                    .push(at),
+                None => self
+                    .repeating
+                    .entry(keys.rule.clone())
+                    .or_default()
+                    .push(at),
+            }
+            self.cycles.entry(keys.rule).or_default().push(at);
+        }
+    }
+
+    /// Every indexed violation `is_same_violation` could accept with `probe` on `side`, in no
+    /// particular order and possibly more than once.
+    pub(crate) fn candidates(&self, probe: &Value, side: Side) -> Vec<usize> {
+        self.candidates_for(&Keys::of(probe), side)
+    }
+
+    fn candidates_for(&self, keys: &Keys, side: Side) -> Vec<usize> {
+        let mut out: Vec<usize> = self.by_ends.get(&keys.ends).cloned().unwrap_or_default();
+        if keys.has_cycle {
+            if let Some(sorted) = &keys.distinct {
+                out.extend(
+                    self.by_cycle
+                        .get(&keys.rule)
+                        .and_then(|by_names| by_names.get(sorted))
+                        .into_iter()
+                        .flatten(),
+                );
+            }
+            let wide = match (side, &keys.distinct) {
+                (Side::Left, None) => self.cycles.get(&keys.rule),
+                (Side::Left, Some(_)) => None,
+                (Side::Right, _) => self.repeating.get(&keys.rule),
+            };
+            out.extend(wide.into_iter().flatten());
+        }
+        out
+    }
 }
 
 fn ends_key(v: &Value, rule: Option<String>) -> (Option<String>, End, End) {
@@ -189,63 +289,20 @@ fn distinct_cycle(v: &Value) -> Option<Vec<String>> {
 
 /// `uniqWith(isSameViolation)`: each violation in order, kept when no violation kept before it
 /// is the same, as upstream's pairwise scan does, but comparing it only with the kept
-/// violations that could be the same.
-///
-/// `isSameViolation(v, u)` needs equal rule names, and then either both cycles truthy with
-/// equally long name lists, every name of `v`'s in `u`'s, or equal `from` and `to`. The second
-/// is a lookup by `(rule, from, to)`. For the first, when `v`'s names do not repeat, `u`'s
-/// names hold all `L` of them in a list of length `L`, so the two name sets are equal: a lookup
-/// by the sorted names. A cycle with a repeated name is compared with every kept cycle of its
-/// rule. Each candidate is then decided by [`is_same_violation`] itself, so the result is the
-/// pairwise scan's.
+/// violations a [`SameIndex`] names as candidates.
 fn unique_violations(violations: Vec<Value>) -> Vec<Value> {
     let mut unique: Vec<Value> = Vec::with_capacity(violations.len());
-    let mut kept = Kept::default();
+    let mut kept = SameIndex::default();
     for violation in violations {
-        let rule = rule_of(&violation).map(str::to_owned);
-        let ends = ends_key(&violation, rule.clone());
-        let has_cycle = js::truthy(violation.get("cycle"));
-        let cycle = if has_cycle {
-            distinct_cycle(&violation)
-        } else {
-            None
-        };
-        let same = |at: &usize| is_same_violation(&violation, &unique[*at]);
-        let by_cycle = || -> bool {
-            match &cycle {
-                Some(sorted) => kept
-                    .by_cycle
-                    .get(&rule)
-                    .and_then(|by_names| by_names.get(sorted))
-                    .is_some_and(|list| list.iter().any(same)),
-                None => kept
-                    .cycles
-                    .get(&rule)
-                    .is_some_and(|list| list.iter().any(same)),
-            }
-        };
+        let keys = Keys::of(&violation);
         let duplicate = kept
-            .by_ends
-            .get(&ends)
-            .is_some_and(|list| list.iter().any(same))
-            || (has_cycle && by_cycle());
-        if duplicate {
-            continue;
+            .candidates_for(&keys, Side::Left)
+            .iter()
+            .any(|at| is_same_violation(&violation, &unique[*at]));
+        if !duplicate {
+            kept.insert_keys(unique.len(), keys);
+            unique.push(violation);
         }
-        let at = unique.len();
-        kept.by_ends.entry(ends).or_default().push(at);
-        if has_cycle {
-            if let Some(sorted) = cycle {
-                kept.by_cycle
-                    .entry(rule.clone())
-                    .or_default()
-                    .entry(sorted)
-                    .or_default()
-                    .push(at);
-            }
-            kept.cycles.entry(rule).or_default().push(at);
-        }
-        unique.push(violation);
     }
     unique
 }
@@ -789,6 +846,27 @@ mod tests {
     }
 
     proptest! {
+        #[test]
+        fn the_candidates_hold_every_violation_that_is_the_same_on_either_side(
+            probe in violation(),
+            indexed in proptest::collection::vec(violation(), 0..30),
+        ) {
+            let mut index = SameIndex::default();
+            for (at, v) in indexed.iter().enumerate() {
+                index.insert(at, v);
+            }
+            let left = index.candidates(&probe, Side::Left);
+            let right = index.candidates(&probe, Side::Right);
+            for (at, v) in indexed.iter().enumerate() {
+                if is_same_violation(&probe, v) {
+                    prop_assert!(left.contains(&at), "left {at}");
+                }
+                if is_same_violation(v, &probe) {
+                    prop_assert!(right.contains(&at), "right {at}");
+                }
+            }
+        }
+
         #[test]
         fn the_indexed_scan_equals_the_pairwise_scan(
             violations in proptest::collection::vec(violation(), 0..40)
