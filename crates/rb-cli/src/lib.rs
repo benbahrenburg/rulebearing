@@ -156,20 +156,28 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         Command::Adopt(a) => cmd::adopt::run(ctx, &a),
         Command::Baseline(a) => cmd::baseline::run(ctx, &a),
         Command::Import(c) => cmd::import::run(ctx, &c),
-        Command::Validate(_) => match ctx.read_stdin() {
+        Command::Validate(a) => match protocol_input(ctx, &a) {
             Ok(text) => protocol::validate(&text),
             Err(e) => Outcome::failed(
                 RunExit::Untrustworthy,
-                format!("rulebearing validate: cannot read stdin: {e}\n"),
+                format!("rulebearing validate: cannot read the request: {e}\n"),
             ),
         },
-        Command::Report(a) => match ctx.read_stdin() {
+        Command::Report(a) => match protocol_input(ctx, &a) {
             Ok(text) => protocol::report(a.output_type.as_deref().unwrap_or("err"), &text),
             Err(e) => Outcome::failed(
                 RunExit::Untrustworthy,
-                format!("rulebearing report: cannot read stdin: {e}\n"),
+                format!("rulebearing report: cannot read the request: {e}\n"),
             ),
         },
+    }
+}
+
+/// A protocol request: the `--input` file when given, else stdin.
+fn protocol_input(ctx: &mut Context<'_>, args: &cli::ProtocolArgs) -> std::io::Result<String> {
+    match &args.input {
+        Some(file) => std::fs::read_to_string(ctx.resolve(file)),
+        None => ctx.read_stdin(),
     }
 }
 
@@ -221,6 +229,34 @@ mod tests {
 
     fn args(list: &[&str]) -> Vec<String> {
         list.iter().map(|s| (*s).to_owned()).collect()
+    }
+
+    #[test]
+    fn protocol_requests_come_from_input_or_stdin() {
+        let dir = std::env::temp_dir().join(format!("rb-protocol-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        let request = r#"{"result":{"modules":[],"summary":{"violations":[],"error":0,"warn":0,"info":0,"ignore":0,"totalCruised":0,"totalDependenciesCruised":0,"optionsUsed":{}}},"options":null}"#;
+        let file = dir.join("request.json");
+        let _ = std::fs::write(&file, request);
+        let path = file.to_string_lossy().into_owned();
+        let from_file = run(&args(&["report", "-T", "json", "--input", &path]));
+        let from_stdin = run_with_input(&args(&["report", "-T", "json"]), &mut request.as_bytes());
+        assert_eq!(from_file.code, 0, "{}", from_file.stderr);
+        assert_eq!(from_file.stdout, from_stdin.stdout);
+        let missing = run(&args(&[
+            "report",
+            "-T",
+            "json",
+            "--input",
+            "/no/such/request.json",
+        ]));
+        assert_eq!(missing.code, 2);
+        assert!(
+            missing.stderr.contains("cannot read the request"),
+            "{}",
+            missing.stderr
+        );
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

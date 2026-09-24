@@ -23,7 +23,8 @@
 // returns a function, the forwarder keeps collecting argument lists instead of calling out; the
 // value a spec asserts on always comes from the binary.
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -40,6 +41,26 @@ export function binary() {
     return existsSync(release) ? release : join(repository, 'target', 'debug', binaryName);
 }
 
+/**
+ * Runs the binary with a request written to a file and passed as `--input`, stdin closed. Piping
+ * the request through `spawnSync`'s `input` deadlocked under load on macOS: the child sat in
+ * `read()` on a stdin socket the parent never closed.
+ */
+function runWith(args, request) {
+    const folder = mkdtempSync(join(tmpdir(), 'rb-shim-'));
+    const file = join(folder, 'request.json');
+    try {
+        writeFileSync(file, request);
+        return spawnSync(binary(), [...args, '--input', file], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            encoding: 'utf8',
+            maxBuffer: 64 * 1024 * 1024,
+        });
+    } finally {
+        rmSync(folder, { recursive: true, force: true });
+    }
+}
+
 /** Replaces regular expressions with their source so a request is plain JSON. */
 function toJson(value) {
     return JSON.stringify(value, (_key, inner) => (inner instanceof RegExp ? inner.source : inner));
@@ -47,10 +68,9 @@ function toJson(value) {
 
 /** Sends one request to the binary and returns its result, or throws with its message. */
 export function call(request) {
-    const run = spawnSync(
-        binary(),
+    const run = runWith(
         ['validate', '--rules', '-', '--module', '-', '--no-liveness'],
-        { input: toJson(request), encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+        toJson(request),
     );
     if (run.error) {
         throw new Error(`rulebearing validate could not start: ${run.error.message}`);
@@ -63,14 +83,13 @@ export function call(request) {
 
 /**
  * Renders a cruise result with one of Rulebearing's reporters (conformance gate 1 layer 3):
- * `rulebearing report --output-type <type>` with { result, options } on stdin.
+ * `rulebearing report --output-type <type> --input <file>` with { result, options } in the file.
  */
 export function report(outputType, result, options) {
-    const run = spawnSync(binary(), ['report', '--output-type', outputType], {
-        input: JSON.stringify({ result, options: options ?? null }),
-        encoding: 'utf8',
-        maxBuffer: 64 * 1024 * 1024,
-    });
+    const run = runWith(
+        ['report', '--output-type', outputType],
+        JSON.stringify({ result, options: options ?? null }),
+    );
     if (run.error) {
         throw new Error(`rulebearing report could not start: ${run.error.message}`);
     }

@@ -32,8 +32,9 @@ Options:
           graph built by another tool, such as scripts/cargo-graph.sh for this repository)
 
   -T, --output-type <TYPE>
-          Output type: err, err-long, json, text, csv, teamcity, azure-devops, github-annotations,
-          agent, baseline, sarif, junit, trx, null
+          Output type: err, err-long, err-html, json, text, csv, teamcity, azure-devops,
+          github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat,
+          fdot, mermaid, d2, metrics, null
 
   -f, --output-to <FILE>
           File to write output to; - for stdout

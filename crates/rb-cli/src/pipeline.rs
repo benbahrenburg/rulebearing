@@ -329,7 +329,7 @@ fn cruise_filters(config: &Config) -> Filters {
 
 /// `collapse` from the configuration or `--collapse`: a folder depth (a single digit) becomes
 /// upstream's pattern, anything else is the pattern itself.
-fn cruise_collapse(config: &Config) -> Option<String> {
+pub(crate) fn cruise_collapse(config: &Config) -> Option<String> {
     config.options.collapse.as_ref().and_then(collapse_pattern)
 }
 

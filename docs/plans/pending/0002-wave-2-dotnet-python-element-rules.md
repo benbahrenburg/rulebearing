@@ -842,10 +842,10 @@ public class ArchitectureRules
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 2E | `dot`, `ddot`, `archi` / `cdot`, `flat` / `fdot` with `reporterOptions` | Not started | gate 1 layer 3 |
-| 2E | `mermaid`, `d2` | Not started | gate 1 layer 3 |
-| 2E | `metrics`, `--metrics` | Not started | gate 1 layer 3 |
-| 2E | `err-html` | Not started | gate 1 layer 3 |
+| 2E | `dot`, `ddot`, `archi` / `cdot`, `flat` / `fdot` with `reporterOptions` | Done | gate 1 layer 3: upstream's `test/report/dot/{module-level,folder-level,custom-level,flat-level}` (23 tests), `theming.spec.mjs` (12) and `module-utl.spec.mjs` (6), unmodified; `run-layer-3.mjs` also renders every `test/report` mock through upstream's reporter and ours with theme, filter, `collapsePattern` and `showMetrics` variants, 0 differing; `crates/rb-cli/tests/graph_reporters.rs` |
+| 2E | `mermaid`, `d2` | Done | gate 1 layer 3: `mermaid.spec.mjs` (12, with `minify` and the plugin entry) and `d2.spec.mjs` (17); the comparison with upstream's code, 0 differing |
+| 2E | `metrics`, `--metrics` | Done | gate 1 layer 3: `metrics.spec.mjs` (11) and the comparison with upstream's code over `hideFolders`, `hideModules`, `orderBy`, 0 differing; `--metrics` / `--no-metrics` in `graph_reporters.rs`. `fmt --exit-code -T metrics` on a result without folders exits 0 as ADR-0030 lists the gating reporters, where upstream exits 1 |
+| 2E | `err-html` | Done | gate 1 layer 3: `error-html.spec.mjs` (5) and `utl.spec.mjs` (16); byte comparison with upstream's code, the run date aside, including `showAliasedModulesUnresolved` and `showExternalModulesUnresolved` |
 | 2E | `baseline` reporter and command, three modes, `expires`, `owner`, `reason`, `--ignore-known` | Done | `crates/rb-cli/tests/baseline.rs` (full, shrink-only, format; `expires` including the same day; `owner` and `reason` kept; `--ignore-known` / `--no-ignore-known` on `cruise` and `fmt`; element rules); `crates/rb-rules/src/known.rs` unit tests; gate 1 layer 3 `test/report/baseline`. dependency-cruiser 18.2.0 has no baseline modes, so the three are defined in [ADR-0037](../../adr/0037-baseline-modes.md) (proposed) |
 | 2E | `sarif` with fingerprints | Done | `crates/rb-report/tests/sarif_schema.rs`: 113 inputs validate against the vendored OASIS SARIF 2.1.0 schema; the fingerprint is the stable id, identical across runs |
 | 2E | `junit`, `trx` | Done | `crates/rb-report/tests/xml_schemas.rs`: `junit` against the vendored `junit-10.xsd` (MIT); `trx` against the structure `vstst.xsd` requires, whose licence forbids vendoring it; one test case per rule, vacuous rules as errors |

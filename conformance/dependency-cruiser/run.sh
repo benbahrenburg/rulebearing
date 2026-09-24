@@ -6,8 +6,9 @@
 #   layer 2  harness/run-layer-2.mjs runs upstream's test/validate and test/graph-utl specs with the
 #            unit under test forwarded to `rulebearing validate`; fails on a failure not listed in
 #            ../excluded.json
-#   layer 3  harness/run-layer-3.mjs runs upstream's test/report specs for the wave 1 reporters with
-#            each reporter forwarded to `rulebearing report`; the specs byte-compare the output
+#   layer 3  harness/run-layer-3.mjs runs upstream's test/report specs for the wave 1 and wave 2
+#            reporters with each reporter forwarded to `rulebearing report`; the specs byte-compare
+#            the output, and every wave 2 reporter is compared with upstream's over the mocks
 #   layer 4  scripts/run-layer-4.sh validates the JSON output (--strict-schema) and every accepted
 #            configuration against the vendored upstream schemas
 #
