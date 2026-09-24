@@ -917,15 +917,15 @@ public class ArchitectureRules
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 2I | `init` detectors for .NET and Python | Not started | fixture tests |
-| 2I | semantic-kernel `init` fixture passes | Not started | nightly job |
-| 2I | autogen `init` fixture passes | Not started | nightly job |
-| 2I | Nightly oracle and scale rows (aspnetcore, jellyfin, home-assistant) | Not started | README table |
+| 2I | `init` detectors for .NET and Python | Done | `crates/rb-cli/tests/init_detectors.rs` over a committed four-project layered solution (`tests/fixtures/init-layers`); unit tests in `init.rs` and `init_graph.rs`: a `.sln`, `.slnx`, `.csproj` or `Directory.Build.props` selects `rulebearing:dotnet` and proposes layer rules from `Domain` / `Application` / `Infrastructure` / `Web` namespaces; a `pyproject.toml`, `setup.py` or `setup.cfg` selects `rulebearing:python` and proposes rules between top-level packages |
+| 2I | semantic-kernel `init` fixture passes | In progress | `testbeds/init/microsoft__semantic-kernel/rulebearing.yaml`; locally at the pinned SHA with the solution built: the proposed configuration cruises with exit 0, 0 errors, 3045 findings baselined, .NET 2426 and Python 1678 modules. The nightly `greenfield-init` job has not run yet |
+| 2I | autogen `init` fixture passes | In progress | `testbeds/init/microsoft__autogen/rulebearing.yaml`; locally `testbeds/greenfield.sh microsoft/autogen` returns ok (fixture unchanged, exit 0, 1437 baselined). The nightly `greenfield-init` job has not run yet |
+| 2I | Nightly oracle and scale rows (aspnetcore, jellyfin, home-assistant) | In progress | the `scale` nightly job over the three (`testbeds/scale.sh`, a regression over 20% fails); jellyfin verified locally (2299 .NET modules, 8.7 s median); home-assistant blocked by cycle-detection time and aspnetcore by its `artifacts/bin` build layout, both being fixed; the oracle rows come with the 2F harness |
 | 2I | Issue: evolutionary-architecture-by-example | Not started | issue link |
 | 2I | Issue: RiverBooks | Not started | issue link |
 | 2I | Issue: kedro | Not started | issue link |
 | 2I | Issue: sqlfluff | Not started | issue link |
-| 2I | Second-maintainer criterion published; outcome recorded | Not started | `CONTRIBUTING.md`, issue links |
+| 2I | Second-maintainer criterion published; outcome recorded | In progress | the criterion and the two newcomer-safe areas (`rb-extract-python`, `adapters/dotnet`) in `CONTRIBUTING.md` § A second maintainer; the outcome waits on the upstream issues |
 
 ### Wave summary
 
