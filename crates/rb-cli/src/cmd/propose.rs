@@ -334,10 +334,12 @@ fn element_draft(
     if let Some(filter) = &filter {
         select["where"] = filter.clone();
     }
+    // Without `--should` only the selection is read; `exist` stands in for the condition, since
+    // the loader refuses an empty `should` and every language answers `exist`.
     let value = json!([{
         "name": name,
         "select": select,
-        "should": condition.clone().unwrap_or_else(|| json!({})),
+        "should": condition.clone().unwrap_or_else(|| json!({ "exist": true })),
     }]);
     let rule: ElementRule = parse_elements(&value)
         .map_err(|e| invalid(e.to_string()))?
