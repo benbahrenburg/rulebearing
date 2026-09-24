@@ -1,6 +1,6 @@
 # ADR-0035: The code layer holds the types the analysed code references, as `ArchUnitNET`'s `ReferencedTypes`
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-24, by the maintainer)
 - **Date:** 2026-09-24
 - **Derives from:** [ADR-0004](0004-graph-document-is-cruise-result-superset.md) (additions are additive), [ADR-0009](0009-conformance-suites-as-specification.md), [ADR-0010](0010-crate-layout-and-extractor-boundary.md), [ADR-0011](0011-read-dotnet-assemblies-not-source.md)
 - **Constrains:** `crates/rb-model/src/code.rs` (`TypeElement.referenced`), `crates/rb-extract-dotnet`, `crates/rb-rules/src/elements/`, `select.includeReferenced` in `crates/rb-config/src/elements.rs`

@@ -1,6 +1,6 @@
 # ADR-0036: Markdown fences are read for a native configuration; a dependency-cruiser one keeps upstream's `extraExtensionsToScan`
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-24, by the maintainer)
 - **Date:** 2026-09-24
 - **Derives from:** [design § Why](../artifacts/design.md#why) ("superset, precisely; nothing is dropped"), [ADR-0009](0009-conformance-suites-as-specification.md) (the upstream suites are the specification), [ADR-0032](0032-liveness-follows-the-configuration-format.md) (a behaviour that would break a drop-in follows the configuration's format)
 - **Constrains:** `crates/rb-extract-ts` (`md.rs`, `Settings::markdown_fences`), `crates/rb-cli` (which configurations turn it on)

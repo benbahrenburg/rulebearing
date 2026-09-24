@@ -38,8 +38,8 @@ A rule in `rulebearing.yaml` cites a decision with the token `adr:NNNN` in its `
 | [0030](0030-the-reporter-decides-the-error-count-exit.md) | The reporter decides whether the error count is the exit code, as in dependency-cruiser; 2 and 3 do not depend on it | Accepted |
 | [0031](0031-a-saved-result-carries-what-the-exit-code-counts.md) | A saved result carries everything the exit code counts: `summary.expired[]`; `fmt --exit-code` reads it and `vacuousRules` | Accepted |
 | [0032](0032-liveness-follows-the-configuration-format.md) | Liveness follows the configuration's format: `warn` for a dependency-cruiser file, `strict` for a native one; named exceptions in `allowEmpty` | Accepted |
-| [0033](0033-llvm-exception-for-ar-archive-writer.md) | One crate-scoped licence exception: Apache-2.0 WITH LLVM-exception for `ar_archive_writer`, which the Python parser's build requires | Proposed |
-| [0034](0034-slices-group-types-or-modules-and-segments.md) | A slice groups .NET types or TypeScript and Python modules; `(*)` names a slice as `ArchUnitNET` does; `segments` keeps the first segments | Proposed |
-| [0035](0035-referenced-types-in-the-code-layer.md) | The code layer holds the types the analysed code references, as `ArchUnitNET`'s `ReferencedTypes` | Proposed |
-| [0036](0036-markdown-fences-follow-the-configuration-format.md) | Markdown fences are read for a native configuration; a dependency-cruiser one keeps upstream's `extraExtensionsToScan` | Proposed |
-| [0037](0037-baseline-modes.md) | `baseline` has three modes of Rulebearing's own (`full`, `shrink-only`, `format`); dependency-cruiser has none | Proposed |
+| [0033](0033-llvm-exception-for-ar-archive-writer.md) | One crate-scoped licence exception: Apache-2.0 WITH LLVM-exception for `ar_archive_writer`, which the Python parser's build requires | Accepted |
+| [0034](0034-slices-group-types-or-modules-and-segments.md) | A slice groups .NET types or TypeScript and Python modules; `(*)` names a slice as `ArchUnitNET` does; `segments` keeps the first segments | Accepted |
+| [0035](0035-referenced-types-in-the-code-layer.md) | The code layer holds the types the analysed code references, as `ArchUnitNET`'s `ReferencedTypes` | Accepted |
+| [0036](0036-markdown-fences-follow-the-configuration-format.md) | Markdown fences are read for a native configuration; a dependency-cruiser one keeps upstream's `extraExtensionsToScan` | Accepted |
+| [0037](0037-baseline-modes.md) | `baseline` has three modes of Rulebearing's own (`full`, `shrink-only`, `format`); dependency-cruiser has none | Accepted |

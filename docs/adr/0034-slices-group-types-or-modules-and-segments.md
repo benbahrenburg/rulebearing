@@ -1,6 +1,6 @@
 # ADR-0034: A slice groups .NET types or TypeScript and Python modules; `(*)` names a slice as `ArchUnitNET` does; `segments` keeps the first segments
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-24, by the maintainer)
 - **Date:** 2026-09-24
 - **Derives from:** [ADR-0009](0009-conformance-suites-as-specification.md) (the upstream suite is the specification), [ADR-0010](0010-crate-layout-and-extractor-boundary.md) (no `match language` in the engine), [ADR-0005](0005-native-config-superset-and-compat.md) (native additions are additive)
 - **Constrains:** `crates/rb-rules/src/slices.rs`, `crates/rb-config/src/capability.rs`, `crates/rb-config/src/elements.rs` (`SliceRule`), the `rb-extract-python` module layer
