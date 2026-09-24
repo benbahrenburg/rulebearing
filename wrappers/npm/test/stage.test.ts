@@ -61,6 +61,9 @@ function fakeSource(): void {
   writeFileSync(join(source, 'bin', 'rulebearing.js'), '// launcher\n');
   writeFileSync(join(source, 'dist', 'launcher.js'), '// compiled\n');
   writeFileSync(join(source, 'dist', 'platforms.js'), '// compiled\n');
+  mkdirSync(join(source, 'dist', 'vitest'), { recursive: true });
+  writeFileSync(join(source, 'dist', 'vitest', 'index.js'), '// compiled adapter\n');
+  writeFileSync(join(source, 'dist', 'vitest', 'index.d.ts'), '// declarations\n');
   // The licence is read from the repository root, two levels above the package.
   writeFileSync(join(scratch, 'LICENSE'), 'MIT from the repository\n');
 }
@@ -139,6 +142,16 @@ describe('the committed package.json', () => {
     expect(manifest.scripts).not.toHaveProperty('preinstall');
   });
 
+  it('exports rulebearing/vitest, with vitest as an optional peer only', () => {
+    expect(manifest.exports).toEqual({
+      './package.json': './package.json',
+      './vitest': { types: './dist/vitest/index.d.ts', default: './dist/vitest/index.js' },
+    });
+    expect(manifest.files).toContain('dist/vitest/');
+    expect(manifest.peerDependencies).toEqual({ vitest: '>=5' });
+    expect(manifest.peerDependenciesMeta).toEqual({ vitest: { optional: true } });
+  });
+
   it('carries the workspace version from Cargo.toml', () => {
     const cargo = readFileSync(join(packageDir, '..', '..', 'Cargo.toml'), 'utf8');
     const version = /\[workspace\.package\][^[]*?\nversion = "([^"]+)"/.exec(cargo)?.[1];
@@ -186,6 +199,8 @@ describe('stage', () => {
       'bin/rulebearing.js',
       'dist/launcher.js',
       'dist/platforms.js',
+      'dist/vitest/index.js',
+      'dist/vitest/index.d.ts',
       'README.md',
     ]) {
       expect(existsSync(join(main, file))).toBe(true);

@@ -8,7 +8,7 @@ npx rulebearing --version
 npx rulebearing cruise --config .dependency-cruiser.cjs --output-type err src
 ```
 
-The command-line surface is the binary's (`npx rulebearing --help`); the exit codes are those of [ADR-0008](../../docs/adr/0008-exit-code-contract.md).
+The command-line surface is the binary's (`npx rulebearing --help`); the exit codes are those of [ADR-0008](../../docs/adr/0008-exit-code-contract.md). The package also exports `rulebearing/vitest`, which runs each rule as a vitest test ([adapters/vitest](../../adapters/vitest/README.md)); vitest is an optional peer dependency, needed only for that entry point.
 
 ## How the package works
 
@@ -35,7 +35,7 @@ When the platform package is missing, for example after `npm install --omit=opti
 
 ## Developing this package
 
-The launcher is TypeScript under `src/`, compiled to `dist/` (strict, ESM, Node 22), and linted by the root configuration through `cargo xtask lint` ([ADR-0023](../../docs/adr/0023-documentation-link-and-lint-gates.md)). The tests hold the 70% line floor of [ADR-0018](../../docs/adr/0018-test-coverage-threshold.md), set in `vitest.config.ts`. Install the tooling once with `npm ci` at the repository root.
+The launcher is TypeScript under `src/`, compiled to `dist/` (strict, ESM, Node 22); `npm run build` also compiles [adapters/vitest](../../adapters/vitest/README.md) into `dist/vitest/`, which `exports` publishes as `rulebearing/vitest`. Both are linted by the root configuration through `cargo xtask lint` ([ADR-0023](../../docs/adr/0023-documentation-link-and-lint-gates.md)). The tests hold the 70% line floor of [ADR-0018](../../docs/adr/0018-test-coverage-threshold.md), set in `vitest.config.ts`. Install the tooling once with `npm ci` at the repository root.
 
 ```sh
 npm run build                                          # src/ to dist/

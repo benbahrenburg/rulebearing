@@ -7,7 +7,8 @@
     "dependency-cruiser",
     "dependencies",
     "boundaries",
-    "lint"
+    "lint",
+    "vitest"
   ],
   "license": "MIT",
   "homepage": "https://github.com/benbahrenburg/rulebearing",
@@ -24,13 +25,21 @@
   "bin": {
     "rulebearing": "bin/rulebearing.js"
   },
+  "exports": {
+    "./package.json": "./package.json",
+    "./vitest": {
+      "types": "./dist/vitest/index.d.ts",
+      "default": "./dist/vitest/index.js"
+    }
+  },
   "files": [
     "bin/rulebearing.js",
     "dist/launcher.js",
-    "dist/platforms.js"
+    "dist/platforms.js",
+    "dist/vitest/"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && tsc -p ../../adapters/vitest/tsconfig.build.json",
     "test": "vitest run --coverage",
     "stage": "npm run build && node scripts/stage.mjs"
   },
@@ -41,5 +50,13 @@
     "rulebearing-cli-darwin-arm64": "0.1.0",
     "rulebearing-cli-darwin-x64": "0.1.0",
     "rulebearing-cli-win32-x64-msvc": "0.1.0"
+  },
+  "peerDependencies": {
+    "vitest": ">=5"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
   }
 }
