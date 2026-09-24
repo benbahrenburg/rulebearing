@@ -199,8 +199,9 @@ def ignored_edges(contract: dict[str, Any], incumbent: dict[str, Any]) -> set[tu
     edges = set()
     for entry in contract.get("ignoreImports", []):
         importer, _, imported = entry.partition("->")
-        sources = [m for m in modules if module_pattern(importer).match(m)]
-        targets = [m for m in modules if module_pattern(imported).match(m)]
+        source_pattern, target_pattern = module_pattern(importer), module_pattern(imported)
+        sources = [m for m in modules if source_pattern.match(m)]
+        targets = [m for m in modules if target_pattern.match(m)]
         if not targets and "*" not in imported:
             targets = [imported.strip()]
         for source in sources:
@@ -210,21 +211,49 @@ def ignored_edges(contract: dict[str, Any], incumbent: dict[str, Any]) -> set[tu
 
 
 def without(
-    graph: dict[str, Any], edges: set[tuple[str, str]], *, type_only: bool
+    graph: dict[str, Any],
+    edges: set[tuple[str, str]],
+    unwalked: set[str],
+    *,
+    type_only: bool,
 ) -> dict[str, Any]:
-    """The graph document with these imports, and type-only ones, removed."""
+    """The graph document with these imports, type-only ones, and the unwalked files' removed."""
     document: dict[str, Any] = json.loads(json.dumps(graph))
+    by_importer: dict[str, set[str]] = {}
+    for importer, imported in edges:
+        by_importer.setdefault(importer, set()).add(imported)
     for module in document["modules"]:
+        ignored = by_importer.get(module["source"], set())
         kept = []
         for dependency in module.get("dependencies", []):
             resolved = dependency["resolved"]
-            dropped = (module["source"], resolved) in edges or any(
-                module["source"] == a and resolved.startswith(b + ".") for a, b in edges
+            # An ignored external package covers its submodules, as grimp squashes them.
+            parts = resolved.split(".")
+            dropped = (
+                any(".".join(parts[:n]) in ignored for n in range(1, len(parts) + 1))
+                or module["source"] in unwalked
+                or resolved in unwalked
             )
             if not dropped and not (type_only and "type-only" in dependency["dependencyTypes"]):
                 kept.append(dependency)
         module["dependencies"] = kept
     return document
+
+
+def unwalked_files(incumbent: dict[str, Any], graph: dict[str, Any]) -> set[str]:
+    """Python files under the root packages that grimp does not read as modules.
+
+    grimp walks a root package's regular subpackages only: a folder without `__init__.py` below
+    it (a namespace portion) is not analysed unless it is a root package itself, so no chain
+    import-linter follows passes through it.
+    """
+    inside = root_inside(incumbent)
+    known = {f for f in incumbent["modules"].values() if f is not None}
+    return {
+        m["source"]
+        for m in graph["modules"]
+        if m.get("language") == "python" and inside(m["source"]) and m["source"] not in known
+    }
 
 
 def junit_run(context: dict[str, Any], graph: Path, out: Path) -> int:
@@ -258,21 +287,25 @@ def explain(
 
     import-linter removes each `ignore_imports` import, and with
     `exclude_type_checking_imports` every `TYPE_CHECKING` import, from the graph before it
-    follows chains; the import writes neither as an edge filter. The contract is re-checked by
-    `rulebearing cruise --graph` over Rulebearing's own graph with those imports removed.
+    follows chains, and grimp does not read a namespace portion below a root package; the import
+    expresses none of these. The contract is re-checked by `rulebearing cruise --graph` over
+    Rulebearing's own graph with those imports, and the unread files' imports, removed.
     """
     incumbent = context["incumbent"]
     edges = ignored_edges(contract, incumbent)
     type_only = bool(incumbent["excludeTypeCheckingImports"])
-    mechanisms = (["ignore_imports"] if edges else []) + (
-        ["exclude_type_checking_imports"] if type_only else []
+    unwalked = unwalked_files(incumbent, context["graph"])
+    mechanisms = (
+        (["ignore_imports"] if edges else [])
+        + (["exclude_type_checking_imports"] if type_only else [])
+        + (["namespace portions grimp does not read"] if unwalked else [])
     )
     if not mechanisms or context.get("bin") is None:
         return
     work = Path(context["work"])
-    stem = f"recheck-{contract['id'] or 'contract'}"
+    stem = f"recheck-{contract['id'] or context['incumbent']['contracts'].index(contract)}"
     graph = work / f"{stem}.json"
-    graph.write_text(json.dumps(without(context["graph"], edges, type_only=type_only)))
+    graph.write_text(json.dumps(without(context["graph"], edges, unwalked, type_only=type_only)))
     report = work / f"{stem}.xml"
     status = junit_run(context, graph, report)
     try:
@@ -284,11 +317,10 @@ def explain(
     row["filtered"] = {"mechanisms": mechanisms, "violations": left}
     if left == 0:
         row["cause"] = (
-            f"import-linter's {' and '.join(mechanisms)} remove imports from the graph before "
-            "chains are followed; with the same imports removed from Rulebearing's graph the "
-            "contract is kept too. The import writes ignore_imports as knownViolations, which "
-            "excuse a violation but cut no chain, and has no form for "
-            "exclude_type_checking_imports"
+            f"import-linter follows chains in a graph without these ({'; '.join(mechanisms)}); "
+            "with the same imports removed from Rulebearing's graph the contract is kept too. "
+            "The import writes ignore_imports as knownViolations, which excuse a violation but "
+            "cut no chain, and has no form for the others"
         )
 
 

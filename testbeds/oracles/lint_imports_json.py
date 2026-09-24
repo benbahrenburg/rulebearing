@@ -147,7 +147,15 @@ def main() -> int:
     modules: dict[str, str | None] = {}
     edges: list[list[str]] = []
     if graph is not None:
-        modules = {m: module_file(m, roots, base) for m in sorted(graph.modules)}
+        # An external package (include_external_packages) is a squashed module outside the root
+        # packages, even when a folder of its name sits beside them; it maps to no file.
+        packages = list(session.get("root_packages", []))
+        modules = {
+            m: module_file(m, roots, base)
+            if any(m == p or m.startswith(p + ".") for p in packages)
+            else None
+            for m in sorted(graph.modules)
+        }
         edges = sorted(
             [importer, imported]
             for importer in modules
