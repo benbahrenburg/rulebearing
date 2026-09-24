@@ -318,6 +318,32 @@ pub struct DotnetOptions {
     /// Project paths to leave out, as patterns.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub exclude_projects: Option<Patterns>,
+    /// Assemblies to read instead of a solution's projects, as globs relative to the working
+    /// directory (`ArchLoader.LoadAssembly`, `LoadAssemblies`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assemblies: Option<Vec<String>>,
+    /// Also read the assemblies the loaded ones reference, when they sit beside them
+    /// (`LoadAssembliesIncludingDependencies`). Default: `false`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub include_dependencies: Option<bool>,
+    /// Folders whose assemblies are read, each with an optional file-name filter
+    /// (`LoadFilteredDirectory`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub directories: Option<Vec<DirectoryFilter>>,
+    /// Keep only types in these namespaces or below (`LoadNamespacesWithinAssembly`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub namespaces: Option<Vec<String>>,
+}
+
+/// One `languages.dotnet.directories` entry.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct DirectoryFilter {
+    /// The folder, relative to the working directory.
+    pub dir: String,
+    /// A file-name glob such as `MyApp.*.dll`. Default: `*.dll`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub filter: Option<String>,
 }
 
 impl DotnetOptions {

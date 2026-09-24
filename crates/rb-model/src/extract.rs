@@ -112,11 +112,7 @@ mod tests {
             }
             Ok(Extraction {
                 modules: self.0.iter().map(|s| Module::new(*s)).collect(),
-                inspected: Receipt {
-                    files: self.0.len() as u64,
-                    assemblies: 0,
-                    modules: self.0.len() as u64,
-                },
+                inspected: Receipt::counts(self.0.len() as u64, 0, self.0.len() as u64),
                 ..Extraction::default()
             })
         }

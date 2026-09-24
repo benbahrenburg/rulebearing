@@ -641,7 +641,11 @@ pub struct Change {
 pub type Inspected = BTreeMap<Language, Receipt>;
 
 /// What one language's extractor inspected.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+///
+/// The .NET and Python additions are the observability counts of
+/// [Wave 2 § 1.8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#18-quality-attributes):
+/// absent for a language that has no such thing, so a TypeScript receipt keeps its wave 1 shape.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Receipt {
     /// Source files read.
@@ -651,6 +655,49 @@ pub struct Receipt {
     pub assemblies: u64,
     /// Modules produced.
     pub modules: u64,
+    /// Projects discovered (.NET).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub projects: Option<u64>,
+    /// Source documents the portable PDBs list (.NET).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pdb_documents: Option<u64>,
+    /// Types by how they were attributed to a file (.NET).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attribution: Option<AttributionCounts>,
+    /// The import roots, repository-relative (Python).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub roots: Option<Vec<String>>,
+    /// The standard-library snapshot used (Python), for example `3.12`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stdlib_version: Option<String>,
+    /// The installed-distributions index (Python): its path, or `none` when no environment was
+    /// found and every non-local, non-stdlib import is `unresolved`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub site: Option<String>,
+}
+
+impl Receipt {
+    /// A receipt with the three counts every language has.
+    pub fn counts(files: u64, assemblies: u64, modules: u64) -> Self {
+        Self {
+            files,
+            assemblies,
+            modules,
+            ..Self::default()
+        }
+    }
+}
+
+/// `summary.inspected.<language>.attribution`: how many types each attribution reached.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AttributionCounts {
+    /// Attributed through the portable PDB.
+    pub pdb: u64,
+    /// Attributed by nesting or naming convention.
+    pub inferred: u64,
+    /// Not attributed to a file.
+    pub none: u64,
 }
 
 /// A rule whose selecting side matched nothing
@@ -962,24 +1009,47 @@ mod tests {
     }
 
     #[test]
+    fn a_receipt_omits_the_additions_a_language_lacks() {
+        let receipt = Receipt::counts(3, 1, 2);
+        assert_eq!(
+            (receipt.files, receipt.assemblies, receipt.modules),
+            (3, 1, 2)
+        );
+        assert_eq!(
+            serde_json::to_string(&receipt).unwrap_or_default(),
+            r#"{"files":3,"assemblies":1,"modules":2}"#
+        );
+        let dotnet = Receipt {
+            projects: Some(2),
+            pdb_documents: Some(7),
+            attribution: Some(AttributionCounts {
+                pdb: 5,
+                inferred: 1,
+                none: 0,
+            }),
+            ..Receipt::counts(7, 2, 7)
+        };
+        assert_eq!(
+            serde_json::to_string(&dotnet).unwrap_or_default(),
+            r#"{"files":7,"assemblies":2,"modules":7,"projects":2,"pdbDocuments":7,"attribution":{"pdb":5,"inferred":1,"none":0}}"#
+        );
+        let python = Receipt {
+            roots: Some(vec!["src".into()]),
+            stdlib_version: Some("3.12".into()),
+            site: Some("none".into()),
+            ..Receipt::counts(4, 0, 4)
+        };
+        assert_eq!(
+            serde_json::to_string(&python).unwrap_or_default(),
+            r#"{"files":4,"assemblies":0,"modules":4,"roots":["src"],"stdlibVersion":"3.12","site":"none"}"#
+        );
+    }
+
+    #[test]
     fn receipt_is_keyed_by_language_in_a_fixed_order() {
         let mut inspected = Inspected::new();
-        inspected.insert(
-            Language::Python,
-            Receipt {
-                files: 1,
-                assemblies: 0,
-                modules: 1,
-            },
-        );
-        inspected.insert(
-            Language::Dotnet,
-            Receipt {
-                files: 0,
-                assemblies: 2,
-                modules: 5,
-            },
-        );
+        inspected.insert(Language::Python, Receipt::counts(1, 0, 1));
+        inspected.insert(Language::Dotnet, Receipt::counts(0, 2, 5));
         let json = serde_json::to_string(&inspected).unwrap_or_default();
         assert_eq!(
             json,

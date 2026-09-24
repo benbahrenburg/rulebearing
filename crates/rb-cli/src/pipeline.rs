@@ -60,11 +60,9 @@ pub fn receipt(document: &GraphDocument) -> Inspected {
     let mut inspected = Inspected::new();
     for module in &document.modules {
         if let Some(language) = module.language {
-            let entry = inspected.entry(language).or_insert(Receipt {
-                files: 0,
-                assemblies: 0,
-                modules: 0,
-            });
+            let entry = inspected
+                .entry(language)
+                .or_insert(Receipt::counts(0, 0, 0));
             entry.files += 1;
             entry.modules += 1;
         }
