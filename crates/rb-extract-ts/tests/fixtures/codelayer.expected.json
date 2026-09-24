@@ -1,0 +1,1246 @@
+{
+  "code": {
+    "types": [
+      {
+        "fullName": "src/legacy/plugin.js#LocalStore",
+        "name": "LocalStore",
+        "namespace": "src/legacy/plugin.js",
+        "kind": "class",
+        "language": "javascript",
+        "file": "src/legacy/plugin.js",
+        "line": 22,
+        "column": 7,
+        "visibility": "public",
+        "nested": false,
+        "baseType": "src/ui/store.ts#Store",
+        "baseTypes": [
+          "src/ui/store.ts#Store"
+        ],
+        "dependencies": [
+          {
+            "target": "src/ui/store.ts#Store",
+            "kind": "inherits",
+            "line": 22
+          }
+        ]
+      },
+      {
+        "fullName": "src/legacy/plugin.js#Plugin",
+        "name": "Plugin",
+        "namespace": "src/legacy/plugin.js",
+        "kind": "class",
+        "language": "javascript",
+        "file": "src/legacy/plugin.js",
+        "line": 3,
+        "column": 7,
+        "visibility": "public",
+        "nested": false,
+        "dependencies": [
+          {
+            "target": "src/legacy/plugin.js#Plugin",
+            "kind": "body",
+            "member": "constructor",
+            "line": 7
+          }
+        ]
+      },
+      {
+        "fullName": "src/legacy/plugin.js#helper",
+        "name": "helper",
+        "namespace": "src/legacy/plugin.js",
+        "kind": "function",
+        "language": "javascript",
+        "file": "src/legacy/plugin.js",
+        "line": 24,
+        "column": 10,
+        "visibility": "internal",
+        "nested": false
+      },
+      {
+        "fullName": "src/main.ts#start",
+        "name": "start",
+        "namespace": "src/main.ts",
+        "kind": "function",
+        "language": "typescript",
+        "file": "src/main.ts",
+        "line": 5,
+        "column": 14,
+        "visibility": "public",
+        "nested": false,
+        "generic": false,
+        "dependencies": [
+          {
+            "target": "src/ui/store.ts#Store",
+            "kind": "body",
+            "member": "constructor",
+            "line": 5
+          },
+          {
+            "target": "src/ui/widget.tsx#Widget",
+            "kind": "body",
+            "member": "constructor",
+            "line": 5
+          },
+          {
+            "target": "src/ui/widget.tsx#Widget",
+            "kind": "signature",
+            "line": 5
+          }
+        ]
+      },
+      {
+        "fullName": "src/model/base.ts#Flags",
+        "name": "Flags",
+        "namespace": "src/model/base.ts",
+        "kind": "enum",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 17,
+        "column": 19,
+        "visibility": "public",
+        "nested": false
+      },
+      {
+        "fullName": "src/model/base.ts#Identified",
+        "name": "Identified",
+        "namespace": "src/model/base.ts",
+        "kind": "interface",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 3,
+        "column": 18,
+        "visibility": "public",
+        "nested": false,
+        "generic": false,
+        "immutable": true
+      },
+      {
+        "fullName": "src/model/base.ts#Internal",
+        "name": "Internal",
+        "namespace": "src/model/base.ts",
+        "kind": "class",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 44,
+        "column": 7,
+        "visibility": "internal",
+        "abstract": false,
+        "nested": false,
+        "generic": false,
+        "immutable": true
+      },
+      {
+        "fullName": "src/model/base.ts#Key",
+        "name": "Key",
+        "namespace": "src/model/base.ts",
+        "kind": "type-alias",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 21,
+        "column": 13,
+        "visibility": "public",
+        "nested": false,
+        "generic": false
+      },
+      {
+        "fullName": "src/model/base.ts#Lookup",
+        "name": "Lookup",
+        "namespace": "src/model/base.ts",
+        "kind": "type-alias",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 23,
+        "column": 13,
+        "visibility": "public",
+        "nested": false,
+        "generic": true,
+        "dependencies": [
+          {
+            "target": "src/model/base.ts#Key",
+            "kind": "signature",
+            "line": 23
+          }
+        ]
+      },
+      {
+        "fullName": "src/model/base.ts#Named",
+        "name": "Named",
+        "namespace": "src/model/base.ts",
+        "kind": "interface",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 7,
+        "column": 18,
+        "visibility": "public",
+        "nested": false,
+        "generic": false,
+        "interfaces": [
+          "src/model/base.ts#Identified"
+        ],
+        "immutable": false,
+        "dependencies": [
+          {
+            "target": "src/model/base.ts#Identified",
+            "kind": "inherits",
+            "line": 7
+          }
+        ]
+      },
+      {
+        "fullName": "src/model/base.ts#Record",
+        "name": "Record",
+        "namespace": "src/model/base.ts",
+        "kind": "class",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 26,
+        "column": 23,
+        "visibility": "public",
+        "abstract": true,
+        "nested": false,
+        "generic": true,
+        "interfaces": [
+          "src/model/base.ts#Identified"
+        ],
+        "immutable": false,
+        "dependencies": [
+          {
+            "target": "src/model/base.ts#Identified",
+            "kind": "implements",
+            "line": 26
+          },
+          {
+            "target": "src/model/base.ts#Status",
+            "kind": "signature",
+            "line": 38
+          },
+          {
+            "target": "src/model/decorators.ts#Column",
+            "kind": "attribute",
+            "line": 29
+          },
+          {
+            "target": "src/model/decorators.ts#Entity",
+            "kind": "attribute",
+            "line": 25
+          }
+        ]
+      },
+      {
+        "fullName": "src/model/base.ts#Status",
+        "name": "Status",
+        "namespace": "src/model/base.ts",
+        "kind": "enum",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 12,
+        "column": 13,
+        "visibility": "public",
+        "nested": false
+      },
+      {
+        "fullName": "src/model/base.ts#makeKey",
+        "name": "makeKey",
+        "namespace": "src/model/base.ts",
+        "kind": "function",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 46,
+        "column": 17,
+        "visibility": "public",
+        "nested": false,
+        "generic": false,
+        "dependencies": [
+          {
+            "target": "src/model/base.ts#Key",
+            "kind": "signature",
+            "line": 46
+          }
+        ]
+      },
+      {
+        "fullName": "src/model/decorators.ts#Column",
+        "name": "Column",
+        "namespace": "src/model/decorators.ts",
+        "kind": "function",
+        "language": "typescript",
+        "file": "src/model/decorators.ts",
+        "line": 6,
+        "column": 14,
+        "visibility": "public",
+        "nested": false,
+        "generic": false
+      },
+      {
+        "fullName": "src/model/decorators.ts#Entity",
+        "name": "Entity",
+        "namespace": "src/model/decorators.ts",
+        "kind": "function",
+        "language": "typescript",
+        "file": "src/model/decorators.ts",
+        "line": 2,
+        "column": 17,
+        "visibility": "public",
+        "nested": false,
+        "generic": false
+      },
+      {
+        "fullName": "src/ui/store.ts#Shapes.Circle",
+        "name": "Circle",
+        "namespace": "src/ui/store.ts",
+        "kind": "class",
+        "language": "typescript",
+        "file": "src/ui/store.ts",
+        "line": 12,
+        "column": 16,
+        "visibility": "public",
+        "abstract": false,
+        "nested": false,
+        "generic": false,
+        "immutable": false
+      },
+      {
+        "fullName": "src/ui/store.ts#Shapes.Circle.Unit",
+        "name": "Unit",
+        "namespace": "src/ui/store.ts",
+        "kind": "class",
+        "language": "typescript",
+        "file": "src/ui/store.ts",
+        "line": 13,
+        "column": 12,
+        "visibility": "public",
+        "abstract": false,
+        "nested": true,
+        "generic": false,
+        "nestedIn": "src/ui/store.ts#Shapes.Circle",
+        "immutable": false
+      },
+      {
+        "fullName": "src/ui/store.ts#Shapes.Hidden",
+        "name": "Hidden",
+        "namespace": "src/ui/store.ts",
+        "kind": "class",
+        "language": "typescript",
+        "file": "src/ui/store.ts",
+        "line": 22,
+        "column": 9,
+        "visibility": "internal",
+        "abstract": false,
+        "nested": false,
+        "generic": false,
+        "immutable": true
+      },
+      {
+        "fullName": "src/ui/store.ts#Shapes.Solid.Sphere",
+        "name": "Sphere",
+        "namespace": "src/ui/store.ts",
+        "kind": "class",
+        "language": "typescript",
+        "file": "src/ui/store.ts",
+        "line": 19,
+        "column": 18,
+        "visibility": "public",
+        "abstract": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "src/ui/store.ts#Shapes.Circle",
+        "baseTypes": [
+          "src/ui/store.ts#Shapes.Circle"
+        ],
+        "immutable": true,
+        "dependencies": [
+          {
+            "target": "src/ui/store.ts#Shapes.Circle",
+            "kind": "inherits",
+            "line": 19
+          }
+        ]
+      },
+      {
+        "fullName": "src/ui/store.ts#Store",
+        "name": "Store",
+        "namespace": "src/ui/store.ts",
+        "kind": "class",
+        "language": "typescript",
+        "file": "src/ui/store.ts",
+        "line": 3,
+        "column": 14,
+        "visibility": "public",
+        "abstract": false,
+        "nested": false,
+        "generic": false,
+        "immutable": false,
+        "dependencies": [
+          {
+            "target": "src/model/base.ts#Identified",
+            "kind": "signature",
+            "line": 4
+          },
+          {
+            "target": "src/model/base.ts#Identified",
+            "kind": "signature",
+            "line": 6
+          }
+        ]
+      },
+      {
+        "fullName": "src/ui/widget.tsx#View",
+        "name": "View",
+        "namespace": "src/ui/widget.tsx",
+        "kind": "class",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 54,
+        "column": 14,
+        "visibility": "public",
+        "abstract": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "Component",
+        "baseTypes": [
+          "Component"
+        ],
+        "immutable": true
+      },
+      {
+        "fullName": "src/ui/widget.tsx#Widget",
+        "name": "Widget",
+        "namespace": "src/ui/widget.tsx",
+        "kind": "class",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 7,
+        "column": 14,
+        "visibility": "public",
+        "abstract": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "src/model/base.ts#Record",
+        "interfaces": [
+          "src/model/base.ts#Named",
+          "src/model/base.ts#Identified"
+        ],
+        "baseTypes": [
+          "src/model/base.ts#Record"
+        ],
+        "immutable": false,
+        "dependencies": [
+          {
+            "target": "src/model/base.ts#Identified",
+            "kind": "implements",
+            "line": 7
+          },
+          {
+            "target": "src/model/base.ts#Lookup",
+            "kind": "signature",
+            "line": 10
+          },
+          {
+            "target": "src/model/base.ts#Named",
+            "kind": "generic-argument",
+            "line": 7
+          },
+          {
+            "target": "src/model/base.ts#Named",
+            "kind": "implements",
+            "line": 7
+          },
+          {
+            "target": "src/model/base.ts#Record",
+            "kind": "inherits",
+            "line": 7
+          },
+          {
+            "target": "src/model/base.ts#Status",
+            "kind": "signature",
+            "line": 49
+          },
+          {
+            "target": "src/model/decorators.ts#Entity",
+            "kind": "attribute",
+            "line": 6
+          },
+          {
+            "target": "src/ui/store.ts#Store",
+            "kind": "body",
+            "member": "put",
+            "line": 13
+          },
+          {
+            "target": "src/ui/store.ts#Store",
+            "kind": "signature",
+            "line": 13
+          },
+          {
+            "target": "src/ui/store.ts#Store",
+            "kind": "signature",
+            "line": 43
+          },
+          {
+            "target": "src/ui/widget.tsx#Widget",
+            "kind": "body",
+            "member": "constructor",
+            "line": 44
+          },
+          {
+            "target": "src/ui/widget.tsx#Widget",
+            "kind": "body",
+            "member": "create",
+            "line": 38
+          },
+          {
+            "target": "src/ui/widget.tsx#Widget",
+            "kind": "body",
+            "member": "save",
+            "line": 38
+          },
+          {
+            "target": "src/ui/widget.tsx#Widget",
+            "kind": "signature",
+            "line": 10
+          },
+          {
+            "target": "src/ui/widget.tsx#Widget",
+            "kind": "signature",
+            "line": 43
+          }
+        ]
+      },
+      {
+        "fullName": "src/ui/widget.tsx#default",
+        "name": "default",
+        "namespace": "src/ui/widget.tsx",
+        "kind": "class",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 56,
+        "column": 16,
+        "visibility": "public",
+        "abstract": false,
+        "nested": false,
+        "generic": false,
+        "immutable": true
+      }
+    ],
+    "members": [
+      {
+        "declaringType": "src/legacy/plugin.js#Plugin",
+        "name": "#enabled",
+        "kind": "field",
+        "language": "javascript",
+        "file": "src/legacy/plugin.js",
+        "line": 4,
+        "column": 3,
+        "visibility": "private",
+        "static": false,
+        "fullName": "src/legacy/plugin.js#Plugin.#enabled"
+      },
+      {
+        "declaringType": "src/legacy/plugin.js#Plugin",
+        "name": "enabled",
+        "kind": "property",
+        "language": "javascript",
+        "file": "src/legacy/plugin.js",
+        "line": 10,
+        "column": 7,
+        "visibility": "public",
+        "static": false,
+        "readonly": true,
+        "fullName": "src/legacy/plugin.js#Plugin.enabled",
+        "getter": {
+          "visibility": "public"
+        }
+      },
+      {
+        "declaringType": "src/legacy/plugin.js#Plugin",
+        "name": "log",
+        "kind": "method",
+        "language": "javascript",
+        "file": "src/legacy/plugin.js",
+        "line": 19,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "fullName": "src/legacy/plugin.js#Plugin.log"
+      },
+      {
+        "declaringType": "src/legacy/plugin.js#Plugin",
+        "name": "of",
+        "kind": "method",
+        "language": "javascript",
+        "file": "src/legacy/plugin.js",
+        "line": 6,
+        "column": 10,
+        "visibility": "public",
+        "static": true,
+        "fullName": "src/legacy/plugin.js#Plugin.of",
+        "dependencies": [
+          {
+            "target": "src/legacy/plugin.js#Plugin",
+            "kind": "body",
+            "member": "constructor",
+            "line": 7
+          }
+        ]
+      },
+      {
+        "declaringType": "src/legacy/plugin.js#Plugin",
+        "name": "run",
+        "kind": "method",
+        "language": "javascript",
+        "file": "src/legacy/plugin.js",
+        "line": 14,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "fullName": "src/legacy/plugin.js#Plugin.run"
+      },
+      {
+        "declaringType": "src/model/base.ts#Identified",
+        "name": "id",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 4,
+        "column": 12,
+        "visibility": "public",
+        "static": false,
+        "readonly": true,
+        "returnType": "string",
+        "fullName": "src/model/base.ts#Identified.id"
+      },
+      {
+        "declaringType": "src/model/base.ts#Named",
+        "name": "name",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 8,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "readonly": false,
+        "returnType": "string",
+        "fullName": "src/model/base.ts#Named.name"
+      },
+      {
+        "declaringType": "src/model/base.ts#Named",
+        "name": "rename",
+        "kind": "method",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 9,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "returnType": "void",
+        "parameterTypes": [
+          "string"
+        ],
+        "fullName": "src/model/base.ts#Named.rename"
+      },
+      {
+        "declaringType": "src/model/base.ts#Record",
+        "name": "constructor",
+        "kind": "constructor",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 32,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "parameterTypes": [
+          "string"
+        ],
+        "fullName": "src/model/base.ts#Record.constructor"
+      },
+      {
+        "declaringType": "src/model/base.ts#Record",
+        "name": "count",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 27,
+        "column": 10,
+        "visibility": "public",
+        "static": true,
+        "abstract": false,
+        "readonly": false,
+        "fullName": "src/model/base.ts#Record.count"
+      },
+      {
+        "declaringType": "src/model/base.ts#Record",
+        "name": "id",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 28,
+        "column": 12,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "readonly": true,
+        "returnType": "string",
+        "fullName": "src/model/base.ts#Record.id"
+      },
+      {
+        "declaringType": "src/model/base.ts#Record",
+        "name": "payload",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 30,
+        "column": 13,
+        "visibility": "protected",
+        "static": false,
+        "abstract": false,
+        "readonly": false,
+        "returnType": "T",
+        "fullName": "src/model/base.ts#Record.payload",
+        "dependencies": [
+          {
+            "target": "src/model/decorators.ts#Column",
+            "kind": "attribute",
+            "line": 29
+          }
+        ]
+      },
+      {
+        "declaringType": "src/model/base.ts#Record",
+        "name": "save",
+        "kind": "method",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 38,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "returnType": "Status",
+        "fullName": "src/model/base.ts#Record.save",
+        "dependencies": [
+          {
+            "target": "src/model/base.ts#Status",
+            "kind": "signature",
+            "line": 38
+          }
+        ]
+      },
+      {
+        "declaringType": "src/model/base.ts#Record",
+        "name": "validate",
+        "kind": "method",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 36,
+        "column": 12,
+        "visibility": "public",
+        "static": false,
+        "abstract": true,
+        "returnType": "boolean",
+        "fullName": "src/model/base.ts#Record.validate"
+      },
+      {
+        "declaringType": "src/ui/store.ts#Shapes.Circle",
+        "name": "Unit",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/ui/store.ts",
+        "line": 13,
+        "column": 12,
+        "visibility": "public",
+        "static": true,
+        "abstract": false,
+        "readonly": false,
+        "fullName": "src/ui/store.ts#Shapes.Circle.Unit"
+      },
+      {
+        "declaringType": "src/ui/store.ts#Shapes.Circle.Unit",
+        "name": "radius",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/ui/store.ts",
+        "line": 14,
+        "column": 7,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "readonly": false,
+        "fullName": "src/ui/store.ts#Shapes.Circle.Unit.radius"
+      },
+      {
+        "declaringType": "src/ui/store.ts#Store",
+        "name": "items",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/ui/store.ts",
+        "line": 4,
+        "column": 11,
+        "visibility": "private",
+        "static": false,
+        "abstract": false,
+        "readonly": false,
+        "returnType": "Identified[]",
+        "fullName": "src/ui/store.ts#Store.items",
+        "dependencies": [
+          {
+            "target": "src/model/base.ts#Identified",
+            "kind": "signature",
+            "line": 4
+          }
+        ]
+      },
+      {
+        "declaringType": "src/ui/store.ts#Store",
+        "name": "put",
+        "kind": "method",
+        "language": "typescript",
+        "file": "src/ui/store.ts",
+        "line": 6,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "returnType": "void",
+        "parameterTypes": [
+          "Identified"
+        ],
+        "fullName": "src/ui/store.ts#Store.put",
+        "dependencies": [
+          {
+            "target": "src/model/base.ts#Identified",
+            "kind": "signature",
+            "line": 6
+          }
+        ]
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "#secret",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 9,
+        "column": 3,
+        "visibility": "private",
+        "static": false,
+        "abstract": false,
+        "readonly": false,
+        "fullName": "src/ui/widget.tsx#Widget.#secret"
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "#touch",
+        "kind": "method",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 47,
+        "column": 3,
+        "visibility": "private",
+        "static": false,
+        "abstract": false,
+        "returnType": "void",
+        "fullName": "src/ui/widget.tsx#Widget.#touch"
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "constructor",
+        "kind": "constructor",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 13,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "parameterTypes": [
+          "string",
+          "Store",
+          "string"
+        ],
+        "fullName": "src/ui/widget.tsx#Widget.constructor",
+        "dependencies": [
+          {
+            "target": "src/ui/store.ts#Store",
+            "kind": "signature",
+            "line": 13
+          }
+        ]
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "create",
+        "kind": "method",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 43,
+        "column": 10,
+        "visibility": "public",
+        "static": true,
+        "abstract": false,
+        "returnType": "Widget",
+        "parameterTypes": [
+          "string",
+          "Store"
+        ],
+        "fullName": "src/ui/widget.tsx#Widget.create",
+        "dependencies": [
+          {
+            "target": "src/ui/store.ts#Store",
+            "kind": "signature",
+            "line": 43
+          },
+          {
+            "target": "src/ui/widget.tsx#Widget",
+            "kind": "body",
+            "member": "constructor",
+            "line": 44
+          },
+          {
+            "target": "src/ui/widget.tsx#Widget",
+            "kind": "signature",
+            "line": 43
+          }
+        ]
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "created",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 11,
+        "column": 19,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "readonly": true,
+        "returnType": "Date",
+        "fullName": "src/ui/widget.tsx#Widget.created"
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "instances",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 10,
+        "column": 18,
+        "visibility": "private",
+        "static": true,
+        "abstract": false,
+        "readonly": false,
+        "returnType": "Lookup<Widget>",
+        "fullName": "src/ui/widget.tsx#Widget.instances",
+        "dependencies": [
+          {
+            "target": "src/model/base.ts#Lookup",
+            "kind": "signature",
+            "line": 10
+          },
+          {
+            "target": "src/ui/widget.tsx#Widget",
+            "kind": "signature",
+            "line": 10
+          }
+        ]
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "label",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 13,
+        "column": 68,
+        "visibility": "protected",
+        "static": false,
+        "abstract": false,
+        "readonly": false,
+        "returnType": "string",
+        "fullName": "src/ui/widget.tsx#Widget.label"
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "name",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 8,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "readonly": false,
+        "fullName": "src/ui/widget.tsx#Widget.name"
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "rename",
+        "kind": "method",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 31,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "returnType": "void",
+        "parameterTypes": [
+          "string"
+        ],
+        "fullName": "src/ui/widget.tsx#Widget.rename",
+        "dependencies": [
+          {
+            "target": "src/ui/store.ts#Store",
+            "kind": "body",
+            "member": "put",
+            "line": 13
+          }
+        ]
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "render",
+        "kind": "method",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 49,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "returnType": "JSX.Element | null",
+        "parameterTypes": [
+          "Status"
+        ],
+        "fullName": "src/ui/widget.tsx#Widget.render",
+        "dependencies": [
+          {
+            "target": "src/model/base.ts#Status",
+            "kind": "signature",
+            "line": 49
+          }
+        ]
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "size",
+        "kind": "property",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 25,
+        "column": 7,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "readonly": true,
+        "returnType": "number",
+        "fullName": "src/ui/widget.tsx#Widget.size",
+        "getter": {
+          "visibility": "public"
+        }
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "store",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 13,
+        "column": 44,
+        "visibility": "private",
+        "static": false,
+        "abstract": false,
+        "readonly": true,
+        "returnType": "Store",
+        "fullName": "src/ui/widget.tsx#Widget.store",
+        "dependencies": [
+          {
+            "target": "src/ui/store.ts#Store",
+            "kind": "signature",
+            "line": 13
+          }
+        ]
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "title",
+        "kind": "property",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 17,
+        "column": 7,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "readonly": false,
+        "returnType": "string",
+        "fullName": "src/ui/widget.tsx#Widget.title",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "public"
+        }
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "validate",
+        "kind": "method",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 37,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "returnType": "boolean",
+        "fullName": "src/ui/widget.tsx#Widget.validate",
+        "dependencies": [
+          {
+            "target": "src/ui/widget.tsx#Widget",
+            "kind": "body",
+            "member": "create",
+            "line": 38
+          },
+          {
+            "target": "src/ui/widget.tsx#Widget",
+            "kind": "body",
+            "member": "save",
+            "line": 38
+          }
+        ]
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#Widget",
+        "name": "visible",
+        "kind": "property",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 29,
+        "column": 12,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "readonly": false,
+        "returnType": "boolean",
+        "fullName": "src/ui/widget.tsx#Widget.visible",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "public"
+        }
+      },
+      {
+        "declaringType": "src/ui/widget.tsx#default",
+        "name": "show",
+        "kind": "method",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 57,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "abstract": false,
+        "returnType": "void",
+        "fullName": "src/ui/widget.tsx#default.show"
+      }
+    ],
+    "attributes": [
+      {
+        "target": "src/model/base.ts#Record",
+        "attributeType": "src/model/decorators.ts#Entity",
+        "arguments": [
+          "records"
+        ],
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 25,
+        "column": 2
+      },
+      {
+        "target": "src/model/base.ts#Record.payload",
+        "attributeType": "src/model/decorators.ts#Column",
+        "arguments": [
+          "{ nullable: false }"
+        ],
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 29,
+        "column": 4
+      },
+      {
+        "target": "src/ui/widget.tsx#Widget",
+        "attributeType": "src/model/decorators.ts#Entity",
+        "arguments": [
+          "widgets"
+        ],
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 6,
+        "column": 2
+      }
+    ],
+    "calls": [
+      {
+        "from": "src/legacy/plugin.js#Plugin.run",
+        "to": "src/legacy/plugin.js#Plugin.log",
+        "language": "javascript",
+        "file": "src/legacy/plugin.js",
+        "line": 15,
+        "column": 5
+      },
+      {
+        "from": "src/model/base.ts#Record.save",
+        "to": "src/model/base.ts#Record.validate",
+        "language": "typescript",
+        "file": "src/model/base.ts",
+        "line": 39,
+        "column": 5
+      },
+      {
+        "from": "src/ui/widget.tsx#Widget.rename",
+        "to": "src/ui/store.ts#Store.put",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 33,
+        "column": 5
+      },
+      {
+        "from": "src/ui/widget.tsx#Widget.rename",
+        "to": "src/ui/widget.tsx#Widget.#touch",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 34,
+        "column": 5
+      },
+      {
+        "from": "src/ui/widget.tsx#Widget.title",
+        "to": "src/ui/widget.tsx#Widget.rename",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 22,
+        "column": 5
+      },
+      {
+        "from": "src/ui/widget.tsx#Widget.validate",
+        "to": "src/model/base.ts#Record.save",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 39,
+        "column": 5
+      },
+      {
+        "from": "src/ui/widget.tsx#Widget.validate",
+        "to": "src/ui/widget.tsx#Widget.create",
+        "language": "typescript",
+        "file": "src/ui/widget.tsx",
+        "line": 38,
+        "column": 27
+      }
+    ]
+  }
+}
