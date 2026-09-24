@@ -314,6 +314,30 @@ fn expression(generator: &mut SchemaGenerator, side: Side) -> Value {
             "not".into(),
             json!({ "allOf": [own], "description": "The item does not hold." }),
         );
+        let access = [
+            "public",
+            "protected",
+            "internal",
+            "protected-internal",
+            "private",
+            "private-protected",
+        ];
+        for (key, concept, family) in [
+            ("getterVisibility", Concept::HavePublicGetter, "Getter"),
+            ("setterVisibility", Concept::HavePublicSetter, "Setter"),
+        ] {
+            properties.insert(
+                key.into(),
+                json!({
+                    "enum": access,
+                    "description": format!(
+                        "The property's {} has this visibility (`HavePublic{family}` and its twins).{}",
+                        family.to_lowercase(),
+                        capabilities(concept)
+                    ),
+                }),
+            );
+        }
         for spelling in spellings(side) {
             let (base, negated, _) = split_key(&spelling, side);
             let Some((_, concept, kind, _)) = VOCABULARY.iter().find(|(n, ..)| *n == base) else {

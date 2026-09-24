@@ -533,6 +533,17 @@
           "description": "`exist`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
           "type": "boolean"
         },
+        "getterVisibility": {
+          "description": "The property's getter has this visibility (`HavePublicGetter` and its twins). .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "enum": [
+            "public",
+            "protected",
+            "internal",
+            "protected-internal",
+            "private",
+            "private-protected"
+          ]
+        },
         "haveAnyAttributes": {
           "anyOf": [
             {
@@ -757,6 +768,10 @@
           "description": "`haveInitOnlySetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
           "type": "boolean"
         },
+        "haveInitSetter": {
+          "description": "`haveInitOnlySetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
         "haveInternalGetter": {
           "description": "`haveInternalGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
           "type": "boolean"
@@ -935,6 +950,23 @@
         "haveSetter": {
           "description": "`haveSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
           "type": "boolean"
+        },
+        "implementAny": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`implementAnyInterfaces`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
         },
         "implementAnyInterfaces": {
           "anyOf": [
@@ -1749,6 +1781,17 @@
         "resideInNamespaceMatching": {
           "description": "`resideInNamespaceMatching`. .NET: answered as `ArchUnitNET` defines it. TypeScript: the namespace is the module's path. JavaScript: the namespace is the module's path. Python: the namespace is the dotted module path.",
           "type": "string"
+        },
+        "setterVisibility": {
+          "description": "The property's setter has this visibility (`HavePublicSetter` and its twins). .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "enum": [
+            "public",
+            "protected",
+            "internal",
+            "protected-internal",
+            "private",
+            "private-protected"
+          ]
         }
       },
       "type": "object"
@@ -2667,6 +2710,17 @@
           "description": "`resideInNamespaceMatching`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: the namespace is the module's path. JavaScript: the namespace is the module's path. Python: the namespace is the dotted module path.",
           "type": "string"
         },
+        "getterVisibility": {
+          "description": "The property's getter has this visibility (`HavePublicGetter` and its twins). .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "enum": [
+            "public",
+            "protected",
+            "internal",
+            "protected-internal",
+            "private",
+            "private-protected"
+          ]
+        },
         "haveAnyAttributes": {
           "anyOf": [
             {
@@ -2891,6 +2945,10 @@
           "description": "`haveInitOnlySetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
           "type": "boolean"
         },
+        "haveInitSetter": {
+          "description": "`haveInitOnlySetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
         "haveInternalGetter": {
           "description": "`haveInternalGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
           "type": "boolean"
@@ -3070,6 +3128,23 @@
           "description": "`haveSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
           "type": "boolean"
         },
+        "implementAny": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`implementAnyInterfaces`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
+        },
         "implementAnyInterfaces": {
           "anyOf": [
             {
@@ -3181,6 +3256,17 @@
         "resideInNamespaceMatching": {
           "description": "`resideInNamespaceMatching`. .NET: answered as `ArchUnitNET` defines it. TypeScript: the namespace is the module's path. JavaScript: the namespace is the module's path. Python: the namespace is the dotted module path.",
           "type": "string"
+        },
+        "setterVisibility": {
+          "description": "The property's setter has this visibility (`HavePublicSetter` and its twins). .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "enum": [
+            "public",
+            "protected",
+            "internal",
+            "protected-internal",
+            "private",
+            "private-protected"
+          ]
         }
       },
       "type": "object"
