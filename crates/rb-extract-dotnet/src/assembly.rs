@@ -7,10 +7,11 @@
 //!   and § 1.6 (the attribution denominator excludes `<Module>` and compiler-generated types)
 //! - Decision: [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Range;
 
 use crate::bytes::{Read, Reader};
+use crate::loader::nested_names;
 use crate::metadata::Metadata;
 use crate::metadata::tables::{Coded, id};
 use crate::pe::{DebugInfo, PeImage};
@@ -64,7 +65,7 @@ impl Assembly {
     /// When the PE image or the metadata is malformed.
     pub fn read(bytes: &[u8]) -> Read<Self> {
         let image = PeImage::parse(bytes)?;
-        let metadata = Metadata::parse(image.metadata, None)?;
+        let metadata = Metadata::parse_assembly(image.metadata)?;
         let reader = TypeReader {
             metadata: &metadata,
         };
@@ -145,9 +146,9 @@ impl TypeReader<'_, '_> {
     }
 
     /// Rows of types carrying `CompilerGeneratedAttribute`, and the target framework.
-    fn attributes(&self) -> Read<(Vec<u32>, Option<String>)> {
+    fn attributes(&self) -> Read<(BTreeSet<u32>, Option<String>)> {
         let t = &self.metadata.tables;
-        let mut generated = Vec::new();
+        let mut generated = BTreeSet::new();
         let mut framework = None;
         let starts = self.method_starts()?;
         for row in 1..=self.metadata.rows(id::CUSTOM_ATTRIBUTE) {
@@ -160,7 +161,7 @@ impl TypeReader<'_, '_> {
             let declaring = (declaring.0.as_str(), declaring.1.as_str());
             match parent {
                 Some((id::TYPE_DEF, type_row)) if declaring == COMPILER_GENERATED => {
-                    generated.push(type_row);
+                    generated.insert(type_row);
                 }
                 Some((id::ASSEMBLY, _)) if declaring == TARGET_FRAMEWORK => {
                     let value = self.metadata.blob(t.cell(id::CUSTOM_ATTRIBUTE, row, 2)?)?;
@@ -172,7 +173,7 @@ impl TypeReader<'_, '_> {
         Ok((generated, framework))
     }
 
-    fn types(&self, generated: &[u32]) -> Read<Vec<TypeInfo>> {
+    fn types(&self, generated: &BTreeSet<u32>) -> Read<Vec<TypeInfo>> {
         let t = &self.metadata.tables;
         let count = self.metadata.rows(id::TYPE_DEF);
         let method_count = self.metadata.rows(id::METHOD_DEF);
@@ -190,7 +191,7 @@ impl TypeReader<'_, '_> {
             let end = if row < count {
                 self.method_start(row + 1)?
             } else {
-                method_count + 1
+                method_count.saturating_add(1)
             };
             let mut first_constructor = None;
             for method in start..end.max(start) {
@@ -211,29 +212,16 @@ impl TypeReader<'_, '_> {
                 compiler_generated: generated.contains(&row),
             });
         }
-        // Full names walk the nesting chain; a malformed cycle stops at the type count.
-        for index in 0..types.len() {
-            let mut parts = vec![types[index].name.clone()];
-            let mut namespace = types[index].namespace.clone();
-            let mut current = types[index].enclosing;
-            let mut steps = 0;
-            while let Some(outer) = current.and_then(|r| row_index(r).and_then(|i| types.get(i))) {
-                parts.push(outer.name.clone());
-                namespace.clone_from(&outer.namespace);
-                current = outer.enclosing;
-                steps += 1;
-                if steps > types.len() {
-                    break;
-                }
-            }
-            parts.reverse();
-            let joined = parts.join("+");
-            types[index].full_name = if namespace.is_empty() {
-                joined
-            } else {
-                format!("{namespace}.{joined}")
-            };
-            types[index].namespace = namespace;
+        // Full names walk the nesting chain once per type; a cycle is malformed.
+        let names = nested_names(
+            &types
+                .iter()
+                .map(|t| (t.namespace.as_str(), t.name.as_str(), t.enclosing))
+                .collect::<Vec<_>>(),
+        )?;
+        for (ty, (namespace, full_name)) in types.iter_mut().zip(names) {
+            ty.namespace = namespace;
+            ty.full_name = full_name;
         }
         Ok(types)
     }

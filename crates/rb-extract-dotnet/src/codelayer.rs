@@ -30,6 +30,7 @@
 //!
 //! Member dependencies roll up to their type, as phase 9 does. Names follow [`crate::names`].
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use rb_model::{
@@ -38,10 +39,13 @@ use rb_model::{
 };
 
 use crate::attribute::TypeAttribution;
-use crate::loader::{Attribute, Loaded, Method, Type};
+use crate::loader::{
+    Attribute, EnumKey, Loaded, Method, Type, enum_code_of, type_name_of, well_known_enum,
+};
 use crate::metadata::tables::id;
 use crate::names::{
-    Generics, Resolved, Universe, assembly_qualified_name, is_compiler_generated_name,
+    Budget, Generics, MAX_NESTING, Resolved, Universe, assembly_qualified_name,
+    is_compiler_generated_name,
 };
 use crate::pdb::{SequencePoint, point_at};
 use crate::sig::{Token, TypeSig};
@@ -181,6 +185,15 @@ mod flags {
     pub const INIT_ONLY: u16 = 0x20;
 }
 
+/// An enum's underlying element type: the type of its `value__` field (ECMA-335 II.14.3).
+fn enum_underlying(ty: &Type) -> Option<u8> {
+    let field = ty.fields.iter().find(|f| f.name == "value__")?;
+    match field.ty.unmodified() {
+        TypeSig::Primitive(name) => enum_code_of(name),
+        _ => None,
+    }
+}
+
 fn type_visibility(bits: u32) -> &'static str {
     match bits & flags::TYPE_VISIBILITY {
         1 | 2 => "public",
@@ -228,34 +241,10 @@ impl<'u> Builder<'u> {
         }
     }
 
-    /// The type a signature names, with its generic arguments.
+    /// The type a signature names, with its generic arguments; `None` for a function pointer
+    /// or a signature too deep or too large to follow (a hostile `TypeSpec` chain).
     pub(crate) fn sig_ref(&self, asm: usize, sig: &TypeSig, generics: Generics<'_>) -> Option<Ref> {
-        Some(match sig {
-            TypeSig::Primitive(name) => Ref::of(Target::Type(Resolved::External {
-                full_name: (*name).to_owned(),
-                assembly: None,
-            })),
-            TypeSig::Named { token, .. } => return self.token_ref(asm, *token, generics),
-            TypeSig::GenericInst { base, args } => {
-                let mut base = self.sig_ref(asm, base, generics)?;
-                base.args = args
-                    .iter()
-                    .filter_map(|a| self.sig_ref(asm, a, generics))
-                    .collect();
-                base
-            }
-            TypeSig::SzArray(inner)
-            | TypeSig::Ptr(inner)
-            | TypeSig::ByRef(inner)
-            | TypeSig::Pinned(inner)
-            | TypeSig::Array { element: inner, .. }
-            | TypeSig::Modified { inner, .. } => return self.sig_ref(asm, inner, generics),
-            TypeSig::Var(n) => Ref::of(Target::GenericParameter(generic(generics.type_, *n, "!"))),
-            TypeSig::MVar(n) => {
-                Ref::of(Target::GenericParameter(generic(generics.method, *n, "!!")))
-            }
-            TypeSig::FnPtr(_) => return None,
-        })
+        self.sig_ref_in(asm, sig, generics, 0, &mut Budget::new())
     }
 
     /// The type a `TypeDef`, `TypeRef` or `TypeSpec` token names.
@@ -265,8 +254,66 @@ impl<'u> Builder<'u> {
         token: Token,
         generics: Generics<'_>,
     ) -> Option<Ref> {
+        self.token_ref_in(asm, token, generics, 0, &mut Budget::new())
+    }
+
+    fn sig_ref_in(
+        &self,
+        asm: usize,
+        sig: &TypeSig,
+        generics: Generics<'_>,
+        depth: u32,
+        budget: &mut Budget,
+    ) -> Option<Ref> {
+        if !budget.step(depth) {
+            return None;
+        }
+        let next = depth + 1;
+        Some(match sig {
+            TypeSig::Primitive(name) => Ref::of(Target::Type(Resolved::External {
+                full_name: (*name).to_owned(),
+                assembly: None,
+            })),
+            TypeSig::Named { token, .. } => {
+                return self.token_ref_in(asm, *token, generics, next, budget);
+            }
+            TypeSig::GenericInst { base, args } => {
+                let mut base = self.sig_ref_in(asm, base, generics, next, budget)?;
+                base.args = args
+                    .iter()
+                    .filter_map(|a| self.sig_ref_in(asm, a, generics, next, budget))
+                    .collect();
+                base
+            }
+            TypeSig::SzArray(inner)
+            | TypeSig::Ptr(inner)
+            | TypeSig::ByRef(inner)
+            | TypeSig::Pinned(inner)
+            | TypeSig::Array { element: inner, .. }
+            | TypeSig::Modified { inner, .. } => {
+                return self.sig_ref_in(asm, inner, generics, next, budget);
+            }
+            TypeSig::Var(n) => Ref::of(Target::GenericParameter(generic(generics.type_, *n, "!"))),
+            TypeSig::MVar(n) => {
+                Ref::of(Target::GenericParameter(generic(generics.method, *n, "!!")))
+            }
+            TypeSig::FnPtr(_) => return None,
+        })
+    }
+
+    fn token_ref_in(
+        &self,
+        asm: usize,
+        token: Token,
+        generics: Generics<'_>,
+        depth: u32,
+        budget: &mut Budget,
+    ) -> Option<Ref> {
+        if !budget.step(depth) {
+            return None;
+        }
         if let Some(spec) = self.universe.spec(asm, token) {
-            return self.sig_ref(asm, spec, generics);
+            return self.sig_ref_in(asm, spec, generics, depth + 1, budget);
         }
         if token.table == id::TYPE_SPEC {
             return None;
@@ -381,7 +428,7 @@ impl<'u> Builder<'u> {
             }
             current = t.enclosing.and_then(|row| loaded.type_at(row));
             steps += 1;
-            if steps > loaded.types.len() {
+            if steps > MAX_NESTING {
                 break;
             }
         }
@@ -500,6 +547,46 @@ impl<'u> Builder<'u> {
         }
     }
 
+    /// An attribute the loader could not decode, decoded again now that every assembly of the
+    /// run is known: an enum argument of a referenced project's enum resolves here. One that
+    /// still cannot be decoded stays undecoded, and its element says `argumentsUnknown`.
+    fn decoded<'x>(&self, asm: usize, attribute: &'x Attribute) -> Cow<'x, Attribute> {
+        let Some(undecoded) = &attribute.undecoded else {
+            return Cow::Borrowed(attribute);
+        };
+        let underlying = |key: EnumKey<'_>| -> Option<u8> {
+            let name = match key {
+                EnumKey::Token(token) => match self.universe.resolve(asm, token) {
+                    Resolved::Def { assembly, row } => {
+                        return self
+                            .universe
+                            .assemblies
+                            .get(assembly)?
+                            .type_at(row)
+                            .and_then(enum_underlying);
+                    }
+                    Resolved::External { full_name, .. } => full_name,
+                },
+                EnumKey::Name(text) => type_name_of(text).to_owned(),
+            };
+            self.universe
+                .defined(0, &name)
+                .and_then(|(_, t)| enum_underlying(t))
+                .or_else(|| well_known_enum(&name))
+        };
+        let again = Attribute::decode(
+            attribute.type_,
+            &undecoded.value,
+            &undecoded.params,
+            &underlying,
+        );
+        if again.undecoded.is_some() {
+            Cow::Borrowed(attribute)
+        } else {
+            Cow::Owned(again)
+        }
+    }
+
     fn attribute_element(
         &self,
         asm: usize,
@@ -519,6 +606,7 @@ impl<'u> Builder<'u> {
                     value: value.clone(),
                 })
                 .collect(),
+            arguments_unknown: attribute.undecoded.is_some(),
             location: location.clone(),
         }
     }
@@ -540,6 +628,7 @@ impl<'u> Builder<'u> {
         elements: &mut Vec<AttributeElement>,
     ) {
         for attribute in attributes {
+            let attribute = self.decoded(asm, attribute);
             for text in &attribute.type_arguments {
                 // AddAttributeArgumentReferenceDependencies skips compiler-generated types.
                 self.push(
@@ -554,7 +643,7 @@ impl<'u> Builder<'u> {
             if let Some(r) = self.token_ref(asm, attribute.type_, Generics::default()) {
                 self.push(deps, &Self::at(r, DependencyKind::Attribute, location));
             }
-            elements.push(self.attribute_element(asm, target, attribute, location));
+            elements.push(self.attribute_element(asm, target, &attribute, location));
         }
     }
 
@@ -1103,5 +1192,129 @@ mod tests {
         assert!(external.args.is_empty());
         let parameter = Ref::of(Target::GenericParameter("A+<T>".into()));
         assert_eq!(parameter.resolved(), None);
+    }
+
+    fn spec(row: u32) -> TypeSig {
+        TypeSig::Named {
+            token: Token {
+                table: id::TYPE_SPEC,
+                row,
+            },
+            value_type: false,
+        }
+    }
+
+    #[test]
+    fn a_self_referential_type_spec_is_bounded_not_a_stack_overflow() {
+        // TypeSpec 1 = CLASS TypeSpec 1: the loader rejects it, a hand-built model must not recurse.
+        let mut loaded = crate::loader::testing::empty("A");
+        loaded.type_specs = vec![spec(1)];
+        let universe = Universe::new(vec![&loaded]);
+        let name = universe.sig_name(0, &spec(1), Generics::default(), true);
+        assert!(name.ends_with(crate::names::UNNAMEABLE), "{name}");
+        let builder = Builder::new(&universe, &[]);
+        assert_eq!(builder.sig_ref(0, &spec(1), Generics::default()), None);
+        let token = Token {
+            table: id::TYPE_SPEC,
+            row: 1,
+        };
+        assert_eq!(builder.token_ref(0, token, Generics::default()), None);
+        let mut ty = crate::loader::testing::ty(1, "N", "T");
+        ty.extends = Some(token);
+        assert!(builder.base_chain(0, &ty).is_empty());
+    }
+
+    #[test]
+    fn a_doubling_type_spec_chain_is_bounded_not_exponential() {
+        // TypeSpec k = GenericInst<TypeSpec k-1, TypeSpec k-1>: legal order, 2^60 nodes unfolded.
+        let mut loaded = crate::loader::testing::empty("A");
+        loaded.type_specs.push(TypeSig::Primitive("System.Int32"));
+        for row in 1..60 {
+            loaded.type_specs.push(TypeSig::GenericInst {
+                base: Box::new(spec(row)),
+                args: vec![spec(row), spec(row)],
+            });
+        }
+        let universe = Universe::new(vec![&loaded]);
+        let started = std::time::Instant::now();
+        let name = universe.sig_name(0, &spec(60), Generics::default(), false);
+        assert!(name.len() < 4 << 20, "{}", name.len());
+        assert!(name.contains(crate::names::UNNAMEABLE));
+        let builder = Builder::new(&universe, &[]);
+        let _ = builder.sig_ref(0, &spec(60), Generics::default());
+        assert!(started.elapsed() < std::time::Duration::from_secs(10));
+    }
+
+    #[test]
+    fn an_array_rank_is_spelled_within_the_limit() {
+        let loaded = crate::loader::testing::empty("A");
+        let universe = Universe::new(vec![&loaded]);
+        let array = |rank| TypeSig::Array {
+            element: Box::new(TypeSig::Primitive("System.Int32")),
+            rank,
+        };
+        let spell = |rank| universe.sig_name(0, &array(rank), Generics::default(), true);
+        assert_eq!(spell(2), "System.Int32[,]");
+        assert_eq!(spell(0), "System.Int32[]");
+        assert_eq!(spell(u32::MAX).len(), "System.Int32[]".len() + 31);
+    }
+
+    #[test]
+    fn an_enum_of_another_loaded_assembly_decodes_in_the_code_layer() {
+        // B defines N.E over System.Int16; A's attribute takes it by TypeRef into B.
+        let mut b = crate::loader::testing::empty("B");
+        let mut e = crate::loader::testing::ty(1, "N", "E");
+        e.fields.push(crate::loader::Field {
+            row: 1,
+            name: "value__".into(),
+            flags: 0,
+            ty: TypeSig::Primitive("System.Int16"),
+            attributes: Vec::new(),
+        });
+        b.types.push(e);
+        let mut a = crate::loader::testing::empty("A");
+        a.assembly_refs.push(crate::loader::AssemblyRefRow {
+            identity: b.identity.clone(),
+        });
+        a.type_refs.push(crate::loader::TypeRefRow {
+            namespace: "N".into(),
+            name: "E".into(),
+            scope: crate::loader::Scope::Assembly(0),
+        });
+        let param = TypeSig::Named {
+            token: Token {
+                table: id::TYPE_REF,
+                row: 1,
+            },
+            value_type: true,
+        };
+        let marker = Token {
+            table: id::TYPE_REF,
+            row: 1,
+        };
+        let value = [1, 0, 0xFE, 0xFF];
+        let attribute = Attribute::decode(marker, &value, std::slice::from_ref(&param), &|_| None);
+        assert!(
+            attribute.undecoded.is_some(),
+            "A alone does not know E's width"
+        );
+        let universe = Universe::new(vec![&a, &b]);
+        let builder = Builder::new(&universe, &[]);
+        let decoded = builder.decoded(0, &attribute);
+        assert_eq!(decoded.arguments, ["-2"]);
+        assert!(decoded.undecoded.is_none());
+        let location = Location::in_file(Language::Dotnet, None);
+        assert!(
+            !builder
+                .attribute_element(0, "N.T", &decoded, &location)
+                .arguments_unknown
+        );
+        // Without B the attribute stays undecoded and its element says so.
+        let alone = Universe::new(vec![&a]);
+        let builder = Builder::new(&alone, &[]);
+        let still = builder.decoded(0, &attribute);
+        assert!(still.undecoded.is_some());
+        let element = builder.attribute_element(0, "N.T", &still, &location);
+        assert!(element.arguments_unknown && element.arguments.is_empty());
     }
 }

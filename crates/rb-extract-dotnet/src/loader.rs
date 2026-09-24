@@ -33,6 +33,7 @@ use crate::bytes::{Read, ReadError, Reader, malformed};
 use crate::il::{Body, Use, parse_body};
 use crate::metadata::Metadata;
 use crate::metadata::tables::{Coded, TableId, id};
+use crate::names::MAX_NESTING;
 use crate::pe::{DebugInfo, PeImage};
 use crate::sig::{
     MethodSig, Token, TypeSig, field_sig, local_var_sig, method_sig, method_spec, property_sig,
@@ -163,6 +164,69 @@ pub struct Attribute {
     /// The positional arguments that are `System.Type` values (`typeof(X)`), as the type names
     /// the blob spells (`Ns.X, Assembly, Version=...`).
     pub type_arguments: Vec<String>,
+    /// Set when the value blob could not be decoded here: it is malformed, or it holds an enum
+    /// whose underlying type this assembly does not say (an enum of another assembly). The
+    /// arguments above are then empty, not a decoded answer; the code layer retries with every
+    /// loaded assembly and otherwise marks the attribute `argumentsUnknown`.
+    pub undecoded: Option<Undecoded>,
+}
+
+/// A custom attribute value blob kept for a later decode, with the constructor's parameters.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Undecoded {
+    /// The value blob.
+    pub value: Vec<u8>,
+    /// The constructor's parameter types.
+    pub params: Vec<TypeSig>,
+}
+
+impl Attribute {
+    /// An attribute whose arguments are decoded from `value` against `params`, enums resolved
+    /// by `underlying`; one that cannot be decoded keeps its blob in [`Attribute::undecoded`].
+    pub fn decode(
+        type_: Token,
+        value: &[u8],
+        params: &[TypeSig],
+        underlying: &dyn Fn(EnumKey<'_>) -> Option<u8>,
+    ) -> Self {
+        match decode_attribute(value, params, underlying) {
+            Ok((arguments, named)) => Self {
+                type_,
+                type_arguments: type_arguments(params, &arguments),
+                arguments,
+                named,
+                undecoded: None,
+            },
+            Err(_) => Self {
+                type_,
+                arguments: Vec::new(),
+                named: Vec::new(),
+                type_arguments: Vec::new(),
+                undecoded: Some(Undecoded {
+                    value: value.to_vec(),
+                    params: params.to_vec(),
+                }),
+            },
+        }
+    }
+}
+
+/// The positional arguments that are `System.Type` values: a class parameter that is not null.
+fn type_arguments(params: &[TypeSig], arguments: &[String]) -> Vec<String> {
+    params
+        .iter()
+        .zip(arguments)
+        .filter(|(p, a)| {
+            matches!(
+                p.unmodified(),
+                TypeSig::Named {
+                    value_type: false,
+                    ..
+                }
+            ) && *a != "null"
+        })
+        .map(|(_, a)| a.clone())
+        .collect()
 }
 
 /// One field.
@@ -295,9 +359,52 @@ pub struct Loaded {
     pub assembly_attributes: Vec<Attribute>,
     /// Debug directory entries.
     pub debug: Vec<DebugInfo>,
+    /// `MethodDef` and `Field` rows to their declaring types, built by [`Loaded::reindex`].
+    pub index: RowIndex,
+}
+
+/// `MethodDef` and `Field` rows to (type index, member index), sorted by row, so a lookup is a
+/// binary search rather than a scan of every type.
+#[derive(Debug, Clone, Default)]
+pub struct RowIndex {
+    methods: Vec<(u32, usize, usize)>,
+    fields: Vec<(u32, usize, usize)>,
+}
+
+impl RowIndex {
+    fn find(entries: &[(u32, usize, usize)], row: u32) -> Option<(usize, usize)> {
+        let at = entries.partition_point(|(r, _, _)| *r < row);
+        entries
+            .get(at)
+            .filter(|(r, _, _)| *r == row)
+            .map(|(_, t, m)| (*t, *m))
+    }
+}
+
+/// Sorts `(row, type, member)` entries by row, keeping the first type that claims a row (the
+/// one a scan in type order finds).
+fn sorted_rows(mut entries: Vec<(u32, usize, usize)>) -> Vec<(u32, usize, usize)> {
+    entries.sort_unstable();
+    entries.dedup_by_key(|(row, _, _)| *row);
+    entries
 }
 
 impl Loaded {
+    /// Rebuilds [`Loaded::index`] from [`Loaded::types`]; the loader calls it, and a caller that
+    /// builds or edits the types by hand calls it after.
+    pub fn reindex(&mut self) {
+        let mut methods = Vec::new();
+        let mut fields = Vec::new();
+        for (t, ty) in self.types.iter().enumerate() {
+            methods.extend(ty.methods.iter().enumerate().map(|(m, x)| (x.row, t, m)));
+            fields.extend(ty.fields.iter().enumerate().map(|(f, x)| (x.row, t, f)));
+        }
+        self.index = RowIndex {
+            methods: sorted_rows(methods),
+            fields: sorted_rows(fields),
+        };
+    }
+
     /// The type with 1-based row `row`.
     pub fn type_at(&self, row: u32) -> Option<&Type> {
         self.types.get((row as usize).checked_sub(1)?)
@@ -305,22 +412,16 @@ impl Loaded {
 
     /// The declaring type row and method of `MethodDef` row `row`.
     pub fn method_at(&self, row: u32) -> Option<(&Type, &Method)> {
-        self.types.iter().find_map(|t| {
-            t.methods
-                .binary_search_by_key(&row, |m| m.row)
-                .ok()
-                .map(|i| (t, &t.methods[i]))
-        })
+        let (t, m) = RowIndex::find(&self.index.methods, row)?;
+        let ty = self.types.get(t)?;
+        Some((ty, ty.methods.get(m)?))
     }
 
     /// The declaring type and field of `Field` row `row`.
     pub fn field_at(&self, row: u32) -> Option<(&Type, &Field)> {
-        self.types.iter().find_map(|t| {
-            t.fields
-                .binary_search_by_key(&row, |f| f.row)
-                .ok()
-                .map(|i| (t, &t.fields[i]))
-        })
+        let (t, f) = RowIndex::find(&self.index.fields, row)?;
+        let ty = self.types.get(t)?;
+        Some((ty, ty.fields.get(f)?))
     }
 
     /// Reads an assembly file.
@@ -329,7 +430,7 @@ impl Loaded {
     /// When the PE image, the metadata, a signature or a method body is malformed.
     pub fn read(bytes: &[u8]) -> Read<Self> {
         let image = PeImage::parse(bytes)?;
-        let metadata = Metadata::parse(image.metadata, None)?;
+        let metadata = Metadata::parse_assembly(image.metadata)?;
         Builder {
             md: &metadata,
             image: &image,
@@ -350,9 +451,14 @@ pub type AttributeArguments = (Vec<String>, Vec<(String, String)>);
 /// Ranges of a list column (`FieldList`, `MethodList`, `ParamList`, `PropertyList`): row `r`
 /// owns `start(r)..start(r + 1)`, the last up to the table's end.
 fn list_range(starts: &[u32], index: usize, total: u32) -> std::ops::Range<u32> {
-    let start = starts.get(index).copied().unwrap_or(total + 1);
-    let end = starts.get(index + 1).copied().unwrap_or(total + 1);
-    start.min(total + 1)..end.clamp(start.min(total + 1), total + 1)
+    let past = total.saturating_add(1);
+    let start = starts.get(index).copied().unwrap_or(past).min(past);
+    let end = index
+        .checked_add(1)
+        .and_then(|next| starts.get(next))
+        .copied()
+        .unwrap_or(past);
+    start..end.clamp(start, past)
 }
 
 /// C#'s rendering of an attribute argument value.
@@ -467,9 +573,8 @@ impl Builder<'_, '_> {
         let type_refs = (1..=self.rows(id::TYPE_REF))
             .map(|row| self.type_ref(row))
             .collect::<Read<Vec<_>>>()?;
-        let type_specs = (1..=self.rows(id::TYPE_SPEC))
-            .map(|row| type_spec(self.blob(id::TYPE_SPEC, row, 0)?))
-            .collect::<Read<Vec<_>>>()?;
+        let ref_names = type_ref_names(&type_refs)?;
+        let type_specs = self.type_specs()?;
         let member_refs = (1..=self.rows(id::MEMBER_REF))
             .map(|row| self.member_ref(row))
             .collect::<Read<Vec<_>>>()?;
@@ -487,8 +592,29 @@ impl Builder<'_, '_> {
                 })
             })
             .collect::<Read<Vec<_>>>()?;
-        let mut attributes = self.attributes(&member_refs)?;
-        let mut types = self.types(&mut attributes)?;
+        let names = self.type_names()?;
+        let enums = self.enum_codes(&names)?;
+        let underlying = |key: EnumKey<'_>| -> Option<u8> {
+            let name = match key {
+                EnumKey::Token(Token {
+                    table: id::TYPE_DEF,
+                    row,
+                }) => return enums.by_row.get(&row).copied(),
+                EnumKey::Token(Token {
+                    table: id::TYPE_REF,
+                    row,
+                }) => ref_names.get((row as usize).checked_sub(1)?)?.as_str(),
+                EnumKey::Token(_) => return None,
+                EnumKey::Name(text) => type_name_of(text),
+            };
+            enums
+                .by_name
+                .get(name)
+                .copied()
+                .or_else(|| well_known_enum(name))
+        };
+        let mut attributes = self.attributes(&member_refs, &underlying)?;
+        let mut types = self.types(&mut attributes, names)?;
         let assembly_attributes = attributes.remove(&(id::ASSEMBLY, 1)).unwrap_or_default();
         let target_framework = assembly_attributes.iter().find_map(|a| {
             Self::type_full_name(a.type_, &type_refs, &types)
@@ -501,7 +627,7 @@ impl Builder<'_, '_> {
                     == Some("System.Runtime.CompilerServices.CompilerGeneratedAttribute")
             });
         }
-        Ok(Loaded {
+        let mut loaded = Loaded {
             identity,
             target_framework,
             types,
@@ -512,7 +638,98 @@ impl Builder<'_, '_> {
             assembly_refs,
             assembly_attributes,
             debug,
-        })
+            index: RowIndex::default(),
+        };
+        loaded.reindex();
+        Ok(loaded)
+    }
+
+    /// Every `TypeSpec` row's signature. A `TypeSpec` may name only an earlier `TypeSpec`, so
+    /// following one always ends, and the tokens one names with every `TypeSpec` unfolded may
+    /// not exceed [`MAX_SPEC_TOKENS`], so naming one is bounded work (the compilers never nest a
+    /// `TypeSpec` inside another at all).
+    fn type_specs(&self) -> Read<Vec<TypeSig>> {
+        let mut specs = Vec::new();
+        let mut unfolded: Vec<usize> = Vec::new();
+        for row in 1..=self.rows(id::TYPE_SPEC) {
+            let spec = type_spec(self.blob(id::TYPE_SPEC, row, 0)?)?;
+            let mut size = 1usize;
+            for token in spec.all_tokens() {
+                size = size.saturating_add(1);
+                if token.table != id::TYPE_SPEC {
+                    continue;
+                }
+                match (token.row as usize)
+                    .checked_sub(1)
+                    .filter(|_| token.row < row)
+                    .and_then(|i| unfolded.get(i))
+                {
+                    Some(inner) => size = size.saturating_add(*inner),
+                    None => {
+                        return malformed(
+                            "TypeSpec (names itself or a later TypeSpec)",
+                            row as usize,
+                        );
+                    }
+                }
+            }
+            if size > MAX_SPEC_TOKENS {
+                return malformed("TypeSpec (unfolds too large)", row as usize);
+            }
+            unfolded.push(size);
+            specs.push(spec);
+        }
+        Ok(specs)
+    }
+
+    /// Every `TypeDef`'s outermost namespace and full name, in row order.
+    fn type_names(&self) -> Read<Vec<(String, String)>> {
+        let mut enclosing = BTreeMap::new();
+        for row in 1..=self.rows(id::NESTED_CLASS) {
+            enclosing.insert(
+                self.cell(id::NESTED_CLASS, row, 0)?,
+                self.cell(id::NESTED_CLASS, row, 1)?,
+            );
+        }
+        let rows = (1..=self.rows(id::TYPE_DEF))
+            .map(|row| {
+                Ok((
+                    self.string(id::TYPE_DEF, row, 2)?,
+                    self.string(id::TYPE_DEF, row, 1)?,
+                    enclosing.get(&row).copied(),
+                ))
+            })
+            .collect::<Read<Vec<_>>>()?;
+        nested_names(
+            &rows
+                .iter()
+                .map(|(namespace, name, outer)| (namespace.as_str(), name.as_str(), *outer))
+                .collect::<Vec<_>>(),
+        )
+    }
+
+    /// The underlying element type of every enum this assembly defines: the type of its
+    /// `value__` field (ECMA-335 II.14.3), by `TypeDef` row and by full name.
+    fn enum_codes(&self, names: &[(String, String)]) -> Read<LocalEnums> {
+        let field_starts = self.starts(id::TYPE_DEF, 4)?;
+        let field_total = self.rows(id::FIELD);
+        let mut enums = LocalEnums::default();
+        for (index, (_, full_name)) in names.iter().enumerate() {
+            for f in list_range(&field_starts, index, field_total) {
+                if self.string(id::FIELD, f, 1)? != "value__" {
+                    continue;
+                }
+                if let TypeSig::Primitive(name) = field_sig(self.blob(id::FIELD, f, 2)?)?
+                    && let Some(code) = enum_code_of(name)
+                {
+                    let row = u32::try_from(index + 1).unwrap_or(0);
+                    enums.by_row.insert(row, code);
+                    enums.by_name.insert(full_name.clone(), code);
+                }
+                break;
+            }
+        }
+        Ok(enums)
     }
 
     /// A type name good enough to recognise the two framework attributes the loader itself needs.
@@ -567,6 +784,7 @@ impl Builder<'_, '_> {
     fn attributes(
         &self,
         member_refs: &[MemberRefRow],
+        underlying: &dyn Fn(EnumKey<'_>) -> Option<u8>,
     ) -> Read<BTreeMap<(TableId, u32), Vec<Attribute>>> {
         let mut found: BTreeMap<(TableId, u32), Vec<Attribute>> = BTreeMap::new();
         let method_starts = self.starts(id::TYPE_DEF, 5)?;
@@ -607,27 +825,10 @@ impl Builder<'_, '_> {
                 _ => continue,
             };
             let value = self.blob(id::CUSTOM_ATTRIBUTE, row, 2)?;
-            let (arguments, named) = decode_attribute(value, &params).unwrap_or_default();
-            let type_arguments = params
-                .iter()
-                .zip(&arguments)
-                .filter(|(p, a)| {
-                    matches!(
-                        p.unmodified(),
-                        TypeSig::Named {
-                            value_type: false,
-                            ..
-                        }
-                    ) && *a != "null"
-                })
-                .map(|(_, a)| a.clone())
-                .collect();
-            found.entry((table, target)).or_default().push(Attribute {
-                type_,
-                arguments,
-                named,
-                type_arguments,
-            });
+            found
+                .entry((table, target))
+                .or_default()
+                .push(Attribute::decode(type_, value, &params, underlying));
         }
         Ok(found)
     }
@@ -702,7 +903,11 @@ impl Builder<'_, '_> {
         clippy::too_many_lines,
         reason = "one pass over the type-owned tables, in table order"
     )]
-    fn types(&self, attributes: &mut BTreeMap<(TableId, u32), Vec<Attribute>>) -> Read<Vec<Type>> {
+    fn types(
+        &self,
+        attributes: &mut BTreeMap<(TableId, u32), Vec<Attribute>>,
+        names: Vec<(String, String)>,
+    ) -> Read<Vec<Type>> {
         let count = self.rows(id::TYPE_DEF);
         let field_starts = self.starts(id::TYPE_DEF, 4)?;
         let method_starts = self.starts(id::TYPE_DEF, 5)?;
@@ -776,8 +981,8 @@ impl Builder<'_, '_> {
         let property_owners = owners(id::PROPERTY_MAP, id::PROPERTY)?;
         let event_owners = owners(id::EVENT_MAP, id::EVENT)?;
 
-        let mut types = Vec::with_capacity(count as usize);
-        for row in 1..=count {
+        let mut types = Vec::with_capacity(names.len());
+        for (row, (namespace, full_name)) in (1..=count).zip(names) {
             let index = (row - 1) as usize;
             let name = self.string(id::TYPE_DEF, row, 1)?;
             let mut fields = Vec::new();
@@ -847,8 +1052,8 @@ impl Builder<'_, '_> {
             types.push(Type {
                 row,
                 is_module_type: row == 1 && name == "<Module>",
-                namespace: self.string(id::TYPE_DEF, row, 2)?,
-                full_name: String::new(),
+                namespace,
+                full_name,
                 name,
                 flags: self.cell(id::TYPE_DEF, row, 0)?,
                 extends: Self::token(Coded::TypeDefOrRef, self.cell(id::TYPE_DEF, row, 3)?),
@@ -864,46 +1069,214 @@ impl Builder<'_, '_> {
                 compiler_generated: false,
             });
         }
-        full_names(&mut types);
         Ok(types)
     }
 }
 
-/// Fills `full_name` and the outermost namespace by walking each nesting chain; a malformed
-/// cycle stops at the type count.
-fn full_names(types: &mut [Type]) {
-    for index in 0..types.len() {
-        let mut parts = vec![types[index].name.clone()];
-        let mut namespace = types[index].namespace.clone();
-        let mut current = types[index].enclosing;
-        let mut steps = 0;
-        while let Some(outer) =
-            current.and_then(|r| (r as usize).checked_sub(1).and_then(|i| types.get(i)))
-        {
-            parts.push(outer.name.clone());
-            namespace.clone_from(&outer.namespace);
-            current = outer.enclosing;
-            steps += 1;
-            if steps > types.len() {
+/// Every type's outermost namespace and full name (`Namespace.Outer+Inner`) from
+/// `(namespace, name, enclosing row)` rows, each chain walked once. An enclosing row that names
+/// no type ends the chain.
+///
+/// # Errors
+/// `NestedClass cycle` when a chain comes back to itself, and `NestedClass (nested too deeply)`
+/// past [`MAX_NESTING`] levels.
+pub(crate) fn nested_names(rows: &[(&str, &str, Option<u32>)]) -> Read<Vec<(String, String)>> {
+    let outer_of = |i: usize| {
+        rows.get(i)
+            .and_then(|(_, _, outer)| (*outer)?.checked_sub(1))
+            .map(|o| o as usize)
+            .filter(|o| *o < rows.len())
+    };
+    // Per row: (namespace, full name, depth) once named.
+    let mut named: Vec<Option<(String, String, usize)>> = vec![None; rows.len()];
+    let mut walking = vec![false; rows.len()];
+    for start in 0..rows.len() {
+        let mut chain = Vec::new();
+        let mut current = Some(start);
+        while let Some(i) = current {
+            if named[i].is_some() {
                 break;
             }
+            if walking[i] {
+                return malformed("NestedClass cycle", i + 1);
+            }
+            walking[i] = true;
+            chain.push(i);
+            current = outer_of(i);
         }
-        parts.reverse();
-        let joined = parts.join("+");
-        types[index].full_name = if namespace.is_empty() {
-            joined
-        } else {
-            format!("{namespace}.{joined}")
-        };
-        types[index].namespace = namespace;
+        for &i in chain.iter().rev() {
+            let (namespace, name, _) = rows[i];
+            let entry = match outer_of(i).and_then(|o| named[o].as_ref()) {
+                Some((outer_namespace, outer_full, depth)) => {
+                    if *depth >= MAX_NESTING {
+                        return malformed("NestedClass (nested too deeply)", i + 1);
+                    }
+                    (
+                        outer_namespace.clone(),
+                        format!("{outer_full}+{name}"),
+                        depth + 1,
+                    )
+                }
+                None if namespace.is_empty() => (String::new(), name.to_owned(), 0),
+                None => (namespace.to_owned(), format!("{namespace}.{name}"), 0),
+            };
+            named[i] = Some(entry);
+            walking[i] = false;
+        }
+    }
+    Ok(named
+        .into_iter()
+        .map(|entry| entry.map(|(n, f, _)| (n, f)).unwrap_or_default())
+        .collect())
+}
+
+/// Every `TypeRef`'s full name (`+` for nesting), in row order.
+///
+/// # Errors
+/// `TypeRef nesting cycle` when a resolution scope chain comes back to itself, and
+/// `TypeRef (nested too deeply)` past [`MAX_NESTING`] levels.
+fn type_ref_names(refs: &[TypeRefRow]) -> Read<Vec<String>> {
+    let outer_of = |i: usize| match refs.get(i).map(|r| r.scope) {
+        Some(Scope::Enclosing(outer)) => {
+            (outer as usize).checked_sub(1).filter(|o| *o < refs.len())
+        }
+        _ => None,
+    };
+    let mut named: Vec<Option<(String, usize)>> = vec![None; refs.len()];
+    let mut walking = vec![false; refs.len()];
+    for start in 0..refs.len() {
+        let mut chain = Vec::new();
+        let mut current = Some(start);
+        while let Some(i) = current {
+            if named[i].is_some() {
+                break;
+            }
+            if walking[i] {
+                return malformed("TypeRef nesting cycle", i + 1);
+            }
+            walking[i] = true;
+            chain.push(i);
+            current = outer_of(i);
+        }
+        for &i in chain.iter().rev() {
+            let r = &refs[i];
+            let entry = match outer_of(i).and_then(|o| named[o].as_ref()) {
+                Some((outer, depth)) => {
+                    if *depth >= MAX_NESTING {
+                        return malformed("TypeRef (nested too deeply)", i + 1);
+                    }
+                    (format!("{outer}+{}", r.name), depth + 1)
+                }
+                None if r.namespace.is_empty() => (r.name.clone(), 0),
+                None => (format!("{}.{}", r.namespace, r.name), 0),
+            };
+            named[i] = Some(entry);
+            walking[i] = false;
+        }
+    }
+    Ok(named
+        .into_iter()
+        .map(|entry| entry.map(|(n, _)| n).unwrap_or_default())
+        .collect())
+}
+
+/// The enums an assembly defines, with their underlying element types.
+#[derive(Debug, Default)]
+struct LocalEnums {
+    by_row: BTreeMap<u32, u8>,
+    by_name: BTreeMap<String, u8>,
+}
+
+/// An enum an attribute value names: by token (a constructor parameter's type) or by the
+/// serialized type name a named argument or a boxed value carries (`Ns.E, Assembly, ...`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EnumKey<'a> {
+    /// A `TypeDef` or `TypeRef` token.
+    Token(Token),
+    /// A serialized type name.
+    Name(&'a str),
+}
+
+/// The full name part of a serialized type name: up to the first comma outside `[...]`.
+pub fn type_name_of(text: &str) -> &str {
+    let mut depth = 0usize;
+    for (at, c) in text.char_indices() {
+        match c {
+            '[' => depth += 1,
+            ']' => depth = depth.saturating_sub(1),
+            ',' if depth == 0 => return text[..at].trim(),
+            _ => {}
+        }
+    }
+    text.trim()
+}
+
+/// The element type code of an integral primitive, the types an enum may have underneath.
+pub fn enum_code_of(primitive: &str) -> Option<u8> {
+    Some(match primitive {
+        "System.Boolean" => 0x02,
+        "System.Char" => 0x03,
+        "System.SByte" => 0x04,
+        "System.Byte" => 0x05,
+        "System.Int16" => 0x06,
+        "System.UInt16" => 0x07,
+        "System.Int32" => 0x08,
+        "System.UInt32" => 0x09,
+        "System.Int64" => 0x0A,
+        "System.UInt64" => 0x0B,
+        _ => return None,
+    })
+}
+
+/// The underlying type of the framework enums attributes commonly take, which an assembly only
+/// references. Any other enum of another assembly is resolved against the loaded assemblies,
+/// or its attribute's arguments are unknown.
+pub fn well_known_enum(full_name: &str) -> Option<u8> {
+    const INT32: &[&str] = &[
+        "System.AttributeTargets",
+        "System.ComponentModel.DesignerSerializationVisibility",
+        "System.ComponentModel.EditorBrowsableState",
+        "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes",
+        "System.Diagnostics.DebuggableAttribute+DebuggingModes",
+        "System.Diagnostics.DebuggerBrowsableState",
+        "System.Runtime.CompilerServices.CompilationRelaxations",
+        "System.Runtime.CompilerServices.LoadHint",
+        "System.Runtime.CompilerServices.MethodCodeType",
+        "System.Runtime.CompilerServices.MethodImplOptions",
+        "System.Runtime.InteropServices.CallingConvention",
+        "System.Runtime.InteropServices.CharSet",
+        "System.Runtime.InteropServices.ClassInterfaceType",
+        "System.Runtime.InteropServices.ComInterfaceType",
+        "System.Runtime.InteropServices.LayoutKind",
+        "System.Runtime.InteropServices.UnmanagedType",
+        "System.Runtime.Versioning.ResourceScope",
+        "System.Security.Permissions.SecurityAction",
+    ];
+    match full_name {
+        "System.Security.SecurityRuleSet" => Some(0x05),
+        name if INT32.contains(&name) => Some(0x08),
+        _ => None,
     }
 }
 
+/// The most type tokens a `TypeSpec` may name with every `TypeSpec` inside it unfolded.
+const MAX_SPEC_TOKENS: usize = 4096;
+
+/// How deeply a custom attribute value may nest arrays and boxed values before it is rejected.
+const MAX_ATTRIBUTE_DEPTH: u32 = 16;
+
 /// Decodes a custom attribute value blob (II.23.3) against the constructor's parameter types.
+/// `underlying` names an enum's underlying element type (`0x08` for `System.Int32`); an enum it
+/// does not know cannot be decoded, because its values' width is unknown.
 ///
 /// # Errors
-/// When the prolog is wrong or a value runs past the blob.
-pub fn decode_attribute(value: &[u8], params: &[TypeSig]) -> Read<AttributeArguments> {
+/// When the prolog is wrong, a value runs past the blob, arrays or boxed values nest deeper
+/// than 16, or an enum's underlying type is unknown.
+pub fn decode_attribute(
+    value: &[u8],
+    params: &[TypeSig],
+    underlying: &dyn Fn(EnumKey<'_>) -> Option<u8>,
+) -> Read<AttributeArguments> {
     let mut r = Reader::new(value, 0, "custom attribute value");
     if value.is_empty() {
         return Ok((Vec::new(), Vec::new()));
@@ -911,18 +1284,19 @@ pub fn decode_attribute(value: &[u8], params: &[TypeSig]) -> Read<AttributeArgum
     if r.u16()? != 1 {
         return malformed("custom attribute prolog", 0);
     }
+    let mut d = ValueDecoder { r, underlying };
     let mut arguments = Vec::with_capacity(params.len());
     for param in params {
-        arguments.push(fixed_arg(&mut r, param)?);
+        arguments.push(d.fixed_arg(param, 0)?);
     }
     let mut named = Vec::new();
-    if r.position() + 2 <= value.len() {
-        let count = r.u16()?;
+    if d.r.position() + 2 <= value.len() {
+        let count = d.r.u16()?;
         for _ in 0..count {
-            r.u8()?; // FIELD (0x53) or PROPERTY (0x54)
-            let kind = field_or_prop_type(&mut r)?;
-            let name = ser_string(&mut r)?.unwrap_or_default();
-            named.push((name, elem_by_code(&mut r, &kind)?));
+            d.r.u8()?; // FIELD (0x53) or PROPERTY (0x54)
+            let kind = d.field_or_prop_type(0)?;
+            let name = ser_string(&mut d.r)?.unwrap_or_default();
+            named.push((name, d.elem_by_code(&kind, 0)?));
         }
     }
     Ok((arguments, named))
@@ -932,19 +1306,128 @@ pub fn decode_attribute(value: &[u8], params: &[TypeSig]) -> Read<AttributeArgum
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum ArgType {
     Code(u8),
-    Enum,
+    /// An enum, by its underlying element type code.
+    Enum(u8),
     Array(Box<ArgType>),
 }
 
-fn field_or_prop_type(r: &mut Reader<'_>) -> Read<ArgType> {
-    Ok(match r.u8()? {
-        0x1D => ArgType::Array(Box::new(field_or_prop_type(r)?)),
-        0x55 => {
-            ser_string(r)?; // the enum's type name
-            ArgType::Enum
+struct ValueDecoder<'a, 'u> {
+    r: Reader<'a>,
+    underlying: &'u dyn Fn(EnumKey<'_>) -> Option<u8>,
+}
+
+impl ValueDecoder<'_, '_> {
+    fn deep(&self, depth: u32) -> Read<()> {
+        if depth > MAX_ATTRIBUTE_DEPTH {
+            return malformed("custom attribute (nested too deeply)", self.r.position());
         }
-        code => ArgType::Code(code),
-    })
+        Ok(())
+    }
+
+    fn enum_of(&self, key: EnumKey<'_>) -> Read<ArgType> {
+        match (self.underlying)(key) {
+            Some(code) => Ok(ArgType::Enum(code)),
+            None => malformed(
+                "custom attribute enum (underlying type unknown)",
+                self.r.position(),
+            ),
+        }
+    }
+
+    fn field_or_prop_type(&mut self, depth: u32) -> Read<ArgType> {
+        self.deep(depth)?;
+        Ok(match self.r.u8()? {
+            0x1D => ArgType::Array(Box::new(self.field_or_prop_type(depth + 1)?)),
+            0x55 => {
+                let name = ser_string(&mut self.r)?.unwrap_or_default();
+                self.enum_of(EnumKey::Name(&name))?
+            }
+            code => ArgType::Code(code),
+        })
+    }
+
+    fn elem_by_code(&mut self, kind: &ArgType, depth: u32) -> Read<String> {
+        self.deep(depth)?;
+        Ok(match kind {
+            ArgType::Enum(code) => return self.elem_by_code(&ArgType::Code(*code), depth + 1),
+            ArgType::Array(element) => {
+                let count = self.r.u32()?;
+                if count == u32::MAX {
+                    return Ok("null".to_owned());
+                }
+                let mut items = Vec::with_capacity(count.min(64) as usize);
+                for _ in 0..count {
+                    items.push(self.elem_by_code(element, depth + 1)?);
+                }
+                format!("[{}]", items.join(", "))
+            }
+            ArgType::Code(code) => match code {
+                0x02 => bool_text(self.r.u8()? != 0),
+                0x03 => {
+                    char::from_u32(u32::from(self.r.u16()?)).map_or_else(String::new, String::from)
+                }
+                0x04 => i8::from_le_bytes([self.r.u8()?]).to_string(),
+                0x05 => self.r.u8()?.to_string(),
+                0x06 => i16::from_le_bytes(self.r.u16()?.to_le_bytes()).to_string(),
+                0x07 => self.r.u16()?.to_string(),
+                0x08 => i32::from_le_bytes(self.r.u32()?.to_le_bytes()).to_string(),
+                0x09 => self.r.u32()?.to_string(),
+                0x0A => i64::from_le_bytes(self.r.u64()?.to_le_bytes()).to_string(),
+                0x0B => self.r.u64()?.to_string(),
+                0x0C => f32::from_le_bytes(self.r.u32()?.to_le_bytes()).to_string(),
+                0x0D => f64::from_le_bytes(self.r.u64()?.to_le_bytes()).to_string(),
+                0x0E | 0x50 => ser_string(&mut self.r)?.unwrap_or_else(|| "null".to_owned()),
+                0x51 => {
+                    let boxed = self.field_or_prop_type(depth + 1)?;
+                    self.elem_by_code(&boxed, depth + 1)?
+                }
+                _ => return malformed("custom attribute element type", self.r.position()),
+            },
+        })
+    }
+
+    /// A fixed argument typed by a constructor parameter.
+    fn fixed_arg(&mut self, param: &TypeSig, depth: u32) -> Read<String> {
+        self.deep(depth)?;
+        let kind = match param.unmodified() {
+            TypeSig::Primitive(name) => ArgType::Code(match *name {
+                "System.String" => 0x0E,
+                "System.Object" => 0x51,
+                "System.Single" => 0x0C,
+                "System.Double" => 0x0D,
+                other => match enum_code_of(other) {
+                    Some(code) => code,
+                    None => {
+                        return malformed("custom attribute parameter type", self.r.position());
+                    }
+                },
+            }),
+            // A value type parameter is an enum (the only value types an attribute takes),
+            // decoded at its underlying type's width.
+            TypeSig::Named {
+                value_type: true,
+                token,
+            } => self.enum_of(EnumKey::Token(*token))?,
+            // A class parameter is System.Type (the only class an attribute takes besides string
+            // and object, which are primitives here).
+            TypeSig::Named {
+                value_type: false, ..
+            } => ArgType::Code(0x50),
+            TypeSig::SzArray(element) => {
+                let count = self.r.u32()?;
+                if count == u32::MAX {
+                    return Ok("null".to_owned());
+                }
+                let mut items = Vec::with_capacity(count.min(64) as usize);
+                for _ in 0..count {
+                    items.push(self.fixed_arg(element, depth + 1)?);
+                }
+                return Ok(format!("[{}]", items.join(", ")));
+            }
+            _ => return malformed("custom attribute parameter type", self.r.position()),
+        };
+        self.elem_by_code(&kind, depth + 1)
+    }
 }
 
 fn ser_string(r: &mut Reader<'_>) -> Read<Option<String>> {
@@ -961,89 +1444,6 @@ fn ser_string(r: &mut Reader<'_>) -> Read<Option<String>> {
         .or_else(|_| malformed("custom attribute string", at))
 }
 
-fn elem_by_code(r: &mut Reader<'_>, kind: &ArgType) -> Read<String> {
-    Ok(match kind {
-        ArgType::Enum => r.u32()?.to_string(),
-        ArgType::Array(element) => {
-            let count = r.u32()?;
-            if count == u32::MAX {
-                return Ok("null".to_owned());
-            }
-            let mut items = Vec::with_capacity(count.min(64) as usize);
-            for _ in 0..count {
-                items.push(elem_by_code(r, element)?);
-            }
-            format!("[{}]", items.join(", "))
-        }
-        ArgType::Code(code) => match code {
-            0x02 => bool_text(r.u8()? != 0),
-            0x03 => char::from_u32(u32::from(r.u16()?)).map_or_else(String::new, String::from),
-            0x04 => i8::from_le_bytes([r.u8()?]).to_string(),
-            0x05 => r.u8()?.to_string(),
-            0x06 => i16::from_le_bytes(r.u16()?.to_le_bytes()).to_string(),
-            0x07 => r.u16()?.to_string(),
-            0x08 => i32::from_le_bytes(r.u32()?.to_le_bytes()).to_string(),
-            0x09 => r.u32()?.to_string(),
-            0x0A => i64::from_le_bytes(r.u64()?.to_le_bytes()).to_string(),
-            0x0B => r.u64()?.to_string(),
-            0x0C => f32::from_le_bytes(r.u32()?.to_le_bytes()).to_string(),
-            0x0D => f64::from_le_bytes(r.u64()?.to_le_bytes()).to_string(),
-            0x0E | 0x50 => ser_string(r)?.unwrap_or_else(|| "null".to_owned()),
-            0x51 => {
-                let boxed = field_or_prop_type(r)?;
-                elem_by_code(r, &boxed)?
-            }
-            _ => return malformed("custom attribute element type", r.position()),
-        },
-    })
-}
-
-/// A fixed argument typed by a constructor parameter.
-fn fixed_arg(r: &mut Reader<'_>, param: &TypeSig) -> Read<String> {
-    let kind = match param.unmodified() {
-        TypeSig::Primitive(name) => ArgType::Code(match *name {
-            "System.Boolean" => 0x02,
-            "System.Char" => 0x03,
-            "System.SByte" => 0x04,
-            "System.Byte" => 0x05,
-            "System.Int16" => 0x06,
-            "System.UInt16" => 0x07,
-            "System.Int32" => 0x08,
-            "System.UInt32" => 0x09,
-            "System.Int64" => 0x0A,
-            "System.UInt64" => 0x0B,
-            "System.Single" => 0x0C,
-            "System.Double" => 0x0D,
-            "System.String" => 0x0E,
-            "System.Object" => 0x51,
-            _ => return malformed("custom attribute parameter type", r.position()),
-        }),
-        // A value type parameter is an enum (the only value types an attribute takes); its
-        // underlying type is not known here, and every enum C# emits by default is 32-bit.
-        TypeSig::Named {
-            value_type: true, ..
-        } => ArgType::Enum,
-        // A class parameter is System.Type (the only class an attribute takes besides string
-        // and object, which are primitives here).
-        TypeSig::Named {
-            value_type: false, ..
-        } => ArgType::Code(0x50),
-        TypeSig::SzArray(element) => {
-            let count = r.u32()?;
-            if count == u32::MAX {
-                return Ok("null".to_owned());
-            }
-            let mut items = Vec::with_capacity(count.min(64) as usize);
-            for _ in 0..count {
-                items.push(fixed_arg(r, element)?);
-            }
-            return Ok(format!("[{}]", items.join(", ")));
-        }
-        _ => return malformed("custom attribute parameter type", r.position()),
-    };
-    elem_by_code(r, &kind)
-}
-
 impl From<ReadError> for crate::attribute::AttributeError {
     fn from(source: ReadError) -> Self {
         Self::Malformed {
@@ -1053,10 +1453,104 @@ impl From<ReadError> for crate::attribute::AttributeError {
     }
 }
 
+/// Helpers for tests elsewhere in the crate that build a model by hand.
+#[cfg(test)]
+pub(crate) mod testing {
+    use super::*;
+
+    /// An assembly named `name` with nothing in it.
+    pub(crate) fn empty(name: &str) -> Loaded {
+        Loaded {
+            identity: Identity {
+                name: name.to_owned(),
+                version: [0; 4],
+                culture: String::new(),
+                public_key_token: None,
+            },
+            target_framework: None,
+            types: Vec::new(),
+            type_refs: Vec::new(),
+            type_specs: Vec::new(),
+            member_refs: Vec::new(),
+            method_specs: Vec::new(),
+            assembly_refs: Vec::new(),
+            assembly_attributes: Vec::new(),
+            debug: Vec::new(),
+            index: RowIndex::default(),
+        }
+    }
+
+    /// A type at `row` named `namespace.name`, with nothing in it.
+    pub(crate) fn ty(row: u32, namespace: &str, name: &str) -> Type {
+        Type {
+            row,
+            namespace: namespace.to_owned(),
+            name: name.to_owned(),
+            full_name: format!("{namespace}.{name}"),
+            flags: 0,
+            extends: None,
+            enclosing: None,
+            interfaces: Vec::new(),
+            generic_params: Vec::new(),
+            generic_constraints: Vec::new(),
+            fields: Vec::new(),
+            methods: Vec::new(),
+            properties: Vec::new(),
+            events: Vec::new(),
+            attributes: Vec::new(),
+            compiler_generated: false,
+            is_module_type: false,
+        }
+    }
+
+    /// Strings or blobs laid out as a heap (index 0 is the empty entry), with each one's index.
+    pub(crate) fn heap(items: &[&[u8]], blob: bool) -> (Vec<u8>, Vec<u32>) {
+        let mut data = vec![0u8];
+        let mut at = Vec::new();
+        for item in items {
+            at.push(u32::try_from(data.len()).unwrap_or(0));
+            if blob {
+                data.push(u8::try_from(item.len()).unwrap_or(0));
+                data.extend(*item);
+            } else {
+                data.extend(*item);
+                data.push(0);
+            }
+        }
+        (data, at)
+    }
+
+    /// A whole assembly image from tables (2-byte indices), a `#Strings` and a `#Blob` heap, and
+    /// any extra streams.
+    pub(crate) fn assembly(
+        tables: &[(TableId, Vec<Vec<u32>>)],
+        strings: Vec<u8>,
+        blobs: Vec<u8>,
+        extra: Vec<(&str, Vec<u8>)>,
+    ) -> Vec<u8> {
+        let mut streams = vec![
+            (
+                "#~",
+                crate::metadata::tables::tests::table_stream(tables, 0),
+            ),
+            ("#Strings", strings),
+            ("#Blob", blobs),
+        ];
+        streams.extend(extra);
+        crate::pe::tests::pe_with(&crate::metadata::tests::root(&streams))
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::testing::{assembly, heap};
     use super::*;
     use proptest::prelude::*;
+
+    /// Decodes with every enum taken as `System.Int32`.
+    fn decode(value: &[u8], params: &[TypeSig]) -> Read<AttributeArguments> {
+        decode_attribute(value, params, &|_| Some(0x08))
+    }
 
     #[test]
     fn identities_display_as_reflection_does() {
@@ -1134,7 +1628,7 @@ mod tests {
             },
             TypeSig::SzArray(Box::new(TypeSig::Primitive("System.Int32"))),
         ];
-        let decoded = decode_attribute(&value, &params);
+        let decoded = decode(&value, &params);
         assert_eq!(
             decoded,
             Ok((
@@ -1173,13 +1667,13 @@ mod tests {
         for (name, bytes, expected) in cases {
             let mut value = vec![1, 0];
             value.extend(bytes);
-            let decoded = decode_attribute(&value, &[TypeSig::Primitive(name)]).map(|d| d.0);
+            let decoded = decode(&value, &[TypeSig::Primitive(name)]).map(|d| d.0);
             assert_eq!(decoded, Ok(vec![expected.to_owned()]), "{name}");
         }
         let mut null_array = vec![1, 0];
         null_array.extend(u32::MAX.to_le_bytes());
         assert_eq!(
-            decode_attribute(
+            decode(
                 &null_array,
                 &[TypeSig::SzArray(Box::new(TypeSig::Primitive(
                     "System.Int32"
@@ -1188,17 +1682,17 @@ mod tests {
             .map(|d| d.0),
             Ok(vec!["null".to_owned()])
         );
-        assert_eq!(decode_attribute(&[], &[]), Ok((vec![], vec![])));
-        assert!(decode_attribute(&[2, 0], &[]).is_err(), "wrong prolog");
+        assert_eq!(decode(&[], &[]), Ok((vec![], vec![])));
+        assert!(decode(&[2, 0], &[]).is_err(), "wrong prolog");
         assert!(
-            decode_attribute(&[1, 0], &[TypeSig::Primitive("System.Int32")]).is_err(),
+            decode(&[1, 0], &[TypeSig::Primitive("System.Int32")]).is_err(),
             "value missing"
         );
         assert!(
-            decode_attribute(&[1, 0, 0], &[TypeSig::Primitive("System.Void")]).is_err(),
+            decode(&[1, 0, 0], &[TypeSig::Primitive("System.Void")]).is_err(),
             "no attribute takes a void"
         );
-        assert!(decode_attribute(&[1, 0, 0], &[TypeSig::Var(0)]).is_err());
+        assert!(decode(&[1, 0, 0], &[TypeSig::Var(0)]).is_err());
     }
 
     proptest! {
@@ -1211,7 +1705,486 @@ mod tests {
                 TypeSig::Primitive("System.Object"),
                 TypeSig::SzArray(Box::new(TypeSig::Primitive("System.Int32"))),
             ];
-            let _ = decode_attribute(&value, &params);
+            let _ = decode(&value, &params);
         }
+    }
+
+    fn what<T>(result: &Read<T>) -> Option<&'static str> {
+        result.as_ref().err().map(|e| e.what)
+    }
+
+    /// A `Module` row naming the module `M.dll` (string index 1 of every heap below).
+    fn module() -> (TableId, Vec<Vec<u32>>) {
+        (id::MODULE, vec![vec![0, 1, 0, 0, 0]])
+    }
+
+    #[test]
+    fn a_type_spec_naming_itself_or_a_later_one_is_malformed() {
+        let (strings, _) = heap(&[b"M.dll"], false);
+        for spec in [
+            vec![0x12, 0x06],                // CLASS TypeSpec 1, in TypeSpec 1
+            vec![0x15, 0x12, 0x06, 1, 0x08], // GenericInst<int> of TypeSpec 1
+            vec![0x20, 0x0A, 0x08],          // modopt(TypeSpec 2) int
+            vec![0x1D, 0x11, 0x0A],          // VALUETYPE TypeSpec 2 []
+        ] {
+            let (blobs, at) = heap(&[&spec], true);
+            let image = assembly(
+                &[module(), (id::TYPE_SPEC, vec![vec![at[0]]])],
+                strings.clone(),
+                blobs,
+                vec![],
+            );
+            let loaded = Loaded::read(&image);
+            assert_eq!(
+                what(&loaded),
+                Some("TypeSpec (names itself or a later TypeSpec)"),
+                "{spec:?}"
+            );
+        }
+        // TypeSpec k = GenericInst<TypeSpec k-1, TypeSpec k-1>: in order, but 2^k tokens unfolded.
+        let mut specs: Vec<Vec<u8>> = vec![vec![0x08]];
+        for row in 1u8..20 {
+            let t = (row << 2) | 2;
+            specs.push(vec![0x15, 0x12, t, 2, 0x12, t, 0x12, t]);
+        }
+        let refs: Vec<&[u8]> = specs.iter().map(Vec::as_slice).collect();
+        let (blobs, at) = heap(&refs, true);
+        let image = assembly(
+            &[
+                module(),
+                (id::TYPE_SPEC, at.iter().map(|b| vec![*b]).collect()),
+            ],
+            strings.clone(),
+            blobs,
+            vec![],
+        );
+        assert_eq!(
+            what(&Loaded::read(&image)),
+            Some("TypeSpec (unfolds too large)")
+        );
+        // TypeSpec 2 naming TypeSpec 1 is fine.
+        let (blobs, at) = heap(&[&[0x08], &[0x1D, 0x12, 0x06]], true);
+        let image = assembly(
+            &[module(), (id::TYPE_SPEC, vec![vec![at[0]], vec![at[1]]])],
+            strings,
+            blobs,
+            vec![],
+        );
+        assert_eq!(Loaded::read(&image).map(|l| l.type_specs.len()), Ok(2));
+    }
+
+    #[test]
+    fn a_nested_class_cycle_is_malformed_for_both_readers() {
+        let (strings, _) = heap(&[b"M.dll", b"A", b"B"], false);
+        let (blobs, _) = heap(&[], true);
+        let typedef = |name: u32| vec![0, name, 0, 0, 1, 1];
+        for nesting in [vec![vec![1, 2], vec![2, 1]], vec![vec![2, 2]]] {
+            let image = assembly(
+                &[
+                    module(),
+                    (id::TYPE_DEF, vec![typedef(7), typedef(9)]),
+                    (id::NESTED_CLASS, nesting.clone()),
+                ],
+                strings.clone(),
+                blobs.clone(),
+                vec![],
+            );
+            assert_eq!(
+                what(&Loaded::read(&image)),
+                Some("NestedClass cycle"),
+                "{nesting:?}"
+            );
+            assert_eq!(
+                what(&crate::assembly::Assembly::read(&image)),
+                Some("NestedClass cycle")
+            );
+        }
+    }
+
+    #[test]
+    fn nested_names_are_linear_and_bounded() {
+        assert_eq!(
+            nested_names(&[
+                ("Ns", "Outer", None),
+                ("", "Inner", Some(1)),
+                ("", "Deep", Some(2))
+            ]),
+            Ok(vec![
+                ("Ns".to_owned(), "Ns.Outer".to_owned()),
+                ("Ns".to_owned(), "Ns.Outer+Inner".to_owned()),
+                ("Ns".to_owned(), "Ns.Outer+Inner+Deep".to_owned()),
+            ])
+        );
+        assert_eq!(
+            nested_names(&[
+                ("", "Global", None),
+                ("X", "Stray", Some(0)),
+                ("Y", "Past", Some(9))
+            ]),
+            Ok(vec![
+                (String::new(), "Global".to_owned()),
+                ("X".to_owned(), "X.Stray".to_owned()),
+                ("Y".to_owned(), "Y.Past".to_owned()),
+            ]),
+            "an enclosing row naming no type ends the chain"
+        );
+        let chain = |length: u32| -> Vec<(&str, &str, Option<u32>)> {
+            (1..=length)
+                .map(|row| ("N", "T", (row > 1).then_some(row - 1)))
+                .collect()
+        };
+        assert!(nested_names(&chain(65)).is_ok());
+        assert_eq!(
+            what(&nested_names(&chain(66))),
+            Some("NestedClass (nested too deeply)")
+        );
+        // A wide, shallow forest of 200,000 types is named in one pass.
+        let wide: Vec<(&str, &str, Option<u32>)> = (1..=200_000u32)
+            .map(|row| ("N", "T", (row > 1).then_some(1)))
+            .collect();
+        assert_eq!(nested_names(&wide).map(|n| n.len()), Ok(200_000));
+    }
+
+    #[test]
+    fn a_type_ref_scope_cycle_is_malformed() {
+        let (strings, _) = heap(&[b"M.dll", b"A", b"B"], false);
+        let (blobs, _) = heap(&[], true);
+        let enclosing = |row: u32| (row << 2) | 3;
+        let image = assembly(
+            &[
+                module(),
+                (
+                    id::TYPE_REF,
+                    vec![vec![enclosing(2), 7, 0], vec![enclosing(1), 9, 0]],
+                ),
+            ],
+            strings,
+            blobs,
+            vec![],
+        );
+        assert_eq!(what(&Loaded::read(&image)), Some("TypeRef nesting cycle"));
+        let deep: Vec<TypeRefRow> = (1..=70u32)
+            .map(|row| TypeRefRow {
+                namespace: String::new(),
+                name: "T".into(),
+                scope: if row == 1 {
+                    Scope::Module
+                } else {
+                    Scope::Enclosing(row - 1)
+                },
+            })
+            .collect();
+        assert_eq!(
+            what(&type_ref_names(&deep)),
+            Some("TypeRef (nested too deeply)")
+        );
+        assert_eq!(
+            type_ref_names(&deep[..3]),
+            Ok(vec!["T".to_owned(), "T+T".to_owned(), "T+T+T".to_owned()])
+        );
+    }
+
+    #[test]
+    fn an_assemblys_pdb_stream_does_not_size_its_tables() {
+        // One TypeDef, and a #Pdb stream claiming u32::MAX Field and MethodDef rows: honoured,
+        // the list ranges would run to u32::MAX + 1.
+        let (strings, _) = heap(&[b"M.dll", b"A"], false);
+        let (blobs, _) = heap(&[], true);
+        let mut pdb = vec![0u8; 20];
+        pdb.extend(0u32.to_le_bytes());
+        pdb.extend(((1u64 << id::FIELD) | (1u64 << id::METHOD_DEF)).to_le_bytes());
+        pdb.extend(u32::MAX.to_le_bytes());
+        pdb.extend(u32::MAX.to_le_bytes());
+        let image = assembly(
+            &[module(), (id::TYPE_DEF, vec![vec![0, 7, 0, 0, 1, 1]])],
+            strings,
+            blobs,
+            vec![("#Pdb", pdb)],
+        );
+        let loaded = Loaded::read(&image);
+        assert_eq!(
+            loaded.map(|l| l.types.iter().map(|t| t.methods.len()).sum::<usize>()),
+            Ok(0)
+        );
+        assert!(crate::assembly::Assembly::read(&image).is_ok());
+        assert_eq!(list_range(&[1], 0, u32::MAX), 1..u32::MAX);
+        assert_eq!(list_range(&[5, 2], 0, u32::MAX), 5..5);
+        assert_eq!(list_range(&[1], usize::MAX, 3), 4..4);
+    }
+
+    /// Types `<Module>`, `N.E` (an enum over `System.Byte`), `N.Attr` (whose constructor takes
+    /// `N.E`) and `N.Target`, which carries `[Attr(E)7]`, `[Ext(Other.Unknown)7]` and
+    /// `[Ext(System.AttributeTargets)4]`.
+    fn enum_image() -> Vec<u8> {
+        let (strings, s) = heap(
+            &[
+                b"M.dll",
+                b"<Module>",
+                b"E",
+                b"N",
+                b"value__",
+                b"Attr",
+                b".ctor",
+                b"Target",
+                b"Ext",
+                b"Unknown",
+                b"Other",
+                b"AttributeTargets",
+                b"System",
+            ],
+            false,
+        );
+        let (blobs, b) = heap(
+            &[
+                &[0x06, 0x05],                // field: uint8
+                &[0x20, 1, 0x01, 0x11, 0x08], // .ctor(valuetype E)
+                &[1, 0, 7, 0, 0],             // Attr: E 7 as a byte
+                &[0x20, 1, 0x01, 0x11, 0x09], // .ctor(valuetype TypeRef 2)
+                &[1, 0, 7, 0, 0, 0, 0, 0],    // Ext: 7
+                &[0x20, 1, 0x01, 0x11, 0x0D], // .ctor(valuetype TypeRef 3)
+                &[1, 0, 4, 0, 0, 0, 0, 0],    // Ext: 4
+            ],
+            true,
+        );
+        let typedef = |name: usize, ns: u32, fields: u32, methods: u32| {
+            vec![0, s[name], ns, 0, fields, methods]
+        };
+        let module_scope = 1 << 2;
+        assembly(
+            &[
+                module(),
+                (
+                    id::TYPE_REF,
+                    vec![
+                        vec![module_scope, s[8], s[3]],
+                        vec![module_scope, s[9], s[10]],
+                        vec![module_scope, s[11], s[12]],
+                    ],
+                ),
+                (
+                    id::TYPE_DEF,
+                    vec![
+                        typedef(1, 0, 1, 1),
+                        typedef(2, s[3], 1, 1),
+                        typedef(5, s[3], 2, 1),
+                        typedef(7, s[3], 2, 2),
+                    ],
+                ),
+                (id::FIELD, vec![vec![0, s[4], b[0]]]),
+                (id::METHOD_DEF, vec![vec![0, 0, 0, s[6], b[1], 1]]),
+                (
+                    id::MEMBER_REF,
+                    vec![
+                        vec![(1 << 3) | 1, s[6], b[3]],
+                        vec![(1 << 3) | 1, s[6], b[5]],
+                    ],
+                ),
+                (
+                    id::CUSTOM_ATTRIBUTE,
+                    vec![
+                        vec![(4 << 5) | 3, (1 << 3) | 2, b[2]],
+                        vec![(4 << 5) | 3, (1 << 3) | 3, b[4]],
+                        vec![(4 << 5) | 3, (2 << 3) | 3, b[6]],
+                    ],
+                ),
+            ],
+            strings,
+            blobs,
+            vec![],
+        )
+    }
+
+    #[test]
+    fn enum_arguments_decode_at_the_underlying_width_or_are_marked_undecoded() {
+        let loaded = Loaded::read(&enum_image());
+        let loaded = loaded.as_ref();
+        let target = loaded.ok().and_then(|l| l.type_at(4));
+        let attributes: Vec<(Vec<String>, bool)> = target
+            .map(|t| {
+                t.attributes
+                    .iter()
+                    .map(|a| (a.arguments.clone(), a.undecoded.is_some()))
+                    .collect()
+            })
+            .unwrap_or_default();
+        assert_eq!(
+            attributes,
+            vec![
+                (vec!["7".to_owned()], false),
+                (vec![], true),
+                (vec!["4".to_owned()], false),
+            ],
+            "a local byte enum reads one byte; an unknown external enum is undecoded, not empty; \
+             a framework enum is known"
+        );
+        let undecoded = target.and_then(|t| t.attributes[1].undecoded.clone());
+        assert_eq!(
+            undecoded.map(|u| u.value),
+            Some(vec![1, 0, 7, 0, 0, 0, 0, 0]),
+            "the blob is kept for the code layer's second try"
+        );
+        // The row index answers the member lookups.
+        assert_eq!(
+            loaded
+                .ok()
+                .and_then(|l| l.method_at(1))
+                .map(|(t, m)| (t.full_name.as_str(), m.name.as_str())),
+            Some(("N.Attr", ".ctor"))
+        );
+        assert_eq!(
+            loaded
+                .ok()
+                .and_then(|l| l.field_at(1))
+                .map(|(t, f)| (t.full_name.as_str(), f.name.as_str())),
+            Some(("N.E", "value__"))
+        );
+        assert!(loaded.ok().and_then(|l| l.method_at(2)).is_none());
+    }
+
+    #[test]
+    fn a_malformed_attribute_value_is_undecoded_not_empty() {
+        let t = Token {
+            table: id::TYPE_REF,
+            row: 1,
+        };
+        let int = [TypeSig::Primitive("System.Int32")];
+        let bad = Attribute::decode(t, &[1, 0, 7], &int, &|_| None);
+        assert_eq!(bad.arguments, Vec::<String>::new());
+        assert!(bad.undecoded.is_some());
+        let good = Attribute::decode(t, &[1, 0, 7, 0, 0, 0], &int, &|_| None);
+        assert_eq!(
+            (good.arguments, good.undecoded),
+            (vec!["7".to_owned()], None)
+        );
+    }
+
+    #[test]
+    fn enums_decode_at_their_underlying_width_and_sign() {
+        let e = TypeSig::Named {
+            token: Token {
+                table: id::TYPE_DEF,
+                row: 2,
+            },
+            value_type: true,
+        };
+        let with = |code: u8| move |_: EnumKey<'_>| Some(code);
+        assert_eq!(
+            decode_attribute(&[1, 0, 0xFF], std::slice::from_ref(&e), &with(0x04)).map(|d| d.0),
+            Ok(vec!["-1".to_owned()])
+        );
+        assert_eq!(
+            decode_attribute(
+                &[1, 0, 0xFF, 0xFF, 0xFF, 0xFF],
+                std::slice::from_ref(&e),
+                &with(0x08)
+            )
+            .map(|d| d.0),
+            Ok(vec!["-1".to_owned()])
+        );
+        assert_eq!(
+            decode_attribute(
+                &[1, 0, 9, 0, 0, 0, 0, 0, 0, 0],
+                std::slice::from_ref(&e),
+                &with(0x0B)
+            )
+            .map(|d| d.0),
+            Ok(vec!["9".to_owned()])
+        );
+        assert_eq!(
+            what(&decode_attribute(&[1, 0, 1, 0, 0, 0], &[e], &|_| None)),
+            Some("custom attribute enum (underlying type unknown)")
+        );
+        // A named argument of an enum type names it by string: [Flag = (E)3].
+        let mut value = vec![1, 0, 1, 0, 0x54, 0x55, 3, b'N', b'.', b'E', 4];
+        value.extend(b"Flag");
+        value.push(3);
+        let named = decode_attribute(&value, &[], &|key| {
+            (key == EnumKey::Name("N.E")).then_some(0x05)
+        });
+        assert_eq!(
+            named.map(|d| d.1),
+            Ok(vec![("Flag".to_owned(), "3".to_owned())])
+        );
+        assert_eq!(type_name_of("Ns.E, Asm, Version=1.0.0.0"), "Ns.E");
+        assert_eq!(
+            type_name_of("Ns.G`1[[Ns.A, Asm]], Other"),
+            "Ns.G`1[[Ns.A, Asm]]"
+        );
+        assert_eq!(enum_code_of("System.String"), None);
+        assert_eq!(well_known_enum("System.AttributeTargets"), Some(0x08));
+        assert_eq!(
+            well_known_enum("System.Security.SecurityRuleSet"),
+            Some(0x05)
+        );
+        assert_eq!(well_known_enum("Other.Unknown"), None);
+    }
+
+    #[test]
+    fn nested_attribute_values_are_bounded_not_a_stack_overflow() {
+        // A boxed object whose type is a boxed object whose type is ... two million deep.
+        let mut boxed = vec![1u8, 0];
+        boxed.extend(std::iter::repeat_n(0x51u8, 2_000_000));
+        assert_eq!(
+            what(&decode(&boxed, &[TypeSig::Primitive("System.Object")])),
+            Some("custom attribute (nested too deeply)")
+        );
+        // A named argument whose type is an array of arrays of ... a million deep.
+        let mut arrays = vec![1u8, 0, 1, 0, 0x53];
+        arrays.extend(std::iter::repeat_n(0x1Du8, 1_000_000));
+        assert_eq!(
+            what(&decode(&arrays, &[])),
+            Some("custom attribute (nested too deeply)")
+        );
+        // Sixteen levels are fine: object -> object[] -> ... boxed.
+        let mut fine = vec![1u8, 0, 0x51, 0x1D, 0x08];
+        fine.extend(1u32.to_le_bytes());
+        fine.extend(5i32.to_le_bytes());
+        assert_eq!(
+            decode(&fine, &[TypeSig::Primitive("System.Object")]).map(|d| d.0),
+            Ok(vec!["[5]".to_owned()])
+        );
+    }
+
+    #[test]
+    fn the_row_index_keeps_the_first_type_that_claims_a_row() {
+        let mut loaded = testing::empty("A");
+        let method = |row: u32, name: &str| Method {
+            row,
+            name: name.to_owned(),
+            flags: 0,
+            sig: MethodSig {
+                has_this: false,
+                generic_params: 0,
+                ret: TypeSig::Primitive("System.Void"),
+                params: Vec::new(),
+            },
+            parameters: Vec::new(),
+            generic_params: Vec::new(),
+            generic_constraints: Vec::new(),
+            body: None,
+            locals: Vec::new(),
+            strings: Vec::new(),
+            attributes: Vec::new(),
+        };
+        let mut first = testing::ty(1, "N", "First");
+        first.methods = vec![method(1, "a"), method(2, "b")];
+        let mut second = testing::ty(2, "N", "Second");
+        second.methods = vec![method(2, "overlap"), method(3, "c")];
+        loaded.types = vec![first, second];
+        assert!(
+            loaded.method_at(1).is_none(),
+            "an unindexed model finds nothing"
+        );
+        loaded.reindex();
+        let name = |row| {
+            loaded
+                .method_at(row)
+                .map(|(t, m)| (t.name.clone(), m.name.clone()))
+        };
+        assert_eq!(name(1), Some(("First".into(), "a".into())));
+        assert_eq!(name(2), Some(("First".into(), "b".into())));
+        assert_eq!(name(3), Some(("Second".into(), "c".into())));
+        assert_eq!(name(4), None);
+        assert_eq!(name(0), None);
     }
 }
