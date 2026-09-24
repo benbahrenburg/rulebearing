@@ -33,6 +33,17 @@ When the platform package is missing, for example after `npm install --omit=opti
 | --- | --- |
 | `RULEBEARING_BINARY` | Path to a `rulebearing` binary to run instead of the platform package's, for a local build (`cargo build --release -p rb-cli`) or a platform without a prebuilt binary. A path that does not exist is exit 2. |
 
+## Finding the binary from another package
+
+The package exports the launcher's resolution, typed, so a Node tool that calls the binary directly finds the same one `npx rulebearing` would run, `RULEBEARING_BINARY` included. [eslint-plugin-rulebearing](../../frontends/eslint-plugin-rulebearing/README.md) locates the binary this way ([plan 0002, Step 13](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)).
+
+```javascript
+import { detectHost, resolveBinary } from 'rulebearing';
+
+const found = resolveBinary(detectHost(), process.env);
+// { kind: 'binary', path } or { kind: 'missing', message }
+```
+
 ## Developing this package
 
 The launcher is TypeScript under `src/`, compiled to `dist/` (strict, ESM, Node 22), and linted by the root configuration through `cargo xtask lint` ([ADR-0023](../../docs/adr/0023-documentation-link-and-lint-gates.md)). The tests hold the 70% line floor of [ADR-0018](../../docs/adr/0018-test-coverage-threshold.md), set in `vitest.config.ts`. Install the tooling once with `npm ci` at the repository root.
