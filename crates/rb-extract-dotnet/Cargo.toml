@@ -17,6 +17,10 @@ thiserror = { workspace = true }
 # (miniz_oxide: MIT OR Zlib OR Apache-2.0). Plan 0000, Step 9; docs/adr/0019-mit-licence.md.
 roxmltree = { workspace = true }
 miniz_oxide = { workspace = true }
+# excludeProjects patterns and the assemblies / directories loader globs (plan 0002, Step 1).
+regex = { workspace = true }
+globset = { workspace = true }
+sha1 = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

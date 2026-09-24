@@ -28,14 +28,40 @@ pub mod id {
     pub const METHOD_PTR: TableId = 0x05;
     /// `MethodDef`.
     pub const METHOD_DEF: TableId = 0x06;
+    /// `Param`.
+    pub const PARAM: TableId = 0x08;
+    /// `InterfaceImpl`.
+    pub const INTERFACE_IMPL: TableId = 0x09;
     /// `MemberRef`.
     pub const MEMBER_REF: TableId = 0x0A;
     /// `CustomAttribute`.
     pub const CUSTOM_ATTRIBUTE: TableId = 0x0C;
+    /// `StandAloneSig`.
+    pub const STAND_ALONE_SIG: TableId = 0x11;
+    /// `EventMap`.
+    pub const EVENT_MAP: TableId = 0x12;
+    /// `Event`.
+    pub const EVENT: TableId = 0x14;
+    /// `PropertyMap`.
+    pub const PROPERTY_MAP: TableId = 0x15;
+    /// `Property`.
+    pub const PROPERTY: TableId = 0x17;
+    /// `MethodSemantics`.
+    pub const METHOD_SEMANTICS: TableId = 0x18;
+    /// `ModuleRef`.
+    pub const MODULE_REF: TableId = 0x1A;
+    /// `TypeSpec`.
+    pub const TYPE_SPEC: TableId = 0x1B;
     /// `Assembly`.
     pub const ASSEMBLY: TableId = 0x20;
+    /// `AssemblyRef`.
+    pub const ASSEMBLY_REF: TableId = 0x23;
     /// `NestedClass`.
     pub const NESTED_CLASS: TableId = 0x29;
+    /// `GenericParam`.
+    pub const GENERIC_PARAM: TableId = 0x2A;
+    /// `MethodSpec`.
+    pub const METHOD_SPEC: TableId = 0x2B;
     /// Portable PDB `Document`.
     pub const DOCUMENT: TableId = 0x30;
     /// Portable PDB `MethodDebugInformation`.

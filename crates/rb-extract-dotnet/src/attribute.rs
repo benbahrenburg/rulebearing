@@ -11,7 +11,9 @@
 //! In order, a type is attributed:
 //!
 //! 1. `pdb`: by the portable PDB, from Roslyn's `TypeDefinitionDocuments` record (written for types
-//!    with no method bodies) or the first visible sequence point of any of its methods;
+//!    with no method bodies), else the document declaring its first constructor (the document of
+//!    the constructor's last visible point), else the first visible sequence point of any of its
+//!    methods;
 //! 2. `inferred`: a nested type with no sequence point of its own takes its enclosing type's file,
 //!    because C# declares a nested type inside its enclosing type's body;
 //! 3. `inferred`: by convention, when exactly one `<TypeName>.cs` exists under the project (or
@@ -239,7 +241,7 @@ fn io_error(path: &Path) -> impl FnOnce(std::io::Error) -> AttributeError + '_ {
 }
 
 /// The assembly's debugging information: an embedded portable PDB, a PDB file beside it, or none.
-fn debug_info(
+pub(crate) fn debug_info(
     dll: &Path,
     assembly: &Assembly,
 ) -> Result<(PdbKind, Option<Vec<u8>>), AttributeError> {
@@ -299,6 +301,10 @@ fn from_pdb(
             if let Some(file) = declared {
                 found.attribution = Some(Attribution::Pdb);
                 found.file = Some(file);
+            } else if let Some((file, line)) = constructor_document(pdb, ty)? {
+                found.attribution = Some(Attribution::Pdb);
+                found.file = document(file);
+                found.line = Some(line);
             } else {
                 for method in ty.methods.clone() {
                     if let Some(point) = pdb.first_point(method)? {
@@ -313,6 +319,28 @@ fn from_pdb(
         results.push(found);
     }
     Ok(results)
+}
+
+/// The document that declares the type's first constructor, and the line of its first point
+/// there: the document of the constructor's last visible point (its closing brace), because the
+/// compiler puts every field initializer of a partial type, whichever file it is in, at the
+/// start of each constructor.
+fn constructor_document(
+    pdb: &PortablePdb<'_>,
+    ty: &TypeInfo,
+) -> Result<Option<(u32, u32)>, ReadError> {
+    let Some(constructor) = ty.first_constructor else {
+        return Ok(None);
+    };
+    let points = pdb.sequence_points(constructor)?;
+    let Some(last) = points.last() else {
+        return Ok(None);
+    };
+    let line = points
+        .iter()
+        .find(|p| p.document == last.document)
+        .map_or(last.line, |p| p.line);
+    Ok(Some((last.document, line)))
 }
 
 /// Pass 2: a nested type with no sequence point takes its enclosing type's file.
@@ -478,6 +506,7 @@ mod tests {
             full_name: format!("{namespace}.{name}"),
             enclosing: None,
             methods: 1..1,
+            first_constructor: None,
             compiler_generated: false,
             is_module_type: false,
         }

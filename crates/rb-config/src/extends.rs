@@ -29,6 +29,10 @@ pub const NATIVE_PRESETS: &[(&str, &str)] = &[
         "typescript",
         include_str!("../../../presets/rulebearing/typescript.yaml"),
     ),
+    (
+        "dotnet",
+        include_str!("../../../presets/rulebearing/dotnet.yaml"),
+    ),
 ];
 
 /// What an `extends` entry names.
@@ -385,6 +389,10 @@ mod tests {
         assert_eq!(
             resolve("rulebearing:recommended", here)?.key(),
             "rulebearing:recommended"
+        );
+        assert_eq!(
+            resolve("rulebearing:dotnet", here)?.key(),
+            "rulebearing:dotnet"
         );
         assert!(resolve("rulebearing:nope", here).is_err());
         assert!(resolve("dependency-cruiser/configs/nope", here).is_err());
