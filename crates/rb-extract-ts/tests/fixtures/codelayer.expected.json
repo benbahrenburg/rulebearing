@@ -40,7 +40,8 @@
             "target": "src/legacy/plugin.js#Plugin",
             "kind": "body",
             "member": "constructor",
-            "line": 7
+            "line": 7,
+            "form": "call"
           }
         ]
       },
@@ -73,13 +74,15 @@
             "target": "src/ui/store.ts#Store",
             "kind": "body",
             "member": "constructor",
-            "line": 5
+            "line": 5,
+            "form": "call"
           },
           {
             "target": "src/ui/widget.tsx#Widget",
             "kind": "body",
             "member": "constructor",
-            "line": 5
+            "line": 5,
+            "form": "call"
           },
           {
             "target": "src/ui/widget.tsx#Widget",
@@ -464,7 +467,8 @@
             "target": "src/ui/store.ts#Store",
             "kind": "body",
             "member": "put",
-            "line": 13
+            "line": 13,
+            "form": "call"
           },
           {
             "target": "src/ui/store.ts#Store",
@@ -480,19 +484,22 @@
             "target": "src/ui/widget.tsx#Widget",
             "kind": "body",
             "member": "constructor",
-            "line": 44
+            "line": 44,
+            "form": "call"
           },
           {
             "target": "src/ui/widget.tsx#Widget",
             "kind": "body",
             "member": "create",
-            "line": 38
+            "line": 38,
+            "form": "call"
           },
           {
             "target": "src/ui/widget.tsx#Widget",
             "kind": "body",
             "member": "save",
-            "line": 38
+            "line": 38,
+            "form": "call"
           },
           {
             "target": "src/ui/widget.tsx#Widget",
@@ -579,7 +586,8 @@
             "target": "src/legacy/plugin.js#Plugin",
             "kind": "body",
             "member": "constructor",
-            "line": 7
+            "line": 7,
+            "form": "call"
           }
         ]
       },
@@ -895,7 +903,8 @@
             "target": "src/ui/widget.tsx#Widget",
             "kind": "body",
             "member": "constructor",
-            "line": 44
+            "line": 44,
+            "form": "call"
           },
           {
             "target": "src/ui/widget.tsx#Widget",
@@ -996,7 +1005,8 @@
             "target": "src/ui/store.ts#Store",
             "kind": "body",
             "member": "put",
-            "line": 13
+            "line": 13,
+            "form": "call"
           }
         ]
       },
@@ -1103,13 +1113,15 @@
             "target": "src/ui/widget.tsx#Widget",
             "kind": "body",
             "member": "create",
-            "line": 38
+            "line": 38,
+            "form": "call"
           },
           {
             "target": "src/ui/widget.tsx#Widget",
             "kind": "body",
             "member": "save",
-            "line": 38
+            "line": 38,
+            "form": "call"
           }
         ]
       },

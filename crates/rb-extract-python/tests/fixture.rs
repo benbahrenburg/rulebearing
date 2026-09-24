@@ -60,10 +60,13 @@ fn the_fixture_matches_its_expectation() -> Result<(), Box<dyn Error>> {
         std::fs::write(expectation_path(), &actual)?;
         return Ok(());
     }
-    let expected = std::fs::read_to_string(expectation_path())?;
+    // Compared as JSON: a workspace build turns on serde_json's `preserve_order` (through
+    // `oxc_resolver`), which changes key order but not content.
+    let expected: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(expectation_path())?)?;
     assert_eq!(
-        actual,
-        expected.replace("\r\n", "\n"),
+        serde_json::from_str::<serde_json::Value>(&actual)?,
+        expected,
         "the extraction changed; if that was intended, regenerate with RB_UPDATE_SNAPSHOTS=1"
     );
     Ok(())

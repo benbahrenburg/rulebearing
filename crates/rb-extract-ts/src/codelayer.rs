@@ -1990,6 +1990,8 @@ pub fn link(files: Vec<FileCode>) -> CodeLayer {
                 kind: pending.kind.to_owned(),
                 member: pending.member.clone(),
                 line: Some(pending.target.line),
+                // A body dependency is `new X()` or a call on X: both are calls.
+                form: (pending.kind == "body").then(|| "call".to_owned()),
             })
         };
         for pending in &file.types {
