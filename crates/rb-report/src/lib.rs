@@ -20,10 +20,12 @@
 pub mod agent;
 pub mod azure_devops;
 pub mod baseline;
+pub mod catalog;
 pub mod csv;
 pub mod err;
 pub mod github_annotations;
 pub mod json;
+pub mod sarif;
 pub mod style;
 pub mod teamcity;
 pub mod text;
@@ -128,9 +130,9 @@ pub struct ReportOptions {
     pub max_findings: Option<usize>,
     /// The timestamp `teamcity` writes, ISO 8601 without `Z`.
     pub timestamp: String,
-    /// `github-annotations`: the run's folder relative to the repository root (`web/`), put before
-    /// each `file=`, because GitHub places an annotation by its path from the root. Empty at the
-    /// root.
+    /// `github-annotations` and `sarif`: the run's folder relative to the repository root
+    /// (`web/`), put before each path, because GitHub places an annotation or a code-scanning
+    /// result by its path from the root. Empty at the root.
     pub path_prefix: String,
     /// `baseline`: the lifecycle fields `rulebearing baseline` gives each entry.
     pub baseline: baseline::Lifecycle,
@@ -188,6 +190,7 @@ pub fn render_with(
         }
         "csv" => csv::render(result),
         "baseline" => baseline::render(result, &options.baseline),
+        "sarif" => sarif::render(result, &options.path_prefix),
         "teamcity" => teamcity::render(result, &options.timestamp),
         "azure-devops" => azure_devops::render(result),
         "github-annotations" => github_annotations::render(result, &options.path_prefix),

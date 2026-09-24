@@ -124,7 +124,7 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         strict_schema: args.strict_schema,
         max_findings: args.max_findings,
         timestamp: ctx.timestamp.clone(),
-        path_prefix: if args.output_type == "github-annotations" {
+        path_prefix: if matches!(args.output_type.as_str(), "github-annotations" | "sarif") {
             ctx.repository_prefix()
         } else {
             String::new()

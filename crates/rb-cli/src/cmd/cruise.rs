@@ -218,7 +218,7 @@ fn report(
         strict_schema: args.strict_schema,
         max_findings: args.max_findings,
         timestamp: ctx.timestamp.clone(),
-        path_prefix: if output_type == "github-annotations" {
+        path_prefix: if matches!(output_type, "github-annotations" | "sarif") {
             ctx.repository_prefix()
         } else {
             String::new()
