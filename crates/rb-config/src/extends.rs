@@ -163,12 +163,27 @@ pub fn entries(canonical: &Map<String, Value>) -> Result<Vec<String>, ConfigErro
     }
 }
 
-fn list<'a>(config: &'a Map<String, Value>, key: &str) -> Vec<&'a Value> {
-    config
-        .get(key)
-        .and_then(Value::as_array)
-        .map(|a| a.iter().collect())
-        .unwrap_or_default()
+/// The items of the list `key`: absent (or `null`, as upstream's `?? []` reads it) is empty, and
+/// any other non-array value is an error naming the key, never a list silently dropped.
+fn list<'a>(config: &'a Map<String, Value>, key: &str) -> Result<Vec<&'a Value>, ConfigError> {
+    match config.get(key) {
+        None | Some(Value::Null) => Ok(Vec::new()),
+        Some(Value::Array(items)) => Ok(items.iter().collect()),
+        Some(_) => Err(ConfigError::Invalid(format!(
+            "`{}` must be a list",
+            display_key(key)
+        ))),
+    }
+}
+
+/// Where a canonical key is written in a native file, for messages.
+fn display_key(key: &str) -> String {
+    match key {
+        "ratchets" | "layers" | "independence" | "elements" | "slices" | "diagrams" => {
+            format!("rules.{key}")
+        }
+        other => other.to_owned(),
+    }
 }
 
 fn name_of(value: &Value) -> Option<&str> {
@@ -247,14 +262,21 @@ fn merge_named(extended: &[&Value], base: &[&Value]) -> Vec<Value> {
 }
 
 /// Merges `base` (the file named in `extends`) under `extended` (the file that extends it).
-pub fn merge(extended: &Map<String, Value>, base: &Map<String, Value>) -> Map<String, Value> {
+///
+/// # Errors
+/// [`ConfigError::Invalid`] when either file holds a rule list (`forbidden`, `rules.elements`,
+/// `allowEmpty` and the rest) that is not a list.
+pub fn merge(
+    extended: &Map<String, Value>,
+    base: &Map<String, Value>,
+) -> Result<Map<String, Value>, ConfigError> {
     let mut out = Map::new();
-    let forbidden = merge_rules(&list(extended, "forbidden"), &list(base, "forbidden"));
-    let required = merge_rules(&list(extended, "required"), &list(base, "required"));
+    let forbidden = merge_rules(&list(extended, "forbidden")?, &list(base, "forbidden")?);
+    let required = merge_rules(&list(extended, "required")?, &list(base, "required")?);
     let allowed = unique_deep(
-        list(extended, "allowed")
+        list(extended, "allowed")?
             .into_iter()
-            .chain(list(base, "allowed"))
+            .chain(list(base, "allowed")?)
             .cloned()
             .collect(),
     );
@@ -285,16 +307,16 @@ pub fn merge(extended: &Map<String, Value>, base: &Map<String, Value>) -> Map<St
         "slices",
         "diagrams",
     ] {
-        let merged = merge_named(&list(extended, key), &list(base, key));
+        let merged = merge_named(&list(extended, key)?, &list(base, key)?);
         if !merged.is_empty() {
             out.insert(key.into(), Value::Array(merged));
         }
     }
     // The named liveness exceptions of both files, in order, each once.
     let allow_empty = unique_deep(
-        list(extended, "allowEmpty")
+        list(extended, "allowEmpty")?
             .into_iter()
-            .chain(list(base, "allowEmpty"))
+            .chain(list(base, "allowEmpty")?)
             .cloned()
             .collect(),
     );
@@ -310,7 +332,7 @@ pub fn merge(extended: &Map<String, Value>, base: &Map<String, Value>) -> Map<St
     if let Some(schema) = extended.get("$schema") {
         out.insert("$schema".into(), schema.clone());
     }
-    out
+    Ok(out)
 }
 
 #[cfg(test)]
@@ -326,7 +348,7 @@ mod tests {
     }
 
     #[test]
-    fn named_rules_merge_with_the_extender_winning() {
+    fn named_rules_merge_with_the_extender_winning() -> Result<(), ConfigError> {
         let extended = object(json!({ "forbidden": [{ "name": "a", "severity": "error" }] }));
         let base = object(json!({
             "forbidden": [
@@ -334,7 +356,7 @@ mod tests {
                 { "name": "b" }
             ]
         }));
-        let merged = merge(&extended, &base);
+        let merged = merge(&extended, &base)?;
         assert_eq!(
             merged["forbidden"],
             json!([
@@ -343,40 +365,43 @@ mod tests {
             ])
         );
         assert_eq!(merged["options"], json!({}));
+        Ok(())
     }
 
     #[test]
-    fn anonymous_and_allowed_rules_are_unique_by_value() {
+    fn anonymous_and_allowed_rules_are_unique_by_value() -> Result<(), ConfigError> {
         let rule = json!({ "from": {}, "to": { "circular": true } });
         let extended = object(json!({ "forbidden": [rule.clone()], "allowed": [rule.clone()] }));
         let base = object(
             json!({ "forbidden": [rule.clone()], "allowed": [rule.clone(), { "from": {}, "to": {} }] }),
         );
-        let merged = merge(&extended, &base);
+        let merged = merge(&extended, &base)?;
         assert_eq!(merged["forbidden"].as_array().map(Vec::len), Some(1));
         assert_eq!(merged["allowed"].as_array().map(Vec::len), Some(2));
         assert_eq!(merged["allowedSeverity"], "warn");
+        Ok(())
     }
 
     #[test]
-    fn allowed_severity_and_options_follow_upstream() {
+    fn allowed_severity_and_options_follow_upstream() -> Result<(), ConfigError> {
         let extended = object(json!({ "allowed": [{}], "options": { "a": 1 } }));
         let base = object(json!({ "allowedSeverity": "error", "options": { "a": 2, "b": 3 } }));
-        let merged = merge(&extended, &base);
+        let merged = merge(&extended, &base)?;
         assert_eq!(merged["allowedSeverity"], "error");
         assert_eq!(merged["options"], json!({ "a": 1, "b": 3 }));
         assert!(!merged.contains_key("required"));
+        Ok(())
     }
 
     #[test]
-    fn native_additions_merge_by_name_and_key() {
+    fn native_additions_merge_by_name_and_key() -> Result<(), ConfigError> {
         let extended = object(
             json!({ "$schema": "s", "ratchets": [{ "name": "r", "budget": "a" }], "defines": { "x": 1 } }),
         );
         let base = object(
             json!({ "ratchets": [{ "name": "r", "budget": "b" }, { "name": "q" }], "defines": { "x": 2, "y": 3 }, "languages": { "python": {} } }),
         );
-        let merged = merge(&extended, &base);
+        let merged = merge(&extended, &base)?;
         assert_eq!(
             merged["ratchets"],
             json!([{ "name": "r", "budget": "a" }, { "name": "q" }])
@@ -384,6 +409,45 @@ mod tests {
         assert_eq!(merged["defines"], json!({ "x": 1, "y": 3 }));
         assert_eq!(merged["languages"], json!({ "python": {} }));
         assert_eq!(merged["$schema"], "s");
+        Ok(())
+    }
+
+    #[test]
+    fn a_rule_list_that_is_not_a_list_is_refused_not_dropped() -> Result<(), ConfigError> {
+        let rules = object(json!({ "elements": [{ "name": "e" }] }));
+        for key in [
+            "forbidden",
+            "required",
+            "allowed",
+            "ratchets",
+            "layers",
+            "independence",
+            "elements",
+            "slices",
+            "diagrams",
+            "allowEmpty",
+        ] {
+            let wrong = object(json!({ key: { "name": "x" } }));
+            for (extended, base) in [(&wrong, &rules), (&rules, &wrong)] {
+                let message = merge(extended, base)
+                    .err()
+                    .map(|e| e.to_string())
+                    .unwrap_or_default();
+                assert!(
+                    message.contains(&format!("{key}` must be a list")),
+                    "{key}: {message}"
+                );
+            }
+        }
+        let named = merge(&object(json!({ "slices": "s" })), &Map::new())
+            .err()
+            .map(|e| e.to_string())
+            .unwrap_or_default();
+        assert!(named.contains("`rules.slices` must be a list"), "{named}");
+        // `null` reads as absent, as upstream's `?? []` does.
+        let merged = merge(&object(json!({ "elements": null })), &rules)?;
+        assert_eq!(merged["elements"], json!([{ "name": "e" }]));
+        Ok(())
     }
 
     #[test]

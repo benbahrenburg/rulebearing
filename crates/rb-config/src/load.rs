@@ -251,7 +251,7 @@ fn resolve_extends(
         let (loaded, _) = canonical_of(as_object(value, Path::new(&entry))?, None)?;
         let loaded = resolve_extends(loaded, &dir, root, opts, visiting, files)?;
         visiting.pop();
-        canonical = extends::merge(&canonical, &loaded);
+        canonical = extends::merge(&canonical, &loaded)?;
     }
     Ok(canonical)
 }
