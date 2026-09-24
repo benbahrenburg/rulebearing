@@ -72,6 +72,8 @@ pub enum Command {
     Init(crate::cmd::init::InitArgs),
     /// Put an existing dependency-cruiser configuration behind a green gate, with a baseline
     Adopt(crate::cmd::adopt::AdoptArgs),
+    /// Write the current violations to a known-violations file, as depcruise-baseline does
+    Baseline(crate::cmd::baseline::BaselineArgs),
     /// Conformance gate 1 layer 2's protocol (hidden).
     #[command(hide = true)]
     Validate(ProtocolArgs),
@@ -178,6 +180,23 @@ pub struct ConfigArgs {
     pub require_comment_token: bool,
 }
 
+/// `--ignore-known [file]` and `--no-ignore-known`, on `cruise` and `fmt`
+/// ([coverage § Command line](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)).
+/// The last of the two on a command line wins, as with dependency-cruiser's negatable option.
+#[derive(Debug, Clone, Default, Args)]
+pub struct KnownArgs {
+    /// Ignore the known violations saved in FILE, in place of options.knownViolations
+    /// (default: .dependency-cruiser-known-violations.json)
+    #[arg(long, value_name = "FILE", num_args = 0..=1,
+          default_missing_value = rb_config::load::DEFAULT_KNOWN_VIOLATIONS_FILE,
+          overrides_with = "no_ignore_known")]
+    pub ignore_known: Option<String>,
+    /// Apply no known violations, options.knownViolations included: every finding at its rule's
+    /// severity
+    #[arg(long, overrides_with = "ignore_known")]
+    pub no_ignore_known: bool,
+}
+
 /// Where a query command finds the graph.
 #[derive(Debug, Clone, Default, Args)]
 pub struct GraphArgs {
@@ -232,6 +251,9 @@ pub struct CruiseArgs {
     /// Include modules matching the regex but do not follow their dependencies
     #[arg(short = 'X', long, value_name = "REGEX")]
     pub do_not_follow: Option<String>,
+    /// Known violations: the file's entries are reported at severity ignore
+    #[command(flatten)]
+    pub known: KnownArgs,
     /// How deep to follow dependencies from the roots; 0 for no limit
     #[arg(long, value_name = "NUMBER")]
     pub max_depth: Option<u8>,
@@ -322,6 +344,9 @@ pub struct FmtArgs {
     /// Collapse modules to a folder depth (a single digit) or to the first match of a regex
     #[arg(short = 'S', long, value_name = "REGEX-OR-DEPTH")]
     pub collapse: Option<String>,
+    /// Known violations applied to, or taken off, the saved result
+    #[command(flatten)]
+    pub known: KnownArgs,
     /// Exit with the number of error violations
     #[arg(short = 'e', long)]
     pub exit_code: bool,

@@ -1,4 +1,4 @@
-// Conformance gate 1, layer 3: dependency-cruiser 18.2.0's report specs for the wave 1 reporters,
+// Conformance gate 1, layer 3: dependency-cruiser 18.2.0's report specs for the ported reporters,
 // run unmodified, with each reporter import forwarded to `rulebearing report` (layer3-hooks.mjs).
 // The specs compare output byte for byte against upstream's fixtures (teamcity's per-session
 // flowId and timestamp aside, which the spec itself removes), so a pass is a byte-compare pass.
@@ -32,8 +32,10 @@ const WAVE_1 = [
     'test/report/azure-devops/azure-devops.spec.mjs',
     'test/report/null/null.spec.mjs',
 ];
+// The wave 2 reporters (plan 0002, Step 10).
+const WAVE_2 = ['test/report/baseline/baseline.spec.mjs'];
 const only = args.filter((arg) => arg.endsWith('.spec.mjs'));
-const specs = only.length > 0 ? only : WAVE_1;
+const specs = only.length > 0 ? only : [...WAVE_1, ...WAVE_2];
 
 const Mocha = createRequire(join(upstream, 'package.json'))('mocha');
 const mocha = new Mocha({ timeout: 20_000, reporter: 'base' });

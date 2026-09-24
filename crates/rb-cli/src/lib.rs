@@ -43,7 +43,6 @@ pub use crate::exit::RunExit;
 /// Subcommands later waves deliver, with the wave. Asking for one says so and exits 2, so no
 /// pipeline mistakes a missing command for a passing gate.
 pub const LATER: &[(&str, u8)] = &[
-    ("baseline", 2),
     ("diff", 3),
     ("place", 2),
     ("docs", 2),
@@ -154,6 +153,7 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         Command::Attest(a) => cmd::attest::run(ctx, &a),
         Command::Init(a) => cmd::init::run(ctx, &a),
         Command::Adopt(a) => cmd::adopt::run(ctx, &a),
+        Command::Baseline(a) => cmd::baseline::run(ctx, &a),
         Command::Validate(_) => match ctx.read_stdin() {
             Ok(text) => protocol::validate(&text),
             Err(e) => Outcome::failed(

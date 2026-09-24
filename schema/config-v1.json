@@ -3651,6 +3651,13 @@
             "null"
           ]
         },
+        "reason": {
+          "description": "Why the exception stands, and what removes it.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "rule": {
           "anyOf": [
             {

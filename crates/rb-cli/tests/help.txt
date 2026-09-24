@@ -17,6 +17,7 @@ Commands:
   attest      Write or verify a receipt of the configuration, inputs and results
   init        Write a first configuration from what the repository holds, passing on its first run
   adopt       Put an existing dependency-cruiser configuration behind a green gate, with a baseline
+  baseline    Write the current violations to a known-violations file, as depcruise-baseline does
 
 Options:
   -h, --help     Print help

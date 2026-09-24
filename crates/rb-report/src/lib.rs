@@ -19,6 +19,7 @@
 
 pub mod agent;
 pub mod azure_devops;
+pub mod baseline;
 pub mod csv;
 pub mod err;
 pub mod github_annotations;
@@ -131,6 +132,8 @@ pub struct ReportOptions {
     /// each `file=`, because GitHub places an annotation by its path from the root. Empty at the
     /// root.
     pub path_prefix: String,
+    /// `baseline`: the lifecycle fields `rulebearing baseline` gives each entry.
+    pub baseline: baseline::Lifecycle,
 }
 
 /// Renders `result` as `output_type`.
@@ -184,6 +187,7 @@ pub fn render_with(
             text::render(result, highlight, options.color)
         }
         "csv" => csv::render(result),
+        "baseline" => baseline::render(result, &options.baseline),
         "teamcity" => teamcity::render(result, &options.timestamp),
         "azure-devops" => azure_devops::render(result),
         "github-annotations" => github_annotations::render(result, &options.path_prefix),
@@ -364,6 +368,13 @@ mod tests {
             assert!(render(t, &result, &o).is_ok(), "{t}");
         }
         assert_eq!(render("null", &result, &o).map(|r| r.exit_code), Ok(2));
+        assert_eq!(
+            render("baseline", &result, &o),
+            Ok(Rendered {
+                output: "[]\n".into(),
+                exit_code: 0
+            })
+        );
         // The gating table agrees with what each ported reporter returns.
         for (t, wave) in OUTPUT_TYPES {
             if *wave == 1 {

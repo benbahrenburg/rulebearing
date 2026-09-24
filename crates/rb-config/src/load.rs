@@ -486,6 +486,46 @@ fn allow_empty(
     Ok(names)
 }
 
+/// The default known-violations file: dependency-cruiser's, so `--ignore-known` and a
+/// `depcruise-baseline` file keep working after the switch
+/// ([coverage § Command line](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)).
+pub const DEFAULT_KNOWN_VIOLATIONS_FILE: &str = ".dependency-cruiser-known-violations.json";
+
+/// Parses a known-violations file: a JSON array of `knownViolations` entries, the shape
+/// `depcruise-baseline` and `rulebearing baseline` write.
+///
+/// # Errors
+/// [`ConfigError::Parse`] when the text is not JSON, [`ConfigError::Invalid`] when it is not an
+/// array of entries.
+pub fn known_violations_text(file: &Path, text: &str) -> Result<Vec<KnownViolation>, ConfigError> {
+    let value: Value = serde_json::from_str(text).map_err(|e| ConfigError::Parse {
+        file: file.to_path_buf(),
+        reason: e.to_string(),
+    })?;
+    if !value.is_array() {
+        return Err(ConfigError::Invalid(format!(
+            "{}: a known-violations file is a JSON array of entries (write one with `rulebearing baseline`)",
+            file.display()
+        )));
+    }
+    serde_json::from_value(value).map_err(|e| {
+        ConfigError::Invalid(format!("{}: an entry is malformed: {e}", file.display()))
+    })
+}
+
+/// Reads a known-violations file ([`known_violations_text`]).
+///
+/// # Errors
+/// [`ConfigError::Read`] naming the file when it cannot be read, as dependency-cruiser's
+/// `--ignore-known` refuses a file that does not exist; otherwise as [`known_violations_text`].
+pub fn known_violations_file(file: &Path) -> Result<Vec<KnownViolation>, ConfigError> {
+    let text = std::fs::read_to_string(file).map_err(|e| ConfigError::Read {
+        file: file.to_path_buf(),
+        reason: format!("{e}; write one with `rulebearing baseline`"),
+    })?;
+    known_violations_text(file, &text)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -945,6 +985,58 @@ rules:
     fn the_repository_root_is_the_git_folder() -> Result<(), Box<dyn Error>> {
         let repo = Repo::new("root", &[("a/b/c.json", "{}")])?;
         assert_eq!(repository_root(&repo.0.join("a/b")), repo.0);
+        Ok(())
+    }
+
+    #[test]
+    fn a_known_violations_file_is_an_array_of_entries() -> Result<(), Box<dyn Error>> {
+        let repo = Repo::new(
+            "known",
+            &[
+                (
+                    "known.json",
+                    r#"[{ "type": "dependency", "from": "a.ts", "to": "b.ts",
+                          "rule": { "name": "no-b", "severity": "error" } },
+                        { "id": "RB-4f2a9c1e", "expires": "2026-12-31", "owner": "@me", "reason": "port lands" }]"#,
+                ),
+                ("object.json", r#"{ "knownViolations": [] }"#),
+                ("broken.json", "[{"),
+                ("wrong.json", r#"[{ "expires": "soon" }]"#),
+            ],
+        )?;
+        let entries = known_violations_file(&repo.0.join("known.json"))?;
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].from.as_deref(), Some("a.ts"));
+        assert_eq!(
+            entries[0].extra.get("type"),
+            Some(&serde_json::json!("dependency"))
+        );
+        assert_eq!(entries[1].id.as_deref(), Some("RB-4f2a9c1e"));
+        assert_eq!(entries[1].owner.as_deref(), Some("@me"));
+        assert_eq!(entries[1].reason.as_deref(), Some("port lands"));
+        assert_eq!(
+            entries[1].expires,
+            chrono::NaiveDate::from_ymd_opt(2026, 12, 31)
+        );
+        let object = known_violations_file(&repo.0.join("object.json"));
+        assert!(
+            matches!(&object, Err(ConfigError::Invalid(m)) if m.contains("JSON array")),
+            "{object:?}"
+        );
+        assert!(matches!(
+            known_violations_file(&repo.0.join("broken.json")),
+            Err(ConfigError::Parse { .. })
+        ));
+        let wrong = known_violations_file(&repo.0.join("wrong.json"));
+        assert!(
+            matches!(&wrong, Err(ConfigError::Invalid(m)) if m.contains("malformed")),
+            "{wrong:?}"
+        );
+        let missing = known_violations_file(&repo.0.join(DEFAULT_KNOWN_VIOLATIONS_FILE));
+        assert!(
+            matches!(&missing, Err(ConfigError::Read { reason, .. }) if reason.contains("rulebearing baseline")),
+            "{missing:?}"
+        );
         Ok(())
     }
 }

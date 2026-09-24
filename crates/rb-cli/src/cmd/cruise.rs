@@ -223,6 +223,7 @@ fn report(
         } else {
             String::new()
         },
+        baseline: rb_report::baseline::Lifecycle::default(),
     };
     let rendered = match rb_report::render(output_type, &value, &options) {
         Ok(r) => r,
