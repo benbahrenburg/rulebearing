@@ -376,6 +376,153 @@ impl Rule {
     }
 }
 
+/// One vocabulary value or a list of them, as `dependencyTypes` is written: `dotnet` or
+/// `[inherits, implements]`. A value outside the vocabulary is a configuration error naming it,
+/// never a restriction that quietly matches nothing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OneOrMany<T>(pub Vec<T>);
+
+impl<T> OneOrMany<T> {
+    /// The values, in the order written.
+    pub fn as_slice(&self) -> &[T] {
+        &self.0
+    }
+}
+
+impl<T: Serialize> Serialize for OneOrMany<T> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self.0.as_slice() {
+            [one] => one.serialize(serializer),
+            many => many.serialize(serializer),
+        }
+    }
+}
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for OneOrMany<T> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        // Buffered as JSON so a wrong value reports the vocabulary's own message ("`x` is not a
+        // valid language") rather than an untagged enum's.
+        match Value::deserialize(deserializer)? {
+            Value::Array(items) => items
+                .into_iter()
+                .map(|item| T::deserialize(item).map_err(serde::de::Error::custom))
+                .collect::<Result<Vec<T>, D::Error>>()
+                .map(Self),
+            one => T::deserialize(one)
+                .map(|value| Self(vec![value]))
+                .map_err(serde::de::Error::custom),
+        }
+    }
+}
+
+impl<T: JsonSchema> JsonSchema for OneOrMany<T> {
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        format!("OneOrMany_{}", T::schema_name()).into()
+    }
+
+    fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        let one = generator.subschema_for::<T>();
+        schemars::json_schema!({
+            "anyOf": [one.clone(), { "type": "array", "items": one }]
+        })
+    }
+}
+
+/// The cross-language keys a dependency rule's `from` and `to` carry in a native configuration
+/// ([design § Dependency rules](../../../docs/artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820),
+/// "Cross-language additions"). Each reads a module addition the extractors record: `language`,
+/// `namespaces[]`, `project`, and the assembly of the types the code layer places in the file.
+/// A module that does not carry the property matches neither the key nor its `Not` form, as
+/// dependency-cruiser's `licenseNot` needs a licence. A `.dependency-cruiser.*` file never sees
+/// them: the loader refuses them there (exit 3).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CrossLanguageKeys {
+    /// Rulebearing addition, native configurations only. The languages the module must be in
+    /// (`typescript`, `javascript`, `dotnet`, `python`), one or a list; compared with the
+    /// module's `language`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub language: Option<OneOrMany<rb_model::Language>>,
+    /// Rulebearing addition, native configurations only. Patterns, any of which one of the
+    /// module's `namespaces[]` must match (.NET namespaces; Python dotted module names).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<Patterns>,
+    /// Rulebearing addition, native configurations only. Patterns none of the module's
+    /// `namespaces[]` may match; a module without `namespaces` does not match.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub namespace_not: Option<Patterns>,
+    /// Rulebearing addition, native configurations only. Patterns the module's `project` must
+    /// match: the `.csproj` (or loaded assembly) path for .NET, the top-level package for Python.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub project: Option<Patterns>,
+    /// Rulebearing addition, native configurations only. Patterns the module's `project` must
+    /// not match; a module without `project` does not match.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub project_not: Option<Patterns>,
+    /// Rulebearing addition, native configurations only. Patterns the .NET assembly name must
+    /// match (`CleanArchitecture.Web`, not the file name): the `assembly` of the types the code
+    /// layer declares in the module's file.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assembly: Option<Patterns>,
+    /// Rulebearing addition, native configurations only. Patterns the assembly name must not
+    /// match; a module the code layer places no type in does not match.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assembly_not: Option<Patterns>,
+}
+
+impl CrossLanguageKeys {
+    /// The keys written, in their configuration spelling.
+    pub fn written(&self) -> Vec<&'static str> {
+        let mut out = Vec::new();
+        for (key, present) in [
+            ("language", self.language.is_some()),
+            ("namespace", self.namespace.is_some()),
+            ("namespaceNot", self.namespace_not.is_some()),
+            ("project", self.project.is_some()),
+            ("projectNot", self.project_not.is_some()),
+            ("assembly", self.assembly.is_some()),
+            ("assemblyNot", self.assembly_not.is_some()),
+        ] {
+            if present {
+                out.push(key);
+            }
+        }
+        out
+    }
+
+    /// The pattern keys with their configuration spelling, for compilation and normalisation.
+    pub fn patterns_mut(&mut self) -> [(&'static str, &mut Option<Patterns>); 6] {
+        [
+            ("namespace", &mut self.namespace),
+            ("namespaceNot", &mut self.namespace_not),
+            ("project", &mut self.project),
+            ("projectNot", &mut self.project_not),
+            ("assembly", &mut self.assembly),
+            ("assemblyNot", &mut self.assembly_not),
+        ]
+    }
+
+    /// The pattern keys with their configuration spelling.
+    pub fn patterns(&self) -> [(&'static str, Option<&Patterns>); 6] {
+        [
+            ("namespace", self.namespace.as_ref()),
+            ("namespaceNot", self.namespace_not.as_ref()),
+            ("project", self.project.as_ref()),
+            ("projectNot", self.project_not.as_ref()),
+            ("assembly", self.assembly.as_ref()),
+            ("assemblyNot", self.assembly_not.as_ref()),
+        ]
+    }
+
+    /// Whether the side can only match modules of `language`: its `language` names that one
+    /// language and nothing else.
+    pub fn only(&self, language: rb_model::Language) -> bool {
+        self.language.as_ref().is_some_and(|l| {
+            !l.as_slice().is_empty() && l.as_slice().iter().all(|x| *x == language)
+        })
+    }
+}
+
 /// `from`.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -389,6 +536,9 @@ pub struct FromRestriction {
     /// Match modules with no edges in or out.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub orphan: Option<bool>,
+    /// The cross-language keys, native configurations only.
+    #[serde(flatten)]
+    pub cross: CrossLanguageKeys,
 }
 
 /// `to`: every restriction dependency-cruiser 18.2.0 defines.
@@ -458,6 +608,33 @@ pub struct ToRestriction {
     /// Reachability: match modules the `from` modules reach (or do not reach).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reachable: Option<bool>,
+    /// Rulebearing addition, native configurations only. The kinds of reference, any of which
+    /// the edge's `dependencyKind` must be (`import`, `inherits`, `implements`, `field`,
+    /// `signature`, `body`, `attribute`, `generic-argument`, `typeof`, `call`), one or a list.
+    /// A property of the edge, so it sits on `to` only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dependency_kind: Option<OneOrMany<rb_model::DependencyKind>>,
+    /// Rulebearing addition, native configurations only. The kinds of reference the edge's
+    /// `dependencyKind` may not be; an edge without `dependencyKind` does not match.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dependency_kind_not: Option<OneOrMany<rb_model::DependencyKind>>,
+    /// The cross-language keys over the target module, native configurations only.
+    #[serde(flatten)]
+    pub cross: CrossLanguageKeys,
+}
+
+impl ToRestriction {
+    /// The Rulebearing additions written on `to`, in their configuration spelling.
+    pub fn additions(&self) -> Vec<&'static str> {
+        let mut out = self.cross.written();
+        if self.dependency_kind.is_some() {
+            out.push("dependencyKind");
+        }
+        if self.dependency_kind_not.is_some() {
+            out.push("dependencyKindNot");
+        }
+        out
+    }
 }
 
 /// `via` and `viaOnly`: the pattern form or the object form.

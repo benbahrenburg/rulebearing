@@ -2,8 +2,10 @@
 //!
 //! - Source: [design § The native format](../../../docs/artifacts/design.md#the-native-format),
 //!   [design § Rules an agent writes](../../../docs/artifacts/design.md#rules-an-agent-writes-held-to-the-same-bar)
-//! - Plan: [Wave 1, Step 4](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-4-config-convert-config-expand-config-lint-shorthands-1a)
-//! - Requirement: [FR-CFG-05](../../../docs/prd.md#fr-cfg-05)
+//! - Plan: [Wave 1, Step 4](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-4-config-convert-config-expand-config-lint-shorthands-1a);
+//!   [Wave 2, Step 8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)
+//!   (`type-only-on-dotnet`)
+//! - Requirement: [FR-CFG-05](../../../docs/prd.md#fr-cfg-05), [FR-RULE-02](../../../docs/prd.md#fr-rule-02)
 //!
 //! | Code | Finding | Needs a graph |
 //! | --- | --- | --- |
@@ -15,6 +17,7 @@
 //! | `no-fix` | a rule without `fix` | no |
 //! | `fix-restates-name` | a `fix` that says nothing the name does not | no |
 //! | `missing-decision-token` | a comment without `adr:NNNN` or `plan:<slug>`, under `--require-comment-token` | no |
+//! | `type-only-on-dotnet` | a rule limited to .NET by `language` that names `type-only`, which no .NET edge carries ([design § Dependency rules](../../../docs/artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820)) | no |
 
 use std::collections::BTreeSet;
 use std::fmt::Write as _;
@@ -175,6 +178,9 @@ pub fn lint(config: &Config, graph: Option<&GraphDocument>, options: LintOptions
                 "missing-decision-token",
                 "the comment has no decision token; add `adr:NNNN` or `plan:<slug>`".into(),
             ));
+        }
+        if let Some(message) = crate::normalize::type_only_on_dotnet(rule) {
+            out.push(finding("type-only-on-dotnet", message));
         }
         let earlier = &rules[..index];
         if *family == Family::Allowed {
