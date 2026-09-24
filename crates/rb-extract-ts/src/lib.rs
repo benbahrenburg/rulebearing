@@ -93,7 +93,11 @@ pub struct TypeScriptExtractor;
 impl From<PipelineError> for ExtractError {
     fn from(error: PipelineError) -> Self {
         match error {
-            PipelineError::Io { source, .. } => Self::Io(source),
+            // The error names the file, which a bare I/O error would not.
+            PipelineError::Io { path, source } => Self::UnsupportedFile {
+                path,
+                reason: format!("cannot be read: {source}"),
+            },
             PipelineError::Parse { path, reason } => Self::UnsupportedFile { path, reason },
             PipelineError::Pattern { pattern, reason } => Self::UnsupportedFile {
                 path: PathBuf::from(pattern),
@@ -470,6 +474,6 @@ mod tests {
             path: PathBuf::from("x"),
             source: std::io::Error::other("gone"),
         });
-        assert!(matches!(io, ExtractError::Io(_)));
+        assert_eq!(io.to_string(), "x: cannot be read: gone");
     }
 }

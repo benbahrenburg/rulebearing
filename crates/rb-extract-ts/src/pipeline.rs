@@ -587,11 +587,17 @@ fn elided_imports(program: &oxc_ast::ast::Program<'_>) -> Vec<Span> {
     elided
 }
 
+/// A source file as dependency-cruiser reads it: `readFileSync(file, "utf8")`, where a byte
+/// sequence that is not UTF-8 (a Latin-1 comment, a binary file with a source extension) becomes
+/// U+FFFD instead of failing the run. Found by the Python oracle harness on
+/// openedx/openedx-platform, whose MPEG transport-stream fixtures are named `.ts`.
 fn read(path: &Path) -> Result<String, PipelineError> {
-    std::fs::read_to_string(path).map_err(|source| PipelineError::Io {
+    let bytes = std::fs::read(path).map_err(|source| PipelineError::Io {
         path: path.to_path_buf(),
         source,
-    })
+    })?;
+    Ok(String::from_utf8(bytes)
+        .unwrap_or_else(|invalid| String::from_utf8_lossy(invalid.as_bytes()).into_owned()))
 }
 
 /// What part of a file a text to parse is.
@@ -1469,6 +1475,24 @@ mod tests {
             .map(|s| s.top_level_statement_count);
         let _ = std::fs::remove_dir_all(&dir);
         assert_eq!(counted, Some(2));
+    }
+
+    #[test]
+    fn a_source_that_is_not_utf8_is_read_as_node_reads_it() {
+        let dir = std::env::temp_dir().join(format!("rb-read-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        let file = dir.join("latin1.js");
+        let _ = std::fs::write(&file, b"// caf\xe9\nimport x from './x';\n");
+        let text = read(&file).ok();
+        let missing = read(&dir.join("missing.js"));
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(
+            text.as_deref(),
+            Some("// caf\u{fffd}\nimport x from './x';\n")
+        );
+        assert!(
+            matches!(missing, Err(PipelineError::Io { ref path, .. }) if path.ends_with("missing.js"))
+        );
     }
 
     #[test]
