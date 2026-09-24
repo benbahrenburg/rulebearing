@@ -1,6 +1,6 @@
 # Plan 0002: Wave 2: .NET, Python, element rules, migration
 
-- **Status:** In progress: 2A and 2B done except the nightly links; 2C next
+- **Status:** In progress: 2A and 2B done except the nightly links; 2C in progress
 - **Owner:** Ben Bahrenburg (@benbahrenburg)
 - **Created:** 2026-09-20
 - **Calendar estimate:** 10 weeks at ~10 h/week (from [design § Waves](../../artifacts/design.md#waves), row 2)
