@@ -837,8 +837,9 @@ fn distance(a: &str, b: &str) -> usize {
     row[b.len()]
 }
 
-/// Every key spelling valid on `side`, for suggestions.
-pub(crate) fn spellings(side: Side) -> Vec<String> {
+/// Every key spelling valid on `side`: the nearest-key suggestions, the schema and the generated
+/// reference read it.
+pub fn spellings(side: Side) -> Vec<String> {
     let mut out = Vec::new();
     for (name, _, _, in_where) in VOCABULARY {
         if side == Side::Where && !in_where {
