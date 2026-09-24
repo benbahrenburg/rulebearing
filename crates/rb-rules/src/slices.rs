@@ -3,6 +3,7 @@
 //! - Source: [design § Slice rules](../../../docs/artifacts/design.md#slice-rules)
 //! - Coverage: [`ArchUnitNET` § Slices](../../../docs/artifacts/archunitnet-0.13.4-coverage.md#slices-sliceruledefinition)
 //! - Plan: [Wave 2, Step 6](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#26-step-6-slice-and-diagram-rules-2c)
+//! - Decision: [ADR-0034](../../../docs/adr/0034-slices-group-types-or-modules-and-segments.md)
 //! - Requirement: [FR-RULE-04](../../../docs/prd.md#fr-rule-04)
 //! - Specification: `ArchUnitNET` 0.13.4 `Fluent/Slices/SliceRuleInitializer.cs` (`Matching`,
 //!   `MatchingWithPackages`, `AssignFunc`), `SlicesShould.cs`, `Domain/SliceIdentifier.cs`
@@ -17,13 +18,23 @@
 //! match belongs to no slice; one that matches but cannot be cut is [`ElementError::Slice`]. The separator is `/` when the pattern has one (a TypeScript path),
 //! `.` otherwise (a .NET namespace, a Python module).
 //!
+//! `segments: n` (a Rulebearing addition) keeps the first `n` segments of each name, so
+//! `app.(*)` with `segments: 1` puts `app.sub` and `app.sub.deep` in one slice `sub`: the siblings
+//! of import-linter's `acyclic_siblings`.
+//!
+//! A slice holds .NET types, joined by their dependencies as in `ArchUnitNET`, and TypeScript,
+//! JavaScript and Python modules, joined by their imports (the capability table's slice unit):
+//! a TypeScript module by its path, a Python module by its dotted name.
+//!
 //! `notDependOnEachOther` fails each slice with a dependency on another, listing the edges;
 //! `beFreeOfCycles` fails each cycle of the slice graph (Tarjan's strongly connected components of
 //! more than one slice).
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use rb_config::capability::{SliceUnit, slice_unit};
 use rb_config::elements::{SliceCondition, SliceRule};
+use rb_model::Language;
 
 use crate::elements::{Architecture, ElementError};
 
@@ -200,6 +211,61 @@ fn components(graph: &BTreeMap<usize, BTreeSet<usize>>, count: usize) -> Vec<Vec
     state.found
 }
 
+/// One thing a slice can hold: its identity, the text the pattern is matched against, and the
+/// identities it depends on.
+struct Member<'a> {
+    key: &'a str,
+    text: &'a str,
+    targets: Vec<&'a str>,
+}
+
+/// What slices group, per language ([`slice_unit`]): the analysed types by namespace with their
+/// dependencies, or the analysed modules with their imports, by path when the pattern's separator
+/// is `/` and by dotted name otherwise.
+fn members<'a>(architecture: &Architecture<'a>, separator: char) -> Vec<Member<'a>> {
+    let by_types =
+        |language: Option<Language>| language.is_some_and(|l| slice_unit(l) == SliceUnit::Types);
+    let mut members: Vec<Member<'a>> = architecture
+        .types
+        .values()
+        .filter(|t| t.referenced != Some(true) && by_types(Some(t.location.language)))
+        .map(|t| Member {
+            key: t.full_name.as_str(),
+            text: t.namespace.as_deref().unwrap_or_default(),
+            targets: t.dependencies.iter().map(|d| d.target.as_str()).collect(),
+        })
+        .collect();
+    for module in architecture.modules {
+        let local = module.core_module != Some(true)
+            && module.could_not_resolve != Some(true)
+            && module.followable != Some(false);
+        if !local || by_types(module.language) || module.language.is_none() {
+            continue;
+        }
+        let text = if separator == '/' {
+            Some(module.source.as_str())
+        } else {
+            module
+                .namespaces
+                .as_ref()
+                .and_then(|n| n.first())
+                .map(String::as_str)
+        };
+        if let Some(text) = text {
+            members.push(Member {
+                key: module.source.as_str(),
+                text,
+                targets: module
+                    .dependencies
+                    .iter()
+                    .map(|d| d.resolved.as_str())
+                    .collect(),
+            });
+        }
+    }
+    members
+}
+
 /// Evaluates one slice rule.
 ///
 /// # Errors
@@ -219,21 +285,26 @@ pub fn evaluate(
     let assignment = parse(&rule.matching).map_err(error)?;
     let mut slices: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let mut slice_of: BTreeMap<&str, String> = BTreeMap::new();
-    for ty in architecture
-        .types
-        .values()
-        .filter(|t| t.referenced != Some(true))
-    {
+    let members = members(architecture, assignment.separator);
+    for member in &members {
         let assigned = assignment
-            .slice(ty.namespace.as_deref().unwrap_or_default())
+            .slice(member.text)
             .map_err(|()| ElementError::Slice {
                 rule: rule.name.clone(),
-                object: ty.full_name.clone(),
+                object: member.key.to_owned(),
                 pattern: assignment.pattern.clone(),
             })?;
-        let Some(slice) = assigned else {
+        let Some(mut slice) = assigned else {
             continue;
         };
+        if let Some(n) = rule.segments {
+            let separator = assignment.separator.to_string();
+            slice = slice
+                .split(assignment.separator)
+                .take(n)
+                .collect::<Vec<_>>()
+                .join(&separator);
+        }
         if rule.ignore.contains(&slice) {
             continue;
         }
@@ -248,11 +319,11 @@ pub fn evaluate(
                 continue;
             }
         }
-        slice_of.insert(ty.full_name.as_str(), slice.clone());
+        slice_of.insert(member.key, slice.clone());
         slices
             .entry(slice)
             .or_default()
-            .insert(ty.full_name.clone());
+            .insert(member.key.to_owned());
     }
     let names: Vec<&String> = slices.keys().collect();
     let index: BTreeMap<&str, usize> = names
@@ -260,20 +331,20 @@ pub fn evaluate(
         .enumerate()
         .map(|(i, n)| (n.as_str(), i))
         .collect();
-    // Slice edges with the type edges behind them.
+    // Slice edges with the member edges behind them.
     let mut edges: BTreeMap<(usize, usize), BTreeSet<(String, String)>> = BTreeMap::new();
-    for (from_type, from_slice) in &slice_of {
-        let Some(ty) = architecture.types.get(from_type) else {
+    for member in &members {
+        let Some(from_slice) = slice_of.get(member.key) else {
             continue;
         };
-        for dependency in &ty.dependencies {
-            if let Some(to_slice) = slice_of.get(dependency.target.as_str())
+        for target in &member.targets {
+            if let Some(to_slice) = slice_of.get(target)
                 && to_slice != from_slice
             {
                 edges
                     .entry((index[from_slice.as_str()], index[to_slice.as_str()]))
                     .or_default()
-                    .insert(((*from_type).to_owned(), dependency.target.clone()));
+                    .insert((member.key.to_owned(), (*target).to_owned()));
             }
         }
     }

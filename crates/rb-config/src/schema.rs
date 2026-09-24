@@ -390,6 +390,10 @@ fn slice_rules(_: &mut SchemaGenerator) -> Schema {
     );
     properties.insert("where".into(), json!({ "type": "string", "description": "A pattern a slice name must match to take part." }));
     properties.insert(
+        "segments".into(),
+        json!({ "type": "integer", "minimum": 1, "description": "Keep the first this many segments of each slice name, so a package and everything below it are one slice (import-linter's `acyclic_siblings`). A Rulebearing addition." }),
+    );
+    properties.insert(
         "allowEmpty".into(),
         json!({ "type": "boolean", "description": "An empty slicing is not vacuous." }),
     );

@@ -765,6 +765,10 @@ pub struct SliceRule {
     pub ignore: Vec<String>,
     /// A pattern a slice name must match to take part.
     pub where_: Option<String>,
+    /// Keep only the first this many segments of a slice name, so a package and everything
+    /// below it form one slice: import-linter's `acyclic_siblings`, which `ArchUnitNET`'s
+    /// patterns cannot say (a Rulebearing addition).
+    pub segments: Option<usize>,
     /// An empty slicing is not vacuous.
     pub allow_empty: bool,
 }
@@ -1287,12 +1291,23 @@ pub fn parse_slices(value: &Value) -> Result<Vec<SliceRule>, ConfigError> {
                 "should",
                 "ignore",
                 "where",
+                "segments",
                 "allowEmpty",
                 "expires",
                 "owner",
             ],
             &context,
         )?;
+        let segments = match map.get("segments") {
+            None => None,
+            Some(value) => Some(
+                value
+                    .as_u64()
+                    .filter(|n| *n > 0)
+                    .and_then(|n| usize::try_from(n).ok())
+                    .ok_or_else(|| invalid(&context, "`segments` must be a whole number from 1"))?,
+            ),
+        };
         let Some(matching) = text(map, "matching") else {
             return Err(invalid(
                 &context,
@@ -1335,6 +1350,7 @@ pub fn parse_slices(value: &Value) -> Result<Vec<SliceRule>, ConfigError> {
             matching,
             should,
             ignore,
+            segments,
         });
     }
     Ok(rules)
@@ -1632,6 +1648,26 @@ mod tests {
         assert!(
             parse_selector(&json!({ "kind": "type", "includeReferenced": "yes" }), "t").is_err()
         );
+        Ok(())
+    }
+
+    #[test]
+    fn slice_segments_are_a_whole_number_from_one() -> Result<(), ConfigError> {
+        let slices = parse_slices(
+            &json!([{ "name": "s", "matching": "App.(*)", "should": "beFreeOfCycles" }]),
+        )?;
+        assert_eq!(slices[0].segments, None);
+        let squashed = parse_slices(
+            &json!([{ "name": "s", "matching": "App.(*)", "should": "beFreeOfCycles", "segments": 1 }]),
+        )?;
+        assert_eq!(squashed[0].segments, Some(1));
+        for bad in [json!(0), json!("one"), json!(-1)] {
+            assert!(
+                parse_slices(&json!([{ "name": "s", "matching": "App.(*)", "should": "beFreeOfCycles", "segments": bad }]))
+                    .is_err()
+            );
+        }
+
         Ok(())
     }
 

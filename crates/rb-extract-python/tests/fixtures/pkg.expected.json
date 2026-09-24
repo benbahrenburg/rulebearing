@@ -688,6 +688,9 @@
         }
       ],
       "language": "python",
+      "namespaces": [
+        "app"
+      ],
       "project": "app",
       "source": "src/app/__init__.py",
       "valid": true
@@ -695,6 +698,9 @@
     {
       "dependencies": [],
       "language": "python",
+      "namespaces": [
+        "app.broken"
+      ],
       "project": "app",
       "source": "src/app/broken.py",
       "valid": true
@@ -796,6 +802,9 @@
         }
       ],
       "language": "python",
+      "namespaces": [
+        "app.cli"
+      ],
       "project": "app",
       "source": "src/app/cli.py",
       "valid": true
@@ -1154,6 +1163,9 @@
         }
       ],
       "language": "python",
+      "namespaces": [
+        "app.core"
+      ],
       "project": "app",
       "source": "src/app/core.py",
       "valid": true
@@ -1192,6 +1204,9 @@
         }
       ],
       "language": "python",
+      "namespaces": [
+        "app.plugins.greet"
+      ],
       "project": "app",
       "source": "src/app/plugins/greet.py",
       "valid": true
@@ -1272,6 +1287,9 @@
         }
       ],
       "language": "python",
+      "namespaces": [
+        "app.shapes"
+      ],
       "project": "app",
       "source": "src/app/shapes.py",
       "valid": true
@@ -1279,6 +1297,9 @@
     {
       "dependencies": [],
       "language": "python",
+      "namespaces": [
+        "app.sub"
+      ],
       "project": "app",
       "source": "src/app/sub/__init__.py",
       "valid": true
@@ -1377,6 +1398,9 @@
         }
       ],
       "language": "python",
+      "namespaces": [
+        "app.sub.deep"
+      ],
       "project": "app",
       "source": "src/app/sub/deep.py",
       "valid": true
@@ -1384,6 +1408,9 @@
     {
       "dependencies": [],
       "language": "python",
+      "namespaces": [
+        "app.sub.sibling"
+      ],
       "project": "app",
       "source": "src/app/sub/sibling.py",
       "valid": true
@@ -1391,6 +1418,9 @@
     {
       "dependencies": [],
       "language": "python",
+      "namespaces": [
+        "app.util"
+      ],
       "project": "app",
       "source": "src/app/util.py",
       "valid": true
@@ -1417,6 +1447,9 @@
         }
       ],
       "language": "python",
+      "namespaces": [
+        "tests.conftest"
+      ],
       "project": "tests",
       "source": "tests/conftest.py",
       "valid": true
@@ -1461,6 +1494,9 @@
         }
       ],
       "language": "python",
+      "namespaces": [
+        "tests.test_core"
+      ],
       "project": "tests",
       "source": "tests/test_core.py",
       "valid": true

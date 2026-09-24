@@ -3929,6 +3929,11 @@
                 "description": "The rule's name, unique in the configuration.",
                 "type": "string"
               },
+              "segments": {
+                "description": "Keep the first this many segments of each slice name, so a package and everything below it are one slice (import-linter's `acyclic_siblings`). A Rulebearing addition.",
+                "minimum": 1,
+                "type": "integer"
+              },
               "severity": {
                 "description": "Default `error`.",
                 "enum": [

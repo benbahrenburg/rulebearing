@@ -158,6 +158,24 @@ fn python(concept: Concept) -> Capability {
     }
 }
 
+/// What a slice groups in a language.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SliceUnit {
+    /// Its types by namespace, joined by their dependencies, as `ArchUnitNET`'s slices are.
+    Types,
+    /// Its modules, by path or dotted name, joined by their imports: the design's path pattern
+    /// for TypeScript and dotted module pattern for Python, where an import is the dependency.
+    Modules,
+}
+
+/// What a slice groups in `language`.
+pub fn slice_unit(language: Language) -> SliceUnit {
+    match language {
+        Language::Dotnet => SliceUnit::Types,
+        Language::Typescript | Language::Javascript | Language::Python => SliceUnit::Modules,
+    }
+}
+
 /// How `language` answers `concept`.
 pub fn capability(concept: Concept, language: Language) -> Capability {
     match language {
@@ -194,6 +212,14 @@ mod tests {
                 Answerable,
                 "{concept:?}"
             );
+        }
+    }
+
+    #[test]
+    fn slices_group_types_in_dotnet_and_modules_elsewhere() {
+        assert_eq!(slice_unit(Language::Dotnet), SliceUnit::Types);
+        for language in [Language::Typescript, Language::Javascript, Language::Python] {
+            assert_eq!(slice_unit(language), SliceUnit::Modules, "{language:?}");
         }
     }
 
