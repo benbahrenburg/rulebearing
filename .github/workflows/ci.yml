@@ -416,6 +416,7 @@ jobs:
       # AGENTS.md's rules section is generated from rulebearing.yaml; a stale copy fails here
       # (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 12).
       - run: ./target/release/rulebearing docs --format agents-md --verify --out AGENTS.md
+      - run: ./target/release/rulebearing docs --format reference --verify --out docs/reference/element-rules.md
       # The repository's own rules over its crate graph (Rust is not an extracted language, so
       # scripts/cargo-graph.sh writes the graph document), every rule carrying a decision token
       # (docs/plans/pending/0001-wave-1-typescript-parity.md, Steps 9 and 15).
