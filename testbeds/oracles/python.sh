@@ -69,15 +69,17 @@ else
   fi
 fi
 
-# The interpreter that runs import-linter also runs compare.py, so it carries PyYAML.
-if ! "$venv/bin/python" -c "import importlib.metadata as m, sys, yaml; sys.exit(m.version('import-linter') != '$import_linter_version')" 2> /dev/null; then
+# The interpreter that runs import-linter also runs compare.py, so it carries PyYAML. An
+# environment is reused only when it was made for the same version and the same `pip` packages.
+wanted="import-linter==$import_linter_version pyyaml $(tr ',' ' ' <<< "$extras")"
+if [ "$(cat "$venv/.rb-oracle" 2> /dev/null)" != "$wanted" ]; then
   rm -rf "$venv"
-  # shellcheck disable=SC2046 # `pip` is a comma-separated list of package names, split on purpose
-  if ! { python3 -m venv "$venv" &&
-         "$venv/bin/pip" install --quiet "import-linter==$import_linter_version" pyyaml $(tr ',' ' ' <<< "$extras"); } > "$out/install.log" 2>&1; then
-    oracle_error "$result" "$repo" "$sha" "$tool" "installing import-linter $import_linter_version failed (see install.log)"
+  # shellcheck disable=SC2086 # the packages are one word each, split on purpose
+  if ! { python3 -m venv "$venv" && "$venv/bin/pip" install --quiet $wanted; } > "$out/install.log" 2>&1; then
+    oracle_error "$result" "$repo" "$sha" "$tool" "installing $wanted failed (see install.log)"
     exit 2
   fi
+  echo "$wanted" > "$venv/.rb-oracle"
 fi
 
 roots=()
