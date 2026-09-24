@@ -45,7 +45,7 @@ An empty upstream selection passes silently in NetArchTest; the case expects a v
 
 ## Counts
 
-323 cases and 83 unported entries, 406 in all (`ported.json`). The unit is one upstream test, or one search where a test makes several (`Utils.RunDependencyTest` searches by the dependency's full name and then by its namespace, and each search is one entry).
+326 cases and 80 unported entries, 406 in all (`ported.json`). The unit is one upstream test, or one search where a test makes several (`Utils.RunDependencyTest` searches by the dependency's full name and then by its namespace, and each search is one entry).
 
 | Upstream test class | Cases | Unported |
 | --- | --- | --- |
@@ -58,7 +58,7 @@ An empty upstream selection passes silently in NetArchTest; the case expects a v
 | `PolicyDefinitionTests` | 5 | 4 |
 | `DependencySearch/VariousTests` | 9 | 2 |
 | `DependencySearch/SearchTypeTests` | 12 | 2 |
-| `DependencySearch/DependencyTypeTests` | 77 | 44 |
+| `DependencySearch/DependencyTypeTests` | 80 | 41 |
 | `DependencySearch/DependencyLocationTests` | 86 | 6 |
 | `DependencySearch/ScalabilityTests` | 0 | 2 |
 
@@ -68,7 +68,6 @@ Every unported entry carries its reason in [unported.json](unported.json):
 | --- | --- | --- |
 | `custom-predicate` | 2 | `MeetCustomRule`, a C# predicate |
 | `constructed-type` | 38 | the search names an array, pointer, by-reference or closed generic type (`ExampleDependency[]`, `ExampleDependency<int>`), which NetArchTest tells apart from its element type; the graph records dependencies on type definitions and generic arguments |
-| `external-namespace` | 3 | the search names a namespace outside the analysed assembly (`System`, `System.Collections.Generic`); a nested selector ranges over analysed types only |
 | `dependency-definition` | 16 | NetArchTest's dependency walk differs from ArchUnitNET's, which the graph document follows: it skips a type's references to its own members, reads const string field values as dependency names, and searches event attributes, closure classes and uncalled static local functions |
 | `vocabulary-gap` | 8 | NetArchTest's `BeImmutable` (no public setter, every field non-public, readonly or const) is not ArchUnitNET's; `OnlyHaveNullableMembers` / `HaveSomeNonNullableMembers` ask member nullability, which the graph does not record |
 | `api-only` | 16 | the test asserts NetArchTest's own API: `Types.InCurrentDomain`, `FromFile`, `FromPath`, a policy's names and descriptions, the search's timing |

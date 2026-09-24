@@ -1535,6 +1535,22 @@ cases:
   expect:
     pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument]
     fail: []
+- id: DependencySearch_VariableGenericTypeArgument_NotFound#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableGenericTypeArgument), typeof(List<ExampleDependency>), false, false)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"System.Collections.Generic\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableGenericTypeArgument
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:System\\.Collections\\.Generic)(?:$|[.+])"
+  expect:
+    pass: []
+    fail: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument]
 - id: DependencySearch_VariableGenericTypeArgumentNested_Found#2
   csharp: "Utils.RunDependencyTest(typeof(VariableGenericTypeArgumentNested), typeof(GenericClass<GenericClass<ExampleDependency>>), true, true)"
   search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
@@ -1755,6 +1771,22 @@ cases:
     pass:
       - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
     fail: []
+- id: DependencySearch_VariableTuple_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableTuple), typeof(Tuple<int, ExampleDependency>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"System\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableTuple
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:System)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple]
+    fail: []
 - id: DependencySearch_VariableTupleNested_Found#1
   csharp: "Utils.RunDependencyTest(typeof(VariableTuple), typeof(ExampleDependency), true, true)"
   search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
@@ -1784,6 +1816,22 @@ cases:
         kind: type
         where:
           haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple]
+    fail: []
+- id: DependencySearch_VariableTuple_NotFound#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableTuple), typeof(Tuple<int, double>), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"System\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableTuple
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:System)(?:$|[.+])"
   expect:
     pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple]
     fail: []

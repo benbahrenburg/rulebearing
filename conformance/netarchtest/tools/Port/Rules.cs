@@ -276,10 +276,9 @@ internal static class Nat
     /// The types a dependency search list names. NetArchTest's search tree matches a referenced
     /// type when the list entry is a prefix of its name in whole segments (separated by <c>.</c>,
     /// <c>/</c>, <c>+</c>, <c>:</c>), case-sensitively: an entry names a type, its nested types and a
-    /// whole namespace alike. The selector ranges over the analysed types, which is where every
-    /// entry this suite ports points; an entry naming an external namespace (<c>System</c>) selects
-    /// nothing, which <c>onlyDependOn</c> does not need because it ignores types outside the
-    /// analysed code.
+    /// whole namespace alike. A nested selector ranges over the analysed types and the types they
+    /// reference, so an entry naming an external namespace (<c>System</c>) matches the referenced
+    /// types in it; <c>onlyDependOn</c> still judges only dependencies on the analysed code.
     /// </summary>
     internal static JsonObject Dependencies(IEnumerable<string> entries) =>
         Expr.Selector("type", Expr.Test("haveFullNameMatching", Side.Where, false,
