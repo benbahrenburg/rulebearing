@@ -634,6 +634,9 @@ pub fn split_key(key: &str, side: Side) -> (String, bool, bool) {
         "noConstructors" | "noConstructor" => ("constructor".to_owned(), true),
         "haveNoGetter" => ("haveGetter".to_owned(), true),
         "haveNoSetter" => ("haveSetter".to_owned(), true),
+        // The coverage tab's names for `ImplementAnyInterfaces` and `HaveInitSetter`.
+        "implementAny" => ("implementAnyInterfaces".to_owned(), false),
+        "haveInitSetter" => ("haveInitOnlySetter".to_owned(), false),
         "types" | "methodMembers" => (String::new(), false),
         _ => (rest.clone(), false),
     };
@@ -887,8 +890,16 @@ pub(crate) fn spellings(side: Side) -> Vec<String> {
             "areNoConstructors",
             "haveNoGetter",
             "haveNoSetter",
+            "implementAny",
+            "haveInitSetter",
         ],
-        Side::Should => &["beNoConstructor", "haveNoGetter", "haveNoSetter"],
+        Side::Should => &[
+            "beNoConstructor",
+            "haveNoGetter",
+            "haveNoSetter",
+            "implementAny",
+            "haveInitSetter",
+        ],
     };
     out.extend(extra.iter().map(|s| (*s).to_owned()));
     out
@@ -1059,6 +1070,7 @@ fn parse_entry(key: &str, value: &Value, side: Side, context: &str) -> Result<Ex
             });
         }
         "not" => return Ok(Expr::Not(Box::new(parse_expr(value, side, &here)?))),
+        "getterVisibility" | "setterVisibility" => return accessor_visibility(key, value, &here),
         _ => {}
     }
     let (base, mut negated, selector) = split_key(key, side);
@@ -1093,6 +1105,38 @@ fn parse_entry(key: &str, value: &Value, side: Side, context: &str) -> Result<Ex
         concept: *concept,
         negated,
         operand: operand(*kind, value, &here)?,
+    }))
+}
+
+/// `getterVisibility: public`, `setterVisibility: private` and so on: the coverage tab's form of
+/// `HavePublicGetter` ... `HavePrivateProtectedSetter`.
+fn accessor_visibility(key: &str, value: &Value, here: &str) -> Result<Expr, ConfigError> {
+    let getter = key == "getterVisibility";
+    let concept = match (getter, value.as_str()) {
+        (true, Some("public")) => Concept::HavePublicGetter,
+        (true, Some("protected")) => Concept::HaveProtectedGetter,
+        (true, Some("internal")) => Concept::HaveInternalGetter,
+        (true, Some("protected-internal")) => Concept::HaveProtectedInternalGetter,
+        (true, Some("private")) => Concept::HavePrivateGetter,
+        (true, Some("private-protected")) => Concept::HavePrivateProtectedGetter,
+        (false, Some("public")) => Concept::HavePublicSetter,
+        (false, Some("protected")) => Concept::HaveProtectedSetter,
+        (false, Some("internal")) => Concept::HaveInternalSetter,
+        (false, Some("protected-internal")) => Concept::HaveProtectedInternalSetter,
+        (false, Some("private")) => Concept::HavePrivateSetter,
+        (false, Some("private-protected")) => Concept::HavePrivateProtectedSetter,
+        _ => {
+            return Err(invalid(
+                here,
+                "must be public, protected, internal, protected-internal, private or private-protected",
+            ));
+        }
+    };
+    Ok(Expr::Test(Test {
+        key: key.to_owned(),
+        concept,
+        negated: false,
+        operand: Operand::Flag,
     }))
 }
 
@@ -1649,6 +1693,113 @@ mod tests {
             parse_selector(&json!({ "kind": "type", "includeReferenced": "yes" }), "t").is_err()
         );
         Ok(())
+    }
+
+    /// Every key the `ArchUnitNET` coverage tab's "Rulebearing key" column names for an element
+    /// predicate or condition, read from the tab so the two cannot drift apart.
+    fn coverage_tab_keys() -> Vec<String> {
+        let tab = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../docs/artifacts/archunitnet-0.13.4-coverage.md"),
+        )
+        .unwrap_or_default();
+        let mut keys = Vec::new();
+        for section in tab.split("\n## ") {
+            let title = section.lines().next().unwrap_or_default();
+            if ![
+                "Predicates and conditions",
+                "Type predicates",
+                "Class and attribute",
+                "Member predicates",
+            ]
+            .iter()
+            .any(|t| title.starts_with(t))
+            {
+                continue;
+            }
+            let rows = section.lines().filter(|l| {
+                l.starts_with("| ") && !l.starts_with("| ---") && !l.contains("Rulebearing key")
+            });
+            for line in rows {
+                let column = line.split('|').nth(2).unwrap_or_default();
+                for token in column.split('`').skip(1).step_by(2) {
+                    keys.push(token.to_owned());
+                }
+            }
+        }
+        keys
+    }
+
+    #[test]
+    fn accessor_visibility_is_the_have_getter_and_setter_family() -> Result<(), ConfigError> {
+        let concept = |value: Value| -> Result<Option<Concept>, ConfigError> {
+            Ok(test(&parse_expr(&value, Side::Where, "t")?).map(|t| t.concept))
+        };
+        assert_eq!(
+            concept(json!({ "getterVisibility": "public" }))?,
+            concept(json!({ "havePublicGetter": true }))?
+        );
+        assert_eq!(
+            concept(json!({ "setterVisibility": "private-protected" }))?,
+            Some(Concept::HavePrivateProtectedSetter)
+        );
+        assert!(parse_expr(&json!({ "getterVisibility": "friend" }), Side::Should, "t").is_err());
+        assert_eq!(
+            concept(json!({ "implementAny": ["I"] }))?,
+            Some(Concept::ImplementAnyInterfaces)
+        );
+        assert_eq!(
+            concept(json!({ "haveInitSetter": true }))?,
+            Some(Concept::HaveInitOnlySetter)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn every_key_the_coverage_tab_names_parses() {
+        let keys = coverage_tab_keys();
+        assert!(
+            keys.len() > 60,
+            "{} keys read from the coverage tab",
+            keys.len()
+        );
+        let mut refused = Vec::new();
+        for token in &keys {
+            // `be...`, `haveFullName*`: families the rows spell out elsewhere; a diagram rule.
+            if token.contains("...") || token.ends_with('*') || token.starts_with("adhereTo") {
+                continue;
+            }
+            let (key, value) = match token.split_once(": ") {
+                Some((key, value)) => (key, json!(value)),
+                None => (token.as_str(), json!(true)),
+            };
+            let (base, _, _) = split_key(key, Side::Where);
+            let in_where = VOCABULARY
+                .iter()
+                .find(|(n, ..)| *n == base)
+                .is_none_or(|(_, _, _, w)| *w);
+            let sides: &[Side] = if key.starts_with("are") || key.starts_with("declaredIn") {
+                &[Side::Where]
+            } else if key.starts_with("be") || !in_where {
+                &[Side::Should]
+            } else {
+                &[Side::Where, Side::Should]
+            };
+            for side in sides {
+                // The value's shape is checked by the schema; here, that the key is known.
+                let parsed = parse_expr(&json!({ key: value.clone() }), *side, "t")
+                    .or_else(|_| parse_expr(&json!({ key: "X" }), *side, "t"))
+                    .or_else(|_| parse_expr(&json!({ key: ["X"] }), *side, "t"))
+                    .or_else(|_| parse_expr(&json!({ key: { "kind": "type" } }), *side, "t"));
+                if let Err(e) = parsed {
+                    refused.push(format!("{key} ({side:?}): {e}"));
+                }
+            }
+        }
+        assert!(
+            refused.is_empty(),
+            "coverage-tab keys that do not parse: {refused:#?}"
+        );
     }
 
     #[test]
