@@ -1,0 +1,16 @@
+<!-- xUnit v2 fixture project: the fixture repository through [RulebearingRules]. Coverlet measures
+     Rulebearing.TestAdapter.xUnit alone at the 70% line floor (docs/adr/0018-test-coverage-threshold.md). -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Include>[Rulebearing.TestAdapter.xUnit]*</Include>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Rulebearing.TestAdapter.xUnit/Rulebearing.TestAdapter.xUnit.csproj" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(TestSdkVersion)" />
+    <PackageReference Include="xunit" Version="$(XunitV2Version)" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVersion)">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>

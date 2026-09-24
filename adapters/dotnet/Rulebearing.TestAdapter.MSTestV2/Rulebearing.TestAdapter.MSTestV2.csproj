@@ -1,0 +1,12 @@
+<!-- MSTest V2: [TestMethod, RulebearingDataSource("rulebearing.yaml")] yields one data row per rule.
+     Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H). -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>Rulebearing.TestAdapter.MSTestV2</PackageId>
+    <Description>MSTest data source for Rulebearing (MSTest.TestFramework 2.x and 3.x): [TestMethod, RulebearingDataSource("rulebearing.yaml")] runs one data row per architecture rule, failing with the rule's fix text and first violations.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Rulebearing.TestAdapter/Rulebearing.TestAdapter.csproj" />
+    <PackageReference Include="MSTest.TestFramework" Version="[$(MSTestV2Version),4.0.0)" />
+  </ItemGroup>
+</Project>

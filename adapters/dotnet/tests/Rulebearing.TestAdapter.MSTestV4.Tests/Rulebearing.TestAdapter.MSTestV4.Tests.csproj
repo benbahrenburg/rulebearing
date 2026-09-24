@@ -1,0 +1,13 @@
+<!-- MSTest V4 fixture project: the fixture repository through [RulebearingDataSource]. Coverlet
+     measures Rulebearing.TestAdapter.MSTestV4 alone at the 70% line floor (docs/adr/0018-test-coverage-threshold.md). -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Include>[Rulebearing.TestAdapter.MSTestV4]*</Include>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Rulebearing.TestAdapter.MSTestV4/Rulebearing.TestAdapter.MSTestV4.csproj" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(TestSdkVersion)" />
+    <PackageReference Include="MSTest.TestFramework" Version="$(MSTestV4Version)" />
+    <PackageReference Include="MSTest.TestAdapter" Version="$(MSTestV4Version)" />
+  </ItemGroup>
+</Project>

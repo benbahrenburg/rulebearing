@@ -114,7 +114,7 @@ wrappers/nuget/pack.sh <dist-dir> <version> <out-dir>
 | Contract | |
 | --- | --- |
 | Input | `<dist-dir>` holds the six `rulebearing-<target>.tar.gz` archives the `binaries` job builds; `<version>` is the workspace version |
-| Output | every `.nupkg` to publish, in `<out-dir>`, at `<version>`; at least `Rulebearing.<version>.nupkg`, the dotnet tool with the binaries under `runtimes/<rid>/native/` |
+| Output | every `.nupkg` to publish, in `<out-dir>`, at `<version>`: `Rulebearing.<version>.nupkg`, the dotnet tool with the binaries under `runtimes/<rid>/native/`, and the seven `Rulebearing.TestAdapter` packages (the core and its xUnit, xUnit v3, NUnit, MSTest v2, MSTest v4 and TUnit packages) |
 | Environment | the .NET 10 SDK on `ubuntu-latest`; no network beyond NuGet restore; no credentials |
 | Check | `dotnet tool install Rulebearing --version <version> --tool-path <dir> --add-source <out-dir>`, then `<dir>/rulebearing --version` prints `rulebearing <version>` on macOS arm64, Linux x64 and Windows x64 |
 

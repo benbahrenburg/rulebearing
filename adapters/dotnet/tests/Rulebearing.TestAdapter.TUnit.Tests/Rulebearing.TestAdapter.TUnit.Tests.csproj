@@ -1,0 +1,16 @@
+<!-- TUnit fixture project: the fixture repository through [RulebearingDataSource]. TUnit runs only
+     on Microsoft.Testing.Platform, which the .NET 10 SDK's `dotnet test` no longer drives through
+     VSTest, so the project is an executable run directly with coverlet.MTP, and
+     adapters/dotnet/test.sh holds Rulebearing.TestAdapter.TUnit to the 70% line floor of
+     docs/adr/0018-test-coverage-threshold.md from the Cobertura report. -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RulebearingTestPlatform>mtp</RulebearingTestPlatform>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Rulebearing.TestAdapter.TUnit/Rulebearing.TestAdapter.TUnit.csproj" />
+    <PackageReference Include="TUnit" Version="$(TUnitVersion)" />
+    <PackageReference Include="coverlet.MTP" Version="$(CoverletVersion)" />
+  </ItemGroup>
+</Project>
