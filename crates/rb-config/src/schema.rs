@@ -204,6 +204,8 @@ fn rule_metadata() -> serde_json::Map<String, Value> {
         "comment": { "type": "string", "description": "Why the rule exists; the decision token (`adr:NNNN`) goes here." },
         "fix": { "type": "string", "description": "What to do about a violation; every reporter prints it." },
         "severity": { "enum": severity, "description": "Default `error`." },
+        "owner": { "type": "string", "description": "Who answers for the rule." },
+        "expires": { "type": "string", "format": "date", "description": "The last day the rule applies, YYYY-MM-DD; the run fails the day after, as for a dependency rule." },
     })
     .as_object()
     .cloned()
@@ -228,7 +230,7 @@ fn selector(generator: &mut SchemaGenerator) -> Value {
                     "description": "Only objects of these languages: scopes a rule that uses a key some language cannot answer (ADR-0014).",
                     "anyOf": [
                         { "enum": LANGUAGES },
-                        { "type": "array", "items": { "enum": LANGUAGES } },
+                        { "type": "array", "minItems": 1, "items": { "enum": LANGUAGES } },
                     ],
                 },
                 "includeReferenced": {
@@ -293,6 +295,63 @@ fn value_schema(generator: &mut SchemaGenerator, kind: ValueKind) -> Value {
     }
 }
 
+/// `getterVisibility` and `setterVisibility`. Each access level is its own concept, answered per
+/// language on its own, so each value carries its own description.
+fn accessor_visibility(properties: &mut serde_json::Map<String, Value>) {
+    for (key, family, levels) in [
+        (
+            "getterVisibility",
+            "Getter",
+            [
+                ("public", Concept::HavePublicGetter),
+                ("protected", Concept::HaveProtectedGetter),
+                ("internal", Concept::HaveInternalGetter),
+                ("protected-internal", Concept::HaveProtectedInternalGetter),
+                ("private", Concept::HavePrivateGetter),
+                ("private-protected", Concept::HavePrivateProtectedGetter),
+            ],
+        ),
+        (
+            "setterVisibility",
+            "Setter",
+            [
+                ("public", Concept::HavePublicSetter),
+                ("protected", Concept::HaveProtectedSetter),
+                ("internal", Concept::HaveInternalSetter),
+                ("protected-internal", Concept::HaveProtectedInternalSetter),
+                ("private", Concept::HavePrivateSetter),
+                ("private-protected", Concept::HavePrivateProtectedSetter),
+            ],
+        ),
+    ] {
+        let values: Vec<Value> = levels
+            .iter()
+            .map(|(level, concept)| {
+                let (name, _, _) = concept.entry();
+                json!({
+                    "const": level,
+                    "description": format!("`{name}`.{}", capabilities(*concept)),
+                })
+            })
+            .collect();
+        let summary: Vec<String> = levels
+            .iter()
+            .map(|(level, concept)| format!("`{level}`:{}", capabilities(*concept)))
+            .collect();
+        properties.insert(
+            key.into(),
+            json!({
+                "oneOf": values,
+                "description": format!(
+                    "The property's {} has this visibility (`HavePublic{family}` and its twins). Per value: {}",
+                    family.to_lowercase(),
+                    summary.join(" ")
+                ),
+            }),
+        );
+    }
+}
+
 /// `where` (predicates) or `should` (conditions): one key, or `all`, `any`, `not` around more.
 fn expression(generator: &mut SchemaGenerator, side: Side) -> Value {
     let (name, what) = match side {
@@ -304,40 +363,17 @@ fn expression(generator: &mut SchemaGenerator, side: Side) -> Value {
         let mut properties = serde_json::Map::new();
         properties.insert(
             "all".into(),
-            json!({ "type": "array", "items": own, "description": "Every item holds (`And()`, `AndShould()`)." }),
+            json!({ "type": "array", "minItems": 1, "items": own, "description": "Every item holds (`And()`, `AndShould()`)." }),
         );
         properties.insert(
             "any".into(),
-            json!({ "type": "array", "items": own, "description": "At least one item holds (`Or()`, `OrShould()`)." }),
+            json!({ "type": "array", "minItems": 1, "items": own, "description": "At least one item holds (`Or()`, `OrShould()`)." }),
         );
         properties.insert(
             "not".into(),
             json!({ "allOf": [own], "description": "The item does not hold." }),
         );
-        let access = [
-            "public",
-            "protected",
-            "internal",
-            "protected-internal",
-            "private",
-            "private-protected",
-        ];
-        for (key, concept, family) in [
-            ("getterVisibility", Concept::HavePublicGetter, "Getter"),
-            ("setterVisibility", Concept::HavePublicSetter, "Setter"),
-        ] {
-            properties.insert(
-                key.into(),
-                json!({
-                    "enum": access,
-                    "description": format!(
-                        "The property's {} has this visibility (`HavePublic{family}` and its twins).{}",
-                        family.to_lowercase(),
-                        capabilities(concept)
-                    ),
-                }),
-            );
-        }
+        accessor_visibility(&mut properties);
         for spelling in spellings(side) {
             let (base, negated, _) = split_key(&spelling, side);
             let Some((_, concept, kind, _)) = VOCABULARY.iter().find(|(n, ..)| *n == base) else {
@@ -361,11 +397,17 @@ fn expression(generator: &mut SchemaGenerator, side: Side) -> Value {
             }
             properties.insert(spelling, value);
         }
-        json!({
+        let mut definition = json!({
             "type": "object",
-            "description": format!("One of `ArchUnitNET`'s {what}, or `all`, `any`, `not` around more. The loader rejects any other key and names the nearest one; `...That` forms (`dependOnAnyTypesThat`) take a nested selector."),
+            "description": format!("One of `ArchUnitNET`'s {what}, or `all`, `any`, `not` around more. The loader rejects any other key and names the nearest one, and an empty expression (only an empty `select.where` means \"no filter\"); `...That` forms (`dependOnAnyTypesThat`) take a nested selector."),
             "properties": properties,
-        })
+        });
+        if side == Side::Should
+            && let Value::Object(map) = &mut definition
+        {
+            map.insert("minProperties".into(), json!(1));
+        }
+        definition
     })
 }
 
@@ -406,7 +448,7 @@ fn slice_rules(_: &mut SchemaGenerator) -> Schema {
     );
     properties.insert(
         "should".into(),
-        json!({ "anyOf": [condition, { "type": "array", "items": condition }], "description": "`NotDependOnEachOther()`, `BeFreeOfCycles()`, or both." }),
+        json!({ "anyOf": [condition, { "type": "array", "minItems": 1, "items": condition }], "description": "`NotDependOnEachOther()`, `BeFreeOfCycles()`, or both." }),
     );
     properties.insert(
         "ignore".into(),
@@ -438,6 +480,10 @@ fn diagram_rules(generator: &mut SchemaGenerator) -> Schema {
     let select = selector(generator);
     let mut properties = rule_metadata();
     properties.insert("select".into(), select);
+    properties.insert(
+        "allowEmpty".into(),
+        json!({ "type": "boolean", "description": "An empty selection is not vacuous. Default false (ADR-0007)." }),
+    );
     properties.insert(
         "adhereTo".into(),
         json!({ "type": "string", "description": "The `PlantUML` component diagram, relative to the configuration (`AdhereToPlantUmlDiagram`)." }),
@@ -580,6 +626,55 @@ mod tests {
         assert!(
             missing.is_empty(),
             "keys the schema does not describe: {missing:?}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn each_rule_family_lists_exactly_the_keys_the_loader_accepts()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let schema: Value = serde_json::from_str(&generate())?;
+        for family in ["elements", "slices", "diagrams"] {
+            let listed: std::collections::BTreeSet<String> =
+                schema["$defs"]["NativeRules"]["properties"][family]["items"]["properties"]
+                    .as_object()
+                    .map(|m| m.keys().cloned().collect())
+                    .unwrap_or_default();
+            let accepted: std::collections::BTreeSet<String> = crate::elements::family_keys(family)
+                .into_iter()
+                .map(str::to_owned)
+                .collect();
+            assert_eq!(listed, accepted, "{family}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn accessor_visibility_describes_each_access_level() -> Result<(), Box<dyn std::error::Error>> {
+        let schema: Value = serde_json::from_str(&generate())?;
+        let values = schema["$defs"]["ElementCondition"]["properties"]["getterVisibility"]["oneOf"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default();
+        let describe = |level: &str| {
+            values
+                .iter()
+                .find(|v| v["const"] == level)
+                .and_then(|v| v["description"].as_str())
+                .unwrap_or_default()
+                .to_owned()
+        };
+        assert_eq!(values.len(), 6);
+        assert!(describe("public").contains("havePublicGetter"));
+        assert!(
+            !describe("public").contains("TypeScript: unanswerable"),
+            "{}",
+            describe("public")
+        );
+        assert!(
+            describe("internal").contains("TypeScript: unanswerable"),
+            "{}",
+            describe("internal")
         );
         Ok(())
     }
