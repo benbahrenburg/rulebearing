@@ -95,8 +95,12 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 # The command line (docs/architecture.md#technology-choices).
 clap = { version = "4", features = ["derive", "wrap_help"] }
 
-# Wave 2+ dependencies are added by the plan that needs them, not in advance:
-#   ruff_python_parser              docs/adr/0013-ruff-parser-for-python.md
+# The Python extractor (plan 0002, Step 4). ruff's parser crates are pinned to exact versions and
+# bumped only by a pull request that re-runs the Python fixtures (docs/adr/0013-ruff-parser-for-python.md).
+# All MIT.
+ruff_python_ast = "=0.0.14"
+ruff_python_parser = "=0.0.14"
+ruff_text_size = "=0.0.14"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

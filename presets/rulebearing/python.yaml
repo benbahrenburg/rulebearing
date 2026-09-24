@@ -1,0 +1,33 @@
+# rulebearing:python. Original to Rulebearing. The recommended rules plus the Python defaults of
+# docs/adr/0013-ruff-parser-for-python.md: virtual environments, installed packages and bytecode
+# caches are not modules, `.pyi` stubs are modules only with `stubs: true`, and the files Python
+# runs by convention rather than by import are not orphans. Plan:
+# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 4. Requirement: FR-CFG-06.
+#
+# Console-script targets (`[project.scripts]` in pyproject.toml) are entry points too, but they
+# differ per repository, so a static preset cannot list them: rb-extract-python reads them during
+# discovery (`Layout::entry_points`) for the CLI to exempt.
+extends: rulebearing:recommended
+languages:
+  python:
+    stubs: false
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        comment: "A module nothing imports and that imports nothing is usually dead code."
+        fix: "Delete the module, import it from where it belongs, or add its path to this rule's from.pathNot if it is an entry point or a configuration file."
+        severity: warn
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "(^|/)__main__\\.py$"
+            - "(^|/)conftest\\.py$"
+        to: {}
+options:
+  exclude:
+    path: "(^|/)(\\.venv|venv|site-packages|__pycache__)/"

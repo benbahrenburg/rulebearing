@@ -33,6 +33,10 @@ pub const NATIVE_PRESETS: &[(&str, &str)] = &[
         "dotnet",
         include_str!("../../../presets/rulebearing/dotnet.yaml"),
     ),
+    (
+        "python",
+        include_str!("../../../presets/rulebearing/python.yaml"),
+    ),
 ];
 
 /// What an `extends` entry names.
@@ -393,6 +397,10 @@ mod tests {
         assert_eq!(
             resolve("rulebearing:dotnet", here)?.key(),
             "rulebearing:dotnet"
+        );
+        assert_eq!(
+            resolve("rulebearing:python", here)?.key(),
+            "rulebearing:python"
         );
         assert!(resolve("rulebearing:nope", here).is_err());
         assert!(resolve("dependency-cruiser/configs/nope", here).is_err());

@@ -1,0 +1,1480 @@
+{
+  "code": {
+    "attributes": [
+      {
+        "attributeType": "dataclasses.dataclass",
+        "column": 2,
+        "file": "src/app/shapes.py",
+        "language": "python",
+        "line": 55,
+        "target": "app.shapes.Loose"
+      },
+      {
+        "attributeType": "dataclasses.dataclass",
+        "column": 2,
+        "file": "src/app/shapes.py",
+        "language": "python",
+        "line": 49,
+        "namedArguments": [
+          {
+            "name": "frozen",
+            "value": "True"
+          }
+        ],
+        "target": "app.shapes.Point"
+      },
+      {
+        "attributeType": "abc.abstractmethod",
+        "column": 6,
+        "file": "src/app/shapes.py",
+        "language": "python",
+        "line": 11,
+        "target": "app.shapes.Shape.area"
+      },
+      {
+        "attributeType": "property",
+        "column": 6,
+        "file": "src/app/shapes.py",
+        "language": "python",
+        "line": 27,
+        "target": "app.shapes.Square.label"
+      },
+      {
+        "attributeType": "classmethod",
+        "column": 6,
+        "file": "src/app/shapes.py",
+        "language": "python",
+        "line": 35,
+        "target": "app.shapes.Square.of"
+      },
+      {
+        "attributeType": "property",
+        "column": 6,
+        "file": "src/app/shapes.py",
+        "language": "python",
+        "line": 19,
+        "target": "app.shapes.Square.side"
+      },
+      {
+        "attributeType": "staticmethod",
+        "column": 6,
+        "file": "src/app/shapes.py",
+        "language": "python",
+        "line": 31,
+        "target": "app.shapes.Square.unit"
+      }
+    ],
+    "calls": [],
+    "members": [
+      {
+        "abstract": false,
+        "column": 9,
+        "declaringType": "app.core.Engine",
+        "file": "src/app/core.py",
+        "fullName": "app.core.Engine.run",
+        "kind": "method",
+        "language": "python",
+        "line": 31,
+        "name": "run",
+        "static": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": true,
+        "column": 9,
+        "declaringType": "app.shapes.Shape",
+        "dependencies": [
+          {
+            "kind": "attribute",
+            "line": 11,
+            "target": "abc.abstractmethod"
+          }
+        ],
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Shape.area",
+        "kind": "method",
+        "language": "python",
+        "line": 12,
+        "name": "area",
+        "static": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 9,
+        "declaringType": "app.shapes.Square",
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Square.__init__",
+        "kind": "constructor",
+        "language": "python",
+        "line": 16,
+        "name": "__init__",
+        "static": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 9,
+        "declaringType": "app.shapes.Square",
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Square._secret",
+        "kind": "method",
+        "language": "python",
+        "line": 39,
+        "name": "_secret",
+        "static": false,
+        "visibility": "private"
+      },
+      {
+        "abstract": false,
+        "column": 9,
+        "declaringType": "app.shapes.Square",
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Square.area",
+        "kind": "method",
+        "language": "python",
+        "line": 42,
+        "name": "area",
+        "static": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 9,
+        "declaringType": "app.shapes.Square",
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Square.label",
+        "getter": {
+          "visibility": "public"
+        },
+        "kind": "property",
+        "language": "python",
+        "line": 28,
+        "name": "label",
+        "readonly": true,
+        "static": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 9,
+        "declaringType": "app.shapes.Square",
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Square.of",
+        "kind": "method",
+        "language": "python",
+        "line": 36,
+        "name": "of",
+        "static": true,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 9,
+        "declaringType": "app.shapes.Square",
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Square.side",
+        "getter": {
+          "visibility": "public"
+        },
+        "kind": "property",
+        "language": "python",
+        "line": 20,
+        "name": "side",
+        "readonly": false,
+        "setter": {
+          "visibility": "public"
+        },
+        "static": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 9,
+        "declaringType": "app.shapes.Square",
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Square.unit",
+        "kind": "method",
+        "language": "python",
+        "line": 32,
+        "name": "unit",
+        "static": true,
+        "visibility": "public"
+      }
+    ],
+    "types": [
+      {
+        "assembly": "app",
+        "column": 5,
+        "file": "src/app/cli.py",
+        "fullName": "app.cli.main",
+        "kind": "function",
+        "language": "python",
+        "line": 7,
+        "name": "main",
+        "namespace": "app.cli",
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "assembly": "app",
+        "column": 7,
+        "file": "src/app/core.py",
+        "fullName": "app.core.Engine",
+        "immutable": false,
+        "kind": "class",
+        "language": "python",
+        "line": 30,
+        "name": "Engine",
+        "namespace": "app.core",
+        "nested": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "assembly": "app",
+        "column": 7,
+        "dependencies": [
+          {
+            "kind": "attribute",
+            "line": 55,
+            "target": "dataclasses.dataclass"
+          }
+        ],
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Loose",
+        "immutable": false,
+        "kind": "class",
+        "language": "python",
+        "line": 56,
+        "name": "Loose",
+        "namespace": "app.shapes",
+        "nested": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": true,
+        "assembly": "app",
+        "column": 7,
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Meta",
+        "immutable": false,
+        "kind": "class",
+        "language": "python",
+        "line": 60,
+        "name": "Meta",
+        "namespace": "app.shapes",
+        "nested": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "assembly": "app",
+        "column": 7,
+        "dependencies": [
+          {
+            "kind": "attribute",
+            "line": 49,
+            "target": "dataclasses.dataclass"
+          }
+        ],
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Point",
+        "immutable": true,
+        "kind": "class",
+        "language": "python",
+        "line": 50,
+        "name": "Point",
+        "namespace": "app.shapes",
+        "nested": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": true,
+        "assembly": "app",
+        "baseType": "abc.ABC",
+        "baseTypes": [
+          "abc.ABC"
+        ],
+        "column": 7,
+        "dependencies": [
+          {
+            "kind": "inherits",
+            "line": 10,
+            "target": "abc.ABC"
+          }
+        ],
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Shape",
+        "immutable": false,
+        "kind": "class",
+        "language": "python",
+        "line": 10,
+        "name": "Shape",
+        "namespace": "app.shapes",
+        "nested": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "assembly": "app",
+        "baseType": "app.shapes.Shape",
+        "baseTypes": [
+          "app.shapes.Shape",
+          "app.sub.sibling.Sibling",
+          "abc.ABC"
+        ],
+        "column": 7,
+        "dependencies": [
+          {
+            "kind": "inherits",
+            "line": 15,
+            "target": "app.shapes.Shape"
+          },
+          {
+            "kind": "inherits",
+            "line": 15,
+            "target": "app.sub.sibling.Sibling"
+          }
+        ],
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Square",
+        "immutable": false,
+        "kind": "class",
+        "language": "python",
+        "line": 15,
+        "name": "Square",
+        "namespace": "app.shapes",
+        "nested": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "assembly": "app",
+        "column": 11,
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.Square.Corner",
+        "immutable": false,
+        "kind": "class",
+        "language": "python",
+        "line": 45,
+        "name": "Corner",
+        "namespace": "app.shapes",
+        "nested": true,
+        "nestedIn": "app.shapes.Square",
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "assembly": "app",
+        "baseType": "app.core.Engine",
+        "baseTypes": [
+          "app.core.Engine"
+        ],
+        "column": 7,
+        "dependencies": [
+          {
+            "kind": "inherits",
+            "line": 64,
+            "target": "app.core.Engine"
+          }
+        ],
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes._Private",
+        "immutable": false,
+        "kind": "class",
+        "language": "python",
+        "line": 64,
+        "name": "_Private",
+        "namespace": "app.shapes",
+        "nested": false,
+        "visibility": "private"
+      },
+      {
+        "assembly": "app",
+        "column": 5,
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes._helper",
+        "kind": "function",
+        "language": "python",
+        "line": 72,
+        "name": "_helper",
+        "namespace": "app.shapes",
+        "visibility": "private"
+      },
+      {
+        "assembly": "app",
+        "column": 5,
+        "file": "src/app/shapes.py",
+        "fullName": "app.shapes.make_square",
+        "kind": "function",
+        "language": "python",
+        "line": 68,
+        "name": "make_square",
+        "namespace": "app.shapes",
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "assembly": "app",
+        "column": 7,
+        "file": "src/app/sub/sibling.py",
+        "fullName": "app.sub.sibling.Sibling",
+        "immutable": false,
+        "kind": "class",
+        "language": "python",
+        "line": 1,
+        "name": "Sibling",
+        "namespace": "app.sub.sibling",
+        "nested": false,
+        "visibility": "public"
+      }
+    ]
+  },
+  "inspected": {
+    "assemblies": 0,
+    "files": 12,
+    "modules": 32,
+    "roots": [
+      "src"
+    ],
+    "site": ".venv/lib/python3.12/site-packages",
+    "stdlibVersion": "3.12"
+  },
+  "modules": [
+    {
+      "coreModule": false,
+      "couldNotResolve": true,
+      "dependencies": [],
+      "dependencyTypes": [
+        "unresolved"
+      ],
+      "followable": false,
+      "source": "....",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "followable": false,
+      "source": "abc",
+      "valid": true
+    },
+    {
+      "coreModule": false,
+      "couldNotResolve": true,
+      "dependencies": [],
+      "dependencyTypes": [
+        "unresolved"
+      ],
+      "followable": false,
+      "source": "app.missing_local",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "followable": false,
+      "source": "collections",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "followable": false,
+      "source": "csv",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "followable": false,
+      "source": "dataclasses",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "followable": false,
+      "source": "decimal",
+      "valid": true
+    },
+    {
+      "coreModule": false,
+      "couldNotResolve": true,
+      "dependencies": [],
+      "dependencyTypes": [
+        "unresolved"
+      ],
+      "followable": false,
+      "source": "distutils",
+      "valid": true
+    },
+    {
+      "coreModule": false,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "site"
+      ],
+      "followable": false,
+      "license": "MIT",
+      "source": "fancylib",
+      "valid": true
+    },
+    {
+      "coreModule": false,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "site"
+      ],
+      "followable": false,
+      "license": "MIT",
+      "source": "fancylib.sub",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "followable": false,
+      "source": "importlib",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "followable": false,
+      "source": "json",
+      "valid": true
+    },
+    {
+      "coreModule": false,
+      "couldNotResolve": true,
+      "dependencies": [],
+      "dependencyTypes": [
+        "unresolved"
+      ],
+      "followable": false,
+      "source": "missing_dependency",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "followable": false,
+      "source": "os",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "followable": false,
+      "source": "os.path",
+      "valid": true
+    },
+    {
+      "coreModule": false,
+      "couldNotResolve": true,
+      "dependencies": [],
+      "dependencyTypes": [
+        "unresolved"
+      ],
+      "followable": false,
+      "source": "pytest",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "followable": false,
+      "source": "sqlite3",
+      "valid": true
+    },
+    {
+      "dependencies": [
+        {
+          "circular": false,
+          "column": 19,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 2,
+          "module": ".core",
+          "moduleSystem": "py",
+          "resolved": "src/app/core.py",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 30,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 4,
+          "module": ".sub",
+          "moduleSystem": "py",
+          "resolved": "src/app/sub/__init__.py",
+          "valid": true
+        }
+      ],
+      "language": "python",
+      "project": "app",
+      "source": "src/app/__init__.py",
+      "valid": true
+    },
+    {
+      "dependencies": [],
+      "language": "python",
+      "project": "app",
+      "source": "src/app/broken.py",
+      "valid": true
+    },
+    {
+      "dependencies": [
+        {
+          "circular": false,
+          "column": 8,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "stdlib"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 2,
+          "module": "importlib",
+          "moduleSystem": "py",
+          "resolved": "importlib",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 8,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 4,
+          "module": "app.plugins",
+          "moduleSystem": "py",
+          "resolved": "src/app/plugins",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 29,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local",
+            "dynamic"
+          ],
+          "dynamic": true,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 8,
+          "module": "app.plugins.greet",
+          "moduleSystem": "py",
+          "resolved": "src/app/plugins/greet.py",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 29,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local",
+            "dynamic"
+          ],
+          "dynamic": true,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 10,
+          "module": ".util",
+          "moduleSystem": "py",
+          "resolved": "src/app/util.py",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 16,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "stdlib",
+            "dynamic"
+          ],
+          "dynamic": true,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 9,
+          "module": "tomllib",
+          "moduleSystem": "py",
+          "resolved": "tomllib",
+          "valid": true
+        }
+      ],
+      "language": "python",
+      "project": "app",
+      "source": "src/app/cli.py",
+      "valid": true
+    },
+    {
+      "dependencies": [
+        {
+          "circular": false,
+          "column": 32,
+          "coreModule": false,
+          "couldNotResolve": true,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "unresolved",
+            "type-only"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 25,
+          "module": ".missing_local",
+          "moduleSystem": "py",
+          "resolved": "app.missing_local",
+          "typeOnly": true,
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 25,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "stdlib"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 5,
+          "module": "collections",
+          "moduleSystem": "py",
+          "resolved": "collections",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 12,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "stdlib"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 27,
+          "module": "csv",
+          "moduleSystem": "py",
+          "resolved": "csv",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 12,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "stdlib",
+            "type-only"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 23,
+          "module": "decimal",
+          "moduleSystem": "py",
+          "resolved": "decimal",
+          "typeOnly": true,
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 8,
+          "coreModule": false,
+          "couldNotResolve": true,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 6,
+          "module": "distutils",
+          "moduleSystem": "py",
+          "resolved": "distutils",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 8,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "site"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "license": "MIT",
+          "line": 7,
+          "module": "fancylib",
+          "moduleSystem": "py",
+          "resolved": "fancylib",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 26,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "site"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "license": "MIT",
+          "line": 8,
+          "module": "fancylib.sub",
+          "moduleSystem": "py",
+          "resolved": "fancylib.sub",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 8,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "stdlib"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 4,
+          "module": "json",
+          "moduleSystem": "py",
+          "resolved": "json",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 8,
+          "coreModule": false,
+          "couldNotResolve": true,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 9,
+          "module": "missing_dependency",
+          "moduleSystem": "py",
+          "resolved": "missing_dependency",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 8,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "stdlib"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 2,
+          "module": "os",
+          "moduleSystem": "py",
+          "resolved": "os",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 8,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "stdlib"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 3,
+          "module": "os.path",
+          "moduleSystem": "py",
+          "resolved": "os.path",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 16,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "stdlib"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 32,
+          "module": "sqlite3",
+          "moduleSystem": "py",
+          "resolved": "sqlite3",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 17,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 18,
+          "module": "app",
+          "moduleSystem": "py",
+          "resolved": "src/app/__init__.py",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 22,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 17,
+          "module": ".plugins.greet",
+          "moduleSystem": "py",
+          "resolved": "src/app/plugins/greet.py",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 21,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 15,
+          "module": "app.sub.deep",
+          "moduleSystem": "py",
+          "resolved": "src/app/sub/deep.py",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 33,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local",
+            "type-only"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 21,
+          "module": "app.sub.sibling",
+          "moduleSystem": "py",
+          "resolved": "src/app/sub/sibling.py",
+          "typeOnly": true,
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 17,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 14,
+          "module": "app.util",
+          "moduleSystem": "py",
+          "resolved": "src/app/util.py",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 15,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 16,
+          "module": ".util",
+          "moduleSystem": "py",
+          "resolved": "src/app/util.py",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 20,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "stdlib"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 10,
+          "module": "typing",
+          "moduleSystem": "py",
+          "resolved": "typing",
+          "valid": true
+        }
+      ],
+      "language": "python",
+      "project": "app",
+      "source": "src/app/core.py",
+      "valid": true
+    },
+    {
+      "coreModule": false,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "local"
+      ],
+      "followable": false,
+      "language": "python",
+      "source": "src/app/plugins",
+      "valid": true
+    },
+    {
+      "dependencies": [
+        {
+          "circular": false,
+          "column": 29,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 2,
+          "module": "app.sub.sibling",
+          "moduleSystem": "py",
+          "resolved": "src/app/sub/sibling.py",
+          "valid": true
+        }
+      ],
+      "language": "python",
+      "project": "app",
+      "source": "src/app/plugins/greet.py",
+      "valid": true
+    },
+    {
+      "dependencies": [
+        {
+          "circular": false,
+          "column": 8,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "stdlib"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 2,
+          "module": "abc",
+          "moduleSystem": "py",
+          "resolved": "abc",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 25,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "stdlib"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 4,
+          "module": "dataclasses",
+          "moduleSystem": "py",
+          "resolved": "dataclasses",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 19,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 6,
+          "module": ".core",
+          "moduleSystem": "py",
+          "resolved": "src/app/core.py",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 26,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 7,
+          "module": ".sub.sibling",
+          "moduleSystem": "py",
+          "resolved": "src/app/sub/sibling.py",
+          "valid": true
+        }
+      ],
+      "language": "python",
+      "project": "app",
+      "source": "src/app/shapes.py",
+      "valid": true
+    },
+    {
+      "dependencies": [],
+      "language": "python",
+      "project": "app",
+      "source": "src/app/sub/__init__.py",
+      "valid": true
+    },
+    {
+      "dependencies": [
+        {
+          "circular": false,
+          "column": 18,
+          "coreModule": false,
+          "couldNotResolve": true,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 6,
+          "module": "....",
+          "moduleSystem": "py",
+          "resolved": "....",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 20,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 2,
+          "module": "..core",
+          "moduleSystem": "py",
+          "resolved": "src/app/core.py",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 15,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 4,
+          "module": ".sibling",
+          "moduleSystem": "py",
+          "resolved": "src/app/sub/sibling.py",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 19,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 5,
+          "module": "..sub.sibling",
+          "moduleSystem": "py",
+          "resolved": "src/app/sub/sibling.py",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 16,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 3,
+          "module": "..util",
+          "moduleSystem": "py",
+          "resolved": "src/app/util.py",
+          "valid": true
+        }
+      ],
+      "language": "python",
+      "project": "app",
+      "source": "src/app/sub/deep.py",
+      "valid": true
+    },
+    {
+      "dependencies": [],
+      "language": "python",
+      "project": "app",
+      "source": "src/app/sub/sibling.py",
+      "valid": true
+    },
+    {
+      "dependencies": [],
+      "language": "python",
+      "project": "app",
+      "source": "src/app/util.py",
+      "valid": true
+    },
+    {
+      "dependencies": [
+        {
+          "circular": false,
+          "column": 8,
+          "coreModule": false,
+          "couldNotResolve": true,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 1,
+          "module": "pytest",
+          "moduleSystem": "py",
+          "resolved": "pytest",
+          "valid": true
+        }
+      ],
+      "language": "python",
+      "project": "tests",
+      "source": "tests/conftest.py",
+      "valid": true
+    },
+    {
+      "dependencies": [
+        {
+          "circular": false,
+          "column": 22,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 1,
+          "module": "app.core",
+          "moduleSystem": "py",
+          "resolved": "src/app/core.py",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 19,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 2,
+          "module": "tests.conftest",
+          "moduleSystem": "py",
+          "resolved": "tests/conftest.py",
+          "valid": true
+        }
+      ],
+      "language": "python",
+      "project": "tests",
+      "source": "tests/test_core.py",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "followable": false,
+      "source": "tomllib",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "followable": false,
+      "source": "typing",
+      "valid": true
+    }
+  ],
+  "warnings": [
+    {
+      "message": "syntax error at 1:12: Expected a parameter or the end of the parameter list; the module has no dependencies in this run. Fix the syntax, or exclude the file",
+      "path": "src/app/broken.py"
+    }
+  ]
+}
