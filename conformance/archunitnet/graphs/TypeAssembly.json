@@ -141,7 +141,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.BaseClassForAssign, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.BaseClassForAssign, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -178,7 +178,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassImplementingInterface, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassImplementingInterface, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -216,7 +216,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassNotImplementingInterface, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassNotImplementingInterface, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -251,7 +251,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithAllMembers, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithAllMembers, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Int32",
@@ -308,7 +308,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithField, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithField, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Int32",
@@ -347,7 +347,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithGenericReturnType, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithGenericReturnType, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -436,7 +436,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithGetOnlyProperty, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithGetOnlyProperty, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -489,7 +489,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithInitOnlyProperty, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithInitOnlyProperty, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -547,7 +547,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithIntReturnType, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithIntReturnType, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Int32",
@@ -588,7 +588,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithMethod, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithMethod, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -623,7 +623,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithNonStaticField, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithNonStaticField, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Int32",
@@ -662,7 +662,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithNonVirtualMethod, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithNonVirtualMethod, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -698,7 +698,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithOtherRegularClassReturnType, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithOtherRegularClassReturnType, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -745,7 +745,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithProperty, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithProperty, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -798,7 +798,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithReadOnlyField, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithReadOnlyField, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -846,7 +846,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithRegularClassReturnType, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithRegularClassReturnType, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -892,7 +892,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithStaticField, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithStaticField, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Int32",
@@ -931,7 +931,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithStaticMethod, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithStaticMethod, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -967,7 +967,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithStaticProperty, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithStaticProperty, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1019,7 +1019,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithStringReturnType, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithStringReturnType, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1060,7 +1060,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithVirtualMethod, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithVirtualMethod, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1096,7 +1096,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithWritableProperty, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithWritableProperty, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1148,7 +1148,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ClassWithoutMembers, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.ClassWithoutMembers, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1183,7 +1183,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.DerivedClassForAssign, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.DerivedClassForAssign, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "TypeNamespace.BaseClassForAssign",
@@ -1217,7 +1217,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.GenericClass`1, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.GenericClass`1, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1251,7 +1251,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.GenericClass`2, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.GenericClass`2, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1284,7 +1284,7 @@
           "TypeNamespace.ITestInterface"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.IChildTestInterface, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.IChildTestInterface, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "TypeNamespace.ITestInterface",
@@ -1313,7 +1313,7 @@
           "TypeNamespace.IOtherTestInterface"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.IMultiParentTestInterface, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.IMultiParentTestInterface, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "TypeNamespace.IOtherTestInterface",
@@ -1345,7 +1345,7 @@
           "TypeNamespace.IOtherTestInterface"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.IOtherChildTestInterface, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.IOtherChildTestInterface, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "TypeNamespace.IOtherTestInterface",
@@ -1370,7 +1370,7 @@
         "nested": false,
         "generic": false,
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.IOtherTestInterface, TypeAssembly"
+        "assemblyQualifiedName": "TypeNamespace.IOtherTestInterface, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
       },
       {
         "fullName": "TypeNamespace.IStandaloneTestInterface",
@@ -1389,7 +1389,7 @@
         "nested": false,
         "generic": false,
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.IStandaloneTestInterface, TypeAssembly"
+        "assemblyQualifiedName": "TypeNamespace.IStandaloneTestInterface, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
       },
       {
         "fullName": "TypeNamespace.ITestInterface",
@@ -1408,7 +1408,7 @@
         "nested": false,
         "generic": false,
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.ITestInterface, TypeAssembly"
+        "assemblyQualifiedName": "TypeNamespace.ITestInterface, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
       },
       {
         "fullName": "TypeNamespace.NonNestedClass",
@@ -1431,7 +1431,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.NonNestedClass, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.NonNestedClass, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1465,7 +1465,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.OtherBaseClassForAssign, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OtherBaseClassForAssign, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1499,7 +1499,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.OtherClassWithStaticField, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OtherClassWithStaticField, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Int32",
@@ -1538,7 +1538,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.OtherClassWithVirtualMethod, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OtherClassWithVirtualMethod, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1574,7 +1574,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.OtherClassWithWritableProperty, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OtherClassWithWritableProperty, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1627,7 +1627,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.OtherDerivedClassForAssign, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OtherDerivedClassForAssign, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "TypeNamespace.BaseClassForAssign",
@@ -1661,7 +1661,7 @@
           "System.Enum"
         ],
         "valueType": true,
-        "assemblyQualifiedName": "TypeNamespace.OtherEnum, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OtherEnum, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Enum",
@@ -1698,7 +1698,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.OtherRegularClass, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OtherRegularClass, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1732,7 +1732,7 @@
           "System.ValueType"
         ],
         "valueType": true,
-        "assemblyQualifiedName": "TypeNamespace.OtherStruct, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OtherStruct, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.String",
@@ -1765,7 +1765,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.OtherUnrelatedClassForAssign, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OtherUnrelatedClassForAssign, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1799,7 +1799,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.OuterClassA, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OuterClassA, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1834,7 +1834,7 @@
         ],
         "nestedIn": "TypeNamespace.OuterClassA",
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.OuterClassA+InnerClassA, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OuterClassA+InnerClassA, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1869,7 +1869,7 @@
         ],
         "nestedIn": "TypeNamespace.OuterClassA",
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.OuterClassA+OtherInnerClassA, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OuterClassA+OtherInnerClassA, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1903,7 +1903,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.OuterClassB, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OuterClassB, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1938,7 +1938,7 @@
         ],
         "nestedIn": "TypeNamespace.OuterClassB",
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.OuterClassB+InnerClassB, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.OuterClassB+InnerClassB, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1972,7 +1972,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.RegularClass, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.RegularClass, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -2006,7 +2006,7 @@
           "System.Enum"
         ],
         "valueType": true,
-        "assemblyQualifiedName": "TypeNamespace.SimpleEnum, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.SimpleEnum, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Enum",
@@ -2043,7 +2043,7 @@
           "System.ValueType"
         ],
         "valueType": true,
-        "assemblyQualifiedName": "TypeNamespace.SimpleStruct, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.SimpleStruct, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Int32",
@@ -2076,7 +2076,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeNamespace.UnrelatedClassForAssign, TypeAssembly",
+        "assemblyQualifiedName": "TypeNamespace.UnrelatedClassForAssign, TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",

@@ -700,11 +700,15 @@ pub enum Expr {
     Test(Test),
 }
 
-/// `select`: a kind and an optional filter.
+/// `select`: a kind, an optional language scope and an optional filter.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Selector {
     /// What is selected.
     pub kind: Kind,
+    /// Only objects of these languages (`select.language`); empty for every language. A rule
+    /// using a key one language cannot answer is scoped with it
+    /// ([ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md)).
+    pub languages: Vec<rb_model::Language>,
     /// The filter, when there is one.
     pub where_: Option<Expr>,
 }
@@ -1068,10 +1072,10 @@ pub fn parse_selector(value: &Value, context: &str) -> Result<Selector, ConfigEr
         return Err(invalid(context, "`select` must be { kind, where }"));
     };
     for key in map.keys() {
-        if key != "kind" && key != "where" {
+        if !matches!(key.as_str(), "kind" | "where" | "language") {
             return Err(invalid(
                 context,
-                format!("`{key}` is not a select key; use kind and where"),
+                format!("`{key}` is not a select key; use kind, language and where"),
             ));
         }
     }
@@ -1083,7 +1087,27 @@ pub fn parse_selector(value: &Value, context: &str) -> Result<Selector, ConfigEr
         .get("where")
         .map(|w| parse_expr(w, Side::Where, &format!("{context}.where")))
         .transpose()?;
-    Ok(Selector { kind, where_ })
+    let languages = match map.get("language") {
+        None => Vec::new(),
+        Some(value) => text_list(value, &format!("{context}.language"))?
+            .iter()
+            .map(|l| {
+                l.parse::<rb_model::Language>().map_err(|_| {
+                    invalid(
+                        context,
+                        format!(
+                            "`{l}` is not a language; use typescript, javascript, dotnet or python"
+                        ),
+                    )
+                })
+            })
+            .collect::<Result<_, _>>()?,
+    };
+    Ok(Selector {
+        kind,
+        languages,
+        where_,
+    })
 }
 
 fn severity(map: &Map<String, Value>, context: &str) -> Result<Severity, ConfigError> {
@@ -1557,6 +1581,16 @@ mod tests {
         );
         assert_eq!(rule.because.as_deref(), Some("b"));
         assert_eq!(rule.select.kind, Kind::Class);
+        assert!(rule.select.languages.is_empty());
+        let scoped = parse_selector(
+            &json!({ "kind": "class", "language": ["dotnet", "python"] }),
+            "t",
+        )?;
+        assert_eq!(
+            scoped.languages,
+            [rb_model::Language::Dotnet, rb_model::Language::Python]
+        );
+        assert!(parse_selector(&json!({ "kind": "class", "language": "cobol" }), "t").is_err());
         let slices = parse_slices(
             &json!([{ "name": "s", "matching": "App.(*)", "should": ["notDependOnEachOther", "beFreeOfCycles"], "ignore": "App.Shared" }]),
         )?;

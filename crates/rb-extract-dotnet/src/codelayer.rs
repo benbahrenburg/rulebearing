@@ -100,6 +100,8 @@ pub struct Found {
     pub dynamic: bool,
     /// The called member's full name, for a call.
     pub call: Option<String>,
+    /// How a body used the type (see [`rb_model::ElementDependency::form`]).
+    pub form: Option<&'static str>,
 }
 
 /// One assembly's inputs.
@@ -341,6 +343,7 @@ impl<'u> Builder<'u> {
             column: point.map(|p| p.column),
             dynamic: false,
             call: None,
+            form: None,
         }
     }
 
@@ -476,6 +479,7 @@ impl<'u> Builder<'u> {
                     member: None,
                     dynamic: false,
                     call: None,
+                    form: None,
                     ..found.clone()
                 },
             );
@@ -564,6 +568,7 @@ impl<'u> Builder<'u> {
             column: location.column,
             dynamic: false,
             call: None,
+            form: None,
         }
     }
 
@@ -575,6 +580,7 @@ impl<'u> Builder<'u> {
                 kind: f.kind.as_str().to_owned(),
                 member: f.member.clone(),
                 line: f.line,
+                form: f.form.map(str::to_owned),
             })
             .filter(|d| !d.target.is_empty())
             .collect()
@@ -615,7 +621,7 @@ impl<'u> Builder<'u> {
         element.assembly = Some(loaded.identity.name.clone());
         element.assembly_qualified_name = Some(assembly_qualified_name(
             &ty.full_name,
-            &loaded.identity.name,
+            &loaded.identity.display(),
         ));
         element.visibility = Some(type_visibility(ty.flags).to_owned());
         let abstract_ = ty.flags & flags::ABSTRACT != 0;

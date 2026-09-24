@@ -2,7 +2,7 @@
 //! pass, one receipt per language.
 //!
 //! - Requirement: [FR-CORE-01](../../../docs/prd.md#fr-core-01) ("oracle runs on dify and
-//!   OpenMetadata produce one graph with `language` on every module")
+//!   `OpenMetadata` produce one graph with `language` on every module")
 //! - Source: [design § One engine, three languages](../../../docs/artifacts/design.md#one-engine-three-languages-one-monorepo)
 //! - Decision: [ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md) (no edge
 //!   joins two languages)
@@ -36,8 +36,8 @@ rules:
         to: { path: "^py/app/util\\.py$" }
 "#;
 
-fn repository() -> Result<PathBuf, Box<dyn Error>> {
-    let dir = std::env::temp_dir().join(format!("rb-cli-multi-{}", std::process::id()));
+fn repository(tag: &str) -> Result<PathBuf, Box<dyn Error>> {
+    let dir = std::env::temp_dir().join(format!("rb-cli-multi-{tag}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     let files = [
         ("rulebearing.yaml", CONFIG),
@@ -49,6 +49,7 @@ fn repository() -> Result<PathBuf, Box<dyn Error>> {
         ("py/app/__init__.py", ""),
         ("py/app/core.py", "from app import util\nimport json\n"),
         ("py/app/util.py", "VALUE = 1\n"),
+        ("py/app/shapes.py", "class Shape:\n    pass\n"),
     ];
     for (file, text) in files {
         let path = dir.join(file);
@@ -68,7 +69,7 @@ fn repository() -> Result<PathBuf, Box<dyn Error>> {
 
 #[test]
 fn one_cruise_reads_three_languages() -> Result<(), Box<dyn Error>> {
-    let dir = repository()?;
+    let dir = repository("three")?;
     let output = Command::new(BIN)
         .args(["cruise", "-T", "json", "--no-progress", "web", "py"])
         .current_dir(&dir)
@@ -138,6 +139,81 @@ fn one_cruise_reads_three_languages() -> Result<(), Box<dyn Error>> {
         result["code"]["types"]
             .as_array()
             .is_some_and(|t| t.len() > 5)
+    );
+    Ok(())
+}
+
+const ELEMENTS: &str = r#"languages:
+  dotnet:
+    assemblies: ["dotnet/*.dll"]
+  python:
+    roots: ["py"]
+rules:
+  elements:
+    - name: customers-are-sealed
+      comment: "adr:0004"
+      fix: "Seal the class, or move it out of Sample.Customers."
+      select: { kind: class, language: dotnet, where: { resideInNamespace: Sample.Customers } }
+      should: { beSealed: true }
+"#;
+
+fn run_with(config: &str, dir_tag: &str) -> Result<(Option<i32>, Value, String), Box<dyn Error>> {
+    let moved = repository(dir_tag)?;
+    std::fs::write(moved.join("rulebearing.yaml"), config)?;
+    let output = Command::new(BIN)
+        .args(["cruise", "-T", "json", "--no-progress", "py"])
+        .current_dir(&moved)
+        .output()?;
+    let _ = std::fs::remove_dir_all(&moved);
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    let json = serde_json::from_slice(&output.stdout).unwrap_or(Value::Null);
+    Ok((output.status.code(), json, stderr))
+}
+
+#[test]
+fn element_rules_report_failing_objects_and_refuse_unanswerable_keys() -> Result<(), Box<dyn Error>>
+{
+    let (code, result, stderr) = run_with(ELEMENTS, "elements")?;
+    assert_eq!(code, Some(0), "{stderr}");
+    let failing: Vec<&str> = result["summary"]["violations"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|v| v["rule"]["name"] == "customers-are-sealed")
+        .filter_map(|v| v["to"].as_str())
+        .collect();
+    assert!(
+        failing.contains(&"Sample.Customers.Customer"),
+        "{failing:?}"
+    );
+    assert!(
+        failing.contains(&"Sample.Customers.Repository`1"),
+        "{failing:?}"
+    );
+    assert!(
+        !failing.contains(&"Sample.Customers.Constants"),
+        "a static class is sealed"
+    );
+    let first = result["summary"]["violations"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .find(|v| v["rule"]["name"] == "customers-are-sealed")
+        .cloned()
+        .unwrap_or(Value::Null);
+    assert_eq!(first["type"], "element");
+    assert_eq!(first["decision"], "adr:0004");
+    assert!(first["id"].as_str().is_some_and(|id| id.starts_with("RB-")));
+    let unscoped = ELEMENTS.replace("language: dotnet, ", "");
+    let (code, _, stderr) = run_with(&unscoped, "unscoped")?;
+    assert_eq!(
+        code,
+        Some(3),
+        "beSealed over Python classes cannot be answered: {stderr}"
+    );
+    assert!(
+        stderr.contains("`beSealed` has no meaning in python"),
+        "{stderr}"
     );
     Ok(())
 }

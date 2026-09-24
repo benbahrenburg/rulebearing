@@ -146,7 +146,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithGetOnlyProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithGetOnlyProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithGetOnlyProperty",
@@ -199,7 +199,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithInitOnlyProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithInitOnlyProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithInitOnlyProperty",
@@ -257,7 +257,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithInternalGetterProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithInternalGetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithInternalGetterProperty",
@@ -310,7 +310,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithInternalSetterProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithInternalSetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithInternalSetterProperty",
@@ -363,7 +363,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithNonVirtualProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithNonVirtualProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithNonVirtualProperty",
@@ -416,7 +416,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithPrivateGetterProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithPrivateGetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithPrivateGetterProperty",
@@ -469,7 +469,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty",
@@ -522,7 +522,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty",
@@ -575,7 +575,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithPrivateSetterProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithPrivateSetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithPrivateSetterProperty",
@@ -628,7 +628,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithProtectedGetterProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithProtectedGetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithProtectedGetterProperty",
@@ -681,7 +681,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty",
@@ -734,7 +734,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty",
@@ -787,7 +787,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithProtectedSetterProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithProtectedSetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithProtectedSetterProperty",
@@ -840,7 +840,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithVirtualProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithVirtualProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithVirtualProperty",
@@ -893,7 +893,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithWritableProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithWritableProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithWritableProperty",
@@ -946,7 +946,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithWriteOnlyProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithWriteOnlyProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.ClassWithWriteOnlyProperty",
@@ -1010,7 +1010,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.OtherClassWithVirtualProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.OtherClassWithVirtualProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.OtherClassWithVirtualProperty",
@@ -1063,7 +1063,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "PropertyMemberNamespace.OtherClassWithWritableProperty, PropertyMemberAssembly",
+        "assemblyQualifiedName": "PropertyMemberNamespace.OtherClassWithWritableProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "PropertyMemberNamespace.OtherClassWithWritableProperty",

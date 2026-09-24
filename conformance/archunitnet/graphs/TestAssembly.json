@@ -3282,7 +3282,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.AbstractRecord, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.AbstractRecord, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Boolean",
@@ -3366,7 +3366,8 @@
           },
           {
             "target": "System.Text.StringBuilder",
-            "kind": "body"
+            "kind": "body",
+            "form": "body-type"
           },
           {
             "target": "System.Text.StringBuilder",
@@ -3412,7 +3413,8 @@
           },
           {
             "target": "TestAssembly.AbstractRecord",
-            "kind": "body"
+            "kind": "body",
+            "form": "type-check"
           },
           {
             "target": "TestAssembly.AbstractRecord",
@@ -3519,7 +3521,7 @@
           "System.Attribute"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.AssemblyTestAttribute, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.AssemblyTestAttribute, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Attribute",
@@ -3577,7 +3579,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Class1, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Class1, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Int32",
@@ -3657,7 +3659,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Class2, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Class2, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -3693,7 +3695,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Class3, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Class3, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -3729,7 +3731,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.ClassCallingOtherMethod, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.ClassCallingOtherMethod, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Console",
@@ -3788,7 +3790,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.ClassUsingNullableReferenceType, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.ClassUsingNullableReferenceType, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -3839,7 +3841,7 @@
           "System.Attribute"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.DependencyTargets.AttributeInTestAssembly, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.DependencyTargets.AttributeInTestAssembly, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Attribute",
@@ -3874,7 +3876,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.DependencyTargets.ClassInTestAssembly, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.DependencyTargets.ClassInTestAssembly, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -3905,7 +3907,7 @@
         "nested": false,
         "generic": false,
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.DependencyTargets.IInterfaceInTestAssembly, TestAssembly"
+        "assemblyQualifiedName": "TestAssembly.DependencyTargets.IInterfaceInTestAssembly, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
       },
       {
         "fullName": "TestAssembly.Diagram.ConfusingNamespaceNames.FooNamespace.BarNamespace.ClassInFooAndBarNamespace",
@@ -3928,7 +3930,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Diagram.ConfusingNamespaceNames.FooNamespace.BarNamespace.ClassInFooAndBarNamespace, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Diagram.ConfusingNamespaceNames.FooNamespace.BarNamespace.ClassInFooAndBarNamespace, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -3962,7 +3964,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Diagram.NoDependencies.Independent.AnotherIndependenClass, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Diagram.NoDependencies.Independent.AnotherIndependenClass, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -3996,7 +3998,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Diagram.NoDependencies.Independent.IndependentClass, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Diagram.NoDependencies.Independent.IndependentClass, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4030,7 +4032,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Diagram.NoDependencies.SomeNamespace.DependencyWithinNamespace, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Diagram.NoDependencies.SomeNamespace.DependencyWithinNamespace, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4064,7 +4066,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Diagram.NoDependencies.SomeNamespace.IndependentOrigin, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Diagram.NoDependencies.SomeNamespace.IndependentOrigin, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4103,7 +4105,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Diagram.SimpleDependency.Origin.SomeOriginClass, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Diagram.SimpleDependency.Origin.SomeOriginClass, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4144,7 +4146,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Diagram.SimpleDependency.Target.SomeTargetClass, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Diagram.SimpleDependency.Target.SomeTargetClass, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4182,7 +4184,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Domain.Entities.Entity1, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Domain.Entities.Entity1, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4241,7 +4243,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Domain.Entities.Entity2WithDependencyToEntity1, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Domain.Entities.Entity2WithDependencyToEntity1, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Collections.Generic.List`1",
@@ -4295,7 +4297,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Domain.Entities.EntityWithPublicSetters, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Domain.Entities.EntityWithPublicSetters, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4347,7 +4349,7 @@
         "nested": false,
         "generic": false,
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Domain.Marker.IEntity, TestAssembly"
+        "assemblyQualifiedName": "TestAssembly.Domain.Marker.IEntity, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
       },
       {
         "fullName": "TestAssembly.Domain.Marker.IRepository",
@@ -4366,7 +4368,7 @@
         "nested": false,
         "generic": false,
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Domain.Marker.IRepository, TestAssembly"
+        "assemblyQualifiedName": "TestAssembly.Domain.Marker.IRepository, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
       },
       {
         "fullName": "TestAssembly.Domain.Marker.IService",
@@ -4385,7 +4387,7 @@
         "nested": false,
         "generic": false,
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Domain.Marker.IService, TestAssembly"
+        "assemblyQualifiedName": "TestAssembly.Domain.Marker.IService, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
       },
       {
         "fullName": "TestAssembly.Domain.Repository.RepositoryWithDependencyToService",
@@ -4411,7 +4413,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Domain.Repository.RepositoryWithDependencyToService, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Domain.Repository.RepositoryWithDependencyToService, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4456,7 +4458,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Domain.Services.NotWellNamedService1, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Domain.Services.NotWellNamedService1, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4497,7 +4499,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Domain.Services.ServiceClassInWrongNamespaceService, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Domain.Services.ServiceClassInWrongNamespaceService, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4538,7 +4540,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Domain.Services.TestService, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Domain.Services.TestService, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4576,7 +4578,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.EmptyTestClass, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.EmptyTestClass, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4610,7 +4612,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.PlantUml.Addresses.Address, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.PlantUml.Addresses.Address, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4649,7 +4651,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.PlantUml.Catalog.ProductCatalog, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.PlantUml.Catalog.ProductCatalog, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Collections.Generic.List`1",
@@ -4671,7 +4673,8 @@
           {
             "target": "System.Collections.Generic.List`1+Enumerator",
             "kind": "body",
-            "line": 13
+            "line": 13,
+            "form": "body-type"
           },
           {
             "target": "System.Collections.Generic.List`1+Enumerator",
@@ -4717,7 +4720,8 @@
           {
             "target": "TestAssembly.PlantUml.Orders.Order",
             "kind": "body",
-            "line": 13
+            "line": 13,
+            "form": "body-type"
           },
           {
             "target": "TestAssembly.PlantUml.Orders.Order",
@@ -4776,7 +4780,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.PlantUml.Customers.Customer, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.PlantUml.Customers.Customer, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4833,7 +4837,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.PlantUml.Importer.ProductImport, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.PlantUml.Importer.ProductImport, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Byte",
@@ -4911,7 +4915,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.PlantUml.Orders.Order, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.PlantUml.Orders.Order, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Collections.Generic.IList`1",
@@ -4944,7 +4948,8 @@
           {
             "target": "System.Collections.Generic.List`1+Enumerator",
             "kind": "body",
-            "line": 20
+            "line": 20,
+            "form": "body-type"
           },
           {
             "target": "System.Collections.Generic.List`1+Enumerator",
@@ -5071,7 +5076,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.PlantUml.Products.Product, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.PlantUml.Products.Product, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5116,7 +5121,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.PlantUml.Xml.Processor.XmlProcessor, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.PlantUml.Xml.Processor.XmlProcessor, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5150,7 +5155,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.PlantUml.Xml.Types.XmlTypes, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.PlantUml.Xml.Types.XmlTypes, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5184,7 +5189,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.PlantUml.Xml.Utils.XmlUtils, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.PlantUml.Xml.Utils.XmlUtils, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5223,7 +5228,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Record1, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Record1, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Boolean",
@@ -5277,7 +5282,8 @@
           },
           {
             "target": "System.Text.StringBuilder",
-            "kind": "body"
+            "kind": "body",
+            "form": "body-type"
           },
           {
             "target": "System.Text.StringBuilder",
@@ -5360,7 +5366,8 @@
           },
           {
             "target": "TestAssembly.Record1",
-            "kind": "body"
+            "kind": "body",
+            "form": "type-check"
           },
           {
             "target": "TestAssembly.Record1",
@@ -5413,7 +5420,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Slices.Slice1.Service.Service1Class, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Slices.Slice1.Service.Service1Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5451,7 +5458,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Slices.Slice1.Slice1Class, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Slices.Slice1.Slice1Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5489,7 +5496,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Slices.Slice2.Service.Service2Class, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Slices.Slice2.Service.Service2Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5527,7 +5534,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Slices.Slice2.Slice2Class, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Slices.Slice2.Slice2Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5565,7 +5572,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Slices.Slice3.Group1.Group1Class, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Slices.Slice3.Group1.Group1Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5603,7 +5610,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Slices.Slice3.Group2.Group2Class, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Slices.Slice3.Group2.Group2Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5637,7 +5644,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Slices.Slice3.Slice3Class, TestAssembly",
+        "assemblyQualifiedName": "TestAssembly.Slices.Slice3.Slice3Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5686,7 +5693,8 @@
           },
           {
             "target": "TestAssembly.AbstractRecord",
-            "kind": "body"
+            "kind": "body",
+            "form": "type-check"
           },
           {
             "target": "TestAssembly.AbstractRecord",
@@ -6019,7 +6027,8 @@
           },
           {
             "target": "System.Text.StringBuilder",
-            "kind": "body"
+            "kind": "body",
+            "form": "body-type"
           },
           {
             "target": "System.Text.StringBuilder",
@@ -7636,7 +7645,8 @@
           {
             "target": "System.Collections.Generic.List`1+Enumerator",
             "kind": "body",
-            "line": 13
+            "line": 13,
+            "form": "body-type"
           },
           {
             "target": "System.Collections.Generic.List`1+Enumerator",
@@ -7665,7 +7675,8 @@
           {
             "target": "TestAssembly.PlantUml.Orders.Order",
             "kind": "body",
-            "line": 13
+            "line": 13,
+            "form": "body-type"
           },
           {
             "target": "TestAssembly.PlantUml.Orders.Order",
@@ -8137,7 +8148,8 @@
           {
             "target": "System.Collections.Generic.List`1+Enumerator",
             "kind": "body",
-            "line": 20
+            "line": 20,
+            "form": "body-type"
           },
           {
             "target": "System.Collections.Generic.List`1+Enumerator",
@@ -8450,7 +8462,8 @@
           },
           {
             "target": "TestAssembly.Record1",
-            "kind": "body"
+            "kind": "body",
+            "form": "type-check"
           },
           {
             "target": "TestAssembly.Record1",
@@ -8692,7 +8705,8 @@
           },
           {
             "target": "System.Text.StringBuilder",
-            "kind": "body"
+            "kind": "body",
+            "form": "body-type"
           },
           {
             "target": "System.Text.StringBuilder",

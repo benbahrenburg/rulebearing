@@ -858,6 +858,7 @@
         "declaringType": "Sample.Customers.Customer",
         "dependencies": [
           {
+            "form": "type-check",
             "kind": "body",
             "target": "Sample.Customers.Customer"
           },
@@ -1110,6 +1111,7 @@
             "target": "System.String"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "target": "System.Text.StringBuilder"
           },
@@ -1697,6 +1699,7 @@
         "declaringType": "Sample.Orders.Order",
         "dependencies": [
           {
+            "form": "body-type",
             "kind": "body",
             "line": 31,
             "target": "Sample.Orders.Order"
@@ -1708,6 +1711,7 @@
             "target": "Sample.Orders.Order"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "line": 31,
             "target": "Sample.Orders.Order+Line"
@@ -1728,6 +1732,7 @@
             "target": "Sample.Orders.Order+Line"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "line": 31,
             "target": "System.Boolean"
@@ -1743,10 +1748,12 @@
             "target": "System.Collections.Generic.List`1"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "target": "System.Collections.Generic.List`1+Enumerator"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "line": 31,
             "target": "System.Collections.Generic.List`1+Enumerator"
@@ -1769,10 +1776,12 @@
             "target": "System.IDisposable"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "target": "System.Int32"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "line": 31,
             "target": "System.Int32"
@@ -1975,6 +1984,7 @@
         "declaringType": "Sample.Orders.Order",
         "dependencies": [
           {
+            "form": "call",
             "kind": "body",
             "line": 42,
             "target": "Sample.Customers.Customer"
@@ -2410,7 +2420,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
-        "assemblyQualifiedName": "Sample.AuditAttribute, Sample",
+        "assemblyQualifiedName": "Sample.AuditAttribute, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Attribute",
         "baseTypes": [
@@ -2500,7 +2510,7 @@
       {
         "abstract": true,
         "assembly": "Sample",
-        "assemblyQualifiedName": "Sample.Customers.Constants, Sample",
+        "assemblyQualifiedName": "Sample.Customers.Constants, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Object",
         "baseTypes": [
@@ -2533,7 +2543,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
-        "assemblyQualifiedName": "Sample.Customers.Customer, Sample",
+        "assemblyQualifiedName": "Sample.Customers.Customer, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Object",
         "baseTypes": [
@@ -2541,6 +2551,7 @@
         ],
         "dependencies": [
           {
+            "form": "type-check",
             "kind": "body",
             "target": "Sample.Customers.Customer"
           },
@@ -2674,6 +2685,7 @@
             "target": "System.String"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "target": "System.Text.StringBuilder"
           },
@@ -2741,7 +2753,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
-        "assemblyQualifiedName": "Sample.Customers.Money, Sample",
+        "assemblyQualifiedName": "Sample.Customers.Money, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.ValueType",
         "baseTypes": [
@@ -2774,7 +2786,7 @@
       {
         "abstract": true,
         "assembly": "Sample",
-        "assemblyQualifiedName": "Sample.Customers.Repository`1, Sample",
+        "assemblyQualifiedName": "Sample.Customers.Repository`1, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Object",
         "baseTypes": [
@@ -2816,7 +2828,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
-        "assemblyQualifiedName": "Sample.Customers.Tier, Sample",
+        "assemblyQualifiedName": "Sample.Customers.Tier, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Enum",
         "baseTypes": [
@@ -2853,7 +2865,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
-        "assemblyQualifiedName": "Sample.IEntity, Sample",
+        "assemblyQualifiedName": "Sample.IEntity, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "file": "src/Shared.cs",
         "fullName": "Sample.IEntity",
@@ -2872,7 +2884,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
-        "assemblyQualifiedName": "Sample.Marker, Sample",
+        "assemblyQualifiedName": "Sample.Marker, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Object",
         "baseTypes": [
@@ -2941,7 +2953,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
-        "assemblyQualifiedName": "Sample.Orders.Order, Sample",
+        "assemblyQualifiedName": "Sample.Orders.Order, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Object",
         "baseTypes": [
@@ -2965,6 +2977,7 @@
             "target": "Sample.Core.Clock"
           },
           {
+            "form": "call",
             "kind": "body",
             "line": 42,
             "target": "Sample.Customers.Customer"
@@ -2994,6 +3007,7 @@
             "target": "Sample.IEntity"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "line": 31,
             "target": "Sample.Orders.Order"
@@ -3052,6 +3066,7 @@
             "target": "Sample.Orders.Order+Line"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "line": 31,
             "target": "Sample.Orders.Order+Line"
@@ -3104,6 +3119,7 @@
             "target": "Sample.Orders.Order+Line"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "line": 31,
             "target": "System.Boolean"
@@ -3141,10 +3157,12 @@
             "target": "System.Collections.Generic.List`1"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "target": "System.Collections.Generic.List`1+Enumerator"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "line": 31,
             "target": "System.Collections.Generic.List`1+Enumerator"
@@ -3195,10 +3213,12 @@
             "target": "System.IDisposable"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "target": "System.Int32"
           },
           {
+            "form": "body-type",
             "kind": "body",
             "line": 31,
             "target": "System.Int32"
@@ -3315,7 +3335,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
-        "assemblyQualifiedName": "Sample.Orders.Order+Line, Sample",
+        "assemblyQualifiedName": "Sample.Orders.Order+Line, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Object",
         "baseTypes": [

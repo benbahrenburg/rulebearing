@@ -556,6 +556,13 @@
     "ElementDependency": {
       "description": "One dependency of a type or member on a type: what `dependOnAny`, `onlyDependOn` and\n`haveDependencyInMethodBodyTo` read.",
       "properties": {
+        "form": {
+          "description": "For a `body` dependency, how the body used the type: `call`, `access` (a field),\n`cast`, `type-check` or `body-type` (a local, `box`, `newarr` and the like), the\ndistinction `haveDependencyInMethodBodyTo` reads.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "kind": {
           "description": "What formed the dependency: `inherits`, `implements`, `field`, `signature`, `body`,\n`attribute`, `generic-argument`, `typeof`, `import`.",
           "type": "string"
@@ -1790,6 +1797,13 @@
             "null"
           ]
         },
+        "assemblyFullName": {
+          "description": "The containing assembly's display name, `Name, Version=1.0.0.0, Culture=neutral,\nPublicKeyToken=null` (.NET): what `resideInAssembly` compares.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "assemblyQualifiedName": {
           "description": "The assembly-qualified name in reflection's spelling (.NET).",
           "type": [
@@ -2142,7 +2156,9 @@
         "reachability",
         "cycle",
         "instability",
-        "folder"
+        "folder",
+        "element",
+        "slice"
       ],
       "type": "string"
     }

@@ -238,7 +238,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "DuplicateClassAcrossAssemblies.DuplicateClass, DuplicateFullNameAssembly",
+        "assemblyQualifiedName": "DuplicateClassAcrossAssemblies.DuplicateClass, DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -273,7 +273,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "DuplicateFullNameAssembly.ClassWithAmbiguousReturnType, DuplicateFullNameAssembly",
+        "assemblyQualifiedName": "DuplicateFullNameAssembly.ClassWithAmbiguousReturnType, DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "DuplicateClassAcrossAssemblies.DuplicateClass",
@@ -320,7 +320,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "DuplicateFullNameAssembly.ClassWithDuplicateParameters, DuplicateFullNameAssembly",
+        "assemblyQualifiedName": "DuplicateFullNameAssembly.ClassWithDuplicateParameters, DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "DuplicateFullNameAssembly.CustomType",
@@ -385,7 +385,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "DuplicateFullNameAssembly.CustomType, DuplicateFullNameAssembly",
+        "assemblyQualifiedName": "DuplicateFullNameAssembly.CustomType, DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -419,7 +419,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "DuplicateFullNameAssembly.DuplicateFullNameAssembly, DuplicateFullNameAssembly",
+        "assemblyQualifiedName": "DuplicateFullNameAssembly.DuplicateFullNameAssembly, DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",

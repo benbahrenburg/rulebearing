@@ -109,7 +109,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodMemberNamespace.ClassWithGenericReturnType, MethodMemberAssembly",
+        "assemblyQualifiedName": "MethodMemberNamespace.ClassWithGenericReturnType, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "MethodMemberNamespace.GenericClass`1",
@@ -182,7 +182,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodMemberNamespace.ClassWithNonVirtualMethod, MethodMemberAssembly",
+        "assemblyQualifiedName": "MethodMemberNamespace.ClassWithNonVirtualMethod, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -218,7 +218,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodMemberNamespace.ClassWithOtherRegularClassReturnType, MethodMemberAssembly",
+        "assemblyQualifiedName": "MethodMemberNamespace.ClassWithOtherRegularClassReturnType, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "MethodMemberNamespace.OtherRegularClass",
@@ -265,7 +265,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodMemberNamespace.ClassWithRegularClassReturnType, MethodMemberAssembly",
+        "assemblyQualifiedName": "MethodMemberNamespace.ClassWithRegularClassReturnType, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "MethodMemberNamespace.RegularClass",
@@ -312,7 +312,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodMemberNamespace.ClassWithStringReturnType, MethodMemberAssembly",
+        "assemblyQualifiedName": "MethodMemberNamespace.ClassWithStringReturnType, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -353,7 +353,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodMemberNamespace.ClassWithVirtualMethod, MethodMemberAssembly",
+        "assemblyQualifiedName": "MethodMemberNamespace.ClassWithVirtualMethod, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -388,7 +388,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodMemberNamespace.GenericClass`1, MethodMemberAssembly",
+        "assemblyQualifiedName": "MethodMemberNamespace.GenericClass`1, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -422,7 +422,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodMemberNamespace.GenericClass`2, MethodMemberAssembly",
+        "assemblyQualifiedName": "MethodMemberNamespace.GenericClass`2, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -457,7 +457,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodMemberNamespace.MethodDependencyClass, MethodMemberAssembly",
+        "assemblyQualifiedName": "MethodMemberNamespace.MethodDependencyClass, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "MethodMemberNamespace.MethodDependencyClass",
@@ -505,7 +505,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodMemberNamespace.OtherCallingClass, MethodMemberAssembly",
+        "assemblyQualifiedName": "MethodMemberNamespace.OtherCallingClass, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "MethodMemberNamespace.MethodDependencyClass",
@@ -565,7 +565,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodMemberNamespace.OtherClassWithVirtualMethod, MethodMemberAssembly",
+        "assemblyQualifiedName": "MethodMemberNamespace.OtherClassWithVirtualMethod, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -600,7 +600,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodMemberNamespace.OtherRegularClass, MethodMemberAssembly",
+        "assemblyQualifiedName": "MethodMemberNamespace.OtherRegularClass, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -634,7 +634,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodMemberNamespace.RegularClass, MethodMemberAssembly",
+        "assemblyQualifiedName": "MethodMemberNamespace.RegularClass, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",

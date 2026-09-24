@@ -124,6 +124,10 @@ pub struct TypeElement {
     /// The assembly-qualified name in reflection's spelling (.NET).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub assembly_qualified_name: Option<String>,
+    /// The containing assembly's display name, `Name, Version=1.0.0.0, Culture=neutral,
+    /// PublicKeyToken=null` (.NET): what `resideInAssembly` compares.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assembly_full_name: Option<String>,
     /// Every other file that declares part of the type (a C# partial type), sorted.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub files: Vec<String>,
@@ -148,6 +152,11 @@ pub struct ElementDependency {
     /// 1-based line of the reference.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub line: Option<u32>,
+    /// For a `body` dependency, how the body used the type: `call`, `access` (a field),
+    /// `cast`, `type-check` or `body-type` (a local, `box`, `newarr` and the like), the
+    /// distinction `haveDependencyInMethodBodyTo` reads.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub form: Option<String>,
 }
 
 /// An accessor of a property: whether it exists is `Some`, and its visibility.
@@ -282,6 +291,7 @@ impl TypeElement {
             immutable: None,
             value_type: None,
             assembly_qualified_name: None,
+            assembly_full_name: None,
             files: Vec::new(),
             dependencies: Vec::new(),
         }
@@ -426,6 +436,7 @@ mod tests {
             kind: kind.to_owned(),
             member: None,
             line: None,
+            form: None,
         }
     }
 

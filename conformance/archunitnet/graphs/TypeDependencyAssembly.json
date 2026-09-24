@@ -239,7 +239,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.BaseClass, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.BaseClass, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -274,7 +274,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.BaseClassWithMember, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.BaseClassWithMember, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -326,7 +326,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.BaseClassWithMultipleDependencies, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.BaseClassWithMultipleDependencies, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -361,7 +361,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.ChildClass, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.ChildClass, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "TypeDependencyNamespace.BaseClass",
@@ -396,7 +396,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.ChildClass1, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.ChildClass1, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "TypeDependencyNamespace.BaseClassWithMultipleDependencies",
@@ -431,7 +431,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.ChildClass2, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.ChildClass2, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "TypeDependencyNamespace.BaseClassWithMultipleDependencies",
@@ -466,7 +466,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.ChildClassOfGeneric, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.ChildClassOfGeneric, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "TypeDependencyNamespace.ChildClassOfGeneric",
@@ -506,7 +506,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.ChildClassWithMember, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.ChildClassWithMember, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
@@ -558,7 +558,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.ClassWithMultipleDependencies, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.ClassWithMultipleDependencies, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -601,7 +601,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.ClassWithReferencedTypeDependency, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.ClassWithReferencedTypeDependency, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Collections.Generic.List`1",
@@ -659,7 +659,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.ClassWithoutDependencies, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.ClassWithoutDependencies, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -693,7 +693,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.GenericBaseClass`1, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.GenericBaseClass`1, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -728,7 +728,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.Issue351, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.Issue351, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "!!0",
@@ -739,6 +739,12 @@
             "target": "System.Collections.Generic.IReadOnlyCollection`1",
             "kind": "body",
             "line": 62
+          },
+          {
+            "target": "System.Collections.Generic.IReadOnlyCollection`1",
+            "kind": "body",
+            "line": 62,
+            "form": "cast"
           },
           {
             "target": "System.Collections.Generic.IReadOnlyCollection`1",
@@ -844,7 +850,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.OtherBaseClass, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.OtherBaseClass, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -879,7 +885,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.OtherChildClass, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.OtherChildClass, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "TypeDependencyNamespace.BaseClass",
@@ -915,7 +921,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.OtherChildClassWithMember, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.OtherChildClassWithMember, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
@@ -967,7 +973,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "TypeDependencyNamespace.OtherClassWithoutDependencies, TypeDependencyAssembly",
+        "assemblyQualifiedName": "TypeDependencyNamespace.OtherClassWithoutDependencies, TypeDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1561,6 +1567,12 @@
             "target": "System.Collections.Generic.IReadOnlyCollection`1",
             "kind": "body",
             "line": 62
+          },
+          {
+            "target": "System.Collections.Generic.IReadOnlyCollection`1",
+            "kind": "body",
+            "line": 62,
+            "form": "cast"
           },
           {
             "target": "System.Collections.Generic.IReadOnlyCollection`1",

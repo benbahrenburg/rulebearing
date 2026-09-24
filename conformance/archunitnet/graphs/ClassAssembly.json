@@ -203,7 +203,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.AbstractClass, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.AbstractClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -238,7 +238,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.ClassWithOnlyStaticMembers, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.ClassWithOnlyStaticMembers, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.ClassWithOnlyStaticMembers",
@@ -289,7 +289,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.ClassWithoutMembers, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.ClassWithoutMembers, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -324,7 +324,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.ImmutableClass, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.ImmutableClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.ImmutableClass",
@@ -393,7 +393,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.MutableClass, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.MutableClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.MutableClass",
@@ -445,7 +445,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.OtherAbstractClass, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.OtherAbstractClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -480,7 +480,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.OtherImmutableClass, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.OtherImmutableClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.OtherImmutableClass",
@@ -549,7 +549,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.OtherMutableClass, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.OtherMutableClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.OtherMutableClass",
@@ -605,11 +605,12 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.OtherRecordClass, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.OtherRecordClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.OtherRecordClass",
-            "kind": "body"
+            "kind": "body",
+            "form": "type-check"
           },
           {
             "target": "ClassNamespace.OtherRecordClass",
@@ -712,7 +713,8 @@
           },
           {
             "target": "System.Text.StringBuilder",
-            "kind": "body"
+            "kind": "body",
+            "form": "body-type"
           },
           {
             "target": "System.Text.StringBuilder",
@@ -774,7 +776,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.OtherRegularClass, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.OtherRegularClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -808,7 +810,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.OtherSealedClass, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.OtherSealedClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -846,11 +848,12 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.RecordClass, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.RecordClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.RecordClass",
-            "kind": "body"
+            "kind": "body",
+            "form": "type-check"
           },
           {
             "target": "ClassNamespace.RecordClass",
@@ -953,7 +956,8 @@
           },
           {
             "target": "System.Text.StringBuilder",
-            "kind": "body"
+            "kind": "body",
+            "form": "body-type"
           },
           {
             "target": "System.Text.StringBuilder",
@@ -1015,7 +1019,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.RegularClass, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.RegularClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1049,7 +1053,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "ClassNamespace.SealedClass, ClassAssembly",
+        "assemblyQualifiedName": "ClassNamespace.SealedClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1795,7 +1799,8 @@
         "dependencies": [
           {
             "target": "ClassNamespace.OtherRecordClass",
-            "kind": "body"
+            "kind": "body",
+            "form": "type-check"
           },
           {
             "target": "ClassNamespace.OtherRecordClass",
@@ -1993,7 +1998,8 @@
           },
           {
             "target": "System.Text.StringBuilder",
-            "kind": "body"
+            "kind": "body",
+            "form": "body-type"
           },
           {
             "target": "System.Text.StringBuilder",
@@ -2222,7 +2228,8 @@
         "dependencies": [
           {
             "target": "ClassNamespace.RecordClass",
-            "kind": "body"
+            "kind": "body",
+            "form": "type-check"
           },
           {
             "target": "ClassNamespace.RecordClass",
@@ -2420,7 +2427,8 @@
           },
           {
             "target": "System.Text.StringBuilder",
-            "kind": "body"
+            "kind": "body",
+            "form": "body-type"
           },
           {
             "target": "System.Text.StringBuilder",
