@@ -42,3 +42,4 @@ A rule in `rulebearing.yaml` cites a decision with the token `adr:NNNN` in its `
 | [0034](0034-slices-group-types-or-modules-and-segments.md) | A slice groups .NET types or TypeScript and Python modules; `(*)` names a slice as `ArchUnitNET` does; `segments` keeps the first segments | Proposed |
 | [0035](0035-referenced-types-in-the-code-layer.md) | The code layer holds the types the analysed code references, as `ArchUnitNET`'s `ReferencedTypes` | Proposed |
 | [0036](0036-markdown-fences-follow-the-configuration-format.md) | Markdown fences are read for a native configuration; a dependency-cruiser one keeps upstream's `extraExtensionsToScan` | Proposed |
+| [0037](0037-baseline-modes.md) | `baseline` has three modes of Rulebearing's own (`full`, `shrink-only`, `format`); dependency-cruiser has none | Proposed |
