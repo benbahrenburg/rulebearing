@@ -32,6 +32,7 @@
 //! `any: [{ all: [A, B] }, C]`. An unknown key is a configuration error naming the nearest known
 //! key.
 
+use chrono::NaiveDate;
 use serde_json::{Map, Value};
 
 use crate::ConfigError;
@@ -732,6 +733,10 @@ pub struct ElementRule {
     pub severity: Severity,
     /// `ArchUnitNET`'s `Because(...)`.
     pub because: Option<String>,
+    /// Who answers for the rule.
+    pub owner: Option<String>,
+    /// The last day the rule applies; the run fails the day after, as a dependency rule's does.
+    pub expires: Option<NaiveDate>,
     /// `WithoutRequiringPositiveResults()`: an empty selection is not vacuous.
     pub allow_empty: bool,
     /// What is selected.
@@ -760,6 +765,10 @@ pub struct SliceRule {
     pub fix: Option<String>,
     /// The severity.
     pub severity: Severity,
+    /// Who answers for the rule.
+    pub owner: Option<String>,
+    /// The last day the rule applies; the run fails the day after, as a dependency rule's does.
+    pub expires: Option<NaiveDate>,
     /// `Matching("X.(*)")`, or `MatchingWithPackages` with `(**)`.
     pub matching: String,
     /// The conditions, every one of which must hold.
@@ -787,6 +796,12 @@ pub struct DiagramRule {
     pub fix: Option<String>,
     /// The severity.
     pub severity: Severity,
+    /// Who answers for the rule.
+    pub owner: Option<String>,
+    /// The last day the rule applies; the run fails the day after, as a dependency rule's does.
+    pub expires: Option<NaiveDate>,
+    /// An empty selection is not vacuous.
+    pub allow_empty: bool,
     /// The objects the diagram's components are matched against.
     pub select: Selector,
     /// The `.puml` file, relative to the configuration.
@@ -803,7 +818,9 @@ impl DiagramRule {
             fix: self.fix.clone(),
             severity: self.severity,
             because: None,
-            allow_empty: false,
+            owner: self.owner.clone(),
+            expires: self.expires,
+            allow_empty: self.allow_empty,
             select: self.select.clone(),
             should: Expr::Test(Test {
                 key: "adhereToPlantUmlDiagram".into(),
@@ -906,7 +923,14 @@ pub fn spellings(side: Side) -> Vec<String> {
     out
 }
 
+/// Keys longer than this get no suggestion: the distance is quadratic in the key's length, and
+/// no real key is anywhere near it.
+const SUGGESTION_KEY_LIMIT: usize = 256;
+
 fn suggestion(key: &str, side: Side) -> String {
+    if key.len() > SUGGESTION_KEY_LIMIT {
+        return String::new();
+    }
     spellings(side)
         .into_iter()
         .min_by_key(|s| distance(key, s))
@@ -978,6 +1002,7 @@ fn operand(kind: ValueKind, value: &Value, context: &str) -> Result<Operand, Con
             let Value::Object(map) = value else {
                 return Err(invalid(context, "must be { attribute, arguments }"));
             };
+            check_keys(map, &["attribute", "arguments"], context)?;
             let attribute = map
                 .get("attribute")
                 .map(|a| objects(a, context))
@@ -1208,6 +1233,12 @@ pub fn parse_selector(value: &Value, context: &str) -> Result<Selector, ConfigEr
     };
     let languages = match map.get("language") {
         None => Vec::new(),
+        Some(Value::Array(items)) if items.is_empty() => {
+            return Err(invalid(
+                context,
+                "`select.language` is an empty list, which would select nothing; name a language or leave the key out",
+            ));
+        }
         Some(value) => text_list(value, &format!("{context}.language"))?
             .iter()
             .map(|l| {
@@ -1248,8 +1279,64 @@ fn severity(map: &Map<String, Value>, context: &str) -> Result<Severity, ConfigE
     })
 }
 
-fn text(map: &Map<String, Value>, key: &str) -> Option<String> {
-    map.get(key).and_then(Value::as_str).map(str::to_owned)
+/// An optional string key: absent is `None`, present but not a string is an error naming it.
+fn opt_text(
+    map: &Map<String, Value>,
+    key: &str,
+    context: &str,
+) -> Result<Option<String>, ConfigError> {
+    match map.get(key) {
+        None => Ok(None),
+        Some(Value::String(s)) => Ok(Some(s.clone())),
+        Some(_) => Err(invalid(context, format!("`{key}` must be a string"))),
+    }
+}
+
+/// An optional boolean key: absent is `false`, present but not a boolean is an error naming it.
+fn opt_bool(map: &Map<String, Value>, key: &str, context: &str) -> Result<bool, ConfigError> {
+    match map.get(key) {
+        None => Ok(false),
+        Some(Value::Bool(b)) => Ok(*b),
+        Some(_) => Err(invalid(context, format!("`{key}` must be true or false"))),
+    }
+}
+
+/// The metadata every element, slice and diagram rule carries beside its name, parsed and
+/// checked as a dependency rule's is ([design § Rule metadata](../../../docs/artifacts/design.md#rule-metadata-that-says-what-to-do)).
+struct Meta {
+    comment: Option<String>,
+    fix: Option<String>,
+    severity: Severity,
+    owner: Option<String>,
+    expires: Option<NaiveDate>,
+    allow_empty: bool,
+}
+
+impl Meta {
+    fn parse(map: &Map<String, Value>, context: &str) -> Result<Self, ConfigError> {
+        let expires = match map.get("expires") {
+            None => None,
+            Some(Value::String(s)) => {
+                Some(NaiveDate::parse_from_str(s, "%Y-%m-%d").map_err(|_| {
+                    invalid(
+                        context,
+                        format!("`expires` must be a date, YYYY-MM-DD; got `{s}`"),
+                    )
+                })?)
+            }
+            Some(_) => {
+                return Err(invalid(context, "`expires` must be a date, YYYY-MM-DD"));
+            }
+        };
+        Ok(Self {
+            comment: opt_text(map, "comment", context)?,
+            fix: opt_text(map, "fix", context)?,
+            severity: severity(map, context)?,
+            owner: opt_text(map, "owner", context)?,
+            expires,
+            allow_empty: opt_bool(map, "allowEmpty", context)?,
+        })
+    }
 }
 
 fn rule_map<'a>(
@@ -1262,13 +1349,13 @@ fn rule_map<'a>(
             "rules.{family}[{index}] must be an object"
         )));
     };
-    let Some(name) = text(map, "name") else {
+    let Some(Value::String(name)) = map.get("name") else {
         return Err(ConfigError::Invalid(format!(
-            "rules.{family}[{index}] needs a `name`"
+            "rules.{family}[{index}] needs a `name` (a string)"
         )));
     };
     let context = format!("rules.{family}[{name}]");
-    Ok((map, name, context))
+    Ok((map, name.clone(), context))
 }
 
 fn check_keys(
@@ -1287,7 +1374,34 @@ fn check_keys(
     Ok(())
 }
 
+/// The keys every family shares.
+const META_KEYS: [&str; 7] = [
+    "name",
+    "comment",
+    "fix",
+    "severity",
+    "expires",
+    "owner",
+    "allowEmpty",
+];
+
+/// Every key a rule of `family` (`elements`, `slices`, `diagrams`) accepts: what the loader
+/// checks and what the schema must list.
+pub(crate) fn family_keys(family: &str) -> Vec<&'static str> {
+    let extra: &[&'static str] = match family {
+        "elements" => &["because", "select", "should"],
+        "slices" => &["matching", "should", "ignore", "where", "segments"],
+        "diagrams" => &["select", "adhereTo"],
+        _ => &[],
+    };
+    META_KEYS.iter().chain(extra).copied().collect()
+}
+
 /// Parses `rules.elements`.
+///
+/// `examples` is refused rather than accepted: on a dependency rule it lists `"from -> to"`
+/// edges that `rulebearing test` proves, and an element rule selects objects, not edges, so
+/// there is nothing it could mean here.
 ///
 /// # Errors
 /// [`ConfigError::Invalid`] naming the rule and the key.
@@ -1298,23 +1412,14 @@ pub fn parse_elements(value: &Value) -> Result<Vec<ElementRule>, ConfigError> {
     let mut rules = Vec::with_capacity(items.len());
     for (index, item) in items.iter().enumerate() {
         let (map, name, context) = rule_map(item, "elements", index)?;
-        check_keys(
-            map,
-            &[
-                "name",
-                "comment",
-                "fix",
-                "severity",
-                "because",
-                "allowEmpty",
-                "select",
-                "should",
-                "examples",
-                "expires",
-                "owner",
-            ],
-            &context,
-        )?;
+        if map.contains_key("examples") {
+            return Err(invalid(
+                &context,
+                "`examples` is a dependency rule's key (`\"from -> to\"` edges for `rulebearing test`); an element rule has none, so remove it",
+            ));
+        }
+        check_keys(map, &family_keys("elements"), &context)?;
+        let meta = Meta::parse(map, &context)?;
         let select = parse_selector(
             map.get("select")
                 .ok_or_else(|| invalid(&context, "`select` is required"))?,
@@ -1327,14 +1432,13 @@ pub fn parse_elements(value: &Value) -> Result<Vec<ElementRule>, ConfigError> {
             &format!("{context}.should"),
         )?;
         rules.push(ElementRule {
-            comment: text(map, "comment"),
-            fix: text(map, "fix"),
-            severity: severity(map, &context)?,
-            because: text(map, "because"),
-            allow_empty: map
-                .get("allowEmpty")
-                .and_then(Value::as_bool)
-                .unwrap_or(false),
+            because: opt_text(map, "because", &context)?,
+            comment: meta.comment,
+            fix: meta.fix,
+            severity: meta.severity,
+            owner: meta.owner,
+            expires: meta.expires,
+            allow_empty: meta.allow_empty,
             name,
             select,
             should,
@@ -1354,24 +1458,8 @@ pub fn parse_slices(value: &Value) -> Result<Vec<SliceRule>, ConfigError> {
     let mut rules = Vec::with_capacity(items.len());
     for (index, item) in items.iter().enumerate() {
         let (map, name, context) = rule_map(item, "slices", index)?;
-        check_keys(
-            map,
-            &[
-                "name",
-                "comment",
-                "fix",
-                "severity",
-                "matching",
-                "should",
-                "ignore",
-                "where",
-                "segments",
-                "allowEmpty",
-                "expires",
-                "owner",
-            ],
-            &context,
-        )?;
+        check_keys(map, &family_keys("slices"), &context)?;
+        let meta = Meta::parse(map, &context)?;
         let segments = match map.get("segments") {
             None => None,
             Some(value) => Some(
@@ -1382,7 +1470,7 @@ pub fn parse_slices(value: &Value) -> Result<Vec<SliceRule>, ConfigError> {
                     .ok_or_else(|| invalid(&context, "`segments` must be a whole number from 1"))?,
             ),
         };
-        let Some(matching) = text(map, "matching") else {
+        let Some(matching) = opt_text(map, "matching", &context)? else {
             return Err(invalid(
                 &context,
                 "`matching` is required, for example \"MyApp.(*)\"",
@@ -1398,6 +1486,12 @@ pub fn parse_slices(value: &Value) -> Result<Vec<SliceRule>, ConfigError> {
                 "`should` must be notDependOnEachOther, beFreeOfCycles or a list of them",
             )
         })?;
+        if conditions.is_empty() {
+            return Err(invalid(
+                &context,
+                "`should` lists no condition; use notDependOnEachOther, beFreeOfCycles or both",
+            ));
+        }
         let should = conditions
             .iter()
             .map(|c| match c.as_str() {
@@ -1412,14 +1506,13 @@ pub fn parse_slices(value: &Value) -> Result<Vec<SliceRule>, ConfigError> {
             .transpose()?
             .unwrap_or_default();
         rules.push(SliceRule {
-            comment: text(map, "comment"),
-            fix: text(map, "fix"),
-            severity: severity(map, &context)?,
-            where_: text(map, "where"),
-            allow_empty: map
-                .get("allowEmpty")
-                .and_then(Value::as_bool)
-                .unwrap_or(false),
+            comment: meta.comment,
+            fix: meta.fix,
+            severity: meta.severity,
+            owner: meta.owner,
+            expires: meta.expires,
+            allow_empty: meta.allow_empty,
+            where_: opt_text(map, "where", &context)?,
             name,
             matching,
             should,
@@ -1441,25 +1534,23 @@ pub fn parse_diagrams(value: &Value) -> Result<Vec<DiagramRule>, ConfigError> {
     let mut rules = Vec::with_capacity(items.len());
     for (index, item) in items.iter().enumerate() {
         let (map, name, context) = rule_map(item, "diagrams", index)?;
-        check_keys(
-            map,
-            &[
-                "name", "comment", "fix", "severity", "select", "adhereTo", "expires", "owner",
-            ],
-            &context,
-        )?;
+        check_keys(map, &family_keys("diagrams"), &context)?;
+        let meta = Meta::parse(map, &context)?;
         let select = parse_selector(
             map.get("select")
                 .ok_or_else(|| invalid(&context, "`select` is required"))?,
             &format!("{context}.select"),
         )?;
-        let Some(adhere_to) = text(map, "adhereTo") else {
+        let Some(adhere_to) = opt_text(map, "adhereTo", &context)? else {
             return Err(invalid(&context, "`adhereTo` is required: the .puml file"));
         };
         rules.push(DiagramRule {
-            comment: text(map, "comment"),
-            fix: text(map, "fix"),
-            severity: severity(map, &context)?,
+            comment: meta.comment,
+            fix: meta.fix,
+            severity: meta.severity,
+            owner: meta.owner,
+            expires: meta.expires,
+            allow_empty: meta.allow_empty,
             name,
             select,
             adhere_to,
@@ -1741,6 +1832,132 @@ mod tests {
     }
 
     #[test]
+    fn expires_and_owner_are_kept_on_every_family() -> Result<(), ConfigError> {
+        let meta = json!({ "owner": "@team", "expires": "2026-12-31" });
+        let with = |rule: Value| -> Value {
+            let mut rule = rule;
+            if let (Value::Object(r), Value::Object(m)) = (&mut rule, &meta) {
+                r.extend(m.clone());
+            }
+            json!([rule])
+        };
+        let date = NaiveDate::from_ymd_opt(2026, 12, 31);
+        let element = parse_elements(&with(
+            json!({ "name": "e", "select": { "kind": "class" }, "should": { "beSealed": true } }),
+        ))?;
+        assert_eq!(
+            (element[0].owner.as_deref(), element[0].expires),
+            (Some("@team"), date)
+        );
+        let slice = parse_slices(&with(
+            json!({ "name": "s", "matching": "A.(*)", "should": "beFreeOfCycles" }),
+        ))?;
+        assert_eq!(
+            (slice[0].owner.as_deref(), slice[0].expires),
+            (Some("@team"), date)
+        );
+        let diagram = parse_diagrams(&with(
+            json!({ "name": "d", "select": { "kind": "type" }, "adhereTo": "d.puml", "allowEmpty": true }),
+        ))?;
+        assert_eq!(
+            (diagram[0].owner.as_deref(), diagram[0].expires),
+            (Some("@team"), date)
+        );
+        let as_element = diagram[0].as_element_rule();
+        assert!(as_element.allow_empty);
+        assert_eq!(as_element.expires, date);
+        for bad in [json!("soon"), json!("2026-13-01"), json!(20_261_231)] {
+            let message = parse_slices(&json!([{ "name": "s", "matching": "A.(*)", "should": "beFreeOfCycles", "expires": bad }]))
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default();
+            assert!(
+                message.contains("`expires` must be a date"),
+                "{bad}: {message}"
+            );
+        }
+        let examples = parse_elements(&json!([{ "name": "e", "select": { "kind": "class" }, "should": { "beSealed": true }, "examples": { "allowed": ["a -> b"] } }]))
+            .err()
+            .map(|e| e.to_string())
+            .unwrap_or_default();
+        assert!(
+            examples.contains("`examples` is a dependency rule's key"),
+            "{examples}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_wrongly_typed_optional_key_is_refused() {
+        let element = |extra: Value| {
+            let mut rule = json!({ "name": "e", "select": { "kind": "class" }, "should": { "beSealed": true } });
+            if let (Value::Object(r), Value::Object(e)) = (&mut rule, extra) {
+                r.extend(e);
+            }
+            parse_elements(&json!([rule])).err().map(|e| e.to_string())
+        };
+        for (extra, needle) in [
+            (json!({ "comment": 1 }), "`comment` must be a string"),
+            (json!({ "fix": ["x"] }), "`fix` must be a string"),
+            (json!({ "because": true }), "`because` must be a string"),
+            (json!({ "owner": 7 }), "`owner` must be a string"),
+            (
+                json!({ "allowEmpty": "yes" }),
+                "`allowEmpty` must be true or false",
+            ),
+        ] {
+            let message = element(extra.clone()).unwrap_or_default();
+            assert!(message.contains(needle), "{extra}: {message}");
+        }
+        let slice = parse_slices(&json!([{ "name": "s", "matching": "A.(*)", "should": "beFreeOfCycles", "where": ["A"] }]))
+            .err()
+            .map(|e| e.to_string())
+            .unwrap_or_default();
+        assert!(slice.contains("`where` must be a string"), "{slice}");
+        let empty_should =
+            parse_slices(&json!([{ "name": "s", "matching": "A.(*)", "should": [] }]));
+        assert!(empty_should.is_err());
+        let diagram =
+            parse_diagrams(&json!([{ "name": "d", "select": { "kind": "type" }, "adhereTo": 3 }]))
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default();
+        assert!(diagram.contains("`adhereTo` must be a string"), "{diagram}");
+        let unnamed =
+            parse_diagrams(&json!([{ "name": 1, "select": { "kind": "type" }, "adhereTo": "d" }]));
+        assert!(unnamed.is_err());
+        let typo = parse_expr(
+            &json!({ "haveAttributeWithArguments": { "attribute": "A", "argument": ["x"] } }),
+            Side::Where,
+            "t",
+        )
+        .err()
+        .map(|e| e.to_string())
+        .unwrap_or_default();
+        assert!(typo.contains("`argument` is not a key here"), "{typo}");
+    }
+
+    #[test]
+    fn an_empty_language_list_and_an_overlong_key_are_handled() {
+        let message = parse_selector(&json!({ "kind": "class", "language": [] }), "t")
+            .err()
+            .map(|e| e.to_string())
+            .unwrap_or_default();
+        assert!(message.contains("empty list"), "{message}");
+        let long = "a".repeat(SUGGESTION_KEY_LIMIT + 1);
+        assert_eq!(suggestion(&long, Side::Where), "");
+        let message = parse_expr(&json!({ long.clone(): true }), Side::Where, "t")
+            .err()
+            .map(|e| e.to_string())
+            .unwrap_or_default();
+        assert!(
+            message.contains("is not an element predicate key")
+                && !message.contains("did you mean")
+        );
+        assert!(suggestion("arePublc", Side::Where).contains("arePublic"));
+    }
+
+    #[test]
     fn referenced_types_are_selected_only_when_asked() -> Result<(), ConfigError> {
         let plain = parse_selector(&json!({ "kind": "type" }), "t")?;
         assert!(
@@ -1851,7 +2068,8 @@ mod tests {
                 let parsed = parse_expr(&json!({ key: value.clone() }), *side, "t")
                     .or_else(|_| parse_expr(&json!({ key: "X" }), *side, "t"))
                     .or_else(|_| parse_expr(&json!({ key: ["X"] }), *side, "t"))
-                    .or_else(|_| parse_expr(&json!({ key: { "kind": "type" } }), *side, "t"));
+                    .or_else(|_| parse_expr(&json!({ key: { "kind": "type" } }), *side, "t"))
+                    .or_else(|_| parse_expr(&json!({ key: { "attribute": "X" } }), *side, "t"));
                 if let Err(e) = parsed {
                     refused.push(format!("{key} ({side:?}): {e}"));
                 }

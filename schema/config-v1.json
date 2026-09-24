@@ -325,7 +325,8 @@
       "type": "object"
     },
     "ElementCondition": {
-      "description": "One of `ArchUnitNET`'s conditions (`Should()`), or `all`, `any`, `not` around more. The loader rejects any other key and names the nearest one; `...That` forms (`dependOnAnyTypesThat`) take a nested selector.",
+      "description": "One of `ArchUnitNET`'s conditions (`Should()`), or `all`, `any`, `not` around more. The loader rejects any other key and names the nearest one, and an empty expression (only an empty `select.where` means \"no filter\"); `...That` forms (`dependOnAnyTypesThat`) take a nested selector.",
+      "minProperties": 1,
       "properties": {
         "adhereToPlantUmlDiagram": {
           "description": "`adhereToPlantUmlDiagram`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
@@ -336,6 +337,7 @@
           "items": {
             "$ref": "#/$defs/ElementCondition"
           },
+          "minItems": 1,
           "type": "array"
         },
         "any": {
@@ -343,6 +345,7 @@
           "items": {
             "$ref": "#/$defs/ElementCondition"
           },
+          "minItems": 1,
           "type": "array"
         },
         "be": {
@@ -549,14 +552,32 @@
           "type": "boolean"
         },
         "getterVisibility": {
-          "description": "The property's getter has this visibility (`HavePublicGetter` and its twins). .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
-          "enum": [
-            "public",
-            "protected",
-            "internal",
-            "protected-internal",
-            "private",
-            "private-protected"
+          "description": "The property's getter has this visibility (`HavePublicGetter` and its twins). Per value: `public`: .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `protected`: .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `internal`: .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `protected-internal`: .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `private`: .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `private-protected`: .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "oneOf": [
+            {
+              "const": "public",
+              "description": "`havePublicGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "protected",
+              "description": "`haveProtectedGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "internal",
+              "description": "`haveInternalGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "protected-internal",
+              "description": "`haveProtectedInternalGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "private",
+              "description": "`havePrivateGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "private-protected",
+              "description": "`havePrivateProtectedGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            }
           ]
         },
         "haveAnyAttributes": {
@@ -1798,27 +1819,46 @@
           "type": "string"
         },
         "setterVisibility": {
-          "description": "The property's setter has this visibility (`HavePublicSetter` and its twins). .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
-          "enum": [
-            "public",
-            "protected",
-            "internal",
-            "protected-internal",
-            "private",
-            "private-protected"
+          "description": "The property's setter has this visibility (`HavePublicSetter` and its twins). Per value: `public`: .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `protected`: .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `internal`: .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `protected-internal`: .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `private`: .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `private-protected`: .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "oneOf": [
+            {
+              "const": "public",
+              "description": "`havePublicSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "protected",
+              "description": "`haveProtectedSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "internal",
+              "description": "`haveInternalSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "protected-internal",
+              "description": "`haveProtectedInternalSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "private",
+              "description": "`havePrivateSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "private-protected",
+              "description": "`havePrivateProtectedSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            }
           ]
         }
       },
       "type": "object"
     },
     "ElementPredicate": {
-      "description": "One of `ArchUnitNET`'s predicates (`That()`), or `all`, `any`, `not` around more. The loader rejects any other key and names the nearest one; `...That` forms (`dependOnAnyTypesThat`) take a nested selector.",
+      "description": "One of `ArchUnitNET`'s predicates (`That()`), or `all`, `any`, `not` around more. The loader rejects any other key and names the nearest one, and an empty expression (only an empty `select.where` means \"no filter\"); `...That` forms (`dependOnAnyTypesThat`) take a nested selector.",
       "properties": {
         "all": {
           "description": "Every item holds (`And()`, `AndShould()`).",
           "items": {
             "$ref": "#/$defs/ElementPredicate"
           },
+          "minItems": 1,
           "type": "array"
         },
         "any": {
@@ -1826,6 +1866,7 @@
           "items": {
             "$ref": "#/$defs/ElementPredicate"
           },
+          "minItems": 1,
           "type": "array"
         },
         "are": {
@@ -2726,14 +2767,32 @@
           "type": "string"
         },
         "getterVisibility": {
-          "description": "The property's getter has this visibility (`HavePublicGetter` and its twins). .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
-          "enum": [
-            "public",
-            "protected",
-            "internal",
-            "protected-internal",
-            "private",
-            "private-protected"
+          "description": "The property's getter has this visibility (`HavePublicGetter` and its twins). Per value: `public`: .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `protected`: .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `internal`: .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `protected-internal`: .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `private`: .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `private-protected`: .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "oneOf": [
+            {
+              "const": "public",
+              "description": "`havePublicGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "protected",
+              "description": "`haveProtectedGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "internal",
+              "description": "`haveInternalGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "protected-internal",
+              "description": "`haveProtectedInternalGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "private",
+              "description": "`havePrivateGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "private-protected",
+              "description": "`havePrivateProtectedGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            }
           ]
         },
         "haveAnyAttributes": {
@@ -3273,14 +3332,32 @@
           "type": "string"
         },
         "setterVisibility": {
-          "description": "The property's setter has this visibility (`HavePublicSetter` and its twins). .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
-          "enum": [
-            "public",
-            "protected",
-            "internal",
-            "protected-internal",
-            "private",
-            "private-protected"
+          "description": "The property's setter has this visibility (`HavePublicSetter` and its twins). Per value: `public`: .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `protected`: .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `internal`: .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `protected-internal`: .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `private`: .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out. `private-protected`: .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "oneOf": [
+            {
+              "const": "public",
+              "description": "`havePublicSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "protected",
+              "description": "`haveProtectedSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "internal",
+              "description": "`haveInternalSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "protected-internal",
+              "description": "`haveProtectedInternalSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "private",
+              "description": "`havePrivateSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            },
+            {
+              "const": "private-protected",
+              "description": "`havePrivateProtectedSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out."
+            }
           ]
         }
       },
@@ -3328,6 +3405,7 @@
                   "python"
                 ]
               },
+              "minItems": 1,
               "type": "array"
             }
           ],
@@ -3965,8 +4043,17 @@
                 "description": "The `PlantUML` component diagram, relative to the configuration (`AdhereToPlantUmlDiagram`).",
                 "type": "string"
               },
+              "allowEmpty": {
+                "description": "An empty selection is not vacuous. Default false (ADR-0007).",
+                "type": "boolean"
+              },
               "comment": {
                 "description": "Why the rule exists; the decision token (`adr:NNNN`) goes here.",
+                "type": "string"
+              },
+              "expires": {
+                "description": "The last day the rule applies, YYYY-MM-DD; the run fails the day after, as for a dependency rule.",
+                "format": "date",
                 "type": "string"
               },
               "fix": {
@@ -3975,6 +4062,10 @@
               },
               "name": {
                 "description": "The rule's name, unique in the configuration.",
+                "type": "string"
+              },
+              "owner": {
+                "description": "Who answers for the rule.",
                 "type": "string"
               },
               "select": {
@@ -4017,12 +4108,21 @@
                 "description": "Why the rule exists; the decision token (`adr:NNNN`) goes here.",
                 "type": "string"
               },
+              "expires": {
+                "description": "The last day the rule applies, YYYY-MM-DD; the run fails the day after, as for a dependency rule.",
+                "format": "date",
+                "type": "string"
+              },
               "fix": {
                 "description": "What to do about a violation; every reporter prints it.",
                 "type": "string"
               },
               "name": {
                 "description": "The rule's name, unique in the configuration.",
+                "type": "string"
+              },
+              "owner": {
+                "description": "Who answers for the rule.",
                 "type": "string"
               },
               "select": {
@@ -4097,6 +4197,11 @@
                 "description": "Why the rule exists; the decision token (`adr:NNNN`) goes here.",
                 "type": "string"
               },
+              "expires": {
+                "description": "The last day the rule applies, YYYY-MM-DD; the run fails the day after, as for a dependency rule.",
+                "format": "date",
+                "type": "string"
+              },
               "fix": {
                 "description": "What to do about a violation; every reporter prints it.",
                 "type": "string"
@@ -4121,6 +4226,10 @@
               },
               "name": {
                 "description": "The rule's name, unique in the configuration.",
+                "type": "string"
+              },
+              "owner": {
+                "description": "Who answers for the rule.",
                 "type": "string"
               },
               "segments": {
@@ -4152,6 +4261,7 @@
                         "beFreeOfCycles"
                       ]
                     },
+                    "minItems": 1,
                     "type": "array"
                   }
                 ],
