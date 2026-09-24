@@ -351,9 +351,13 @@ fn loosen(source: &str, source_type: SourceType) -> String {
         let blank: String = text[start..end]
             .chars()
             .map(|c| {
-                if c.is_whitespace() { c } else { ' ' }
-                    .to_string()
-                    .repeat(c.len_utf8())
+                // Whitespace stays as it is; anything else becomes one space per byte, so every
+                // later offset is unchanged.
+                if c.is_whitespace() {
+                    c.to_string()
+                } else {
+                    " ".repeat(c.len_utf8())
+                }
             })
             .collect();
         text.replace_range(start..end, &blank);
@@ -1141,6 +1145,7 @@ impl<'a> Visit<'a> for AcornAmd<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
 
     #[test]
     fn the_longest_chain_counts_segments_of_values_and_types() {
@@ -1154,6 +1159,27 @@ mod tests {
         assert_eq!(longest("let v: A.B.C;"), 3);
         assert_eq!(longest("let v: A.B<C.D.E.F.G>;"), 5);
         assert_eq!(longest("a.b(c.d.e).f;"), 3);
+    }
+
+    /// Multi-byte whitespace on a blanked line (here U+00A0) keeps its length, so the import
+    /// after it keeps the span the code layer reads against the original source.
+    #[test]
+    fn loosening_keeps_offsets_past_multi_byte_whitespace() {
+        let source = "export default const x = 1;\u{a0}\u{a0}\u{a0}\u{a0}\nclass Foo extends Bar {}\nimport a from './a';\n";
+        assert_eq!(loosen(source, SourceType::mjs()).len(), source.len());
+        let found = walk_source(
+            source,
+            SourceType::mjs(),
+            Flavour::Acorn,
+            &WalkOptions {
+                module_systems: vec![ModuleSystem::Es6],
+                ..WalkOptions::default()
+            },
+        )
+        .unwrap_or_default();
+        let spans: Vec<(u32, u32)> = found.iter().map(|f| (f.span.start, f.span.end)).collect();
+        assert_eq!(spans, [(61, 81)]);
+        assert_eq!(&source[61..81], "import a from './a';");
     }
 
     #[test]
@@ -1244,5 +1270,18 @@ mod tests {
             },
         );
         assert_eq!(found.map(|f| f.len()).ok(), Some(1));
+    }
+
+    proptest! {
+        /// Loosening only blanks, byte for byte: the text keeps its length whatever characters,
+        /// multi-byte whitespace included, stand on the blanked lines.
+        #[test]
+        fn loosening_keeps_the_length(
+            tail in "[a-z\u{a0}\u{2003}\u{3000}\u{85}\u{feff}é字😀 =;{}()\n]{0,80}",
+        ) {
+            let source = format!("export default const x = 1;{tail}");
+            prop_assert_eq!(loosen(&source, SourceType::mjs()).len(), source.len());
+            prop_assert_eq!(loosen(&source, SourceType::ts()).len(), source.len());
+        }
     }
 }
