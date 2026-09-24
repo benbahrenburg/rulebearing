@@ -1744,6 +1744,16 @@ cases:
   expect:
     pass: [TypeDependencyNamespace.BaseClass]
     fail: []
+- id: ExistTest#3
+  query: Types that have full name "NotTheNameOfAnyObject" should exist
+  csharp: Types().That().HaveFullName(helper.NonExistentObjectName).Should().Exist()
+  architecture: [TypeDependencyAssembly]
+  rule:
+    select:
+      kind: type
+      where: {haveFullName: NotTheNameOfAnyObject}
+    should: {exist: true}
+  expect: {passes: false}
 - id: HaveAnyAttributesTest#1
   alsoCovers: [HaveAnyAttributesTest#2, HaveAnyAttributesTest#3, HaveAnyAttributesTest#4]
   query: Types that are "AttributeNamespace.ClassWithTwoAttributes" should have "AttributeNamespace.Attribute1"

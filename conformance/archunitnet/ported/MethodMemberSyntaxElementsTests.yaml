@@ -1514,6 +1514,68 @@ cases:
   expect:
     pass: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
     fail: []
+- id: HaveReturnTypeTest#35
+  alsoCovers: [HaveReturnTypeTest#36]
+  query: Method members that are "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGene... should have return type "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass>"
+  csharp: MethodMembers().That().Are(helper.MethodReturningGenericClass).Should().HaveReturnType(typeof(GenericClass<RegularClass>))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    should:
+      haveReturnType: [MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass>]
+  expect:
+    pass: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    fail: []
+- id: HaveReturnTypeTest#37
+  alsoCovers: [HaveReturnTypeTest#38]
+  query: Method members that are "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGene... should be Method members that have return type "MethodMemberNamespace.GenericClass`1[[MethodMemberNamespace.RegularClass, MethodMemberAssembly, Version=1....
+  csharp: MethodMembers().That().Are(helper.MethodReturningGenericClass).Should().Be(MethodMembers().That().HaveReturnType(typeof(GenericClass<RegularClass>)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    should:
+      be:
+        kind: method
+        where:
+          haveReturnType: [MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass>]
+  expect:
+    pass: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    fail: []
+- id: HaveReturnTypeTest#39
+  alsoCovers: [HaveReturnTypeTest#40]
+  query: Method members that are "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGene... should have return type "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.OtherRegularClass>"
+  csharp: MethodMembers().That().Are(helper.MethodReturningGenericClass).Should().HaveReturnType(typeof(GenericClass<OtherRegularClass>))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    should:
+      haveReturnType: [MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.OtherRegularClass>]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+- id: HaveReturnTypeTest#41
+  alsoCovers: [HaveReturnTypeTest#42]
+  query: Method members that are "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGene... should be Method members that have return type "MethodMemberNamespace.GenericClass`1[[MethodMemberNamespace.OtherRegularClass, MethodMemberAssembly, Versi...
+  csharp: MethodMembers().That().Are(helper.MethodReturningGenericClass).Should().Be(MethodMembers().That().HaveReturnType(typeof(GenericClass<OtherRegularClass>)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    should:
+      be:
+        kind: method
+        where:
+          haveReturnType: [MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.OtherRegularClass>]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
 - id: HaveReturnTypeTest#43
   query: Method members that are "MethodMemberNamespace.GenericClass`2<MethodMemberNamespace.RegularClass,MethodMemberNamespace.OtherRegularClass> MethodMemberNamespace.ClassWi... should have return type "MethodMemberNamespace.GenericClass`2"
   csharp: MethodMembers().That().Are(helper.MethodReturningTwoArgGenericClass).Should().HaveReturnType(typeof(GenericClass<,>))
@@ -1750,6 +1812,68 @@ cases:
   expect:
     pass: []
     fail: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+- id: DoNotHaveReturnTypeTest#34
+  alsoCovers: [DoNotHaveReturnTypeTest#35]
+  query: Method members that are "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGene... should not have return type "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass>"
+  csharp: MethodMembers().That().Are(helper.MethodReturningGenericClass).Should().NotHaveReturnType(typeof(GenericClass<RegularClass>))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    should:
+      notHaveReturnType: [MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass>]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+- id: DoNotHaveReturnTypeTest#36
+  alsoCovers: [DoNotHaveReturnTypeTest#37]
+  query: Method members that are "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGene... should be Method members that do not have return type "MethodMemberNamespace.GenericClass`1[[MethodMemberNamespace.RegularClass, MethodMemberAssembly, Ver...
+  csharp: MethodMembers().That().Are(helper.MethodReturningGenericClass).Should().Be(MethodMembers().That().DoNotHaveReturnType(typeof(GenericClass<RegularClass>)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveReturnType: [MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass>]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+- id: DoNotHaveReturnTypeTest#38
+  alsoCovers: [DoNotHaveReturnTypeTest#39]
+  query: Method members that are "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGene... should not have return type "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.OtherRegularClass>"
+  csharp: MethodMembers().That().Are(helper.MethodReturningGenericClass).Should().NotHaveReturnType(typeof(GenericClass<OtherRegularClass>))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    should:
+      notHaveReturnType: [MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.OtherRegularClass>]
+  expect:
+    pass: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    fail: []
+- id: DoNotHaveReturnTypeTest#40
+  alsoCovers: [DoNotHaveReturnTypeTest#41]
+  query: Method members that are "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGene... should be Method members that do not have return type "MethodMemberNamespace.GenericClass`1[[MethodMemberNamespace.OtherRegularClass, MethodMemberAssembly...
+  csharp: MethodMembers().That().Are(helper.MethodReturningGenericClass).Should().Be(MethodMembers().That().DoNotHaveReturnType(typeof(GenericClass<OtherRegularClass>)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveReturnType: [MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.OtherRegularClass>]
+  expect:
+    pass: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    fail: []
 - id: HaveReturnTypeWithAmbiguousReturnTypeTest#1
   query: Method members that are "DuplicateClassAcrossAssemblies.DuplicateClass DuplicateFullNameAssembly.ClassWithAmbiguousReturnType::MethodWithAmbiguousReturnType()" should have return type "MethodMemberNamespace.RegularClass"
   csharp: MethodMembers().That().Are(helper.MethodWithAmbiguousReturnType).Should().HaveReturnType(helper.RegularClass)
