@@ -13,6 +13,7 @@
 //! | `LoadFilteredDirectory` | [`a_filtered_directory_is_read`] |
 //! | `LoadNamespacesWithinAssembly` | [`namespaces_keep_only_their_types`] |
 //! | solution-driven loading | [`a_classic_solution_reads_every_built_project`], [`an_slnx_with_multi_targeting_and_exclusions`] |
+//! | build output layouts | [`an_arcade_repository_builds_to_artifacts_bin`] (dotnet/aspnetcore), [`use_artifacts_output_builds_to_artifacts_bin_pivots`] |
 
 use std::path::{Path, PathBuf};
 
@@ -178,6 +179,107 @@ fn an_slnx_with_multi_targeting_and_exclusions() -> Result<(), Box<dyn std::erro
             .all(|w| !w.message.contains("Old")),
         "the excluded project is not read"
     );
+    Ok(())
+}
+
+/// Each discovered project's assembly name and the assembly it was found at.
+type Located = Vec<(String, Option<PathBuf>)>;
+
+/// The assembly each discovered project was found at, by assembly name.
+fn located(dir: &Path) -> Result<Located, Box<dyn std::error::Error>> {
+    Ok(discover(dir, &DotnetOptions::default())?
+        .projects
+        .into_iter()
+        .map(|p| (p.assembly_name, p.assembly))
+        .collect())
+}
+
+#[test]
+fn an_arcade_repository_builds_to_artifacts_bin() -> Result<(), Box<dyn std::error::Error>> {
+    // dotnet/aspnetcore's layout: the Arcade SDK builds every project to
+    // artifacts/bin/<Project>/<Configuration>/<TFM>/, nothing under the project folder.
+    let dir = layout(
+        "arcade",
+        "arcade",
+        &[
+            ("Sample", "artifacts/bin/Web/Debug/net10.0"),
+            ("Sample.Core", "artifacts/bin/Core/Debug/net10.0"),
+        ],
+    )?;
+    let found = located(&dir)?;
+    assert_eq!(
+        found,
+        [
+            (
+                "Sample.Core".to_owned(),
+                Some(dir.join("artifacts/bin/Core/Debug/net10.0/Sample.Core.dll"))
+            ),
+            (
+                "Sample".to_owned(),
+                Some(dir.join("artifacts/bin/Web/Debug/net10.0/Sample.dll"))
+            ),
+        ]
+    );
+    let extraction =
+        DotnetExtractor.extract(std::slice::from_ref(&dir), &DotnetOptions::default())?;
+    let _ = std::fs::remove_dir_all(&dir);
+    assert_eq!(
+        (
+            extraction.inspected.projects,
+            extraction.inspected.assemblies
+        ),
+        (Some(2), 2)
+    );
+    assert!(
+        extraction
+            .warnings
+            .iter()
+            .all(|w| !w.message.contains("no built")),
+        "{:?}",
+        extraction.warnings
+    );
+    Ok(())
+}
+
+#[test]
+fn use_artifacts_output_builds_to_artifacts_bin_pivots() -> Result<(), Box<dyn std::error::Error>> {
+    // The .NET 8 layout: artifacts/bin/<Project>/<pivot>/, the pivot the lower-cased
+    // configuration, with the target framework only for a multi-targeting project.
+    let dir = layout(
+        "artifacts",
+        "use-artifacts",
+        &[
+            ("Sample", "artifacts/bin/Web/debug_net10.0"),
+            ("Sample", "artifacts/bin/Web/debug_net8.0"),
+            ("Sample.Core", "artifacts/bin/Core/debug"),
+        ],
+    )?;
+    let found = located(&dir)?;
+    assert_eq!(
+        found,
+        [
+            (
+                "Sample.Core".to_owned(),
+                Some(dir.join("artifacts/bin/Core/debug/Sample.Core.dll"))
+            ),
+            (
+                "Sample".to_owned(),
+                Some(dir.join("artifacts/bin/Web/debug_net10.0/Sample.dll"))
+            ),
+        ]
+    );
+    let options = DotnetOptions {
+        target_framework: Some("net8.0".to_owned()),
+        ..DotnetOptions::default()
+    };
+    let chosen = discover(&dir, &options)?;
+    assert_eq!(
+        chosen.projects[1].assembly,
+        Some(dir.join("artifacts/bin/Web/debug_net8.0/Sample.dll"))
+    );
+    let extraction = DotnetExtractor.extract(std::slice::from_ref(&dir), &options)?;
+    let _ = std::fs::remove_dir_all(&dir);
+    assert_eq!(extraction.inspected.assemblies, 2);
     Ok(())
 }
 
