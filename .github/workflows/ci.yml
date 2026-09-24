@@ -179,6 +179,30 @@ jobs:
       - run: npm run build && npm test
         working-directory: wrappers/npm
 
+  # The .NET test adapters and the dotnet tool (plan 0002, Step 14, 2H): each of the seven
+  # Rulebearing.TestAdapter packages and the tool's launcher at its own 70% line floor
+  # (docs/adr/0018), the junit message-equality proof against the built binary, and the smoke test
+  # that installs the packed tool into an empty tool path and runs `rulebearing --version`.
+  dotnet-adapters:
+    name: dotnet-adapters
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+      - run: cargo build --release --locked -p rb-cli
+      - run: adapters/dotnet/test.sh
+        env:
+          RULEBEARING_BINARY: ${{ github.workspace }}/target/release/rulebearing
+      - run: dotnet test wrappers/nuget/tests/Rulebearing.Tool.Tests --nologo -p:Threshold=70 -p:ThresholdType=line -p:ThresholdStat=total
+      - run: wrappers/nuget/smoke.sh
+        env:
+          RULEBEARING_BINARY: ${{ github.workspace }}/target/release/rulebearing
+
   # Mutation testing runs in eight shards so the rule engine's mutants fit the time limit; the
   # `mutants` job below is the required check and passes only when every shard did.
   mutants-shard:
