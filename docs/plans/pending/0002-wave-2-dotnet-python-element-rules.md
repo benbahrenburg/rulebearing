@@ -824,12 +824,12 @@ public class ArchitectureRules
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 2D | `language`, `namespace`, `project`, `assembly`, `dependencyKind` matchers | Not started | matcher tests |
-| 2D | `to.license` for .NET and Python; `to.moreUnstable` | Not started | fixtures |
-| 2D | `type-only` warning on a .NET rule; exit 3 on cross-language keys in a dc config | Not started | tests |
-| 2D | `rulebearing:dotnet`, `rulebearing:python`, `recommended` composition, `--init` presets | Not started | snapshot tests |
-| 2D | Vue and Svelte splitting; Markdown fences | Not started | gate 1 layer 1 |
-| 2D | `webpackConfig`, `collapse`, `highlight`, `experimentalStats` | Not started | gate 1 layers 1 and 2 |
+| 2D | `language`, `namespace`, `project`, `assembly`, `dependencyKind` matchers | Done | `crates/rb-rules/src/matchers.rs` table tests; `cargo test -p rb-rules --test cross_language` (one firing rule per key and `Not` form over `conformance/archunitnet/graphs/TestAssembly.json`, exact violation sets); `assembly` reads the code layer's assembly name, not the `project` path; `dependencyKind` is an edge property, on `to` only; ratchets and `can-import` read the keys |
+| 2D | `to.license` for .NET and Python; `to.moreUnstable` | Done | `crates/rb-cli/tests/cross_language.rs` `dotnet_licences_and_assemblies_reach_the_rules` (a `.nuspec` licence through the real extractor); `license_on_the_python_graph`; `more_unstable_on_a_dotnet_graph` (module and folder scope). Project-level instability has no computation or document behind it; a project's folder is a folder |
+| 2D | `type-only` warning on a .NET rule; exit 3 on cross-language keys in a dc config | Done | `crates/rb-config/src/normalize.rs` tests, lint fixture `crates/rb-config/tests/lint/type-only-on-dotnet.yaml`; `crates/rb-cli/tests/cross_language.rs` (exit 3 on `from.namespace` and `to.dependencyKind` in a `.dependency-cruiser.json`; the warning on stderr) |
+| 2D | `rulebearing:dotnet`, `rulebearing:python`, `recommended` composition, `--init` presets | Done | `cargo test -p rb-config --test presets` (seven snapshots; `recommended` spells out the union of the three presets and a test holds it to them); `cargo test -p rb-cli --test init_presets`, `--test config_expand`; `help-cruise.txt`, `help-init.txt` snapshots |
+| 2D | Vue and Svelte splitting; Markdown fences | Done | `crates/rb-extract-ts/src/sfc.rs`, `md.rs`; gate 1 layer 1 296 of 296 (the Vue case `odds-and-ends#1`); `cargo test -p rb-extract-ts --test options` (Svelte and Markdown); dependency-cruiser never reads an `extraExtensionsToScan` file, so fences are read for a native configuration only ([ADR-0036](../../adr/0036-markdown-fences-follow-the-configuration-format.md), proposed). Upstream has no graph-level Svelte or Markdown case to record |
+| 2D | `webpackConfig`, `collapse`, `highlight`, `experimentalStats` | Done | gate 1 layer 2 34 of 34 specs, `excluded.json` empty; `cargo test -p rb-cli --test cruise_options`; `rb-config` webpack and sandbox-escape tests; `webpackConfig` evaluated in the sandbox, its `resolve` block reaching the resolver |
 
 ### Wave 2E: reporters and baseline semantics
 
