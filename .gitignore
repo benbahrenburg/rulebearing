@@ -4,6 +4,7 @@ Cargo.lock.orig
 /.graph/
 /coverage/
 /wrappers/npm/coverage/
+/frontends/eslint-plugin-rulebearing/coverage/
 /lcov.info
 # cargo-mutants working output (docs/adr/0024-test-quality-gates.md)
 /mutants.out/

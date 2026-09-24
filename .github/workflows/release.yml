@@ -1,13 +1,16 @@
 # Builds the `rulebearing` binary for the six targets of docs/architecture.md#distribution and, on a
-# release tag, attaches them to a GitHub release and publishes the npm wrapper at the same version
-# (wave 1; NuGet and PyPI join with wave 2). The 0.0.1 name reservations were a manual, one-day
+# release tag, attaches them to a GitHub release and publishes the npm wrapper and
+# eslint-plugin-rulebearing at the same version (wave 1; the plugin with wave 2, Step 13; NuGet and
+# PyPI join with wave 2). The 0.0.1 name reservations were a manual, one-day
 # procedure in docs/release.md (docs/adr/0020).
 #
 # Dry run: a tag ending in `-rc.N` (for example v0.0.1-rc.1), or a manual run with `dry_run` left
 # on, builds every target, stages and packs the npm packages, runs the npm install matrix from the
 # packed tarballs, and uploads everything as workflow artefacts without releasing or publishing.
 # Plans: docs/plans/pending/0000-wave-0-spike.md, Step 11 (binaries);
-# docs/plans/pending/0001-wave-1-typescript-parity.md, Step 19 (npm). Hardening: docs/adr/0025.
+# docs/plans/pending/0001-wave-1-typescript-parity.md, Step 19 (npm);
+# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 13 (eslint-plugin-rulebearing).
+# Hardening: docs/adr/0025.
 name: release
 
 on:
@@ -131,6 +134,21 @@ jobs:
       - run: node wrappers/npm/scripts/stage.mjs dist "$VERSION" staged
         env:
           VERSION: ${{ steps.version.outputs.version }}
+      # eslint-plugin-rulebearing, built against the wrapper's declarations and staged beside the
+      # wrapper with the release version stamped into it and into its `rulebearing` dependency;
+      # the source tree's package.json is copied, never edited.
+      - name: stage eslint-plugin-rulebearing
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          plugin=frontends/eslint-plugin-rulebearing
+          (cd "$plugin" && npm run build)
+          dir=staged/eslint-plugin-rulebearing
+          rm -rf "$dir"
+          mkdir -p "$dir/dist"
+          cp "$plugin"/dist/*.js "$plugin"/dist/*.d.ts "$dir/dist/"
+          cp "$plugin/package.json" "$plugin/README.md" LICENSE "$dir/"
+          (cd "$dir" && npm pkg set "version=$VERSION" "dependencies.rulebearing=$VERSION" && npm pkg delete scripts)
       - name: pack
         run: |
           mkdir packages
@@ -234,3 +252,5 @@ jobs:
             publish "$tarball"
           done
           publish "./packages/rulebearing-$VERSION.tgz"
+          # The plugin last: it depends on `rulebearing` at the same version.
+          publish "./packages/eslint-plugin-rulebearing-$VERSION.tgz"

@@ -1,0 +1,46 @@
+{
+  "name": "eslint-plugin-rulebearing",
+  "version": "0.1.0",
+  "description": "One ESLint rule, rulebearing/boundaries, that reports an import the rulebearing gate would fail, with the rule, its fix and the violation id",
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "eslint-plugin",
+    "architecture",
+    "boundaries",
+    "rulebearing"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/benbahrenburg/rulebearing/tree/main/frontends/eslint-plugin-rulebearing#readme",
+  "bugs": "https://github.com/benbahrenburg/rulebearing/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benbahrenburg/rulebearing.git",
+    "directory": "frontends/eslint-plugin-rulebearing"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/*.js",
+    "dist/*.d.ts"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "rulebearing": "0.1.0"
+  },
+  "peerDependencies": {
+    "eslint": ">=9"
+  }
+}
