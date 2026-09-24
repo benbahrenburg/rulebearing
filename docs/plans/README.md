@@ -13,6 +13,7 @@ Every plan links the [PRD](../prd.md) requirements it satisfies, the [ADRs](../a
 | [0002](pending/0002-wave-2-dotnet-python-element-rules.md) | 2 | .NET, Python, element rules, migration | 10 weeks | 0001 |
 | [0003](pending/0003-wave-3-operations-surface-inner-loop.md) | 3 | Operations, the rest of the surface, the inner loop | 8 weeks | 0002 |
 | [0004](pending/0004-wave-4-reach.md) | 4 | Reach, funded on the adoption numbers | 8 weeks | 0003 and [NFR-ADOPT-01](../prd.md#nfr-adopt-01) |
+| [0005](pending/0005-guard-catalogue.md) | 1 to 2 | The guard catalogue: quality, convention and lifecycle guards as executable recipes | 5 weeks | 0001 (1A, 1B, 1E); 0002 for sub-wave 5D |
 
 ## Implemented
 

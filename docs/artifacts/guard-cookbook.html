@@ -1,0 +1,799 @@
+<title>Rulebearing Guard Cookbook</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+  :root {
+    --bg: #F4F3EF;
+    --surface: #FFFFFF;
+    --surface-2: #EBEAE4;
+    --ink: #1B1E24;
+    --muted: #5E6470;
+    --line: #D8D5CC;
+    --line-strong: #B9B5AA;
+    --accent: #2C6B5B;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #DCEBE5;
+    --forbid: #A8262F;
+    --forbid-soft: #F3DEDF;
+    --warn: #9A6A12;
+    --warn-soft: #F5E9CF;
+    --plan: #3A5A8C;
+    --plan-soft: #DEE6F2;
+    --code-bg: #F7F6F2;
+    --code-key: #2C6B5B;
+    --code-str: #7A3E1F;
+    --code-cmt: #7C8290;
+    --code-kw: #3A5A8C;
+    --code-var: #A8262F;
+    --shadow: 0 1px 2px rgba(27,30,36,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #14161A;
+      --surface: #1C1F25;
+      --surface-2: #23272E;
+      --ink: #E7E5DF;
+      --muted: #9CA2AC;
+      --line: #2E323A;
+      --line-strong: #444A54;
+      --accent: #63B39B;
+      --accent-ink: #0F1A16;
+      --accent-soft: #1E3A32;
+      --forbid: #E4707A;
+      --forbid-soft: #3A2226;
+      --warn: #D9A94A;
+      --warn-soft: #3A3020;
+      --plan: #8FB0E0;
+      --plan-soft: #202C3D;
+      --code-bg: #171A1F;
+      --code-key: #7CC8AF;
+      --code-str: #E0A77E;
+      --code-cmt: #7C8290;
+      --code-kw: #9DB9E6;
+      --code-var: #EE8A93;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #14161A;
+    --surface: #1C1F25;
+    --surface-2: #23272E;
+    --ink: #E7E5DF;
+    --muted: #9CA2AC;
+    --line: #2E323A;
+    --line-strong: #444A54;
+    --accent: #63B39B;
+    --accent-ink: #0F1A16;
+    --accent-soft: #1E3A32;
+    --forbid: #E4707A;
+    --forbid-soft: #3A2226;
+    --warn: #D9A94A;
+    --warn-soft: #3A3020;
+    --plan: #8FB0E0;
+    --plan-soft: #202C3D;
+    --code-bg: #171A1F;
+    --code-key: #7CC8AF;
+    --code-str: #E0A77E;
+    --code-cmt: #7C8290;
+    --code-kw: #9DB9E6;
+    --code-var: #EE8A93;
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, pre, kbd { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+  p code, li code, td code, th code, dd code, h3 code, .note code {
+    font-size: .92em;
+    background: var(--surface-2);
+    padding: .05em .35em;
+    border-radius: 3px;
+  }
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+  h1 { font-family: "IBM Plex Serif", Georgia, serif; font-weight: 600; font-size: clamp(2rem, 4.5vw, 2.9rem); line-height: 1.1; letter-spacing: -.01em; }
+  h2 { font-size: 1.45rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-size: 1.05rem; font-weight: 600; }
+  p { margin: 0; max-width: 68ch; }
+  .lede { font-size: 1.1rem; color: var(--muted); max-width: 62ch; }
+
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-block: 40px 80px;
+    padding-inline: 20px;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 48px;
+  }
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-block: 24px 60px; padding-inline: 16px; }
+  }
+
+  nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; }
+  nav.toc .eyebrow { margin-bottom: 10px; }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  nav.toc a { display: block; padding: 5px 10px; border-left: 2px solid var(--line); color: var(--muted); font-size: .9rem; }
+  nav.toc a:hover { color: var(--ink); border-color: var(--line-strong); text-decoration: none; }
+  nav.toc a.sub { padding-left: 22px; font-size: .84rem; }
+  @media (max-width: 900px) {
+    nav.toc { position: static; }
+    nav.toc ol { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    nav.toc a { border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; background: var(--surface); }
+    nav.toc a.sub { display: none; }
+  }
+
+  main { display: flex; flex-direction: column; gap: 56px; min-width: 0; }
+  header.hero { display: flex; flex-direction: column; gap: 18px; }
+  .eyebrow { font-size: .74rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; }
+
+  .exit-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin-top: 6px; }
+  .exit-strip div { background: var(--surface); padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+  .exit-strip b { font-family: "IBM Plex Mono", monospace; font-size: 1.15rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .exit-strip span { font-size: .84rem; color: var(--muted); }
+  @media (max-width: 560px) { .exit-strip { grid-template-columns: minmax(0, 1fr); } }
+
+  section { display: flex; flex-direction: column; gap: 20px; scroll-margin-top: 16px; }
+  .section-head { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .section-head p { color: var(--muted); }
+
+  .recipe { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; scroll-margin-top: 16px; }
+  .recipe-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+  .recipe-head p { flex-basis: 100%; color: var(--muted); }
+
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 500; letter-spacing: .03em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+  .badge.family { background: var(--surface-2); color: var(--muted); }
+  .badge.w1 { background: var(--accent-soft); color: var(--accent); }
+  .badge.w2 { background: var(--plan-soft); color: var(--plan); }
+  .badge.err { background: var(--forbid-soft); color: var(--forbid); }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+
+  .codeblock { position: relative; border: 1px solid var(--line); border-radius: 6px; background: var(--code-bg); box-shadow: var(--shadow); }
+  .codeblock .bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--line); font-size: .76rem; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+  .codeblock button { font: inherit; font-size: .76rem; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+  .codeblock button:hover { color: var(--ink); border-color: var(--line-strong); }
+  .codeblock button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .codeblock pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-size: .84rem; line-height: 1.55; tab-size: 2; }
+  .codeblock code { display: block; white-space: pre; }
+  .tok-key { color: var(--code-key); }
+  .tok-str { color: var(--code-str); }
+  .tok-cmt { color: var(--code-cmt); font-style: italic; }
+  .tok-kw { color: var(--code-kw); }
+  .tok-var { color: var(--code-var); font-weight: 500; }
+
+  .anatomy { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .anatomy { grid-template-columns: minmax(0, 1fr); } }
+  dl.fields { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 14px; font-size: .9rem; }
+  dl.fields dt { font-family: "IBM Plex Mono", monospace; font-size: .82rem; color: var(--accent); padding-top: 1px; }
+  dl.fields dd { margin: 0; color: var(--ink); }
+  dl.fields dd small { color: var(--muted); }
+
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 500; background: var(--surface-2); }
+  tr:last-child td { border-bottom: none; }
+  td a { white-space: nowrap; }
+
+  .note { border-left: 3px solid var(--accent); background: var(--surface); padding: 12px 16px; border-radius: 0 6px 6px 0; font-size: .92rem; max-width: 76ch; }
+  .note.forbid { border-color: var(--forbid); }
+  .note b { font-weight: 600; }
+
+  ul.checklist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; max-width: 76ch; }
+  ul.checklist li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; align-items: start; }
+  ul.checklist li::before { content: ""; width: 14px; height: 14px; margin-top: 4px; border: 1.5px solid var(--line-strong); border-radius: 3px; }
+
+  footer { color: var(--muted); font-size: .84rem; border-top: 1px solid var(--line); padding-top: 18px; max-width: 76ch; }
+  footer p + p { margin-top: 6px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+</style>
+
+<div class="shell">
+  <nav class="toc" aria-label="Contents">
+    <div class="eyebrow">Contents</div>
+    <ol>
+      <li><a href="#file">The file</a></li>
+      <li><a href="#anatomy">Anatomy of a rule</a></li>
+      <li><a href="#catalogue">Guard catalogue</a></li>
+      <li><a href="#quality">Code quality guards</a></li>
+      <li><a class="sub" href="#q-cycles">Cycles</a></li>
+      <li><a class="sub" href="#q-dead">Dead code</a></li>
+      <li><a class="sub" href="#q-test-leak">Test leakage</a></li>
+      <li><a class="sub" href="#q-licence">Licences</a></li>
+      <li><a class="sub" href="#q-coupling">Coupling</a></li>
+      <li><a href="#conventions">Convention guards</a></li>
+      <li><a class="sub" href="#c-layers">Layers</a></li>
+      <li><a class="sub" href="#c-independence">Independence</a></li>
+      <li><a class="sub" href="#c-barrel">Public entry points</a></li>
+      <li><a class="sub" href="#c-required">Must-reach</a></li>
+      <li><a class="sub" href="#c-elements">Naming and shape</a></li>
+      <li><a href="#lifecycle">Budgets and exceptions</a></li>
+      <li><a href="#prove">Prove the rule</a></li>
+      <li><a href="#checklist">Before you merge</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div class="eyebrow">rulebearing.yaml</div>
+      <h1>Rulebearing Guard Cookbook</h1>
+      <p class="lede">Every guard a team writes by hand today, a cycle check, a dead-code sweep, a licence gate, a layer fence, a budget that only falls, is one entry in the rule file. This page shows the entry for each, in the shapes the rule language accepts.</p>
+      <div class="exit-strip" aria-label="Exit codes">
+        <div><b>0 to 255</b><span>the count of <code>error</code> violations, from a gating reporter</span></div>
+        <div><b>2</b><span>the run cannot be trusted: a vacuous rule, a missing budget, unreadable input</span></div>
+        <div><b>3</b><span>the configuration is invalid: an unknown key, a missing decision token, a predicate the language cannot answer</span></div>
+      </div>
+    </header>
+
+    <section id="file">
+      <div class="section-head">
+        <h2>The file</h2>
+        <p>One native file groups rules by family. Every dependency-cruiser key is legal at the same place with the same meaning; the native format adds keys and renames none. Families marked wave 2 are specified in the design and planned in <code>docs/plans/pending/0002</code>; the rest land with wave 1.</p>
+      </div>
+      <div class="codeblock" data-lang="yaml"><div class="bar"><span>rulebearing.yaml</span><button type="button" data-copy>Copy</button></div><pre><code>$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+extends: rulebearing:recommended        # six quality rules, every one with a fix
+defines: {}                             # values read from JSON, used as ${name} in any pattern
+languages:
+  typescript: { tsConfig: { fileName: tsconfig.json } }
+
+rules:
+  dependencies:                         # dependency-cruiser's rule set, whole
+    forbidden: []                       #   an edge or a module that matches is a violation
+    allowed: []                         #   an edge no entry covers is a violation
+    required: []                        #   a module that does not import (or reach) a target is a violation
+  layers: []                            # shorthand: one forbidden rule per lower-to-higher pair
+  independence: []                      # shorthand: one $1 fence between sibling folders
+  ratchets: []                          # a count of edges that may only fall, against a budget file
+  elements: []                          # ArchUnitNET's select / where / should            (wave 2)
+  slices: []                            # notDependOnEachOther, beFreeOfCycles              (wave 2)
+  diagrams: []                          # adhereTo: a PlantUML component diagram            (wave 2)
+
+options:
+  doNotFollow: { path: node_modules }
+  knownViolations: []                   # the baseline; each entry carries expires and owner
+
+allowEmpty: []                          # rules allowed to match nothing, by name</code></pre></div>
+      <div class="note"><b>Two formats, one model.</b> A <code>.dependency-cruiser.js</code> that works with dependency-cruiser 18.2.0 runs here unchanged. <code>rulebearing config convert</code> moves it to the native format losslessly, and the reverse direction prints what it dropped. Reference: <code>docs/config.md</code>.</div>
+    </section>
+
+    <section id="anatomy">
+      <div class="section-head">
+        <h2>Anatomy of a rule</h2>
+        <p>Every family shares the same metadata. The four fields dependency-cruiser does not have (<code>fix</code>, <code>examples</code>, <code>owner</code>, <code>expires</code>) are what <code>explain</code>, <code>err-long</code> and the <code>agent</code> reporter print.</p>
+      </div>
+      <div class="anatomy">
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.dependencies.forbidden[]</span><button type="button" data-copy>Copy</button></div><pre><code>- name: domain-depends-on-nothing
+  comment: "Domain is the centre of the template. plan:0005-guard-catalogue"
+  fix: "Move the shared type into src/domain, or invert the edge so application code depends on domain."
+  severity: error
+  from: { path: "^src/domain/" }
+  to:   { path: "^src/(application|infrastructure|web)/" }
+  examples:
+    forbidden: ["src/domain/order.ts -> src/application/create-order.ts"]
+    allowed:   ["src/application/create-order.ts -> src/domain/order.ts"]
+  owner: "@platform-team"
+  expires: null</code></pre></div>
+        <dl class="fields">
+          <dt>name</dt><dd>Stable, kebab-case. The baseline, the violation id and <code>explain</code> key on it.</dd>
+          <dt>comment</dt><dd>The why, with a decision token <code>adr:NNNN</code> or <code>plan:&lt;slug&gt;</code>. <small><code>--require-comment-token</code> makes a rule without one exit 3.</small></dd>
+          <dt>fix</dt><dd>The imperative to follow when the rule fires. <small><code>config lint</code> flags a fix that restates the name.</small></dd>
+          <dt>severity</dt><dd><code>error</code> counts toward the exit code. <code>warn</code> and <code>info</code> are reported. <code>ignore</code> is silent.</dd>
+          <dt>from / to</dt><dd>Matchers on the resolved path. A capture in <code>from.path</code> is <code>$1</code> to <code>$9</code> in <code>to</code>, escaped so it matches only itself.</dd>
+          <dt>examples</dt><dd>Edges <code>rulebearing test</code> builds into a synthetic graph. A rule cannot merge without proof it fires.</dd>
+          <dt>owner</dt><dd>Who answers for the rule.</dd>
+          <dt>expires</dt><dd>A date, for a temporary exception. The run fails the day after.</dd>
+          <dt>allowEmpty</dt><dd>Opts the rule out of liveness. <small>Without it, a rule whose <code>from</code> matches nothing is vacuous and exits 2.</small></dd>
+        </dl>
+      </div>
+    </section>
+
+    <section id="catalogue">
+      <div class="section-head">
+        <h2>Guard catalogue</h2>
+        <p>What each kind of guard is in the rule language, and where the recipe is on this page.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>You want to guard</th><th>Rule shape</th><th>Family</th><th>Lands in</th></tr></thead>
+          <tbody>
+            <tr><td><a href="#q-cycles">No import cycles</a></td><td><code>to.circular: true</code>, ignoring type-only edges</td><td>forbidden</td><td><span class="badge w1">wave 1</span></td></tr>
+            <tr><td><a href="#q-dead">No dead modules</a></td><td><code>from.orphan: true</code> with entry points excluded</td><td>forbidden</td><td><span class="badge w1">wave 1</span></td></tr>
+            <tr><td><a href="#q-dead">No unresolvable imports</a></td><td><code>to.couldNotResolve: true</code></td><td>forbidden</td><td><span class="badge w1">wave 1</span></td></tr>
+            <tr><td><a href="#q-test-leak">Tests never leak into production</a></td><td><code>from.pathNot</code> test paths, <code>to.path</code> test paths or <code>dependencyTypes: [npm-dev]</code></td><td>forbidden</td><td><span class="badge w1">wave 1</span></td></tr>
+            <tr><td><a href="#q-licence">No copyleft licences</a></td><td><code>to.license</code></td><td>forbidden</td><td><span class="badge w1">wave 1</span></td></tr>
+            <tr><td><a href="#q-coupling">No stable code leaning on unstable code</a></td><td><code>to.moreUnstable: true</code></td><td>forbidden</td><td><span class="badge w1">wave 1</span></td></tr>
+            <tr><td><a href="#q-coupling">No hub module; no shared module with one user</a></td><td><code>module.numberOfDependentsMoreThan</code> / <code>LessThan</code></td><td>forbidden</td><td><span class="badge w1">wave 1</span></td></tr>
+            <tr><td><a href="#c-layers">Layering</a></td><td><code>rules.layers</code>, highest to lowest</td><td>shorthand</td><td><span class="badge w1">wave 1</span></td></tr>
+            <tr><td><a href="#c-independence">Feature or app independence</a></td><td><code>rules.independence</code> with one capture</td><td>shorthand</td><td><span class="badge w1">wave 1</span></td></tr>
+            <tr><td><a href="#c-barrel">Imports go through a public entry point</a></td><td><code>to.path</code> inside the package, <code>to.pathNot</code> its index</td><td>forbidden</td><td><span class="badge w1">wave 1</span></td></tr>
+            <tr><td><a href="#c-required">Every handler reaches the auth check</a></td><td><code>required</code> with <code>to.reachable: true</code></td><td>required</td><td><span class="badge w1">wave 1</span></td></tr>
+            <tr><td><a href="#c-elements">Naming, visibility, sealed, return types</a></td><td><code>select / where / should</code></td><td>elements</td><td><span class="badge w2">wave 2</span></td></tr>
+            <tr><td><a href="#c-slices">Bounded contexts stay apart</a></td><td><code>matching</code> with <code>(*)</code>, <code>notDependOnEachOther</code></td><td>slices</td><td><span class="badge w2">wave 2</span></td></tr>
+            <tr><td><a href="#c-diagram">Code matches the component diagram</a></td><td><code>adhereTo: file.puml</code></td><td>diagrams</td><td><span class="badge w2">wave 2</span></td></tr>
+            <tr><td><a href="#l-ratchet">A count that may only fall</a></td><td><code>rules.ratchets</code> with a budget file</td><td>ratchet</td><td><span class="badge w1">wave 1</span></td></tr>
+            <tr><td><a href="#l-baseline">Accept today's findings, with a deadline</a></td><td><code>options.knownViolations</code> with <code>expires</code></td><td>baseline</td><td><span class="badge w1">wave 1</span></td></tr>
+            <tr><td><a href="#l-exception">A named exception list kept out of the regex</a></td><td><code>defines</code> from JSON, <code>${name}</code></td><td>defines</td><td><span class="badge w1">wave 1</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="quality">
+      <div class="section-head">
+        <h2>Code quality guards</h2>
+        <p>Facts about the graph itself: cycles, orphans, imports that resolve to nothing, licences, coupling. The first four ship in <code>rulebearing:recommended</code>; write your own only to narrow or extend them. A rule you name the same as a preset rule replaces the attributes it names.</p>
+      </div>
+
+      <article class="recipe" id="q-cycles">
+        <div class="recipe-head"><h3>No cycles, and type-only edges do not count</h3><span class="badge family">forbidden</span><span class="badge err">error</span><span class="badge w1">wave 1</span>
+          <p>Tarjan's strongly connected components find the cycle and the report enumerates its path. <code>scope: folder</code> applies the same rule to folders instead of files.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.dependencies.forbidden[]</span><button type="button" data-copy>Copy</button></div><pre><code>- name: no-circular
+  comment: "A module on a cycle cannot be changed, tested or moved on its own. plan:0005-guard-catalogue"
+  fix: "Break the cycle: move the shared code into a module both sides import, or invert one edge behind an interface. Type-only imports do not count."
+  severity: error
+  from: {}
+  to: { circular: true, dependencyTypesNot: [type-only] }
+
+- name: no-folder-cycles
+  comment: "Folders are the units people reason about; a cycle between them hides in file-level green. plan:0005-guard-catalogue"
+  fix: "Move the file that closes the folder cycle into the folder it really belongs to."
+  severity: warn
+  scope: folder
+  from: { path: "^src/" }
+  to: { circular: true }</code></pre></div>
+      </article>
+
+      <article class="recipe" id="q-dead">
+        <div class="recipe-head"><h3>No dead modules, no imports that resolve to nothing</h3><span class="badge family">forbidden</span><span class="badge warn">warn</span><span class="badge err">error</span><span class="badge w1">wave 1</span>
+          <p>An orphan imports nothing and is imported by nothing. Entry points and configuration files are orphans by design, so the rule excludes them by path rather than going quiet.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.dependencies.forbidden[]</span><button type="button" data-copy>Copy</button></div><pre><code>- name: no-orphans
+  comment: "A module nothing imports and that imports nothing is usually dead code. plan:0005-guard-catalogue"
+  fix: "Delete the module, import it from where it belongs, or add its path to this rule's from.pathNot if it is an entry point."
+  severity: warn
+  from:
+    orphan: true
+    pathNot:
+      - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"     # dotfiles
+      - "\\.d\\.(c|m)?ts$"                                    # type declarations
+      - "(^|/)(page|layout|route|loading|error)\\.tsx?$"      # framework entry files by convention
+      - "(^|/)(vite|vitest|eslint|prettier|next)\\.config\\.(js|cjs|mjs|ts)$"
+  to: {}
+
+- name: not-to-unresolvable
+  comment: "An import that resolves to nothing fails at run time or hides a missing package. plan:0005-guard-catalogue"
+  fix: "Fix the specifier, or add the package to package.json; for a path alias, check tsConfig and enhancedResolveOptions."
+  severity: error
+  from: {}
+  to: { couldNotResolve: true }</code></pre></div>
+      </article>
+
+      <article class="recipe" id="q-test-leak">
+        <div class="recipe-head"><h3>Tests and dev-only packages never leak into production code</h3><span class="badge family">forbidden</span><span class="badge err">error</span><span class="badge w1">wave 1</span>
+          <p>Two edges to forbid: production code importing a test helper, and production code importing a package that only exists in <code>devDependencies</code>. Matchers hit the resolved path, so a path alias cannot dodge the fence.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.dependencies.forbidden[]</span><button type="button" data-copy>Copy</button></div><pre><code>- name: production-never-imports-tests
+  comment: "A test helper in a production bundle ships mocks and fixtures to users. plan:0005-guard-catalogue"
+  fix: "Move the shared helper into src/ as ordinary code, or keep the import inside the test tree."
+  severity: error
+  from: { path: "^src/", pathNot: ["\\.(test|spec)\\.[jt]sx?$", "(^|/)__tests__/", "(^|/)test-utils/"] }
+  to:   { path: ["\\.(test|spec)\\.[jt]sx?$", "(^|/)__tests__/", "(^|/)test-utils/", "(^|/)__mocks__/"] }
+  examples:
+    forbidden: ["src/orders/service.ts -> src/orders/__tests__/fixtures.ts"]
+    allowed:   ["src/orders/service.test.ts -> src/orders/__tests__/fixtures.ts"]
+
+- name: production-never-uses-dev-dependencies
+  comment: "A devDependency is absent from a production install. plan:0005-guard-catalogue"
+  fix: "Move the package to dependencies in package.json, or move the import into test or build code."
+  severity: error
+  from: { path: "^src/", pathNot: ["\\.(test|spec)\\.[jt]sx?$", "(^|/)__tests__/"] }
+  to:   { dependencyTypes: [npm-dev], dependencyTypesNot: [type-only] }</code></pre></div>
+      </article>
+
+      <article class="recipe" id="q-licence">
+        <div class="recipe-head"><h3>No copyleft licence reaches the product</h3><span class="badge family">forbidden</span><span class="badge err">error</span><span class="badge w1">wave 1</span>
+          <p><code>license</code> matches the package's declared licence, as dependency-cruiser reads it. Pair it with the recommended rule against packages missing from <code>package.json</code>.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.dependencies.forbidden[]</span><button type="button" data-copy>Copy</button></div><pre><code>- name: no-copyleft-in-product
+  comment: "The product is distributed under MIT; a copyleft dependency changes that. adr:0019"
+  fix: "Replace the package with an MIT, BSD or Apache-2.0 alternative, or keep it in tooling that is never shipped."
+  severity: error
+  from: { path: "^(apps|packages)/", pathNot: "^packages/tooling/" }
+  to:   { license: "(GPL|AGPL|LGPL|SSPL)" }</code></pre></div>
+      </article>
+
+      <article class="recipe" id="q-coupling">
+        <div class="recipe-head"><h3>Coupling: stable code on unstable code, hubs, and shared code with one user</h3><span class="badge family">forbidden</span><span class="badge warn">warn</span><span class="badge w1">wave 1</span>
+          <p>Instability is the outgoing share of a module's edges. <code>moreUnstable</code> flags a module that depends on something less stable than itself. Dependents rules match on the <code>module</code> key and count who imports it.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.dependencies.forbidden[]</span><button type="button" data-copy>Copy</button></div><pre><code>- name: stable-never-depends-on-unstable
+  comment: "A stable package pulled toward an unstable one inherits its churn. plan:0005-guard-catalogue"
+  fix: "Invert the edge behind an interface in the stable package, or move the volatile code up."
+  severity: warn
+  from: { path: "^packages/(core|domain)/" }
+  to:   { moreUnstable: true, dependencyTypesNot: [type-only] }
+
+- name: no-hub-modules
+  comment: "A module with more than 40 dependents is a hidden global. plan:0005-guard-catalogue"
+  fix: "Split the module by the concerns its importers use; a barrel file that re-exports everything is the usual cause."
+  severity: warn
+  module: { path: "^src/", pathNot: "(^|/)index\\.ts$", numberOfDependentsMoreThan: 40 }
+
+- name: shared-means-shared
+  comment: "Code under shared/ with one importer belongs beside that importer. plan:0005-guard-catalogue"
+  fix: "Move the module into the folder of its only importer, or delete it."
+  severity: warn
+  module: { path: "^src/shared/", numberOfDependentsLessThan: 2 }</code></pre></div>
+      </article>
+    </section>
+
+    <section id="conventions">
+      <div class="section-head">
+        <h2>Convention guards</h2>
+        <p>Where code may live and what it may know about. The shorthands exist because most dependency-cruiser configs write a layer model out longhand as five or six rules; <code>rulebearing config expand</code> prints the expansion so nothing is hidden.</p>
+      </div>
+
+      <article class="recipe" id="c-layers">
+        <div class="recipe-head"><h3>Layers: a lower layer never depends on a higher one</h3><span class="badge family">shorthand</span><span class="badge err">error</span><span class="badge w1">wave 1</span>
+          <p>Listed highest to lowest. Each lower layer gets one <code>forbidden</code> rule per higher layer, named <code>clean:domain-to-web</code> and so on, all sharing the <code>fix</code>.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.layers[]</span><button type="button" data-copy>Copy</button></div><pre><code>- name: clean
+  comment: "Clean architecture: web calls application, application calls domain, never the reverse. plan:0005-guard-catalogue"
+  fix: "Depend inward. Put the interface in the lower layer and the implementation in the higher one."
+  severity: error
+  layers:
+    - "^src/web/"
+    - "^src/application/"
+    - "^src/domain/"</code></pre></div>
+      </article>
+
+      <article class="recipe" id="c-independence">
+        <div class="recipe-head"><h3>Independence: features and apps do not import each other</h3><span class="badge family">shorthand</span><span class="badge err">error</span><span class="badge w1">wave 1</span>
+          <p>The pattern has exactly one capturing group naming the unit. It expands to one <code>$1</code> fence: files under one feature may not import another feature. The longhand form is shown for the cases the shorthand cannot express, here with an exception list from JSON.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.independence[] and the longhand</span><button type="button" data-copy>Copy</button></div><pre><code>rules:
+  independence:
+    - name: features-are-independent
+      comment: "A feature talks to another feature through packages/, never by import. plan:0005-guard-catalogue"
+      fix: "Move the shared code into packages/, or expose it from the feature's public API and register it there."
+      pattern: "^apps/web/src/features/([^/]+)/"
+
+  dependencies:
+    forbidden:
+      - name: no-app-to-app
+        comment: "Apps share only packages/* and HTTP; the legacy apps are exempt until their split lands. plan:0005-guard-catalogue"
+        fix: "Call the other app over its API, or move the shared code into packages/."
+        severity: error
+        from: { path: "^apps/([^/]+)/", pathNot: "^apps/(${legacyApps})/" }
+        to:   { path: "^apps/([^/]+)/", pathNot: "^apps/$1/" }
+        examples:
+          forbidden: ["apps/web/src/a.ts -> apps/admin/src/b.ts"]
+          allowed:   ["apps/web/src/a.ts -> apps/web/src/b.ts"]
+
+defines:
+  legacyApps: { fromJson: eng/legacy-apps.json, select: "apps[*].name" }   # joined with | by default</code></pre></div>
+      </article>
+
+      <article class="recipe" id="c-barrel">
+        <div class="recipe-head"><h3>Imports into a package go through its public entry point</h3><span class="badge family">forbidden</span><span class="badge err">error</span><span class="badge w1">wave 1</span>
+          <p>Lookaround is refused by the linear-time engine, so the exclusion is a <code>pathNot</code>, not a negative lookahead. The capture keeps a package's own internal imports legal.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.dependencies.forbidden[]</span><button type="button" data-copy>Copy</button></div><pre><code>- name: packages-are-entered-through-index
+  comment: "A package's public API is its src/index.ts; deep imports freeze its file layout. plan:0005-guard-catalogue"
+  fix: "Export the symbol from the package's src/index.ts and import it from the package name."
+  severity: error
+  from: { path: "^(apps|packages)/([^/]+)/" }
+  to:
+    path: "^packages/([^/]+)/src/"
+    pathNot:
+      - "^packages/$2/"                        # a package may import its own files
+      - "^packages/[^/]+/src/index\\.ts$"      # the public entry point
+  examples:
+    forbidden: ["apps/web/src/page.tsx -> packages/ui/src/button/button.tsx"]
+    allowed:
+      - "apps/web/src/page.tsx -> packages/ui/src/index.ts"
+      - "packages/ui/src/index.ts -> packages/ui/src/button/button.tsx"
+
+- name: ui-never-imports-server
+  comment: "Client components must not bundle server code or secrets. plan:0005-guard-catalogue"
+  fix: "Call the server through a route handler or a server action; import only types from the server tree."
+  severity: error
+  from: { path: "^apps/([^/]+)/src/(components|app/.*/client)/" }
+  to:   { path: "^apps/$1/src/server/", dependencyTypesNot: [type-only] }</code></pre></div>
+      </article>
+
+      <article class="recipe" id="c-required">
+        <div class="recipe-head"><h3>Must-reach: every route handler reaches the auth check</h3><span class="badge family">required</span><span class="badge err">error</span><span class="badge w1">wave 1</span>
+          <p>A <code>required</code> rule flags a module matching <code>module</code> that does not import a target. With <code>to.reachable: true</code> it is enough to reach it through any chain, which is how a handler that wraps its own middleware still passes.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.dependencies.required[]</span><button type="button" data-copy>Copy</button></div><pre><code>- name: routes-reach-the-auth-guard
+  comment: "Every API route is authenticated; an unguarded route is the one that leaks. plan:0005-guard-catalogue"
+  fix: "Wrap the handler in withAuth from src/server/auth/guard.ts, or import a middleware that does."
+  module: { path: "^apps/web/src/app/api/.*/route\\.ts$", pathNot: "^apps/web/src/app/api/(health|public)/" }
+  to:     { path: "^apps/web/src/server/auth/guard\\.ts$", reachable: true }
+
+- name: features-register-their-public-api
+  comment: "A feature without an index has no public API to fence. plan:0005-guard-catalogue"
+  fix: "Add src/features/<name>/index.ts and export the feature's entry points from it."
+  module: { path: "^apps/web/src/features/([^/]+)/[^/]+\\.tsx?$", pathNot: "index\\.ts$" }
+  to:     { path: "^apps/web/src/features/$1/index\\.ts$", reachable: true }</code></pre></div>
+      </article>
+
+      <article class="recipe" id="c-elements">
+        <div class="recipe-head"><h3>Naming, visibility and shape: element rules</h3><span class="badge family">elements</span><span class="badge err">error</span><span class="badge w2">wave 2</span>
+          <p>ArchUnitNET's selectors, predicates and conditions as declarative keys in camelCase. <code>select.kind</code> is one of <code>type</code>, <code>class</code>, <code>interface</code>, <code>attribute</code>, <code>member</code>, <code>field</code>, <code>method</code>, <code>property</code>, <code>function</code>, <code>module</code>. <code>all</code>, <code>any</code> and <code>not</code> combine predicates. A predicate the language cannot answer is exit 3, never a silent pass.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.elements[]</span><button type="button" data-copy>Copy</button></div><pre><code>- name: handlers-are-internal-and-sealed
+  comment: "A handler is reached through MediatR, never referenced directly. plan:0005-guard-catalogue"
+  fix: "Mark the handler internal sealed. Nothing outside the Application project may name it."
+  select:
+    kind: class
+    where:
+      all:
+        - haveNameEndingWith: Handler
+        - resideInNamespaceMatching: "^Shop\\.Application\\."
+        - not: { areAbstract: true }
+  should: { all: [ { beInternal: true }, { beSealed: true } ] }
+  because: "A handler is an implementation detail of the Application project."
+
+- name: controllers-are-named-and-placed
+  comment: "A controller outside Web.Controllers is not picked up by the route convention. plan:0005-guard-catalogue"
+  fix: "Rename the class to end in Controller and move it under Shop.Web.Controllers."
+  select: { kind: class, where: { areAssignableTo: "Microsoft.AspNetCore.Mvc.ControllerBase" } }
+  should:
+    all:
+      - haveNameEndingWith: Controller
+      - resideInNamespaceMatching: "^Shop\\.Web\\.Controllers"
+
+- name: endpoints-do-not-return-http-response-message
+  comment: "HttpResponseMessage bypasses the result filters. plan:0005-guard-catalogue"
+  fix: "Return IResult or ActionResult and let the filters shape the response."
+  select:
+    kind: method
+    where: { all: [ { declaredInTypesThat: { resideInNamespaceMatching: "^Shop\\.Web\\.Endpoints" } }, { arePublic: true } ] }
+  should: { notHaveReturnType: ["System.Net.Http.HttpResponseMessage"] }
+
+- name: domain-entities-are-immutable
+  comment: "An entity mutated from outside the aggregate skips its invariants. plan:0005-guard-catalogue"
+  fix: "Make the setters private or init-only and expose a method that enforces the invariant."
+  select: { kind: class, where: { resideInNamespaceMatching: "^Shop\\.Domain\\.Entities" } }
+  should: { beImmutable: true }
+
+- name: public-python-functions-are-snake-case
+  comment: "PEP 8 names for the public surface of the service. plan:0005-guard-catalogue"
+  fix: "Rename the function to snake_case, or prefix it with an underscore if it is private."
+  select: { kind: function, where: { all: [ { resideInNamespaceMatching: "^svc\\.api\\." }, { arePublic: true } ] } }
+  should: { haveNameMatching: "^[a-z][a-z0-9_]*$" }</code></pre></div>
+        <div class="note"><b>Cross-language where the concept exists.</b> <code>kind: class</code> with <code>areSealed</code> is C#. <code>haveAnyAttributes</code> reads decorators in TypeScript and Python. <code>kind: function</code> with <code>arePublic</code> reads <code>export</code> in TypeScript and a leading underscore in Python. The full vocabulary is the ArchUnitNET coverage tab under <code>docs/artifacts/</code>.</div>
+      </article>
+
+      <article class="recipe" id="c-slices">
+        <div class="recipe-head"><h3>Slices: bounded contexts stay apart</h3><span class="badge family">slices</span><span class="badge err">error</span><span class="badge w2">wave 2</span>
+          <p>A slice pattern is a namespace pattern for .NET, a dotted module pattern for Python, and a path pattern for TypeScript. Both conditions are also expressible as dependency rules; the slice form reads as the architecture rather than as a regex.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.slices[]</span><button type="button" data-copy>Copy</button></div><pre><code>- name: bounded-contexts-do-not-know-each-other
+  comment: "Modular monolith: each context owns its data and talks through the shared kernel. plan:0005-guard-catalogue"
+  fix: "Publish an event or a shared-kernel interface instead of referencing the other context."
+  matching: "Shop.(*)"                 # (**) for MatchingWithPackages
+  should: [notDependOnEachOther, beFreeOfCycles]
+  ignore: ["Shop.SharedKernel"]
+
+- name: web-features-are-slices
+  comment: "The same rule for the TypeScript front end. plan:0005-guard-catalogue"
+  fix: "Move the shared code into packages/."
+  matching: "apps/web/src/features/(*)/"
+  should: notDependOnEachOther</code></pre></div>
+      </article>
+
+      <article class="recipe" id="c-diagram">
+        <div class="recipe-head"><h3>Diagrams: the code matches the component diagram</h3><span class="badge family">diagrams</span><span class="badge err">error</span><span class="badge w2">wave 2</span>
+          <p>Types match components by the component's <code>&lt;&lt;pattern&gt;&gt;</code> stereotype; any dependency the diagram does not draw is a violation. The <code>plantuml</code> reporter draws the diagram from slices or folders, so it can be generated once and then enforced.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.diagrams[]</span><button type="button" data-copy>Copy</button></div><pre><code>- name: matches-the-context-diagram
+  comment: "docs/architecture/components.puml is the reviewed picture; code follows it. plan:0005-guard-catalogue"
+  fix: "Either remove the dependency or change the diagram in the same pull request, with the reason."
+  select: { kind: type, where: { resideInAssemblyMatching: "^Shop\\." } }
+  adhereTo: docs/architecture/components.puml</code></pre></div>
+      </article>
+    </section>
+
+    <section id="lifecycle">
+      <div class="section-head">
+        <h2>Budgets and exceptions</h2>
+        <p>The guards that keep the other guards honest over time. Every one refuses the cheapest path to green: a ceiling cannot be raised, a baseline entry expires, an exception has a date and an owner.</p>
+      </div>
+
+      <article class="recipe" id="l-ratchet">
+        <div class="recipe-head"><h3>A ratchet: a count that may only fall</h3><span class="badge family">ratchets</span><span class="badge w1">wave 1</span>
+          <p>Counts the direct edges matching <code>from</code> and <code>to</code>, with <code>$1</code> captures, and compares with the ceiling in the budget file. An exceeded ratchet is one error. A missing budget is exit 2. <code>count --write</code> lowers the ceiling to the current count and refuses to raise it.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rules.ratchets[] and eng/routes-via-service-budget.json</span><button type="button" data-copy>Copy</button></div><pre><code>rules:
+  ratchets:
+    - name: routes-via-service
+      comment: "Route files reach the database through the service layer; the direct edges are being retired. adr:0029"
+      fix: "Move the query into apps/<app>/src/server/services and call it from the route."
+      owner: "@web-platform"
+      from: { path: "^apps/([^/]+)/src/app/.*/(page|route)\\.tsx?$" }
+      to:   { path: "^apps/$1/src/(server|domain)/" }
+      budget: eng/routes-via-service-budget.json
+
+# eng/routes-via-service-budget.json
+# { "ceiling": 14 }
+#
+# rulebearing count --from '^apps/([^/]+)/src/app/.*/(page|route)\.tsx?$' --to '^apps/$1/src/(server|domain)/' \
+#   --budget eng/routes-via-service-budget.json --write      # lowers 14 to today's count; a raise is refused</code></pre></div>
+      </article>
+
+      <article class="recipe" id="l-baseline">
+        <div class="recipe-head"><h3>A baseline: accept today's findings, each with a deadline</h3><span class="badge family">knownViolations</span><span class="badge w1">wave 1</span>
+          <p><code>rulebearing adopt</code> writes this on a brownfield repository so the first run is green. A known finding is reported with severity <code>ignore</code>. An entry past its date fails the run the day after, so the baseline shrinks or someone renews it by name.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>options.knownViolations[]</span><button type="button" data-copy>Copy</button></div><pre><code>options:
+  knownViolations:
+    - id: RB-4f2a9c10                       # stable: rule, both ends and the kind of edge
+      rule: { name: ui-never-imports-server, severity: error }
+      expires: 2026-12-31
+      owner: "@orders-team"
+    - from: apps/web/src/app/orders/page.tsx  # dependency-cruiser's own shape is accepted as it is
+      to: apps/web/src/server/db.ts
+      rule: { name: ui-never-imports-server, severity: error }</code></pre></div>
+      </article>
+
+      <article class="recipe" id="l-exception">
+        <div class="recipe-head"><h3>A temporary rule, an exception list, and a rule ahead of its first match</h3><span class="badge family">metadata</span><span class="badge w1">wave 1</span>
+          <p>Three ways to record an exception without weakening the fence. <code>expires</code> puts a date on a temporary rule. <code>defines</code> keeps the exception list in a JSON file with an owner and a review, out of the regex. <code>allowEmpty</code> excuses one rule from liveness by name.</p></div>
+        <div class="codeblock" data-lang="yaml"><div class="bar"><span>rulebearing.yaml</span><button type="button" data-copy>Copy</button></div><pre><code>defines:
+  migratingPackages: { fromJson: eng/migration.json, select: "packages[*]", joinWith: "|" }
+
+rules:
+  dependencies:
+    forbidden:
+      - name: no-legacy-http-client-except-migrating
+        comment: "The legacy client is retired by the end of Q4 2026. plan:http-client-migration"
+        fix: "Use packages/http; add the package to eng/migration.json only with the owner's review."
+        severity: error
+        from: { path: "^packages/", pathNot: "^packages/(${migratingPackages})/" }
+        to:   { path: "^packages/legacy-http/" }
+        owner: "@web-platform"
+        expires: 2026-12-31                # the run fails on 2027-01-01 if the rule is still here
+
+      - name: plugins-stay-apart
+        comment: "Plugins are independent; the first one lands next sprint. plan:plugin-host"
+        fix: "Talk to another plugin through the host API."
+        severity: error
+        from: { path: "^plugins/([^/]+)/" }
+        to:   { path: "^plugins/([^/]+)/", pathNot: "^plugins/$1/" }
+        allowEmpty: true                   # matches nothing until plugins/ has two entries
+
+# For a rule that lives in an extended .dependency-cruiser.* file, which cannot carry the key:
+# allowEmpty: [plugins-stay-apart]</code></pre></div>
+        <div class="note forbid"><b>What the engine will not let a rule do.</b> Raise a ceiling with <code>count --write</code>. Pass while matching nothing. Merge without a decision token when <code>--require-comment-token</code> is on. Use lookaround in a pattern. Return a silent false for a predicate the language cannot answer. Each is a failure, not a warning.</div>
+      </article>
+    </section>
+
+    <section id="prove">
+      <div class="section-head">
+        <h2>Prove the rule</h2>
+        <p>A rule is code. These commands are its tests, its linter and its documentation.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>Answers</th></tr></thead>
+          <tbody>
+            <tr><td><code>rulebearing test</code></td><td>Does each rule flag its <code>examples.forbidden</code> edges and pass its <code>examples.allowed</code> ones, on a synthetic graph built from them?</td></tr>
+            <tr><td><code>rulebearing config lint --graph .graph/cruise.json</code></td><td>Can a rule never match? Is it shadowed by an earlier one? Does an <code>allowed</code> list admit everything? Is a <code>fix</code> missing or a restatement of the name? Is a decision token missing?</td></tr>
+            <tr><td><code>rulebearing explain &lt;rule&gt;</code></td><td>The rule in a sentence, its reason and fix, what each side matches today, and the first edges it flags.</td></tr>
+            <tr><td><code>rulebearing rules --json</code></td><td>Every rule with its family, severity and how many modules each side matched. A zero on the <code>from</code> side is the vacuous rule liveness will fail.</td></tr>
+            <tr><td><code>rulebearing can-import &lt;from&gt; &lt;to&gt;</code></td><td>Yes or no, with the rule that decides it, from the cached graph, before the import is written.</td></tr>
+            <tr><td><code>rulebearing propose --from &lt;glob&gt; --to &lt;glob&gt;</code></td><td>A draft rule with the match counts on both sides and the edges it would flag today. <code>--from-example "a.ts -> b.ts"</code> generalises one edge to the narrowest rule that covers it. Wave 2.</td></tr>
+            <tr><td><code>rulebearing cruise --require-comment-token -T err-long</code></td><td>The gate itself. Every finding prints the rule's <code>fix</code>; the exit code is the count of <code>error</code> findings.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="checklist">
+      <div class="section-head">
+        <h2>Before you merge a rule</h2>
+      </div>
+      <ul class="checklist">
+        <li>The <code>comment</code> says why and carries <code>adr:NNNN</code> or <code>plan:&lt;slug&gt;</code>.</li>
+        <li>The <code>fix</code> is an imperative someone can follow without opening the rule.</li>
+        <li><code>examples.forbidden</code> and <code>examples.allowed</code> are present and <code>rulebearing test</code> is green.</li>
+        <li><code>rulebearing rules --json</code> shows a non-zero match on the <code>from</code> side, or the rule is named in <code>allowEmpty</code> with the reason in its comment.</li>
+        <li><code>rulebearing config lint</code> reports no shadowing and no never-matching pattern.</li>
+        <li>A temporary rule or baseline entry has <code>owner</code> and <code>expires</code>.</li>
+        <li>No ratchet ceiling was raised. No <code>pathNot</code> was widened to get green without a decision recorded.</li>
+        <li>The rule uses <code>pathNot</code> rather than lookaround, and captures rather than duplicated literals.</li>
+      </ul>
+      <footer>
+        <p>Sources in the repository: <code>docs/rules.md</code>, <code>docs/config.md</code>, <code>docs/artifacts/design.md</code> (The rule language, Rules an agent can implement and follow), <code>presets/rulebearing/recommended.yaml</code>, and this repository's own <code>rulebearing.yaml</code>. Decision tokens in the examples cite plan 0005 (the guard catalogue, <code>docs/plans/pending/0005-guard-catalogue.md</code>), ADR-0019 (MIT licence) and ADR-0029 (ratchets); a rule in your own repository cites the decision it actually serves.</p>
+        <p>Element, slice and diagram rules are specified in the design and scheduled in plan 0002. Their keys are ArchUnitNET's method names in camelCase, as the coverage tab lists them.</p>
+      </footer>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  var KW = /^(true|false|null|error|warn|info|ignore|notDependOnEachOther|beFreeOfCycles)$/;
+
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function paintValue(v) {
+    var out = '', i = 0;
+    while (i < v.length) {
+      var ch = v[i];
+      if (ch === '"' || ch === "'") {
+        var j = v.indexOf(ch, i + 1);
+        if (j < 0) j = v.length - 1;
+        var str = v.slice(i, j + 1);
+        out += '<span class="tok-str">' + esc(str).replace(/\$\{?[0-9A-Za-z_]+\}?/g, '<span class="tok-var">$&</span>') + '</span>';
+        i = j + 1;
+        continue;
+      }
+      var m = /^[A-Za-z_][A-Za-z0-9_-]*/.exec(v.slice(i));
+      if (m) {
+        out += KW.test(m[0]) ? '<span class="tok-kw">' + m[0] + '</span>' : esc(m[0]);
+        i += m[0].length;
+        continue;
+      }
+      var d = /^\$\{?[0-9A-Za-z_]+\}?/.exec(v.slice(i));
+      if (d) { out += '<span class="tok-var">' + esc(d[0]) + '</span>'; i += d[0].length; continue; }
+      out += esc(ch);
+      i += 1;
+    }
+    return out;
+  }
+
+  function paintLine(line) {
+    var comment = '';
+    var inQ = null;
+    for (var i = 0; i < line.length; i++) {
+      var c = line[i];
+      if (inQ) { if (c === inQ) inQ = null; continue; }
+      if (c === '"' || c === "'") { inQ = c; continue; }
+      if (c === '#' && (i === 0 || /\s/.test(line[i - 1]))) { comment = line.slice(i); line = line.slice(0, i); break; }
+    }
+    var m = /^(\s*(?:-\s+)?)([$A-Za-z_][^:"'#]*?)(:)(\s|$)(.*)$/.exec(line);
+    var body;
+    if (m) {
+      body = esc(m[1]) + '<span class="tok-key">' + esc(m[2]) + '</span>' + m[3] + m[4] + paintValue(m[5]);
+    } else {
+      body = paintValue(line);
+    }
+    return body + (comment ? '<span class="tok-cmt">' + esc(comment) + '</span>' : '');
+  }
+
+  document.querySelectorAll('.codeblock[data-lang="yaml"] code').forEach(function (code) {
+    var text = code.textContent;
+    code.innerHTML = text.split('\n').map(paintLine).join('\n');
+  });
+
+  document.querySelectorAll('button[data-copy]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var code = btn.closest('.codeblock').querySelector('code');
+      var text = code.textContent;
+      function done(ok) {
+        btn.textContent = ok ? 'Copied' : 'Select and copy';
+        setTimeout(function () { btn.textContent = 'Copy'; }, 1600);
+      }
+      function fallback() {
+        try {
+          var range = document.createRange();
+          range.selectNodeContents(code);
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        } catch (e) {}
+        done(false);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, fallback);
+      } else {
+        fallback();
+      }
+    });
+  });
+})();
+</script>
