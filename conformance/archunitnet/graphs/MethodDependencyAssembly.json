@@ -29,7 +29,7 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 7,
+          "line": 6,
           "dependencyKind": "inherits"
         },
         {
@@ -77,7 +77,7 @@
         "kind": "class",
         "language": "dotnet",
         "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
-        "line": 7,
+        "line": 6,
         "attribution": "pdb",
         "assembly": "MethodDependencyAssembly",
         "visibility": "public",
@@ -93,6 +93,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodDependencyNamespace.MethodDependencyClass, MethodDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "MethodDependencyNamespace.MethodDependencyClass",
@@ -126,7 +127,7 @@
           {
             "target": "System.Object",
             "kind": "inherits",
-            "line": 7
+            "line": 6
           }
         ]
       },
@@ -137,7 +138,7 @@
         "kind": "class",
         "language": "dotnet",
         "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
-        "line": 32,
+        "line": 31,
         "attribution": "pdb",
         "assembly": "MethodDependencyAssembly",
         "visibility": "public",
@@ -153,7 +154,20 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodDependencyNamespace.OtherCallingClass, MethodDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "line": 31,
+            "form": "body-type"
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "line": 37,
+            "form": "body-type"
+          },
           {
             "target": "MethodDependencyNamespace.MethodDependencyClass",
             "kind": "body",
@@ -186,7 +200,7 @@
           {
             "target": "System.Object",
             "kind": "inherits",
-            "line": 32
+            "line": 31
           }
         ]
       }
@@ -219,7 +233,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
         "line": 10,
-        "column": 34,
+        "column": 32,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -234,7 +248,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
         "line": 19,
-        "column": 35,
+        "column": 33,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -249,7 +263,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
         "line": 21,
-        "column": 35,
+        "column": 33,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -264,7 +278,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
         "line": 23,
-        "column": 35,
+        "column": 33,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -278,8 +292,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
-        "line": 14,
-        "column": 9,
+        "line": 13,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -313,8 +327,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
-        "line": 7,
-        "column": 9,
+        "line": 6,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -337,7 +351,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
         "line": 25,
-        "column": 47,
+        "column": 45,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -371,8 +385,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
-        "line": 38,
-        "column": 9,
+        "line": 37,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -380,6 +394,12 @@
         "returnType": "System.Void",
         "fullName": "System.Void MethodDependencyNamespace.OtherCallingClass::AnotherMethodCallingCalledMethod()",
         "dependencies": [
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "line": 37,
+            "form": "body-type"
+          },
           {
             "target": "MethodDependencyNamespace.MethodDependencyClass",
             "kind": "body",
@@ -400,8 +420,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
-        "line": 32,
-        "column": 9,
+        "line": 31,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -409,6 +429,12 @@
         "returnType": "System.Void",
         "fullName": "System.Void MethodDependencyNamespace.OtherCallingClass::MethodCallingCalledMethod()",
         "dependencies": [
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "line": 31,
+            "form": "body-type"
+          },
           {
             "target": "MethodDependencyNamespace.MethodDependencyClass",
             "kind": "body",

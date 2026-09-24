@@ -358,8 +358,8 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 18,
-          "column": 13,
+          "line": 17,
+          "column": 9,
           "dependencyKind": "body",
           "member": "TestAssembly.Class2..ctor"
         }
@@ -503,7 +503,7 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 9,
+          "line": 8,
           "dependencyKind": "inherits"
         },
         {
@@ -539,8 +539,8 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 9,
-          "column": 13,
+          "line": 8,
+          "column": 9,
           "dependencyKind": "signature"
         },
         {
@@ -1022,7 +1022,7 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 12,
+          "line": 11,
           "dependencyKind": "inherits"
         },
         {
@@ -1867,8 +1867,8 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 13,
-          "column": 13,
+          "line": 12,
+          "column": 9,
           "dependencyKind": "body",
           "member": "System.Collections.Generic.List`1+Enumerator.MoveNext"
         },
@@ -1922,8 +1922,8 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 13,
-          "column": 13,
+          "line": 12,
+          "column": 9,
           "dependencyKind": "body",
           "member": "TestAssembly.PlantUml.Orders.Order..ctor"
         },
@@ -1941,8 +1941,8 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 16,
-          "column": 17,
+          "line": 12,
+          "column": 9,
           "dependencyKind": "body",
           "member": "TestAssembly.PlantUml.Products.Product.Register"
         },
@@ -2061,7 +2061,7 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 13,
+          "line": 11,
           "column": 9,
           "dependencyKind": "signature"
         }
@@ -2109,8 +2109,8 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 18,
-          "column": 13,
+          "line": 17,
+          "column": 9,
           "dependencyKind": "signature"
         },
         {
@@ -2161,8 +2161,8 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 18,
-          "column": 13,
+          "line": 17,
+          "column": 9,
           "dependencyKind": "signature"
         },
         {
@@ -2179,8 +2179,8 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 18,
-          "column": 13,
+          "line": 17,
+          "column": 9,
           "dependencyKind": "body",
           "member": "TestAssembly.PlantUml.Catalog.ProductCatalog..ctor"
         },
@@ -2334,8 +2334,8 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 15,
-          "column": 13,
+          "line": 14,
+          "column": 9,
           "dependencyKind": "signature"
         },
         {
@@ -2373,7 +2373,7 @@
           "moduleSystem": "clr",
           "valid": true,
           "line": 27,
-          "column": 48,
+          "column": 46,
           "dependencyKind": "signature"
         },
         {
@@ -2426,8 +2426,8 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 23,
-          "column": 17,
+          "line": 19,
+          "column": 9,
           "dependencyKind": "body",
           "member": "TestAssembly.PlantUml.Products.Product.Report"
         },
@@ -3283,6 +3283,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.AbstractRecord, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Boolean",
@@ -3362,7 +3363,7 @@
           {
             "target": "System.String",
             "kind": "signature",
-            "line": 9
+            "line": 8
           },
           {
             "target": "System.Text.StringBuilder",
@@ -3415,6 +3416,12 @@
             "target": "TestAssembly.AbstractRecord",
             "kind": "body",
             "form": "type-check"
+          },
+          {
+            "target": "TestAssembly.AbstractRecord",
+            "kind": "body",
+            "line": 8,
+            "form": "body-type"
           },
           {
             "target": "TestAssembly.AbstractRecord",
@@ -3491,7 +3498,7 @@
           {
             "target": "TestAssembly.AbstractRecord",
             "kind": "signature",
-            "line": 9
+            "line": 8
           },
           {
             "target": "TestAssembly.AbstractRecord",
@@ -3522,6 +3529,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.AssemblyTestAttribute, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Attribute",
@@ -3580,11 +3588,12 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Class1, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Int32",
             "kind": "signature",
-            "line": 18
+            "line": 17
           },
           {
             "target": "System.Object",
@@ -3604,6 +3613,12 @@
           },
           {
             "target": "System.String",
+            "kind": "body",
+            "line": 17,
+            "form": "body-type"
+          },
+          {
+            "target": "System.String",
             "kind": "signature",
             "line": 9
           },
@@ -3615,7 +3630,7 @@
           {
             "target": "System.String",
             "kind": "signature",
-            "line": 18
+            "line": 17
           },
           {
             "target": "TestAssembly.Class1",
@@ -3628,6 +3643,12 @@
             "kind": "body",
             "member": "<TestProperty>k__BackingField",
             "line": 14
+          },
+          {
+            "target": "TestAssembly.Class2",
+            "kind": "body",
+            "line": 17,
+            "form": "body-type"
           },
           {
             "target": "TestAssembly.Class2",
@@ -3660,6 +3681,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Class2, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -3696,6 +3718,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Class3, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -3716,7 +3739,7 @@
         "kind": "class",
         "language": "dotnet",
         "file": "TestAssembly/ClassCallingOtherMethod.cs",
-        "line": 9,
+        "line": 8,
         "attribution": "pdb",
         "assembly": "TestAssembly",
         "visibility": "public",
@@ -3732,6 +3755,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.ClassCallingOtherMethod, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Console",
@@ -3753,7 +3777,7 @@
           {
             "target": "System.Object",
             "kind": "inherits",
-            "line": 9
+            "line": 8
           },
           {
             "target": "TestAssembly.Class1",
@@ -3764,7 +3788,7 @@
           {
             "target": "TestAssembly.Class1",
             "kind": "signature",
-            "line": 9
+            "line": 8
           }
         ]
       },
@@ -3791,6 +3815,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.ClassUsingNullableReferenceType, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -3842,6 +3867,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.DependencyTargets.AttributeInTestAssembly, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Attribute",
@@ -3877,6 +3903,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.DependencyTargets.ClassInTestAssembly, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -3907,7 +3934,8 @@
         "nested": false,
         "generic": false,
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.DependencyTargets.IInterfaceInTestAssembly, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
+        "assemblyQualifiedName": "TestAssembly.DependencyTargets.IInterfaceInTestAssembly, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
       },
       {
         "fullName": "TestAssembly.Diagram.ConfusingNamespaceNames.FooNamespace.BarNamespace.ClassInFooAndBarNamespace",
@@ -3931,6 +3959,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Diagram.ConfusingNamespaceNames.FooNamespace.BarNamespace.ClassInFooAndBarNamespace, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -3965,6 +3994,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Diagram.NoDependencies.Independent.AnotherIndependenClass, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -3999,6 +4029,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Diagram.NoDependencies.Independent.IndependentClass, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4033,6 +4064,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Diagram.NoDependencies.SomeNamespace.DependencyWithinNamespace, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4067,6 +4099,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Diagram.NoDependencies.SomeNamespace.IndependentOrigin, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4090,7 +4123,7 @@
         "kind": "class",
         "language": "dotnet",
         "file": "TestAssembly/Diagram/SimpleDependency/Origin/SomeOriginClass.cs",
-        "line": 12,
+        "line": 11,
         "attribution": "pdb",
         "assembly": "TestAssembly",
         "visibility": "public",
@@ -4106,6 +4139,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Diagram.SimpleDependency.Origin.SomeOriginClass, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4115,7 +4149,7 @@
           {
             "target": "System.Object",
             "kind": "inherits",
-            "line": 12
+            "line": 11
           },
           {
             "target": "TestAssembly.Diagram.SimpleDependency.Target.SomeTargetClass",
@@ -4147,6 +4181,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Diagram.SimpleDependency.Target.SomeTargetClass, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4185,6 +4220,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Domain.Entities.Entity1, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4244,6 +4280,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Domain.Entities.Entity2WithDependencyToEntity1, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Collections.Generic.List`1",
@@ -4298,6 +4335,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Domain.Entities.EntityWithPublicSetters, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4349,7 +4387,8 @@
         "nested": false,
         "generic": false,
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Domain.Marker.IEntity, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
+        "assemblyQualifiedName": "TestAssembly.Domain.Marker.IEntity, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
       },
       {
         "fullName": "TestAssembly.Domain.Marker.IRepository",
@@ -4368,7 +4407,8 @@
         "nested": false,
         "generic": false,
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Domain.Marker.IRepository, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
+        "assemblyQualifiedName": "TestAssembly.Domain.Marker.IRepository, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
       },
       {
         "fullName": "TestAssembly.Domain.Marker.IService",
@@ -4387,7 +4427,8 @@
         "nested": false,
         "generic": false,
         "valueType": false,
-        "assemblyQualifiedName": "TestAssembly.Domain.Marker.IService, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
+        "assemblyQualifiedName": "TestAssembly.Domain.Marker.IService, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
       },
       {
         "fullName": "TestAssembly.Domain.Repository.RepositoryWithDependencyToService",
@@ -4414,6 +4455,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Domain.Repository.RepositoryWithDependencyToService, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4459,6 +4501,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Domain.Services.NotWellNamedService1, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4500,6 +4543,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Domain.Services.ServiceClassInWrongNamespaceService, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4541,6 +4585,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Domain.Services.TestService, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4579,6 +4624,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.EmptyTestClass, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4613,6 +4659,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.PlantUml.Addresses.Address, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4652,6 +4699,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.PlantUml.Catalog.ProductCatalog, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Collections.Generic.List`1",
@@ -4673,7 +4721,7 @@
           {
             "target": "System.Collections.Generic.List`1+Enumerator",
             "kind": "body",
-            "line": 13,
+            "line": 12,
             "form": "body-type"
           },
           {
@@ -4720,7 +4768,7 @@
           {
             "target": "TestAssembly.PlantUml.Orders.Order",
             "kind": "body",
-            "line": 13,
+            "line": 12,
             "form": "body-type"
           },
           {
@@ -4738,6 +4786,12 @@
           {
             "target": "TestAssembly.PlantUml.Products.Product",
             "kind": "body",
+            "line": 12,
+            "form": "body-type"
+          },
+          {
+            "target": "TestAssembly.PlantUml.Products.Product",
+            "kind": "body",
             "member": "Register",
             "line": 16
           },
@@ -4749,7 +4803,7 @@
           {
             "target": "TestAssembly.PlantUml.Products.Product",
             "kind": "generic-argument",
-            "line": 13
+            "line": 12
           },
           {
             "target": "TestAssembly.PlantUml.Products.Product",
@@ -4781,6 +4835,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.PlantUml.Customers.Customer, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -4811,7 +4866,7 @@
           {
             "target": "TestAssembly.PlantUml.Orders.Order",
             "kind": "signature",
-            "line": 13
+            "line": 11
           }
         ]
       },
@@ -4838,11 +4893,12 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.PlantUml.Importer.ProductImport, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Byte",
             "kind": "signature",
-            "line": 18
+            "line": 17
           },
           {
             "target": "System.Object",
@@ -4853,6 +4909,12 @@
             "target": "System.Object",
             "kind": "inherits",
             "line": 14
+          },
+          {
+            "target": "TestAssembly.PlantUml.Catalog.ProductCatalog",
+            "kind": "body",
+            "line": 17,
+            "form": "body-type"
           },
           {
             "target": "TestAssembly.PlantUml.Catalog.ProductCatalog",
@@ -4868,7 +4930,7 @@
           {
             "target": "TestAssembly.PlantUml.Catalog.ProductCatalog",
             "kind": "signature",
-            "line": 18
+            "line": 17
           },
           {
             "target": "TestAssembly.PlantUml.Customers.Customer",
@@ -4916,11 +4978,12 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.PlantUml.Orders.Order, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Collections.Generic.IList`1",
             "kind": "signature",
-            "line": 15
+            "line": 14
           },
           {
             "target": "System.Collections.Generic.List`1",
@@ -4948,7 +5011,7 @@
           {
             "target": "System.Collections.Generic.List`1+Enumerator",
             "kind": "body",
-            "line": 20,
+            "line": 19,
             "form": "body-type"
           },
           {
@@ -5029,6 +5092,12 @@
           {
             "target": "TestAssembly.PlantUml.Products.Product",
             "kind": "body",
+            "line": 19,
+            "form": "body-type"
+          },
+          {
+            "target": "TestAssembly.PlantUml.Products.Product",
+            "kind": "body",
             "member": "Report",
             "line": 23
           },
@@ -5040,12 +5109,17 @@
           {
             "target": "TestAssembly.PlantUml.Products.Product",
             "kind": "generic-argument",
+            "line": 14
+          },
+          {
+            "target": "TestAssembly.PlantUml.Products.Product",
+            "kind": "generic-argument",
             "line": 15
           },
           {
             "target": "TestAssembly.PlantUml.Products.Product",
             "kind": "generic-argument",
-            "line": 20
+            "line": 19
           },
           {
             "target": "TestAssembly.PlantUml.Products.Product",
@@ -5077,6 +5151,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.PlantUml.Products.Product, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5122,6 +5197,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.PlantUml.Xml.Processor.XmlProcessor, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5156,6 +5232,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.PlantUml.Xml.Types.XmlTypes, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5190,6 +5267,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.PlantUml.Xml.Utils.XmlUtils, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5229,6 +5307,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Record1, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Boolean",
@@ -5421,6 +5500,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Slices.Slice1.Service.Service1Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5459,6 +5539,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Slices.Slice1.Slice1Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5497,6 +5578,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Slices.Slice2.Service.Service2Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5535,6 +5617,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Slices.Slice2.Slice2Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5573,6 +5656,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Slices.Slice3.Group1.Group1Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5611,6 +5695,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Slices.Slice3.Group2.Group2Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -5645,6 +5730,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "TestAssembly.Slices.Slice3.Slice3Class, TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -6310,7 +6396,7 @@
         "language": "dotnet",
         "file": "TestAssembly/AbstractRecord.cs",
         "line": 12,
-        "column": 36,
+        "column": 34,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -6406,8 +6492,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssembly/AbstractRecord.cs",
-        "line": 9,
-        "column": 13,
+        "line": 8,
+        "column": 9,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -6421,7 +6507,13 @@
           {
             "target": "System.String",
             "kind": "signature",
-            "line": 9
+            "line": 8
+          },
+          {
+            "target": "TestAssembly.AbstractRecord",
+            "kind": "body",
+            "line": 8,
+            "form": "body-type"
           },
           {
             "target": "TestAssembly.AbstractRecord",
@@ -6432,7 +6524,7 @@
           {
             "target": "TestAssembly.AbstractRecord",
             "kind": "signature",
-            "line": 9
+            "line": 8
           }
         ]
       },
@@ -6499,8 +6591,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssembly/Class1.cs",
-        "line": 18,
-        "column": 13,
+        "line": 17,
+        "column": 9,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -6514,12 +6606,24 @@
           {
             "target": "System.Int32",
             "kind": "signature",
-            "line": 18
+            "line": 17
+          },
+          {
+            "target": "System.String",
+            "kind": "body",
+            "line": 17,
+            "form": "body-type"
           },
           {
             "target": "System.String",
             "kind": "signature",
-            "line": 18
+            "line": 17
+          },
+          {
+            "target": "TestAssembly.Class2",
+            "kind": "body",
+            "line": 17,
+            "form": "body-type"
           },
           {
             "target": "TestAssembly.Class2",
@@ -6650,7 +6754,7 @@
         "language": "dotnet",
         "file": "TestAssembly/Class2.cs",
         "line": 5,
-        "column": 38,
+        "column": 36,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -6685,7 +6789,7 @@
         "language": "dotnet",
         "file": "TestAssembly/Class3.cs",
         "line": 5,
-        "column": 51,
+        "column": 49,
         "visibility": "public",
         "static": true,
         "virtual": false,
@@ -6719,8 +6823,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssembly/ClassCallingOtherMethod.cs",
-        "line": 9,
-        "column": 13,
+        "line": 8,
+        "column": 9,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -6752,7 +6856,7 @@
           {
             "target": "TestAssembly.Class1",
             "kind": "signature",
-            "line": 9
+            "line": 8
           }
         ]
       },
@@ -6919,7 +7023,7 @@
         "language": "dotnet",
         "file": "TestAssembly/DependencyTargets/ClassInTestAssembly.cs",
         "line": 5,
-        "column": 46,
+        "column": 44,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -7071,8 +7175,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssembly/Diagram/SimpleDependency/Origin/SomeOriginClass.cs",
-        "line": 12,
-        "column": 13,
+        "line": 11,
+        "column": 9,
         "visibility": "internal",
         "static": false,
         "virtual": false,
@@ -7627,8 +7731,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssembly/PlantUml/Catalog/ProductCatalog.cs",
-        "line": 13,
-        "column": 13,
+        "line": 12,
+        "column": 9,
         "visibility": "internal",
         "static": false,
         "virtual": false,
@@ -7645,7 +7749,7 @@
           {
             "target": "System.Collections.Generic.List`1+Enumerator",
             "kind": "body",
-            "line": 13,
+            "line": 12,
             "form": "body-type"
           },
           {
@@ -7675,7 +7779,7 @@
           {
             "target": "TestAssembly.PlantUml.Orders.Order",
             "kind": "body",
-            "line": 13,
+            "line": 12,
             "form": "body-type"
           },
           {
@@ -7693,13 +7797,19 @@
           {
             "target": "TestAssembly.PlantUml.Products.Product",
             "kind": "body",
+            "line": 12,
+            "form": "body-type"
+          },
+          {
+            "target": "TestAssembly.PlantUml.Products.Product",
+            "kind": "body",
             "member": "Register",
             "line": 16
           },
           {
             "target": "TestAssembly.PlantUml.Products.Product",
             "kind": "generic-argument",
-            "line": 13
+            "line": 12
           },
           {
             "target": "TestAssembly.PlantUml.Products.Product",
@@ -7734,7 +7844,7 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssembly/PlantUml/Customers/Customer.cs",
-        "line": 13,
+        "line": 11,
         "column": 9,
         "visibility": "internal",
         "static": false,
@@ -7749,7 +7859,7 @@
           {
             "target": "TestAssembly.PlantUml.Orders.Order",
             "kind": "signature",
-            "line": 13
+            "line": 11
           }
         ]
       },
@@ -7875,8 +7985,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssembly/PlantUml/Importer/ProductImport.cs",
-        "line": 18,
-        "column": 13,
+        "line": 17,
+        "column": 9,
         "visibility": "private",
         "static": false,
         "virtual": false,
@@ -7890,7 +8000,13 @@
           {
             "target": "System.Byte",
             "kind": "signature",
-            "line": 18
+            "line": 17
+          },
+          {
+            "target": "TestAssembly.PlantUml.Catalog.ProductCatalog",
+            "kind": "body",
+            "line": 17,
+            "form": "body-type"
           },
           {
             "target": "TestAssembly.PlantUml.Catalog.ProductCatalog",
@@ -7901,7 +8017,7 @@
           {
             "target": "TestAssembly.PlantUml.Catalog.ProductCatalog",
             "kind": "signature",
-            "line": 18
+            "line": 17
           }
         ]
       },
@@ -8088,8 +8204,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssembly/PlantUml/Orders/Order.cs",
-        "line": 15,
-        "column": 13,
+        "line": 14,
+        "column": 9,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -8103,7 +8219,7 @@
           {
             "target": "System.Collections.Generic.IList`1",
             "kind": "signature",
-            "line": 15
+            "line": 14
           },
           {
             "target": "System.Collections.Generic.List`1",
@@ -8120,6 +8236,11 @@
           {
             "target": "TestAssembly.PlantUml.Products.Product",
             "kind": "generic-argument",
+            "line": 14
+          },
+          {
+            "target": "TestAssembly.PlantUml.Products.Product",
+            "kind": "generic-argument",
             "line": 15
           }
         ]
@@ -8130,8 +8251,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssembly/PlantUml/Orders/Order.cs",
-        "line": 20,
-        "column": 13,
+        "line": 19,
+        "column": 9,
         "visibility": "internal",
         "static": false,
         "virtual": false,
@@ -8148,7 +8269,7 @@
           {
             "target": "System.Collections.Generic.List`1+Enumerator",
             "kind": "body",
-            "line": 20,
+            "line": 19,
             "form": "body-type"
           },
           {
@@ -8196,13 +8317,19 @@
           {
             "target": "TestAssembly.PlantUml.Products.Product",
             "kind": "body",
+            "line": 19,
+            "form": "body-type"
+          },
+          {
+            "target": "TestAssembly.PlantUml.Products.Product",
+            "kind": "body",
             "member": "Report",
             "line": 23
           },
           {
             "target": "TestAssembly.PlantUml.Products.Product",
             "kind": "generic-argument",
-            "line": 20
+            "line": 19
           },
           {
             "target": "TestAssembly.PlantUml.Products.Product",
@@ -8218,7 +8345,7 @@
         "language": "dotnet",
         "file": "TestAssembly/PlantUml/Orders/Order.cs",
         "line": 27,
-        "column": 48,
+        "column": 46,
         "visibility": "private",
         "static": false,
         "virtual": false,
@@ -8283,7 +8410,7 @@
         "language": "dotnet",
         "file": "TestAssembly/PlantUml/Products/Product.cs",
         "line": 12,
-        "column": 34,
+        "column": 32,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -8298,7 +8425,7 @@
         "language": "dotnet",
         "file": "TestAssembly/PlantUml/Products/Product.cs",
         "line": 14,
-        "column": 32,
+        "column": 30,
         "visibility": "public",
         "static": false,
         "virtual": false,

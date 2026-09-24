@@ -45,8 +45,8 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 26,
-          "column": 9,
+          "line": 25,
+          "column": 5,
           "dependencyKind": "signature"
         },
         {
@@ -94,7 +94,7 @@
         "kind": "class",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 54,
+        "line": 53,
         "attribution": "pdb",
         "assembly": "MethodMemberAssembly",
         "visibility": "public",
@@ -110,17 +110,30 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodMemberNamespace.ClassWithGenericReturnType, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "MethodMemberNamespace.GenericClass`1",
             "kind": "body",
+            "line": 53,
+            "form": "body-type"
+          },
+          {
+            "target": "MethodMemberNamespace.GenericClass`1",
+            "kind": "body",
             "member": ".ctor",
             "line": 54
           },
           {
             "target": "MethodMemberNamespace.GenericClass`1",
             "kind": "signature",
-            "line": 54
+            "line": 53
+          },
+          {
+            "target": "MethodMemberNamespace.GenericClass`2",
+            "kind": "body",
+            "line": 58,
+            "form": "body-type"
           },
           {
             "target": "MethodMemberNamespace.GenericClass`2",
@@ -131,7 +144,12 @@
           {
             "target": "MethodMemberNamespace.GenericClass`2",
             "kind": "signature",
-            "line": 59
+            "line": 58
+          },
+          {
+            "target": "MethodMemberNamespace.OtherRegularClass",
+            "kind": "generic-argument",
+            "line": 58
           },
           {
             "target": "MethodMemberNamespace.OtherRegularClass",
@@ -141,7 +159,17 @@
           {
             "target": "MethodMemberNamespace.RegularClass",
             "kind": "generic-argument",
+            "line": 53
+          },
+          {
+            "target": "MethodMemberNamespace.RegularClass",
+            "kind": "generic-argument",
             "line": 54
+          },
+          {
+            "target": "MethodMemberNamespace.RegularClass",
+            "kind": "generic-argument",
+            "line": 58
           },
           {
             "target": "MethodMemberNamespace.RegularClass",
@@ -156,7 +184,7 @@
           {
             "target": "System.Object",
             "kind": "inherits",
-            "line": 54
+            "line": 53
           }
         ]
       },
@@ -183,6 +211,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodMemberNamespace.ClassWithNonVirtualMethod, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -203,7 +232,7 @@
         "kind": "class",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 42,
+        "line": 41,
         "attribution": "pdb",
         "assembly": "MethodMemberAssembly",
         "visibility": "public",
@@ -219,7 +248,14 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodMemberNamespace.ClassWithOtherRegularClassReturnType, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
+          {
+            "target": "MethodMemberNamespace.OtherRegularClass",
+            "kind": "body",
+            "line": 41,
+            "form": "body-type"
+          },
           {
             "target": "MethodMemberNamespace.OtherRegularClass",
             "kind": "body",
@@ -229,7 +265,7 @@
           {
             "target": "MethodMemberNamespace.OtherRegularClass",
             "kind": "signature",
-            "line": 42
+            "line": 41
           },
           {
             "target": "System.Object",
@@ -239,7 +275,7 @@
           {
             "target": "System.Object",
             "kind": "inherits",
-            "line": 42
+            "line": 41
           }
         ]
       },
@@ -250,7 +286,7 @@
         "kind": "class",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 34,
+        "line": 33,
         "attribution": "pdb",
         "assembly": "MethodMemberAssembly",
         "visibility": "public",
@@ -266,7 +302,14 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodMemberNamespace.ClassWithRegularClassReturnType, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
+          {
+            "target": "MethodMemberNamespace.RegularClass",
+            "kind": "body",
+            "line": 33,
+            "form": "body-type"
+          },
           {
             "target": "MethodMemberNamespace.RegularClass",
             "kind": "body",
@@ -276,7 +319,7 @@
           {
             "target": "MethodMemberNamespace.RegularClass",
             "kind": "signature",
-            "line": 34
+            "line": 33
           },
           {
             "target": "System.Object",
@@ -286,7 +329,7 @@
           {
             "target": "System.Object",
             "kind": "inherits",
-            "line": 34
+            "line": 33
           }
         ]
       },
@@ -297,7 +340,7 @@
         "kind": "class",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 26,
+        "line": 25,
         "attribution": "pdb",
         "assembly": "MethodMemberAssembly",
         "visibility": "public",
@@ -313,6 +356,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodMemberNamespace.ClassWithStringReturnType, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -322,12 +366,18 @@
           {
             "target": "System.Object",
             "kind": "inherits",
-            "line": 26
+            "line": 25
+          },
+          {
+            "target": "System.String",
+            "kind": "body",
+            "line": 25,
+            "form": "body-type"
           },
           {
             "target": "System.String",
             "kind": "signature",
-            "line": 26
+            "line": 25
           }
         ]
       },
@@ -354,6 +404,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodMemberNamespace.ClassWithVirtualMethod, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -389,6 +440,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodMemberNamespace.GenericClass`1, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -423,6 +475,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodMemberNamespace.GenericClass`2, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -442,7 +495,7 @@
         "kind": "class",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 67,
+        "line": 66,
         "attribution": "pdb",
         "assembly": "MethodMemberAssembly",
         "visibility": "public",
@@ -458,6 +511,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodMemberNamespace.MethodDependencyClass, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "MethodMemberNamespace.MethodDependencyClass",
@@ -479,7 +533,7 @@
           {
             "target": "System.Object",
             "kind": "inherits",
-            "line": 67
+            "line": 66
           }
         ]
       },
@@ -490,7 +544,7 @@
         "kind": "class",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 86,
+        "line": 85,
         "attribution": "pdb",
         "assembly": "MethodMemberAssembly",
         "visibility": "public",
@@ -506,7 +560,20 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodMemberNamespace.OtherCallingClass, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
+          {
+            "target": "MethodMemberNamespace.MethodDependencyClass",
+            "kind": "body",
+            "line": 85,
+            "form": "body-type"
+          },
+          {
+            "target": "MethodMemberNamespace.MethodDependencyClass",
+            "kind": "body",
+            "line": 91,
+            "form": "body-type"
+          },
           {
             "target": "MethodMemberNamespace.MethodDependencyClass",
             "kind": "body",
@@ -539,7 +606,7 @@
           {
             "target": "System.Object",
             "kind": "inherits",
-            "line": 86
+            "line": 85
           }
         ]
       },
@@ -566,6 +633,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodMemberNamespace.OtherClassWithVirtualMethod, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -601,6 +669,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodMemberNamespace.OtherRegularClass, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -635,6 +704,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "MethodMemberNamespace.RegularClass, MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -655,8 +725,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 54,
-        "column": 9,
+        "line": 53,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -667,13 +737,24 @@
           {
             "target": "MethodMemberNamespace.GenericClass`1",
             "kind": "body",
+            "line": 53,
+            "form": "body-type"
+          },
+          {
+            "target": "MethodMemberNamespace.GenericClass`1",
+            "kind": "body",
             "member": ".ctor",
             "line": 54
           },
           {
             "target": "MethodMemberNamespace.GenericClass`1",
             "kind": "signature",
-            "line": 54
+            "line": 53
+          },
+          {
+            "target": "MethodMemberNamespace.RegularClass",
+            "kind": "generic-argument",
+            "line": 53
           },
           {
             "target": "MethodMemberNamespace.RegularClass",
@@ -688,8 +769,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 59,
-        "column": 9,
+        "line": 58,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -700,18 +781,34 @@
           {
             "target": "MethodMemberNamespace.GenericClass`2",
             "kind": "body",
+            "line": 58,
+            "form": "body-type"
+          },
+          {
+            "target": "MethodMemberNamespace.GenericClass`2",
+            "kind": "body",
             "member": ".ctor",
             "line": 59
           },
           {
             "target": "MethodMemberNamespace.GenericClass`2",
             "kind": "signature",
-            "line": 59
+            "line": 58
+          },
+          {
+            "target": "MethodMemberNamespace.OtherRegularClass",
+            "kind": "generic-argument",
+            "line": 58
           },
           {
             "target": "MethodMemberNamespace.OtherRegularClass",
             "kind": "generic-argument",
             "line": 59
+          },
+          {
+            "target": "MethodMemberNamespace.RegularClass",
+            "kind": "generic-argument",
+            "line": 58
           },
           {
             "target": "MethodMemberNamespace.RegularClass",
@@ -767,7 +864,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
         "line": 19,
-        "column": 38,
+        "column": 36,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -781,8 +878,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 42,
-        "column": 9,
+        "line": 41,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -793,13 +890,19 @@
           {
             "target": "MethodMemberNamespace.OtherRegularClass",
             "kind": "body",
+            "line": 41,
+            "form": "body-type"
+          },
+          {
+            "target": "MethodMemberNamespace.OtherRegularClass",
+            "kind": "body",
             "member": ".ctor",
             "line": 42
           },
           {
             "target": "MethodMemberNamespace.OtherRegularClass",
             "kind": "signature",
-            "line": 42
+            "line": 41
           }
         ]
       },
@@ -829,8 +932,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 34,
-        "column": 9,
+        "line": 33,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -841,13 +944,19 @@
           {
             "target": "MethodMemberNamespace.RegularClass",
             "kind": "body",
+            "line": 33,
+            "form": "body-type"
+          },
+          {
+            "target": "MethodMemberNamespace.RegularClass",
+            "kind": "body",
             "member": ".ctor",
             "line": 34
           },
           {
             "target": "MethodMemberNamespace.RegularClass",
             "kind": "signature",
-            "line": 34
+            "line": 33
           }
         ]
       },
@@ -877,8 +986,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 26,
-        "column": 9,
+        "line": 25,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -888,8 +997,14 @@
         "dependencies": [
           {
             "target": "System.String",
+            "kind": "body",
+            "line": 25,
+            "form": "body-type"
+          },
+          {
+            "target": "System.String",
             "kind": "signature",
-            "line": 26
+            "line": 25
           }
         ]
       },
@@ -940,7 +1055,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
         "line": 9,
-        "column": 43,
+        "column": 41,
         "visibility": "public",
         "static": false,
         "virtual": true,
@@ -1015,7 +1130,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
         "line": 70,
-        "column": 34,
+        "column": 32,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -1029,8 +1144,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 67,
-        "column": 9,
+        "line": 66,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -1053,7 +1168,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
         "line": 79,
-        "column": 47,
+        "column": 45,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -1068,7 +1183,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
         "line": 77,
-        "column": 39,
+        "column": 37,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -1082,8 +1197,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 74,
-        "column": 9,
+        "line": 73,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -1125,8 +1240,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 92,
-        "column": 9,
+        "line": 91,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -1134,6 +1249,12 @@
         "returnType": "System.Void",
         "fullName": "System.Void MethodMemberNamespace.OtherCallingClass::AnotherMethodCallingCalledMethod()",
         "dependencies": [
+          {
+            "target": "MethodMemberNamespace.MethodDependencyClass",
+            "kind": "body",
+            "line": 91,
+            "form": "body-type"
+          },
           {
             "target": "MethodMemberNamespace.MethodDependencyClass",
             "kind": "body",
@@ -1154,8 +1275,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
-        "line": 86,
-        "column": 9,
+        "line": 85,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -1163,6 +1284,12 @@
         "returnType": "System.Void",
         "fullName": "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()",
         "dependencies": [
+          {
+            "target": "MethodMemberNamespace.MethodDependencyClass",
+            "kind": "body",
+            "line": 85,
+            "form": "body-type"
+          },
           {
             "target": "MethodMemberNamespace.MethodDependencyClass",
             "kind": "body",
@@ -1204,7 +1331,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/MethodMemberAssembly/MethodMemberAssemblyClasses.cs",
         "line": 14,
-        "column": 48,
+        "column": 46,
         "visibility": "public",
         "static": false,
         "virtual": true,

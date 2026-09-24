@@ -9,6 +9,8 @@
 # Decisions: docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0019-mit-licence.md (only
 # the binary fixtures and the notice are committed; the C# source is fetched here, never committed).
 #
+# Debug, as upstream's CI runs the tests (`dotnet test -c Debug` in .github/workflows/build.yaml):
+# the snapshots describe Debug IL, whose locals and class state machines the element rules read.
 # The build is deterministic and CI-path-mapped (source paths become /_/...), so a rebuild with
 # the same SDK gives the same bytes and fixtures/SHA256SUMS stays valid. Run it once, and again
 # only when PIN changes; commit the diff under fixtures/ together with the new hashes.
@@ -51,7 +53,7 @@ for project in "${projects[@]}"; do
   name="$(basename "$project" .csproj)"
   names+=("$name")
   dotnet build "$work/ArchUnitNET/$project" \
-    --configuration Release \
+    --configuration Debug \
     --output "$work/out/$name" \
     -p:DebugType=portable \
     -p:Deterministic=true \
