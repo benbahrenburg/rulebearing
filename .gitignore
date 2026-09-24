@@ -39,3 +39,6 @@ __pycache__/
 /fuzz/target/
 /fuzz/coverage/
 /conformance/archunitnet/attribution/*.log
+/wrappers/nuget/runtimes/
+# grimp's import cache (import-linter)
+.grimp_cache/

@@ -898,13 +898,13 @@ public class ArchitectureRules
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 2H | `dotnet tool` wrapper with `runtimes/` | Not started | smoke job |
-| 2H | pip wheel per platform | Not started | smoke job |
-| 2H | `Rulebearing.TestAdapter` core and xUnit v2, v3 | Not started | coverlet |
-| 2H | NUnit, MSTest v2, v4, TUnit packages | Not started | coverlet |
-| 2H | `pytest-rulebearing` | Not started | pytest-cov |
-| 2H | `rulebearing/vitest` | Not started | vitest coverage |
-| 2H | Release workflow publishes NuGet and PyPI | Not started | workflow run |
+| 2H | `dotnet tool` wrapper with `runtimes/` | Done | `wrappers/nuget/`: the `Rulebearing` dotnet tool, a net8.0 launcher over `runtimes/<rid>/native/` for the six release targets; `pack.sh <dist> <version> <out>` packs it and the seven TestAdapter packages; `smoke.sh` installs from the package into an empty tool path, `rulebearing --version` prints `rulebearing 0.1.0` and exit codes pass through; launcher tests 100% lines; CI `dotnet-adapters`; `release.yml` `nuget-install-check` on three hosts |
+| 2H | pip wheel per platform | Done | `wrappers/pip` and `scripts/build-wheels.sh`: six `py3-none-<plat>` wheels, the binary in the package data, a `rulebearing` console script, the version stamped by `hatch_build.py`; `tests/test_wheel_smoke.py` builds, installs into a new venv and runs `rulebearing --version`; pytest-cov 99%; `release.yml` `pypi-install-check` on three hosts |
+| 2H | `Rulebearing.TestAdapter` core and xUnit v2, v3 | Done | `adapters/dotnet/Rulebearing.TestAdapter` (99.8% lines), `.xUnit` (100%), `.xUnitV3` (100%), coverlet at 70% (`adapters/dotnet/test.sh`); `JunitEqualityTests` proves every message equals `rulebearing cruise -T junit` over three scenarios; a vacuous rule fails with the ADR-0007 reason; CI `dotnet-adapters` |
+| 2H | NUnit, MSTest v2, v4, TUnit packages | Done | `.NUnit` (100%), `.MSTestV2` (96%), `.MSTestV4` (100%) under coverlet.msbuild, `.TUnit` (100%) under coverlet.MTP, each at the 70% floor; each fixture project asserts the failing rule's `junit` message and that the passing rule passes |
+| 2H | `pytest-rulebearing` | Done | `adapters/python/pytest-rulebearing`: one item per rule behind `--rulebearing` or `rulebearing = true`; `tests/test_junit_equality.py` proves every message equals `cruise -T junit` on `adapters/fixture`; the vacuous rule fails with the ADR-0007 reason; pytest-cov 100%; CI `adapters` |
+| 2H | `rulebearing/vitest` | Done | `adapters/vitest`, the `rulebearing/vitest` subpath export of the npm package: `defineArchitectureTests()` and `RulebearingReporter`; `test/junit.test.ts` and `test/e2e.test.ts` prove message equality with `cruise -T junit`; vitest 99.5% lines; CI `adapters` |
+| 2H | Release workflow publishes NuGet and PyPI | In progress | `release.yml` jobs `version`, `pypi-build`, `pypi-install-check`, `pypi-publish`, `nuget-pack`, `nuget-install-check`, `nuget-publish`, from one tag at one version; actionlint clean. Waits for a workflow run and the `PYPI_TOKEN` and `NUGET_API_KEY` secrets |
 
 ### Wave 2I: greenfield `init` proof, nightly tables, upstream offers, second maintainer
 

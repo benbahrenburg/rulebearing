@@ -27,7 +27,18 @@ crates/rb-extract-ts/tests/fixtures/
 # and the `config expand` fixture.
 crates/rb-config/tests/presets/
 crates/rb-cli/tests/config-expand/
+# Graphs and expectations the extractors write and their tests compare byte for byte (plan 0002,
+# 2A to 2C): regenerated with RB_UPDATE_SNAPSHOTS=1, never edited by hand.
+conformance/**/graphs/
+crates/rb-extract-dotnet/tests/fixtures/*.expected.json
+crates/rb-extract-python/tests/fixtures/*.expected.json
+# Written by the oracle harness (testbeds/oracles/).
+testbeds/results/
+# Vendored verbatim with its NOTICE (the OASIS SARIF 2.1.0 schema).
+crates/rb-report/tests/schemas/
 
 # Local only: fuzzing corpora and the worktrees of parallel agent sessions.
 fuzz/corpus/
 .claude/worktrees/
+# grimp's import cache, written when import-linter runs in this tree.
+.grimp_cache/

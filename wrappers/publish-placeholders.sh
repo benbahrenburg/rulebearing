@@ -35,8 +35,9 @@ echo "== PyPI"
 echo "PyPI: reserved at 0.0.1; the real wheels are released by .github/workflows/release.yml"
 
 echo "== NuGet"
-dotnet pack "$here/nuget/Rulebearing.csproj" --configuration Release --output "$work/nupkg" --nologo --verbosity quiet
-ls "$work/nupkg"
-$dry || dotnet nuget push "$work/nupkg/Rulebearing.0.0.1.nupkg" --api-key "${NUGET_API_KEY:?NUGET_API_KEY is required}" --source https://api.nuget.org/v3/index.json
+# The 0.0.1 reservation is published (2026-09-22). wrappers/nuget is now the real `Rulebearing`
+# dotnet tool, packed from the release archives by wrappers/nuget/pack.sh and published by
+# release.yml (docs/release.md), so this script no longer packs it.
+echo "NuGet: reserved at 0.0.1; the dotnet tool and the test adapters are released by .github/workflows/release.yml"
 
 echo "placeholders: $($dry && echo 'dry run complete; nothing published' || echo 'published; record the four URLs in the plan')"
