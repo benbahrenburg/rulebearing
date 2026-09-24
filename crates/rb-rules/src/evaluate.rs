@@ -31,7 +31,7 @@ use crate::derive::{self, DependentsWhen};
 use crate::folders::folders;
 use crate::graph::filters::{Filter, add_focus};
 use crate::js;
-use crate::matchers::pattern;
+use crate::matchers::{ModuleFacts, matches_from_cross_language, pattern};
 use crate::patterns;
 use crate::summarize::{
     is_same_violation, options_used, rule_set_used, summarize_folders, summarize_modules,
@@ -157,8 +157,19 @@ pub fn needs_metrics(rules: &DependencyRules) -> bool {
         .any(|r| r.to.more_unstable.is_some() || r.is_folder_scope())
 }
 
-/// The selecting side of a rule: `module` for dependents and required rules, else `from`.
-fn selects(rule: &Rule, module: &Value) -> bool {
+/// Whether any dependency rule carries a cross-language key, so the module facts are needed.
+pub fn uses_cross_language(rules: &DependencyRules) -> bool {
+    rules
+        .forbidden
+        .iter()
+        .chain(&rules.allowed)
+        .chain(&rules.required)
+        .any(|r| !r.from.cross.written().is_empty() || !r.to.additions().is_empty())
+}
+
+/// The selecting side of a rule: `module` for dependents and required rules, else `from`; then
+/// the cross-language keys of `from`, which the loader allows only where `from` selects.
+fn selects(rule: &Rule, module: &Value, facts: &ModuleFacts) -> bool {
     let source = js::text(module, "source");
     let (path, path_not) = match &rule.module {
         Some(m) => (pattern(m.path.as_ref()), pattern(m.path_not.as_ref())),
@@ -169,6 +180,7 @@ fn selects(rule: &Rule, module: &Value) -> bool {
     };
     path.is_none_or(|p| patterns::test(&p, &source))
         && path_not.is_none_or(|p| !patterns::test(&p, &source))
+        && matches_from_cross_language(rule, module, facts)
 }
 
 fn has_placeholder(p: &str) -> bool {
@@ -368,6 +380,7 @@ fn stats_and_liveness(
     modules: &[Value],
     violations: &[Value],
     liveness: bool,
+    facts: &ModuleFacts,
 ) -> (Vec<RuleStats>, Vec<VacuousRule>) {
     let mut stats = Vec::new();
     let mut vacuous = Vec::new();
@@ -383,7 +396,7 @@ fn stats_and_liveness(
             } else {
                 rule.name().to_owned()
             };
-            let from_matches = modules.iter().filter(|m| selects(rule, m)).count();
+            let from_matches = modules.iter().filter(|m| selects(rule, m, facts)).count();
             let count = violations
                 .iter()
                 .filter(|v| v.get("rule").and_then(|r| js::str_of(r, "name")) == Some(rule.name()))
@@ -443,10 +456,15 @@ fn focus_filter(options: &rb_config::model::Options) -> Option<Filter> {
 
 /// Merges each module's and each dependency's verdict into it; with `validate` off, every
 /// verdict is `{ "valid": true }`.
-fn add_validations(modules: &mut [Value], rules: &DependencyRules, validate: bool) {
+fn add_validations(
+    modules: &mut [Value],
+    rules: &DependencyRules,
+    validate: bool,
+    facts: &ModuleFacts,
+) {
     for module in modules {
         let verdict = if validate {
-            validate_module(rules, module)
+            validate_module(rules, module, facts)
         } else {
             json!({ "valid": true })
         };
@@ -457,7 +475,7 @@ fn add_validations(modules: &mut [Value], rules: &DependencyRules, validate: boo
         if let Some(Value::Array(dependencies)) = module.get_mut("dependencies") {
             for dependency in dependencies.iter_mut() {
                 let verdict = if validate {
-                    validate_dependency(rules, &snapshot, dependency)
+                    validate_dependency(rules, &snapshot, dependency, facts)
                 } else {
                     json!({ "valid": true })
                 };
@@ -491,6 +509,11 @@ pub fn evaluate(
     let families = !config.rules.elements.is_empty()
         || !config.rules.slices.is_empty()
         || !config.rules.diagrams.is_empty();
+    let facts = if uses_cross_language(rules) {
+        ModuleFacts::new(&document.modules, document.code.as_ref())
+    } else {
+        ModuleFacts::default()
+    };
     let element_input = families.then(|| GraphDocument {
         modules: document.modules.clone(),
         code: document.code.clone(),
@@ -527,7 +550,7 @@ pub fn evaluate(
     if let Some(focus) = &focus {
         modules = add_focus(modules, focus);
     }
-    add_validations(&mut modules, rules, opts.validate);
+    add_validations(&mut modules, rules, opts.validate, &facts);
     let mut expired = expired_rules(rules, opts.today);
     let known = known_entries(&config.known_violations, opts.today, &mut expired);
     soften(&mut modules, &known);
@@ -541,7 +564,8 @@ pub fn evaluate(
     violations.extend(summarize_folders(&folder_values, Some(rules)));
     violations.sort_by(crate::compare::compare_violations);
     annotate(&mut violations, &modules, rules);
-    let (rule_stats, mut vacuous) = stats_and_liveness(rules, &modules, &violations, opts.liveness);
+    let (rule_stats, mut vacuous) =
+        stats_and_liveness(rules, &modules, &violations, opts.liveness, &facts);
     if let Some(input) = &element_input {
         let (found, empty) = crate::families::evaluate(input, config)?;
         violations.extend(found);
@@ -963,6 +987,44 @@ mod tests {
     }
 
     #[test]
+    fn module_facts_are_built_only_for_cross_language_rules() {
+        let rule = |value: Value| -> Rule { serde_json::from_value(value).unwrap_or_default() };
+        let plain = || rule(json!({ "from": { "path": "^a" }, "to": { "circular": true } }));
+        assert!(!uses_cross_language(&DependencyRules {
+            forbidden: vec![plain()],
+            allowed: vec![plain()],
+            required: vec![plain()],
+            ..DependencyRules::default()
+        }));
+        for (list, value) in [
+            (
+                "forbidden",
+                json!({ "from": { "language": "dotnet" }, "to": {} }),
+            ),
+            (
+                "allowed",
+                json!({ "from": {}, "to": { "namespace": "^A" } }),
+            ),
+            (
+                "required",
+                json!({ "from": {}, "to": { "dependencyKind": "body" } }),
+            ),
+            (
+                "forbidden",
+                json!({ "from": {}, "to": { "dependencyKindNot": "body" } }),
+            ),
+        ] {
+            let mut rules = DependencyRules::default();
+            match list {
+                "forbidden" => rules.forbidden.push(rule(value.clone())),
+                "allowed" => rules.allowed.push(rule(value.clone())),
+                _ => rules.required.push(rule(value.clone())),
+            }
+            assert!(uses_cross_language(&rules), "{list}: {value}");
+        }
+    }
+
+    #[test]
     fn placeholders_are_a_dollar_and_a_digit() {
         assert!(has_placeholder("^apps/$1/"));
         assert!(!has_placeholder("^apps/v2/"));
@@ -1008,12 +1070,12 @@ mod tests {
 
         let not_api =
             rule(json!({ "from": { "path": "^apps/", "pathNot": "^apps/api" }, "to": {} }));
-        assert!(selects(&not_api, &modules[0]));
-        assert!(!selects(&not_api, &modules[1]));
-        assert!(!selects(&not_api, &modules[2]));
+        assert!(selects(&not_api, &modules[0], &ModuleFacts::default()));
+        assert!(!selects(&not_api, &modules[1], &ModuleFacts::default()));
+        assert!(!selects(&not_api, &modules[2], &ModuleFacts::default()));
         let module_not = rule(json!({ "module": { "pathNot": "^apps/" }, "to": {} }));
-        assert!(!selects(&module_not, &modules[0]));
-        assert!(selects(&module_not, &modules[3]));
+        assert!(!selects(&module_not, &modules[0], &ModuleFacts::default()));
+        assert!(selects(&module_not, &modules[3], &ModuleFacts::default()));
     }
 
     #[test]

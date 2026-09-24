@@ -13,6 +13,16 @@
 //! `.dependency-cruiser.*` file each is a warning that the file no longer runs on
 //! dependency-cruiser, and an error under `--strict-compat`.
 //!
+//! **Cross-language keys.** `language`, `namespace`, `project`, `assembly` (each with its `Not`
+//! form except `language`) on `from` and `to`, and `dependencyKind` / `dependencyKindNot` on `to`,
+//! are additions a dependency-cruiser configuration never sees
+//! ([design § Dependency rules](../../../docs/artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820)):
+//! in a `.dependency-cruiser.*` file each is an error (exit 3) with or without `--strict-compat`,
+//! because dependency-cruiser would refuse the file and dropping the key would widen the rule.
+//! They narrow dependency and orphan rules; on a reachability, dependents, required or
+//! folder-scoped rule they are an error, since those rules select through derivations the keys
+//! do not reach.
+//!
 //! **Normalisation** is `normalizeRuleSet` from dependency-cruiser 18.2.0: `severity` defaults to
 //! `warn`, `name` to `unnamed`, `scope` to `module`; arrays of patterns are joined with `|`;
 //! `viaNot` becomes `viaOnly.pathNot` and `viaSomeNot` becomes `via.pathNot`; `allowed` rules are
@@ -26,7 +36,8 @@ use rb_model::options::Patterns;
 
 use crate::ConfigError;
 use crate::model::{
-    CompatMode, ConfigWarning, DependencyRules, Rule, Scope, ToRestriction, ViaRestriction,
+    CompatMode, ConfigWarning, CrossLanguageKeys, DependencyRules, Rule, Scope, ToRestriction,
+    ViaRestriction,
 };
 use crate::pattern::{self, Safety};
 
@@ -37,6 +48,18 @@ const RULE_KEYS: &[&str] = &[
 /// The native metadata keys.
 pub const NATIVE_RULE_KEYS: &[&str] = &["fix", "examples", "owner", "expires", "allowEmpty"];
 const FROM_KEYS: &[&str] = &["path", "pathNot", "orphan"];
+/// The cross-language keys of `from` and `to`, native configurations only.
+pub const CROSS_LANGUAGE_KEYS: &[&str] = &[
+    "language",
+    "namespace",
+    "namespaceNot",
+    "project",
+    "projectNot",
+    "assembly",
+    "assemblyNot",
+];
+/// The cross-language keys of `to` alone: properties of the edge.
+pub const EDGE_KEYS: &[&str] = &["dependencyKind", "dependencyKindNot"];
 const TO_KEYS: &[&str] = &[
     "path",
     "pathNot",
@@ -209,13 +232,25 @@ fn check_rule(
         }
     }
     if let Some(from) = map.get("from") {
-        check_object(from, &format!("{at}.from"), FROM_KEYS)?;
+        if let Some(key) = EDGE_KEYS.iter().find(|k| from.get(**k).is_some()) {
+            return Err(ConfigError::Invalid(format!(
+                "`{at}.from.{key}`: `{key}` is a property of the edge, not of the module that imports; write it under `to`"
+            )));
+        }
+        let mut allowed = FROM_KEYS.to_vec();
+        allowed.extend_from_slice(CROSS_LANGUAGE_KEYS);
+        check_object(from, &format!("{at}.from"), &allowed)?;
+        check_cross_language(from, &format!("{at}.from"), compat)?;
     }
     if let Some(module) = map.get("module") {
         check_object(module, &format!("{at}.module"), MODULE_KEYS)?;
     }
     if let Some(to) = map.get("to") {
-        check_object(to, &format!("{at}.to"), TO_KEYS)?;
+        let mut allowed = TO_KEYS.to_vec();
+        allowed.extend_from_slice(CROSS_LANGUAGE_KEYS);
+        allowed.extend_from_slice(EDGE_KEYS);
+        check_object(to, &format!("{at}.to"), &allowed)?;
+        check_cross_language(to, &format!("{at}.to"), compat)?;
         for via in ["via", "viaOnly"] {
             if let Some(value @ Value::Object(_)) = to.get(via) {
                 check_object(value, &format!("{at}.to.{via}"), VIA_KEYS)?;
@@ -223,6 +258,101 @@ fn check_rule(
         }
     }
     Ok(())
+}
+
+/// The cross-language keys written in one side of a rule.
+fn cross_language_keys(side: &Value) -> Vec<&'static str> {
+    CROSS_LANGUAGE_KEYS
+        .iter()
+        .chain(EDGE_KEYS)
+        .filter(|k| side.get(**k).is_some())
+        .copied()
+        .collect()
+}
+
+/// Refuses a cross-language key in a dependency-cruiser configuration.
+fn check_cross_language(side: &Value, at: &str, compat: CompatMode) -> Result<(), ConfigError> {
+    if compat != CompatMode::DependencyCruiser {
+        return Ok(());
+    }
+    match cross_language_keys(side).first() {
+        Some(key) => Err(ConfigError::Invalid(format!(
+            "`{at}.{key}` is a Rulebearing addition for native configurations; a dependency-cruiser configuration never sees it. Move the rule into rulebearing.yaml (`rulebearing config convert` writes one) or remove the key"
+        ))),
+        None => Ok(()),
+    }
+}
+
+/// Refuses cross-language keys on a rule whose selection they cannot narrow: reachability,
+/// dependents, required and folder-scoped rules.
+fn check_cross_language_placement(rule: &Rule, family: &str) -> Result<(), ConfigError> {
+    let mut written: Vec<String> = rule
+        .from
+        .cross
+        .written()
+        .into_iter()
+        .map(|k| format!("from.{k}"))
+        .collect();
+    written.extend(rule.to.additions().into_iter().map(|k| format!("to.{k}")));
+    let Some(first) = written.first() else {
+        return Ok(());
+    };
+    let kind = if rule.is_folder_scope() {
+        Some(
+            "a folder-scoped rule compares folders, which carry no language, namespace, project or edge kind",
+        )
+    } else if rule.to.reachable.is_some() {
+        Some(
+            "a reachability rule selects through `reachable`, which the cross-language keys do not narrow",
+        )
+    } else if rule.module.is_some() || family == "required" {
+        Some(
+            "a dependents or required rule selects through `module`, which the cross-language keys do not narrow",
+        )
+    } else {
+        None
+    };
+    match kind {
+        Some(why) => Err(ConfigError::Invalid(format!(
+            "rule `{}`: `{first}` cannot apply here: {why}. Narrow the rule with `path` instead, or make it a dependency rule",
+            rule.name()
+        ))),
+        None => Ok(()),
+    }
+}
+
+/// The warning for a rule whose `from` or `to` can only match .NET modules and that names
+/// `type-only`, which no .NET edge carries
+/// ([design § Dependency rules](../../../docs/artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820)).
+pub fn type_only_on_dotnet(rule: &Rule) -> Option<String> {
+    let dotnet = rb_model::Language::Dotnet;
+    let side = if rule.from.cross.only(dotnet) {
+        "from"
+    } else if rule.to.cross.only(dotnet) {
+        "to"
+    } else {
+        return None;
+    };
+    let names = |types: Option<&Vec<rb_model::DependencyType>>| {
+        types.is_some_and(|t| t.contains(&rb_model::DependencyType::TypeOnly))
+    };
+    let vias = [rule.to.via.as_ref(), rule.to.via_only.as_ref()];
+    let at = if names(rule.to.dependency_types.as_ref()) {
+        "to.dependencyTypes"
+    } else if names(rule.to.dependency_types_not.as_ref()) {
+        "to.dependencyTypesNot"
+    } else if vias
+        .iter()
+        .flatten()
+        .any(|v| names(v.dependency_types.as_ref()) || names(v.dependency_types_not.as_ref()))
+    {
+        "to.via"
+    } else {
+        return None;
+    };
+    Some(format!(
+        "{at} names `type-only`, but `{side}.language` limits the rule to .NET, where `type-only` has no meaning (a signature reference still loads the assembly) and no edge carries it; use `signature-only` for an edge whose every reference is a signature, or remove `type-only`"
+    ))
 }
 
 /// Checks every key of a canonical configuration.
@@ -310,6 +440,7 @@ fn normalise_to(to: &mut ToRestriction) {
             via.path_not = Some(some_not);
         }
     }
+    normalise_cross(&mut to.cross);
     for patterns in [
         &mut to.path,
         &mut to.path_not,
@@ -322,12 +453,20 @@ fn normalise_to(to: &mut ToRestriction) {
     }
 }
 
+/// Joins the cross-language pattern lists as `path` lists are joined.
+fn normalise_cross(cross: &mut CrossLanguageKeys) {
+    for (_, patterns) in cross.patterns_mut() {
+        joined(patterns);
+    }
+}
+
 fn normalise_rule(rule: &mut Rule) {
     rule.meta.severity = Some(rule.severity());
     rule.meta.name = Some(rule.name().to_owned());
     rule.scope = Some(rule.scope.unwrap_or(Scope::Module));
     joined(&mut rule.from.path);
     joined(&mut rule.from.path_not);
+    normalise_cross(&mut rule.from.cross);
     normalise_to(&mut rule.to);
     if let Some(module) = &mut rule.module {
         joined(&mut module.path);
@@ -377,12 +516,22 @@ pub fn rule_set(canonical: &Map<String, Value>) -> Result<DependencyRules, Confi
                 rule.meta.name = Some("not-in-allowed".to_owned());
                 joined(&mut rule.from.path);
                 joined(&mut rule.from.path_not);
+                normalise_cross(&mut rule.from.cross);
                 normalise_to(&mut rule.to);
             }
         }
     }
     for rule in forbidden.iter_mut().chain(required.iter_mut()) {
         normalise_rule(rule);
+    }
+    for (family, list) in [
+        ("forbidden", &forbidden),
+        ("allowed", &allowed),
+        ("required", &required),
+    ] {
+        for rule in list {
+            check_cross_language_placement(rule, family)?;
+        }
     }
     forbidden.retain(|r| r.severity() != Severity::Ignore);
     required.retain(|r| r.severity() != Severity::Ignore);
@@ -392,6 +541,30 @@ pub fn rule_set(canonical: &Map<String, Value>) -> Result<DependencyRules, Confi
         allowed_severity,
         required,
     })
+}
+
+/// `from.<key>` for a cross-language pattern key.
+fn from_key(key: &str) -> &'static str {
+    match key {
+        "namespace" => "from.namespace",
+        "namespaceNot" => "from.namespaceNot",
+        "project" => "from.project",
+        "projectNot" => "from.projectNot",
+        "assembly" => "from.assembly",
+        _ => "from.assemblyNot",
+    }
+}
+
+/// `to.<key>` for a cross-language pattern key.
+fn to_key(key: &str) -> &'static str {
+    match key {
+        "namespace" => "to.namespace",
+        "namespaceNot" => "to.namespaceNot",
+        "project" => "to.project",
+        "projectNot" => "to.projectNot",
+        "assembly" => "to.assembly",
+        _ => "to.assemblyNot",
+    }
 }
 
 /// Every pattern of a rule with where it sits, for compilation and the safety check.
@@ -420,6 +593,12 @@ pub fn rule_patterns(rule: &Rule) -> Vec<(&'static str, &str)> {
         "to.exoticRequireNot",
         rule.to.exotic_require_not.as_ref(),
     );
+    for (key, patterns) in rule.from.cross.patterns() {
+        add(&mut out, from_key(key), patterns);
+    }
+    for (key, patterns) in rule.to.cross.patterns() {
+        add(&mut out, to_key(key), patterns);
+    }
     add(&mut out, "to.viaNot", rule.to.via_not.as_ref());
     add(&mut out, "to.viaSomeNot", rule.to.via_some_not.as_ref());
     if let Some(via) = &rule.to.via {
@@ -437,7 +616,8 @@ pub fn rule_patterns(rule: &Rule) -> Vec<(&'static str, &str)> {
     out
 }
 
-/// Compiles every pattern of every rule, and applies safe-regex's check.
+/// Compiles every pattern of every rule, applies safe-regex's check, and warns about `type-only`
+/// on a rule limited to .NET ([`type_only_on_dotnet`]).
 ///
 /// # Errors
 /// [`ConfigError::Pattern`] for a pattern the engine cannot run; [`ConfigError::Strict`] for a
@@ -472,17 +652,8 @@ pub fn check_patterns(
                 warnings.push(ConfigWarning::about(rule.name(), message));
             }
         }
-        if rule.to.more_unstable.is_some() {
-            warnings.push(ConfigWarning::about(
-                rule.name(),
-                "to.moreUnstable requires `metrics`, which arrives in wave 2; until then the restriction never matches",
-            ));
-        }
-        if rule.to.license.is_some() || rule.to.license_not.is_some() {
-            warnings.push(ConfigWarning::about(
-                rule.name(),
-                "to.license and to.licenseNot read licences from installed packages, which arrives in wave 2; until then the restriction never matches",
-            ));
+        if let Some(message) = type_only_on_dotnet(rule) {
+            warnings.push(ConfigWarning::about(rule.name(), message));
         }
     }
     Ok(warnings)
@@ -663,7 +834,11 @@ mod tests {
             json!({ "forbidden": [{ "name": "n", "from": { "path": "(a+)+" }, "to": { "moreUnstable": true, "license": "GPL" } }] }),
         ))?;
         let warnings = check_patterns(&nested, false)?;
-        assert_eq!(warnings.len(), 3);
+        assert_eq!(
+            warnings.len(),
+            1,
+            "only the nested quantifier: licences and metrics are computed now"
+        );
         assert!(matches!(
             check_patterns(&nested, true),
             Err(ConfigError::Strict { .. })
@@ -672,6 +847,248 @@ mod tests {
             json!({ "forbidden": [{ "from": { "path": "a", "pathNot": "b" }, "to": { "path": "c", "pathNot": "d", "licenseNot": "e", "exoticRequire": "f", "exoticRequireNot": "g", "via": { "path": "h", "pathNot": "i" }, "viaOnly": { "path": "j" } }, "module": { "path": "k", "pathNot": "l" } }] }),
         ))?;
         assert_eq!(rule_patterns(&every.forbidden[0]).len(), 12);
+        let cross = rule_set(&object(json!({ "forbidden": [{
+            "from": { "namespace": "a", "namespaceNot": "b", "project": "c", "projectNot": "d", "assembly": "e", "assemblyNot": "f" },
+            "to": { "namespace": "g", "namespaceNot": "h", "project": "i", "projectNot": "j", "assembly": "k", "assemblyNot": "l" }
+        }] })))?;
+        let at: Vec<(&str, &str)> = rule_patterns(&cross.forbidden[0]);
+        assert_eq!(
+            at,
+            [
+                ("from.namespace", "a"),
+                ("from.namespaceNot", "b"),
+                ("from.project", "c"),
+                ("from.projectNot", "d"),
+                ("from.assembly", "e"),
+                ("from.assemblyNot", "f"),
+                ("to.namespace", "g"),
+                ("to.namespaceNot", "h"),
+                ("to.project", "i"),
+                ("to.projectNot", "j"),
+                ("to.assembly", "k"),
+                ("to.assemblyNot", "l"),
+            ]
+        );
+        let broken = rule_set(&object(
+            json!({ "forbidden": [{ "name": "ns", "from": {}, "to": { "namespace": "(?<=x)" } }] }),
+        ))?;
+        let error = check_patterns(&broken, false)
+            .err()
+            .map(|e| e.to_string())
+            .unwrap_or_default();
+        assert!(
+            error.contains("ns") && error.contains("to.namespace"),
+            "{error}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn cross_language_keys_are_native_only() -> Result<(), ConfigError> {
+        for (side, key, value) in [
+            ("from", "language", json!("dotnet")),
+            ("from", "namespace", json!("^A")),
+            ("from", "namespaceNot", json!("^A")),
+            ("from", "project", json!("^A")),
+            ("from", "projectNot", json!("^A")),
+            ("from", "assembly", json!("^A")),
+            ("from", "assemblyNot", json!("^A")),
+            ("to", "language", json!("python")),
+            ("to", "namespace", json!("^A")),
+            ("to", "assemblyNot", json!("^A")),
+            ("to", "dependencyKind", json!("inherits")),
+            ("to", "dependencyKindNot", json!(["body"])),
+        ] {
+            let config = object(json!({ "forbidden": [{ "name": "r", side: { key: value } }] }));
+            assert!(
+                check_keys(&config, CompatMode::Native, false)?
+                    .warnings
+                    .is_empty(),
+                "{side}.{key} is legal in a native file"
+            );
+            let error = check_keys(&config, CompatMode::DependencyCruiser, false)
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default();
+            assert!(
+                error.contains(&format!("`forbidden[0].{side}.{key}`"))
+                    && error.contains("Rulebearing addition for native configurations"),
+                "{side}.{key}: {error}"
+            );
+        }
+        let edge_on_from = object(
+            json!({ "forbidden": [{ "from": { "dependencyKind": "inherits" }, "to": {} }] }),
+        );
+        let error = check_keys(&edge_on_from, CompatMode::Native, false)
+            .err()
+            .map(|e| e.to_string())
+            .unwrap_or_default();
+        assert!(
+            error.contains("forbidden[0].from.dependencyKind") && error.contains("under `to`"),
+            "{error}"
+        );
+        assert_eq!(
+            cross_language_keys(
+                &json!({ "path": "x", "namespace": "a", "dependencyKind": "body" })
+            ),
+            ["namespace", "dependencyKind"]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn cross_language_values_normalise_and_name_bad_vocabulary() -> Result<(), ConfigError> {
+        let rules = rule_set(&object(json!({ "forbidden": [{
+            "from": { "language": "dotnet", "namespace": ["^A\\.", "^B\\."] },
+            "to": { "language": ["dotnet", "python"], "dependencyKind": ["inherits", "implements"], "assemblyNot": ["x", "y"] }
+        }] })))?;
+        let rule = &rules.forbidden[0];
+        assert_eq!(
+            rule.from.cross.namespace,
+            Some(Patterns::One("^A\\.|^B\\.".into()))
+        );
+        assert_eq!(
+            rule.to.cross.assembly_not,
+            Some(Patterns::One("x|y".into()))
+        );
+        assert_eq!(
+            rule.from
+                .cross
+                .language
+                .as_ref()
+                .map(|l| l.as_slice().to_vec()),
+            Some(vec![rb_model::Language::Dotnet])
+        );
+        assert_eq!(
+            rule.to
+                .dependency_kind
+                .as_ref()
+                .map(|k| k.as_slice().to_vec()),
+            Some(vec![
+                rb_model::DependencyKind::Inherits,
+                rb_model::DependencyKind::Implements
+            ])
+        );
+        assert!(rule.from.cross.only(rb_model::Language::Dotnet));
+        assert!(!rule.to.cross.only(rb_model::Language::Dotnet));
+        assert!(!CrossLanguageKeys::default().only(rb_model::Language::Dotnet));
+        assert_eq!(rule.from.cross.written(), ["language", "namespace"]);
+        assert_eq!(
+            rule.to.additions(),
+            ["language", "assemblyNot", "dependencyKind"]
+        );
+        let back = serde_json::to_value(rule).unwrap_or_default();
+        assert_eq!(
+            back["from"]["language"], "dotnet",
+            "one value writes as one"
+        );
+        assert_eq!(back["to"]["language"], json!(["dotnet", "python"]));
+        for (value, needle) in [
+            (
+                json!({ "to": { "dependencyKind": "inherit" } }),
+                "`inherit` is not a valid dependency kind",
+            ),
+            (
+                json!({ "from": { "language": ["dotnet", "csharp"] } }),
+                "`csharp` is not a valid language",
+            ),
+        ] {
+            let error = rule_set(&object(json!({ "forbidden": [value] })))
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default();
+            assert!(error.contains(needle), "{error}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn cross_language_keys_refuse_rules_they_cannot_narrow() {
+        for (rule, needle) in [
+            (
+                json!({ "forbidden": [{ "name": "f", "scope": "folder", "from": { "language": "dotnet" }, "to": { "circular": true } }] }),
+                "folder-scoped",
+            ),
+            (
+                json!({ "forbidden": [{ "name": "r", "from": { "namespace": "^A" }, "to": { "path": "x", "reachable": false } }] }),
+                "reachability",
+            ),
+            (
+                json!({ "forbidden": [{ "name": "d", "from": {}, "module": { "path": "x", "numberOfDependentsLessThan": 2 }, "to": { "project": "p" } }] }),
+                "dependents or required",
+            ),
+            (
+                json!({ "required": [{ "name": "q", "module": { "path": "x" }, "to": { "path": "y", "dependencyKind": "body" } }] }),
+                "dependents or required",
+            ),
+            (
+                json!({ "allowed": [{ "from": {}, "to": { "path": "y", "reachable": true, "assembly": "A" } }] }),
+                "reachability",
+            ),
+        ] {
+            let error = rule_set(&object(rule))
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default();
+            assert!(error.contains(needle), "{needle}: {error}");
+        }
+        let orphans = rule_set(&object(
+            json!({ "forbidden": [{ "name": "o", "from": { "orphan": true, "language": "dotnet" }, "to": {} }] }),
+        ));
+        assert!(
+            orphans.is_ok(),
+            "an orphan rule narrows by the module's keys"
+        );
+    }
+
+    #[test]
+    fn type_only_on_a_dotnet_rule_is_a_warning() -> Result<(), ConfigError> {
+        let warned = |value: Value| -> Result<Vec<ConfigWarning>, ConfigError> {
+            let rules = rule_set(&object(json!({ "forbidden": [value] })))?;
+            check_patterns(&rules, false)
+        };
+        for (value, at, side) in [
+            (
+                json!({ "name": "a", "from": { "language": "dotnet" }, "to": { "dependencyTypes": ["type-only"] } }),
+                "to.dependencyTypes",
+                "from",
+            ),
+            (
+                json!({ "name": "b", "from": {}, "to": { "language": ["dotnet"], "dependencyTypesNot": ["type-only"] } }),
+                "to.dependencyTypesNot",
+                "to",
+            ),
+            (
+                json!({ "name": "c", "from": { "language": "dotnet" }, "to": { "via": { "dependencyTypes": ["type-only"] } } }),
+                "to.via",
+                "from",
+            ),
+            (
+                json!({ "name": "d", "from": { "language": "dotnet" }, "to": { "viaOnly": { "dependencyTypesNot": ["type-only"] } } }),
+                "to.via",
+                "from",
+            ),
+        ] {
+            let warnings = warned(value)?;
+            assert_eq!(warnings.len(), 1, "{at}");
+            assert!(
+                warnings[0]
+                    .message
+                    .starts_with(&format!("{at} names `type-only`"))
+                    && warnings[0].message.contains(&format!("`{side}.language`"))
+                    && warnings[0].message.contains("signature-only"),
+                "{}",
+                warnings[0].message
+            );
+        }
+        for quiet in [
+            json!({ "from": { "language": ["dotnet", "python"] }, "to": { "dependencyTypes": ["type-only"] } }),
+            json!({ "from": { "language": "python" }, "to": { "dependencyTypes": ["type-only"] } }),
+            json!({ "from": {}, "to": { "dependencyTypes": ["type-only"] } }),
+            json!({ "from": { "language": "dotnet" }, "to": { "dependencyTypes": ["signature-only"], "via": { "path": "x" } } }),
+        ] {
+            assert!(warned(quiet.clone())?.is_empty(), "{quiet}");
+        }
         Ok(())
     }
 }

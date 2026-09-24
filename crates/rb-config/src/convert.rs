@@ -18,7 +18,7 @@ use std::path::Path;
 
 use serde_json::{Map, Value};
 
-use crate::normalize::NATIVE_RULE_KEYS;
+use crate::normalize::{CROSS_LANGUAGE_KEYS, EDGE_KEYS, NATIVE_RULE_KEYS};
 use crate::{ConfigError, defines, native, shorthands};
 
 /// Something native-to-dependency-cruiser conversion left out.
@@ -114,6 +114,7 @@ pub fn to_dependency_cruiser(
     }
     for list in ["forbidden", "allowed", "required"] {
         if let Some(Value::Array(rules)) = canonical.get_mut(list) {
+            drop_cross_language_rules(rules, list, &mut dropped);
             for rule in rules.iter_mut() {
                 let Value::Object(rule) = rule else { continue };
                 let name = rule
@@ -133,6 +134,38 @@ pub fn to_dependency_cruiser(
         }
     }
     Ok((canonical, dropped))
+}
+
+/// Leaves out every rule a cross-language key narrows: without the key the rule would match
+/// more, so the whole rule goes, never the key alone.
+fn drop_cross_language_rules(rules: &mut Vec<Value>, list: &str, dropped: &mut Vec<Dropped>) {
+    rules.retain(|rule| {
+        let keys: Vec<String> = ["from", "to"]
+            .iter()
+            .flat_map(|side| {
+                rule.get(*side).map_or_else(Vec::new, |value| {
+                    CROSS_LANGUAGE_KEYS
+                        .iter()
+                        .chain(EDGE_KEYS)
+                        .filter(|k| value.get(**k).is_some())
+                        .map(|k| format!("{side}.{k}"))
+                        .collect()
+                })
+            })
+            .collect();
+        if keys.is_empty() {
+            return true;
+        }
+        let name = rule.get("name").and_then(Value::as_str).unwrap_or("unnamed");
+        dropped.push(Dropped {
+            at: format!("{list}[{name}]"),
+            reason: format!(
+                "narrowed by {}, a Rulebearing addition; without it the rule would match more, so the whole rule is left out",
+                keys.join(", ")
+            ),
+        });
+        false
+    });
 }
 
 /// `config expand`: the native file with `defines` substituted and the shorthands expanded, so
@@ -249,6 +282,39 @@ mod tests {
         assert!(!dc.contains_key("extends"));
         assert!(describe(&dropped).contains("dropped 10"));
         assert_eq!(describe(&[]), "nothing dropped\n");
+        Ok(())
+    }
+
+    #[test]
+    fn a_rule_with_cross_language_keys_is_dropped_whole() -> Result<(), ConfigError> {
+        let native_file = object(json!({ "rules": { "dependencies": {
+            "forbidden": [
+                { "name": "web-not-infra", "from": { "language": "dotnet", "namespace": "^Web" }, "to": { "dependencyKind": "inherits" } },
+                { "name": "kept", "from": { "path": "^a" }, "to": { "path": "^b" } }
+            ],
+            "allowed": [{ "from": {}, "to": { "assemblyNot": "^Legacy" } }]
+        } } }));
+        let (dc, dropped) = to_dependency_cruiser(&native_file, Path::new("."))?;
+        assert_eq!(
+            dc["forbidden"],
+            json!([{ "name": "kept", "from": { "path": "^a" }, "to": { "path": "^b" } }])
+        );
+        assert_eq!(dc["allowed"], json!([]));
+        let described: Vec<(&str, &str)> = dropped
+            .iter()
+            .map(|d| (d.at.as_str(), d.reason.as_str()))
+            .collect();
+        assert_eq!(described.len(), 2);
+        assert_eq!(described[0].0, "forbidden[web-not-infra]");
+        assert!(
+            described[0]
+                .1
+                .starts_with("narrowed by from.language, from.namespace, to.dependencyKind,"),
+            "{}",
+            described[0].1
+        );
+        assert_eq!(described[1].0, "allowed[unnamed]");
+        assert!(described[1].1.contains("to.assemblyNot"));
         Ok(())
     }
 

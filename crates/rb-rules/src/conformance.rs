@@ -27,6 +27,7 @@ use crate::graph::consolidate::{consolidate_to_folder, consolidate_to_pattern};
 use crate::graph::filters::{Filter, Filters, add_focus, apply};
 use crate::graph::indexed::{DependencySet, IndexedGraph};
 use crate::js;
+use crate::matchers::ModuleFacts;
 use crate::validate::{
     Matcher, folder_match, matches_dependents_rule, matches_orphan_rule, matches_reachable_rule,
     matches_reaches_rule, module_match, validate_dependency, validate_folder, validate_module,
@@ -216,12 +217,14 @@ fn dispatch_validate(
     key: (&str, &str, &str),
 ) -> Result<Value, ProtocolError> {
     let arg = |i: usize| args.get(i).copied().unwrap_or(&Value::Null);
+    // The upstream specifications carry no cross-language keys, so no module facts.
+    let facts = ModuleFacts::default();
     let answer = match key {
         ("#validate/index.mjs", "validateModule", "") => {
-            validate_module(&raw_rule_set(arg(0))?, arg(1))
+            validate_module(&raw_rule_set(arg(0))?, arg(1), &facts)
         }
         ("#validate/index.mjs", "validateDependency", "") => {
-            validate_dependency(&raw_rule_set(arg(0))?, arg(1), arg(2))
+            validate_dependency(&raw_rule_set(arg(0))?, arg(1), arg(2), &facts)
         }
         ("#validate/index.mjs", "validateFolder", "") => {
             validate_folder(&raw_rule_set(arg(0))?, arg(1), arg(2))
@@ -236,7 +239,7 @@ fn dispatch_validate(
         ("#validate/match-module-rule-helpers.mjs", name, "") => {
             let r = rule(arg(0), 0)?;
             json!(match name {
-                "matchesOrphanRule" => matches_orphan_rule(&r, arg(1)),
+                "matchesOrphanRule" => matches_orphan_rule(&r, arg(1), &facts),
                 "matchesReachableRule" => matches_reachable_rule(&r, arg(1)),
                 "matchesReachesRule" => matches_reaches_rule(&r, arg(1)),
                 "matchesDependentsRule" => matches_dependents_rule(&r, arg(1)),
@@ -244,7 +247,7 @@ fn dispatch_validate(
             })
         }
         ("#validate/match-module-rule.mjs", "default", "match") => {
-            json!(module_match(&rule(arg(1), 1)?, arg(0)))
+            json!(module_match(&rule(arg(1), 1)?, arg(0), &facts))
         }
         ("#validate/match-module-rule.mjs", "default", "isInteresting") => {
             json!(Matcher::Module.is_interesting(&rule(arg(0), 0)?))
@@ -253,7 +256,8 @@ fn dispatch_validate(
             json!(crate::validate::dependency_match(
                 &rule(arg(2), 2)?,
                 arg(0),
-                arg(1)
+                arg(1),
+                &facts
             ))
         }
         ("#validate/match-dependency-rule.mjs", "default", "isInteresting") => {

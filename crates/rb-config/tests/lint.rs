@@ -2,7 +2,8 @@
 //!
 //! - Plan: [Wave 1, Step 4](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-4-config-convert-config-expand-config-lint-shorthands-1a)
 //!   ("One fixture per finding under `rb-config/tests/lint/`")
-//! - Requirement: [FR-CFG-05](../../../docs/prd.md#fr-cfg-05)
+//! - Requirement: [FR-CFG-05](../../../docs/prd.md#fr-cfg-05); `type-only-on-dotnet` is
+//!   [FR-RULE-02](../../../docs/prd.md#fr-rule-02)
 
 use std::error::Error;
 use std::path::PathBuf;
@@ -42,6 +43,7 @@ fn each_fixture_raises_its_finding() -> Result<(), Box<dyn Error>> {
         "missing-decision-token",
         "never-matches",
         "severity-below-error",
+        "type-only-on-dotnet",
     ] {
         let found = codes(&format!("{code}.yaml"), true)?;
         assert!(found.contains(&code), "{code}.yaml gave {found:?}");
@@ -65,5 +67,28 @@ fn tokens_are_only_required_when_asked() -> Result<(), Box<dyn Error>> {
 fn graph_findings_need_a_graph() -> Result<(), Box<dyn Error>> {
     let config = load(&fixture("never-matches.yaml"), &LoadOptions::default())?;
     assert!(lint(&config, None, LintOptions::default()).is_empty());
+    Ok(())
+}
+
+#[test]
+fn type_only_on_dotnet_is_the_only_finding_of_its_fixture() -> Result<(), Box<dyn Error>> {
+    assert_eq!(
+        codes("type-only-on-dotnet.yaml", true)?,
+        ["type-only-on-dotnet"]
+    );
+    let config = load(
+        &fixture("type-only-on-dotnet.yaml"),
+        &LoadOptions::default(),
+    )?;
+    assert!(
+        config
+            .warnings
+            .iter()
+            .any(|w| w.rule.as_deref() == Some("no-type-imports-into-domain")
+                && w.message
+                    .contains("`from.language` limits the rule to .NET")),
+        "the loader warns as well: {:?}",
+        config.warnings
+    );
     Ok(())
 }
