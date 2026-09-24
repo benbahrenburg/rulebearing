@@ -1,0 +1,59 @@
+{
+  "repo": "online-ml/river",
+  "sha": "d7085cde5bf90898b338d1ad522c71b9b9aa26f8",
+  "tool": "import-linter",
+  "importLinterVersion": "2.15",
+  "settings": "pyproject.toml",
+  "config": "imported",
+  "status": "compared",
+  "summary": {
+    "total": 1,
+    "agree": 0,
+    "disagree": 1,
+    "stays": 0,
+    "not-imported": 0,
+    "error": 0
+  },
+  "contracts": [
+    {
+      "id": null,
+      "name": "River sub-packages form a DAG",
+      "type": "acyclic_siblings",
+      "importLinter": "kept",
+      "rules": 50,
+      "violations": 4,
+      "rulebearing": "broken",
+      "verdict": "disagree",
+      "filtered": {
+        "mechanisms": [
+          "ignore_imports",
+          "TYPE_CHECKING imports (exclude_type_checking_imports)",
+          "imports by modules outside the root packages"
+        ],
+        "violations": 0,
+        "sufficientAlone": [
+          "ignore_imports"
+        ]
+      },
+      "cause": "import-linter's graph has no ignore_imports; with the same imports removed from Rulebearing's graph the contract is kept too. The import writes ignore_imports as knownViolations, which excuse a violation but cut no chain, and has no form for the other filters",
+      "sample": [
+        "river-sub-packages-form-a-dag:river.tree: base -> viz",
+        "river-sub-packages-form-a-dag:river: base -> compose",
+        "river-sub-packages-form-a-dag:river: drift -> feature_extraction",
+        "river-sub-packages-form-a-dag:river: evaluate -> time_series"
+      ]
+    }
+  ],
+  "graph": {
+    "rootPackages": [
+      "river"
+    ],
+    "importLinter": 1237,
+    "rulebearing": 1237,
+    "equal": true,
+    "unexplained": 0,
+    "onlyRulebearing": {},
+    "onlyImportLinter": {}
+  },
+  "agrees": false
+}

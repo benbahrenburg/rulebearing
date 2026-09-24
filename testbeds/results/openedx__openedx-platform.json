@@ -1,0 +1,163 @@
+{
+  "repo": "openedx/openedx-platform",
+  "sha": "23f45c133cf8e5074a723e6f6685137c87c01780",
+  "tool": "import-linter",
+  "importLinterVersion": "2.15",
+  "settings": "pyproject.toml",
+  "config": "imported",
+  "status": "compared",
+  "summary": {
+    "total": 4,
+    "agree": 1,
+    "disagree": 2,
+    "stays": 1,
+    "not-imported": 0,
+    "error": 0
+  },
+  "contracts": [
+    {
+      "id": null,
+      "name": "lms and cms are independent",
+      "type": "independence",
+      "importLinter": "kept",
+      "rules": 2,
+      "violations": 91028,
+      "rulebearing": "broken",
+      "verdict": "disagree",
+      "filtered": {
+        "mechanisms": [
+          "ignore_imports",
+          "imports by modules outside the root packages"
+        ],
+        "violations": 0,
+        "sufficientAlone": []
+      },
+      "cause": "import-linter's graph has no ignore_imports, imports by modules outside the root packages, together; with the same imports removed from Rulebearing's graph the contract is kept too. The import writes ignore_imports as knownViolations, which excuse a violation but cut no chain, and has no form for the other filters",
+      "sample": [
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/branding/__init__.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/branding/api.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/branding/models.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/branding/toggles.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/bulk_email/api.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/bulk_email/data.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/bulk_email/message_types.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/bulk_email/messages.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/bulk_email/models.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/bulk_email/models_api.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/bulk_email/tasks.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/bulk_email/toggles.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/ccx/custom_exception.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/ccx/models.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/ccx/modulestore.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/ccx/overrides.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/ccx/utils.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/certificates/api.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/certificates/config.py",
+        "lms-and-cms-are-independent:cms-to-lms: cms/djangoapps/api/v1/serializers/course_runs.py -> lms/djangoapps/certificates/data.py"
+      ]
+    },
+    {
+      "id": null,
+      "name": "Do not depend on non-public API of isolated apps.",
+      "type": "isolated_apps",
+      "importLinter": "kept",
+      "rules": 0,
+      "violations": 0,
+      "rulebearing": null,
+      "verdict": "stays",
+      "reason": "stays in import-linter: `isolated_apps` is a custom contract type, Python code the importer cannot translate"
+    },
+    {
+      "id": null,
+      "name": "Do not directly import internals of openedx_content (only import from openedx_content.api).",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "Low-level apps should not depend on high-level apps",
+      "type": "layers",
+      "importLinter": "kept",
+      "rules": 31,
+      "violations": 1556,
+      "rulebearing": "broken",
+      "verdict": "disagree",
+      "filtered": {
+        "mechanisms": [
+          "ignore_imports",
+          "imports by modules outside the root packages"
+        ],
+        "violations": 0,
+        "sufficientAlone": []
+      },
+      "cause": "import-linter's graph has no ignore_imports, imports by modules outside the root packages, together; with the same imports removed from Rulebearing's graph the contract is kept too. The import writes ignore_imports as knownViolations, which excuse a violation but cut no chain, and has no form for the other filters",
+      "sample": [
+        "low-level-apps-should-not-depend-on-high-level-apps:cms.lib.xblock.upstream_sync-to-openedx.core.djangoapps.content.search: cms/lib/xblock/upstream_sync.py -> openedx/core/djangoapps/content/search/api.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:cms.lib.xblock.upstream_sync-to-openedx.core.djangoapps.content.search: cms/lib/xblock/upstream_sync.py -> openedx/core/djangoapps/content/search/documents.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:cms.lib.xblock.upstream_sync-to-openedx.core.djangoapps.content.search: cms/lib/xblock/upstream_sync.py -> openedx/core/djangoapps/content/search/index_config.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:cms.lib.xblock.upstream_sync-to-openedx.core.djangoapps.content.search: cms/lib/xblock/upstream_sync.py -> openedx/core/djangoapps/content/search/models.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:cms.lib.xblock.upstream_sync-to-openedx.core.djangoapps.content.search: cms/lib/xblock/upstream_sync.py -> openedx/core/djangoapps/content/search/plain_text_math.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/api.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/apps.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/documents.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/handlers.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/index_config.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/management/commands/reindex_studio.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/models.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/tasks.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/tests/test_api.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/tests/test_documents.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/tests/test_handlers.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/tests/test_models.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/tests/test_reconcile.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/tests/test_reindex_cmd.py -> cms/lib/xblock/upstream_sync.py",
+        "low-level-apps-should-not-depend-on-high-level-apps:openedx.core.djangoapps.content.search-to-cms.lib.xblock.upstream_sync: openedx/core/djangoapps/content/search/tests/test_views.py -> cms/lib/xblock/upstream_sync.py"
+      ]
+    }
+  ],
+  "graph": {
+    "rootPackages": [
+      "lms",
+      "cms",
+      "openedx",
+      "openedx_content",
+      "openedx_catalog",
+      "openedx_learning"
+    ],
+    "importLinter": 7098,
+    "rulebearing": 7097,
+    "equal": false,
+    "unexplained": 0,
+    "onlyRulebearing": {
+      "dynamic": {
+        "count": 1,
+        "sample": [
+          [
+            "openedx/core/djangoapps/bookmarks/signals.py",
+            "openedx/core/djangoapps/bookmarks/tasks.py"
+          ]
+        ]
+      }
+    },
+    "onlyImportLinter": {
+      "ancestorOfMissing": {
+        "count": 2,
+        "sample": [
+          [
+            "cms/envs/devstack.py",
+            "cms/__init__.py"
+          ],
+          [
+            "lms/envs/devstack.py",
+            "lms/__init__.py"
+          ]
+        ]
+      }
+    }
+  },
+  "agrees": false
+}

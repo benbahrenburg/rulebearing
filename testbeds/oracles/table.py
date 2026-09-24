@@ -67,11 +67,14 @@ def outcome(document: dict[str, Any], rows: list[dict[str, Any]]) -> str:
     explained = [r for r in disagreeing if r.get("cause")]
     lead = f"{len(disagreeing)} disagree"
     if explained:
-        filters = sorted(
-            {f for r in explained for f in r.get("filtered", {}).get("sufficientAlone", [])}
-        )
-        which = f": import-linter's graph has no {', '.join(filters)}" if filters else ""
-        lead += f", {len(explained)} explained{which}"
+        # The filter that accounts for each alone, or the ones that do only together.
+        causes: set[str] = set()
+        for r in explained:
+            filtered = r.get("filtered", {})
+            alone = filtered.get("sufficientAlone", [])
+            causes.update(alone or [" + ".join(filtered.get("mechanisms", []))])
+        which = "; ".join(sorted(c for c in causes if c))
+        lead += f", {len(explained)} explained: import-linter's graph has no {which}"
     return lead
 
 
