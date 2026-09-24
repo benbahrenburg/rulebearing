@@ -17,7 +17,7 @@ The repositories in [manifest.yaml](manifest.yaml) are the nightly proof ([NFR-C
 | --- | --- |
 | `run.sh <owner/repo> [out]` | Clones one row at its SHA outside this repository (MSBuild, eslint and tsconfig search upward for configuration), runs the incumbent under `/usr/bin/time`, and writes `result.json`, `timing.json` and the tool's output. Status is `ok`, `failed` (the tool reported violations or failing tests), `error` (clone, build or tool failure, with the log named) or `idle` |
 | `summarise.mjs <out> [--readme README.md]` | Builds `summary.md` and `summary.json`; with `--readme`, rewrites the table between the `testbeds` markers in the root README |
-| `check-regression.sh <previous> <current> [20]` | Fails when a Rulebearing timing grew by more than the threshold against the previous summary; passes with a message while no Rulebearing timing exists |
+| `check-regression.sh <summary> [20]` | Fails when a Rulebearing timing grew by more than the threshold against the baseline, the build behind the previous committed summary. `run.sh` times both on the same runner, interleaved, when `RULEBEARING_BASELINE_BIN` is set, because hosted runners differ by more than 20% on the same binary. Passes with a message while no row has a pair |
 | `pin.sh [owner/repo ...]` | Re-pins rows to their default branch's head |
 
 The workflow is [`.github/workflows/nightly-testbeds.yml`](../.github/workflows/nightly-testbeds.yml). It gives each row with an incumbent its own runner, records the other rows, assembles the summary, runs the regression check, and publishes the summary to the `testbeds-results` branch. `main` accepts changes only through reviewed pull requests, so the README table is refreshed from that branch by pull request:
