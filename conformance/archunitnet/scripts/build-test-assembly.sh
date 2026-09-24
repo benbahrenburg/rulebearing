@@ -54,7 +54,14 @@ names=()
 for project in "${projects[@]}"; do
   name="$(basename "$project" .csproj)"
   names+=("$name")
-  dotnet build "$work/ArchUnitNET/$project" \
+  # Verify, a package of the test project, turns deterministic source paths off and writes the
+  # project directory into an assembly attribute; global properties put both back, so the test
+  # project's bytes do not depend on where it was cloned. The others map through SourceRoot.
+  extra=()
+  if [ "$name" = ArchUnitNETTests ]; then
+    extra=(-p:DeterministicSourcePaths=true "-p:PathMap=$work/ArchUnitNET/=/_/" "-p:ProjectDir=/_/ArchUnitNETTests/")
+  fi
+  dotnet build "$work/ArchUnitNET/$project" ${extra[@]+"${extra[@]}"} \
     --configuration Debug \
     --output "$work/out/$name" \
     -p:DebugType=portable \
