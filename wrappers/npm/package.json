@@ -24,10 +24,19 @@
   "bin": {
     "rulebearing": "bin/rulebearing.js"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/launcher.d.ts",
+      "default": "./dist/launcher.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "bin/rulebearing.js",
     "dist/launcher.js",
-    "dist/platforms.js"
+    "dist/launcher.d.ts",
+    "dist/platforms.js",
+    "dist/platforms.d.ts"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

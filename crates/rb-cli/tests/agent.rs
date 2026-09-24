@@ -188,6 +188,63 @@ fn can_import_answers_from_the_saved_graph() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn can_import_json_carries_the_gates_violation_id_and_fix() -> Result<(), Box<dyn Error>> {
+    // Wave 2, Step 13: the ESLint plugin reads `can-import --json`, so its id must be the one
+    // the gate gives the same edge, and its exit code the text form's.
+    let dir = tree("can-import-json")?;
+    let gate = run(&dir, &["cruise", "-T", "json", "src"])?;
+    let gate_id = json(&gate)?["summary"]["violations"][0]["id"].clone();
+    let no = run(
+        &dir,
+        &[
+            "can-import",
+            "--json",
+            "src/domain/model.ts",
+            "src/web/view.ts",
+        ],
+    )?;
+    assert_eq!(no.status.code(), Some(1), "{}", stdout(&no));
+    let answer = json(&no)?;
+    assert_eq!(answer["verdict"], "no");
+    assert_eq!(answer["from"], "src/domain/model.ts");
+    assert_eq!(answer["to"], "src/web/view.ts");
+    assert_eq!(answer["violations"][0]["name"], "domain-not-to-web");
+    assert_eq!(answer["violations"][0]["severity"], "error");
+    assert_eq!(
+        answer["violations"][0]["fix"],
+        "Move the shared type into src/domain"
+    );
+    assert!(gate_id.is_string());
+    assert_eq!(answer["violations"][0]["id"], gate_id);
+    let yes = run(
+        &dir,
+        &[
+            "can-import",
+            "--json",
+            "src/web/view.ts",
+            "src/domain/model.ts",
+        ],
+    )?;
+    assert_eq!(yes.status.code(), Some(0));
+    let answer = json(&yes)?;
+    assert_eq!(answer["verdict"], "yes");
+    assert_eq!(answer["violations"], serde_json::json!([]));
+    // Two runs answer byte for byte alike.
+    let again = run(
+        &dir,
+        &[
+            "can-import",
+            "--json",
+            "src/domain/model.ts",
+            "src/web/view.ts",
+        ],
+    )?;
+    assert_eq!(again.stdout, no.stdout);
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
 fn can_import_takes_the_targets_kind_from_the_graph() -> Result<(), Box<dyn Error>> {
     let dir = tree("can-import-kind")?;
     let graph = serde_json::json!({
