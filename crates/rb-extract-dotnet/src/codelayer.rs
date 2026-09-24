@@ -600,6 +600,43 @@ impl<'u> Builder<'u> {
         built
     }
 
+    /// A type the kept code references but no analysed assembly defines, as `ArchUnitNET`'s
+    /// `DomainResolver` holds it: a stub with its definition's facts when an assembly from
+    /// index `from` on (one found beside the analysed ones) defines it, else an
+    /// `UnavailableType` with only its name. Neither has members or dependencies.
+    pub fn referenced(&self, from: usize, full_name: &str) -> TypeElement {
+        let location = Location::in_file(Language::Dotnet, None);
+        let Some((asm, ty)) = self.universe.defined(from, full_name) else {
+            let outer = full_name.split('+').next().unwrap_or(full_name);
+            let (namespace, _) = outer.rsplit_once('.').unwrap_or(("", outer));
+            let name = full_name.rsplit(['.', '+']).next().unwrap_or(full_name);
+            let mut element = TypeElement::new(full_name, name, "unavailable", location);
+            element.namespace = (!namespace.is_empty()).then(|| namespace.to_owned());
+            element.referenced = Some(true);
+            return element;
+        };
+        let loaded = self.universe.assemblies[asm];
+        let (kind, value_type) = self.kind(asm, ty);
+        let mut element = TypeElement::new(&ty.full_name, &ty.name, kind, location);
+        element.namespace = (!ty.namespace.is_empty()).then(|| ty.namespace.clone());
+        element.referenced = Some(true);
+        element.assembly = Some(loaded.identity.name.clone());
+        let display = loaded.identity.display();
+        element.assembly_qualified_name = Some(assembly_qualified_name(&ty.full_name, &display));
+        element.assembly_full_name = Some(display);
+        element.visibility = Some(type_visibility(ty.flags).to_owned());
+        element.r#abstract = Some(ty.flags & flags::ABSTRACT != 0 && kind != "interface");
+        element.sealed = Some(ty.flags & flags::SEALED != 0);
+        element.record = Some(
+            matches!(kind, "class" | "attribute")
+                && ty.methods.iter().any(|m| m.name == "<Clone>$"),
+        );
+        element.value_type = Some(value_type);
+        element.nested = Some(ty.enclosing.is_some());
+        element.generic = Some(!ty.generic_params.is_empty());
+        element
+    }
+
     #[expect(
         clippy::too_many_lines,
         reason = "the type's own properties, then each member family in ArchUnitNET's phase order"

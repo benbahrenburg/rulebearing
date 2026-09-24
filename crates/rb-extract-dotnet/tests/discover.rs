@@ -231,6 +231,7 @@ fn a_filtered_directory_is_read() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(
         code.types
             .iter()
+            .filter(|t| t.referenced.is_none())
             .map(|t| t.full_name.as_str())
             .collect::<Vec<_>>(),
         ["Sample.Core.Clock"]
@@ -251,6 +252,7 @@ fn namespaces_keep_only_their_types() -> Result<(), Box<dyn std::error::Error>> 
     assert!(
         code.types
             .iter()
+            .filter(|t| t.referenced.is_none())
             .all(|t| t.full_name.starts_with("Sample.Orders"))
     );
     Ok(())

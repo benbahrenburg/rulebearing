@@ -1111,6 +1111,38 @@
             "line": 10
           }
         ]
+      },
+      {
+        "fullName": "System.Object",
+        "name": "Object",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "name": "CompilerGeneratedAttribute",
+        "namespace": "System.Runtime.CompilerServices",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.String",
+        "name": "String",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Void",
+        "name": "Void",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
       }
     ],
     "members": [

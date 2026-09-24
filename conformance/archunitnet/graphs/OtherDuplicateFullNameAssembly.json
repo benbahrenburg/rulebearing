@@ -184,6 +184,14 @@
             "kind": "inherits"
           }
         ]
+      },
+      {
+        "fullName": "System.Object",
+        "name": "Object",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
       }
     ],
     "members": [

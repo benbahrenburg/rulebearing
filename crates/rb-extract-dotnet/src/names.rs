@@ -93,6 +93,18 @@ impl<'a> Universe<'a> {
         self.by_name.get(&name.to_ascii_lowercase()).copied()
     }
 
+    /// The first assembly from `from` on that defines `full_name`, with the definition.
+    pub fn defined(
+        &self,
+        from: usize,
+        full_name: &str,
+    ) -> Option<(usize, &'a crate::loader::Type)> {
+        (from..self.assemblies.len()).find_map(|index| {
+            let row = self.def_named(index, full_name)?;
+            self.assemblies[index].type_at(row).map(|t| (index, t))
+        })
+    }
+
     /// The `TypeDef` row of `full_name` in assembly `index`.
     pub fn def_named(&self, index: usize, full_name: &str) -> Option<u32> {
         self.defs.get(index)?.get(full_name).copied()

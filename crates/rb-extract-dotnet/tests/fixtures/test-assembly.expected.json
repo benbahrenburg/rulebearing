@@ -4497,6 +4497,158 @@
     ],
     "types": [
       {
+        "fullName": "System.Attribute",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Attribute",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.AttributeUsageAttribute",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "AttributeUsageAttribute",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Boolean",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Boolean",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Byte",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Byte",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Collections.Generic.EqualityComparer`1",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "EqualityComparer`1",
+        "namespace": "System.Collections.Generic",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Collections.Generic.IList`1",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "IList`1",
+        "namespace": "System.Collections.Generic",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Collections.Generic.List`1",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "List`1",
+        "namespace": "System.Collections.Generic",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Collections.Generic.List`1+Enumerator",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Enumerator",
+        "namespace": "System.Collections.Generic",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Console",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Console",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.IDisposable",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "IDisposable",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.IEquatable`1",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "IEquatable`1",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Int32",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Int32",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Object",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Object",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "CompilerGeneratedAttribute",
+        "namespace": "System.Runtime.CompilerServices",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Runtime.CompilerServices.RuntimeHelpers",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "RuntimeHelpers",
+        "namespace": "System.Runtime.CompilerServices",
+        "referenced": true
+      },
+      {
+        "fullName": "System.String",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "String",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Text.StringBuilder",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "StringBuilder",
+        "namespace": "System.Text",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Type",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Type",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Void",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Void",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
         "abstract": true,
         "assembly": "TestAssembly",
         "assemblyFullName": "TestAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
