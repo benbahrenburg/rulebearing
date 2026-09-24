@@ -147,6 +147,18 @@ impl<'a> PeImage<'a> {
         })
     }
 
+    /// The bytes from `rva` to the end of its section's raw data: where a method body starts,
+    /// whose length only its header knows.
+    pub fn from_rva(&self, rva: u32) -> Option<&'a [u8]> {
+        let section = self.sections.iter().find(|s| {
+            rva.checked_sub(s.virtual_address)
+                .is_some_and(|within| within < s.raw_size)
+        })?;
+        let start = self.offset_of(rva)?;
+        let end = (section.raw_offset as usize).checked_add(section.raw_size as usize)?;
+        self.data.get(start..end.min(self.data.len()))
+    }
+
     fn slice(&self, rva: u32, size: u32, what: &'static str) -> Read<&'a [u8]> {
         let Some(offset) = self.offset_of(rva) else {
             return malformed(what, rva as usize);
@@ -273,6 +285,23 @@ pub(crate) mod tests {
         assert_eq!(image.map(|i| i.debug.len()), Some(0));
         assert_eq!(image.and_then(|i| i.offset_of(0x2010)), Some(0x210));
         assert_eq!(image.and_then(|i| i.offset_of(0x5000)), None);
+        assert_eq!(
+            image
+                .and_then(|i| i.from_rva(0x2048))
+                .map(|b| (b.len(), &b[..4])),
+            Some((0x200 - 0x48, &b"BSJB"[..])),
+            "from the RVA to the end of the section's raw data"
+        );
+        assert_eq!(
+            image.and_then(|i| i.from_rva(0x2200)),
+            None,
+            "past the raw data"
+        );
+        assert_eq!(
+            image.and_then(|i| i.from_rva(0x1000)),
+            None,
+            "before the section"
+        );
     }
 
     #[test]

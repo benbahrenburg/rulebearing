@@ -666,6 +666,47 @@ mod tests {
     }
 
     #[test]
+    fn the_dotnet_preset_sets_the_dotnet_defaults() -> Result<(), Box<dyn Error>> {
+        let repo = Repo::new(
+            "dotnet-preset",
+            &[("rulebearing.yaml", "extends: rulebearing:dotnet\n")],
+        )?;
+        let config = repo.load("rulebearing.yaml")?;
+        let exclude = serde_json::to_string(&config.languages.typescript.exclude)?;
+        for part in ["(obj|bin)", "g\\\\.cs", "Designer", "GlobalUsings"] {
+            assert!(exclude.contains(part), "{part} in {exclude}");
+        }
+        let orphans = config
+            .rules
+            .dependencies
+            .forbidden
+            .iter()
+            .find(|r| r.name() == "no-orphans")
+            .and_then(|r| r.from.path_not.clone())
+            .map(|p| p.joined())
+            .unwrap_or_default();
+        for part in [
+            "Program",
+            "Startup",
+            "AssemblyInfo",
+            "Migrations",
+            "tsconfig",
+        ] {
+            assert!(orphans.contains(part), "{part} in {orphans}");
+        }
+        assert!(
+            config
+                .rules
+                .dependencies
+                .forbidden
+                .iter()
+                .any(|r| r.name() == "no-circular"),
+            "the recommended rules are kept"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn a_native_config_with_every_addition() -> Result<(), Box<dyn Error>> {
         let repo = Repo::new(
             "native",

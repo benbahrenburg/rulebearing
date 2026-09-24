@@ -54,6 +54,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bstr"
+version = "1.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6bb31b46c14244e20ee9984b11bf5c992b91fb6939fea616e3512c8baecdbe5f"
+dependencies = [
+ "memchr",
+ "serde_core",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -187,6 +197,19 @@ dependencies = [
  "cfg-if",
  "libc",
  "r-efi",
+]
+
+[[package]]
+name = "globset"
+version = "0.4.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07c34a9410465b45bd9787443bc7370f37735bad04b0f0cd57ff1a3186c98988"
+dependencies = [
+ "aho-corasick",
+ "bstr",
+ "log",
+ "regex-automata",
+ "regex-syntax",
 ]
 
 [[package]]
@@ -354,7 +377,7 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "rb-config"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "rb-model",
@@ -371,12 +394,15 @@ dependencies = [
 
 [[package]]
 name = "rb-extract-dotnet"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
+ "globset",
  "miniz_oxide",
  "rb-model",
+ "regex",
  "roxmltree",
  "serde",
+ "sha1",
  "thiserror",
 ]
 
@@ -391,7 +417,7 @@ dependencies = [
 
 [[package]]
 name = "rb-model"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "schemars",
  "serde",
@@ -608,6 +634,17 @@ dependencies = [
  "ryu",
  "serde",
  "unsafe-libyaml",
+]
+
+[[package]]
+name = "sha1"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aacc4cc499359472b4abe1bf11d0b12e688af9a805fa5e3016f9a386dc2d0214"
+dependencies = [
+ "cfg-if",
+ "cpufeatures",
+ "digest",
 ]
 
 [[package]]
@@ -844,7 +881,7 @@ checksum = "23b97319f7b8343df12cc98938e5c3eb436064524c8d2b4e30a1d3a36eecdf81"
 
 [[package]]
 name = "xtask"
-version = "0.0.1"
+version = "0.1.0"
 
 [[package]]
 name = "zmij"

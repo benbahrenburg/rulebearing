@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/App/App.csproj" />
+    <Project Path="src/Lib/Lib.csproj" />
+  </Folder>
+  <Project Path="legacy/Old/Old.csproj" />
+</Solution>

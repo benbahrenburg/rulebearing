@@ -21,6 +21,31 @@ const TYPE_DEFINITION_DOCUMENTS: [u8; 16] = [
     0xBC, 0x74, 0x2E, 0x93, 0xA9, 0xDB, 0x78, 0x44, 0x8D, 0x46, 0x0F, 0x32, 0xA7, 0xBA, 0xB3, 0xD3,
 ];
 
+/// The `CustomDebugInformation` kind holding a module's `SourceLink` JSON
+/// (`CC110556-A091-4D38-9FEC-25AB9A351A6A`), in the `#GUID` heap's byte order.
+const SOURCE_LINK: [u8; 16] = [
+    0x56, 0x05, 0x11, 0xCC, 0x91, 0xA0, 0x38, 0x4D, 0x9F, 0xEC, 0x25, 0xAB, 0x9A, 0x35, 0x1A, 0x6A,
+];
+
+/// One visible sequence point: where the instructions from `offset` on came from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SequencePoint {
+    /// IL offset of the first instruction the point covers.
+    pub offset: u32,
+    /// 1-based row of the `Document` table.
+    pub document: u32,
+    /// 1-based start line.
+    pub line: u32,
+    /// 1-based start column.
+    pub column: u32,
+}
+
+/// The point covering IL offset `offset`: the last visible point at or before it.
+pub fn point_at(points: &[SequencePoint], offset: u32) -> Option<&SequencePoint> {
+    let index = points.partition_point(|p| p.offset <= offset);
+    index.checked_sub(1).and_then(|i| points.get(i))
+}
+
 /// The first visible sequence point of a method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FirstPoint {
@@ -123,6 +148,50 @@ impl<'a> PortablePdb<'a> {
         first_visible_point(self.metadata.blob(points)?, document)
     }
 
+    /// Every visible sequence point of the method with `MethodDef` row `method`, in IL order.
+    ///
+    /// # Errors
+    /// When the method's sequence-points blob is malformed.
+    pub fn sequence_points(&self, method: u32) -> Read<Vec<SequencePoint>> {
+        if method == 0 || method > self.metadata.rows(id::METHOD_DEBUG_INFORMATION) {
+            return Ok(Vec::new());
+        }
+        let tables = &self.metadata.tables;
+        let document = tables.cell(id::METHOD_DEBUG_INFORMATION, method, 0)?;
+        let points = tables.cell(id::METHOD_DEBUG_INFORMATION, method, 1)?;
+        if points == 0 {
+            return Ok(Vec::new());
+        }
+        all_visible_points(self.metadata.blob(points)?, document)
+    }
+
+    /// The module's `SourceLink` JSON, when the PDB carries one.
+    ///
+    /// # Errors
+    /// When the custom debug information table is malformed.
+    pub fn source_link(&self) -> Read<Option<String>> {
+        let tables = &self.metadata.tables;
+        for row in 1..=self.metadata.rows(id::CUSTOM_DEBUG_INFORMATION) {
+            let parent = tables.cell(id::CUSTOM_DEBUG_INFORMATION, row, 0)?;
+            if !matches!(
+                Coded::HasCustomDebugInformation.decode(parent),
+                Some((id::MODULE, _))
+            ) {
+                continue;
+            }
+            let kind = self
+                .metadata
+                .guid(tables.cell(id::CUSTOM_DEBUG_INFORMATION, row, 1)?)?;
+            if kind == SOURCE_LINK {
+                let value =
+                    self.metadata
+                        .blob(tables.cell(id::CUSTOM_DEBUG_INFORMATION, row, 2)?)?;
+                return Ok(std::str::from_utf8(value).ok().map(str::to_owned));
+            }
+        }
+        Ok(None)
+    }
+
     /// For each `TypeDef` row that carries `TypeDefinitionDocuments`, the documents declaring it.
     ///
     /// # Errors
@@ -196,6 +265,61 @@ pub fn first_visible_point(blob: &[u8], document: u32) -> Read<Option<FirstPoint
     Ok(None)
 }
 
+/// Decodes a whole sequence-points blob, keeping the visible points.
+///
+/// # Errors
+/// When the blob ends early.
+pub fn all_visible_points(blob: &[u8], document: u32) -> Read<Vec<SequencePoint>> {
+    let mut r = Reader::new(blob, 0, "sequence points");
+    r.compressed_u32()?; // local signature
+    let mut document = if document == 0 {
+        r.compressed_u32()?
+    } else {
+        document
+    };
+    let mut found = Vec::new();
+    let mut offset: u32 = 0;
+    let mut previous: Option<(u32, u32)> = None;
+    let mut first_record = true;
+    while r.position() < blob.len() {
+        let il_delta = r.compressed_u32()?;
+        if il_delta == 0 && !first_record {
+            document = r.compressed_u32()?;
+            continue;
+        }
+        first_record = false;
+        offset = offset.saturating_add(il_delta);
+        let line_delta = r.compressed_u32()?;
+        let column_delta = if line_delta == 0 {
+            i64::from(r.compressed_u32()?)
+        } else {
+            i64::from(r.compressed_i32()?)
+        };
+        if line_delta == 0 && column_delta == 0 {
+            continue; // hidden
+        }
+        let (line, column) = match previous {
+            None => (r.compressed_u32()?, r.compressed_u32()?),
+            Some((line, column)) => {
+                let line = i64::from(line) + i64::from(r.compressed_i32()?);
+                let column = i64::from(column) + i64::from(r.compressed_i32()?);
+                (
+                    u32::try_from(line).unwrap_or(0),
+                    u32::try_from(column).unwrap_or(0),
+                )
+            }
+        };
+        previous = Some((line, column));
+        found.push(SequencePoint {
+            offset,
+            document,
+            line,
+            column,
+        });
+    }
+    Ok(found)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -238,6 +362,33 @@ mod tests {
             }))
         );
         assert_eq!(first_visible_point(&[0, 0, 0, 0], 1), Ok(None));
+        // The same blob decoded whole: the second visible point's line and column are signed
+        // deltas from the first (portable PDB: "δStartLine", "δStartColumn").
+        let blob = [0, 0, 0, 0, 4, 0, 5, 12, 9, 3, 1, 2, 2, 4];
+        let points = all_visible_points(&blob, 3);
+        assert_eq!(
+            points,
+            Ok(vec![
+                SequencePoint {
+                    offset: 4,
+                    document: 3,
+                    line: 12,
+                    column: 9
+                },
+                SequencePoint {
+                    offset: 7,
+                    document: 3,
+                    line: 13,
+                    column: 11
+                },
+            ])
+        );
+        let points = points.unwrap_or_default();
+        assert_eq!(point_at(&points, 3), None);
+        assert_eq!(point_at(&points, 4).map(|p| p.line), Some(12));
+        assert_eq!(point_at(&points, 6).map(|p| p.line), Some(12));
+        assert_eq!(point_at(&points, 9).map(|p| p.line), Some(13));
+        assert!(all_visible_points(&[0, 0, 4, 1], 1).is_err());
         assert!(first_visible_point(&[0, 0, 1], 1).is_err());
     }
 

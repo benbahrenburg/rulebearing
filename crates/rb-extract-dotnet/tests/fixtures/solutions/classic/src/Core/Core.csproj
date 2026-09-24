@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Sample.Core</AssemblyName>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,26 @@
+# rulebearing:dotnet. Original to Rulebearing. The recommended rules plus the .NET defaults of
+# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 3 and
+# docs/artifacts/design.md#one-engine-three-languages-one-monorepo: build output and generated
+# sources are not modules, and the files the runtime or the tooling enters by convention rather
+# than by reference are not orphans. Requirement: FR-CFG-06.
+extends: rulebearing:recommended
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        comment: "A module nothing imports and that imports nothing is usually dead code."
+        fix: "Delete the module, import it from where it belongs, or add its path to this rule's from.pathNot if it is an entry point or a configuration file."
+        severity: warn
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "(^|/)(Program|Startup|AssemblyInfo)\\.cs$"
+            - "(^|/)Migrations/"
+        to: {}
+options:
+  exclude:
+    path: "(^|/)(obj|bin)/|\\.g\\.cs$|\\.Designer\\.cs$|(^|/)GlobalUsings\\.g\\.cs$"

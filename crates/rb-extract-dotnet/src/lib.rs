@@ -12,30 +12,46 @@
 //!
 //! Rule of the boundary: this crate reads assemblies and PDBs and writes `rb_model` types only.
 //!
-//! Wave 0 (Spike B) builds the reader far enough to attribute every type to a source file and
+//! Wave 0 (Spike B) built the reader far enough to attribute every type to a source file and
 //! measure the share it attributes, the figure [ADR-0003](../../../docs/adr/0003-dotnet-extractor-fallback.md)
-//! decides on. The edge set (the IL operand scan, the code layer) is wave 2.
+//! decided on ([ADR-0022](../../../docs/adr/0022-dotnet-reader-in-rust-confirmed.md)). Wave 2
+//! ([Steps 1 to 3](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#21-step-1-net-discovery-and-the-loader-options-2a))
+//! completes it: discovery, the full table set, signatures, IL, the edge set and the code layer.
 //!
-//! | Module | Reads |
+//! | Module | Does |
 //! | --- | --- |
 //! | [`bytes`] | bounds-checked little-endian reads and compressed integers |
-//! | [`pe`] | PE headers, sections, the CLI header, the debug directory |
-//! | [`metadata`] | the metadata root, heaps and the table stream |
-//! | [`assembly`] | types, nesting, method ranges, compiler-generated markers |
-//! | [`pdb`] | portable PDB documents and sequence points |
+//! | [`pe`] | PE headers, sections, the CLI header, the debug directory, method bodies by RVA |
+//! | [`metadata`] | the metadata root, heaps (`#Strings`, `#US`, `#Blob`, `#GUID`) and the table stream |
+//! | [`sig`] | field, method, property, local, `TypeSpec` and `MethodSpec` signatures |
+//! | [`il`] | method bodies: the instructions whose operand is a token |
+//! | [`loader`] | one assembly as an owned model; its module doc lists the table set and why each table is read |
+//! | [`assembly`] | the light type view the attribution passes use |
+//! | [`pdb`] | portable PDB documents, sequence points, `SourceLink` |
 //! | [`attribute`] | one type to one file: `pdb`, `inferred`, `none` |
-//! | [`msbuild`] | solution and project files, to find the built assemblies |
+//! | [`discover`] | solutions, project files and the loader options, to find the built assemblies |
+//! | [`names`] | resolving references across assemblies and spelling names as `ArchUnitNET` does |
+//! | [`codelayer`], [`body`] | the code layer and every type's and member's dependencies |
+//! | [`edges`] | the module layer: type dependencies projected to files, with the .NET `dependencyTypes` |
 //!
 //! Every reader returns an error naming the structure and offset on malformed input; the fuzz
-//! target `fuzz/fuzz_targets/metadata_reader.rs` and a truncation test hold it to that.
+//! targets `fuzz/fuzz_targets/metadata_reader.rs`, `ecma335.rs` and `pdb.rs` and the truncation
+//! tests hold it to that.
 
 pub mod assembly;
 pub mod attribute;
+pub mod body;
 pub mod bytes;
+pub mod codelayer;
+pub mod discover;
+pub mod edges;
+pub mod il;
+pub mod loader;
 pub mod metadata;
-pub mod msbuild;
+pub mod names;
 pub mod pdb;
 pub mod pe;
+pub mod sig;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -47,7 +63,7 @@ use rb_model::{
 use serde::Serialize;
 
 use attribute::{AssemblyAttribution, Counts, PdbKind, attribute_assembly};
-use msbuild::{Project, SolutionError, solution_projects};
+use discover::{DiscoverError, Project, solution_projects};
 
 /// The edge kinds this extractor records, from
 /// [design § Dependency rules](../../../docs/artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820).
@@ -129,7 +145,7 @@ pub fn attribute_solution(
     solution: &Path,
     configuration: &str,
     repository: &Path,
-) -> Result<AttributionReport, SolutionError> {
+) -> Result<AttributionReport, DiscoverError> {
     let mut report = AttributionReport {
         solution: display(solution, repository),
         configuration: configuration.to_owned(),
@@ -143,7 +159,7 @@ pub fn attribute_solution(
     };
     let mut seen = BTreeSet::new();
     for path in solution_projects(solution)? {
-        let project = match Project::read(&path, configuration, repository) {
+        let project = match Project::read(&path, configuration, None, repository) {
             Ok(project) => project,
             Err(error) => {
                 report.errors.push(ProjectError {
@@ -170,8 +186,7 @@ pub fn attribute_solution(
         if !seen.insert(dll.clone()) {
             continue;
         }
-        let folder = path.parent().unwrap_or(repository);
-        match attribute_assembly(&dll, folder, repository) {
+        match attribute_assembly(&dll, project.folder(), repository) {
             Ok(assembly) => {
                 if matches!(assembly.pdb, PdbKind::Windows | PdbKind::Missing) {
                     report.non_portable_pdb_types +=
@@ -191,34 +206,122 @@ pub fn attribute_solution(
     Ok(report)
 }
 
-/// The .NET extractor: one module per source file its built assemblies' types attribute to.
+/// The .NET extractor: one module per source file the built assemblies' types attribute to,
+/// the edges between them, and the code layer.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct DotnetExtractor;
 
-/// The solution to read: the configured one, else the only `.sln` or `.slnx` in the root.
-fn find_solution(root: &Path, options: &DotnetOptions) -> Result<PathBuf, ExtractError> {
-    if let Some(solution) = &options.solution {
-        return Ok(root.join(solution));
+/// The root's path below its git repository's root (`src/`), empty at the root or outside a
+/// repository: deterministic builds write documents relative to the repository root (`/_/`).
+fn repository_prefix(root: &Path) -> String {
+    let absolute = std::fs::canonicalize(root).unwrap_or_else(|_| root.to_path_buf());
+    let mut current = absolute.as_path();
+    loop {
+        if current.join(".git").exists() {
+            return absolute
+                .strip_prefix(current)
+                .map(|rest| {
+                    let rest = rest.to_string_lossy().replace('\\', "/");
+                    if rest.is_empty() {
+                        rest
+                    } else {
+                        format!("{rest}/")
+                    }
+                })
+                .unwrap_or_default();
+        }
+        match current.parent() {
+            Some(parent) => current = parent,
+            None => return String::new(),
+        }
     }
-    let mut found: Vec<PathBuf> = std::fs::read_dir(root)?
-        .flatten()
-        .map(|e| e.path())
-        .filter(|p| p.extension().is_some_and(|e| e == "sln" || e == "slnx"))
-        .collect();
-    found.sort();
-    match found.as_slice() {
-        [only] => Ok(only.clone()),
-        [] => Err(ExtractError::NoModulesFound),
-        _ => Err(ExtractError::UnsupportedFile {
-            path: root.to_path_buf(),
-            reason: "more than one solution; set languages.dotnet.solution".to_owned(),
-        }),
+}
+
+/// A document path relative to the root: `/_/`-mapped paths are relative to the repository, so
+/// the root's own prefix is removed.
+fn under_root(path: &str, prefix: &str) -> String {
+    path.strip_prefix(prefix).unwrap_or(path).to_owned()
+}
+
+fn read_error(path: &Path, reason: &dyn std::fmt::Display) -> ExtractError {
+    ExtractError::UnsupportedFile {
+        path: path.to_path_buf(),
+        reason: reason.to_string(),
     }
+}
+
+/// One assembly, read.
+struct Read {
+    project: Project,
+    loaded: loader::Loaded,
+    attribution: AssemblyAttribution,
+    points: BTreeMap<u32, Vec<pdb::SequencePoint>>,
+    documents: Vec<String>,
+}
+
+/// Reads one built assembly: metadata, attribution and sequence points.
+fn read_assembly(
+    project: &Project,
+    dll: &Path,
+    root: &Path,
+    prefix: &str,
+) -> Result<Read, ExtractError> {
+    let bytes = std::fs::read(dll)?;
+    let loaded = loader::Loaded::read(&bytes).map_err(|e| read_error(dll, &e))?;
+    let mut attribution =
+        attribute_assembly(dll, project.folder(), root).map_err(|e| read_error(dll, &e))?;
+    if attribution.pdb == PdbKind::Windows {
+        return Err(ExtractError::NonPortablePdb {
+            assembly: dll.to_path_buf(),
+        });
+    }
+    for ty in &mut attribution.types {
+        if let Some(file) = &ty.file {
+            ty.file = Some(under_root(file, prefix));
+        }
+    }
+    let assembly_view = assembly::Assembly::read(&bytes).map_err(|e| read_error(dll, &e))?;
+    let (_, pdb_bytes) =
+        attribute::debug_info(dll, &assembly_view).map_err(|e| read_error(dll, &e))?;
+    let mut points = BTreeMap::new();
+    let mut documents = Vec::new();
+    if let Some(pdb_bytes) = pdb_bytes.as_deref()
+        && let Ok(pdb) = pdb::PortablePdb::parse(pdb_bytes)
+    {
+        let pdb_path = dll.with_extension("pdb");
+        documents = pdb
+            .documents()
+            .map_err(|e| read_error(&pdb_path, &e))?
+            .iter()
+            .map(|d| under_root(&attribute::normalise_document(d, root), prefix))
+            .collect();
+        for ty in &loaded.types {
+            for method in &ty.methods {
+                let found = pdb
+                    .sequence_points(method.row)
+                    .map_err(|e| read_error(&pdb_path, &e))?;
+                if !found.is_empty() {
+                    points.insert(method.row, found);
+                }
+            }
+        }
+    }
+    Ok(Read {
+        project: project.clone(),
+        loaded,
+        attribution,
+        points,
+        documents,
+    })
 }
 
 impl Extractor for DotnetExtractor {
     type Options = DotnetOptions;
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the five stages of a .NET extraction in order"
+    )]
     fn extract(
         &self,
         roots: &[PathBuf],
@@ -227,64 +330,159 @@ impl Extractor for DotnetExtractor {
         let Some(root) = roots.first() else {
             return Err(ExtractError::NoModulesFound);
         };
-        let solution = find_solution(root, options)?;
-        let report =
-            attribute_solution(&solution, options.configuration(), root).map_err(|error| {
-                ExtractError::UnsupportedFile {
-                    path: solution.clone(),
-                    reason: error.to_string(),
-                }
-            })?;
-        if report.assemblies.is_empty() {
-            return Err(ExtractError::NoBuiltAssemblies { solution });
-        }
-        if let Some(assembly) = report
-            .assemblies
+        let workspace = discover::discover(root, options).map_err(|e| match e {
+            DiscoverError::NothingFound { .. } => ExtractError::NoModulesFound,
+            DiscoverError::Io { path, source } => read_error(&path, &source),
+            other => read_error(root, &other),
+        })?;
+        let prefix = repository_prefix(root);
+        let mut warnings: Vec<Warning> = workspace
+            .errors
             .iter()
-            .find(|a| matches!(a.pdb, PdbKind::Windows | PdbKind::Missing))
-        {
-            return Err(ExtractError::NonPortablePdb {
-                assembly: root.join(&assembly.path),
+            .map(|(path, reason)| Warning::about(path, reason.clone()))
+            .collect();
+        let mut reads: Vec<Read> = Vec::new();
+        let mut seen = BTreeSet::new();
+        for project in &workspace.projects {
+            let Some(dll) = &project.assembly else {
+                warnings.push(Warning::about(
+                    &project.path,
+                    format!(
+                        "no built {}.dll; run dotnet build -p:DebugType=portable",
+                        project.assembly_name
+                    ),
+                ));
+                continue;
+            };
+            if seen.insert(dll.clone()) {
+                reads.push(read_assembly(project, dll, root, &prefix)?);
+            }
+        }
+        if options.include_dependencies == Some(true) {
+            let mut index = 0;
+            while index < reads.len() {
+                let folder = reads[index].project.folder().to_path_buf();
+                let names: Vec<String> = reads[index]
+                    .loaded
+                    .assembly_refs
+                    .iter()
+                    .map(|a| a.identity.name.clone())
+                    .collect();
+                for name in names {
+                    let dll = folder.join(format!("{name}.dll"));
+                    if dll.is_file() && seen.insert(dll.clone()) {
+                        reads.push(read_assembly(&Project::loose(&dll), &dll, root, &prefix)?);
+                    }
+                }
+                index += 1;
+            }
+        }
+        if reads.is_empty() {
+            return Err(ExtractError::NoBuiltAssemblies {
+                solution: workspace.solution.clone().unwrap_or_else(|| root.clone()),
             });
         }
-        let mut files: BTreeMap<String, (BTreeSet<String>, bool)> = BTreeMap::new();
-        let mut warnings = Vec::new();
-        for assembly in &report.assemblies {
-            for ty in &assembly.types {
+        for read in &reads {
+            if read.attribution.pdb == PdbKind::Missing {
+                warnings.push(Warning::about(
+                    &read.project.path,
+                    "no PDB beside the assembly: types have attribution none and path rules skip them; build with -p:DebugType=portable",
+                ));
+            }
+        }
+
+        let universe = names::Universe::new(reads.iter().map(|r| &r.loaded).collect());
+        let namespaces = options.namespaces.as_deref();
+        let sources: Vec<codelayer::Source<'_>> = reads
+            .iter()
+            .map(|r| codelayer::Source {
+                loaded: &r.loaded,
+                attribution: &r.attribution.types,
+                points: r.points.clone(),
+                documents: r.documents.clone(),
+                namespaces,
+            })
+            .collect();
+        let built = codelayer::Builder::new(&universe, &sources).build();
+
+        let display = |path: &Path| {
+            under_root(
+                &attribute::normalise_document(&path.to_string_lossy(), root),
+                &prefix,
+            )
+        };
+        let mut files: BTreeMap<String, (BTreeSet<String>, bool, String)> = BTreeMap::new();
+        let mut counts = rb_model::AttributionCounts::default();
+        let mut assemblies = Vec::with_capacity(reads.len());
+        for read in &reads {
+            let project_path = display(&read.project.path);
+            let mut by_type = BTreeMap::new();
+            for ty in &read.attribution.types {
                 match (&ty.attribution, &ty.file) {
                     (Some(kind @ (Attribution::Pdb | Attribution::Inferred)), Some(file)) => {
-                        let entry = files.entry(file.clone()).or_default();
+                        let entry = files
+                            .entry(file.clone())
+                            .or_insert_with(|| (BTreeSet::new(), false, project_path.clone()));
                         if !ty.namespace.is_empty() {
                             entry.0.insert(ty.namespace.clone());
                         }
                         entry.1 |= *kind == Attribution::Pdb;
+                        by_type.insert(ty.full_name.clone(), file.clone());
+                        if *kind == Attribution::Pdb {
+                            counts.pdb += 1;
+                        } else {
+                            counts.inferred += 1;
+                        }
                     }
-                    (Some(_), _) => warnings.push(Warning::about(
-                        &assembly.path,
-                        format!("{}: no source file; path-based rules skip it", ty.full_name),
-                    )),
+                    (Some(_), _) => {
+                        counts.none += 1;
+                        warnings.push(Warning::about(
+                            &read.attribution.path,
+                            format!("{}: no source file; path-based rules skip it", ty.full_name),
+                        ));
+                    }
                     (None, _) => {}
                 }
             }
+            assemblies.push(edges::AssemblyFiles {
+                project: &read.project,
+                project_path,
+                files: by_type,
+            });
         }
-        let modules: Vec<Module> = files
+        let file_count = files.len() as u64;
+        let mut modules: Vec<Module> = files
             .into_iter()
-            .map(|(file, (namespaces, from_pdb))| Module {
+            .map(|(file, (namespaces, from_pdb, project))| Module {
                 language: Some(Language::Dotnet),
+                project: Some(project),
                 namespaces: Some(namespaces.into_iter().collect()),
                 attribution: Some(if from_pdb {
                     Attribution::Pdb
                 } else {
                     Attribution::Inferred
                 }),
+                followable: Some(true),
                 ..Module::new(file)
             })
             .collect();
-        let count = modules.len() as u64;
+        edges::project(
+            &universe,
+            &assemblies,
+            &built.dependencies,
+            &mut modules,
+            edges::packages_root().as_deref(),
+        );
+        let module_count = modules.len() as u64;
         Ok(Extraction {
             modules,
-            code: None,
-            inspected: Receipt::counts(count, report.assemblies.len() as u64, count),
+            code: Some(built.code),
+            inspected: Receipt {
+                projects: Some(workspace.projects.len() as u64),
+                pdb_documents: Some(reads.iter().map(|r| r.documents.len() as u64).sum()),
+                attribution: Some(counts),
+                ..Receipt::counts(file_count, reads.len() as u64, module_count)
+            },
             warnings,
         })
     }
@@ -299,6 +497,18 @@ mod tests {
         assert!(is_portable_pdb(b"BSJB\x01\x00\x01\x00"));
         assert!(!is_portable_pdb(b"Microsoft C/C++ MSF 7.00"));
         assert!(!is_portable_pdb(b""));
+    }
+
+    #[test]
+    fn documents_are_made_relative_to_the_root() {
+        assert_eq!(under_root("src/Web/A.cs", "src/"), "Web/A.cs");
+        assert_eq!(under_root("TestAssembly/A.cs", "src/"), "TestAssembly/A.cs");
+        assert_eq!(under_root("A.cs", ""), "A.cs");
+        // This crate's folder sits two levels below the repository root.
+        let crate_root = Path::new(env!("CARGO_MANIFEST_DIR"));
+        assert_eq!(repository_prefix(crate_root), "crates/rb-extract-dotnet/");
+        assert_eq!(repository_prefix(&crate_root.join("../..")), "");
+        assert_eq!(repository_prefix(Path::new("/")), "");
     }
 
     #[test]

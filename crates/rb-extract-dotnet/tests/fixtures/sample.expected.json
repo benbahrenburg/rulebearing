@@ -1,0 +1,4135 @@
+{
+  "code": {
+    "attributes": [
+      {
+        "arguments": [
+          "4"
+        ],
+        "attributeType": "System.AttributeUsageAttribute",
+        "file": "src/Shared.cs",
+        "language": "dotnet",
+        "line": 12,
+        "target": "Sample.AuditAttribute"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "column": 26,
+        "file": "src/Order.cs",
+        "language": "dotnet",
+        "line": 20,
+        "target": "Sample.Core.Clock Sample.Orders.Order::get_Clock()"
+      },
+      {
+        "arguments": [
+          "shared"
+        ],
+        "attributeType": "Sample.AuditAttribute",
+        "file": "src/Shared.cs",
+        "language": "dotnet",
+        "line": 26,
+        "target": "Sample.Marker"
+      },
+      {
+        "arguments": [
+          "orders"
+        ],
+        "attributeType": "Sample.AuditAttribute",
+        "file": "src/Order.cs",
+        "language": "dotnet",
+        "line": 20,
+        "namedArguments": [
+          {
+            "name": "Level",
+            "value": "2"
+          }
+        ],
+        "target": "Sample.Orders.Order"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "file": "src/Customer.cs",
+        "language": "dotnet",
+        "target": "System.Boolean Sample.Customers.Customer::Equals(Sample.Customers.Customer)"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "file": "src/Customer.cs",
+        "language": "dotnet",
+        "target": "System.Boolean Sample.Customers.Customer::Equals(System.Object)"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "file": "src/Customer.cs",
+        "language": "dotnet",
+        "target": "System.Boolean Sample.Customers.Customer::PrintMembers(System.Text.StringBuilder)"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "file": "src/Customer.cs",
+        "language": "dotnet",
+        "target": "System.Boolean Sample.Customers.Customer::op_Equality(Sample.Customers.Customer,Sample.Customers.Customer)"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "file": "src/Customer.cs",
+        "language": "dotnet",
+        "target": "System.Boolean Sample.Customers.Customer::op_Inequality(Sample.Customers.Customer,Sample.Customers.Customer)"
+      },
+      {
+        "arguments": [
+          "Sample.Orders.Order+<Positive>d__15"
+        ],
+        "attributeType": "System.Runtime.CompilerServices.IteratorStateMachineAttribute",
+        "column": 30,
+        "file": "src/Order.Lines.cs",
+        "language": "dotnet",
+        "line": 31,
+        "target": "System.Collections.Generic.IEnumerable`1<Sample.Orders.Order/Line> Sample.Orders.Order::Positive()"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "column": 32,
+        "file": "src/Order.Lines.cs",
+        "language": "dotnet",
+        "line": 47,
+        "target": "System.Decimal Sample.Orders.Order/Line::get_Price()"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "column": 24,
+        "file": "src/Shared.cs",
+        "language": "dotnet",
+        "line": 19,
+        "target": "System.Int32 Sample.AuditAttribute::get_Level()"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "file": "src/Customer.cs",
+        "language": "dotnet",
+        "target": "System.Int32 Sample.Customers.Customer::GetHashCode()"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "column": 31,
+        "file": "src/Order.Lines.cs",
+        "language": "dotnet",
+        "line": 49,
+        "target": "System.Int32 Sample.Orders.Order/Line::get_Quantity()"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "column": 21,
+        "file": "src/Order.cs",
+        "language": "dotnet",
+        "line": 16,
+        "target": "System.Int32 Sample.Orders.Order::get_Id()"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "column": 26,
+        "file": "src/Shared.cs",
+        "language": "dotnet",
+        "line": 17,
+        "target": "System.String Sample.AuditAttribute::get_Area()"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "file": "src/Customer.cs",
+        "language": "dotnet",
+        "target": "System.String Sample.Customers.Customer::ToString()"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "column": 24,
+        "file": "src/Customer.cs",
+        "language": "dotnet",
+        "line": 3,
+        "target": "System.String Sample.Customers.Customer::get_Name()"
+      },
+      {
+        "arguments": [
+          "Sample.Orders.Order+<LoadOwnerAsync>d__14"
+        ],
+        "attributeType": "System.Runtime.CompilerServices.AsyncStateMachineAttribute",
+        "file": "src/Order.cs",
+        "language": "dotnet",
+        "target": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "file": "src/Customer.cs",
+        "language": "dotnet",
+        "line": 3,
+        "target": "System.Type Sample.Customers.Customer::EqualityContract()"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "file": "src/Customer.cs",
+        "language": "dotnet",
+        "target": "System.Type Sample.Customers.Customer::get_EqualityContract()"
+      },
+      {
+        "arguments": [
+          "use the other"
+        ],
+        "attributeType": "System.ObsoleteAttribute",
+        "file": "src/Shared.cs",
+        "language": "dotnet",
+        "line": 26,
+        "target": "System.Type Sample.Marker::Kind"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "column": 29,
+        "file": "src/Shared.cs",
+        "language": "dotnet",
+        "line": 19,
+        "target": "System.Void Sample.AuditAttribute::set_Level(System.Int32)"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "column": 15,
+        "file": "src/Customer.cs",
+        "language": "dotnet",
+        "line": 3,
+        "target": "System.Void Sample.Customers.Customer::.ctor(Sample.Customers.Customer)"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "file": "src/Customer.cs",
+        "language": "dotnet",
+        "target": "System.Void Sample.Customers.Customer::Deconstruct(System.String&)"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "column": 37,
+        "file": "src/Order.Lines.cs",
+        "language": "dotnet",
+        "line": 47,
+        "target": "System.Void Sample.Orders.Order/Line::set_Price(System.Decimal)"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "column": 36,
+        "file": "src/Order.Lines.cs",
+        "language": "dotnet",
+        "line": 49,
+        "target": "System.Void Sample.Orders.Order/Line::set_Quantity(System.Int32)"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "column": 24,
+        "file": "src/Customer.cs",
+        "language": "dotnet",
+        "line": 3,
+        "target": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit) Sample.Customers.Customer::set_Name(System.String)"
+      },
+      {
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "column": 26,
+        "file": "src/Order.cs",
+        "language": "dotnet",
+        "line": 16,
+        "target": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit) Sample.Orders.Order::set_Id(System.Int32)"
+      }
+    ],
+    "calls": [
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Boolean Sample.Customers.Customer::Equals(Sample.Customers.Customer)",
+        "language": "dotnet",
+        "to": "System.Boolean System.Collections.Generic.EqualityComparer`1<System.String>::Equals(!0,!0)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Boolean Sample.Customers.Customer::Equals(Sample.Customers.Customer)",
+        "language": "dotnet",
+        "to": "System.Boolean System.Type::op_Equality(System.Type,System.Type)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Boolean Sample.Customers.Customer::Equals(Sample.Customers.Customer)",
+        "language": "dotnet",
+        "to": "System.Collections.Generic.EqualityComparer`1<!0> System.Collections.Generic.EqualityComparer`1<System.String>::get_Default()"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Boolean Sample.Customers.Customer::Equals(Sample.Customers.Customer)",
+        "language": "dotnet",
+        "to": "System.Type Sample.Customers.Customer::get_EqualityContract()"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Boolean Sample.Customers.Customer::Equals(System.Object)",
+        "language": "dotnet",
+        "to": "System.Boolean Sample.Customers.Customer::Equals(Sample.Customers.Customer)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Boolean Sample.Customers.Customer::PrintMembers(System.Text.StringBuilder)",
+        "language": "dotnet",
+        "to": "System.String Sample.Customers.Customer::get_Name()"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Boolean Sample.Customers.Customer::PrintMembers(System.Text.StringBuilder)",
+        "language": "dotnet",
+        "to": "System.Text.StringBuilder System.Text.StringBuilder::Append(System.Object)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Boolean Sample.Customers.Customer::PrintMembers(System.Text.StringBuilder)",
+        "language": "dotnet",
+        "to": "System.Text.StringBuilder System.Text.StringBuilder::Append(System.String)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Boolean Sample.Customers.Customer::PrintMembers(System.Text.StringBuilder)",
+        "language": "dotnet",
+        "to": "System.Void System.Runtime.CompilerServices.RuntimeHelpers::EnsureSufficientExecutionStack()"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Boolean Sample.Customers.Customer::op_Equality(Sample.Customers.Customer,Sample.Customers.Customer)",
+        "language": "dotnet",
+        "to": "System.Boolean Sample.Customers.Customer::Equals(Sample.Customers.Customer)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Boolean Sample.Customers.Customer::op_Inequality(Sample.Customers.Customer,Sample.Customers.Customer)",
+        "language": "dotnet",
+        "to": "System.Boolean Sample.Customers.Customer::op_Equality(Sample.Customers.Customer,Sample.Customers.Customer)"
+      },
+      {
+        "column": 18,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Collections.Generic.IEnumerable`1<Sample.Orders.Order/Line> Sample.Orders.Order::Positive()",
+        "language": "dotnet",
+        "line": 31,
+        "to": "!0 System.Collections.Generic.List`1/Enumerator<Sample.Orders.Order/Line>::get_Current()"
+      },
+      {
+        "column": 27,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Collections.Generic.IEnumerable`1<Sample.Orders.Order/Line> Sample.Orders.Order::Positive()",
+        "language": "dotnet",
+        "line": 31,
+        "to": "System.Boolean System.Collections.Generic.List`1/Enumerator<Sample.Orders.Order/Line>::MoveNext()"
+      },
+      {
+        "column": 30,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Collections.Generic.IEnumerable`1<Sample.Orders.Order/Line> Sample.Orders.Order::Positive()",
+        "language": "dotnet",
+        "line": 31,
+        "to": "System.Collections.Generic.List`1/Enumerator<!0> System.Collections.Generic.List`1<Sample.Orders.Order/Line>::GetEnumerator()"
+      },
+      {
+        "column": 13,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Collections.Generic.IEnumerable`1<Sample.Orders.Order/Line> Sample.Orders.Order::Positive()",
+        "language": "dotnet",
+        "line": 33,
+        "to": "System.Int32 Sample.Orders.Order/Line::get_Quantity()"
+      },
+      {
+        "file": "src/Order.Lines.cs",
+        "from": "System.Collections.Generic.IEnumerable`1<Sample.Orders.Order/Line> Sample.Orders.Order::Positive()",
+        "language": "dotnet",
+        "to": "System.Void System.IDisposable::Dispose()"
+      },
+      {
+        "column": 9,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Decimal Sample.Orders.Order::Total()",
+        "language": "dotnet",
+        "line": 20,
+        "to": "System.Collections.Generic.IEnumerable`1<!!0> System.Linq.Enumerable::Where(System.Collections.Generic.IEnumerable`1<!!0>,System.Func`2<!!0,System.Boolean>)"
+      },
+      {
+        "column": 59,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Decimal Sample.Orders.Order::Total()",
+        "language": "dotnet",
+        "line": 20,
+        "to": "System.Decimal Sample.Orders.Order/Line::get_Price()"
+      },
+      {
+        "column": 59,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Decimal Sample.Orders.Order::Total()",
+        "language": "dotnet",
+        "line": 20,
+        "to": "System.Decimal System.Decimal::op_Implicit(System.Int32)"
+      },
+      {
+        "column": 59,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Decimal Sample.Orders.Order::Total()",
+        "language": "dotnet",
+        "line": 20,
+        "to": "System.Decimal System.Decimal::op_Multiply(System.Decimal,System.Decimal)"
+      },
+      {
+        "column": 9,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Decimal Sample.Orders.Order::Total()",
+        "language": "dotnet",
+        "line": 20,
+        "to": "System.Decimal System.Linq.Enumerable::Sum(System.Collections.Generic.IEnumerable`1<!!0>,System.Func`2<!!0,System.Decimal>)"
+      },
+      {
+        "column": 34,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Decimal Sample.Orders.Order::Total()",
+        "language": "dotnet",
+        "line": 20,
+        "to": "System.Int32 Sample.Orders.Order/Line::get_Quantity()"
+      },
+      {
+        "column": 9,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Decimal Sample.Orders.Order::Total()",
+        "language": "dotnet",
+        "line": 20,
+        "to": "System.Void System.Func`2<Sample.Orders.Order/Line,System.Boolean>::.ctor(System.Object,System.IntPtr)"
+      },
+      {
+        "column": 9,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Decimal Sample.Orders.Order::Total()",
+        "language": "dotnet",
+        "line": 20,
+        "to": "System.Void System.Func`2<Sample.Orders.Order/Line,System.Decimal>::.ctor(System.Object,System.IntPtr)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Int32 Sample.Customers.Customer::GetHashCode()",
+        "language": "dotnet",
+        "to": "System.Collections.Generic.EqualityComparer`1<!0> System.Collections.Generic.EqualityComparer`1<System.String>::get_Default()"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Int32 Sample.Customers.Customer::GetHashCode()",
+        "language": "dotnet",
+        "to": "System.Collections.Generic.EqualityComparer`1<!0> System.Collections.Generic.EqualityComparer`1<System.Type>::get_Default()"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Int32 Sample.Customers.Customer::GetHashCode()",
+        "language": "dotnet",
+        "to": "System.Int32 System.Collections.Generic.EqualityComparer`1<System.String>::GetHashCode(!0)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Int32 Sample.Customers.Customer::GetHashCode()",
+        "language": "dotnet",
+        "to": "System.Int32 System.Collections.Generic.EqualityComparer`1<System.Type>::GetHashCode(!0)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Int32 Sample.Customers.Customer::GetHashCode()",
+        "language": "dotnet",
+        "to": "System.Type Sample.Customers.Customer::get_EqualityContract()"
+      },
+      {
+        "column": 9,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Object Sample.Orders.Order::Dynamic()",
+        "language": "dotnet",
+        "line": 42,
+        "to": "System.Type System.Type::GetType(System.String)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.String Sample.Customers.Customer::ToString()",
+        "language": "dotnet",
+        "to": "System.Boolean Sample.Customers.Customer::PrintMembers(System.Text.StringBuilder)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.String Sample.Customers.Customer::ToString()",
+        "language": "dotnet",
+        "to": "System.String System.Object::ToString()"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.String Sample.Customers.Customer::ToString()",
+        "language": "dotnet",
+        "to": "System.Text.StringBuilder System.Text.StringBuilder::Append(System.Char)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.String Sample.Customers.Customer::ToString()",
+        "language": "dotnet",
+        "to": "System.Text.StringBuilder System.Text.StringBuilder::Append(System.String)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.String Sample.Customers.Customer::ToString()",
+        "language": "dotnet",
+        "to": "System.Void System.Text.StringBuilder::.ctor()"
+      },
+      {
+        "file": "src/Order.cs",
+        "from": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()",
+        "language": "dotnet",
+        "to": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<!0> System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Sample.Customers.Customer>::Create()"
+      },
+      {
+        "file": "src/Order.cs",
+        "from": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()",
+        "language": "dotnet",
+        "to": "System.Threading.Tasks.Task`1<!0> System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Sample.Customers.Customer>::get_Task()"
+      },
+      {
+        "file": "src/Order.cs",
+        "from": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()",
+        "language": "dotnet",
+        "to": "System.Void System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Sample.Customers.Customer>::Start(!!0&)"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Type Sample.Customers.Customer::get_EqualityContract()",
+        "language": "dotnet",
+        "to": "System.Type System.Type::GetTypeFromHandle(System.RuntimeTypeHandle)"
+      },
+      {
+        "column": 5,
+        "file": "src/Shared.cs",
+        "from": "System.Void Sample.AuditAttribute::.ctor(System.String)",
+        "language": "dotnet",
+        "line": 12,
+        "to": "System.Void System.Attribute::.ctor()"
+      },
+      {
+        "column": 15,
+        "file": "src/Customer.cs",
+        "from": "System.Void Sample.Customers.Customer::.ctor(Sample.Customers.Customer)",
+        "language": "dotnet",
+        "line": 3,
+        "to": "System.Void System.Object::.ctor()"
+      },
+      {
+        "column": 15,
+        "file": "src/Customer.cs",
+        "from": "System.Void Sample.Customers.Customer::.ctor(System.String)",
+        "language": "dotnet",
+        "line": 3,
+        "to": "System.Void System.Object::.ctor()"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Void Sample.Customers.Customer::Deconstruct(System.String&)",
+        "language": "dotnet",
+        "to": "System.String Sample.Customers.Customer::get_Name()"
+      },
+      {
+        "file": "src/Customer.cs",
+        "from": "System.Void Sample.Customers.Repository`1::.ctor()",
+        "language": "dotnet",
+        "to": "System.Void System.Object::.ctor()"
+      },
+      {
+        "column": 5,
+        "file": "src/Shared.cs",
+        "from": "System.Void Sample.Marker::.ctor()",
+        "language": "dotnet",
+        "line": 26,
+        "to": "System.Type System.Type::GetTypeFromHandle(System.RuntimeTypeHandle)"
+      },
+      {
+        "column": 5,
+        "file": "src/Shared.cs",
+        "from": "System.Void Sample.Marker::.ctor()",
+        "language": "dotnet",
+        "line": 26,
+        "to": "System.Void System.Object::.ctor()"
+      },
+      {
+        "file": "src/Order.Lines.cs",
+        "from": "System.Void Sample.Orders.Order/Line::.ctor()",
+        "language": "dotnet",
+        "to": "System.Void System.Object::.ctor()"
+      },
+      {
+        "column": 35,
+        "file": "src/Order.cs",
+        "from": "System.Void Sample.Orders.Order::.ctor(Sample.Customers.Customer)",
+        "language": "dotnet",
+        "line": 20,
+        "to": "System.Void Sample.Core.Clock::.ctor()"
+      },
+      {
+        "column": 5,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Void Sample.Orders.Order::.ctor(Sample.Customers.Customer)",
+        "language": "dotnet",
+        "line": 11,
+        "to": "System.Void System.Collections.Generic.List`1<Sample.Orders.Order/Line>::.ctor()"
+      },
+      {
+        "column": 5,
+        "file": "src/Order.cs",
+        "from": "System.Void Sample.Orders.Order::.ctor(Sample.Customers.Customer)",
+        "language": "dotnet",
+        "line": 11,
+        "to": "System.Void System.Object::.ctor()"
+      },
+      {
+        "column": 9,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Void Sample.Orders.Order::Add(Sample.Orders.Order/Line)",
+        "language": "dotnet",
+        "line": 15,
+        "to": "System.Void System.Collections.Generic.List`1<Sample.Orders.Order/Line>::Add(!0)"
+      }
+    ],
+    "members": [
+      {
+        "declaringType": "Sample.AuditAttribute",
+        "dependencies": [
+          {
+            "kind": "signature",
+            "line": 12,
+            "target": "System.Int32"
+          }
+        ],
+        "file": "src/Shared.cs",
+        "fullName": "System.Int32 Sample.AuditAttribute::Level()",
+        "getter": {
+          "visibility": "public"
+        },
+        "kind": "property",
+        "language": "dotnet",
+        "line": 12,
+        "name": "Level",
+        "readonly": false,
+        "returnType": "System.Int32",
+        "setter": {
+          "visibility": "public"
+        },
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 24,
+        "declaringType": "Sample.AuditAttribute",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 19,
+            "member": "<Level>k__BackingField",
+            "target": "Sample.AuditAttribute"
+          },
+          {
+            "kind": "signature",
+            "line": 19,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "attribute",
+            "line": 19,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          }
+        ],
+        "file": "src/Shared.cs",
+        "fullName": "System.Int32 Sample.AuditAttribute::get_Level()",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 19,
+        "name": "get_Level()",
+        "returnType": "System.Int32",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.AuditAttribute",
+        "dependencies": [
+          {
+            "kind": "signature",
+            "line": 12,
+            "target": "System.String"
+          }
+        ],
+        "file": "src/Shared.cs",
+        "fullName": "System.String Sample.AuditAttribute::Area()",
+        "getter": {
+          "visibility": "public"
+        },
+        "kind": "property",
+        "language": "dotnet",
+        "line": 12,
+        "name": "Area",
+        "readonly": true,
+        "returnType": "System.String",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 26,
+        "declaringType": "Sample.AuditAttribute",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 17,
+            "member": "<Area>k__BackingField",
+            "target": "Sample.AuditAttribute"
+          },
+          {
+            "kind": "attribute",
+            "line": 17,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "signature",
+            "line": 17,
+            "target": "System.String"
+          }
+        ],
+        "file": "src/Shared.cs",
+        "fullName": "System.String Sample.AuditAttribute::get_Area()",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 17,
+        "name": "get_Area()",
+        "returnType": "System.String",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 5,
+        "declaringType": "Sample.AuditAttribute",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 14,
+            "member": "<Area>k__BackingField",
+            "target": "Sample.AuditAttribute"
+          },
+          {
+            "kind": "body",
+            "line": 12,
+            "member": ".ctor",
+            "target": "System.Attribute"
+          },
+          {
+            "kind": "signature",
+            "line": 12,
+            "target": "System.String"
+          }
+        ],
+        "file": "src/Shared.cs",
+        "fullName": "System.Void Sample.AuditAttribute::.ctor(System.String)",
+        "kind": "constructor",
+        "language": "dotnet",
+        "line": 12,
+        "name": ".ctor(System.String)",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "returnType": "System.Void",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 29,
+        "declaringType": "Sample.AuditAttribute",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 19,
+            "member": "<Level>k__BackingField",
+            "target": "Sample.AuditAttribute"
+          },
+          {
+            "kind": "signature",
+            "line": 19,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "attribute",
+            "line": 19,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          }
+        ],
+        "file": "src/Shared.cs",
+        "fullName": "System.Void Sample.AuditAttribute::set_Level(System.Int32)",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 19,
+        "name": "set_Level(System.Int32)",
+        "parameterTypes": [
+          "System.Int32"
+        ],
+        "returnType": "System.Void",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Customers.Constants",
+        "dependencies": [
+          {
+            "kind": "field",
+            "target": "System.String"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.String Sample.Customers.Constants::Name",
+        "kind": "field",
+        "language": "dotnet",
+        "name": "Name",
+        "readonly": false,
+        "returnType": "System.String",
+        "static": true,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "body",
+            "member": "<Name>k__BackingField",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "member": "get_EqualityContract",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Boolean"
+          },
+          {
+            "kind": "body",
+            "member": "Equals",
+            "target": "System.Collections.Generic.EqualityComparer`1"
+          },
+          {
+            "kind": "body",
+            "member": "get_Default",
+            "target": "System.Collections.Generic.EqualityComparer`1"
+          },
+          {
+            "kind": "attribute",
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "generic-argument",
+            "target": "System.String"
+          },
+          {
+            "kind": "body",
+            "member": "op_Equality",
+            "target": "System.Type"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Boolean Sample.Customers.Customer::Equals(Sample.Customers.Customer)",
+        "kind": "method",
+        "language": "dotnet",
+        "name": "Equals(Sample.Customers.Customer)",
+        "parameterTypes": [
+          "Sample.Customers.Customer"
+        ],
+        "returnType": "System.Boolean",
+        "static": false,
+        "virtual": true,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "body",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "member": "Equals",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Boolean"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Object"
+          },
+          {
+            "kind": "attribute",
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Boolean Sample.Customers.Customer::Equals(System.Object)",
+        "kind": "method",
+        "language": "dotnet",
+        "name": "Equals(System.Object)",
+        "parameterTypes": [
+          "System.Object"
+        ],
+        "returnType": "System.Boolean",
+        "static": false,
+        "virtual": true,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "body",
+            "member": "get_Name",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Boolean"
+          },
+          {
+            "kind": "attribute",
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "body",
+            "member": "EnsureSufficientExecutionStack",
+            "target": "System.Runtime.CompilerServices.RuntimeHelpers"
+          },
+          {
+            "kind": "body",
+            "member": "Append",
+            "target": "System.Text.StringBuilder"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Text.StringBuilder"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Boolean Sample.Customers.Customer::PrintMembers(System.Text.StringBuilder)",
+        "kind": "method",
+        "language": "dotnet",
+        "name": "PrintMembers(System.Text.StringBuilder)",
+        "parameterTypes": [
+          "System.Text.StringBuilder"
+        ],
+        "returnType": "System.Boolean",
+        "static": false,
+        "virtual": true,
+        "visibility": "protected"
+      },
+      {
+        "abstract": false,
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "body",
+            "member": "Equals",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Boolean"
+          },
+          {
+            "kind": "attribute",
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Boolean Sample.Customers.Customer::op_Equality(Sample.Customers.Customer,Sample.Customers.Customer)",
+        "kind": "method",
+        "language": "dotnet",
+        "name": "op_Equality(Sample.Customers.Customer,Sample.Customers.Customer)",
+        "parameterTypes": [
+          "Sample.Customers.Customer",
+          "Sample.Customers.Customer"
+        ],
+        "returnType": "System.Boolean",
+        "static": true,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "body",
+            "member": "op_Equality",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Boolean"
+          },
+          {
+            "kind": "attribute",
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Boolean Sample.Customers.Customer::op_Inequality(Sample.Customers.Customer,Sample.Customers.Customer)",
+        "kind": "method",
+        "language": "dotnet",
+        "name": "op_Inequality(Sample.Customers.Customer,Sample.Customers.Customer)",
+        "parameterTypes": [
+          "Sample.Customers.Customer",
+          "Sample.Customers.Customer"
+        ],
+        "returnType": "System.Boolean",
+        "static": true,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "body",
+            "member": "<Name>k__BackingField",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "member": "get_EqualityContract",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "member": "GetHashCode",
+            "target": "System.Collections.Generic.EqualityComparer`1"
+          },
+          {
+            "kind": "body",
+            "member": "get_Default",
+            "target": "System.Collections.Generic.EqualityComparer`1"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Int32"
+          },
+          {
+            "kind": "attribute",
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "generic-argument",
+            "target": "System.String"
+          },
+          {
+            "kind": "generic-argument",
+            "target": "System.Type"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Int32 Sample.Customers.Customer::GetHashCode()",
+        "kind": "method",
+        "language": "dotnet",
+        "name": "GetHashCode()",
+        "returnType": "System.Int32",
+        "static": false,
+        "virtual": true,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "signature",
+            "line": 3,
+            "target": "System.String"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.String Sample.Customers.Customer::Name()",
+        "getter": {
+          "visibility": "public"
+        },
+        "initSetter": {
+          "visibility": "public"
+        },
+        "kind": "property",
+        "language": "dotnet",
+        "line": 3,
+        "name": "Name",
+        "readonly": false,
+        "returnType": "System.String",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "body",
+            "member": "PrintMembers",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "member": "ToString",
+            "target": "System.Object"
+          },
+          {
+            "kind": "attribute",
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "signature",
+            "target": "System.String"
+          },
+          {
+            "kind": "body",
+            "target": "System.Text.StringBuilder"
+          },
+          {
+            "kind": "body",
+            "member": ".ctor",
+            "target": "System.Text.StringBuilder"
+          },
+          {
+            "kind": "body",
+            "member": "Append",
+            "target": "System.Text.StringBuilder"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.String Sample.Customers.Customer::ToString()",
+        "kind": "method",
+        "language": "dotnet",
+        "name": "ToString()",
+        "returnType": "System.String",
+        "static": false,
+        "virtual": true,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 24,
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 3,
+            "member": "<Name>k__BackingField",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "attribute",
+            "line": 3,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "signature",
+            "line": 3,
+            "target": "System.String"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.String Sample.Customers.Customer::get_Name()",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 3,
+        "name": "get_Name()",
+        "returnType": "System.String",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "attribute",
+            "line": 3,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "signature",
+            "line": 3,
+            "target": "System.Type"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Type Sample.Customers.Customer::EqualityContract()",
+        "getter": {
+          "visibility": "protected"
+        },
+        "kind": "property",
+        "language": "dotnet",
+        "line": 3,
+        "name": "EqualityContract",
+        "readonly": true,
+        "returnType": "System.Type",
+        "static": false,
+        "virtual": true,
+        "visibility": "protected"
+      },
+      {
+        "abstract": false,
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "typeof",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "attribute",
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "body",
+            "member": "GetTypeFromHandle",
+            "target": "System.Type"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Type"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Type Sample.Customers.Customer::get_EqualityContract()",
+        "kind": "method",
+        "language": "dotnet",
+        "name": "get_EqualityContract()",
+        "returnType": "System.Type",
+        "static": false,
+        "virtual": true,
+        "visibility": "protected"
+      },
+      {
+        "abstract": false,
+        "column": 15,
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 3,
+            "member": "<Name>k__BackingField",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "line": 3,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "line": 3,
+            "member": ".ctor",
+            "target": "System.Object"
+          },
+          {
+            "kind": "attribute",
+            "line": 3,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Void Sample.Customers.Customer::.ctor(Sample.Customers.Customer)",
+        "kind": "constructor",
+        "language": "dotnet",
+        "line": 3,
+        "name": ".ctor(Sample.Customers.Customer)",
+        "parameterTypes": [
+          "Sample.Customers.Customer"
+        ],
+        "returnType": "System.Void",
+        "static": false,
+        "virtual": false,
+        "visibility": "protected"
+      },
+      {
+        "abstract": false,
+        "column": 15,
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 3,
+            "member": "<Name>k__BackingField",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "line": 3,
+            "member": ".ctor",
+            "target": "System.Object"
+          },
+          {
+            "kind": "signature",
+            "line": 3,
+            "target": "System.String"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Void Sample.Customers.Customer::.ctor(System.String)",
+        "kind": "constructor",
+        "language": "dotnet",
+        "line": 3,
+        "name": ".ctor(System.String)",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "returnType": "System.Void",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "body",
+            "member": "get_Name",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "attribute",
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "signature",
+            "target": "System.String"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Void Sample.Customers.Customer::Deconstruct(System.String&)",
+        "kind": "method",
+        "language": "dotnet",
+        "name": "Deconstruct(System.String&)",
+        "parameterTypes": [
+          "System.String&"
+        ],
+        "returnType": "System.Void",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 24,
+        "declaringType": "Sample.Customers.Customer",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 3,
+            "member": "<Name>k__BackingField",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "attribute",
+            "line": 3,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "signature",
+            "line": 3,
+            "target": "System.String"
+          },
+          {
+            "kind": "signature",
+            "line": 3,
+            "target": "System.Void"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit) Sample.Customers.Customer::set_Name(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 3,
+        "name": "set_Name(System.String)",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Customers.Money",
+        "dependencies": [
+          {
+            "kind": "field",
+            "target": "System.Decimal"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Decimal Sample.Customers.Money::Amount",
+        "kind": "field",
+        "language": "dotnet",
+        "name": "Amount",
+        "readonly": false,
+        "returnType": "System.Decimal",
+        "static": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "declaringType": "Sample.Customers.Repository`1",
+        "dependencies": [
+          {
+            "kind": "body",
+            "member": ".ctor",
+            "target": "System.Object"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Void Sample.Customers.Repository`1::.ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "name": ".ctor()",
+        "returnType": "System.Void",
+        "static": false,
+        "virtual": false,
+        "visibility": "protected"
+      },
+      {
+        "abstract": true,
+        "declaringType": "Sample.Customers.Repository`1",
+        "dependencies": [
+          {
+            "kind": "signature",
+            "target": "Sample.Customers.Repository`1+<T>"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Int32"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "T Sample.Customers.Repository`1::Find(System.Int32)",
+        "kind": "method",
+        "language": "dotnet",
+        "name": "Find(System.Int32)",
+        "parameterTypes": [
+          "System.Int32"
+        ],
+        "returnType": "Sample.Customers.Repository`1+<T>",
+        "static": false,
+        "virtual": true,
+        "visibility": "protected"
+      },
+      {
+        "declaringType": "Sample.Customers.Tier",
+        "dependencies": [
+          {
+            "kind": "field",
+            "target": "Sample.Customers.Tier"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "Sample.Customers.Tier Sample.Customers.Tier::Basic",
+        "kind": "field",
+        "language": "dotnet",
+        "name": "Basic",
+        "readonly": false,
+        "returnType": "Sample.Customers.Tier",
+        "static": true,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Customers.Tier",
+        "dependencies": [
+          {
+            "kind": "field",
+            "target": "Sample.Customers.Tier"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "Sample.Customers.Tier Sample.Customers.Tier::Gold",
+        "kind": "field",
+        "language": "dotnet",
+        "name": "Gold",
+        "readonly": false,
+        "returnType": "Sample.Customers.Tier",
+        "static": true,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Customers.Tier",
+        "dependencies": [
+          {
+            "kind": "field",
+            "target": "System.Int32"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "System.Int32 Sample.Customers.Tier::value__",
+        "kind": "field",
+        "language": "dotnet",
+        "name": "value__",
+        "readonly": false,
+        "returnType": "System.Int32",
+        "static": false,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Marker",
+        "dependencies": [
+          {
+            "kind": "attribute",
+            "line": 26,
+            "target": "System.ObsoleteAttribute"
+          },
+          {
+            "kind": "field",
+            "line": 26,
+            "target": "System.Type"
+          }
+        ],
+        "file": "src/Shared.cs",
+        "fullName": "System.Type Sample.Marker::Kind",
+        "kind": "field",
+        "language": "dotnet",
+        "line": 26,
+        "name": "Kind",
+        "readonly": false,
+        "returnType": "System.Type",
+        "static": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 5,
+        "declaringType": "Sample.Marker",
+        "dependencies": [
+          {
+            "kind": "typeof",
+            "line": 26,
+            "target": "Sample.IEntity"
+          },
+          {
+            "kind": "body",
+            "line": 26,
+            "member": "Kind",
+            "target": "Sample.Marker"
+          },
+          {
+            "kind": "body",
+            "line": 26,
+            "member": ".ctor",
+            "target": "System.Object"
+          },
+          {
+            "kind": "body",
+            "line": 26,
+            "member": "GetTypeFromHandle",
+            "target": "System.Type"
+          }
+        ],
+        "file": "src/Shared.cs",
+        "fullName": "System.Void Sample.Marker::.ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "line": 26,
+        "name": ".ctor()",
+        "returnType": "System.Void",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "signature",
+            "line": 20,
+            "target": "Sample.Core.Clock"
+          }
+        ],
+        "file": "src/Order.cs",
+        "fullName": "Sample.Core.Clock Sample.Orders.Order::Clock()",
+        "getter": {
+          "visibility": "public"
+        },
+        "kind": "property",
+        "language": "dotnet",
+        "line": 20,
+        "name": "Clock",
+        "readonly": true,
+        "returnType": "Sample.Core.Clock",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 26,
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "signature",
+            "line": 20,
+            "target": "Sample.Core.Clock"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "<Clock>k__BackingField",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "attribute",
+            "line": 20,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          }
+        ],
+        "file": "src/Order.cs",
+        "fullName": "Sample.Core.Clock Sample.Orders.Order::get_Clock()",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 20,
+        "name": "get_Clock()",
+        "returnType": "Sample.Core.Clock",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "signature",
+            "line": 20,
+            "target": "Sample.Customers.Customer"
+          }
+        ],
+        "file": "src/Order.cs",
+        "fullName": "Sample.Customers.Customer Sample.Orders.Order::Owner()",
+        "getter": {
+          "visibility": "public"
+        },
+        "kind": "property",
+        "language": "dotnet",
+        "line": 20,
+        "name": "Owner",
+        "readonly": true,
+        "returnType": "Sample.Customers.Customer",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "field",
+            "line": 20,
+            "target": "Sample.Customers.Customer"
+          }
+        ],
+        "file": "src/Order.cs",
+        "fullName": "Sample.Customers.Customer Sample.Orders.Order::_customer",
+        "kind": "field",
+        "language": "dotnet",
+        "line": 20,
+        "name": "_customer",
+        "readonly": true,
+        "returnType": "Sample.Customers.Customer",
+        "static": false,
+        "visibility": "private"
+      },
+      {
+        "abstract": false,
+        "column": 30,
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "signature",
+            "line": 18,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "line": 18,
+            "member": "_customer",
+            "target": "Sample.Orders.Order"
+          }
+        ],
+        "file": "src/Order.cs",
+        "fullName": "Sample.Customers.Customer Sample.Orders.Order::get_Owner()",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 18,
+        "name": "get_Owner()",
+        "returnType": "Sample.Customers.Customer",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 30,
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 31,
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "member": "_lines",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "body",
+            "line": 33,
+            "member": "get_Quantity",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "generic-argument",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 31,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "target": "System.Boolean"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Collections.Generic.IEnumerable`1"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "member": "GetEnumerator",
+            "target": "System.Collections.Generic.List`1"
+          },
+          {
+            "kind": "body",
+            "target": "System.Collections.Generic.List`1+Enumerator"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "target": "System.Collections.Generic.List`1+Enumerator"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "member": "MoveNext",
+            "target": "System.Collections.Generic.List`1+Enumerator"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "member": "get_Current",
+            "target": "System.Collections.Generic.List`1+Enumerator"
+          },
+          {
+            "kind": "body",
+            "member": "Dispose",
+            "target": "System.IDisposable"
+          },
+          {
+            "kind": "body",
+            "target": "System.Int32"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "attribute",
+            "line": 31,
+            "target": "System.Runtime.CompilerServices.IteratorStateMachineAttribute"
+          }
+        ],
+        "file": "src/Order.Lines.cs",
+        "fullName": "System.Collections.Generic.IEnumerable`1<Sample.Orders.Order/Line> Sample.Orders.Order::Positive()",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 31,
+        "name": "Positive()",
+        "returnType": "System.Collections.Generic.IEnumerable`1<Sample.Orders.Order+Line>",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "generic-argument",
+            "line": 20,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "field",
+            "line": 20,
+            "target": "System.Collections.Generic.List`1"
+          }
+        ],
+        "file": "src/Order.cs",
+        "fullName": "System.Collections.Generic.List`1<Sample.Orders.Order/Line> Sample.Orders.Order::_lines",
+        "kind": "field",
+        "language": "dotnet",
+        "line": 20,
+        "name": "_lines",
+        "readonly": true,
+        "returnType": "System.Collections.Generic.List`1<Sample.Orders.Order+Line>",
+        "static": false,
+        "visibility": "private"
+      },
+      {
+        "abstract": false,
+        "column": 9,
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "_lines",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "get_Price",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "get_Quantity",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 20,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 20,
+            "target": "System.Boolean"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "op_Implicit",
+            "target": "System.Decimal"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "op_Multiply",
+            "target": "System.Decimal"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 20,
+            "target": "System.Decimal"
+          },
+          {
+            "kind": "signature",
+            "line": 20,
+            "target": "System.Decimal"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": ".ctor",
+            "target": "System.Func`2"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "Sum",
+            "target": "System.Linq.Enumerable"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "Where",
+            "target": "System.Linq.Enumerable"
+          }
+        ],
+        "file": "src/Order.Lines.cs",
+        "fullName": "System.Decimal Sample.Orders.Order::Total()",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 20,
+        "name": "Total()",
+        "returnType": "System.Decimal",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "signature",
+            "line": 20,
+            "target": "System.Int32"
+          }
+        ],
+        "file": "src/Order.cs",
+        "fullName": "System.Int32 Sample.Orders.Order::Id()",
+        "getter": {
+          "visibility": "public"
+        },
+        "initSetter": {
+          "visibility": "public"
+        },
+        "kind": "property",
+        "language": "dotnet",
+        "line": 20,
+        "name": "Id",
+        "readonly": false,
+        "returnType": "System.Int32",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 21,
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 16,
+            "member": "<Id>k__BackingField",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "signature",
+            "line": 16,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "attribute",
+            "line": 16,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          }
+        ],
+        "file": "src/Order.cs",
+        "fullName": "System.Int32 Sample.Orders.Order::get_Id()",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 16,
+        "name": "get_Id()",
+        "returnType": "System.Int32",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 9,
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 42,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "line": 42,
+            "target": "System.Object"
+          },
+          {
+            "kind": "body",
+            "line": 42,
+            "member": "GetType",
+            "target": "System.Type"
+          }
+        ],
+        "file": "src/Order.Lines.cs",
+        "fullName": "System.Object Sample.Orders.Order::Dynamic()",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 42,
+        "name": "Dynamic()",
+        "returnType": "System.Object",
+        "static": true,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "generic-argument",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "attribute",
+            "target": "System.Runtime.CompilerServices.AsyncStateMachineAttribute"
+          },
+          {
+            "kind": "body",
+            "member": "Create",
+            "target": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1"
+          },
+          {
+            "kind": "body",
+            "member": "Start",
+            "target": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1"
+          },
+          {
+            "kind": "body",
+            "member": "get_Task",
+            "target": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Threading.Tasks.Task`1"
+          }
+        ],
+        "file": "src/Order.cs",
+        "fullName": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()",
+        "kind": "method",
+        "language": "dotnet",
+        "name": "LoadOwnerAsync()",
+        "returnType": "System.Threading.Tasks.Task`1<Sample.Customers.Customer>",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 35,
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 20,
+            "member": ".ctor",
+            "target": "Sample.Core.Clock"
+          },
+          {
+            "kind": "signature",
+            "line": 20,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "<Clock>k__BackingField",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 13,
+            "member": "_customer",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 11,
+            "member": "_lines",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 11,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "body",
+            "line": 11,
+            "member": ".ctor",
+            "target": "System.Collections.Generic.List`1"
+          },
+          {
+            "kind": "body",
+            "line": 11,
+            "member": ".ctor",
+            "target": "System.Object"
+          }
+        ],
+        "file": "src/Order.cs",
+        "fullName": "System.Void Sample.Orders.Order::.ctor(Sample.Customers.Customer)",
+        "kind": "constructor",
+        "language": "dotnet",
+        "line": 20,
+        "name": ".ctor(Sample.Customers.Customer)",
+        "parameterTypes": [
+          "Sample.Customers.Customer"
+        ],
+        "returnType": "System.Void",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 9,
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 15,
+            "member": "_lines",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 15,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "signature",
+            "line": 15,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "body",
+            "line": 15,
+            "member": "Add",
+            "target": "System.Collections.Generic.List`1"
+          }
+        ],
+        "file": "src/Order.Lines.cs",
+        "fullName": "System.Void Sample.Orders.Order::Add(Sample.Orders.Order/Line)",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 15,
+        "name": "Add(Sample.Orders.Order/Line)",
+        "parameterTypes": [
+          "Sample.Orders.Order+Line"
+        ],
+        "returnType": "System.Void",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 26,
+        "declaringType": "Sample.Orders.Order",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 16,
+            "member": "<Id>k__BackingField",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "signature",
+            "line": 16,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "attribute",
+            "line": 16,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "signature",
+            "line": 16,
+            "target": "System.Void"
+          }
+        ],
+        "file": "src/Order.cs",
+        "fullName": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit) Sample.Orders.Order::set_Id(System.Int32)",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 16,
+        "name": "set_Id(System.Int32)",
+        "parameterTypes": [
+          "System.Int32"
+        ],
+        "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Orders.Order+Line",
+        "dependencies": [
+          {
+            "kind": "signature",
+            "line": 47,
+            "target": "System.Decimal"
+          }
+        ],
+        "file": "src/Order.Lines.cs",
+        "fullName": "System.Decimal Sample.Orders.Order/Line::Price()",
+        "getter": {
+          "visibility": "public"
+        },
+        "kind": "property",
+        "language": "dotnet",
+        "line": 47,
+        "name": "Price",
+        "readonly": false,
+        "returnType": "System.Decimal",
+        "setter": {
+          "visibility": "public"
+        },
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 32,
+        "declaringType": "Sample.Orders.Order+Line",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 47,
+            "member": "<Price>k__BackingField",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "signature",
+            "line": 47,
+            "target": "System.Decimal"
+          },
+          {
+            "kind": "attribute",
+            "line": 47,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          }
+        ],
+        "file": "src/Order.Lines.cs",
+        "fullName": "System.Decimal Sample.Orders.Order/Line::get_Price()",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 47,
+        "name": "get_Price()",
+        "returnType": "System.Decimal",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "declaringType": "Sample.Orders.Order+Line",
+        "dependencies": [
+          {
+            "kind": "signature",
+            "line": 47,
+            "target": "System.Int32"
+          }
+        ],
+        "file": "src/Order.Lines.cs",
+        "fullName": "System.Int32 Sample.Orders.Order/Line::Quantity()",
+        "getter": {
+          "visibility": "public"
+        },
+        "kind": "property",
+        "language": "dotnet",
+        "line": 47,
+        "name": "Quantity",
+        "readonly": false,
+        "returnType": "System.Int32",
+        "setter": {
+          "visibility": "private"
+        },
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 31,
+        "declaringType": "Sample.Orders.Order+Line",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 49,
+            "member": "<Quantity>k__BackingField",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "signature",
+            "line": 49,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "attribute",
+            "line": 49,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          }
+        ],
+        "file": "src/Order.Lines.cs",
+        "fullName": "System.Int32 Sample.Orders.Order/Line::get_Quantity()",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 49,
+        "name": "get_Quantity()",
+        "returnType": "System.Int32",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "declaringType": "Sample.Orders.Order+Line",
+        "dependencies": [
+          {
+            "kind": "body",
+            "member": ".ctor",
+            "target": "System.Object"
+          }
+        ],
+        "file": "src/Order.Lines.cs",
+        "fullName": "System.Void Sample.Orders.Order/Line::.ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "name": ".ctor()",
+        "returnType": "System.Void",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 37,
+        "declaringType": "Sample.Orders.Order+Line",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 47,
+            "member": "<Price>k__BackingField",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "signature",
+            "line": 47,
+            "target": "System.Decimal"
+          },
+          {
+            "kind": "attribute",
+            "line": 47,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          }
+        ],
+        "file": "src/Order.Lines.cs",
+        "fullName": "System.Void Sample.Orders.Order/Line::set_Price(System.Decimal)",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 47,
+        "name": "set_Price(System.Decimal)",
+        "parameterTypes": [
+          "System.Decimal"
+        ],
+        "returnType": "System.Void",
+        "static": false,
+        "virtual": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "column": 36,
+        "declaringType": "Sample.Orders.Order+Line",
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 49,
+            "member": "<Quantity>k__BackingField",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "signature",
+            "line": 49,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "attribute",
+            "line": 49,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          }
+        ],
+        "file": "src/Order.Lines.cs",
+        "fullName": "System.Void Sample.Orders.Order/Line::set_Quantity(System.Int32)",
+        "kind": "method",
+        "language": "dotnet",
+        "line": 49,
+        "name": "set_Quantity(System.Int32)",
+        "parameterTypes": [
+          "System.Int32"
+        ],
+        "returnType": "System.Void",
+        "static": false,
+        "virtual": false,
+        "visibility": "private"
+      }
+    ],
+    "types": [
+      {
+        "abstract": false,
+        "assembly": "Sample",
+        "assemblyQualifiedName": "Sample.AuditAttribute, Sample",
+        "attribution": "pdb",
+        "baseType": "System.Attribute",
+        "baseTypes": [
+          "System.Attribute"
+        ],
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 14,
+            "member": "<Area>k__BackingField",
+            "target": "Sample.AuditAttribute"
+          },
+          {
+            "kind": "body",
+            "line": 17,
+            "member": "<Area>k__BackingField",
+            "target": "Sample.AuditAttribute"
+          },
+          {
+            "kind": "body",
+            "line": 19,
+            "member": "<Level>k__BackingField",
+            "target": "Sample.AuditAttribute"
+          },
+          {
+            "kind": "body",
+            "line": 12,
+            "member": ".ctor",
+            "target": "System.Attribute"
+          },
+          {
+            "kind": "inherits",
+            "line": 12,
+            "target": "System.Attribute"
+          },
+          {
+            "kind": "attribute",
+            "line": 12,
+            "target": "System.AttributeUsageAttribute"
+          },
+          {
+            "kind": "signature",
+            "line": 12,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "signature",
+            "line": 19,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "attribute",
+            "line": 17,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "attribute",
+            "line": 19,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "signature",
+            "line": 12,
+            "target": "System.String"
+          },
+          {
+            "kind": "signature",
+            "line": 17,
+            "target": "System.String"
+          }
+        ],
+        "file": "src/Shared.cs",
+        "fullName": "Sample.AuditAttribute",
+        "generic": false,
+        "kind": "attribute",
+        "language": "dotnet",
+        "line": 12,
+        "name": "AuditAttribute",
+        "namespace": "Sample",
+        "nested": false,
+        "record": false,
+        "sealed": true,
+        "static": false,
+        "valueType": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": true,
+        "assembly": "Sample",
+        "assemblyQualifiedName": "Sample.Customers.Constants, Sample",
+        "attribution": "pdb",
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "dependencies": [
+          {
+            "kind": "inherits",
+            "target": "System.Object"
+          },
+          {
+            "kind": "field",
+            "target": "System.String"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "Sample.Customers.Constants",
+        "generic": false,
+        "kind": "class",
+        "language": "dotnet",
+        "name": "Constants",
+        "namespace": "Sample.Customers",
+        "nested": false,
+        "record": false,
+        "sealed": true,
+        "static": true,
+        "valueType": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "assembly": "Sample",
+        "assemblyQualifiedName": "Sample.Customers.Customer, Sample",
+        "attribution": "pdb",
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "dependencies": [
+          {
+            "kind": "body",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "member": "<Name>k__BackingField",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "line": 3,
+            "member": "<Name>k__BackingField",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "member": "Equals",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "member": "PrintMembers",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "member": "get_EqualityContract",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "member": "get_Name",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "member": "op_Equality",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 3,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "line": 3,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "typeof",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Boolean"
+          },
+          {
+            "kind": "body",
+            "member": "Equals",
+            "target": "System.Collections.Generic.EqualityComparer`1"
+          },
+          {
+            "kind": "body",
+            "member": "GetHashCode",
+            "target": "System.Collections.Generic.EqualityComparer`1"
+          },
+          {
+            "kind": "body",
+            "member": "get_Default",
+            "target": "System.Collections.Generic.EqualityComparer`1"
+          },
+          {
+            "kind": "implements",
+            "line": 3,
+            "target": "System.IEquatable`1"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Int32"
+          },
+          {
+            "kind": "body",
+            "line": 3,
+            "member": ".ctor",
+            "target": "System.Object"
+          },
+          {
+            "kind": "body",
+            "member": "ToString",
+            "target": "System.Object"
+          },
+          {
+            "kind": "inherits",
+            "line": 3,
+            "target": "System.Object"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Object"
+          },
+          {
+            "kind": "attribute",
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "attribute",
+            "line": 3,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "body",
+            "member": "EnsureSufficientExecutionStack",
+            "target": "System.Runtime.CompilerServices.RuntimeHelpers"
+          },
+          {
+            "kind": "generic-argument",
+            "target": "System.String"
+          },
+          {
+            "kind": "signature",
+            "target": "System.String"
+          },
+          {
+            "kind": "signature",
+            "line": 3,
+            "target": "System.String"
+          },
+          {
+            "kind": "body",
+            "target": "System.Text.StringBuilder"
+          },
+          {
+            "kind": "body",
+            "member": ".ctor",
+            "target": "System.Text.StringBuilder"
+          },
+          {
+            "kind": "body",
+            "member": "Append",
+            "target": "System.Text.StringBuilder"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Text.StringBuilder"
+          },
+          {
+            "kind": "body",
+            "member": "GetTypeFromHandle",
+            "target": "System.Type"
+          },
+          {
+            "kind": "body",
+            "member": "op_Equality",
+            "target": "System.Type"
+          },
+          {
+            "kind": "generic-argument",
+            "target": "System.Type"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Type"
+          },
+          {
+            "kind": "signature",
+            "line": 3,
+            "target": "System.Type"
+          },
+          {
+            "kind": "signature",
+            "line": 3,
+            "target": "System.Void"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "Sample.Customers.Customer",
+        "generic": false,
+        "interfaces": [
+          "System.IEquatable`1"
+        ],
+        "kind": "class",
+        "language": "dotnet",
+        "line": 3,
+        "name": "Customer",
+        "namespace": "Sample.Customers",
+        "nested": false,
+        "record": true,
+        "sealed": false,
+        "static": false,
+        "valueType": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "assembly": "Sample",
+        "assemblyQualifiedName": "Sample.Customers.Money, Sample",
+        "attribution": "pdb",
+        "baseType": "System.ValueType",
+        "baseTypes": [
+          "System.ValueType"
+        ],
+        "dependencies": [
+          {
+            "kind": "field",
+            "target": "System.Decimal"
+          },
+          {
+            "kind": "inherits",
+            "target": "System.ValueType"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "Sample.Customers.Money",
+        "generic": false,
+        "kind": "struct",
+        "language": "dotnet",
+        "name": "Money",
+        "namespace": "Sample.Customers",
+        "nested": false,
+        "record": false,
+        "sealed": true,
+        "static": false,
+        "valueType": true,
+        "visibility": "public"
+      },
+      {
+        "abstract": true,
+        "assembly": "Sample",
+        "assemblyQualifiedName": "Sample.Customers.Repository`1, Sample",
+        "attribution": "pdb",
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "dependencies": [
+          {
+            "kind": "signature",
+            "target": "Sample.Customers.Repository`1+<T>"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Int32"
+          },
+          {
+            "kind": "body",
+            "member": ".ctor",
+            "target": "System.Object"
+          },
+          {
+            "kind": "inherits",
+            "target": "System.Object"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "Sample.Customers.Repository`1",
+        "generic": true,
+        "kind": "class",
+        "language": "dotnet",
+        "name": "Repository`1",
+        "namespace": "Sample.Customers",
+        "nested": false,
+        "record": false,
+        "sealed": false,
+        "static": false,
+        "valueType": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "assembly": "Sample",
+        "assemblyQualifiedName": "Sample.Customers.Tier, Sample",
+        "attribution": "pdb",
+        "baseType": "System.Enum",
+        "baseTypes": [
+          "System.Enum"
+        ],
+        "dependencies": [
+          {
+            "kind": "field",
+            "target": "Sample.Customers.Tier"
+          },
+          {
+            "kind": "inherits",
+            "target": "System.Enum"
+          },
+          {
+            "kind": "field",
+            "target": "System.Int32"
+          }
+        ],
+        "file": "src/Customer.cs",
+        "fullName": "Sample.Customers.Tier",
+        "generic": false,
+        "kind": "enum",
+        "language": "dotnet",
+        "name": "Tier",
+        "namespace": "Sample.Customers",
+        "nested": false,
+        "record": false,
+        "sealed": true,
+        "static": false,
+        "valueType": true,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "assembly": "Sample",
+        "assemblyQualifiedName": "Sample.IEntity, Sample",
+        "attribution": "pdb",
+        "file": "src/Shared.cs",
+        "fullName": "Sample.IEntity",
+        "generic": false,
+        "kind": "interface",
+        "language": "dotnet",
+        "name": "IEntity",
+        "namespace": "Sample",
+        "nested": false,
+        "record": false,
+        "sealed": false,
+        "static": false,
+        "valueType": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "assembly": "Sample",
+        "assemblyQualifiedName": "Sample.Marker, Sample",
+        "attribution": "pdb",
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "dependencies": [
+          {
+            "kind": "attribute",
+            "line": 26,
+            "target": "Sample.AuditAttribute"
+          },
+          {
+            "kind": "typeof",
+            "line": 26,
+            "target": "Sample.IEntity"
+          },
+          {
+            "kind": "body",
+            "line": 26,
+            "member": "Kind",
+            "target": "Sample.Marker"
+          },
+          {
+            "kind": "body",
+            "line": 26,
+            "member": ".ctor",
+            "target": "System.Object"
+          },
+          {
+            "kind": "inherits",
+            "line": 26,
+            "target": "System.Object"
+          },
+          {
+            "kind": "attribute",
+            "line": 26,
+            "target": "System.ObsoleteAttribute"
+          },
+          {
+            "kind": "body",
+            "line": 26,
+            "member": "GetTypeFromHandle",
+            "target": "System.Type"
+          },
+          {
+            "kind": "field",
+            "line": 26,
+            "target": "System.Type"
+          }
+        ],
+        "file": "src/Shared.cs",
+        "fullName": "Sample.Marker",
+        "generic": false,
+        "kind": "class",
+        "language": "dotnet",
+        "line": 26,
+        "name": "Marker",
+        "namespace": "Sample",
+        "nested": false,
+        "record": false,
+        "sealed": true,
+        "static": false,
+        "valueType": false,
+        "visibility": "internal"
+      },
+      {
+        "abstract": false,
+        "assembly": "Sample",
+        "assemblyQualifiedName": "Sample.Orders.Order, Sample",
+        "attribution": "pdb",
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "dependencies": [
+          {
+            "kind": "attribute",
+            "line": 20,
+            "target": "Sample.AuditAttribute"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": ".ctor",
+            "target": "Sample.Core.Clock"
+          },
+          {
+            "kind": "signature",
+            "line": 20,
+            "target": "Sample.Core.Clock"
+          },
+          {
+            "kind": "body",
+            "line": 42,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "field",
+            "line": 20,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "generic-argument",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "line": 18,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "signature",
+            "line": 20,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "implements",
+            "line": 20,
+            "target": "Sample.IEntity"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "<Clock>k__BackingField",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 16,
+            "member": "<Id>k__BackingField",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 13,
+            "member": "_customer",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 18,
+            "member": "_customer",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 11,
+            "member": "_lines",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 15,
+            "member": "_lines",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "_lines",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "member": "_lines",
+            "target": "Sample.Orders.Order"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "get_Price",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "get_Quantity",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "body",
+            "line": 33,
+            "member": "get_Quantity",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "generic-argument",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 11,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 15,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 20,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 31,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "signature",
+            "line": 15,
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "target": "System.Boolean"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 20,
+            "target": "System.Boolean"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Collections.Generic.IEnumerable`1"
+          },
+          {
+            "kind": "body",
+            "line": 11,
+            "member": ".ctor",
+            "target": "System.Collections.Generic.List`1"
+          },
+          {
+            "kind": "body",
+            "line": 15,
+            "member": "Add",
+            "target": "System.Collections.Generic.List`1"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "member": "GetEnumerator",
+            "target": "System.Collections.Generic.List`1"
+          },
+          {
+            "kind": "field",
+            "line": 20,
+            "target": "System.Collections.Generic.List`1"
+          },
+          {
+            "kind": "body",
+            "target": "System.Collections.Generic.List`1+Enumerator"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "target": "System.Collections.Generic.List`1+Enumerator"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "member": "MoveNext",
+            "target": "System.Collections.Generic.List`1+Enumerator"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "member": "get_Current",
+            "target": "System.Collections.Generic.List`1+Enumerator"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "op_Implicit",
+            "target": "System.Decimal"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "op_Multiply",
+            "target": "System.Decimal"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 20,
+            "target": "System.Decimal"
+          },
+          {
+            "kind": "signature",
+            "line": 20,
+            "target": "System.Decimal"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": ".ctor",
+            "target": "System.Func`2"
+          },
+          {
+            "kind": "body",
+            "member": "Dispose",
+            "target": "System.IDisposable"
+          },
+          {
+            "kind": "body",
+            "target": "System.Int32"
+          },
+          {
+            "kind": "body",
+            "line": 31,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "signature",
+            "line": 16,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "signature",
+            "line": 20,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "Sum",
+            "target": "System.Linq.Enumerable"
+          },
+          {
+            "kind": "body",
+            "line": 20,
+            "member": "Where",
+            "target": "System.Linq.Enumerable"
+          },
+          {
+            "kind": "body",
+            "line": 11,
+            "member": ".ctor",
+            "target": "System.Object"
+          },
+          {
+            "kind": "inherits",
+            "line": 20,
+            "target": "System.Object"
+          },
+          {
+            "kind": "signature",
+            "line": 42,
+            "target": "System.Object"
+          },
+          {
+            "kind": "attribute",
+            "target": "System.Runtime.CompilerServices.AsyncStateMachineAttribute"
+          },
+          {
+            "kind": "body",
+            "member": "Create",
+            "target": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1"
+          },
+          {
+            "kind": "body",
+            "member": "Start",
+            "target": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1"
+          },
+          {
+            "kind": "body",
+            "member": "get_Task",
+            "target": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1"
+          },
+          {
+            "kind": "attribute",
+            "line": 16,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "attribute",
+            "line": 20,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "attribute",
+            "line": 31,
+            "target": "System.Runtime.CompilerServices.IteratorStateMachineAttribute"
+          },
+          {
+            "kind": "signature",
+            "target": "System.Threading.Tasks.Task`1"
+          },
+          {
+            "kind": "body",
+            "line": 42,
+            "member": "GetType",
+            "target": "System.Type"
+          },
+          {
+            "kind": "signature",
+            "line": 16,
+            "target": "System.Void"
+          }
+        ],
+        "file": "src/Order.cs",
+        "files": [
+          "src/Order.Lines.cs"
+        ],
+        "fullName": "Sample.Orders.Order",
+        "generic": false,
+        "interfaces": [
+          "Sample.IEntity"
+        ],
+        "kind": "class",
+        "language": "dotnet",
+        "line": 20,
+        "name": "Order",
+        "namespace": "Sample.Orders",
+        "nested": false,
+        "record": false,
+        "sealed": false,
+        "static": false,
+        "valueType": false,
+        "visibility": "public"
+      },
+      {
+        "abstract": false,
+        "assembly": "Sample",
+        "assemblyQualifiedName": "Sample.Orders.Order+Line, Sample",
+        "attribution": "pdb",
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "dependencies": [
+          {
+            "kind": "body",
+            "line": 47,
+            "member": "<Price>k__BackingField",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "body",
+            "line": 49,
+            "member": "<Quantity>k__BackingField",
+            "target": "Sample.Orders.Order+Line"
+          },
+          {
+            "kind": "signature",
+            "line": 47,
+            "target": "System.Decimal"
+          },
+          {
+            "kind": "signature",
+            "line": 47,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "signature",
+            "line": 49,
+            "target": "System.Int32"
+          },
+          {
+            "kind": "body",
+            "member": ".ctor",
+            "target": "System.Object"
+          },
+          {
+            "kind": "inherits",
+            "line": 47,
+            "target": "System.Object"
+          },
+          {
+            "kind": "attribute",
+            "line": 47,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          },
+          {
+            "kind": "attribute",
+            "line": 49,
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+          }
+        ],
+        "file": "src/Order.Lines.cs",
+        "fullName": "Sample.Orders.Order+Line",
+        "generic": false,
+        "kind": "class",
+        "language": "dotnet",
+        "line": 47,
+        "name": "Line",
+        "namespace": "Sample.Orders",
+        "nested": true,
+        "nestedIn": "Sample.Orders.Order",
+        "record": false,
+        "sealed": true,
+        "static": false,
+        "valueType": false,
+        "visibility": "public"
+      }
+    ]
+  },
+  "inspected": {
+    "assemblies": 1,
+    "attribution": {
+      "inferred": 0,
+      "none": 0,
+      "pdb": 10
+    },
+    "files": 4,
+    "modules": 8,
+    "pdbDocuments": 6,
+    "projects": 1
+  },
+  "modules": [
+    {
+      "coreModule": false,
+      "couldNotResolve": true,
+      "dependencies": [],
+      "dependencyTypes": [
+        "unresolved"
+      ],
+      "followable": false,
+      "language": "dotnet",
+      "source": "Sample.Core",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "framework"
+      ],
+      "followable": false,
+      "language": "dotnet",
+      "source": "System.Collections",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "framework"
+      ],
+      "followable": false,
+      "language": "dotnet",
+      "source": "System.Linq",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "framework"
+      ],
+      "followable": false,
+      "language": "dotnet",
+      "source": "System.Runtime",
+      "valid": true
+    },
+    {
+      "attribution": "pdb",
+      "dependencies": [
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "member": "System.Collections.Generic.EqualityComparer`1.Equals",
+          "module": "System.Collections.Generic.EqualityComparer`1",
+          "moduleSystem": "clr",
+          "resolved": "System.Collections",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "inherits",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 3,
+          "module": "System.Enum",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "implements",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 3,
+          "module": "System.IEquatable`1",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "field",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "module": "System.Decimal",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "signature",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 3,
+          "module": "System.Boolean",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 15,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 3,
+          "member": "System.Object..ctor",
+          "module": "System.Object",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "attribute",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 3,
+          "module": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "generic-argument",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "module": "System.String",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        }
+      ],
+      "followable": true,
+      "language": "dotnet",
+      "namespaces": [
+        "Sample.Customers"
+      ],
+      "project": "built/Sample.dll",
+      "source": "src/Customer.cs",
+      "valid": true
+    },
+    {
+      "attribution": "pdb",
+      "dependencies": [
+        {
+          "circular": false,
+          "column": 5,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 11,
+          "member": "System.Collections.Generic.List`1+Enumerator.MoveNext",
+          "module": "System.Collections.Generic.List`1",
+          "moduleSystem": "clr",
+          "resolved": "System.Collections",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 9,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 20,
+          "member": "System.Linq.Enumerable.Sum",
+          "module": "System.Linq.Enumerable",
+          "moduleSystem": "clr",
+          "resolved": "System.Linq",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "inherits",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 47,
+          "module": "System.Object",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 9,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "signature",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 20,
+          "module": "System.Decimal",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 9,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 20,
+          "member": "System.Decimal.op_Implicit",
+          "module": "System.Boolean",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 30,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "attribute",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 31,
+          "module": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 9,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "generic-argument",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 20,
+          "module": "System.Boolean",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 9,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": true,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 42,
+          "module": "Sample.Customers.Customer",
+          "moduleSystem": "clr",
+          "resolved": "src/Customer.cs",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 5,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 11,
+          "member": "Sample.Orders.Order._lines",
+          "module": "Sample.Orders.Order",
+          "moduleSystem": "clr",
+          "resolved": "src/Order.cs",
+          "valid": true
+        }
+      ],
+      "followable": true,
+      "language": "dotnet",
+      "namespaces": [
+        "Sample.Orders"
+      ],
+      "project": "built/Sample.dll",
+      "source": "src/Order.Lines.cs",
+      "valid": true
+    },
+    {
+      "attribution": "pdb",
+      "dependencies": [
+        {
+          "circular": false,
+          "coreModule": false,
+          "couldNotResolve": true,
+          "dependencyKind": "signature",
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 20,
+          "module": "Sample.Core.Clock",
+          "moduleSystem": "clr",
+          "resolved": "Sample.Core",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 35,
+          "coreModule": false,
+          "couldNotResolve": true,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 20,
+          "member": "Sample.Core.Clock..ctor",
+          "module": "Sample.Core.Clock",
+          "moduleSystem": "clr",
+          "resolved": "Sample.Core",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "field",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 20,
+          "module": "System.Collections.Generic.List`1",
+          "moduleSystem": "clr",
+          "resolved": "System.Collections",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "module": "System.Collections.Generic.List`1+Enumerator",
+          "moduleSystem": "clr",
+          "resolved": "System.Collections",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "inherits",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 20,
+          "module": "System.Object",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "signature",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 20,
+          "module": "System.Collections.Generic.IEnumerable`1",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 5,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 11,
+          "member": "System.IDisposable.Dispose",
+          "module": "System.IDisposable",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 21,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "attribute",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 16,
+          "module": "System.Runtime.CompilerServices.AsyncStateMachineAttribute",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "field",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 20,
+          "module": "Sample.Customers.Customer",
+          "moduleSystem": "clr",
+          "resolved": "src/Customer.cs",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "signature",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 20,
+          "module": "Sample.Customers.Customer",
+          "moduleSystem": "clr",
+          "resolved": "src/Customer.cs",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "generic-argument",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "module": "Sample.Customers.Customer",
+          "moduleSystem": "clr",
+          "resolved": "src/Customer.cs",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "generic-argument",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 20,
+          "module": "Sample.Orders.Order+Line",
+          "moduleSystem": "clr",
+          "resolved": "src/Order.Lines.cs",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "implements",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 20,
+          "module": "Sample.IEntity",
+          "moduleSystem": "clr",
+          "resolved": "src/Shared.cs",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "attribute",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 20,
+          "module": "Sample.AuditAttribute",
+          "moduleSystem": "clr",
+          "resolved": "src/Shared.cs",
+          "valid": true
+        }
+      ],
+      "followable": true,
+      "language": "dotnet",
+      "namespaces": [
+        "Sample.Orders"
+      ],
+      "project": "built/Sample.dll",
+      "source": "src/Order.cs",
+      "valid": true
+    },
+    {
+      "attribution": "pdb",
+      "dependencies": [
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "inherits",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 12,
+          "module": "System.Attribute",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "field",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 26,
+          "module": "System.Type",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "signature",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 12,
+          "module": "System.Int32",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 5,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 12,
+          "member": "System.Attribute..ctor",
+          "module": "System.Attribute",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "attribute",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 12,
+          "module": "System.AttributeUsageAttribute",
+          "moduleSystem": "clr",
+          "resolved": "System.Runtime",
+          "valid": true
+        }
+      ],
+      "followable": true,
+      "language": "dotnet",
+      "namespaces": [
+        "Sample"
+      ],
+      "project": "built/Sample.dll",
+      "source": "src/Shared.cs",
+      "valid": true
+    }
+  ],
+  "warnings": []
+}

@@ -1,7 +1,8 @@
 # Nightly fuzzing of the parsers that read untrusted bytes: a crash, an overflow or a runaway
 # allocation fails the run and uploads the reproducing input.
 # Plan: docs/plans/pending/0000-wave-0-spike.md, Step 9 (the metadata reader target, ten minutes);
-# docs/plans/pending/0001-wave-1-typescript-parity.md, Step 2 and § 1.7 (the configuration targets).
+# docs/plans/pending/0001-wave-1-typescript-parity.md, Step 2 and § 1.7 (the configuration targets);
+# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 2 (the ecma335 and pdb targets).
 # Requirement: docs/prd.md#nfr-sec-01. Actions pinned by SHA (docs/adr/0025-ci-and-supply-chain-hardening.md).
 name: fuzz
 
@@ -23,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [metadata_reader, config_js, config_data]
+        target: [metadata_reader, ecma335, pdb, config_js, config_data]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
