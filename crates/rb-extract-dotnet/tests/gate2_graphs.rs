@@ -52,7 +52,12 @@ fn every_fixture_graph_is_current() -> Result<(), Box<dyn std::error::Error>> {
         if std::env::var_os("RB_UPDATE_SNAPSHOTS").is_some() {
             std::fs::write(&path, &text)?;
         }
-        if std::fs::read_to_string(&path).unwrap_or_default() != text {
+        // Compared as JSON: a workspace build turns on serde_json's `preserve_order`, which
+        // changes key order but not content.
+        let committed: Option<serde_json::Value> = std::fs::read_to_string(&path)
+            .ok()
+            .and_then(|t| serde_json::from_str(&t).ok());
+        if committed != serde_json::from_str(&text).ok() {
             stale.push(name.clone());
         }
     }

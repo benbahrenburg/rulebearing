@@ -64,9 +64,12 @@ fn matches_expectation(
     if std::env::var_os("RB_UPDATE_SNAPSHOTS").is_some() {
         std::fs::write(&path, &actual)?;
     }
-    let expected = std::fs::read_to_string(&path).unwrap_or_default();
+    // Compared as JSON: a workspace build turns on serde_json's `preserve_order` (through
+    // `oxc_resolver`), which changes key order but not content.
+    let expected: Value = serde_json::from_str(&std::fs::read_to_string(&path).unwrap_or_default())
+        .unwrap_or_default();
     assert!(
-        expected == actual,
+        expected == serde_json::from_str::<Value>(&actual)?,
         "{} differs from the extraction; regenerate with RB_UPDATE_SNAPSHOTS=1 and review the diff",
         path.display()
     );
