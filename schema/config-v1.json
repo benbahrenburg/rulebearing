@@ -4293,6 +4293,7 @@
           "items": {
             "$ref": "#/$defs/DependencyKind"
           },
+          "minItems": 1,
           "type": "array"
         }
       ]
@@ -4306,6 +4307,7 @@
           "items": {
             "$ref": "#/$defs/Language"
           },
+          "minItems": 1,
           "type": "array"
         }
       ]
