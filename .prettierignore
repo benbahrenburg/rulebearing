@@ -23,6 +23,10 @@ Cargo.lock
 crates/rb-extract-ts/tests/options/
 # The code-layer fixture tree and its expectation, compared byte for byte (plan 0002, 2C).
 crates/rb-extract-ts/tests/fixtures/
+# Snapshots written by the code and compared byte for byte (plan 0002, 2D): the resolved presets
+# and the `config expand` fixture.
+crates/rb-config/tests/presets/
+crates/rb-cli/tests/config-expand/
 
 # Local only: fuzzing corpora and the worktrees of parallel agent sessions.
 fuzz/corpus/
