@@ -5,7 +5,9 @@
 # Plan: docs/plans/pending/0000-wave-0-spike.md, Step 7. Requirement: docs/prd.md#nfr-conf-03.
 #
 # A row that fails to clone, build or run is reported as `error` and never fails the run
-# (§ 1.7, Reliability); only a Rulebearing timing regression over 20% fails it. Rulebearing runs
+# (§ 1.7, Reliability); only a Rulebearing timing regression over 20% fails it, and the greenfield
+# init proof when init's proposal for semantic-kernel or autogen no longer passes (plan 0002,
+# Step 15). The scale rows (aspnetcore, jellyfin, home-assistant) time Rulebearing alone. Rulebearing runs
 # beside dependency-cruiser on its rows (plan 0001, Step 18), timed and diffed with the incumbent. The summary is published to the
 # `testbeds-results` branch, because `main` accepts changes only through reviewed pull requests;
 # README.md carries the table between its testbeds markers, refreshed from that branch.
@@ -101,6 +103,99 @@ jobs:
           path: testbeds/out
           if-no-files-found: error
 
+  # The greenfield init proof (design § Test beds, item 2; docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md,
+  # Step 15). Each row is built with its manifest `build` command, its init fixture regenerated and
+  # compared with testbeds/init/<owner>__<name>/rulebearing.yaml, and init's full proposal cruised
+  # back (testbeds/greenfield.sh). The job fails when the proof does: the fixture changed, or the
+  # cruise did not exit 0. Its result joins the summary table beside the incumbent rows.
+  greenfield-init:
+    name: init ${{ matrix.repo }}
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: [microsoft/semantic-kernel, microsoft/autogen]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      # semantic-kernel pins a 10.0 SDK, autogen a 9.0 one; their projects also target 8.0.
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+      - run: python3 -m pip install --quiet pyyaml
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rulebearing-binary
+          path: target/release
+      - run: chmod +x target/release/rulebearing
+      - id: slug
+        env:
+          REPO: ${{ matrix.repo }}
+        run: echo "slug=${REPO//\//__}" >> "$GITHUB_OUTPUT"
+      - env:
+          REPO: ${{ matrix.repo }}
+        run: testbeds/greenfield.sh "$REPO" testbeds/out
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: testbed-${{ steps.slug.outputs.slug }}
+          path: testbeds/out
+          if-no-files-found: error
+      - name: the proof passed
+        env:
+          SLUG: ${{ steps.slug.outputs.slug }}
+        run: |
+          python3 -c 'import json, sys; r = json.load(open(sys.argv[1])); print(r["repo"], r["status"], r["detail"]); sys.exit(r["status"] != "ok")' "testbeds/out/$SLUG/result.json"
+
+  # The scale rows (design § Test beds, item 3; plan 0002, Step 15): each is built, given the
+  # configuration init writes, and cruised three times (testbeds/scale.sh). The median is the row's
+  # Rulebearing time, and the summary job's regression check fails the night when it grows by more
+  # than 20%. A row that cannot build or run is reported, as the incumbent rows are.
+  scale:
+    name: scale ${{ matrix.repo }}
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: [dotnet/aspnetcore, jellyfin/jellyfin, home-assistant/core]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      # jellyfin pins a 10.0 SDK; aspnetcore's restore.sh installs the SDK its global.json names.
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+      - run: python3 -m pip install --quiet pyyaml
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rulebearing-binary
+          path: target/release
+      - run: chmod +x target/release/rulebearing
+      - id: slug
+        env:
+          REPO: ${{ matrix.repo }}
+        run: echo "slug=${REPO//\//__}" >> "$GITHUB_OUTPUT"
+      - env:
+          REPO: ${{ matrix.repo }}
+        run: testbeds/scale.sh "$REPO" testbeds/out
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: testbed-${{ steps.slug.outputs.slug }}
+          path: testbeds/out
+          if-no-files-found: error
+
   # Conformance gate 1, layer 5 (docs/plans/pending/0001-wave-1-typescript-parity.md, Step 18):
   # dependency-cruiser and Rulebearing over the three named oracles at their pinned SHAs, diffed,
   # and the mutation branch. The same job runs on every push to main in ci.yml; nightly it also
@@ -135,7 +230,7 @@ jobs:
 
   summary:
     name: summary and regression check
-    needs: [run, layer-5]
+    needs: [run, layer-5, greenfield-init, scale]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -160,6 +255,7 @@ jobs:
         with:
           name: layer5
           path: target/conformance/layer5
+      # The greenfield and scale rows with a job of their own keep the result it wrote.
       - name: record the rows with no incumbent
         run: |
           python3 -c 'import yaml; print("\n".join(r["repo"] for r in yaml.safe_load(open("testbeds/manifest.yaml"))["rows"] if r["tool"] == "none"))' |
