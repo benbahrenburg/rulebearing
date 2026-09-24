@@ -7,6 +7,13 @@
 //!   `TargetFramework(s)`, `AssemblyName`, `RootNamespace`)
 //! - Requirement: [FR-EXT-DN-01](../../../../docs/prd.md#fr-ext-dn-01)
 //!
+//! A repository on the Arcade SDK (a `Directory.Build.props` that imports
+//! `Microsoft.DotNet.Arcade.Sdk`, as dotnet/aspnetcore does) builds every project to
+//! `artifacts/bin/<OutDirName>/<Configuration>/<TFM>/` under the folder holding `global.json`,
+//! `OutDirName` defaulting to the project name (Arcade's documented "Build output layout", set in
+//! its `RepoLayout.props` and `ProjectLayout.props`); [`ProjectFile::arcade_output`] records that
+//! folder. An `ArtifactsDir` or `OutDirName` the repository sets is honoured when it expands.
+//!
 //! A property is looked up in the project first, then in each `Directory.Build.props` from the
 //! project's folder upwards, first value wins. A value may name `$(MSBuildProjectName)`,
 //! `$(Configuration)`, `$(TargetFramework)` or another property the project or its props define;
@@ -34,6 +41,7 @@ pub struct Properties {
     project_refs: Vec<String>,
     package_refs: Vec<(String, Option<String>)>,
     package_versions: Vec<(String, String)>,
+    sdk_imports: Vec<String>,
 }
 
 impl Properties {
@@ -72,6 +80,12 @@ impl Properties {
                         .map(|t| t.trim().to_owned())
                 })
             };
+            if node.has_tag_name("Import") {
+                if let Some(sdk) = node.attribute("Sdk") {
+                    properties.sdk_imports.push(sdk.trim().to_owned());
+                }
+                continue;
+            }
             match (node.tag_name().name(), node.attribute("Include")) {
                 ("ProjectReference", Some(include)) => {
                     properties.project_refs.push(include.to_owned());
@@ -100,6 +114,11 @@ impl Properties {
             .map(|(_, v)| v.as_str())
     }
 
+    /// Whether the file imports the MSBuild SDK `sdk` (`<Import Project="..." Sdk="sdk" />`).
+    pub fn imports_sdk(&self, sdk: &str) -> bool {
+        self.sdk_imports.iter().any(|s| s.eq_ignore_ascii_case(sdk))
+    }
+
     /// The central version of a package id.
     fn central_version(&self, id: &str) -> Option<&str> {
         self.package_versions
@@ -126,6 +145,40 @@ fn files_above(project: &Path, root: &Path, name: &str) -> Vec<(PathBuf, Propert
     found
 }
 
+/// The Arcade SDK's package name, as a `Directory.Build.props` imports it.
+pub const ARCADE_SDK: &str = "Microsoft.DotNet.Arcade.Sdk";
+
+/// The nearest folder from the project's up to `root` holding `global.json`: Arcade's
+/// `RepoRoot`.
+fn global_json_folder(project: &Path, root: &Path) -> Option<PathBuf> {
+    let mut folder = project.parent();
+    while let Some(current) = folder {
+        if current.join("global.json").is_file() {
+            return Some(current.to_path_buf());
+        }
+        if current == root {
+            return None;
+        }
+        folder = current.parent();
+    }
+    None
+}
+
+/// The .NET 8 `artifacts/` folder, when a `Directory.Build.props` turns `UseArtifactsOutput`
+/// on: its `ArtifactsPath`, else `artifacts/` beside it.
+fn artifacts_output(props: &[(PathBuf, Properties)]) -> Option<PathBuf> {
+    props
+        .iter()
+        .find(|(_, p)| {
+            p.get("UseArtifactsOutput")
+                .is_some_and(|v| v.eq_ignore_ascii_case("true"))
+        })
+        .map(|(dir, p)| {
+            p.get("ArtifactsPath")
+                .map_or_else(|| dir.join("artifacts"), |a| dir.join(a))
+        })
+}
+
 /// A project file read, before its output is located.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectFile {
@@ -145,6 +198,9 @@ pub struct ProjectFile {
     pub output_path: Option<String>,
     /// The `artifacts/` folder, when `UseArtifactsOutput` is on.
     pub artifacts: Option<PathBuf>,
+    /// The Arcade SDK's `artifacts/bin/<OutDirName>/` folder, when the repository builds with
+    /// Arcade; the assembly is under `<Configuration>/<TFM>/` in it.
+    pub arcade_output: Option<PathBuf>,
     /// Referenced projects, resolved and sorted.
     pub project_refs: Vec<PathBuf>,
     /// Referenced packages, sorted by id.
@@ -166,6 +222,11 @@ impl ProjectFile {
             .and_then(|s| s.to_str())
             .unwrap_or_default()
             .to_owned();
+        let repo_root = props
+            .iter()
+            .any(|(_, p)| p.imports_sdk(ARCADE_SDK))
+            .then(|| global_json_folder(path, root))
+            .flatten();
         let raw = |name: &str| -> Option<String> {
             own.get(name)
                 .or_else(|| props.iter().find_map(|(_, p)| p.get(name)))
@@ -176,6 +237,7 @@ impl ProjectFile {
             let expanded = expand(&value, &|property: &str| match property {
                 "MSBuildProjectName" => Some(stem.clone()),
                 "Configuration" => Some(configuration.to_owned()),
+                "RepoRoot" => repo_root.as_ref().map(|r| format!("{}/", r.display())),
                 other if other.eq_ignore_ascii_case(name) => None,
                 other => raw(other),
             });
@@ -204,18 +266,19 @@ impl ProjectFile {
             .iter()
             .any(|(id, _)| id.eq_ignore_ascii_case("Microsoft.NET.Test.Sdk"))
             || lookup("IsTestProject").is_some_and(|v| v.eq_ignore_ascii_case("true"));
-        let artifacts = props
-            .iter()
-            .find(|(_, p)| {
-                p.get("UseArtifactsOutput")
-                    .is_some_and(|v| v.eq_ignore_ascii_case("true"))
-            })
-            .map(|(dir, p)| {
-                p.get("ArtifactsPath")
-                    .map_or_else(|| dir.join("artifacts"), |a| dir.join(a))
-            });
+        let artifacts = artifacts_output(&props);
         let output_path = lookup("OutputPath");
         let folder = path.parent().unwrap_or(Path::new("."));
+        // A relative `ArtifactsDir` is relative to the project, as any MSBuild path property is;
+        // Arcade's own default is absolute (`$(RepoRoot)artifacts/`).
+        let arcade_output = repo_root.as_ref().map(|repo| {
+            let artifacts = lookup("ArtifactsDir").map_or_else(
+                || repo.join("artifacts"),
+                |dir| normalise(&folder.join(dir.replace('\\', "/"))),
+            );
+            let name = lookup("OutDirName").unwrap_or_else(|| stem.clone());
+            artifacts.join("bin").join(name.replace('\\', "/"))
+        });
         let mut project_refs: Vec<PathBuf> = own
             .project_refs
             .iter()
@@ -246,6 +309,7 @@ impl ProjectFile {
             is_test,
             output_path,
             artifacts,
+            arcade_output,
             project_refs,
             package_refs: packages,
         })

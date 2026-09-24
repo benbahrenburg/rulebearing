@@ -5,8 +5,10 @@
 //!   `bin/<Configuration>/<TargetFramework>/`)
 //! - Requirement: [FR-EXT-DN-01](../../../../docs/prd.md#fr-ext-dn-01)
 //!
-//! The conventional places are tried in order (`OutputPath`, `bin/<Configuration>/<TFM>/`, the
-//! `artifacts/` layout), the preferred target framework first; when all are empty, the output
+//! The conventional places are tried in order (`OutputPath`, the Arcade SDK's
+//! `artifacts/bin/<Project>/<Configuration>/<TFM>/`, `bin/<Configuration>/<TFM>/`, the .NET 8
+//! `UseArtifactsOutput` layout `artifacts/bin/<Project>/<pivot>/`), the preferred target
+//! framework first; when all are empty, the output
 //! folders are searched for `<AssemblyName>.dll`, skipping `ref/` and `refint/` (reference
 //! assemblies carry no method bodies), and a path naming the configuration wins.
 
@@ -33,6 +35,9 @@ pub fn built_assembly(
         if let Some(output) = &project.output_path {
             candidates.push(folder.join(output.replace('\\', "/")).join(tfm).join(&file));
         }
+        if let Some(arcade) = &project.arcade_output {
+            candidates.push(arcade.join(configuration).join(tfm).join(&file));
+        }
         candidates.push(folder.join("bin").join(configuration).join(tfm).join(&file));
         if let Some(artifacts) = &project.artifacts {
             let pivot = if tfm.is_empty() {
@@ -53,6 +58,7 @@ pub fn built_assembly(
         return Some(found);
     }
     let mut roots = vec![folder.join("bin")];
+    roots.extend(project.arcade_output.clone());
     if let Some(artifacts) = &project.artifacts {
         roots.push(artifacts.join("bin").join(&project.stem));
     }
@@ -120,6 +126,72 @@ mod tests {
             Some(dir.join("src/Api/bin/Release/net8.0/Api.dll")),
             "a search finds the other configuration when the named one is empty"
         );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_arcade_layout_is_read_from_the_sdk_import_and_global_json() {
+        let dir = scratch("arcade");
+        let arcade = r#"<Project><Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" /><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>"#;
+        write(&dir.join("Directory.Build.props"), arcade);
+        write(&dir.join("src/Api/Api.csproj"), "<Project/>");
+        write(&dir.join("artifacts/bin/Api/Release/net10.0/Api.dll"), "");
+        // Without global.json the SDK cannot be resolved, so the layout does not apply.
+        let p = project(&dir, "src/Api/Api.csproj");
+        assert_eq!(p.as_ref().and_then(|p| p.arcade_output.clone()), None);
+        assert_eq!(
+            p.as_ref().and_then(|p| built_assembly(p, "Release", None)),
+            None
+        );
+        write(
+            &dir.join("global.json"),
+            r#"{ "msbuild-sdks": { "Microsoft.DotNet.Arcade.Sdk": "10.0.0-beta.1" } }"#,
+        );
+        let p = project(&dir, "src/Api/Api.csproj");
+        assert_eq!(
+            p.as_ref().and_then(|p| p.arcade_output.clone()),
+            Some(dir.join("artifacts/bin/Api"))
+        );
+        assert_eq!(
+            p.as_ref().and_then(|p| built_assembly(p, "Release", None)),
+            Some(dir.join("artifacts/bin/Api/Release/net10.0/Api.dll"))
+        );
+        assert_eq!(
+            p.as_ref().and_then(|p| built_assembly(p, "Debug", None)),
+            Some(dir.join("artifacts/bin/Api/Release/net10.0/Api.dll")),
+            "the search covers the Arcade folder too"
+        );
+        // OutDirName and ArtifactsDir, as a repository may set them, expanded.
+        write(
+            &dir.join("src/Tool/Tool.csproj"),
+            r"<Project><PropertyGroup><OutDirName>Tools\$(MSBuildProjectName)</OutDirName><ArtifactsDir>$(RepoRoot)out\</ArtifactsDir></PropertyGroup></Project>",
+        );
+        write(&dir.join("out/bin/Tools/Tool/Release/net10.0/Tool.dll"), "");
+        let p = project(&dir, "src/Tool/Tool.csproj");
+        assert_eq!(
+            p.as_ref().and_then(|p| built_assembly(p, "Release", None)),
+            Some(dir.join("out/bin/Tools/Tool/Release/net10.0/Tool.dll"))
+        );
+        // A relative ArtifactsDir is relative to the project.
+        write(
+            &dir.join("src/Rel/Rel.csproj"),
+            "<Project><PropertyGroup><ArtifactsDir>../../rel</ArtifactsDir></PropertyGroup></Project>",
+        );
+        let p = project(&dir, "src/Rel/Rel.csproj");
+        assert_eq!(
+            p.as_ref().and_then(|p| p.arcade_output.clone()),
+            Some(dir.join("rel/bin/Rel"))
+        );
+        // A props file that does not import Arcade leaves the layout off, global.json or not.
+        write(
+            &dir.join("plain/Directory.Build.props"),
+            r#"<Project><Import Project="Other.props" Sdk="Some.Other.Sdk" /></Project>"#,
+        );
+        write(&dir.join("plain/global.json"), "{}");
+        write(&dir.join("plain/P/P.csproj"), "<Project/>");
+        let p =
+            ProjectFile::read(&dir.join("plain/P/P.csproj"), "Release", &dir.join("plain")).ok();
+        assert_eq!(p.and_then(|p| p.arcade_output), None);
         let _ = std::fs::remove_dir_all(&dir);
     }
 

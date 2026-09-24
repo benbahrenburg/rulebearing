@@ -37,3 +37,23 @@ How the 2026-09-23 row was taken, with `hyperfine --warmup 2 --runs 10` over the
 - **Stage split, one run.** Configuration 9 ms, extract 2,044 ms, evaluate 686 ms, report 122 ms. The run spent 10.2 s of system time against 3.3 s of user time.
 
 3.46 times faster than dependency-cruiser, but over the 2-second target, and the miss is in extraction: 2.0 s here against 0.18 s for the synthetic tree's 5,500 modules on the runner. The high system time points at file-system work in resolution, which the synthetic tree does not exercise. Finding and fixing it is a wave 2 performance item; the synthetic figure above meets [NFR-PERF-01](prd.md#nfr-perf-01).
+
+## Scale repositories
+
+The nightly scale rows ([testbeds/README.md](../testbeds/README.md), `scale.sh`) cruise a large repository with the configuration `rulebearing init` writes for it, which carries a `knownViolations` entry for every finding. home-assistant/core (the SHA pinned in `testbeds/manifest.yaml`, Python, 22,926 modules, 165,470 dependencies, 33,020 violations) exposed three quadratic scans over violations, all ported from, or modelled on, pairwise loops upstream:
+
+| Stage | Where | What it did | Now |
+| --- | --- | --- | --- |
+| evaluate | `summarize_modules` | `uniqWith(isSameViolation)`: each violation against every one kept before it | candidates from an index by rule, `from` and `to`, and by the sorted cycle names |
+| report | `rewrap`'s `carry_additions` | a linear search of the saved violations for each recomputed one | a first-match map by rule, `from` and `to` |
+| evaluate, `init` | `KnownSet` (`softenKnownViolations`) | every baseline entry tested against every module rule, dependency rule and violation | candidates from an index by id, `from` and rule, type and rule, or cycle names |
+
+Each candidate is still decided by the original predicate, and property tests compare each index with the scan it replaced. The cycle search was not the cost: it already runs only inside a strongly connected component ([`graph/indexed.rs`](../crates/rb-rules/src/graph/indexed.rs)).
+
+| Date | Machine | Command | Before (`d9cb2fa`) | After | Output |
+| --- | --- | --- | --- | --- | --- |
+| 2026-09-24 | Apple M2 Pro, 12 threads, load average 10 to 16 | `cruise` with `extends: [rulebearing:python, rulebearing:recommended]` | 556 s (evaluate 189 s, report 342 s) | 9.7 s (extract 3.1 s, evaluate 2.9 s, report 3.0 s) | byte-identical |
+| 2026-09-24 | same | `init --owner testbed --force` | about 26 CPU-minutes | 25 s | the same `rulebearing.yaml` |
+| 2026-09-24 | same | `cruise` with that `rulebearing.yaml` (33,016 known violations) | 788 s | 11.8 s | byte-identical |
+
+The synthetic tree did not move: `hyperfine -N --warmup 3 --runs 20` gave 817 ms before and 810 ms after on the same loaded machine, with identical output.
