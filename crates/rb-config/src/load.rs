@@ -666,6 +666,48 @@ mod tests {
     }
 
     #[test]
+    fn the_python_preset_sets_the_python_defaults() -> Result<(), Box<dyn Error>> {
+        let repo = Repo::new(
+            "python-preset",
+            &[("rulebearing.yaml", "extends: rulebearing:python\n")],
+        )?;
+        let config = repo.load("rulebearing.yaml")?;
+        assert_eq!(
+            config.languages.python.as_ref().and_then(|p| p.stubs),
+            Some(false)
+        );
+        let exclude = serde_json::to_string(&config.languages.typescript.exclude)?;
+        for folder in [".venv", "venv", "site-packages", "__pycache__"] {
+            assert!(exclude.contains(folder), "{exclude}");
+        }
+        let orphans = config
+            .rules
+            .dependencies
+            .forbidden
+            .iter()
+            .find(|r| r.name() == "no-orphans")
+            .and_then(|r| r.from.path_not.clone())
+            .map(|p| p.joined())
+            .unwrap_or_default();
+        assert!(
+            orphans.contains("__main__")
+                && orphans.contains("conftest")
+                && orphans.contains("tsconfig"),
+            "{orphans}"
+        );
+        assert!(
+            config
+                .rules
+                .dependencies
+                .forbidden
+                .iter()
+                .any(|r| r.name() == "no-circular"),
+            "the recommended rules are kept"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn a_native_config_with_every_addition() -> Result<(), Box<dyn Error>> {
         let repo = Repo::new(
             "native",

@@ -29,6 +29,10 @@ pub const NATIVE_PRESETS: &[(&str, &str)] = &[
         "typescript",
         include_str!("../../../presets/rulebearing/typescript.yaml"),
     ),
+    (
+        "python",
+        include_str!("../../../presets/rulebearing/python.yaml"),
+    ),
 ];
 
 /// What an `extends` entry names.
@@ -385,6 +389,10 @@ mod tests {
         assert_eq!(
             resolve("rulebearing:recommended", here)?.key(),
             "rulebearing:recommended"
+        );
+        assert_eq!(
+            resolve("rulebearing:python", here)?.key(),
+            "rulebearing:python"
         );
         assert!(resolve("rulebearing:nope", here).is_err());
         assert!(resolve("dependency-cruiser/configs/nope", here).is_err());
