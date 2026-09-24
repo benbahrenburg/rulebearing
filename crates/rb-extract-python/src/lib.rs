@@ -363,7 +363,8 @@ fn close_base_chains(layer: &mut CodeLayer) {
 /// An input that does not exist or a folder that cannot be listed, or no module at all. A file
 /// that cannot be read or parsed is a warning naming it, and the run continues.
 pub fn extract_with(inputs: &[PathBuf], settings: &Settings) -> Result<Extraction, ExtractError> {
-    let files = discover::walk(&settings.base, inputs, settings.stubs)?;
+    let walked = discover::walk(&settings.base, inputs, settings.stubs)?;
+    let files = walked.files;
     if files.is_empty() {
         return Err(ExtractError::NoModulesFound);
     }
@@ -374,6 +375,7 @@ pub fn extract_with(inputs: &[PathBuf], settings: &Settings) -> Result<Extractio
         .collect();
     let known: BTreeSet<&str> = files.iter().map(String::as_str).collect();
     let mut warnings = settings.warnings.clone();
+    warnings.extend(walked.warnings);
     let mut modules = Vec::with_capacity(files.len());
     let mut targets: BTreeMap<String, Module> = BTreeMap::new();
     let mut code = CodeLayer::default();

@@ -24,6 +24,8 @@
 use std::io;
 use std::path::{Path, PathBuf};
 
+use rb_model::Warning;
+
 /// Folder names never walked: virtual environments, installed packages, bytecode caches and
 /// version-control metadata. A folder holding `pyvenv.cfg` is a virtual environment whatever
 /// its name, and is skipped too.
@@ -323,13 +325,23 @@ pub fn candidate_paths(dotted: &str, extension: &str) -> [String; 2] {
     ]
 }
 
+/// What a walk found: the source files and the problems met on the way.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Walked {
+    /// Every source file, relative to the working directory, posix-separated, sorted.
+    pub files: Vec<String>,
+    /// A broken symbolic link named like a source file, one warning each.
+    pub warnings: Vec<Warning>,
+}
+
 /// Every `.py` file (and `.pyi` when `stubs`) under `inputs`, relative to `base`,
-/// posix-separated, sorted. Excluded folders and symbolic links to folders are not entered.
+/// posix-separated, sorted. Excluded folders and symbolic links to folders are not entered; a
+/// symbolic link to a file is followed, and a broken one named like a source file is a warning.
 ///
 /// # Errors
 /// An input that does not exist, or a folder that cannot be read.
-pub fn walk(base: &Path, inputs: &[PathBuf], stubs: bool) -> io::Result<Vec<String>> {
-    let mut found = Vec::new();
+pub fn walk(base: &Path, inputs: &[PathBuf], stubs: bool) -> io::Result<Walked> {
+    let mut walked = Walked::default();
     let default_input = [PathBuf::from(".")];
     let inputs = if inputs.is_empty() {
         &default_input[..]
@@ -344,14 +356,15 @@ pub fn walk(base: &Path, inputs: &[PathBuf], stubs: bool) -> io::Result<Vec<Stri
         };
         let meta = std::fs::metadata(&path)?;
         if meta.is_dir() {
-            walk_dir(base, &path, stubs, &mut found)?;
+            walk_dir(base, &path, stubs, &mut walked)?;
         } else if is_source(&path, stubs) {
-            found.push(relative(base, &path));
+            walked.files.push(relative(base, &path));
         }
     }
-    found.sort();
-    found.dedup();
-    Ok(found)
+    walked.files.sort();
+    walked.files.dedup();
+    walked.warnings.sort_by(|a, b| a.path.cmp(&b.path));
+    Ok(walked)
 }
 
 fn is_source(path: &Path, stubs: bool) -> bool {
@@ -362,7 +375,7 @@ fn is_source(path: &Path, stubs: bool) -> bool {
     }
 }
 
-fn walk_dir(base: &Path, dir: &Path, stubs: bool, found: &mut Vec<String>) -> io::Result<()> {
+fn walk_dir(base: &Path, dir: &Path, stubs: bool, walked: &mut Walked) -> io::Result<()> {
     let mut entries: Vec<_> = std::fs::read_dir(dir)?.collect::<Result<_, _>>()?;
     entries.sort_by_key(std::fs::DirEntry::file_name);
     for entry in entries {
@@ -372,10 +385,23 @@ fn walk_dir(base: &Path, dir: &Path, stubs: bool, found: &mut Vec<String>) -> io
             let name = entry.file_name();
             let excluded = name.to_str().is_some_and(|n| EXCLUDED_DIRS.contains(&n));
             if !excluded && !path.join("pyvenv.cfg").is_file() {
-                walk_dir(base, &path, stubs, found)?;
+                walk_dir(base, &path, stubs, walked)?;
             }
         } else if kind.is_file() && is_source(&path, stubs) {
-            found.push(relative(base, &path));
+            walked.files.push(relative(base, &path));
+        } else if kind.is_symlink() && is_source(&path, stubs) {
+            // A link to a file is followed; a link to a folder is never entered, so a cycle
+            // cannot be walked.
+            match std::fs::metadata(&path) {
+                Ok(target) if target.is_file() => walked.files.push(relative(base, &path)),
+                Ok(_) => {}
+                Err(error) => walked.warnings.push(Warning::about(
+                    relative(base, &path),
+                    format!(
+                        "is a symbolic link whose target cannot be read ({error}); it is not analysed. Fix or remove the link"
+                    ),
+                )),
+            }
         }
     }
     Ok(())
@@ -599,11 +625,11 @@ mod tests {
             write(&dir, file, "");
         }
         assert_eq!(
-            walk(&dir, &[], false)?,
+            walk(&dir, &[], false)?.files,
             ["src/pkg/__init__.py", "src/pkg/a.py", "top.py"]
         );
         assert_eq!(
-            walk(&dir, &[PathBuf::from("src")], true)?,
+            walk(&dir, &[PathBuf::from("src")], true)?.files,
             ["src/pkg/__init__.py", "src/pkg/a.py", "src/pkg/a.pyi"]
         );
         assert_eq!(
@@ -611,11 +637,39 @@ mod tests {
                 &dir,
                 &[dir.join("top.py"), PathBuf::from("notes.txt")],
                 false
-            )?,
+            )?
+            .files,
             ["top.py"]
         );
         assert!(walk(&dir, &[PathBuf::from("missing")], false).is_err());
         assert_eq!(relative(Path::new("/a"), Path::new("/b/c.py")), "/b/c.py");
+        let _ = std::fs::remove_dir_all(&dir);
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn symbolic_links_to_files_are_followed_and_broken_ones_are_warnings() -> io::Result<()> {
+        use std::os::unix::fs::symlink;
+        let dir = scratch("links");
+        write(&dir, "real/x.py", "");
+        write(&dir, "pkg/__init__.py", "");
+        symlink(dir.join("real/x.py"), dir.join("pkg/linked.py"))?;
+        symlink(dir.join("real/gone.py"), dir.join("pkg/broken.py"))?;
+        symlink(dir.join("real/gone.txt"), dir.join("pkg/broken.txt"))?;
+        symlink(dir.join("real"), dir.join("pkg/folder"))?;
+        symlink(dir.join("pkg"), dir.join("pkg/cycle"))?;
+        let walked = walk(&dir, &[], false)?;
+        assert_eq!(
+            walked.files,
+            ["pkg/__init__.py", "pkg/linked.py", "real/x.py"]
+        );
+        let warned: Vec<(Option<PathBuf>, bool)> = walked
+            .warnings
+            .iter()
+            .map(|w| (w.path.clone(), w.message.contains("symbolic link")))
+            .collect();
+        assert_eq!(warned, [(Some(PathBuf::from("pkg/broken.py")), true)]);
         let _ = std::fs::remove_dir_all(&dir);
         Ok(())
     }
