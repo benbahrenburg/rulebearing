@@ -25,13 +25,13 @@ Both `--from-hook` commands answer in Claude Code's hook protocol and exit 0, so
 
 | Command | Answers |
 | --- | --- |
-| `rulebearing can-import <from> <to>` | Would this import be allowed? `yes` (exit 0), or `no` with the rule, its comment and its `fix` (exit 1). It answers from the saved graph, so it is fast. The target's kind (`npm-dev`, `core`, its licence) comes from the graph; a target the graph has never seen and that is not a file on disk exits 2 rather than guess |
-| `rulebearing impact <file> [--depth N]` | What the file is subject to, as JSON |
+| `rulebearing can-import <from> <to>` | Would this import be allowed? `yes` (exit 0), or `no` with the rule, its comment and its `fix` (exit 1). It answers from the worktree-aware cache, so it is fast. The target's kind (`npm-dev`, `core`, its licence) comes from the graph; a target the graph has never seen and that is not a file on disk exits 2 rather than guess |
+| `rulebearing impact <file> [--depth N] [--json]` | What the file is subject to: the rules that mention it, its dependents to depth N, whether it sits on a cycle and the ratchets its edges count toward; text, or JSON with `--json` |
 | `rulebearing explain <rule> [--plain]` | The rule as one English sentence, why it exists, what to do, and the first edges it matched |
 | `rulebearing rules --json` | Every rule, its family, severity, `fix`, and how many modules each side matches |
 | `rulebearing count --from <regex> --to <regex>` | How many direct edges match, against a budget with `--budget` |
 
-The query commands read `.graph/cruise.json` when it exists, which `rulebearing cruise -T json -f .graph/cruise.json <paths>` writes; `--graph FILE` names another, and without either they extract the paths given.
+The query commands (`can-import`, `impact`, `propose`, `place`) read `--graph FILE` when given; otherwise the worktree-aware cache under `.graph/cache/<key>/`, keyed by the worktree root, `HEAD` and the configuration's hash ([plan 0002, Step 13](plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)), so two worktrees of one repository never read each other's graph. A miss extracts the paths given and writes the cache; `--no-cache` neither reads nor writes it. The key follows commits, not uncommitted edits: pass `--no-cache` to see an edit before committing it.
 
 ## The `agent` reporter
 
