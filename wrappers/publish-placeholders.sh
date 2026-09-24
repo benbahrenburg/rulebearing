@@ -29,11 +29,10 @@ if ! $dry; then
 fi
 
 echo "== PyPI"
-python3 -m venv "$work/venv"
-"$work/venv/bin/pip" install --quiet build twine
-"$work/venv/bin/python" -m build --outdir "$work/dist" "$here/pip"
-"$work/venv/bin/twine" check "$work/dist/"*
-$dry || "$work/venv/bin/twine" upload "$work/dist/"*
+# The 0.0.1 reservation is published. wrappers/pip is now the real package: one wheel per
+# platform, built from the release archives and published by release.yml
+# (wrappers/pip/scripts/build-wheels.sh, docs/release.md), so this script no longer builds it.
+echo "PyPI: reserved at 0.0.1; the real wheels are released by .github/workflows/release.yml"
 
 echo "== NuGet"
 dotnet pack "$here/nuget/Rulebearing.csproj" --configuration Release --output "$work/nupkg" --nologo --verbosity quiet
