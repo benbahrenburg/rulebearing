@@ -233,7 +233,9 @@ pub fn test<'a>(
     // `(positive, negative)`: most concepts negate plainly; a few define their own negative.
     let (positive, negative): (bool, Option<bool>) = match test.concept {
         Concept::Identity => (operand_keys(e, &test.operand)?.contains(key), None),
-        Concept::Exist => (true, Some(true)),
+        // `ExistsCondition`: every selected object exists, so `exist` passes it and
+        // `notExist` fails it; the empty selection is judged in `evaluate`.
+        Concept::Exist => (true, None),
         Concept::Public => (visibility(object) == Some("public"), None),
         Concept::Private => (visibility(object) == Some("private"), None),
         Concept::Protected => (visibility(object) == Some("protected"), None),

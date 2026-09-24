@@ -1,15 +1,17 @@
 # ArchUnitNET test fixtures
 
-The assemblies ArchUnitNET's own tests load, built once and committed so conformance gate 2 and the `rb-extract-dotnet` tests read the same bytes on every machine: `TestAssembly` (slices, PlantUML, the reader's tests) and the ten purpose-built assemblies under upstream's `TestAssemblies/`, against which the element tests' snapshots were recorded ([plan 0002, Step 7](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c)) ([design § Conformance gate 2](../../../docs/artifacts/design.md#conformance-gate-2-archunitnets-test-assemblies-validate-the-element-rules), [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md)).
+The assemblies ArchUnitNET's own tests load, built once and committed so conformance gate 2 and the `rb-extract-dotnet` tests read the same bytes on every machine: `TestAssembly` (slices, PlantUML, the reader's tests), the ten purpose-built assemblies under upstream's `TestAssemblies/`, against which the element tests' snapshots were recorded, and `ArchUnitNETTests` itself, the architecture of the combinator and rule-evaluation tests ([plan 0002, Step 7](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c)) ([design § Conformance gate 2](../../../docs/artifacts/design.md#conformance-gate-2-archunitnets-test-assemblies-validate-the-element-rules), [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md)).
 
 | Item | Value |
 | --- | --- |
-| Upstream | [TNG/ArchUnitNET](https://github.com/TNG/ArchUnitNET), tag `0.13.4` (commit `1ab5943d761d48f86b42f45ef047130dc9aff1c6`), projects `TestAssembly/TestAssembly.csproj` and `TestAssemblies/{Attribute,Class,DuplicateFullName,OtherDuplicateFullName,MethodDependency,MethodMember,PropertyMember,Type,TypeDependency,Visibility}Assembly` |
+| Upstream | [TNG/ArchUnitNET](https://github.com/TNG/ArchUnitNET), tag `0.13.4` (commit `1ab5943d761d48f86b42f45ef047130dc9aff1c6`), projects `TestAssembly/TestAssembly.csproj`, `ArchUnitNETTests/ArchUnitNETTests.csproj` and `TestAssemblies/{Attribute,Class,DuplicateFullName,OtherDuplicateFullName,MethodDependency,MethodMember,PropertyMember,Type,TypeDependency,Visibility}Assembly` |
 | Target framework | `net10.0` |
 | .NET SDK used | 10.0.100 |
 | Build | `--configuration Debug -p:DebugType=portable -p:Deterministic=true -p:ContinuousIntegrationBuild=true`, so source paths are mapped to `/_/` and a rebuild with the same SDK gives the same bytes; Debug because upstream's CI runs the tests with `dotnet test -c Debug` |
 | `TestAssembly.dll` SHA-256 | `9b2cc7f17d18c1b7f26abd5ed0b416d1fae7c1093daae5b5c65ab51c4a26ca72` |
 | `TestAssembly.pdb` SHA-256 | `b407a5d66fd997575f30b5aeb4d6086984cdb0b17a2b0ec8a7c094a83a424e64` |
+| `ArchUnitNETTests.dll` SHA-256 | `9df24046408181c4ed7b5f818a4dc4d196290766a01636396d334d78c819f573` |
+| `ArchUnitNETTests.pdb` SHA-256 | `3799bf963f0cfd106bbf6799bdbf98feac26a4f574d6f73d7d1e473ee4601982` |
 | `AttributeAssembly.dll` SHA-256 | `d065bc536064018a92bce73d8322ec8f0602023060adb85bef450b50614de57b` |
 | `AttributeAssembly.pdb` SHA-256 | `3f66e44e256b70c53bc7b294d1989512d2892a127bbc84ad7e56d0a6581e97a5` |
 | `ClassAssembly.dll` SHA-256 | `122ac100e3c03e29f4d2dd7bd734f7cf412bcaf5512e22859d5e373aa28fae00` |
