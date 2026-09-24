@@ -861,10 +861,10 @@ public class ArchitectureRules
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 2F | `import archunit`: ArchUnitNET chains | Not started | fixtures, round-trip test |
-| 2F | `import archunit`: NetArchTest chains | Not started | fixtures |
-| 2F | `import import-linter`: six contract kinds and `ignore_imports` | Not started | fixtures |
-| 2F | `import eslint`: `no-restricted-paths`, `eslint-plugin-boundaries` | Not started | fixtures |
+| 2F | `import archunit`: ArchUnitNET chains | Done | `crates/rb-cli/tests/import.rs` (`archunit/fluent`, byte-compared, twice for determinism); `tests/import_corpus.rs`: 727 of the 1,560 gate 2 C# chains import, each equal to its ported rule, the rest refused with a reason; the round trip reproduces 11 of 11 upstream verdicts (`SlicesTests` over `TestAssembly`, `DependenciesToOtherAssembliesTests` over `ArchUnitNETTests`) |
+| 2F | `import archunit`: NetArchTest chains | Done | `archunit/netarchtest` fixture; 70 of the 71 NetArchTest `GetResult` chains import equal to their ported rule |
+| 2F | `import import-linter`: six contract kinds and `ignore_imports` | Done | six fixtures (`forbidden`, `layers`, `independence`, `protected`, `acyclic`, `own`), each cruised to break where import-linter breaks; importing import-linter's own `.importlinter` reproduces `testbeds/oracles/configs/seddonym__import-linter.yaml` exactly |
+| 2F | `import eslint`: `no-restricted-paths`, `eslint-plugin-boundaries` | Done | four fixtures (flat, legacy, CommonJS, `package.json`); a cruise over a TypeScript tree reports exactly the four expected violations; the sandbox still refuses Node built-ins, `process` and endless loops |
 | 2F | .NET oracle harness and table (nine repos) | Not started | nightly rows |
 | 2F | Python oracle harness and table (fourteen repos, incl. dify and OpenMetadata halves) | Not started | nightly rows |
 
@@ -885,7 +885,7 @@ public class ArchitectureRules
 | 2G | `test --generate` | Done | `crates/rb-cli/tests/cmd/generate.rs`: examples written in place, comments kept, `--force` required to overwrite, `rulebearing test` passes afterwards |
 | 2G | `decisions`, `decisions new` | Done | `crates/rb-cli/tests/cmd/decisions.rs`: table and `--json`, exit 1 on a dangling `adr:NNNN`, the ADR-0001 template scaffolded |
 | 2G | Worktree-aware cache key | Done | `crates/rb-cli/tests/cache_worktree.rs` (two worktrees at different `HEAD`s: different directories, neither reads the other's graph; a commit and `git pack-refs` handled); `crates/rb-cli/src/cache/key.rs` unit tests |
-| 2G | `eslint-plugin-rulebearing` | Not started | vitest coverage, agreement test |
+| 2G | `eslint-plugin-rulebearing` | In progress | `frontends/eslint-plugin-rulebearing/test/boundaries.test.ts`: every `rulebearing/boundaries` message equals the `junit` failure message of the same edge (5 edges over import, export-from, `import()` and `require()`; from the cache, from `--graph`, after caching); vitest lines 95.78% (floor 70%); `can-import --json` id equals the cruise id (`crates/rb-cli/tests/agent.rs`); the `eslint-plugin` CI job. Publishing from `release.yml` is defined and waits for the first tag |
 
 ### Wave 2H: test adapters and wrappers
 
