@@ -14,24 +14,33 @@
 //!   ([ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md))
 //!
 //! Reporters read the result as JSON, as dependency-cruiser's do, so a result with a missing or
-//! extra field renders the way it would upstream. Wave 1 ships the reporters of
-//! [`OUTPUT_TYPES`] marked wave 1, and wave 2 adds `baseline`, `sarif`, `junit` and `trx`; asking
-//! for one not yet built is a named error.
+//! extra field renders the way it would upstream. The reporters of [`OUTPUT_TYPES`] up to the
+//! current wave are delivered; asking for a later one is a named error. Wave 2 adds `baseline`,
+//! `sarif`, `junit` and `trx`, the graph reporters ([`dot`], [`mermaid`], [`d2`]), [`metrics`] and
+//! [`err_html`].
 
 pub mod agent;
 pub mod azure_devops;
 pub mod baseline;
 pub mod catalog;
+pub mod conformance;
 pub mod csv;
+pub mod d2;
+pub mod dot;
 pub mod err;
+pub mod err_html;
 pub mod github_annotations;
+pub(crate) mod js;
 pub mod json;
 pub mod junit;
+pub mod mermaid;
+pub mod metrics;
 pub mod sarif;
 pub mod style;
 pub mod teamcity;
 pub mod text;
 pub mod trx;
+pub(crate) mod utl;
 
 use serde_json::Value;
 
@@ -112,7 +121,7 @@ pub enum ReportError {
     Unknown(String),
     /// An output type a later wave delivers.
     #[error(
-        "the `{name}` reporter arrives in wave {wave}; use err, err-long, json, text, csv, teamcity, azure-devops, github-annotations, agent, baseline, sarif, junit, trx or null"
+        "the `{name}` reporter arrives in wave {wave}; use err, err-long, err-html, json, text, csv, teamcity, azure-devops, github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot, mermaid, d2, metrics or null"
     )]
     NotYet {
         /// The type.
@@ -139,6 +148,9 @@ pub struct ReportOptions {
     pub path_prefix: String,
     /// `baseline`: the lifecycle fields `rulebearing baseline` gives each entry.
     pub baseline: baseline::Lifecycle,
+    /// `collapse` given to `fmt` (or `cruise`): passed to the reporter as `collapsePattern` over its
+    /// own section, as dependency-cruiser's `reportWrap` does.
+    pub collapse_pattern: Option<String>,
 }
 
 /// Renders `result` as `output_type`.
@@ -165,14 +177,28 @@ pub fn render_with(
     section: Option<&Value>,
 ) -> Result<Rendered, ReportError> {
     let reporter_options = |name: &str| {
-        section.cloned().or_else(|| {
+        let own = section.cloned().or_else(|| {
             result
                 .get("summary")
                 .and_then(|s| s.get("optionsUsed"))
                 .and_then(|o| o.get("reporterOptions"))
                 .and_then(|r| r.get(name))
+                .filter(|r| !r.is_null())
                 .cloned()
-        })
+        });
+        match &options.collapse_pattern {
+            // `{ ...reportOptions, collapsePattern: formatOptions.collapse }`.
+            Some(pattern) => {
+                let mut merged = own
+                    .as_ref()
+                    .and_then(Value::as_object)
+                    .cloned()
+                    .unwrap_or_default();
+                merged.insert("collapsePattern".into(), Value::String(pattern.clone()));
+                Some(Value::Object(merged))
+            }
+            None => own,
+        }
     };
     Ok(match output_type {
         "err" | "err-long" => {
@@ -202,6 +228,21 @@ pub fn render_with(
         "agent" => agent::render(
             result,
             options.max_findings.unwrap_or(agent::DEFAULT_MAX_FINDINGS),
+        ),
+        "dot" | "ddot" | "archi" | "cdot" | "flat" | "fdot" => {
+            let section = reporter_options(output_type);
+            match dot::Granularity::of(output_type) {
+                Some(granularity) => dot::render(result, granularity, section.as_ref()),
+                None => return Err(ReportError::Unknown(output_type.to_owned())),
+            }
+        }
+        "mermaid" => mermaid::render(result, reporter_options("mermaid").as_ref()),
+        "d2" => d2::render(result),
+        "metrics" => metrics::render(result, reporter_options("metrics").as_ref(), options.color),
+        "err-html" => err_html::render(
+            result,
+            reporter_options("err-html").as_ref(),
+            &options.timestamp,
         ),
         "null" => Rendered {
             output: String::new(),
@@ -391,13 +432,35 @@ mod tests {
             }
         }
         assert!(!gates("json") && gates("err") && !gates("dot"));
+        // The wave 2E reporters render; a wave 3 one is still a named error.
+        for t in [
+            "dot", "ddot", "archi", "cdot", "flat", "fdot", "mermaid", "d2", "err-html",
+        ] {
+            assert_eq!(render(t, &result, &o).map(|r| r.exit_code), Ok(0), "{t}");
+        }
         assert_eq!(
-            render("dot", &result, &o),
+            render("metrics", &result, &o).map(|r| r.exit_code),
+            Ok(1),
+            "no folders"
+        );
+        assert_eq!(
+            render("x-dot-webpage", &result, &o),
             Err(ReportError::NotYet {
-                name: "dot".into(),
-                wave: 2
+                name: "x-dot-webpage".into(),
+                wave: 3
             })
         );
+        // `collapse` reaches the reporter as `collapsePattern` over its own section.
+        let modules =
+            json!({ "modules": [{ "source": "src/a/b.js", "dependencies": [] }], "summary": {} });
+        let collapsed = ReportOptions {
+            collapse_pattern: Some("^src/[^/]+".into()),
+            ..ReportOptions::default()
+        };
+        let dot = render("dot", &modules, &collapsed)
+            .map(|r| r.output)
+            .unwrap_or_default();
+        assert!(dot.contains("\"src/a\" [label=<a>"), "{dot}");
         assert_eq!(
             render("pdf", &result, &o),
             Err(ReportError::Unknown("pdf".into()))

@@ -19,6 +19,9 @@ testbeds/checkouts/
 schema/*.json
 conformance/archunitnet/attribution/
 Cargo.lock
+# The err-html template, verbatim from dependency-cruiser 18.2.0 so the page is upstream's byte for byte
+# (plan 0002, 2E).
+crates/rb-report/src/err_html.html
 # Extractor option fixtures: mini-repositories kept byte for byte, since line and column are asserted.
 crates/rb-extract-ts/tests/options/
 # The code-layer fixture tree and its expectation, compared byte for byte (plan 0002, 2C).
