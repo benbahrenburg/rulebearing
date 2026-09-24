@@ -15,7 +15,7 @@
 //! | slice | slice that depends on another, or cycle of slices (`from` and `to` the slices) |
 
 use rb_config::Config;
-use rb_config::elements::{ElementRule, Expr, Operand, Test};
+use rb_config::elements::{ElementRule, Expr, Test};
 use rb_model::{GraphDocument, VacuousRule, violation_id::violation_id};
 use serde_json::{Value, json};
 
@@ -134,21 +134,7 @@ pub fn evaluate(
         element_violations(&architecture, rule, &mut found, &mut empty)?;
     }
     for rule in &config.rules.diagrams {
-        let as_element = ElementRule {
-            name: rule.name.clone(),
-            comment: rule.comment.clone(),
-            fix: rule.fix.clone(),
-            severity: rule.severity,
-            because: None,
-            allow_empty: false,
-            select: rule.select.clone(),
-            should: Expr::Test(Test {
-                key: "adhereToPlantUmlDiagram".into(),
-                concept: rb_config::elements::Concept::AdhereToPlantUmlDiagram,
-                negated: false,
-                operand: Operand::Diagram(rule.adhere_to.clone()),
-            }),
-        };
+        let as_element = rule.as_element_rule();
         element_violations(&architecture, &as_element, &mut found, &mut empty)?;
     }
     for rule in &config.rules.slices {
