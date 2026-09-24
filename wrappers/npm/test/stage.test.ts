@@ -61,6 +61,9 @@ function fakeSource(): void {
   writeFileSync(join(source, 'bin', 'rulebearing.js'), '// launcher\n');
   writeFileSync(join(source, 'dist', 'launcher.js'), '// compiled\n');
   writeFileSync(join(source, 'dist', 'platforms.js'), '// compiled\n');
+  // The declarations the package exports to eslint-plugin-rulebearing (plan 0002, Step 13).
+  writeFileSync(join(source, 'dist', 'launcher.d.ts'), '// declared\n');
+  writeFileSync(join(source, 'dist', 'platforms.d.ts'), '// declared\n');
   // The licence is read from the repository root, two levels above the package.
   writeFileSync(join(scratch, 'LICENSE'), 'MIT from the repository\n');
 }
@@ -185,7 +188,9 @@ describe('stage', () => {
     for (const file of [
       'bin/rulebearing.js',
       'dist/launcher.js',
+      'dist/launcher.d.ts',
       'dist/platforms.js',
+      'dist/platforms.d.ts',
       'README.md',
     ]) {
       expect(existsSync(join(main, file))).toBe(true);

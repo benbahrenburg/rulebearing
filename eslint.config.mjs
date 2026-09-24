@@ -24,6 +24,9 @@ export default defineConfig([
         'crates/rb-extract-ts/tests/options/**',
         // The code-layer fixture tree, whose lines and columns the expectation records (plan 0002, 2C).
         'crates/rb-extract-ts/tests/fixtures/**',
+        // The ESLint plugin's fixture repository, linted by the plugin's own tests against the gate
+        // (plan 0002, Step 13), not by the repository's configuration.
+        'frontends/eslint-plugin-rulebearing/test/fixture/**',
         // Local only: fuzzing corpora (fuzz/README.md) and the worktrees of parallel agent sessions.
         'fuzz/corpus/**',
         '.claude/worktrees/**',

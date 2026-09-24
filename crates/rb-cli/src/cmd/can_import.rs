@@ -11,7 +11,13 @@
 //! Reads `--graph FILE`, else the cache entry for this worktree, commit and configuration
 //! ([`crate::cache`]), extracting and writing it on a miss; adds the hypothetical edge (circular when `to` already reaches `from`),
 //! and evaluates the dependency rules for that edge alone. Prints `yes`, or `no` with the deciding
-//! rule, its comment and its `fix`; exits 0 for yes, 1 for no.
+//! rule, its comment and its `fix`; exits 0 for yes, 1 for no. With `--json` the same answer is
+//! one JSON object: `verdict` (`yes` or `no`), `from`, `to`, `violations` (each deciding rule with
+//! its `name`, `severity`, `id`, `comment` and `fix`) and `warnings` (the rules below error
+//! severity that the edge would also match). The `id` is the one the gate would give the edge
+//! ([ADR-0015](../../../../docs/adr/0015-stable-violation-id.md)): the edge's `dependencyKind` in the
+//! graph when it is already there, else `import`. This is what `eslint-plugin-rulebearing` reads
+//! ([Wave 2, Step 13](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)).
 //!
 //! Both paths are normalised the way the graph writes them (repository-relative, `/`, no `./`).
 //! The edge takes the target's attributes (`dependencyTypes`, `license`, `coreModule`, ...) from
@@ -26,6 +32,7 @@ use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 use std::fmt::Write as _;
 
 use clap::Args;
+use rb_model::violation_id::violation_id;
 use rb_rules::matchers::{Facts, ModuleFacts};
 use rb_rules::validate::validate_dependency;
 use serde::Deserialize;
@@ -49,6 +56,9 @@ pub struct CanImportArgs {
     /// Extract afresh, neither reading nor writing the cache
     #[arg(long)]
     pub no_cache: bool,
+    /// Print the answer as JSON: the verdict and each deciding rule with its id, comment and fix
+    #[arg(long)]
+    pub json: bool,
     /// Configuration
     #[command(flatten)]
     pub config: ConfigArgs,
@@ -134,6 +144,8 @@ struct LightDependency {
     license: Option<String>,
     #[serde(default)]
     instability: Option<f64>,
+    #[serde(default)]
+    dependency_kind: Option<String>,
 }
 
 /// A path as the graph writes it: relative to the working folder, `/`-separated, no `./`.
@@ -294,44 +306,116 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default();
-    let blocking: Vec<&Value> = rules
+    // The gate keys an edge's id on the kind the graph records for it (empty when it records
+    // none); an edge the graph does not have yet is the hypothetical `import`.
+    let kind = graph
+        .modules
         .iter()
-        .filter(|r| r.get("severity").and_then(Value::as_str) == Some("error"))
+        .find(|m| m.source == from_path)
+        .and_then(|m| m.dependencies.iter().find(|d| d.resolved == to_path))
+        .map_or_else(
+            || "import".to_owned(),
+            |d| d.dependency_kind.clone().unwrap_or_default(),
+        );
+    let decisions: Vec<Decision> = rules
+        .iter()
+        .map(|r| {
+            let name = r["name"].as_str().unwrap_or_default().to_owned();
+            let rule = config
+                .rules
+                .all_dependency_rules()
+                .map(|(_, rule)| rule)
+                .find(|x| x.name() == name);
+            Decision {
+                id: violation_id(&name, &from_path, &to_path, &kind),
+                severity: r["severity"].as_str().unwrap_or_default().to_owned(),
+                comment: rule.and_then(|x| x.meta.comment.clone()),
+                fix: rule.and_then(|x| x.meta.fix.clone()),
+                name,
+            }
+        })
         .collect();
-    let mut out = String::new();
-    if blocking.is_empty() {
-        out.push_str("yes\n");
-        for r in &rules {
-            let _ = writeln!(
-                out,
-                "  (warns: {} {})",
-                r["severity"].as_str().unwrap_or_default(),
-                r["name"].as_str().unwrap_or_default()
-            );
-        }
-        return Outcome::printed(out);
-    }
-    out.push_str("no\n");
-    for r in blocking {
-        let name = r["name"].as_str().unwrap_or_default();
-        let rule = config
-            .rules
-            .all_dependency_rules()
-            .map(|(_, rule)| rule)
-            .find(|x| x.name() == name);
-        let _ = writeln!(out, "  rule: {name}");
-        if let Some(comment) = rule.and_then(|x| x.meta.comment.as_deref()) {
-            let _ = writeln!(out, "  why: {comment}");
-        }
-        if let Some(fix) = rule.and_then(|x| x.meta.fix.as_deref()) {
-            let _ = writeln!(out, "  fix: {fix}");
-        }
-    }
+    let allowed = !decisions.iter().any(Decision::blocks);
+    let code = if allowed {
+        0
+    } else {
+        RunExit::Violations(1).code()
+    };
+    let stdout = if args.json {
+        as_json(&from_path, &to_path, &decisions)
+    } else {
+        as_text(&decisions)
+    };
     Outcome {
-        stdout: out,
+        stdout,
         stderr: String::new(),
-        code: RunExit::Violations(1).code(),
+        code,
     }
+}
+
+/// One rule the hypothetical edge matches, with what the gate would report for it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Decision {
+    name: String,
+    severity: String,
+    id: String,
+    comment: Option<String>,
+    fix: Option<String>,
+}
+
+impl Decision {
+    /// Only an error-severity rule says `no`, as only it fails the gate.
+    fn blocks(&self) -> bool {
+        self.severity == "error"
+    }
+}
+
+/// `yes` with the rules that only warn, or `no` with each deciding rule, its comment and `fix`.
+fn as_text(decisions: &[Decision]) -> String {
+    let mut out = String::new();
+    if decisions.iter().any(Decision::blocks) {
+        out.push_str("no\n");
+        for d in decisions.iter().filter(|d| d.blocks()) {
+            let _ = writeln!(out, "  rule: {}", d.name);
+            if let Some(comment) = &d.comment {
+                let _ = writeln!(out, "  why: {comment}");
+            }
+            if let Some(fix) = &d.fix {
+                let _ = writeln!(out, "  fix: {fix}");
+            }
+        }
+    } else {
+        out.push_str("yes\n");
+        for d in decisions {
+            let _ = writeln!(out, "  (warns: {} {})", d.severity, d.name);
+        }
+    }
+    out
+}
+
+/// The answer as one JSON object, fields in a fixed order, ending in a newline.
+fn as_json(from: &str, to: &str, decisions: &[Decision]) -> String {
+    let entry = |d: &Decision| {
+        let mut value = json!({ "name": d.name, "severity": d.severity, "id": d.id });
+        if let Some(comment) = &d.comment {
+            value["comment"] = json!(comment);
+        }
+        if let Some(fix) = &d.fix {
+            value["fix"] = json!(fix);
+        }
+        value
+    };
+    let blocks = decisions.iter().any(Decision::blocks);
+    let answer = json!({
+        "verdict": if blocks { "no" } else { "yes" },
+        "from": from,
+        "to": to,
+        "violations": decisions.iter().filter(|d| d.blocks()).map(entry).collect::<Vec<_>>(),
+        "warnings": decisions.iter().filter(|d| !d.blocks()).map(entry).collect::<Vec<_>>(),
+    });
+    let mut out = serde_json::to_string_pretty(&answer).unwrap_or_default();
+    out.push('\n');
+    out
 }
 
 #[cfg(test)]
@@ -343,5 +427,68 @@ mod tests {
         let edges: HashMap<&str, Vec<&str>> = HashMap::from([("a", vec!["b"]), ("b", vec!["c"])]);
         assert!(reaches(&edges, "a", "c"));
         assert!(!reaches(&edges, "c", "a"));
+    }
+
+    fn decision(name: &str, severity: &str, fix: Option<&str>) -> Decision {
+        Decision {
+            name: name.into(),
+            severity: severity.into(),
+            id: violation_id(name, "a.ts", "b.ts", "import"),
+            comment: fix.map(|_| "why".to_owned()),
+            fix: fix.map(str::to_owned),
+        }
+    }
+
+    #[test]
+    fn text_says_no_with_the_deciding_rules_and_yes_with_the_warnings() {
+        let no = as_text(&[
+            decision("hard", "error", Some("Do this")),
+            decision("soft", "warn", None),
+        ]);
+        assert_eq!(no, "no\n  rule: hard\n  why: why\n  fix: Do this\n");
+        assert_eq!(
+            as_text(&[decision("soft", "warn", None)]),
+            "yes\n  (warns: warn soft)\n"
+        );
+        assert_eq!(as_text(&[]), "yes\n");
+    }
+
+    #[test]
+    fn json_carries_the_verdict_ids_and_fix() {
+        let text = as_json(
+            "a.ts",
+            "b.ts",
+            &[
+                decision("hard", "error", Some("Do this")),
+                decision("soft", "info", None),
+            ],
+        );
+        let value: Value = serde_json::from_str(&text).unwrap_or_default();
+        assert_eq!(value["verdict"], "no");
+        assert_eq!(value["from"], "a.ts");
+        assert_eq!(value["to"], "b.ts");
+        assert_eq!(value["violations"][0]["name"], "hard");
+        assert_eq!(value["violations"][0]["fix"], "Do this");
+        assert_eq!(value["violations"][0]["comment"], "why");
+        // The fixed vector of ADR-0015, so the plugin's id is the gate's.
+        assert_eq!(
+            violation_id(
+                "no-cross-app-imports",
+                "apps/web/src/x.ts",
+                "apps/worker/src/y.ts",
+                "import"
+            ),
+            "RB-a85578a3"
+        );
+        assert_eq!(
+            value["violations"][0]["id"],
+            violation_id("hard", "a.ts", "b.ts", "import")
+        );
+        assert_eq!(value["warnings"][0]["name"], "soft");
+        assert!(value["warnings"][0].get("fix").is_none());
+        assert!(text.ends_with("}\n"));
+        let yes: Value = serde_json::from_str(&as_json("a.ts", "b.ts", &[])).unwrap_or_default();
+        assert_eq!(yes["verdict"], "yes");
+        assert_eq!(yes["violations"], json!([]));
     }
 }
