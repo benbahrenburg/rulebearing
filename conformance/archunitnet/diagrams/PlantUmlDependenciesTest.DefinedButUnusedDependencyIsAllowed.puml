@@ -1,0 +1,5 @@
+@startuml
+[SomeOrigin] <<TestAssembly.Diagram.NoDependencies.Independent.*>>
+[SomeTarget] <<TestAssembly.Diagram.NoDependencies.SomeNamespace.*>>
+SomeOrigin --> SomeTarget
+@enduml

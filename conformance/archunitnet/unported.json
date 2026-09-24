@@ -1,300 +1,62 @@
 {
-  "$comment": "Upstream ArchUnitNET tests with no case in ported/, each with a reason, written by conformance/archunitnet/tools/port.py (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7). `block` is the 1-based snapshot block of `test`, or null for a whole test that has no snapshot. Reasons: custom-predicate (a C# predicate or condition, no data-driven case), not-yet: <method or construct> (the element-rule schema or the tool cannot express it yet), not-yet: non-snapshot (asserted in C#, ported separately).",
+  "$comment": "Upstream ArchUnitNET tests with no case in ported/, each with a reason, written by conformance/archunitnet/tools/port.py (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7). `block` is the 1-based snapshot block of `test`, or null for a whole test that has no snapshot. Reasons: custom-predicate (a C# predicate or condition, no data-driven case), not-yet: <method or construct> (the element-rule schema or the tool cannot express it yet), not-yet: non-snapshot (asserted in C#, ported separately); a non-snapshot test's reason written by hand (wave-3: ..., api-only: ...) is kept.",
   "pin": "0.13.4",
   "entries": [
-    {
-      "source": "ArchUnitNETTests/Dependencies/PlantUmlDependenciesTest.cs",
-      "test": "DefinedButUnusedDependencyIsAllowed",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Dependencies/PlantUmlDependenciesTest.cs",
-      "test": "DiagramWithNoDependencies",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Dependencies/PlantUmlDependenciesTest.cs",
-      "test": "DiagramWithNoDependenciesFileBased",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/ClassDiagramAssociationTest.cs",
-      "test": "ClassResidesInMultipleNamespaces",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/ClassDiagramAssociationTest.cs",
-      "test": "GetNamespaceIdentifierAssociatedWithClass",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/ClassDiagramAssociationTest.cs",
-      "test": "GetTargetNamespaceIdentifierOfClass",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/ClassDiagramAssociationTest.cs",
-      "test": "RejectsClassNotContainedInAnyComponent",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/ClassDiagramAssociationTest.cs",
-      "test": "RejectsDuplicateStereotype",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/ClassDiagramAssociationTest.cs",
-      "test": "ReportsIfClassIsContainedInAnyComponent",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlComponentTest.cs",
-      "test": "TwoComponentsWithSameNameStereoTypeAndAliasHaveSameHashCode",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlComponentTest.cs",
-      "test": "TwoComponentsWithSameNameStereoTypeAndAliasShouldBeEqual",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlComponentTest.cs",
-      "test": "TwoNonIdenticalComponentsShouldNotBeEqual",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlErrorMessagesCheck.cs",
-      "test": "NoDuplicatesInErrorMessageTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
     {
       "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
       "test": "BuildUmlByDependenciesTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
       "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
       "test": "BuildUmlByDependenciesWithObjectsWithNoDependenciesTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
       "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
       "test": "BuildUmlByNamespacesTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
       "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
       "test": "BuildUmlBySlicesTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
       "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
       "test": "BuildUmlByTypesIncludingDependenciesToOtherTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
       "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
       "test": "BuildUmlByTypesTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
       "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
       "test": "HandleIllegalComponentNamesTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
       "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
       "test": "SpecialCharactersInComponentNamesTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "DoesNotIncludeCommentedOutLines",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "DoesNotIncludeDependencyDescriptions",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParseAComponentDiagramWithBothAliasAndNamesUsed",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParseADiagramWithNonUniqueTargets",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesAComponentDiagramThatUsesAliasWithAndWithoutBrackets",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesADiagramWithNoUniqueOrigins",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesASimpleComponent",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesASimpleComponentWithFile",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesATrickyAlias",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesComponentDiagramWithMultipleStereotypes",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesComponentDiagramWithMultipleStereotypesAndAlias",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesCorrectNumberOfComponents",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesDependenciesBetweenComponentsWithoutBrackets",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesDependencyOfSimpleComponentDiagram",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesDiagramWithDependenciesThatUseAlias",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesMultipleComponentsAndDependencies",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesTwoIdenticalComponentsNoDependency",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ParsesVariousTypesOfDependencyArrows",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "RejectsAComponentWithAnIllegalAlias",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ThrowsExceptionWithComponentsThatAreNotYetDefined",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs",
-      "test": "ThrowsExceptionWithComponentsWithoutStereotypes",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
       "source": "ArchUnitNETTests/Fluent/ArchRuleEqualityTests.cs",
@@ -364,28 +126,28 @@
       "test": "ComponentDiagramFromCustomDependenciesTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
       "source": "ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs",
       "test": "ComponentDiagramFromSlicesTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
       "source": "ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs",
       "test": "ComponentDiagramFromTypesTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
       "source": "ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs",
       "test": "ComponentDiagramWriteToFileTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
       "source": "ArchUnitNETTests/Fluent/RuleEvaluationTests.cs",
@@ -656,20 +418,6 @@
     {
       "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
       "test": "VisibilityTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/TypeSyntaxElementsTests.cs",
-      "test": "AdhereToPlantUmlDiagramFileTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/TypeSyntaxElementsTests.cs",
-      "test": "AdhereToPlantUmlDiagramStreamTest",
       "block": null,
       "query": null,
       "reason": "not-yet: non-snapshot"
