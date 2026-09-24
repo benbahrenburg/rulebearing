@@ -158,6 +158,10 @@ pub struct Architecture<'a> {
     pub callers_of: BTreeMap<&'a str, BTreeSet<&'a str>>,
     /// Every full name a dependency points at, loaded or not.
     pub referenced: BTreeSet<&'a str>,
+    /// Every member's full name.
+    pub member_names: BTreeSet<&'a str>,
+    /// Every module's source.
+    pub module_sources: BTreeSet<&'a str>,
     /// The module layer.
     pub modules: &'a [Module],
     /// Every language present in the code layer and the module layer.
@@ -186,6 +190,12 @@ impl<'a> Architecture<'a> {
             calls_from: BTreeMap::new(),
             callers_of: BTreeMap::new(),
             referenced: BTreeSet::new(),
+            member_names: code
+                .members
+                .iter()
+                .filter_map(|m| m.full_name.as_deref())
+                .collect(),
+            module_sources: document.modules.iter().map(|m| m.source.as_str()).collect(),
             modules: &document.modules,
             languages: BTreeSet::new(),
             base: std::path::PathBuf::from("."),
@@ -276,15 +286,13 @@ impl<'a> Architecture<'a> {
         }
     }
 
-    /// Whether a name is an object of the analysed code or something its dependencies name.
+    /// Whether a name is an object of the analysed code or something its dependencies name:
+    /// four set lookups, none a scan.
     fn knows(&self, name: &str) -> bool {
         self.types.contains_key(name)
             || self.referenced.contains(name)
-            || self
-                .members
-                .iter()
-                .any(|m| m.full_name.as_deref() == Some(name))
-            || self.modules.iter().any(|m| m.source == name)
+            || self.member_names.contains(name)
+            || self.module_sources.contains(name)
     }
 }
 
@@ -325,12 +333,19 @@ impl Outcome {
     }
 }
 
+/// Resolved object keys, shared between the objects a test is applied to.
+pub type Keys = std::rc::Rc<BTreeSet<String>>;
+
 /// The evaluator of one rule's expressions against an architecture.
 pub struct Evaluator<'r, 'a> {
     architecture: &'r Architecture<'a>,
     rule: &'r str,
-    /// Selector results already computed, keyed by the selector's address.
-    cache: std::cell::RefCell<BTreeMap<usize, BTreeSet<String>>>,
+    /// Selector results already computed, keyed by the selector's address (the rule's own,
+    /// alive as long as the evaluator).
+    cache: std::cell::RefCell<BTreeMap<usize, Keys>>,
+    /// Name operands already checked to exist, by the names: each test checks its names once,
+    /// not once per object.
+    names: std::cell::RefCell<BTreeMap<Vec<String>, Keys>>,
     /// Diagrams already read, by path.
     pub(crate) diagrams:
         std::cell::RefCell<BTreeMap<String, std::rc::Rc<crate::plantuml::Association>>>,
@@ -343,6 +358,7 @@ impl<'r, 'a> Evaluator<'r, 'a> {
             architecture,
             rule,
             cache: std::cell::RefCell::new(BTreeMap::new()),
+            names: std::cell::RefCell::new(BTreeMap::new()),
             diagrams: std::cell::RefCell::new(BTreeMap::new()),
         }
     }
@@ -393,35 +409,50 @@ impl<'r, 'a> Evaluator<'r, 'a> {
     ///
     /// # Errors
     /// [`ElementError::UnknownObject`] for a name nothing in the run has.
-    pub fn resolve(&self, objects: &Objects) -> Result<BTreeSet<String>, ElementError> {
+    pub fn resolve(&self, objects: &Objects) -> Result<Keys, ElementError> {
         match objects {
             Objects::Names(names) => {
-                for name in names {
-                    if !self.architecture.knows(name) {
-                        return Err(ElementError::UnknownObject {
-                            rule: self.rule.to_owned(),
-                            name: name.clone(),
-                        });
-                    }
+                if let Some(hit) = self.names.borrow().get(names) {
+                    return Ok(std::rc::Rc::clone(hit));
                 }
-                Ok(names.iter().cloned().collect())
+                if let Some(name) = names.iter().find(|n| !self.architecture.knows(n)) {
+                    return Err(ElementError::UnknownObject {
+                        rule: self.rule.to_owned(),
+                        name: name.clone(),
+                    });
+                }
+                let keys = std::rc::Rc::new(names.iter().cloned().collect());
+                self.names
+                    .borrow_mut()
+                    .insert(names.clone(), std::rc::Rc::clone(&keys));
+                Ok(keys)
             }
             Objects::Selector(selector) => {
                 let address = std::ptr::from_ref::<Selector>(selector) as usize;
                 if let Some(hit) = self.cache.borrow().get(&address) {
-                    return Ok(hit.clone());
+                    return Ok(std::rc::Rc::clone(hit));
                 }
                 // A nested selector filters what the object relates to, as `ArchUnitNET`'s
                 // `ComplexCondition` filters dependency targets: referenced types count.
-                let keys: BTreeSet<String> = self
-                    .select_among(selector, true)?
-                    .iter()
-                    .map(|o| o.key().to_owned())
-                    .collect();
-                self.cache.borrow_mut().insert(address, keys.clone());
+                let keys: Keys = std::rc::Rc::new(
+                    self.select_among(selector, true)?
+                        .iter()
+                        .map(|o| o.key().to_owned())
+                        .collect(),
+                );
+                self.cache
+                    .borrow_mut()
+                    .insert(address, std::rc::Rc::clone(&keys));
                 Ok(keys)
             }
         }
+    }
+
+    /// How many operands this evaluator has resolved, for the tests that prove each is
+    /// resolved once.
+    #[cfg(test)]
+    pub(crate) fn resolved(&self) -> usize {
+        self.cache.borrow().len() + self.names.borrow().len()
     }
 
     /// Whether `object` satisfies `expr`.
@@ -539,7 +570,15 @@ pub fn evaluate(
         });
     }
     results.sort_by(|a, b| a.object.cmp(&b.object));
-    results.dedup_by(|a, b| a.object == b.object);
+    // Two objects can share a key (members without a full name, say): one result for the key,
+    // failing when either fails, so a duplicate never hides a failure.
+    results.dedup_by(|later, kept| {
+        let same = later.object == kept.object;
+        if same {
+            kept.passed &= later.passed;
+        }
+        same
+    });
     let empty = selected.is_empty();
     Ok(Outcome {
         rule: rule.name.clone(),
@@ -553,11 +592,11 @@ pub fn evaluate(
 pub(crate) fn operand_keys(
     evaluator: &Evaluator<'_, '_>,
     operand: &Operand,
-) -> Result<BTreeSet<String>, ElementError> {
+) -> Result<Keys, ElementError> {
     match operand {
         Operand::Objects(objects) => evaluator.resolve(objects),
-        Operand::Names(names) => Ok(names.iter().cloned().collect()),
-        _ => Ok(BTreeSet::new()),
+        Operand::Names(names) => Ok(std::rc::Rc::new(names.iter().cloned().collect())),
+        _ => Ok(Keys::default()),
     }
 }
 
@@ -654,6 +693,96 @@ mod tests {
             "should": { "onlyDependOn": ["App.Repository"] }
         }))?;
         assert_eq!(keys(&only), [("App.Service", true)]);
+        Ok(())
+    }
+
+    #[test]
+    fn names_are_known_by_set_lookups_and_each_operand_is_resolved_once()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut document = document();
+        let at = Location::in_file(Language::Dotnet, Some("a.cs".to_owned()));
+        let mut run = rb_model::MemberElement::new("App.Service", "Run", "method", at);
+        run.full_name = Some("App.Service::Run()".to_owned());
+        if let Some(code) = document.code.as_mut() {
+            code.members.push(run);
+        }
+        document.modules.push(Module::new("src/a.cs"));
+        let architecture = Architecture::new(&document);
+        assert_eq!(
+            architecture.member_names,
+            BTreeSet::from(["App.Service::Run()"])
+        );
+        assert_eq!(architecture.module_sources, BTreeSet::from(["src/a.cs"]));
+        let evaluator = Evaluator::new(&architecture, "r");
+        for known in [
+            "App.Service",
+            "Lib.Client",
+            "App.Service::Run()",
+            "src/a.cs",
+        ] {
+            let names = Objects::Names(vec![known.to_owned()]);
+            assert_eq!(
+                evaluator.resolve(&names)?.iter().collect::<Vec<_>>(),
+                [known]
+            );
+        }
+        let unknown = Objects::Names(vec!["App.Service".to_owned(), "Nope".to_owned()]);
+        assert_eq!(
+            evaluator.resolve(&unknown),
+            Err(ElementError::UnknownObject {
+                rule: "r".into(),
+                name: "Nope".into()
+            })
+        );
+        let rules = parse_elements(&json!([{ "name": "r",
+            "select": { "kind": "class" },
+            "should": { "dependOnAny": ["App.Repository"] } }]))?;
+        let evaluator = Evaluator::new(&architecture, "r");
+        let selected = evaluator.select(&rules[0].select)?;
+        assert_eq!(selected.len(), 2);
+        let verdicts = selected
+            .iter()
+            .map(|o| evaluator.holds(o, &rules[0].should))
+            .collect::<Result<Vec<_>, _>>()?;
+        assert_eq!(verdicts, [false, true], "Repository, then Service");
+        assert_eq!(evaluator.resolved(), 1, "one operand, resolved once");
+        let Expr::Test(Test {
+            operand: Operand::Objects(objects),
+            ..
+        }) = &rules[0].should
+        else {
+            return Err("not a test".into());
+        };
+        assert!(std::rc::Rc::ptr_eq(
+            &evaluator.resolve(objects)?,
+            &evaluator.resolve(objects)?
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn two_objects_with_one_key_fail_when_either_fails() -> Result<(), Box<dyn std::error::Error>> {
+        let at = || Location::in_file(Language::Dotnet, Some("a.cs".to_owned()));
+        // Neither member has a full name, so both are known by the simple name `f`; the
+        // failing one comes second in document order.
+        let mut fixed = rb_model::MemberElement::new("A", "f", "field", at());
+        fixed.r#static = Some(true);
+        let loose = rb_model::MemberElement::new("B", "f", "field", at());
+        let document = GraphDocument {
+            code: Some(CodeLayer {
+                members: vec![fixed, loose],
+                ..CodeLayer::default()
+            }),
+            ..GraphDocument::default()
+        };
+        let architecture = Architecture::new(&document);
+        let rules = parse_elements(&json!([{ "name": "r",
+            "select": { "kind": "field" }, "should": { "beStatic": true } }]))?;
+        let outcome = evaluate(&architecture, &rules[0])?;
+        assert_eq!(keys(&outcome), [("f", false)]);
+        let rules = parse_elements(&json!([{ "name": "r",
+            "select": { "kind": "field" }, "should": { "haveName": "f" } }]))?;
+        assert_eq!(keys(&evaluate(&architecture, &rules[0])?), [("f", true)]);
         Ok(())
     }
 

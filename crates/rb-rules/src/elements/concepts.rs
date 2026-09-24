@@ -403,9 +403,9 @@ pub fn test<'a>(
         Concept::ImplementInterface => {
             // A named interface outside the code is not an error here: ArchUnitNET's
             // ImplementInterface(Type) answers false, and its negation true.
-            let wanted: BTreeSet<String> = match &test.operand {
+            let wanted: super::Keys = match &test.operand {
                 Operand::Objects(rb_config::elements::Objects::Names(names)) => {
-                    names.iter().cloned().collect()
+                    std::rc::Rc::new(names.iter().cloned().collect())
                 }
                 other => operand_keys(e, other)?,
             };
@@ -508,9 +508,9 @@ pub fn test<'a>(
         Concept::Constructor => (member.is_some_and(|m| m.kind == "constructor"), None),
         Concept::Virtual => (member.is_some_and(|m| flag(m.r#virtual)), None),
         Concept::HaveReturnType => {
-            let wanted = match &test.operand {
+            let wanted: super::Keys = match &test.operand {
                 Operand::Objects(rb_config::elements::Objects::Names(names)) => {
-                    names.iter().cloned().collect()
+                    std::rc::Rc::new(names.iter().cloned().collect())
                 }
                 other => operand_keys(e, other)?,
             };
