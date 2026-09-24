@@ -18,6 +18,9 @@ extend-exclude = [
   # Generated from the upstream fixture assemblies; their identifiers are upstream's.
   "conformance/*/graphs/",
   "testbeds/checkouts/",
+  # The oracle harness's result files carry the oracles' own contract ids, test names and
+  # messages verbatim (testbeds/oracles/compare.py).
+  "testbeds/results/",
   # Tool output: compiler command lines, not prose.
   "mutants.out/",
   "mutants.out.old/",

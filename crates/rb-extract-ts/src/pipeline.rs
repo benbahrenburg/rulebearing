@@ -1482,13 +1482,13 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("rb-read-{}", std::process::id()));
         let _ = std::fs::create_dir_all(&dir);
         let file = dir.join("latin1.js");
-        let _ = std::fs::write(&file, b"// caf\xe9\nimport x from './x';\n");
+        let _ = std::fs::write(&file, b"// na\xefve\nimport x from './x';\n");
         let text = read(&file).ok();
         let missing = read(&dir.join("missing.js"));
         let _ = std::fs::remove_dir_all(&dir);
         assert_eq!(
             text.as_deref(),
-            Some("// caf\u{fffd}\nimport x from './x';\n")
+            Some("// na\u{fffd}ve\nimport x from './x';\n")
         );
         assert!(
             matches!(missing, Err(PipelineError::Io { ref path, .. }) if path.ends_with("missing.js"))
