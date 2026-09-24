@@ -13,6 +13,7 @@
 //! | Module | Does |
 //! | --- | --- |
 //! | [`model`] | the configuration model both formats load into |
+//! | [`capability`] | which language answers each element predicate, and how |
 //! | [`mod@load`] | one file in, one [`Config`] out |
 //! | [`read`] | YAML, JSON, JSON5, JSONC, TOML and JavaScript into JSON |
 //! | [`js`] | the sandboxed QuickJS evaluator and `--config-via-node` |
@@ -26,6 +27,7 @@
 //! | [`lint`] | `config lint` |
 //! | [`schema`] | the native format's JSON schema, `schema/config-v1.json` |
 
+pub mod capability;
 pub mod convert;
 pub mod defines;
 pub mod elements;
