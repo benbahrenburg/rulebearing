@@ -6,7 +6,14 @@
 //! - Coverage: [coverage § Result document](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#result-document-cruise-result-schema)
 //! - Decisions: [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
 //!   (additions are additive), [ADR-0015](../../../docs/adr/0015-stable-violation-id.md) (ids)
-//! - Requirements: [FR-CORE-04](../../../docs/prd.md#fr-core-04), [FR-CORE-07](../../../docs/prd.md#fr-core-07)
+//! - Requirements: [FR-CORE-04](../../../docs/prd.md#fr-core-04), [FR-CORE-07](../../../docs/prd.md#fr-core-07),
+//!   [NFR-PERF-01](../../../docs/prd.md#nfr-perf-01)
+//!
+//! Upstream removes duplicate violations with a pairwise scan, quadratic in their number: on
+//! home-assistant/core's 33,000 violations that took minutes. [`unique_violations`] keeps the
+//! same violations through an index, and a property test holds it to the pairwise scan.
+
+use std::collections::HashMap;
 
 use rb_config::Rule;
 use rb_config::model::DependencyRules;
@@ -32,14 +39,14 @@ fn names(steps: &Value) -> Vec<&str> {
         .unwrap_or_default()
 }
 
+/// The name of a violation's rule.
+fn rule_of(v: &Value) -> Option<&str> {
+    v.get("rule").and_then(|r| js::str_of(r, "name"))
+}
+
 /// `isSameViolation`.
 pub fn is_same_violation(left: &Value, right: &Value) -> bool {
-    let rule_name = |v: &Value| {
-        v.get("rule")
-            .and_then(|r| js::str_of(r, "name"))
-            .map(str::to_owned)
-    };
-    if rule_name(left) != rule_name(right) {
+    if rule_of(left) != rule_of(right) {
         return false;
     }
     let same_from_to =
@@ -130,11 +137,115 @@ pub fn summarize_modules(modules: &[Value], rules: Option<&DependencyRules>) -> 
         }
     }
     violations.sort_by(compare_violations);
-    let mut unique: Vec<Value> = Vec::with_capacity(violations.len());
-    for violation in violations {
-        if !unique.iter().any(|u| is_same_violation(&violation, u)) {
-            unique.push(violation);
+    unique_violations(violations)
+}
+
+/// One side of a violation's `from` or `to`, as a hash key: absent, a string, or anything else.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum End {
+    Absent,
+    Text(String),
+    Other,
+}
+
+impl End {
+    fn of(violation: &Value, key: &str) -> Self {
+        match violation.get(key) {
+            None => Self::Absent,
+            Some(Value::String(s)) => Self::Text(s.clone()),
+            Some(_) => Self::Other,
         }
+    }
+}
+
+/// Where a kept violation can be found again: every candidate `isSameViolation` could accept.
+#[derive(Debug, Default)]
+struct Kept {
+    /// By rule name and `(from, to)`; a non-string end collapses into one bucket per rule.
+    by_ends: HashMap<(Option<String>, End, End), Vec<usize>>,
+    /// By rule name and then the sorted cycle names, for cycles without a repeated name.
+    by_cycle: HashMap<Option<String>, HashMap<Vec<String>, Vec<usize>>>,
+    /// Every kept violation with a truthy `cycle`, by rule name.
+    cycles: HashMap<Option<String>, Vec<usize>>,
+}
+
+fn ends_key(v: &Value, rule: Option<String>) -> (Option<String>, End, End) {
+    let (from, to) = (End::of(v, "from"), End::of(v, "to"));
+    if from == End::Other || to == End::Other {
+        (rule, End::Other, End::Other)
+    } else {
+        (rule, from, to)
+    }
+}
+
+/// The sorted cycle names when none repeats, else `None`.
+fn distinct_cycle(v: &Value) -> Option<Vec<String>> {
+    let mut sorted: Vec<String> = names(&v["cycle"]).into_iter().map(str::to_owned).collect();
+    let length = sorted.len();
+    sorted.sort_unstable();
+    sorted.dedup();
+    (sorted.len() == length).then_some(sorted)
+}
+
+/// `uniqWith(isSameViolation)`: each violation in order, kept when no violation kept before it
+/// is the same, as upstream's pairwise scan does, but comparing it only with the kept
+/// violations that could be the same.
+///
+/// `isSameViolation(v, u)` needs equal rule names, and then either both cycles truthy with
+/// equally long name lists, every name of `v`'s in `u`'s, or equal `from` and `to`. The second
+/// is a lookup by `(rule, from, to)`. For the first, when `v`'s names do not repeat, `u`'s
+/// names hold all `L` of them in a list of length `L`, so the two name sets are equal: a lookup
+/// by the sorted names. A cycle with a repeated name is compared with every kept cycle of its
+/// rule. Each candidate is then decided by [`is_same_violation`] itself, so the result is the
+/// pairwise scan's.
+fn unique_violations(violations: Vec<Value>) -> Vec<Value> {
+    let mut unique: Vec<Value> = Vec::with_capacity(violations.len());
+    let mut kept = Kept::default();
+    for violation in violations {
+        let rule = rule_of(&violation).map(str::to_owned);
+        let ends = ends_key(&violation, rule.clone());
+        let has_cycle = js::truthy(violation.get("cycle"));
+        let cycle = if has_cycle {
+            distinct_cycle(&violation)
+        } else {
+            None
+        };
+        let same = |at: &usize| is_same_violation(&violation, &unique[*at]);
+        let by_cycle = || -> bool {
+            match &cycle {
+                Some(sorted) => kept
+                    .by_cycle
+                    .get(&rule)
+                    .and_then(|by_names| by_names.get(sorted))
+                    .is_some_and(|list| list.iter().any(same)),
+                None => kept
+                    .cycles
+                    .get(&rule)
+                    .is_some_and(|list| list.iter().any(same)),
+            }
+        };
+        let duplicate = kept
+            .by_ends
+            .get(&ends)
+            .is_some_and(|list| list.iter().any(same))
+            || (has_cycle && by_cycle());
+        if duplicate {
+            continue;
+        }
+        let at = unique.len();
+        kept.by_ends.entry(ends).or_default().push(at);
+        if has_cycle {
+            if let Some(sorted) = cycle {
+                kept.by_cycle
+                    .entry(rule.clone())
+                    .or_default()
+                    .entry(sorted)
+                    .or_default()
+                    .push(at);
+            }
+            kept.cycles.entry(rule).or_default().push(at);
+        }
+        unique.push(violation);
     }
     unique
 }
@@ -300,6 +411,8 @@ pub fn options_used(options: &Map<String, Value>, args: &[String]) -> Map<String
 
 #[cfg(test)]
 mod tests {
+    use proptest::prelude::*;
+
     use super::*;
 
     fn rules(value: Value) -> DependencyRules {
@@ -466,6 +579,222 @@ mod tests {
         assert!(is_same_violation(&v("a", "b"), &c1));
         assert!(is_same_violation(&w1, &v("a", "b")));
         assert!(is_same_violation(&v("a", "b"), &w1));
+    }
+
+    /// Upstream's `uniqWith(isSameViolation)` as a pairwise scan: the oracle the indexed
+    /// [`unique_violations`] must equal.
+    fn pairwise_unique(violations: Vec<Value>) -> Vec<Value> {
+        let mut unique: Vec<Value> = Vec::new();
+        for violation in violations {
+            if !unique.iter().any(|u| is_same_violation(&violation, u)) {
+                unique.push(violation);
+            }
+        }
+        unique
+    }
+
+    fn steps(names: &[&str]) -> Value {
+        Value::Array(names.iter().map(|n| json!({ "name": n })).collect())
+    }
+
+    type Case = (Vec<Value>, Vec<usize>);
+
+    /// Each case's kept indices, by the oracle and by the indexed scan.
+    fn assert_scans_agree(cases: Vec<Case>) {
+        for (violations, kept) in cases {
+            let expected: Vec<Value> = kept.iter().map(|i| violations[*i].clone()).collect();
+            assert_eq!(pairwise_unique(violations.clone()), expected, "the oracle");
+            assert_eq!(unique_violations(violations), expected);
+        }
+    }
+
+    #[test]
+    fn the_indexed_scan_finds_duplicate_cycles_as_the_pairwise_scan_does() {
+        let v = |rule: &str, from: Value, to: Value| json!({ "rule": { "name": rule }, "from": from, "to": to });
+        let with = |mut v: Value, key: &str, value: Value| {
+            v[key] = value;
+            v
+        };
+        assert_scans_agree(vec![
+            // Same rule and ends: a duplicate. Another rule with the same ends: kept.
+            (
+                vec![
+                    v("r", json!("a"), json!("b")),
+                    v("r", json!("a"), json!("b")),
+                    v("s", json!("a"), json!("b")),
+                ],
+                vec![0, 2],
+            ),
+            // The same cycle set from other ends is a duplicate, found by the sorted names.
+            (
+                vec![
+                    with(
+                        v("r", json!("a"), json!("b")),
+                        "cycle",
+                        steps(&["b", "c", "a"]),
+                    ),
+                    with(
+                        v("r", json!("c"), json!("a")),
+                        "cycle",
+                        steps(&["a", "b", "c"]),
+                    ),
+                    with(v("r", json!("x"), json!("y")), "cycle", steps(&["a", "b"])),
+                    with(
+                        v("s", json!("c"), json!("a")),
+                        "cycle",
+                        steps(&["a", "b", "c"]),
+                    ),
+                ],
+                vec![0, 2, 3],
+            ),
+            // A repeated name: every name in the kept cycle, same length, so a duplicate; the
+            // reverse is not, because d is missing from the kept list.
+            (
+                vec![
+                    with(
+                        v("r", json!("a"), json!("b")),
+                        "cycle",
+                        steps(&["a", "b", "d"]),
+                    ),
+                    with(
+                        v("r", json!("p"), json!("q")),
+                        "cycle",
+                        steps(&["a", "a", "b"]),
+                    ),
+                    with(
+                        v("r", json!("p"), json!("q")),
+                        "cycle",
+                        steps(&["a", "b", "b"]),
+                    ),
+                ],
+                vec![0],
+            ),
+            (
+                vec![
+                    with(
+                        v("r", json!("a"), json!("b")),
+                        "cycle",
+                        steps(&["a", "a", "b"]),
+                    ),
+                    with(
+                        v("r", json!("p"), json!("q")),
+                        "cycle",
+                        steps(&["a", "b", "d"]),
+                    ),
+                ],
+                vec![0, 1],
+            ),
+            // An empty cycle is truthy: it equals only another empty one.
+            (
+                vec![
+                    with(v("r", json!("a"), json!("b")), "cycle", json!([])),
+                    with(v("r", json!("c"), json!("d")), "cycle", json!([])),
+                    with(v("r", json!("e"), json!("f")), "cycle", steps(&["e"])),
+                ],
+                vec![0, 2],
+            ),
+        ]);
+    }
+
+    #[test]
+    fn the_indexed_scan_compares_ends_and_via_as_the_pairwise_scan_does() {
+        let v = |rule: &str, from: Value, to: Value| json!({ "rule": { "name": rule }, "from": from, "to": to });
+        let with = |mut v: Value, key: &str, value: Value| {
+            v[key] = value;
+            v
+        };
+        assert_scans_agree(vec![
+            // A cycle on one side only: the ends decide.
+            (
+                vec![
+                    v("r", json!("a"), json!("b")),
+                    with(v("r", json!("a"), json!("b")), "cycle", steps(&["b", "a"])),
+                    with(v("r", json!("a"), json!("c")), "cycle", steps(&["c", "a"])),
+                    v("r", json!("a"), json!("c")),
+                ],
+                vec![0, 2],
+            ),
+            // Via lists with the same ends compare by names; other ends never match.
+            (
+                vec![
+                    with(v("r", json!("a"), json!("b")), "via", steps(&["q"])),
+                    with(v("r", json!("a"), json!("b")), "via", steps(&["q"])),
+                    with(v("r", json!("a"), json!("b")), "via", steps(&["z"])),
+                    with(v("r", json!("x"), json!("b")), "via", steps(&["q"])),
+                ],
+                vec![0, 2, 3],
+            ),
+            // Non-string and absent ends share a bucket and compare by value.
+            (
+                vec![
+                    v("r", json!(1), json!("b")),
+                    v("r", json!(1), json!("b")),
+                    v("r", json!("a"), json!(2)),
+                    json!({ "rule": { "name": "r" } }),
+                    json!({ "rule": { "name": "r" } }),
+                    json!({ "rule": { "name": "r" }, "from": null, "to": null }),
+                    json!({ "from": "a", "to": "b" }),
+                    json!({ "from": "a", "to": "b" }),
+                ],
+                vec![0, 2, 3, 5, 6],
+            ),
+        ]);
+    }
+
+    fn end() -> impl Strategy<Value = Option<Value>> {
+        prop_oneof![
+            Just(None),
+            Just(Some(Value::Null)),
+            Just(Some(json!(1))),
+            (0u8..4).prop_map(|n| Some(json!(format!("m{n}")))),
+        ]
+    }
+
+    fn step_list() -> impl Strategy<Value = Option<Value>> {
+        prop_oneof![
+            Just(None),
+            Just(Some(Value::Null)),
+            Just(Some(json!(false))),
+            proptest::collection::vec(
+                prop_oneof![
+                    (0u8..4).prop_map(|n| json!({ "name": format!("m{n}") })),
+                    Just(json!({ "dependencyTypes": [] })),
+                ],
+                0..5
+            )
+            .prop_map(|s| Some(Value::Array(s))),
+        ]
+    }
+
+    fn violation() -> impl Strategy<Value = Value> {
+        (
+            prop_oneof![Just(None), Just(Some("p")), Just(Some("q"))],
+            end(),
+            end(),
+            step_list(),
+            step_list(),
+        )
+            .prop_map(|(rule, from, to, cycle, via)| {
+                let mut v = Map::new();
+                if let Some(rule) = rule {
+                    v.insert("rule".into(), json!({ "name": rule }));
+                }
+                for (key, value) in [("from", from), ("to", to), ("cycle", cycle), ("via", via)] {
+                    if let Some(value) = value {
+                        v.insert(key.into(), value);
+                    }
+                }
+                Value::Object(v)
+            })
+    }
+
+    proptest! {
+        #[test]
+        fn the_indexed_scan_equals_the_pairwise_scan(
+            violations in proptest::collection::vec(violation(), 0..40)
+        ) {
+            prop_assert_eq!(unique_violations(violations.clone()), pairwise_unique(violations));
+        }
     }
 
     #[test]

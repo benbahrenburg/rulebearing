@@ -4,14 +4,18 @@
 //! - Plan: [Wave 1, Step 13](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
 //!   (`fmt` re-reports a saved result without extracting)
 //! - Source: [design § The subcommands a guard reaches for](../../../docs/artifacts/design.md#the-subcommands-a-guard-reaches-for)
-//! - Requirement: [FR-CORE-02](../../../docs/prd.md#fr-core-02)
+//! - Requirements: [FR-CORE-02](../../../docs/prd.md#fr-core-02),
+//!   [NFR-PERF-01](../../../docs/prd.md#nfr-perf-01) (the saved violations are found by key, not
+//!   by a scan per violation)
 //!
 //! `cruise` passes its rule set; `fmt` has none, and neither has dependency-cruiser's
 //! `depcruise-fmt`, so a re-summarised violation there is typed from the annotated graph alone.
 //! The Rulebearing additions a saved violation carries (`id`, `fix`, `decision`) are kept by
 //! matching each recomputed violation to the saved one with the same rule, `from` and `to`.
 
+use std::borrow::Cow;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 use rb_config::model::DependencyRules;
 use rb_model::{Folder, GraphDocument, Module};
@@ -54,18 +58,25 @@ fn strip_self_transitions(module: &mut Value) {
     }
 }
 
-/// Carries `id`, `fix` and `decision` from the saved violations onto the recomputed ones.
+/// The rule name, `from` and `to` a saved violation is matched by.
+fn addition_key(v: &Value) -> (Option<Cow<'_, str>>, Cow<'_, str>, Cow<'_, str>) {
+    (
+        v.get("rule").map(|r| js::text(r, "name")),
+        js::text(v, "from"),
+        js::text(v, "to"),
+    )
+}
+
+/// Carries `id`, `fix` and `decision` from the saved violations onto the recomputed ones: from
+/// the first saved violation with the same key, found through an index rather than a scan, so
+/// a result with many violations is not quadratic.
 fn carry_additions(violations: &mut [Value], saved: &[Value]) {
+    let mut first: HashMap<_, &Value> = HashMap::with_capacity(saved.len());
+    for s in saved {
+        first.entry(addition_key(s)).or_insert(s);
+    }
     for violation in violations {
-        let key = |v: &Value| {
-            (
-                v.get("rule").map(|r| js::text(r, "name").into_owned()),
-                js::text(v, "from").into_owned(),
-                js::text(v, "to").into_owned(),
-            )
-        };
-        let wanted = key(violation);
-        if let Some(old) = saved.iter().find(|s| key(s) == wanted) {
+        if let Some(old) = first.get(&addition_key(violation)).copied() {
             for field in ["id", "fix", "decision"] {
                 if let Some(value) = old.get(field) {
                     js::set(violation, field, value.clone());
@@ -303,6 +314,86 @@ mod tests {
                 .is_some_and(|used| used.contains_key("forbidden"))
         );
         Ok(())
+    }
+
+    /// The linear scan the index replaced: the oracle.
+    fn carry_by_scan(violations: &mut [Value], saved: &[Value]) {
+        for violation in violations {
+            let wanted = addition_key(violation);
+            if let Some(old) = saved.iter().find(|s| addition_key(s) == wanted) {
+                let old = old.clone();
+                for field in ["id", "fix", "decision"] {
+                    if let Some(value) = old.get(field) {
+                        js::set(violation, field, value.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn additions_come_from_the_first_saved_violation_with_the_key() {
+        let saved = vec![
+            json!({ "rule": { "name": "r" }, "from": "a", "to": "b", "id": "RB-1", "fix": "one" }),
+            json!({ "rule": { "name": "r" }, "from": "a", "to": "b", "id": "RB-2", "decision": "d" }),
+            json!({ "rule": { "name": "s" }, "from": "a", "to": "b", "id": "RB-3" }),
+            json!({ "from": "a", "to": "b", "id": "RB-4" }),
+            json!({ "rule": {}, "from": 1, "id": "RB-5" }),
+        ];
+        let mut violations = vec![
+            json!({ "rule": { "name": "r" }, "from": "a", "to": "b" }),
+            json!({ "rule": { "name": "s" }, "from": "a", "to": "b", "fix": "kept" }),
+            json!({ "from": "a", "to": "b" }),
+            json!({ "rule": { "name": "undefined" }, "from": "1" }),
+            json!({ "rule": { "name": "r" }, "from": "a", "to": "c" }),
+        ];
+        carry_additions(&mut violations, &saved);
+        assert_eq!(
+            violations,
+            [
+                json!({ "rule": { "name": "r" }, "from": "a", "to": "b", "id": "RB-1", "fix": "one" }),
+                json!({ "rule": { "name": "s" }, "from": "a", "to": "b", "fix": "kept", "id": "RB-3" }),
+                json!({ "from": "a", "to": "b", "id": "RB-4" }),
+                // A missing rule name reads as "undefined" and the number 1 as "1", as upstream's
+                // string keys do.
+                json!({ "rule": { "name": "undefined" }, "from": "1", "id": "RB-5" }),
+                json!({ "rule": { "name": "r" }, "from": "a", "to": "c" }),
+            ]
+        );
+    }
+
+    fn keyed() -> impl proptest::strategy::Strategy<Value = Value> {
+        use proptest::prelude::*;
+        (
+            prop_oneof![Just(None), Just(Some("r")), Just(Some("s"))],
+            0u8..3,
+            0u8..3,
+            proptest::option::of(0u8..9),
+        )
+            .prop_map(|(rule, from, to, id)| {
+                let mut v = json!({ "from": format!("m{from}"), "to": format!("m{to}") });
+                if let Some(rule) = rule {
+                    v["rule"] = json!({ "name": rule });
+                }
+                if let Some(id) = id {
+                    v["id"] = json!(format!("RB-{id}"));
+                }
+                v
+            })
+    }
+
+    proptest::proptest! {
+        #[test]
+        fn the_index_carries_what_the_scan_carries(
+            violations in proptest::collection::vec(keyed(), 0..20),
+            saved in proptest::collection::vec(keyed(), 0..20),
+        ) {
+            let mut ours = violations.clone();
+            carry_additions(&mut ours, &saved);
+            let mut oracle = violations;
+            carry_by_scan(&mut oracle, &saved);
+            proptest::prop_assert_eq!(ours, oracle);
+        }
     }
 
     #[test]
