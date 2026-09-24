@@ -19,7 +19,7 @@ use rb_model::options::{
 };
 use serde_json::{Map, Value, json};
 
-use crate::cli::{ConfigArgs, CruiseArgs};
+use crate::cli::{ConfigArgs, CruiseArgs, KnownArgs};
 use crate::context::Context;
 
 /// Where the configuration came from.
@@ -295,7 +295,28 @@ pub fn apply_flags(
             &path.display().to_string(),
         )?);
     }
+    known_violations(config, &args.known, ctx)?;
     check_report_patterns(config)
+}
+
+/// `--ignore-known [file]` replaces `options.knownViolations` with the file's entries, as
+/// dependency-cruiser sets `ruleSet.options.knownViolations` from it; `--no-ignore-known` drops
+/// every entry, the configuration's included, so each finding is reported at its rule's severity
+/// ([Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)).
+///
+/// # Errors
+/// [`ConfigError`] naming the file when it cannot be read or is not a known-violations file.
+pub fn known_violations(
+    config: &mut Config,
+    known: &KnownArgs,
+    ctx: &Context<'_>,
+) -> Result<(), ConfigError> {
+    if known.no_ignore_known {
+        config.known_violations.clear();
+    } else if let Some(file) = &known.ignore_known {
+        config.known_violations = rb_config::load::known_violations_file(&ctx.resolve(file))?;
+    }
+    Ok(())
 }
 
 /// dependency-cruiser's option defaults, which `optionsUsed` carries.

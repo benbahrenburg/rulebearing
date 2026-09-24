@@ -1936,11 +1936,15 @@ dependencies = [
 name = "rb-report"
 version = "0.1.0"
 dependencies = [
+ "jsonschema",
  "proptest",
  "rb-model",
  "rb-rules",
+ "regex",
+ "roxmltree",
  "serde",
  "serde_json",
+ "sha2",
  "thiserror",
 ]
 

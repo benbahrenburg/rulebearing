@@ -116,6 +116,58 @@ fn element_violations(
     Ok(())
 }
 
+/// One family rule as `summary.ruleSetUsed` lists it: the fields a reporter or a test adapter
+/// reads to give every rule its own result, passing or not.
+fn used(
+    name: &str,
+    severity: rb_model::Severity,
+    comment: Option<&str>,
+    fix: Option<&str>,
+) -> Value {
+    let mut v = json!({ "name": name, "severity": severity.as_str() });
+    if let Some(c) = comment {
+        v["comment"] = json!(c);
+    }
+    if let Some(f) = fix {
+        v["fix"] = json!(f);
+    }
+    v
+}
+
+/// The additive `summary.ruleSetUsed` keys `elements`, `slices` and `diagrams`, each present
+/// only when the configuration has such rules, so the `junit`, `trx` and `sarif` reporters and
+/// the test adapters list every rule
+/// ([Wave 2 plan § 1.5](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes),
+/// the test adapter contract). `--strict-schema` removes them with the other additions.
+pub fn rule_set_used(rules: &rb_config::model::Rules) -> serde_json::Map<String, Value> {
+    let mut out = serde_json::Map::new();
+    let elements: Vec<Value> = rules
+        .elements
+        .iter()
+        .map(|r| used(&r.name, r.severity, r.comment.as_deref(), r.fix.as_deref()))
+        .collect();
+    let slices: Vec<Value> = rules
+        .slices
+        .iter()
+        .map(|r| used(&r.name, r.severity, r.comment.as_deref(), r.fix.as_deref()))
+        .collect();
+    let diagrams: Vec<Value> = rules
+        .diagrams
+        .iter()
+        .map(|r| used(&r.name, r.severity, r.comment.as_deref(), r.fix.as_deref()))
+        .collect();
+    for (key, list) in [
+        ("elements", elements),
+        ("slices", slices),
+        ("diagrams", diagrams),
+    ] {
+        if !list.is_empty() {
+            out.insert(key.into(), Value::Array(list));
+        }
+    }
+    out
+}
+
 /// Every element, slice and diagram violation of a run, and the rules whose selection is empty.
 ///
 /// # Errors
@@ -201,6 +253,12 @@ mod tests {
             Some("adr:0004".into())
         );
         assert_eq!(decision(Some("no token")), None);
+        assert_eq!(
+            decision(Some("a bare adr: token")),
+            None,
+            "the prefix alone is no token"
+        );
+        assert_eq!(decision(Some("adr:7")), Some("adr:7".into()));
         assert_eq!(decision(None), None);
         let expr = rb_config::elements::parse_expr(
             &json!({ "all": [{ "beSealed": true }] }),
@@ -211,5 +269,33 @@ mod tests {
             expr.map(|e| condition_key(&e)).ok().as_deref(),
             Some("beSealed")
         );
+    }
+
+    #[test]
+    fn the_rule_set_lists_every_family_rule() -> Result<(), Box<dyn std::error::Error>> {
+        assert!(rule_set_used(&rb_config::model::Rules::default()).is_empty());
+        let rules = rb_config::model::Rules {
+            elements: rb_config::elements::parse_elements(&json!([
+                { "name": "sealed", "severity": "warn", "comment": "c adr:0001", "fix": "Seal it.",
+                  "select": { "kind": "type" }, "should": { "beSealed": true } }
+            ]))?,
+            slices: rb_config::elements::parse_slices(&json!([
+                { "name": "apart", "matching": "A.(*)", "should": "notDependOnEachOther" }
+            ]))?,
+            diagrams: rb_config::elements::parse_diagrams(&json!([
+                { "name": "drawn", "severity": "info", "select": { "kind": "type" }, "adhereTo": "a.puml" }
+            ]))?,
+            ..rb_config::model::Rules::default()
+        };
+        let used = rule_set_used(&rules);
+        assert_eq!(
+            Value::Object(used),
+            json!({
+                "elements": [{ "name": "sealed", "severity": "warn", "comment": "c adr:0001", "fix": "Seal it." }],
+                "slices": [{ "name": "apart", "severity": "error" }],
+                "diagrams": [{ "name": "drawn", "severity": "info" }]
+            })
+        );
+        Ok(())
     }
 }

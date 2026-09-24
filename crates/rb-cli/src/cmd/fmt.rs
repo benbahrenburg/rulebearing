@@ -60,6 +60,26 @@ pub fn format_options(args: &FmtArgs) -> FormatOptions {
     }
 }
 
+/// `--ignore-known [file]` softens the saved result's findings the file lists, as `cruise` would
+/// have; `--no-ignore-known` puts every softened finding back at its rule's severity
+/// (`summary.ruleSetUsed`). Either way the counts, and so `--exit-code`, follow.
+fn known_violations(
+    ctx: &Context<'_>,
+    args: &FmtArgs,
+    document: &mut rb_model::GraphDocument,
+) -> Result<(), Outcome> {
+    let result = if args.known.no_ignore_known {
+        rb_rules::known::restore_severities(document)
+    } else if let Some(file) = &args.known.ignore_known {
+        let entries = rb_config::load::known_violations_file(&ctx.resolve(file))
+            .map_err(|e| failed(RunExit::InvalidConfig, &e.to_string()))?;
+        rb_rules::known::apply_to_document(document, &entries, ctx.today).map(|_| ())
+    } else {
+        Ok(())
+    };
+    result.map_err(|e| failed(RunExit::Untrustworthy, &e.to_string()))
+}
+
 /// Runs `fmt`.
 pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
     if let Some(from) = args
@@ -82,7 +102,7 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         Ok(t) => t,
         Err(e) => return failed(RunExit::Untrustworthy, &e),
     };
-    let document = match rb_ingest::dependency_cruiser::read(&text) {
+    let mut document = match rb_ingest::dependency_cruiser::read(&text) {
         Ok(d) => d,
         Err(e) => {
             return failed(
@@ -91,6 +111,9 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
             );
         }
     };
+    if let Err(outcome) = known_violations(ctx, args, &mut document) {
+        return outcome;
+    }
     let document = match rewrap(document, &format_options(args), None) {
         Ok(d) => d,
         Err(e) => return failed(RunExit::Untrustworthy, &e.to_string()),
@@ -101,11 +124,12 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         strict_schema: args.strict_schema,
         max_findings: args.max_findings,
         timestamp: ctx.timestamp.clone(),
-        path_prefix: if args.output_type == "github-annotations" {
+        path_prefix: if matches!(args.output_type.as_str(), "github-annotations" | "sarif") {
             ctx.repository_prefix()
         } else {
             String::new()
         },
+        baseline: rb_report::baseline::Lifecycle::default(),
     };
     let rendered = match rb_report::render(&args.output_type, &value, &options) {
         Ok(r) => r,
