@@ -14,10 +14,17 @@ rb-model = { workspace = true }
 rb-rules = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+# The trx reporter's name-based GUIDs (plan 0002, Step 10).
+sha2 = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
+# The sarif reporter is validated against the vendored SARIF 2.1.0 schema, and the junit and trx
+# reporters are read back as XML (tests/; plan 0002, Step 10).
+jsonschema = { workspace = true }
+roxmltree = { workspace = true }
+regex = { workspace = true }
 
 [lints]
 workspace = true

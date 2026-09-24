@@ -16,6 +16,7 @@ const REPORTERS = new Map([
     ['#report/azure-devops.mjs', 'azure-devops'],
     ['#report/null.mjs', 'null'],
     ['#report/json.mjs', 'json'],
+    ['#report/baseline.mjs', 'baseline'],
 ]);
 const SHIM = new URL('./shim.mjs', import.meta.url).href;
 
