@@ -2420,6 +2420,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
+        "assemblyFullName": "Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "assemblyQualifiedName": "Sample.AuditAttribute, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Attribute",
@@ -2510,6 +2511,7 @@
       {
         "abstract": true,
         "assembly": "Sample",
+        "assemblyFullName": "Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "assemblyQualifiedName": "Sample.Customers.Constants, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Object",
@@ -2543,6 +2545,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
+        "assemblyFullName": "Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "assemblyQualifiedName": "Sample.Customers.Customer, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Object",
@@ -2753,6 +2756,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
+        "assemblyFullName": "Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "assemblyQualifiedName": "Sample.Customers.Money, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.ValueType",
@@ -2786,6 +2790,7 @@
       {
         "abstract": true,
         "assembly": "Sample",
+        "assemblyFullName": "Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "assemblyQualifiedName": "Sample.Customers.Repository`1, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Object",
@@ -2828,6 +2833,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
+        "assemblyFullName": "Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "assemblyQualifiedName": "Sample.Customers.Tier, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Enum",
@@ -2865,6 +2871,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
+        "assemblyFullName": "Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "assemblyQualifiedName": "Sample.IEntity, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "file": "src/Shared.cs",
@@ -2884,6 +2891,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
+        "assemblyFullName": "Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "assemblyQualifiedName": "Sample.Marker, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Object",
@@ -2953,6 +2961,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
+        "assemblyFullName": "Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "assemblyQualifiedName": "Sample.Orders.Order, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Object",
@@ -3335,6 +3344,7 @@
       {
         "abstract": false,
         "assembly": "Sample",
+        "assemblyFullName": "Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "assemblyQualifiedName": "Sample.Orders.Order+Line, Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
         "attribution": "pdb",
         "baseType": "System.Object",

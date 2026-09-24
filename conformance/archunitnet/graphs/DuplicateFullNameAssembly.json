@@ -29,7 +29,7 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 7,
+          "line": 6,
           "dependencyKind": "inherits"
         },
         {
@@ -63,8 +63,8 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 7,
-          "column": 9,
+          "line": 6,
+          "column": 5,
           "dependencyKind": "signature"
         },
         {
@@ -81,8 +81,8 @@
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
-          "line": 7,
-          "column": 9,
+          "line": 6,
+          "column": 5,
           "dependencyKind": "body",
           "member": "DuplicateClassAcrossAssemblies.DuplicateClass..ctor"
         }
@@ -176,7 +176,7 @@
           "moduleSystem": "clr",
           "valid": true,
           "line": 7,
-          "column": 77,
+          "column": 75,
           "dependencyKind": "signature"
         },
         {
@@ -239,6 +239,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "DuplicateClassAcrossAssemblies.DuplicateClass, DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -258,7 +259,7 @@
         "kind": "class",
         "language": "dotnet",
         "file": "TestAssemblies/DuplicateFullNameAssembly/ClassWithAmbiguousReturnType.cs",
-        "line": 7,
+        "line": 6,
         "attribution": "pdb",
         "assembly": "DuplicateFullNameAssembly",
         "visibility": "public",
@@ -274,7 +275,14 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "DuplicateFullNameAssembly.ClassWithAmbiguousReturnType, DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
+          {
+            "target": "DuplicateClassAcrossAssemblies.DuplicateClass",
+            "kind": "body",
+            "line": 6,
+            "form": "body-type"
+          },
           {
             "target": "DuplicateClassAcrossAssemblies.DuplicateClass",
             "kind": "body",
@@ -284,7 +292,7 @@
           {
             "target": "DuplicateClassAcrossAssemblies.DuplicateClass",
             "kind": "signature",
-            "line": 7
+            "line": 6
           },
           {
             "target": "System.Object",
@@ -294,7 +302,7 @@
           {
             "target": "System.Object",
             "kind": "inherits",
-            "line": 7
+            "line": 6
           }
         ]
       },
@@ -321,6 +329,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "DuplicateFullNameAssembly.ClassWithDuplicateParameters, DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "DuplicateFullNameAssembly.CustomType",
@@ -386,6 +395,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "DuplicateFullNameAssembly.CustomType, DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -420,6 +430,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "DuplicateFullNameAssembly.DuplicateFullNameAssembly, DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "DuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -460,8 +471,8 @@
         "kind": "method",
         "language": "dotnet",
         "file": "TestAssemblies/DuplicateFullNameAssembly/ClassWithAmbiguousReturnType.cs",
-        "line": 7,
-        "column": 9,
+        "line": 6,
+        "column": 5,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -472,13 +483,19 @@
           {
             "target": "DuplicateClassAcrossAssemblies.DuplicateClass",
             "kind": "body",
+            "line": 6,
+            "form": "body-type"
+          },
+          {
+            "target": "DuplicateClassAcrossAssemblies.DuplicateClass",
+            "kind": "body",
             "member": ".ctor",
             "line": 7
           },
           {
             "target": "DuplicateClassAcrossAssemblies.DuplicateClass",
             "kind": "signature",
-            "line": 7
+            "line": 6
           }
         ]
       },
@@ -529,7 +546,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
         "line": 13,
-        "column": 78,
+        "column": 76,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -555,7 +572,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
         "line": 11,
-        "column": 93,
+        "column": 91,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -594,7 +611,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
         "line": 7,
-        "column": 77,
+        "column": 75,
         "visibility": "public",
         "static": false,
         "virtual": false,
@@ -620,7 +637,7 @@
         "language": "dotnet",
         "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
         "line": 9,
-        "column": 66,
+        "column": 64,
         "visibility": "public",
         "static": false,
         "virtual": false,

@@ -9,12 +9,12 @@
 //!
 //! Cases live in `conformance/archunitnet/ported/<TestClass>.yaml`, written by
 //! `conformance/archunitnet/tools/port.py` from upstream's test sources and Verify snapshots. Each
-//! names the fixture assemblies its architecture loads, the rule, and the expectation: the
+//! names the fixture assemblies its architecture loads (per case, or for the whole file), the rule, and the expectation: the
 //! passing and failing object sets, an error (`TypeDoesNotExistInArchitecture`), or a vacuous
 //! selection. The graphs are `conformance/archunitnet/graphs/<Assembly>.json`.
 //! `RB_GATE2_REPORT=1` writes the differing cases to `<temp>/rb-gate2-failures.txt`.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use rb_model::GraphDocument;
@@ -121,6 +121,17 @@ fn check(architecture: &Architecture<'_>, id: &str, case: &Value) -> Option<Stri
     ))
 }
 
+/// The architecture a case loads: its own `architecture`, or its file's.
+fn assemblies_of(suite: &Value, case: &Value) -> Vec<String> {
+    let own = strings(case.get("architecture"));
+    let chosen = if own.is_empty() {
+        strings(suite.get("architecture"))
+    } else {
+        own
+    };
+    chosen.into_iter().collect()
+}
+
 #[test]
 fn every_ported_case_reproduces_upstream() -> Result<(), Box<dyn std::error::Error>> {
     let mut files: Vec<PathBuf> = std::fs::read_dir(conformance().join("ported"))
@@ -133,26 +144,50 @@ fn every_ported_case_reproduces_upstream() -> Result<(), Box<dyn std::error::Err
         })
         .unwrap_or_default();
     files.sort();
-    let mut total = 0_u64;
-    let mut failures = Vec::new();
+    let mut suites = Vec::new();
     for file in &files {
         let suite: Value = serde_yaml::from_str(&std::fs::read_to_string(file)?)?;
-        let assemblies: Vec<String> = strings(suite.get("architecture")).into_iter().collect();
-        let document = architecture_document(&assemblies)?;
-        let architecture = Architecture::new(&document);
         let name = file
             .file_stem()
             .map(|s| s.to_string_lossy().into_owned())
             .unwrap_or_default();
-        for case in suite
+        suites.push((name, suite));
+    }
+    let empty = Vec::new();
+    let cases = |suite: &Value| -> Vec<Value> {
+        suite
             .get("cases")
             .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-        {
+            .unwrap_or(&empty)
+            .clone()
+    };
+    // One document per distinct assembly set, then one architecture over each.
+    let mut documents: BTreeMap<Vec<String>, GraphDocument> = BTreeMap::new();
+    for (_, suite) in &suites {
+        for case in cases(suite) {
+            let assemblies = assemblies_of(suite, &case);
+            if let std::collections::btree_map::Entry::Vacant(slot) = documents.entry(assemblies) {
+                let document = architecture_document(slot.key())?;
+                slot.insert(document);
+            }
+        }
+    }
+    let architectures: BTreeMap<&Vec<String>, Architecture<'_>> = documents
+        .iter()
+        .map(|(key, document)| (key, Architecture::new(document)))
+        .collect();
+    let mut total = 0_u64;
+    let mut failures = Vec::new();
+    for (name, suite) in &suites {
+        for case in cases(suite) {
             total += 1;
             let id = case.get("id").and_then(Value::as_str).unwrap_or("?");
-            if let Some(failure) = check(&architecture, &format!("{name}.{id}"), case) {
+            let assemblies = assemblies_of(suite, &case);
+            let Some(architecture) = architectures.get(&assemblies) else {
+                failures.push(format!("{name}.{id}: no architecture for {assemblies:?}"));
+                continue;
+            };
+            if let Some(failure) = check(architecture, &format!("{name}.{id}"), &case) {
                 failures.push(failure);
             }
         }
