@@ -19,13 +19,25 @@ A `.dependency-cruiser.js` that works with dependency-cruiser 18.2.0 works here 
 
 **JavaScript configurations** run in an embedded QuickJS sandbox with no filesystem, network or process access, and with CommonJS and ES module syntax. `require` and `import` resolve only inside the repository, and the pure `path` and `url` modules are provided ([ADR-0027](adr/0027-pure-path-and-url-modules-in-the-config-sandbox.md)). A configuration that reads files, such as one that lists a folder to build a pattern, is refused with a message naming `--config-via-node`, which evaluates it with the local Node instead.
 
-**`extends`** takes a file, an npm package, or one of the bundled presets:
+**`extends`** takes a file, an npm package, or one of the bundled presets.
+
+### Presets
 
 | Preset | What it is |
 | --- | --- |
 | `dependency-cruiser/configs/recommended`, `recommended-strict`, `recommended-warn-only` | dependency-cruiser's own, vendored with their licence ([presets/dependency-cruiser](../presets/dependency-cruiser/)) |
-| `rulebearing:recommended` | Six rules, every one with a `fix` ([presets/rulebearing/recommended.yaml](../presets/rulebearing/recommended.yaml)) |
-| `rulebearing:typescript` | The recommended rules plus the TypeScript settings a monorepo usually needs: type-only imports kept as edges, and export maps resolved as Node and bundlers resolve them ([presets/rulebearing/typescript.yaml](../presets/rulebearing/typescript.yaml)) |
+| `rulebearing:typescript` | The TypeScript and JavaScript defaults: type-only imports kept as edges, export maps resolved as Node and bundlers resolve them, `node_modules` recorded but not followed, build output (`dist/`, `build/`, `coverage/`, `.next/`, `out/`) left out, the npm and Node rules (`no-non-package-json`, `no-deprecated-core`, `no-duplicate-dep-types`), and `no-orphans` with the toolchain's entry files exempt ([presets/rulebearing/typescript.yaml](../presets/rulebearing/typescript.yaml)) |
+| `rulebearing:dotnet` | The .NET exclusions and nothing else: C# sources under `obj/` and `bin/`, `*.g.cs`, `*.Designer.cs` left out; `Program.cs`, `Startup.cs`, `AssemblyInfo.cs` and `Migrations/` not orphans ([presets/rulebearing/dotnet.yaml](../presets/rulebearing/dotnet.yaml)) |
+| `rulebearing:python` | The Python exclusions and nothing else: `.venv/`, `venv/`, `site-packages/`, `__pycache__/` and `.pyi` stubs left out; `__main__.py` and `conftest.py` not orphans ([presets/rulebearing/python.yaml](../presets/rulebearing/python.yaml)) |
+| `rulebearing:recommended` | Composes the three (`extends: [rulebearing:typescript, rulebearing:dotnet, rulebearing:python]`) and adds `no-circular` and `not-to-unresolvable`; every rule has a `fix` ([presets/rulebearing/recommended.yaml](../presets/rulebearing/recommended.yaml)) |
+
+The merge replaces a rule's `from` and an option's value whole, so `rulebearing:recommended` lists the union of the three presets' `no-orphans` exclusions and `exclude` patterns, and a test keeps it the union. A repository with one language puts its own preset first, so that its exclusions win and no other language's are carried ([design § What stays honest across the boundary](artifacts/design.md#what-stays-honest-across-the-boundary)):
+
+```yaml
+extends: [rulebearing:python, rulebearing:recommended]
+```
+
+`rulebearing init` writes that line for the language it finds, and `extends: rulebearing:recommended` when it finds several ([cli.md](cli.md#commands)).
 
 Rules merge by name, as dependency-cruiser merges them: a rule in the extending file with the name of an extended rule replaces the attributes it names.
 
@@ -81,6 +93,10 @@ The top level holds `$schema`, `extends`, `defines`, `languages`, `options`, `ru
 | `allowEmpty` | Rules and ratchets allowed to match nothing, by name (`allowed[N]` for the Nth `allowed` entry), including rules from an extended dependency-cruiser file, which cannot carry the key itself. A name that is no rule is an error, so an exception cannot outlive its rule ([ADR-0032](adr/0032-liveness-follows-the-configuration-format.md)) |
 
 `rulebearing config expand FILE` prints a native file with `defines` substituted and the shorthands expanded into the rules they stand for.
+
+**`webpackConfig`** (`fileName`, `env`, `arguments`, or `--webpack-config [FILE]`) is evaluated in the same sandbox as a JavaScript configuration, or by Node under `--config-via-node`. A function-shaped configuration is called with `env` and `arguments`, an array's first element is taken, and the `resolve` block's `alias`, `aliasFields`, `conditionNames`, `exportsFields`, `extensions`, `mainFields`, `mainFiles`, `modules` and `symlinks` reach the resolver, winning over `enhancedResolveOptions` as they do in dependency-cruiser; any other key is named in a warning. A configuration that loads webpack plugins from `node_modules` needs Node: evaluate it elsewhere and pass the JSON (the configuration, or its `resolve` block) with `--webpack-config-json FILE`.
+
+**Markdown fences.** In a native file, listing `.md` in `extraExtensionsToScan` also reads the `js`, `ts`, `jsx`, `tsx`, `javascript` and `typescript` code fences of those files, with each dependency's line and column pointing into the Markdown. A dependency-cruiser file keeps dependency-cruiser's behaviour, which never reads a file of `extraExtensionsToScan` ([ADR-0036](adr/0036-markdown-fences-follow-the-configuration-format.md)).
 
 ## Rule metadata
 

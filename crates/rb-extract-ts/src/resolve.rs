@@ -57,6 +57,114 @@ const UNFOLLOWABLE: &[&str] = &[
     ".json", ".node", ".css", ".sass", ".scss", ".stylus", ".less",
 ];
 
+/// Where a webpack-style alias sends a specifier.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AliasTarget {
+    /// A path or another specifier.
+    Path(String),
+    /// `false`: the module is ignored (resolves to nothing).
+    Ignore,
+}
+
+/// The enhanced-resolve keys [`apply_resolve_block`] maps onto a [`ResolveConfig`].
+pub const RESOLVE_BLOCK_KEYS: &[&str] = &[
+    "alias",
+    "aliasFields",
+    "conditionNames",
+    "exportsFields",
+    "extensions",
+    "mainFields",
+    "mainFiles",
+    "modules",
+    "symlinks",
+];
+
+fn strings(value: &serde_json::Value) -> Option<Vec<String>> {
+    match value {
+        serde_json::Value::String(one) => Some(vec![one.clone()]),
+        serde_json::Value::Array(many) => Some(
+            many.iter()
+                .filter_map(|v| v.as_str().map(str::to_owned))
+                .collect(),
+        ),
+        _ => None,
+    }
+}
+
+fn alias_targets(value: &serde_json::Value) -> Vec<AliasTarget> {
+    match value {
+        serde_json::Value::Bool(false) => vec![AliasTarget::Ignore],
+        other => strings(other)
+            .unwrap_or_default()
+            .into_iter()
+            .map(AliasTarget::Path)
+            .collect(),
+    }
+}
+
+/// Lays an enhanced-resolve options block (a webpack configuration's `resolve`, or the one a
+/// recorded `test/extract` case passes) over `config`, as dependency-cruiser spreads it over its
+/// resolve options: each key present replaces the setting. `alias` takes webpack's object form
+/// (`{ "name": target | [targets] | false }`) and its array form (`[{ name, alias, onlyModule }]`).
+/// Returns the keys present that the resolver does not read (the ones outside
+/// [`RESOLVE_BLOCK_KEYS`]), sorted, for the caller to report.
+pub fn apply_resolve_block(
+    config: &mut ResolveConfig,
+    block: &serde_json::Map<String, serde_json::Value>,
+) -> Vec<String> {
+    let lists: [(&str, &mut Vec<String>); 7] = [
+        ("extensions", &mut config.extensions),
+        ("modules", &mut config.modules),
+        ("mainFields", &mut config.main_fields),
+        ("mainFiles", &mut config.main_files),
+        ("exportsFields", &mut config.exports_fields),
+        ("conditionNames", &mut config.condition_names),
+        ("aliasFields", &mut config.alias_fields),
+    ];
+    for (key, target) in lists {
+        if let Some(values) = block.get(key).and_then(strings) {
+            *target = values;
+        }
+    }
+    match block.get("alias") {
+        Some(serde_json::Value::Object(map)) => {
+            config.alias = map
+                .iter()
+                .map(|(name, value)| (name.clone(), alias_targets(value)))
+                .collect();
+        }
+        Some(serde_json::Value::Array(entries)) => {
+            config.alias = entries
+                .iter()
+                .filter_map(|entry| {
+                    let name = entry.get("name")?.as_str()?;
+                    let exact = entry
+                        .get("onlyModule")
+                        .and_then(serde_json::Value::as_bool)
+                        .unwrap_or(false);
+                    let key = if exact {
+                        format!("{name}$")
+                    } else {
+                        name.to_owned()
+                    };
+                    Some((key, alias_targets(entry.get("alias")?)))
+                })
+                .collect();
+        }
+        _ => {}
+    }
+    if let Some(symlinks) = block.get("symlinks").and_then(serde_json::Value::as_bool) {
+        config.symlinks = symlinks;
+    }
+    let mut unread: Vec<String> = block
+        .keys()
+        .filter(|k| !RESOLVE_BLOCK_KEYS.contains(&k.as_str()))
+        .cloned()
+        .collect();
+    unread.sort();
+    unread
+}
+
 /// Everything that decides a resolution: the enhanced-resolve options dependency-cruiser passes,
 /// plus the parts of its configuration the classification reads.
 #[expect(
@@ -79,8 +187,9 @@ pub struct ResolveConfig {
     pub condition_names: Vec<String>,
     /// `package.json` fields holding browser-style alias maps.
     pub alias_fields: Vec<String>,
-    /// webpack-style aliases, prefix to target.
-    pub alias: Vec<(String, String)>,
+    /// webpack-style aliases: the prefix (a trailing `$` for an exact match), and the targets
+    /// tried in order.
+    pub alias: Vec<(String, Vec<AliasTarget>)>,
     /// Whether symlinks resolve to their target.
     pub symlinks: bool,
     /// The tsconfig whose `paths` apply.
@@ -258,7 +367,18 @@ impl ResolveConfig {
             alias: self
                 .alias
                 .iter()
-                .map(|(k, v)| (k.clone(), vec![AliasValue::Path(v.clone())]))
+                .map(|(k, targets)| {
+                    (
+                        k.clone(),
+                        targets
+                            .iter()
+                            .map(|t| match t {
+                                AliasTarget::Path(path) => AliasValue::Path(path.clone()),
+                                AliasTarget::Ignore => AliasValue::Ignore,
+                            })
+                            .collect(),
+                    )
+                })
                 .collect(),
             symlinks: self.symlinks,
             tsconfig: self.tsconfig.as_ref().map(|config_file| {
@@ -915,9 +1035,74 @@ mod tests {
     }
 
     #[test]
+    fn a_resolve_block_replaces_what_it_names() {
+        let mut config = ResolveConfig::default();
+        let block = serde_json::json!({
+            "alias": { "@": "/src", "multi": ["/a", "/b"], "gone": false },
+            "modules": ["node_modules", "lib"],
+            "extensions": [".ts", ".js"],
+            "mainFields": "module",
+            "symlinks": false,
+            "plugins": [{}],
+            "fallback": {}
+        });
+        let unread = apply_resolve_block(
+            &mut config,
+            block.as_object().unwrap_or(&serde_json::Map::new()),
+        );
+        assert_eq!(unread, ["fallback", "plugins"]);
+        assert_eq!(config.modules, ["node_modules", "lib"]);
+        assert_eq!(config.extensions, [".ts", ".js"]);
+        assert_eq!(config.main_fields, ["module"]);
+        assert_eq!(
+            config.main_files,
+            ["index"],
+            "keys absent keep their setting"
+        );
+        assert!(!config.symlinks);
+        assert_eq!(
+            config.alias,
+            [
+                ("@".to_owned(), vec![AliasTarget::Path("/src".to_owned())]),
+                (
+                    "multi".to_owned(),
+                    vec![
+                        AliasTarget::Path("/a".to_owned()),
+                        AliasTarget::Path("/b".to_owned())
+                    ]
+                ),
+                ("gone".to_owned(), vec![AliasTarget::Ignore]),
+            ]
+        );
+        let array = serde_json::json!({ "alias": [
+            { "name": "react", "alias": "/preact", "onlyModule": true },
+            { "name": "lib", "alias": "/lib" },
+            { "alias": "/no-name" }
+        ] });
+        let unread = apply_resolve_block(
+            &mut config,
+            array.as_object().unwrap_or(&serde_json::Map::new()),
+        );
+        assert!(unread.is_empty());
+        assert_eq!(
+            config.alias,
+            [
+                (
+                    "react$".to_owned(),
+                    vec![AliasTarget::Path("/preact".to_owned())]
+                ),
+                ("lib".to_owned(), vec![AliasTarget::Path("/lib".to_owned())]),
+            ]
+        );
+        assert_eq!(config.resolver(None).options().alias.len(), 2);
+    }
+
+    #[test]
     fn aliases_are_classified_in_upstreams_order() {
         let mut config = ResolveConfig::default();
-        config.alias.push(("@web".to_owned(), "/x".to_owned()));
+        config
+            .alias
+            .push(("@web".to_owned(), vec![AliasTarget::Path("/x".to_owned())]));
         assert_eq!(
             alias_types("@web/a", "x/a.ts", &config, None),
             [D::Aliased, D::AliasedWebpack]

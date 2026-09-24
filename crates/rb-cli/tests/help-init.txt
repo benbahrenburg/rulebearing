@@ -1,0 +1,33 @@
+Write a first configuration from what the repository holds, passing on its first run
+
+Usage: rulebearing init [OPTIONS]
+
+Options:
+      --preset <LANGUAGE>
+          Use these languages' presets instead of the ones found: typescript, dotnet, python
+          (repeat, or separate with commas)
+
+          Possible values:
+          - typescript: TypeScript and JavaScript: `rulebearing:typescript`
+          - dotnet:     .NET: `rulebearing:dotnet`
+          - python:     Python: `rulebearing:python`
+
+      --dry-run
+          Print the proposal and do not write it
+
+      --force
+          Replace an existing configuration file
+
+      --output <FILE>
+          Where to write the configuration
+          
+          [default: rulebearing.yaml]
+
+      --expires <DATE|DAYS>
+          When baseline entries expire: a date (YYYY-MM-DD) or a number of days
+
+      --owner <OWNER>
+          Who answers for baseline entries (default: the git user)
+
+  -h, --help
+          Print help (see a summary with '-h')
