@@ -4,10 +4,14 @@
 //! - Plan: [Wave 1 § 1.6](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#16-decisions-applied-and-decisions-to-make)
 //!   (`impact` lands in wave 1 for the `PreToolUse` hook),
 //!   [Step 15](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-15-hooks-install---claude-code-summary---format-agent-impact-attest---require-comment-token-1e)
+//!   and [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
+//!   (text or `--json`; the worktree-aware cache of Step 13)
 //! - Requirement: [FR-CLI-03](../../../../docs/prd.md#fr-cli-03)
 //!
 //! Prints the rules whose `from` or `to` matches the file, its dependents to `--depth`, whether it
-//! sits on a cycle, and the ratchets its edges count toward. `--from-hook` reads the file from a
+//! sits on a cycle, and the ratchets its edges count toward: as text, or as JSON with `--json`.
+//! The graph is `--graph FILE`, else the cache entry for this worktree, commit and configuration
+//! ([`crate::cache`]), extracted and written on a miss. `--from-hook` reads the file from a
 //! Claude Code hook's JSON on stdin (`tool_input.file_path`), relative to the working directory,
 //! and answers as a `PreToolUse` hook must: the report as `hookSpecificOutput.additionalContext`,
 //! which reaches the agent, and exit 0 always, because exit 2 would block the edit and plain
@@ -20,10 +24,14 @@ use rb_config::Rule;
 use rb_rules::matchers::pattern;
 use serde_json::{Value, json};
 
-use crate::cli::{ConfigArgs, GraphArgs};
-use crate::cmd::{rules, summary};
+use std::fmt::Write as _;
+
+use crate::cli::ConfigArgs;
+use crate::cmd::summary;
 use crate::context::Context;
-use crate::{Outcome, RunExit, configure};
+use crate::pipeline::{self, RunOptions};
+use crate::progress::Progress;
+use crate::{Outcome, RunExit, cache, configure};
 
 /// `impact`.
 #[derive(Debug, Clone, Default, Args)]
@@ -40,9 +48,15 @@ pub struct ImpactArgs {
     /// Configuration
     #[command(flatten)]
     pub config: ConfigArgs,
-    /// A saved graph (default .graph/cruise.json)
+    /// A graph document to answer from instead of the cache
     #[arg(long, value_name = "FILE")]
     pub graph: Option<String>,
+    /// Extract afresh, neither reading nor writing the cache
+    #[arg(long)]
+    pub no_cache: bool,
+    /// Print JSON
+    #[arg(long)]
+    pub json: bool,
 }
 
 fn matches(p: Option<String>, text: &str) -> bool {
@@ -99,13 +113,87 @@ pub fn run(ctx: &mut Context<'_>, args: &ImpactArgs) -> Outcome {
     }
     let file = args.file.clone().unwrap_or_default();
     match report(ctx, args, &file) {
-        Ok(report) => {
+        Ok(report) if args.json => {
             let mut text = serde_json::to_string_pretty(&report).unwrap_or_default();
             text.push('\n');
             Outcome::printed(text)
         }
+        Ok(report) => Outcome::printed(text(&report)),
         Err(outcome) => outcome,
     }
+}
+
+fn names(value: &Value) -> Vec<&str> {
+    value
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .collect()
+}
+
+/// The report as text: one heading per part, one line per item.
+pub fn text(report: &Value) -> String {
+    let field = |v: &Value, k: &str| v.get(k).and_then(Value::as_str).unwrap_or("-").to_owned();
+    let mut out = field(report, "file");
+    if report.get("known") != Some(&Value::Bool(true)) {
+        out.push_str(" (not in the graph yet)");
+    }
+    out.push('\n');
+    let rules = report.get("rules").and_then(Value::as_array);
+    match rules {
+        Some(list) if !list.is_empty() => {
+            out.push_str("  rules that mention it:\n");
+            for r in list {
+                let _ = write!(
+                    out,
+                    "    {} ({}, {})",
+                    field(r, "name"),
+                    field(r, "side"),
+                    field(r, "severity")
+                );
+                if let Some(fix) = r.get("fix").and_then(Value::as_str) {
+                    let _ = write!(out, ": {fix}");
+                }
+                out.push('\n');
+            }
+        }
+        _ => out.push_str("  rules that mention it: none\n"),
+    }
+    let dependents = names(&report["dependents"]);
+    let depth = report.get("depth").and_then(Value::as_u64).unwrap_or(1);
+    if dependents.is_empty() {
+        let _ = writeln!(out, "  dependents (depth {depth}): none");
+    } else {
+        let _ = writeln!(out, "  dependents (depth {depth}):");
+        for d in dependents {
+            let _ = writeln!(out, "    {d}");
+        }
+    }
+    let cycle = report.get("onCycle") == Some(&Value::Bool(true));
+    let _ = writeln!(out, "  on a cycle: {}", if cycle { "yes" } else { "no" });
+    let ratchets = report.get("ratchets").and_then(Value::as_array);
+    match ratchets {
+        Some(list) if !list.is_empty() => {
+            out.push_str("  ratchets its edges count toward:\n");
+            for r in list {
+                let count = r.get("count").and_then(Value::as_u64).unwrap_or(0);
+                let _ = match r.get("ceiling").and_then(Value::as_u64) {
+                    Some(ceiling) => {
+                        writeln!(out, "    {}: {count} of {ceiling}", field(r, "name"))
+                    }
+                    None => writeln!(
+                        out,
+                        "    {}: {count}, no ceiling ({})",
+                        field(r, "name"),
+                        field(r, "error")
+                    ),
+                };
+            }
+        }
+        _ => out.push_str("  ratchets its edges count toward: none\n"),
+    }
+    out
 }
 
 /// The `PreToolUse` answer: never blocks. A report that cannot be made (no configuration, nothing
@@ -139,11 +227,19 @@ fn from_hook(ctx: &mut Context<'_>, args: &ImpactArgs) -> Outcome {
 fn report(ctx: &mut Context<'_>, args: &ImpactArgs, file: &str) -> Result<Value, Outcome> {
     let file = file.to_owned();
     let config = configure::required(ctx, &args.config)?;
-    let graph_args = GraphArgs {
-        graph: args.graph.clone(),
+    let untrusted =
+        |m: String| Outcome::failed(RunExit::Untrustworthy, format!("rulebearing impact: {m}\n"));
+    let graph =
+        cache::document(ctx, &config, args.graph.as_deref(), args.no_cache).map_err(untrusted)?;
+    let options = RunOptions {
+        liveness: false,
+        options_used: serde_json::Map::new(),
         paths: Vec::new(),
     };
-    let evaluation = rules::statistics(ctx, &config, &graph_args)?;
+    let evaluation =
+        pipeline::evaluate_document(ctx, &config, graph, &options, &mut Progress::new(None))
+            .map_err(|e| untrusted(e.to_string()))?
+            .evaluation;
     let document = &evaluation.document;
     let mut dependents = BTreeSet::new();
     let mut queue = VecDeque::from([(file.clone(), 0usize)]);

@@ -1,0 +1,452 @@
+//! `rulebearing docs --format agents-md | contributing | skill [--out FILE] [--verify]`: the
+//! documentation an agent or a contributor reads, rendered from the rules so it cannot drift.
+//!
+//! - Source: [design § Docs derived from the rules, never written beside them](../../../../docs/artifacts/design.md#docs-derived-from-the-rules-never-written-beside-them)
+//! - Plan: [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
+//! - Decision: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md) decision 2
+//! - Coverage: [`ArchUnitNET` coverage tab](../../../../docs/artifacts/archunitnet-0.13.4-coverage.md)
+//!   (the "Stays" note: both rule styles are taught when both exist)
+//! - Requirement: [FR-CLI-02](../../../../docs/prd.md#fr-cli-02)
+//!
+//! | Format | Renders |
+//! | --- | --- |
+//! | `agents-md` | the section of `AGENTS.md` or `CLAUDE.md` an agent reads: one line per rule with its sentence (`explain --plain`), severity, `fix` and decision links, grouped by the tree it fences |
+//! | `contributing` | the "what does this error mean and how do I fix it" table: rule, sentence, `fix`, decision |
+//! | `skill` | a Claude Code `SKILL.md`: the rule families, the commands, how to read the `agent` reporter, and the rules |
+//!
+//! `agents-md` and `contributing` are sections: with `--out FILE` they replace what lies between
+//! their `<!-- rulebearing:<format>:begin -->` and `end` markers and keep the rest of the file,
+//! or are appended when the file has no markers, so a hand-written `CLAUDE.md` keeps its prose.
+//! `skill` is a whole file. `--verify` renders the same bytes and exits 1 when the file on disk
+//! differs, which is how CI fails a stale copy. Decision links are relative to the output file.
+//! Nothing time- or machine-dependent is written, so two runs agree byte for byte.
+
+use std::fmt::Write as _;
+use std::path::{Component, Path, PathBuf};
+
+use clap::{Args, ValueEnum};
+
+use crate::cli::ConfigArgs;
+use crate::cmd::catalogue::{self, Entry};
+use crate::cmd::decisions::{self, ADR_DIR};
+use crate::context::Context;
+use crate::{Outcome, RunExit, configure};
+
+/// What `docs` renders.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum DocsFormat {
+    /// The rules section of AGENTS.md or CLAUDE.md
+    AgentsMd,
+    /// The error-to-fix table of a contributing guide
+    Contributing,
+    /// A Claude Code SKILL.md
+    Skill,
+}
+
+impl DocsFormat {
+    /// The name `--format` takes.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::AgentsMd => "agents-md",
+            Self::Contributing => "contributing",
+            Self::Skill => "skill",
+        }
+    }
+}
+
+/// `docs`.
+#[derive(Debug, Clone, Args)]
+pub struct DocsArgs {
+    /// What to render: agents-md, contributing or skill
+    #[arg(long, value_enum, value_name = "FORMAT")]
+    pub format: DocsFormat,
+    /// Write to FILE instead of stdout; agents-md and contributing replace their marked section
+    /// and keep the rest of the file
+    #[arg(long, value_name = "FILE")]
+    pub out: Option<String>,
+    /// Exit 1 when FILE differs from what would be written, without writing it
+    #[arg(long, requires = "out")]
+    pub verify: bool,
+    /// The folder holding the decision records the links point at
+    #[arg(long, value_name = "DIR", default_value = ADR_DIR)]
+    pub adr_dir: String,
+    /// Configuration
+    #[command(flatten)]
+    pub config: ConfigArgs,
+}
+
+/// `to` relative to the folder `from`, `/`-separated; both absolute or both relative.
+pub fn relative(from: &Path, to: &Path) -> String {
+    let parts = |p: &Path| -> Vec<String> {
+        p.components()
+            .filter(|c| !matches!(c, Component::CurDir))
+            .map(|c| c.as_os_str().to_string_lossy().into_owned())
+            .collect()
+    };
+    let (from, to) = (parts(from), parts(to));
+    let common = from.iter().zip(&to).take_while(|(a, b)| a == b).count();
+    let mut out: Vec<String> = vec!["..".to_owned(); from.len() - common];
+    out.extend(to[common..].iter().cloned());
+    out.join("/")
+}
+
+/// What a rendering needs besides the configuration.
+struct Place<'a> {
+    /// The working directory.
+    base: &'a Path,
+    /// The folder the output's links are relative to.
+    folder: PathBuf,
+    /// `--adr-dir`.
+    adr_dir: &'a str,
+    /// The configuration's name as the reader should type it.
+    config_name: String,
+}
+
+impl Place<'_> {
+    /// The decision links of an entry, as Markdown.
+    fn links(&self, entry: &Entry) -> Vec<String> {
+        entry
+            .tokens()
+            .into_iter()
+            .map(
+                |token| match decisions::resolve(self.base, self.adr_dir, &token) {
+                    Some(path) => format!("[{token}]({})", relative(&self.folder, &path)),
+                    None => format!("`{token}`"),
+                },
+            )
+            .collect()
+    }
+
+    /// One rule as a Markdown list item.
+    fn line(&self, entry: &Entry) -> String {
+        let mut text = format!("- **{}**", entry.name);
+        match entry.severity {
+            Some(severity) => {
+                let _ = write!(text, " ({}, {})", entry.family, severity.as_str());
+            }
+            None => {
+                let _ = write!(text, " ({})", entry.family);
+            }
+        }
+        let _ = write!(text, ": {}", entry.sentence);
+        if let Some(fix) = &entry.fix {
+            let _ = write!(text, " Fix: {}", fix.trim());
+        }
+        let links = self.links(entry);
+        if !links.is_empty() {
+            let _ = write!(text, " Decision: {}.", links.join(", "));
+        }
+        text
+    }
+
+    /// Every rule, grouped by what it fences.
+    fn grouped_lines(&self, entries: &[Entry], level: &str) -> String {
+        let mut out = String::new();
+        for (group, members) in catalogue::grouped(entries) {
+            let _ = writeln!(out, "{level} {}\n", group.heading());
+            for entry in members {
+                let _ = writeln!(out, "{}", self.line(entry));
+            }
+            out.push('\n');
+        }
+        out
+    }
+}
+
+fn begin(format: DocsFormat) -> String {
+    format!("<!-- rulebearing:{}:begin -->", format.as_str())
+}
+
+fn end(format: DocsFormat) -> String {
+    format!("<!-- rulebearing:{}:end -->", format.as_str())
+}
+
+fn agents_md(place: &Place<'_>, entries: &[Entry]) -> String {
+    let mut out = format!("{}\n## Architecture rules\n\n", begin(DocsFormat::AgentsMd));
+    let _ = writeln!(
+        out,
+        "Generated from `{}` by `rulebearing docs --format agents-md`; change the rules, not this section. Each line is one rule: what it forbids or requires, its severity, what to do when it fires, and the decision it serves. Ask `rulebearing can-import <from> <to>` before writing an import, and `rulebearing explain <rule>` when one fires.\n",
+        place.config_name
+    );
+    if entries.is_empty() {
+        out.push_str("The configuration holds no rules.\n\n");
+    } else {
+        out.push_str(&place.grouped_lines(entries, "###"));
+    }
+    out.push_str(&end(DocsFormat::AgentsMd));
+    out.push('\n');
+    out
+}
+
+fn cell(text: &str) -> String {
+    text.trim().replace('|', "\\|").replace('\n', " ")
+}
+
+fn contributing(place: &Place<'_>, entries: &[Entry]) -> String {
+    let mut out = format!(
+        "{}\n## What a rulebearing error means and how to fix it\n\n",
+        begin(DocsFormat::Contributing)
+    );
+    let _ = writeln!(
+        out,
+        "Generated from `{}` by `rulebearing docs --format contributing`. A failing check names the rule; find it here.\n",
+        place.config_name
+    );
+    out.push_str(
+        "| Rule | What it means | How to fix it | Decision |\n| --- | --- | --- | --- |\n",
+    );
+    for entry in entries {
+        let links = place.links(entry);
+        let _ = writeln!(
+            out,
+            "| `{}` | {} | {} | {} |",
+            cell(&entry.name),
+            cell(&entry.sentence),
+            entry.fix.as_deref().map_or_else(|| "-".to_owned(), cell),
+            if links.is_empty() {
+                "-".to_owned()
+            } else {
+                links.join(", ")
+            }
+        );
+    }
+    out.push('\n');
+    out.push_str(&end(DocsFormat::Contributing));
+    out.push('\n');
+    out
+}
+
+/// The families present, with counts, in the order the engine evaluates them.
+fn families(entries: &[Entry]) -> Vec<(&'static str, usize)> {
+    [
+        "forbidden",
+        "allowed",
+        "required",
+        "ratchets",
+        "elements",
+        "slices",
+        "diagrams",
+    ]
+    .into_iter()
+    .map(|f| (f, entries.iter().filter(|e| e.family == f).count()))
+    .filter(|(_, n)| *n > 0)
+    .collect()
+}
+
+fn family_meaning(family: &str) -> &'static str {
+    match family {
+        "forbidden" => {
+            "dependency-cruiser style: an import these rules match is a violation on that import's line"
+        }
+        "allowed" => {
+            "dependency-cruiser style: every import must match one of these, else it is `not-in-allowed`"
+        }
+        "required" => {
+            "dependency-cruiser style: every module a rule selects must import (or reach) what it names"
+        }
+        "ratchets" => {
+            "a count of matching imports that may fall and never rise; `rulebearing count --write` lowers the ceiling"
+        }
+        "elements" => {
+            "ArchUnitNET style: every selected type, member or module must satisfy the rule's `should`"
+        }
+        "slices" => {
+            "ArchUnitNET style: slices of the code may not depend on each other or form a cycle"
+        }
+        _ => "ArchUnitNET style: the code must follow the dependencies a PlantUML diagram draws",
+    }
+}
+
+fn skill(place: &Place<'_>, entries: &[Entry]) -> String {
+    let mut out = String::from(
+        "---\nname: rulebearing-architecture\ndescription: The architecture rules this repository enforces with rulebearing, and the commands that check an import, a file or a new rule before CI does. Use before adding an import, creating or moving a file, or changing the rule file.\n---\n\n# Architecture rules (rulebearing)\n\n",
+    );
+    let _ = writeln!(
+        out,
+        "The rules live in `{}` and CI fails on any error-severity violation. This skill was generated from them by `rulebearing docs --format skill`; regenerate it when they change.\n",
+        place.config_name
+    );
+    out.push_str("## Rule families\n\n");
+    let present = families(entries);
+    for (family, count) in &present {
+        let _ = writeln!(out, "- `{family}` ({count}): {}.", family_meaning(family));
+    }
+    if present.is_empty() {
+        out.push_str("- none yet: the configuration holds no rules.\n");
+    }
+    let dependency_style = present
+        .iter()
+        .any(|(f, _)| matches!(*f, "forbidden" | "allowed" | "required"));
+    let element_style = present
+        .iter()
+        .any(|(f, _)| matches!(*f, "elements" | "slices" | "diagrams"));
+    if dependency_style && element_style {
+        out.push_str("\nBoth styles are in force: dependency-cruiser-style rules judge imports between files, ArchUnitNET-style rules judge types and members. A change must satisfy both, and a violation names which rule it broke.\n");
+    }
+    out.push_str(
+        "\n## Commands\n\n\
+| Command | Use it to |\n\
+| --- | --- |\n\
+| `rulebearing cruise --output-type agent` | check the repository; exit 0 means no error-severity violation |\n\
+| `rulebearing can-import <from> <to>` | ask before writing an import: `yes`, or `no` with the rule and its `fix` |\n\
+| `rulebearing explain <rule>` | read a rule as a sentence, why it exists, its `fix` and the edges it matches |\n\
+| `rulebearing impact <file>` | see the rules that mention a file, its dependents, cycles and ratchets before editing it |\n\
+| `rulebearing place --imports a,b --imported-by c --language <language>` | find the directories where a new module with those imports would be legal |\n\
+| `rulebearing test` | prove every rule's `examples`: forbidden ones flagged, allowed ones not |\n\
+\n## Reading the `agent` reporter\n\n\
+`cruise --output-type agent` prints JSON. `rules[]` holds one entry per rule that fired, cheapest to fix first, each with `name`, `severity`, `count` (all violations), `shown` (those listed), `fix` (do this), `decision` (the record the rule serves) and `violations[]`. Each violation has a stable `id`, `from`, `to`, `line` and `column` (edit that import), and `cost` (`edgesToMove`, `targetFanIn`, `score`). `inspected` counts what was read, so an empty run is visible; `vacuousRules` lists rules that matched nothing; `budget.truncated` says whether `--max-findings` cut the list. Fix the cheapest violations first, follow `fix` rather than widening a rule, and never raise a ratchet's ceiling.\n\n## The rules\n\n",
+    );
+    if entries.is_empty() {
+        out.push_str("The configuration holds no rules.\n");
+    } else {
+        let lines = place.grouped_lines(entries, "###");
+        out.push_str(lines.trim_end());
+        out.push('\n');
+    }
+    out
+}
+
+/// The file's new content: the section put between its markers, appended when the file has none,
+/// or the whole text for a format that is not a section.
+pub fn merge(format: DocsFormat, existing: Option<&str>, rendered: &str) -> String {
+    if format == DocsFormat::Skill {
+        return rendered.to_owned();
+    }
+    let Some(existing) = existing.filter(|e| !e.trim().is_empty()) else {
+        return rendered.to_owned();
+    };
+    let (open, close) = (begin(format), end(format));
+    if let Some(start) = existing.find(&open)
+        && let Some(stop) = existing[start..].find(&close).map(|i| start + i)
+    {
+        let mut rest = &existing[stop + close.len()..];
+        rest = rest.strip_prefix('\n').unwrap_or(rest);
+        return format!("{}{rendered}{rest}", &existing[..start]);
+    }
+    format!("{}\n\n{rendered}", existing.trim_end())
+}
+
+/// Runs `docs`.
+pub fn run(ctx: &mut Context<'_>, args: &DocsArgs) -> Outcome {
+    let config = match configure::required(ctx, &args.config) {
+        Ok(c) => c,
+        Err(o) => return o,
+    };
+    let out_path = args.out.as_deref().map(|o| ctx.resolve(o));
+    let folder = out_path
+        .as_deref()
+        .and_then(Path::parent)
+        .map_or_else(|| ctx.cwd.clone(), Path::to_path_buf);
+    let place = Place {
+        base: &ctx.cwd,
+        folder,
+        adr_dir: &args.adr_dir,
+        config_name: config.origin.as_deref().map_or_else(
+            || "the configuration".to_owned(),
+            |p| {
+                let base = ctx.cwd.canonicalize().unwrap_or_else(|_| ctx.cwd.clone());
+                let path = p.canonicalize().unwrap_or_else(|_| p.to_path_buf());
+                decisions::shown(&base, &path)
+            },
+        ),
+    };
+    let entries = catalogue::entries(&config);
+    let rendered = match args.format {
+        DocsFormat::AgentsMd => agents_md(&place, &entries),
+        DocsFormat::Contributing => contributing(&place, &entries),
+        DocsFormat::Skill => skill(&place, &entries),
+    };
+    let (Some(path), Some(name)) = (out_path, args.out.as_deref()) else {
+        return Outcome::printed(rendered);
+    };
+    let existing = std::fs::read_to_string(&path).ok();
+    let content = merge(args.format, existing.as_deref(), &rendered);
+    if args.verify {
+        return if existing.as_deref() == Some(content.as_str()) {
+            Outcome::printed(format!("{name} is up to date\n"))
+        } else {
+            let state = if existing.is_some() {
+                "is stale"
+            } else {
+                "does not exist"
+            };
+            Outcome {
+                stdout: String::new(),
+                stderr: format!(
+                    "rulebearing docs: {name} {state}; regenerate it with `rulebearing docs --format {} --out {name}` and commit it\n",
+                    args.format.as_str()
+                ),
+                code: RunExit::Violations(1).code(),
+            }
+        };
+    }
+    let mut ignored = String::new();
+    match crate::write_output(ctx, name, &content, &mut ignored) {
+        Ok(()) => Outcome::printed(format!("wrote {name}\n")),
+        Err(e) => Outcome::failed(RunExit::Untrustworthy, format!("rulebearing docs: {e}\n")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn links_are_relative_to_the_output_folder() {
+        assert_eq!(
+            relative(Path::new("/r"), Path::new("/r/docs/adr/1.md")),
+            "docs/adr/1.md"
+        );
+        assert_eq!(
+            relative(
+                Path::new("/r/.claude/skills/x"),
+                Path::new("/r/docs/adr/1.md")
+            ),
+            "../../../docs/adr/1.md"
+        );
+        assert_eq!(relative(Path::new("./a"), Path::new("a/b.md")), "b.md");
+    }
+
+    #[test]
+    fn a_section_replaces_its_markers_or_is_appended() {
+        let section =
+            "<!-- rulebearing:agents-md:begin -->\nNEW\n<!-- rulebearing:agents-md:end -->\n";
+        let f = DocsFormat::AgentsMd;
+        assert_eq!(merge(f, None, section), section);
+        assert_eq!(merge(f, Some("  \n"), section), section);
+        let hand = "# Mine\n\nprose\n";
+        let appended = merge(f, Some(hand), section);
+        assert_eq!(appended, format!("# Mine\n\nprose\n\n{section}"));
+        let old = appended
+            .replace("NEW", "OLD")
+            .replace("prose", "kept prose")
+            + "tail\n";
+        assert_eq!(
+            merge(f, Some(&old), section),
+            format!("# Mine\n\nkept prose\n\n{section}tail\n")
+        );
+        assert_eq!(merge(f, Some(&appended), section), appended, "idempotent");
+        assert_eq!(merge(DocsFormat::Skill, Some(hand), "S"), "S");
+        let other = merge(DocsFormat::Contributing, Some(&appended), "C\n");
+        assert!(other.ends_with("C\n") && other.contains("NEW"));
+    }
+
+    #[test]
+    fn formats_and_cells() {
+        for f in DocsFormat::value_variants() {
+            assert_eq!(DocsFormat::from_str(f.as_str(), false).ok(), Some(*f));
+        }
+        assert_eq!(cell(" a|b\nc "), "a\\|b c");
+        for family in [
+            "forbidden",
+            "allowed",
+            "required",
+            "ratchets",
+            "elements",
+            "slices",
+            "diagrams",
+        ] {
+            assert!(!family_meaning(family).is_empty());
+        }
+    }
+}

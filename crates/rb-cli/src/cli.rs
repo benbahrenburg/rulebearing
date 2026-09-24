@@ -66,6 +66,14 @@ pub enum Command {
     Summary(crate::cmd::summary::SummaryArgs),
     /// What a file is subject to, before an edit
     Impact(crate::cmd::impact::ImpactArgs),
+    /// Where a new module with these imports would be legal
+    Place(crate::cmd::place::PlaceArgs),
+    /// Draft a rule from globs, a selector or one forbidden edge, with what it matches today
+    Propose(crate::cmd::propose::ProposeArgs),
+    /// Render the rules as AGENTS.md, a contributing table or a Claude Code skill
+    Docs(crate::cmd::docs::DocsArgs),
+    /// The decision records the rules cite, checked; `decisions new` scaffolds one
+    Decisions(crate::cmd::decisions::DecisionsArgs),
     /// Write or verify a receipt of the configuration, inputs and results
     Attest(crate::cmd::attest::AttestArgs),
     /// Write a first configuration from what the repository holds, passing on its first run

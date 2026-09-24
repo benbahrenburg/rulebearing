@@ -13,6 +13,7 @@
 //!
 //! | Module | Does |
 //! | --- | --- |
+//! | [`cache`] | the worktree-aware graph cache the query commands read |
 //! | [`cli`] | every flag, declared once |
 //! | [`cmd`] | one module per subcommand |
 //! | [`pipeline`] | the five stages as one call |
@@ -22,6 +23,7 @@
 //! | [`progress`] | `--progress` |
 //! | [`protocol`] | the conformance harness's `validate` and `report` |
 
+pub mod cache;
 pub mod cli;
 pub mod cmd;
 pub mod configure;
@@ -45,11 +47,7 @@ pub use crate::exit::RunExit;
 pub const LATER: &[(&str, u8)] = &[
     ("baseline", 2),
     ("diff", 3),
-    ("place", 2),
-    ("docs", 2),
     ("import", 2),
-    ("propose", 2),
-    ("decisions", 2),
     ("guard", 3),
     ("snapshot", 3),
     ("changelog", 3),
@@ -151,6 +149,10 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         Command::Hooks(c) => cmd::hooks::run(ctx, &c),
         Command::Summary(a) => cmd::summary::run(ctx, &a),
         Command::Impact(a) => cmd::impact::run(ctx, &a),
+        Command::Place(a) => cmd::place::run(ctx, &a),
+        Command::Propose(a) => cmd::propose::run(ctx, &a),
+        Command::Docs(a) => cmd::docs::run(ctx, &a),
+        Command::Decisions(a) => cmd::decisions::run(ctx, &a),
         Command::Attest(a) => cmd::attest::run(ctx, &a),
         Command::Init(a) => cmd::init::run(ctx, &a),
         Command::Adopt(a) => cmd::adopt::run(ctx, &a),
