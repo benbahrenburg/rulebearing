@@ -91,7 +91,8 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
             );
         }
     };
-    let document = match rewrap(document, &format_options(args), None) {
+    let format = format_options(args);
+    let document = match rewrap(document, &format, None) {
         Ok(d) => d,
         Err(e) => return failed(RunExit::Untrustworthy, &e.to_string()),
     };
@@ -106,6 +107,7 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         } else {
             String::new()
         },
+        collapse_pattern: format.collapse.clone(),
     };
     let rendered = match rb_report::render(&args.output_type, &value, &options) {
         Ok(r) => r,

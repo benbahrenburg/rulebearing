@@ -146,6 +146,11 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
                 .unwrap_or_else(|| "-".into()),
         )
     };
+    effective.options.metrics = Some(configure::wants_metrics(
+        &effective,
+        args.metrics && !args.no_metrics,
+        &output_type,
+    ));
     let options = RunOptions {
         liveness: liveness != Liveness::Off,
         options_used: configure::options_used(
@@ -223,6 +228,9 @@ fn report(
         } else {
             String::new()
         },
+        // The cruise applies no `collapse` to its modules (pipeline.rs), so none reaches the
+        // reporter either.
+        collapse_pattern: None,
     };
     let rendered = match rb_report::render(output_type, &value, &options) {
         Ok(r) => r,

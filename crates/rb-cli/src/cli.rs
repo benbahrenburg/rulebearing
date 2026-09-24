@@ -205,15 +205,20 @@ pub struct CruiseArgs {
     /// graph built by another tool, such as scripts/cargo-graph.sh for this repository)
     #[arg(long, value_name = "FILE")]
     pub graph: Option<String>,
-    /// Output type: err, err-long, json, text, csv, teamcity, azure-devops, github-annotations, agent, null
+    /// Output type: err, err-long, err-html, json, text, csv, teamcity, azure-devops,
+    /// github-annotations, agent, dot, ddot, archi, cdot, flat, fdot, mermaid, d2, metrics, null
     #[arg(short = 'T', long, value_name = "TYPE")]
     pub output_type: Option<String>,
     /// File to write output to; - for stdout
     #[arg(short = 'f', long, value_name = "FILE")]
     pub output_to: Option<String>,
     /// Calculate stability metrics (instability, folders)
-    #[arg(short = 'm', long)]
+    #[arg(short = 'm', long, overrides_with = "no_metrics")]
     pub metrics: bool,
+    /// Do not calculate stability metrics (the default; the later of --metrics and --no-metrics
+    /// wins). Hidden, as dependency-cruiser hides it
+    #[arg(long, hide = true, overrides_with = "metrics")]
+    pub no_metrics: bool,
     /// Only include modules matching the regex
     #[arg(short = 'I', long, value_name = "REGEX")]
     pub include_only: Option<String>,

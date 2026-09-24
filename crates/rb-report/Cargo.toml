@@ -13,7 +13,9 @@ publish.workspace = true
 rb-model = { workspace = true }
 rb-rules = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
+# `preserve_order`: the `dot` theme attributes print in the order the theme gives them
+# (dependency-cruiser's object key order), so a theme renders byte for byte as upstream.
+serde_json = { workspace = true, features = ["preserve_order"] }
 thiserror = { workspace = true }
 
 [dev-dependencies]
