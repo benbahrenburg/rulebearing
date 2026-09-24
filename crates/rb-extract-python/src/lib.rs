@@ -267,9 +267,10 @@ fn read_and_parse(settings: &Settings, index: &ModuleIndex, file: &str) -> Parse
     };
     let module = match parse::parse(&source) {
         Ok(module) => module,
-        Err(message) => {
+        Err(error) => {
             return failed(format!(
-                "{message}; the module has no dependencies in this run. Fix the syntax, or exclude the file"
+                "{error}; the module has no dependencies in this run. {}",
+                error.fix()
             ));
         }
     };
