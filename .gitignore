@@ -4,6 +4,10 @@ Cargo.lock.orig
 /.graph/
 /coverage/
 /wrappers/npm/coverage/
+/adapters/vitest/coverage/
+# pytest-cov data (pyproject.toml, [tool.pytest.ini_options])
+.coverage
+.coverage.*
 /lcov.info
 # cargo-mutants working output (docs/adr/0024-test-quality-gates.md)
 /mutants.out/
