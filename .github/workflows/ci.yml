@@ -203,6 +203,32 @@ jobs:
         env:
           RULEBEARING_BINARY: ${{ github.workspace }}/target/debug/rulebearing
 
+  # The test adapters and the pip wrapper, each at its own 70% line floor (docs/adr/0018), against
+  # the binary built here (plan 0002, Step 14): the rulebearing/vitest suite, the pytest plugin, and
+  # the pip wrapper, whose smoke test builds a wheel, installs it into a new venv and runs
+  # `rulebearing --version`.
+  adapters:
+    name: adapters
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - run: cargo build --release --locked -p rb-cli
+      - run: npm ci --no-audit --no-fund --ignore-scripts
+      - run: npm test
+        working-directory: adapters/vitest
+      - run: python -m pip install --quiet pytest pytest-cov build hatchling packaging
+      - run: python -m pytest wrappers/pip --cov=wrappers/pip
+      - run: python -m pytest adapters/python --cov=adapters/python
+
   # Mutation testing runs in eight shards so the rule engine's mutants fit the time limit; the
   # `mutants` job below is the required check and passes only when every shard did.
   mutants-shard:

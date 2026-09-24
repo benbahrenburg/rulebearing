@@ -15,6 +15,8 @@ extend-exclude = [
     "docs/artifacts",
     # Fixture packages are extractor input, written to exercise import forms, not to pass lint.
     "crates/*/tests/fixtures",
+    # The test adapters' shared fixture: extractor input with a badly named class on purpose.
+    "adapters/fixture",
 ]
 
 [tool.ruff.lint]
@@ -33,6 +35,10 @@ ignore = [
 # Conformance tools are standalone scripts run by path (python3 conformance/<gate>/tools/x.py),
 # not an importable package.
 "conformance/*/tools/*.py" = ["INP001"]
+# Hatchling loads a package's hook by path (wrappers/pip/hatch_build.py,
+# adapters/python/pytest-rulebearing/hatch_version.py); it sits beside pyproject.toml, outside the
+# package it builds. The two names differ so that `mypy .` sees two modules, not one twice.
+"**/hatch_*.py" = ["INP001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -48,7 +54,7 @@ warn_unreachable = true
 warn_unused_configs = true
 disallow_any_generics = true
 no_implicit_reexport = true
-exclude = "(^|/)(target|node_modules|\\.venv|testbeds/checkouts|conformance/.*/(upstream|fixtures)|crates/[^/]+/tests/fixtures)/"
+exclude = "(^|/)(target|node_modules|\\.venv|testbeds/checkouts|conformance/.*/(upstream|fixtures)|crates/[^/]+/tests/fixtures|adapters/fixture)/"
 
 # PyYAML ships no type stubs and the lint job installs only ruff and mypy; the conformance tools
 # (conformance/archunitnet/tools/port.py) call yaml.safe_dump and type what it returns.
@@ -56,9 +62,16 @@ exclude = "(^|/)(target|node_modules|\\.venv|testbeds/checkouts|conformance/.*/(
 module = ["yaml"]
 ignore_missing_imports = true
 
+# Each Python package is its own coverage gate at 70% of lines (docs/adr/0018): name the package
+# directory as the source, so one package cannot carry another over the floor.
+#   pytest wrappers/pip --cov=wrappers/pip
+#   pytest adapters/python --cov=adapters/python
+# The sources are imported from the tree (pythonpath), so coverage measures them where they are,
+# and the plugin is loaded by the tests themselves, inside the measured window.
 [tool.pytest.ini_options]
-addopts = "--cov --cov-report=term-missing --cov-fail-under=70"
+addopts = "--import-mode=importlib -p pytester --cov-report=term-missing --cov-fail-under=70"
 testpaths = ["wrappers/pip", "adapters/python"]
+pythonpath = ["wrappers/pip/src", "adapters/python/pytest-rulebearing/src"]
 
 [tool.coverage.run]
 branch = false
