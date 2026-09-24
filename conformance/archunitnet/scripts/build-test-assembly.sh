@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Builds ArchUnitNET's test fixtures at the version in ../PIN with portable PDBs and copies them,
 # with ArchUnitNET's LICENSE and NOTICE (Apache-2.0), into ../fixtures/: TestAssembly (slices,
-# PlantUML, the reader's own tests) and the purpose-built assemblies under TestAssemblies/ that the
-# element tests' snapshots were recorded against.
+# PlantUML, the reader's own tests), the purpose-built assemblies under TestAssemblies/ that the
+# element tests' snapshots were recorded against, and ArchUnitNETTests itself.
 #
 # Plans: docs/plans/pending/0000-wave-0-spike.md, Step 6 item 1 (TestAssembly);
 # docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7 (the TestAssemblies).
@@ -32,10 +32,12 @@ git -c advice.detachedHead=false clone --quiet --depth 1 --branch "$pin" \
 # build net10.0, and the SDK actually used is recorded in fixtures/README.md.
 rm -f "$work/ArchUnitNET/global.json"
 
-# The assemblies the element snapshots load (ArchUnitNETTests/AssemblyTestHelper), and the two
-# that share full names across assemblies.
+# The assemblies the element snapshots load (ArchUnitNETTests/AssemblyTestHelper), the two that
+# share full names across assemblies, and the test project itself, which is
+# `ArchUnitNETTestArchitecture` for the combinator and rule-evaluation tests.
 projects=(
   TestAssembly/TestAssembly.csproj
+  ArchUnitNETTests/ArchUnitNETTests.csproj
   TestAssemblies/AttributeAssembly/AttributeAssembly.csproj
   TestAssemblies/ClassAssembly/ClassAssembly.csproj
   TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.csproj

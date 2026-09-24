@@ -11,7 +11,7 @@
 //! `conformance/archunitnet/tools/port.py` from upstream's test sources and Verify snapshots. Each
 //! names the fixture assemblies its architecture loads (per case, or for the whole file), the
 //! rule, and the expectation: the passing and failing object sets, an error
-//! (`TypeDoesNotExistInArchitecture`), or a vacuous selection. A case's `family` is `element`
+//! (`TypeDoesNotExistInArchitecture`), a vacuous selection, or `passes` (`HasNoViolations`). A case's `family` is `element`
 //! (the default), `slice`, `diagram` (a diagram rule over `conformance/archunitnet/diagrams/`)
 //! or `plantuml` (a diagram parsed on its own). The graphs are
 //! `conformance/archunitnet/graphs/<Assembly>.json`.
@@ -125,6 +125,15 @@ fn check_element(
             format!(
                 "{id}: expected a vacuous selection, got {} objects",
                 outcome.results.len()
+            )
+        });
+    }
+    // `HasNoViolations`: every result passes and a positive result was required and found.
+    if let Some(passes) = expect.get("passes").and_then(Value::as_bool) {
+        return (outcome.holds() != passes).then(|| {
+            format!(
+                "{id}: expected passes={passes}, got {:?} (vacuous {}, existence failed {})",
+                outcome.results, outcome.vacuous, outcome.existence_failed
             )
         });
     }
