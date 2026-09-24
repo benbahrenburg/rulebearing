@@ -60,6 +60,11 @@ ALLOWED = "not-in-allowed"
 UNPROTECTED = "import-linter:unprotected"
 NO_CONTRACT = "(violations of rules no contract names)"
 Violation = tuple[str, str, str]  # (rule, from, to)
+# The ways import-linter's graph differs from the imported rules' (compare.explain).
+IGNORE = "ignore_imports"
+TYPE_ONLY = "TYPE_CHECKING imports (exclude_type_checking_imports)"
+NAMESPACE = "namespace portions below a root package"
+OUTSIDE = "imports by modules outside the root packages"
 TRX = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
 
 
@@ -316,38 +321,67 @@ def explain(
     """
     incumbent = context["incumbent"]
     edges = ignored_edges(contract, incumbent)
-    type_only = bool(incumbent["excludeTypeCheckingImports"])
-    unwalked = unwalked_files(incumbent, context["graph"])
-    outside = outside_files(incumbent, context["graph"])
-    mechanisms = (
-        (["ignore_imports"] if edges else [])
-        + (["exclude_type_checking_imports"] if type_only else [])
-        + (["namespace portions grimp does not read"] if unwalked else [])
-        + (["modules outside the root packages, where chains stop"] if outside else [])
-    )
+    filters = {
+        IGNORE: bool(edges),
+        TYPE_ONLY: bool(incumbent["excludeTypeCheckingImports"]),
+        NAMESPACE: bool(unwalked_files(incumbent, context["graph"])),
+        OUTSIDE: bool(outside_files(incumbent, context["graph"])),
+    }
+    mechanisms = [name for name, applies in filters.items() if applies]
     if not mechanisms or context.get("bin") is None:
         return
+    index = context["incumbent"]["contracts"].index(contract)
+    left = recheck(row, contract, context, set(mechanisms), f"{index}-all")
+    if left is None:
+        return
+    row["filtered"] = {"mechanisms": mechanisms, "violations": left}
+    if left != 0:
+        return
+    # Which filter accounts for it on its own, when there is more than one.
+    alone = mechanisms
+    if len(mechanisms) > 1:
+        alone = [
+            m
+            for m in mechanisms
+            if recheck(row, contract, context, {m}, f"{index}-{mechanisms.index(m)}") == 0
+        ]
+    row["filtered"]["sufficientAlone"] = alone
+    which = ", ".join(alone) if alone else f"{', '.join(mechanisms)}, together"
+    row["cause"] = (
+        f"import-linter's graph has no {which}; with the same imports removed from "
+        "Rulebearing's graph the contract is kept too. The import writes ignore_imports as "
+        "knownViolations, which excuse a violation but cut no chain, and has no form for the "
+        "other filters"
+    )
+
+
+def recheck(
+    row: dict[str, Any],
+    contract: dict[str, Any],
+    context: dict[str, Any],
+    active: set[str],
+    stem: str,
+) -> int | None:
+    """The contract's violations over Rulebearing's graph with these filters applied."""
+    incumbent = context["incumbent"]
+    filtered = without(
+        context["graph"],
+        ignored_edges(contract, incumbent) if IGNORE in active else set(),
+        unwalked_files(incumbent, context["graph"]) if NAMESPACE in active else set(),
+        outside_files(incumbent, context["graph"]) if OUTSIDE in active else set(),
+        type_only=TYPE_ONLY in active,
+    )
     work = Path(context["work"])
-    stem = f"recheck-{contract['id'] or context['incumbent']['contracts'].index(contract)}"
-    graph = work / f"{stem}.json"
-    filtered = without(context["graph"], edges, unwalked, outside, type_only=type_only)
+    graph = work / f"recheck-{stem}.json"
     graph.write_text(json.dumps(filtered))
-    report = work / f"{stem}.xml"
+    report = work / f"recheck-{stem}.xml"
     status = junit_run(context, graph, report)
     try:
         rerun = JUnit(report)
     except ET.ParseError:
         row["cause"] = f"not diagnosed: the re-check exited {status} with no JUnit report"
-        return
-    left = len(context["attribution"].violations(rerun).get(row["name"], []))
-    row["filtered"] = {"mechanisms": mechanisms, "violations": left}
-    if left == 0:
-        row["cause"] = (
-            f"import-linter follows chains in a graph without these ({'; '.join(mechanisms)}); "
-            "with the same imports removed from Rulebearing's graph the contract is kept too. "
-            "The import writes ignore_imports as knownViolations, which excuse a violation but "
-            "cut no chain, and has no form for the others"
-        )
+        return None
+    return len(context["attribution"].violations(rerun).get(row["name"], []))
 
 
 def root_inside(incumbent: dict[str, Any]) -> Callable[[str], bool]:

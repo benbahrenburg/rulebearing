@@ -39,7 +39,7 @@ def cell(text: str) -> str:
 
 
 def short(text: str) -> str:
-    """The first sentence or so of a long explanation."""
+    """A long detail cut to a table cell's length."""
     text = text.strip()
     return text if len(text) <= DETAIL else text[: DETAIL - 3].rstrip() + "..."
 
@@ -61,12 +61,17 @@ def outcome(document: dict[str, Any], rows: list[dict[str, Any]]) -> str:
         return f"error: {short(str(document.get('detail', '')))}"
     disagreeing = [r for r in rows if r.get("verdict") == "disagree"]
     if not disagreeing:
+        if not any(r.get("verdict") == "agree" for r in rows):
+            return "nothing compared: every test stays or is not imported"
         return "agrees"
-    causes = [r["cause"] for r in disagreeing if r.get("cause")]
-    explained = len(causes)
+    explained = [r for r in disagreeing if r.get("cause")]
     lead = f"{len(disagreeing)} disagree"
     if explained:
-        lead += f" ({explained} explained: {short(causes[0])})"
+        filters = sorted(
+            {f for r in explained for f in r.get("filtered", {}).get("sufficientAlone", [])}
+        )
+        which = f": import-linter's graph has no {', '.join(filters)}" if filters else ""
+        lead += f", {len(explained)} explained{which}"
     return lead
 
 
