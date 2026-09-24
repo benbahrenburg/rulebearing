@@ -1,0 +1,832 @@
+# Copyright (c) 2026 Ben Bahrenburg. MIT licence: see LICENSE.
+"""The join of an incumbent's verdicts with Rulebearing's, per contract or per test.
+
+Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11 (the oracle
+harness) and section 1.4.5. Requirement: docs/prd.md#nfr-conf-03. Design:
+docs/artifacts/design.md, "Test beds", item 1 (oracle zero-diff). Run by
+testbeds/oracles/python.sh and testbeds/oracles/dotnet.sh; writes testbeds/results/<slug>.json,
+which testbeds/oracles/table.py reads.
+
+`python`: import-linter's verdict on each contract (lint_imports_json.py) beside Rulebearing's
+over the rules `rulebearing import import-linter` wrote from it. A rule belongs to the contract
+its comment names ("import-linter contract: <name>"); a violation of the `allowed` list
+(`not-in-allowed`) belongs to each protected contract whose `to.path` matches the imported
+module. The violations come from `cruise -T junit` (one line each, no chain), and only
+error-severity failures count: an `ignore_imports` entry is a known violation, which the
+reporter lists without failing the rule. A disagreeing contract is re-checked over
+Rulebearing's graph with the imports import-linter removes before it follows chains
+(`ignore_imports`, and `TYPE_CHECKING` imports under `exclude_type_checking_imports`) removed
+too; when that re-check keeps the contract, the row's `cause` says so. The verdict stays
+`disagree`: the import cannot express either filter, so the imported rules do disagree.
+
+The graph comparison is grimp's direct imports between the root packages' modules beside
+Rulebearing's local edges between the same files (from a cruise with no rules, which is also
+what the re-check edits), self-imports left out. An edge on one side
+only is counted by kind: `notGrimpModule` (a file in a folder grimp does not walk, having no
+`__init__.py`), `dynamic` (a literal `importlib.import_module`, which grimp does not read),
+`allReexport` (a submodule an `__init__.py` lists in `__all__`, a dependency by design, plan
+0002 Step 4), `ancestorOfMissing` (grimp gives an import of a missing submodule to its nearest
+package; Rulebearing reports it unresolved), else `unexplained`.
+
+`dotnet`: each architecture test in the incumbent's TRX file (a test whose class is declared in
+a file under the imported folder that uses ArchUnitNET or NetArchTest) beside the verdict of the
+rules `rulebearing import archunit` named from its method (`kebab(method)`, then `-2`, `-3` for more
+chains in the same method), read from the JUnit report where each rule is one test case. A
+test whose chains the importer wrote commented out is `stays` (custom predicate) or
+`not-imported` (with the importer's reason), recorded and not counted as a disagreement.
+
+Exit 0 when nothing disagrees, 1 when something does, 2 when the inputs are unusable.
+"""
+
+from __future__ import annotations
+
+import argparse
+import ast
+import json
+import re
+import subprocess
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+
+SAMPLE = 20
+CONTRACT = "import-linter contract: "
+ALLOWED = "not-in-allowed"
+UNPROTECTED = "import-linter:unprotected"
+NO_CONTRACT = "(violations of rules no contract names)"
+Violation = tuple[str, str, str]  # (rule, from, to)
+TRX = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
+
+
+def write(path: Path, document: dict[str, Any]) -> None:
+    """Write a result file: sorted keys where order carries no meaning, two-space indent."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n")
+
+
+def summarise(rows: list[dict[str, Any]]) -> dict[str, int]:
+    """Count the rows per verdict."""
+    counts = {"agree": 0, "disagree": 0, "stays": 0, "not-imported": 0, "error": 0}
+    for row in rows:
+        counts[row["verdict"]] = counts.get(row["verdict"], 0) + 1
+    return {"total": len(rows), **counts}
+
+
+# Python -------------------------------------------------------------------------------------
+
+
+def walk_rules(node: object) -> Iterator[dict[str, Any]]:
+    """Every mapping in the rules tree that carries a rule name."""
+    if isinstance(node, dict):
+        if isinstance(node.get("name"), str):
+            yield node
+        for value in node.values():
+            yield from walk_rules(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from walk_rules(item)
+
+
+def patterns(side: object) -> list[re.Pattern[str]]:
+    """A rule side's `path` as compiled expressions."""
+    if not isinstance(side, dict):
+        return []
+    value = side.get("path", [])
+    return [re.compile(p) for p in ([value] if isinstance(value, str) else value)]
+
+
+def contract_notes(text: str) -> dict[str, str]:
+    """The reason the importer wrote under a contract's heading comment, by contract id."""
+    notes: dict[str, str] = {}
+    heading = re.compile(r"^\s*# import-linter contract `([^`]+)` \([^)]*\): ")
+    current: str | None = None
+    for line in text.splitlines():
+        found = heading.match(line)
+        if found:
+            current = found.group(1)
+            continue
+        stripped = line.strip()
+        if current is None or not stripped.startswith("#"):
+            current = None
+            continue
+        body = stripped[1:].strip()
+        if body and not stripped.startswith("#   ") and not body.startswith("- name:"):
+            notes.setdefault(current, body)
+    return notes
+
+
+class Attribution:
+    """Which contract each imported rule, and so each violation, belongs to."""
+
+    def __init__(self, imported: dict[str, Any]) -> None:
+        """Read the rules' comments and the protected contracts' `allowed` rules."""
+        self.by_rule: dict[str, str] = {}
+        self.rules_per_contract: dict[str, int] = {}
+        self.protected: list[tuple[str, list[re.Pattern[str]]]] = []
+        rules = imported.get("rules", {}) or {}
+        for rule in walk_rules(rules):
+            comment = str(rule.get("comment", ""))
+            if comment.startswith(CONTRACT):
+                contract = comment[len(CONTRACT) :]
+                self.by_rule[rule["name"]] = contract
+                self.rules_per_contract[contract] = self.rules_per_contract.get(contract, 0) + 1
+        for rule in (rules.get("dependencies", {}) or {}).get("allowed", []) or []:
+            comment = str(rule.get("comment", ""))
+            if rule.get("name") != UNPROTECTED and comment.startswith(CONTRACT):
+                self.protected.append((comment[len(CONTRACT) :], patterns(rule.get("to"))))
+
+    def violations(self, report: JUnit) -> dict[str, list[Violation]]:
+        """The error-severity violations of a JUnit report, by contract name."""
+        out: dict[str, list[Violation]] = {}
+        for violation in report.violations:
+            name = violation[0]
+            owners = [self.by_rule[name]] if name in self.by_rule else []
+            if name == ALLOWED:
+                owners = [c for c, ps in self.protected if any(p.search(violation[2]) for p in ps)]
+            for owner in owners or [NO_CONTRACT]:
+                out.setdefault(owner, []).append(violation)
+        return out
+
+
+class JUnit:
+    """A `cruise -T junit` report: each failing rule's violations and each rule that errored.
+
+    The report is used rather than `-T json` because it carries one line per violation and no
+    chain: on an oracle with a hundred thousand reachability violations the JSON result, with a
+    path per violation in the modules and again in the summary, runs to gigabytes.
+    """
+
+    def __init__(self, path: Path) -> None:
+        """Parse the report."""
+        self.violations: list[Violation] = []
+        self.errors: dict[str, list[str]] = {}
+        root = ET.parse(path).getroot()  # noqa: S314 (the file is Rulebearing's own output)
+        line = re.compile(r"^(?:RB-\S+ )?(.+?) -> (.+)$")
+        for case in root.iter("testcase"):
+            name = case.get("name", "")
+            for failure in case.findall("failure"):
+                if failure.get("type") != "error":
+                    continue
+                for text in (failure.text or "").splitlines():
+                    found = line.match(text.strip())
+                    if found:
+                        self.violations.append((name, found.group(1), found.group(2)))
+            for error in case.findall("error"):
+                self.errors.setdefault(name, []).append(error.get("type", "error"))
+
+
+def module_pattern(expression: str) -> re.Pattern[str]:
+    """An import-linter module expression (`a.*.b`, `a.**`) as a pattern over dotted names."""
+    parts = []
+    for part in expression.strip().split("."):
+        if part == "**":
+            parts.append(r"[^.]+(?:\.[^.]+)*")
+        elif part == "*":
+            parts.append(r"[^.]+")
+        else:
+            parts.append(re.escape(part))
+    return re.compile(r"\.".join(parts) + r"\Z")
+
+
+def ignored_edges(contract: dict[str, Any], incumbent: dict[str, Any]) -> set[tuple[str, str]]:
+    """A contract's `ignore_imports` as (importer file, imported file or external name) pairs."""
+    modules: dict[str, str | None] = incumbent["modules"]
+    edges = set()
+    for entry in contract.get("ignoreImports", []):
+        importer, _, imported = entry.partition("->")
+        sources = [m for m in modules if module_pattern(importer).match(m)]
+        targets = [m for m in modules if module_pattern(imported).match(m)]
+        if not targets and "*" not in imported:
+            targets = [imported.strip()]
+        for source in sources:
+            for target in targets:
+                edges.add((modules.get(source) or source, modules.get(target) or target))
+    return edges
+
+
+def without(
+    graph: dict[str, Any], edges: set[tuple[str, str]], *, type_only: bool
+) -> dict[str, Any]:
+    """The graph document with these imports, and type-only ones, removed."""
+    document: dict[str, Any] = json.loads(json.dumps(graph))
+    for module in document["modules"]:
+        kept = []
+        for dependency in module.get("dependencies", []):
+            resolved = dependency["resolved"]
+            dropped = (module["source"], resolved) in edges or any(
+                module["source"] == a and resolved.startswith(b + ".") for a, b in edges
+            )
+            if not dropped and not (type_only and "type-only" in dependency["dependencyTypes"]):
+                kept.append(dependency)
+        module["dependencies"] = kept
+    return document
+
+
+def junit_run(context: dict[str, Any], graph: Path, out: Path) -> int:
+    """`rulebearing cruise --graph` with the imported rules, the JUnit report written to `out`."""
+    with out.open("w") as sink:
+        return subprocess.run(  # noqa: S603 (the harness's own binary, arguments it built)
+            [
+                context["bin"],
+                "cruise",
+                "--config",
+                context["config"],
+                "--graph",
+                str(graph),
+                "-T",
+                "junit",
+                "--no-progress",
+            ],
+            cwd=context["cwd"],
+            stdout=sink,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        ).returncode
+
+
+def explain(
+    row: dict[str, Any],
+    contract: dict[str, Any],
+    context: dict[str, Any],
+) -> None:
+    """For a disagreeing contract, whether import-linter's graph filters account for it.
+
+    import-linter removes each `ignore_imports` import, and with
+    `exclude_type_checking_imports` every `TYPE_CHECKING` import, from the graph before it
+    follows chains; the import writes neither as an edge filter. The contract is re-checked by
+    `rulebearing cruise --graph` over Rulebearing's own graph with those imports removed.
+    """
+    incumbent = context["incumbent"]
+    edges = ignored_edges(contract, incumbent)
+    type_only = bool(incumbent["excludeTypeCheckingImports"])
+    mechanisms = (["ignore_imports"] if edges else []) + (
+        ["exclude_type_checking_imports"] if type_only else []
+    )
+    if not mechanisms or context.get("bin") is None:
+        return
+    work = Path(context["work"])
+    stem = f"recheck-{contract['id'] or 'contract'}"
+    graph = work / f"{stem}.json"
+    graph.write_text(json.dumps(without(context["graph"], edges, type_only=type_only)))
+    report = work / f"{stem}.xml"
+    status = junit_run(context, graph, report)
+    try:
+        rerun = JUnit(report)
+    except ET.ParseError:
+        row["cause"] = f"not diagnosed: the re-check exited {status} with no JUnit report"
+        return
+    left = len(context["attribution"].violations(rerun).get(row["name"], []))
+    row["filtered"] = {"mechanisms": mechanisms, "violations": left}
+    if left == 0:
+        row["cause"] = (
+            f"import-linter's {' and '.join(mechanisms)} remove imports from the graph before "
+            "chains are followed; with the same imports removed from Rulebearing's graph the "
+            "contract is kept too. The import writes ignore_imports as knownViolations, which "
+            "excuse a violation but cut no chain, and has no form for "
+            "exclude_type_checking_imports"
+        )
+
+
+def root_inside(incumbent: dict[str, Any]) -> Callable[[str], bool]:
+    """Whether a file lies in one of the root packages' folders (or is a single-file root)."""
+    folders = [f for f in incumbent.get("rootFolders", {}).values() if f]
+    return lambda path: any(path == f or (f.endswith("/") and path.startswith(f)) for f in folders)
+
+
+def our_edges(
+    incumbent: dict[str, Any], cruise: dict[str, Any]
+) -> tuple[dict[tuple[str, str], set[str]], dict[str, list[str]]]:
+    """Rulebearing's local edges under the roots with their types, and each file's unresolved."""
+    inside = root_inside(incumbent)
+    skip_type_only = bool(incumbent["excludeTypeCheckingImports"])
+    types: dict[tuple[str, str], set[str]] = {}
+    unresolved: dict[str, list[str]] = {}
+    for module in cruise["modules"]:
+        if module.get("language") != "python" or not inside(module["source"]):
+            continue
+        for dependency in module.get("dependencies", []):
+            edge = (module["source"], dependency["resolved"])
+            kinds = set(dependency["dependencyTypes"])
+            if "unresolved" in kinds:
+                unresolved.setdefault(module["source"], []).append(dependency["module"])
+            local = "local" in kinds and inside(edge[1]) and edge[0] != edge[1]
+            if local and not (skip_type_only and kinds == {"local", "type-only"}):
+                types.setdefault(edge, set()).update(kinds)
+    return types, unresolved
+
+
+def kinds_summary(groups: dict[str, list[tuple[str, str]]]) -> dict[str, Any]:
+    """Each kind of one-sided edge with its count and a sample."""
+    return {
+        k: {"count": len(v), "sample": [list(e) for e in v[:SAMPLE]]}
+        for k, v in sorted(groups.items())
+    }
+
+
+def python_graph(incumbent: dict[str, Any], cruise: dict[str, Any], cwd: Path) -> dict[str, Any]:
+    """The graph comparison: grimp's direct imports beside Rulebearing's local edges."""
+    modules: dict[str, str | None] = incumbent["modules"]
+    by_file = {f: m for m, f in modules.items() if f is not None}
+    theirs = {
+        (str(modules[a]), str(modules[b]))
+        for a, b in incumbent["edges"]
+        if modules.get(a) is not None and modules.get(b) is not None and a != b
+    }
+    types, unresolved = our_edges(incumbent, cruise)
+    ours = set(types)
+    # Edges Rulebearing has for reasons the design records: a file in a folder grimp does not
+    # walk (no __init__.py), a literal importlib call, a submodule an __init__.py's __all__ names.
+    only_ours: dict[str, list[tuple[str, str]]] = {}
+    for edge in sorted(ours - theirs):
+        if edge[0] not in by_file or edge[1] not in by_file:
+            kind = "notGrimpModule"
+        elif "dynamic" in types[edge]:
+            kind = "dynamic"
+        elif edge[0].endswith("__init__.py") and in_all(cwd / edge[0], edge[1]):
+            kind = "allReexport"
+        else:
+            kind = "unexplained"
+        only_ours.setdefault(kind, []).append(edge)
+    # Edges grimp has where Rulebearing reports the import unresolved: grimp gives an import of a
+    # missing submodule (a generated `_version`, a deleted module) to its nearest package.
+    only_theirs: dict[str, list[tuple[str, str]]] = {}
+    for edge in sorted(theirs - ours):
+        target = by_file.get(edge[1], "")
+        missing = any(
+            target and name.startswith(target + ".") for name in unresolved.get(edge[0], [])
+        )
+        only_theirs.setdefault("ancestorOfMissing" if missing else "unexplained", []).append(edge)
+    unexplained = len(only_ours.get("unexplained", [])) + len(only_theirs.get("unexplained", []))
+    return {
+        "rootPackages": incumbent["rootPackages"],
+        "importLinter": len(theirs),
+        "rulebearing": len(ours),
+        "equal": theirs == ours,
+        "unexplained": unexplained,
+        "onlyRulebearing": kinds_summary(only_ours),
+        "onlyImportLinter": kinds_summary(only_theirs),
+    }
+
+
+def in_all(init: Path, target: str) -> bool:
+    """Whether the package's __init__.py lists the target's module name in `__all__`."""
+    try:
+        tree = ast.parse(init.read_text(errors="replace"))
+    except (OSError, SyntaxError, ValueError):
+        return False
+    stem = target.removesuffix("/__init__.py").removesuffix(".py").rsplit("/", 1)[-1]
+    for node in ast.walk(tree):
+        targets = []
+        if isinstance(node, ast.Assign):
+            targets, value = node.targets, node.value
+        elif isinstance(node, (ast.AnnAssign, ast.AugAssign)) and node.value is not None:
+            targets, value = [node.target], node.value
+        if any(isinstance(t, ast.Name) and t.id == "__all__" for t in targets) and isinstance(
+            value, (ast.List, ast.Tuple)
+        ):
+            names = [e.value for e in value.elts if isinstance(e, ast.Constant)]
+            if stem in names:
+                return True
+    return False
+
+
+def python_rows(
+    incumbent: dict[str, Any],
+    imported_text: str,
+    context: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """One row per contract."""
+    attribution: Attribution = context["attribution"]
+    violations = attribution.violations(context["junit"])
+    vacuous: dict[str, list[str]] = {}
+    for rule, kinds in context["junit"].errors.items():
+        if "vacuous" in kinds:
+            vacuous.setdefault(attribution.by_rule.get(rule, NO_CONTRACT), []).append(rule)
+    notes = contract_notes(imported_text)
+    rows = []
+    for contract in incumbent["contracts"]:
+        name = contract["name"]
+        found = violations.get(name, [])
+        row: dict[str, Any] = {
+            "id": contract["id"],
+            "name": name,
+            "type": contract["type"],
+            "importLinter": contract["importLinter"],
+            "rules": attribution.rules_per_contract.get(name, 0),
+            "violations": len(found),
+        }
+        note = notes.get(str(contract["id"]), "")
+        if row["rules"] == 0:
+            row["rulebearing"] = None
+            row["verdict"] = "stays" if note.startswith("stays in") else "not-imported"
+            row["reason"] = note or "the importer wrote no rule for this contract"
+        elif contract["importLinter"] == "error":
+            row["rulebearing"] = "broken" if found else "kept"
+            row["verdict"] = "error"
+            row["reason"] = contract.get("detail", "")
+        else:
+            row["rulebearing"] = "broken" if found else "kept"
+            if name in vacuous:
+                row["vacuousRules"] = sorted(vacuous[name])
+            agree = row["rulebearing"] == contract["importLinter"]
+            row["verdict"] = "agree" if agree else "disagree"
+            if not agree and found:
+                explain(row, contract, context)
+        if found:
+            row["sample"] = sorted({f"{r}: {a} -> {b}" for r, a, b in found})[:SAMPLE]
+        rows.append(row)
+    stray = violations.get(NO_CONTRACT, [])
+    if stray:
+        rows.append(
+            {
+                "id": None,
+                "name": NO_CONTRACT,
+                "type": "",
+                "importLinter": None,
+                "rules": 0,
+                "violations": len(stray),
+                "rulebearing": "broken",
+                "verdict": "disagree",
+                "sample": sorted({f"{r}: {a} -> {b}" for r, a, b in stray})[:SAMPLE],
+            }
+        )
+    return rows
+
+
+def python_main(args: argparse.Namespace) -> int:
+    """Compare one Python oracle."""
+    import yaml  # noqa: PLC0415 (only the python mode needs it; table.py's CI job has no PyYAML)
+
+    incumbent = json.loads(Path(args.incumbent).read_text())
+    imported_text = Path(args.imported).read_text()
+    imported = yaml.safe_load(imported_text) or {}
+    graph = json.loads(Path(args.graph).read_text())
+    context = {
+        "incumbent": incumbent,
+        "graph": graph,
+        "junit": JUnit(Path(args.junit)),
+        "attribution": Attribution(imported),
+        "bin": args.rulebearing,
+        "config": args.imported,
+        "cwd": args.cwd,
+        "work": args.work or str(Path(args.junit).parent),
+    }
+    rows = python_rows(incumbent, imported_text, context)
+    comparison = python_graph(incumbent, graph, Path(args.cwd))
+    summary = summarise(rows)
+    document = {
+        "repo": args.repo,
+        "sha": args.sha,
+        "tool": "import-linter",
+        "importLinterVersion": incumbent["importLinterVersion"],
+        "settings": args.settings,
+        "config": args.config_kind,
+        "status": "compared",
+        "summary": summary,
+        "contracts": rows,
+        "graph": comparison,
+        "agrees": summary["disagree"] == 0,
+    }
+    write(Path(args.out), document)
+    sys.stdout.write(
+        f"python-oracle: {args.repo}: {summary['total']} contracts, {summary['agree']} agree, "
+        f"{summary['disagree']} disagree, {summary['stays']} stay, "
+        f"{summary['not-imported']} not imported, {summary['error']} error; graph "
+        f"{comparison['importLinter']} vs {comparison['rulebearing']} edges, "
+        f"{comparison['unexplained']} unexplained\n"
+    )
+    return 0 if document["agrees"] else 1
+
+
+# .NET ---------------------------------------------------------------------------------------
+
+
+def kebab(name: str) -> str:
+    """The importer's rule name for a test method (crates/rb-cli/src/cmd/import/archunit.rs)."""
+    out: list[str] = []
+    for i, c in enumerate(name):
+        if c in "_- ":
+            if out and out[-1] != "-":
+                out.append("-")
+            continue
+        if c.isupper() and i > 0:
+            previous = name[i - 1]
+            next_lower = i + 1 < len(name) and name[i + 1].islower()
+            if (
+                previous.islower() or previous.isdigit() or (previous.isupper() and next_lower)
+            ) and (not out or out[-1] != "-"):
+                out.append("-")
+        out.append(c.lower())
+    return "".join(out).strip("-")
+
+
+def split_top(text: str) -> list[str]:
+    """Split on commas outside quotes and brackets."""
+    parts, depth, quote, current = [], 0, "", []
+    for c in text:
+        if quote:
+            current.append(c)
+            if c == quote:
+                quote = ""
+        elif c in "\"'":
+            quote = c
+            current.append(c)
+        elif c in "([{":
+            depth += 1
+            current.append(c)
+        elif c in ")]}":
+            depth -= 1
+            current.append(c)
+        elif c == "," and depth == 0:
+            parts.append("".join(current).strip())
+            current = []
+        else:
+            current.append(c)
+    if "".join(current).strip():
+        parts.append("".join(current).strip())
+    return parts
+
+
+def literal(value: str) -> str:
+    """A data-row value as a comparable string: quotes, `typeof`, `nameof` and suffixes dropped."""
+    value = value.strip()
+    found = re.fullmatch(r"(?:typeof|nameof)\((.*)\)", value)
+    if found:
+        value = found.group(1).rsplit(".", 1)[-1]
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":  # noqa: PLR2004
+        return value[1:-1]
+    return value.rstrip("mMfFdDlLuU") if re.fullmatch(r"-?\d[\d.]*[mMfFdDlLuU]?", value) else value
+
+
+def row_values(row: str) -> list[str]:
+    """`[InlineData("a", 1)]` as ["a", "1"]."""
+    found = re.search(r"\((.*)\)\s*\]?\s*$", row)
+    return [literal(v) for v in split_top(found.group(1))] if found else []
+
+
+def trx_values(display: str) -> list[str]:
+    """`Ns.Class.Method(a: "x", b: 1)` as ["x", "1"]."""
+    if "(" not in display or not display.endswith(")"):
+        return []
+    inner = display[display.index("(") + 1 : -1]
+    return [literal(p.split(":", 1)[1] if ":" in p else p) for p in split_top(inner)]
+
+
+def imported_rules(text: str) -> list[dict[str, Any]]:
+    """Every rule the importer wrote, active or commented out, with its file, row and reason."""
+    rules: list[dict[str, Any]] = []
+    pending: list[str] = []
+    name_line = re.compile(r"^\s*(#\s)?\s*- name: (.+?)\s*$")
+    for line in text.splitlines():
+        found = name_line.match(line)
+        if found:
+            reason = ""
+            row = None
+            for note in pending:
+                body = note.strip().lstrip("#").strip()
+                if body.startswith(("stays in ", "not imported: ")):
+                    reason = body
+                if body.startswith("with "):
+                    row = body[len("with ") :]
+            rules.append(
+                {
+                    "name": found.group(2).strip("\"'"),
+                    "active": found.group(1) is None,
+                    "row": row,
+                    "reason": reason,
+                    "file": None,
+                }
+            )
+            pending = []
+            continue
+        file_line = re.match(r'^\s*#?\s*comment: "imported from (.+):(\d+)"', line)
+        if file_line and rules and rules[-1]["file"] is None:
+            rules[-1]["file"] = file_line.group(1)
+            continue
+        if line.lstrip().startswith("#"):
+            pending.append(line)
+    return rules
+
+
+def junit_verdicts(path: Path) -> dict[str, str]:
+    """Each rule's verdict in the JUnit report: pass, fail (a failure) or error (vacuous, ...)."""
+    verdicts: dict[str, str] = {}
+    root = ET.parse(path).getroot()  # noqa: S314 (the file is Rulebearing's own output)
+    for case in root.iter("testcase"):
+        name = case.get("name", "")
+        if case.find("failure") is not None:
+            verdicts[name] = "fail"
+        elif case.find("error") is not None:
+            verdicts[name] = "error"
+        else:
+            verdicts[name] = "pass"
+    return verdicts
+
+
+def trx_tests(path: Path) -> list[dict[str, str]]:
+    """Each test result in a TRX file: class, method, display name and outcome."""
+    root = ET.parse(path).getroot()  # noqa: S314 (the file is dotnet test's output on this runner)
+    methods: dict[str, tuple[str, str]] = {}
+    for test in root.iter(f"{TRX}UnitTest"):
+        element = test.find(f"{TRX}TestMethod")
+        if element is not None:
+            methods[test.get("id", "")] = (element.get("className", ""), element.get("name", ""))
+    tests = []
+    for result in root.iter(f"{TRX}UnitTestResult"):
+        class_name, method = methods.get(result.get("testId", ""), ("", ""))
+        display = result.get("testName", "")
+        if not method:
+            method = display.split("(", 1)[0].rsplit(".", 1)[-1]
+        # xUnit writes the method with its data row; MSTest and NUnit write the bare name.
+        method = method.split("(", 1)[0].rsplit(".", 1)[-1]
+        tests.append(
+            {
+                "class": class_name.split(",", 1)[0].strip(),
+                "method": method,
+                "test": display,
+                "outcome": result.get("outcome", ""),
+            }
+        )
+    return sorted(tests, key=lambda t: (t["class"], t["test"]))
+
+
+def class_files(tests_dir: Path, cwd: Path) -> dict[str, set[str]]:
+    """The architecture-test files under the test folder that declare each class, by name.
+
+    An architecture test is one whose file uses ArchUnitNET or NetArchTest: a test project also
+    holds unit tests, and a repository can name the libraries only as data (a package whose
+    licence it checks), so a test in any other file is out of scope.
+    """
+    declared: dict[str, set[str]] = {}
+    pattern = re.compile(r"\b(?:class|record)\s+([A-Za-z_]\w*)")
+    uses = re.compile(r"\b(?:using\s+(?:static\s+)?|global::)(?:ArchUnitNET|NetArchTest)\b")
+    for path in sorted(tests_dir.rglob("*.cs")):
+        if {"bin", "obj"} & set(path.relative_to(tests_dir).parts):
+            continue
+        text = path.read_text(errors="replace")
+        if not uses.search(text):
+            continue
+        shown = path.resolve().relative_to(cwd).as_posix()
+        for name in pattern.findall(text):
+            declared.setdefault(name, set()).add(shown)
+    return declared
+
+
+def rules_for(
+    test: dict[str, str],
+    rules: list[dict[str, Any]],
+    declared: dict[str, set[str]],
+) -> list[dict[str, Any]]:
+    """The rules the importer named from this test's method, in its class's files."""
+    base = kebab(test["method"])
+    named = [r for r in rules if re.fullmatch(re.escape(base) + r"(-\d+)?", r["name"])]
+    simple = re.split(r"[.+]", test["class"])[-1]
+    files = declared.get(simple, set())
+    in_class = [r for r in named if r["file"] in files]
+    if in_class:
+        named = in_class
+    elif len({r["file"] for r in named}) > 1:
+        return []
+    with_rows = [r for r in named if r["row"]]
+    wanted = trx_values(test["test"])
+    if with_rows and wanted:
+        same_row = [r for r in with_rows if row_values(r["row"]) == wanted]
+        if same_row:
+            return same_row
+    return named
+
+
+def dotnet_row(
+    test: dict[str, str], rules: list[dict[str, Any]], verdicts: dict[str, str]
+) -> dict[str, Any]:
+    """One test's row."""
+    outcome = test["outcome"].lower()
+    row: dict[str, Any] = {
+        "test": test["test"],
+        "dotnet": outcome,
+        "rules": [r["name"] for r in rules],
+    }
+    active = [r for r in rules if r["active"]]
+    inactive = [r for r in rules if not r["active"]]
+    if outcome not in ("passed", "failed"):
+        row.update(rulebearing=None, verdict="not-imported", reason=f"dotnet test: {outcome}")
+        return row
+    if not rules:
+        row.update(
+            rulebearing=None,
+            verdict="not-imported",
+            reason="no fluent rule the importer reads (the test queries the architecture in C#)",
+        )
+        return row
+    if not active:
+        reason = next((r["reason"] for r in inactive if r["reason"].startswith("stays")), "")
+        reason = reason or next((r["reason"] for r in inactive if r["reason"]), "")
+        verdict = "stays" if reason.startswith("stays") else "not-imported"
+        row.update(rulebearing=None, verdict=verdict, reason=reason)
+        return row
+    missing = [r["name"] for r in active if r["name"] not in verdicts]
+    if missing:
+        row.update(
+            rulebearing=None, verdict="error", reason=f"no JUnit case for {', '.join(missing)}"
+        )
+        return row
+    failing = [r["name"] for r in active if verdicts[r["name"]] != "pass"]
+    row["rulebearing"] = "failed" if failing else "passed"
+    if failing:
+        row["failing"] = failing
+    if inactive and outcome == "failed" and not failing:
+        row["verdict"] = "not-imported"
+        row["reason"] = (
+            "the test fails and the chains the importer translated pass; the rest are not "
+            f"imported ({inactive[0]['reason']})"
+        )
+    else:
+        row["verdict"] = "agree" if row["rulebearing"] == outcome else "disagree"
+    return row
+
+
+def dotnet_main(args: argparse.Namespace) -> int:
+    """Compare one .NET oracle."""
+    cwd = Path(args.cwd).resolve()
+    rules = imported_rules(Path(args.imported).read_text())
+    verdicts = junit_verdicts(Path(args.junit)) if Path(args.junit).is_file() else {}
+    tests = trx_tests(Path(args.trx))
+    declared = class_files(Path(args.tests_dir).resolve(), cwd)
+    rows: list[dict[str, Any]] = []
+    used: set[str] = set()
+    out_of_scope = 0
+    for test in tests:
+        simple = re.split(r"[.+]", test["class"])[-1]
+        if simple not in declared:
+            out_of_scope += 1
+            continue
+        matched = rules_for(test, rules, declared)
+        used.update(r["name"] for r in matched)
+        rows.append(dotnet_row(test, matched, verdicts))
+    summary = summarise(rows)
+    unmatched = sorted(r["name"] for r in rules if r["active"] and r["name"] not in used)
+    status = "compared"
+    detail = ""
+    if not tests:
+        status, detail = "error", "dotnet test ran no tests (see incumbent.log)"
+    elif not rows:
+        status = "error"
+        detail = (
+            f"no test dotnet test ran is in a file under {args.tests_shown} that uses "
+            "ArchUnitNET or NetArchTest: nothing to compare"
+        )
+    document = {
+        "repo": args.repo,
+        "sha": args.sha,
+        "tool": args.tool,
+        "tests": args.tests_shown,
+        "status": status,
+        "detail": detail,
+        "summary": summary,
+        "rules": {
+            "imported": sum(1 for r in rules if r["active"]),
+            "commentedOut": sum(1 for r in rules if not r["active"]),
+            "withoutTest": unmatched,
+        },
+        "outOfScope": out_of_scope,
+        "results": rows,
+        "agrees": status == "compared" and summary["disagree"] == 0 and summary["error"] == 0,
+    }
+    write(Path(args.out), document)
+    sys.stdout.write(
+        f"dotnet-oracle: {args.repo}: {status}{' (' + detail + ')' if detail else ''}; "
+        f"{summary['total']} tests, {summary['agree']} agree, {summary['disagree']} disagree, "
+        f"{summary['stays']} stay, {summary['not-imported']} not imported, "
+        f"{summary['error']} error\n"
+    )
+    if status != "compared":
+        return 2
+    return 0 if document["agrees"] else 1
+
+
+def main() -> int:
+    """Parse the arguments and run one mode."""
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n", 1)[0])
+    modes = parser.add_subparsers(dest="mode", required=True)
+    python = modes.add_parser("python", help="one import-linter oracle")
+    for flag in ("incumbent", "imported", "junit", "graph", "repo", "sha", "settings", "out"):
+        python.add_argument(f"--{flag}", required=True)
+    python.add_argument("--config-kind", default="imported")
+    python.add_argument("--cwd", default=".", help="the folder cruise ran in")
+    python.add_argument("--rulebearing", help="the binary, to re-check a disagreeing contract")
+    python.add_argument("--work", help="where the re-check writes its graphs")
+    dotnet = modes.add_parser("dotnet", help="one NetArchTest or ArchUnitNET oracle")
+    for flag in ("trx", "imported", "junit", "tests-dir", "tests-shown", "cwd", "repo", "sha"):
+        dotnet.add_argument(f"--{flag}", required=True)
+    dotnet.add_argument("--tool", required=True)
+    dotnet.add_argument("--out", required=True)
+    args = parser.parse_args()
+    return python_main(args) if args.mode == "python" else dotnet_main(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

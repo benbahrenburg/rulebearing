@@ -6,7 +6,13 @@
 # tool (the incumbent: dependency-cruiser | netarchtest | archunitnet | import-linter | none), and per
 # tool: config (dependency-cruiser config, repository-relative), solution and test (.NET: the solution
 # Spike B builds and the architecture-test project the incumbent runs), dir (import-linter: the package
-# folder holding the contracts, default the root). A row whose tool is none has
+# folder holding the contracts, default the root). For the oracle harness (testbeds/oracles/, plan
+# 0002 Step 11): tests (.NET: the folder of architecture tests `import archunit` reads, default the
+# test project's folder), filter (.NET: a `dotnet test --filter` selecting those tests), pip
+# (import-linter: packages import-linter needs beside the repository's own source, a root package
+# that is installed rather than in the repository or a custom contract type's dependency),
+# translation (import-linter: a hand translation under testbeds/oracles/configs/ used instead of
+# the import). A row whose tool is none has
 # nothing to run until the Rulebearing column exists (wave 1), so the runner records it without cloning.
 # Every repository is a read-only test bed; nothing from it is committed.
 version: 2
@@ -29,23 +35,23 @@ rows:
   - { repo: onebeyond/monaco, sha: 5700abab4d735e7accdcd0d1fde823845e8c99c3, role: oracle, languages: [csharp], tool: archunitnet, solution: src/Content/Backend/Solution/Monaco.Template.Backend.slnx, test: src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/Monaco.Template.Backend.ArchitectureTests.csproj }
   - { repo: dennisdoomen/packageguard, sha: f1fdbca94ccdbd0d18c99cb49f4a2a427aea903f, role: oracle, languages: [csharp], tool: netarchtest, solution: PackageGuard.sln, test: Src/PackageGuard.Specs/PackageGuard.Specs.csproj }
   - { repo: NeVeSpl/NetArchTest.eNhancedEdition, sha: 7f29bdf5f24368dccad27b8e3ec52a807e813504, role: oracle, languages: [csharp], tool: netarchtest, solution: NetArchTest.eNhancedEdition.sln, test: tests/NetArchTest.Rules.UnitTests/NetArchTest.UnitTests.csproj }
-  - { repo: DrJohnMelville/Pdf, sha: 2e9eef3d4af15391809d9a79253e6fff0058d668, role: oracle, languages: [csharp], tool: netarchtest, solution: Src/Src.sln, test: Src/Melville.ArchitectureAnalyzer.Test/Melville.ArchitectureAnalyzer.Test.csproj }
+  - { repo: DrJohnMelville/Pdf, sha: 2e9eef3d4af15391809d9a79253e6fff0058d668, role: oracle, languages: [csharp], tool: netarchtest, solution: Src/Src.sln, test: Src/Melville.Pdf.DataModelTests/Melville.Pdf.DataModelTests.csproj, tests: Src/Melville.Pdf.DataModelTests/Architecture, filter: "FullyQualifiedName~Melville.Pdf.DataModelTests.Architecture", note: "the NetArchTest tests are the Architecture folder of the data-model test project" }
   - { repo: TNG/ArchUnitNET, sha: 28b62ec0d98f9babb4ccdb6d8a1c3673a0497bcb, role: oracle, languages: [csharp], tool: archunitnet, solution: ArchUnit.sln, test: ArchUnitNETTests/ArchUnitNETTests.csproj, note: "the .NET conformance suite" }
   - { repo: BenMorris/NetArchTest, sha: a761f63b694a6facd4be01fbc8fe2ae26579572e, role: oracle, languages: [csharp], tool: netarchtest, solution: "NetArchTest - all projects.sln", test: test/NetArchTest.Rules.UnitTests/NetArchTest.Rules.UnitTests.csproj, note: "the .NET conformance suite" }
   - { repo: seddonym/import-linter, sha: 31927f1457e3df673912cb5efb0afa6dbc37585f, role: oracle, languages: [python], tool: import-linter, note: "Python oracle and the contract-kind mapping" }
   - { repo: kedro-org/kedro, sha: 8d9abdf02b1ce93fbe9079cff6f696fb230facc4, role: oracle, languages: [python], tool: import-linter }
   - { repo: sqlfluff/sqlfluff, sha: 0532c99e27811edb644f0afea13ade46182b72b2, role: oracle, languages: [python], tool: import-linter }
   - { repo: bridgecrewio/checkov, sha: 92ca0101e39e7f575c8182b5b1fd7c89b04e136b, role: oracle, languages: [python], tool: import-linter }
-  - { repo: openedx/openedx-platform, sha: 23f45c133cf8e5074a723e6f6685137c87c01780, role: oracle, languages: [python], tool: import-linter }
+  - { repo: openedx/openedx-platform, sha: 23f45c133cf8e5074a723e6f6685137c87c01780, role: oracle, languages: [python], tool: import-linter, pip: ["openedx-core==1.4.0"] }
   - { repo: napari/napari, sha: 5ef58e212af1af11737bc005048cfd0fb7a1aefd, role: oracle, languages: [python], tool: import-linter }
-  - { repo: nolar/kopf, sha: e63c29c374cde63b6afa7378ae4486bb92062c0f, role: oracle, languages: [python], tool: import-linter }
+  - { repo: nolar/kopf, sha: e63c29c374cde63b6afa7378ae4486bb92062c0f, role: oracle, languages: [python], tool: import-linter, pip: [astpath] }
   - { repo: online-ml/river, sha: d7085cde5bf90898b338d1ad522c71b9b9aa26f8, role: oracle, languages: [python], tool: import-linter }
   - { repo: wemake-services/wemake-python-styleguide, sha: b4d0171879edc9a6a71a1506a2ee5554f634e0ea, role: oracle, languages: [python], tool: import-linter }
   - { repo: google/langextract, sha: 62b933a2c757fd2bbb100498571b8d1692db4344, role: oracle, languages: [python], tool: import-linter }
   - { repo: microsoft/promptflow, sha: 3928a727b406e66d64ff42621534bb58e0ca18ce, role: oracle, languages: [python], tool: import-linter, dir: src/promptflow-core }
   - { repo: HKUDS/DeepTutor, sha: 11f9c15f6d2727ce07ff8d66e511b1e7ae2f8463, role: oracle, languages: [python], tool: import-linter }
-  - { repo: langgenius/dify, sha: 3a017e8cccb316f23f601af65d2e8ce92e68f788, role: oracle, languages: [typescript, python], tool: none }
-  - { repo: open-metadata/OpenMetadata, sha: 325c3ee7af5176f615f48b89747f027018d6d61a, role: oracle, languages: [typescript, python], tool: none }
+  - { repo: langgenius/dify, sha: 3a017e8cccb316f23f601af65d2e8ce92e68f788, role: oracle, languages: [typescript, python], tool: import-linter, dir: api, note: "mixed-language oracle; the contracts are on the Python half" }
+  - { repo: open-metadata/OpenMetadata, sha: 325c3ee7af5176f615f48b89747f027018d6d61a, role: oracle, languages: [typescript, python], tool: import-linter, dir: ingestion, note: "mixed-language oracle; the contracts are on the Python half" }
   - { repo: microsoft/semantic-kernel, sha: ca40aa7226531d28a721d0ca0e451d0aaf86dafc, role: greenfield, languages: [dotnet, python, typescript], tool: none }
   - { repo: microsoft/autogen, sha: 027ecf0a379bcc1d09956d46d12d44a3ad9cee14, role: greenfield, languages: [python, dotnet, typescript], tool: none }
   - { repo: jasontaylordev/CleanArchitecture, sha: 1d71eefc5ccf9a5e9b2db86e4cf08070148c7bb4, role: greenfield, languages: [dotnet, typescript], tool: none }

@@ -1,11 +1,11 @@
-# import-linter's own .importlinter contracts, translated by hand until `rulebearing import
-# import-linter` produces this file (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md,
-# Step 11). `layers` (containers: importlinter, exhaustive): each lower layer may not reach a higher
+# import-linter's own .importlinter contracts, translated by hand before `rulebearing import
+# import-linter` existed (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11),
+# and kept as the reference crates/rb-cli/tests/import.rs holds the importer's output to. `layers` (containers: importlinter, exhaustive): each lower layer may not reach a higher
 # one, directly or through other modules, as import-linter checks chains. `acyclic_siblings`
 # (ancestors: importlinter): under each package, its children, each with everything below it, may
 # not import one another in a cycle; one slice rule per package, `segments: 1` making each child
 # one slice.
-# Used by testbeds/oracles/python.sh.
+# The nightly oracle row runs the importer's own output (testbeds/oracles/python.sh).
 languages:
   python:
     roots: [src]
