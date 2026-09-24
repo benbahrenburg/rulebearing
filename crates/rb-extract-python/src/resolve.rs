@@ -40,7 +40,8 @@ use crate::parse::{ImportSpec, Origin};
 use crate::site::{Provider, SiteIndex};
 use crate::stdlib::StdlibSet;
 
-fn is_stub(path: &str) -> bool {
+/// Whether a path is a `.pyi` stub.
+pub fn is_stub(path: &str) -> bool {
     std::path::Path::new(path)
         .extension()
         .is_some_and(|e| e == "pyi")

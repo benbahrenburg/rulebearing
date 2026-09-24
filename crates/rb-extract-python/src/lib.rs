@@ -356,6 +356,22 @@ fn close_base_chains(layer: &mut CodeLayer) {
     }
 }
 
+/// For each file, whether it is a stub whose module also has a `.py` file. Such a stub adds no
+/// code-layer elements: the `.py` stands for the module, as it does for the resolver.
+fn shadowed_stubs(files: &[String], parsed: &[Parsed]) -> Vec<bool> {
+    let implemented: BTreeSet<&str> = files
+        .iter()
+        .zip(parsed)
+        .filter(|(file, _)| !resolve::is_stub(file))
+        .map(|(_, p)| p.identity.dotted.as_str())
+        .collect();
+    files
+        .iter()
+        .zip(parsed)
+        .map(|(file, p)| resolve::is_stub(file) && implemented.contains(p.identity.dotted.as_str()))
+        .collect()
+}
+
 /// Extracts every Python module under `inputs` (relative to `settings.base`) with
 /// `settings` from [`prepare`].
 ///
@@ -374,14 +390,17 @@ pub fn extract_with(inputs: &[PathBuf], settings: &Settings) -> Result<Extractio
         .map(|file| read_and_parse(settings, &index, file))
         .collect();
     let known: BTreeSet<&str> = files.iter().map(String::as_str).collect();
+    let shadowed = shadowed_stubs(&files, &parsed);
     let mut warnings = settings.warnings.clone();
     warnings.extend(walked.warnings);
     let mut modules = Vec::with_capacity(files.len());
     let mut targets: BTreeMap<String, Module> = BTreeMap::new();
     let mut code = CodeLayer::default();
-    for (file, result) in files.iter().zip(parsed) {
+    for ((file, result), shadowed) in files.iter().zip(parsed).zip(shadowed) {
         warnings.extend(result.warning);
-        code.merge(result.code);
+        if !shadowed {
+            code.merge(result.code);
+        }
         let mut seen = BTreeSet::new();
         let mut dependencies: Vec<Dependency> = Vec::new();
         for spec in &result.specs {
