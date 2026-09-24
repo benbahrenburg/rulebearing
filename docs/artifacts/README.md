@@ -11,3 +11,11 @@ Read-only inputs, exported verbatim from the source design document ([ADR-0001](
 Source: the Claude Docs document at https://claude.ai/code/artifact/74210034-25ca-4a9c-9dd6-bbd24a62ac87 (private). The design's own internal links between tabs (`file/1704a18f-ee24`, `file/6eb75df7-6f94`) refer to the two coverage files above.
 
 The two coverage tabs are also the ledger the conformance gates report against ([ADR-0009](../adr/0009-conformance-suites-as-specification.md)): a row may not say **Parity** until the pinned upstream suite says so.
+
+## Derived artifacts
+
+Not inputs from the design document, but exports derived from it and from the docs, kept here dated and unedited so a plan can say what it started from. The living version of each is the document its row names; when the two disagree, the living document is right.
+
+| File | Derived from | Living version | Exported |
+| --- | --- | --- | --- |
+| [guard-cookbook.html](guard-cookbook.html) | [design § The rule language](design.md#the-rule-language), [§ Rules an agent can implement and follow](design.md#rules-an-agent-can-implement-and-follow), [docs/rules.md](../rules.md), [docs/config.md](../config.md), [presets/rulebearing/recommended.yaml](../../presets/rulebearing/recommended.yaml): every guard a team writes by hand as one rule-file entry, in three groups (code quality, convention, budgets and exceptions) | `docs/guards.md`, generated from the fixtures of [plan 0005](../plans/pending/0005-guard-catalogue.md) | 2026-09-24, from the Claude artifact at https://claude.ai/artifact/LNknVgbyFjHk4Ac1KXnHis (private) |
