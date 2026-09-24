@@ -41,7 +41,7 @@ fn run(code_layer: bool) -> Result<Extraction, Box<dyn Error>> {
 }
 
 fn serialise(extraction: &Extraction) -> Result<String, serde_json::Error> {
-    let document = serde_json::json!({ "code": extraction.code });
+    let document = serde_json::json!({ "code": extraction.code, "modules": extraction.modules });
     Ok(format!("{}\n", serde_json::to_string_pretty(&document)?))
 }
 

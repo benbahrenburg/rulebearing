@@ -11,7 +11,7 @@
 //!   expectations)
 //! - Requirement: [FR-RULE-03](../../../docs/prd.md#fr-rule-03)
 //!
-//! The code layers are `crates/rb-extract-ts/tests/fixtures/codelayer.expected.json` and
+//! The documents are `crates/rb-extract-ts/tests/fixtures/codelayer.expected.json` and
 //! `crates/rb-extract-python/tests/fixtures/pkg.expected.json`, which those crates' tests keep
 //! equal to what the extractors produce.
 
@@ -32,6 +32,7 @@ fn document(expectation: &str) -> Result<GraphDocument> {
         .join(expectation);
     let value: Value = serde_json::from_str(&std::fs::read_to_string(path)?)?;
     Ok(GraphDocument {
+        modules: serde_json::from_value(value["modules"].clone())?,
         code: Some(serde_json::from_value(value["code"].clone())?),
         ..GraphDocument::default()
     })
@@ -192,17 +193,50 @@ fn python_cannot_answer_method_body_questions() -> Result<()> {
 #[test]
 fn python_slices_by_dotted_module() -> Result<()> {
     let py = python()?;
-    let independent = slice(&py, "app.(*)", "notDependOnEachOther")?;
+    let modules = slice(&py, "app.(*)", "notDependOnEachOther")?;
     assert_eq!(
-        independent.slices.keys().collect::<Vec<_>>(),
-        ["cli", "core", "shapes", "sub.sibling"]
+        modules.slices.keys().collect::<Vec<_>>(),
+        [
+            "broken",
+            "cli",
+            "core",
+            "plugins.greet",
+            "shapes",
+            "sub",
+            "sub.deep",
+            "sub.sibling",
+            "util"
+        ],
+        "a Python slice holds modules, named by the dotted remainder"
     );
-    assert!(
-        !independent.failures.is_empty(),
-        "shapes' _Private extends core's Engine"
-    );
+    assert!(!modules.failures.is_empty(), "cli imports util");
     let first = slice(&py, "app.(**)..", "beFreeOfCycles")?;
-    assert_eq!(first.slices.keys().collect::<Vec<_>>(), ["sub"]);
-    assert!(first.failures.is_empty());
+    assert_eq!(first.slices.keys().collect::<Vec<_>>(), ["plugins", "sub"]);
+    assert!(
+        first.failures.is_empty(),
+        "plugins.greet imports sub.sibling, nothing goes back"
+    );
+    Ok(())
+}
+
+#[test]
+fn python_sibling_packages_are_one_slice_each_with_segments() -> Result<()> {
+    let py = python()?;
+    let rules = parse_slices(&json!([{
+        "name": "acyclic-siblings", "matching": "app.(*)", "segments": 1, "should": "beFreeOfCycles"
+    }]))?;
+    let outcome = slices::evaluate(&Architecture::new(&py), &rules[0])?;
+    assert_eq!(
+        outcome.slices.keys().collect::<Vec<_>>(),
+        ["broken", "cli", "core", "plugins", "shapes", "sub", "util"],
+        "`sub`, `sub.deep` and `sub.sibling` are the one sibling `sub`"
+    );
+    assert_eq!(outcome.failures.len(), 1, "{:?}", outcome.failures);
+    assert_eq!(
+        outcome.failures[0].slices,
+        ["core", "plugins", "sub"],
+        "core imports plugins.greet, which imports sub.sibling, and sub.deep imports core: the \
+         cycle import-linter's acyclic_siblings finds"
+    );
     Ok(())
 }

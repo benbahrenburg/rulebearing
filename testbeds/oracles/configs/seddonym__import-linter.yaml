@@ -1,8 +1,10 @@
 # import-linter's own .importlinter contracts, translated by hand until `rulebearing import
 # import-linter` produces this file (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md,
 # Step 11). `layers` (containers: importlinter, exhaustive): each lower layer may not reach a higher
-# one, directly or through other modules, as import-linter checks chains. `acyclic_siblings` needs
-# slice rules (beFreeOfCycles, sub-wave 2C) and is compared once they exist.
+# one, directly or through other modules, as import-linter checks chains. `acyclic_siblings`
+# (ancestors: importlinter): under each package, its children, each with everything below it, may
+# not import one another in a cycle; one slice rule per package, `segments: 1` making each child
+# one slice.
 # Used by testbeds/oracles/python.sh.
 languages:
   python:
@@ -150,3 +152,53 @@ rules:
         severity: error
         from: { path: "^src/importlinter/domain(/|\\.py$)" }
         to: { path: "^src/importlinter/application(/|\\.py$)", reachable: true }
+  slices:
+    - name: "acyclic:importlinter"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: "acyclic:importlinter.adapters"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.adapters.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: "acyclic:importlinter.application"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.application.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: "acyclic:importlinter.application.ports"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.application.ports.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: "acyclic:importlinter.contracts"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.contracts.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: "acyclic:importlinter.domain"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.domain.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: "acyclic:importlinter.ui"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.ui.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
