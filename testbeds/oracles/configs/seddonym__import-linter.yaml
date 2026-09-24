@@ -15,143 +15,143 @@ rules:
       - name: "layers:ui-to-cli"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/ui(/|\\.py$)" }
-        to: { path: "^src/importlinter/cli(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/ui(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
       - name: "layers:api-to-cli"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/api(/|\\.py$)" }
-        to: { path: "^src/importlinter/cli(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/api(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
       - name: "layers:api-to-ui"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/api(/|\\.py$)" }
-        to: { path: "^src/importlinter/ui(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/api(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/ui(/.*)?\\.py$", reachable: true }
       - name: "layers:contracts-to-cli"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/contracts(/|\\.py$)" }
-        to: { path: "^src/importlinter/cli(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/contracts(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
       - name: "layers:contracts-to-ui"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/contracts(/|\\.py$)" }
-        to: { path: "^src/importlinter/ui(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/contracts(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/ui(/.*)?\\.py$", reachable: true }
       - name: "layers:contracts-to-api"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/contracts(/|\\.py$)" }
-        to: { path: "^src/importlinter/api(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/contracts(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/api(/.*)?\\.py$", reachable: true }
       - name: "layers:configuration-to-cli"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/configuration(/|\\.py$)" }
-        to: { path: "^src/importlinter/cli(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/configuration(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
       - name: "layers:configuration-to-ui"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/configuration(/|\\.py$)" }
-        to: { path: "^src/importlinter/ui(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/configuration(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/ui(/.*)?\\.py$", reachable: true }
       - name: "layers:configuration-to-api"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/configuration(/|\\.py$)" }
-        to: { path: "^src/importlinter/api(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/configuration(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/api(/.*)?\\.py$", reachable: true }
       - name: "layers:configuration-to-contracts"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/configuration(/|\\.py$)" }
-        to: { path: "^src/importlinter/contracts(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/configuration(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/contracts(/.*)?\\.py$", reachable: true }
       - name: "layers:adapters-to-cli"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/adapters(/|\\.py$)" }
-        to: { path: "^src/importlinter/cli(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/adapters(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
       - name: "layers:adapters-to-ui"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/adapters(/|\\.py$)" }
-        to: { path: "^src/importlinter/ui(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/adapters(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/ui(/.*)?\\.py$", reachable: true }
       - name: "layers:adapters-to-api"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/adapters(/|\\.py$)" }
-        to: { path: "^src/importlinter/api(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/adapters(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/api(/.*)?\\.py$", reachable: true }
       - name: "layers:adapters-to-contracts"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/adapters(/|\\.py$)" }
-        to: { path: "^src/importlinter/contracts(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/adapters(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/contracts(/.*)?\\.py$", reachable: true }
       - name: "layers:adapters-to-configuration"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/adapters(/|\\.py$)" }
-        to: { path: "^src/importlinter/configuration(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/adapters(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/configuration(/.*)?\\.py$", reachable: true }
       - name: "layers:application-to-cli"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/application(/|\\.py$)" }
-        to: { path: "^src/importlinter/cli(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/application(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
       - name: "layers:application-to-ui"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/application(/|\\.py$)" }
-        to: { path: "^src/importlinter/ui(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/application(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/ui(/.*)?\\.py$", reachable: true }
       - name: "layers:application-to-api"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/application(/|\\.py$)" }
-        to: { path: "^src/importlinter/api(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/application(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/api(/.*)?\\.py$", reachable: true }
       - name: "layers:application-to-contracts"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/application(/|\\.py$)" }
-        to: { path: "^src/importlinter/contracts(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/application(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/contracts(/.*)?\\.py$", reachable: true }
       - name: "layers:application-to-configuration"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/application(/|\\.py$)" }
-        to: { path: "^src/importlinter/configuration(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/application(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/configuration(/.*)?\\.py$", reachable: true }
       - name: "layers:application-to-adapters"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/application(/|\\.py$)" }
-        to: { path: "^src/importlinter/adapters(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/application(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/adapters(/.*)?\\.py$", reachable: true }
       - name: "layers:domain-to-cli"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/domain(/|\\.py$)" }
-        to: { path: "^src/importlinter/cli(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
       - name: "layers:domain-to-ui"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/domain(/|\\.py$)" }
-        to: { path: "^src/importlinter/ui(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/ui(/.*)?\\.py$", reachable: true }
       - name: "layers:domain-to-api"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/domain(/|\\.py$)" }
-        to: { path: "^src/importlinter/api(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/api(/.*)?\\.py$", reachable: true }
       - name: "layers:domain-to-contracts"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/domain(/|\\.py$)" }
-        to: { path: "^src/importlinter/contracts(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/contracts(/.*)?\\.py$", reachable: true }
       - name: "layers:domain-to-configuration"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/domain(/|\\.py$)" }
-        to: { path: "^src/importlinter/configuration(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/configuration(/.*)?\\.py$", reachable: true }
       - name: "layers:domain-to-adapters"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/domain(/|\\.py$)" }
-        to: { path: "^src/importlinter/adapters(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/adapters(/.*)?\\.py$", reachable: true }
       - name: "layers:domain-to-application"
         comment: "import-linter contract: Layered architecture"
         severity: error
-        from: { path: "^src/importlinter/domain(/|\\.py$)" }
-        to: { path: "^src/importlinter/application(/|\\.py$)", reachable: true }
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/application(/.*)?\\.py$", reachable: true }
   slices:
     - name: "acyclic:importlinter"
       comment: "import-linter contract: All packages are acyclic"

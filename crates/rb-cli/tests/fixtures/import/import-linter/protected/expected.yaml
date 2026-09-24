@@ -13,9 +13,9 @@ rules:
       - name: db
         comment: "import-linter contract: Only the API and the jobs reach the database"
         from:
-          path: ["^lib/api(/|\\.py$)", "^lib/jobs(/|\\.py$)", "^lib/db(/|\\.py$)"]
+          path: ["^lib/api(/.*)?\\.py$", "^lib/jobs(/.*)?\\.py$", "^lib/db(/.*)?\\.py$"]
         to:
-          path: "^lib/db(/|\\.py$)"
+          path: "^lib/db(/.*)?\\.py$"
         allowEmpty: true
       # import-linter contract `empty` (protected): Nothing named
       # protected_modules is empty: nothing to protect
@@ -31,6 +31,6 @@ rules:
         comment: "import-linter: every import of an unprotected module"
         from: {}
         to:
-          pathNot: "^lib/db(/|\\.py$)"
+          pathNot: "^lib/db(/.*)?\\.py$"
         allowEmpty: true
     allowedSeverity: error
