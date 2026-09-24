@@ -219,28 +219,36 @@ fn reaches(edges: &HashMap<&str, Vec<&str>>, start: &str, goal: &str) -> bool {
     false
 }
 
+/// The graph `can-import` answers from, and how to name it: `--graph FILE`, else this
+/// worktree's cached graph.
+fn graph_for(
+    ctx: &mut Context<'_>,
+    args: &CanImportArgs,
+    config: &rb_config::Config,
+) -> Result<(String, LightGraph), Outcome> {
+    match &args.graph {
+        Some(file) => load(ctx, file).map(|g| (file.clone(), g)),
+        None => cache::graph(ctx, config, None, args.no_cache)
+            .and_then(|g| serde_json::from_str::<LightGraph>(&g.text).map_err(|e| e.to_string()))
+            .map(|g| ("the graph of this worktree".to_owned(), g))
+            .map_err(|m| {
+                Outcome::failed(
+                    RunExit::Untrustworthy,
+                    format!("rulebearing can-import: {m}\n"),
+                )
+            }),
+    }
+}
+
 /// Runs `can-import`.
 pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
     let config = match configure::required(ctx, &args.config) {
         Ok(c) => c,
         Err(o) => return o,
     };
-    let (file, graph) = match &args.graph {
-        Some(file) => match load(ctx, file) {
-            Ok(g) => (file.clone(), g),
-            Err(o) => return o,
-        },
-        None => match cache::graph(ctx, &config, None, args.no_cache)
-            .and_then(|g| serde_json::from_str::<LightGraph>(&g.text).map_err(|e| e.to_string()))
-        {
-            Ok(g) => ("the graph of this worktree".to_owned(), g),
-            Err(m) => {
-                return Outcome::failed(
-                    RunExit::Untrustworthy,
-                    format!("rulebearing can-import: {m}\n"),
-                );
-            }
-        },
+    let (file, graph) = match graph_for(ctx, args, &config) {
+        Ok(found) => found,
+        Err(o) => return o,
     };
     let edges: HashMap<&str, Vec<&str>> = graph
         .modules
