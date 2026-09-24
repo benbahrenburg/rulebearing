@@ -159,10 +159,12 @@ The aliases live in `.cargo/config.toml`. `scripts/check-links.sh` and `npm run 
 - The conformance ratchets did not grow; if a row in a coverage tab is now proven, the plan's status table says so with the run linked.
 - New public items have doc comments with links; new crates have the linked header.
 - No `unsafe`, no `unwrap`/`expect`/`panic` outside tests, no network, no code execution outside the sandbox.
+- No stubs, no-ops or placeholders in production code (see "Things not to do").
 - If a decision was made, an ADR was added; if a plan's exit criteria are all met, the plan was moved.
 
 ## Things not to do
 
+- Do not put a stub, a no-op, or anything that stands in for real behaviour in production code. That covers a function that returns a fixed or default value in place of doing its work, an empty body, a `todo!()` or `unimplemented!()`, a flag or option that is accepted and ignored, a subcommand or reporter that prints nothing, a predicate that always answers `true` or `false`, and a `TODO` left where the behaviour belongs. Test doubles are allowed, but only in test code: `#[cfg(test)]` modules, `tests/`, `benches/`, `fuzz/` and the test projects of the wrappers, adapters and front-ends. If a feature cannot be delivered in full, leave it out and say so in the plan's status table. When a language cannot answer a predicate, exit 3 with the rule named, as the capability table requires.
 - Do not rename or drop a dependency-cruiser key, field, flag or output type. The promise is "nothing is dropped".
 - Do not invent a cross-language edge, a heuristic resolution, or a silent false for a predicate a language cannot answer. Exit 3 with the rule named.
 - Do not let a vacuous rule pass. Exit 2, `summary.vacuousRules[]` filled.
