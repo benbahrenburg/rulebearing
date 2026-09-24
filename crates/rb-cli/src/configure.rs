@@ -266,8 +266,9 @@ pub fn apply_flags(
         options.suffix = Some(suffix.clone());
     }
     // dependency-cruiser's `--metrics` defaults to false and its command-line options are spread
-    // over the configuration's, so `options.metrics: true` alone computes nothing.
-    options.metrics = Some(args.metrics);
+    // over the configuration's, so `options.metrics: true` alone computes nothing. `--no-metrics`
+    // cancels an earlier `--metrics` (clap keeps the later of the two).
+    options.metrics = Some(args.metrics && !args.no_metrics);
     if let Some(file) = &args.webpack_config {
         // As upstream's `--webpack-config`: the named file replaces the configuration's.
         let reference = config
@@ -339,6 +340,61 @@ fn defaults(cwd: &str) -> Map<String, Value> {
     map
 }
 
+/// `shouldCalculateMetrics`: metrics are computed when `--metrics` asks, when the reporter is
+/// `metrics`, when the reporter's own options set `showMetrics: true`, or when a rule needs them
+/// (`to.moreUnstable`, `scope: folder`), as dependency-cruiser's option normalisation decides.
+pub fn wants_metrics(config: &Config, flag: bool, output_type: &str) -> bool {
+    let reporter_shows = config
+        .options
+        .reporter_options
+        .as_ref()
+        .and_then(|r| r.get(output_type))
+        .and_then(|r| r.get("showMetrics"))
+        == Some(&Value::Bool(true));
+    flag || output_type == "metrics"
+        || reporter_shows
+        || rb_rules::evaluate::needs_metrics(&config.rules.dependencies)
+}
+
+/// The `reporterOptions` patterns dependency-cruiser's `normalizeReporterOptions` turns from an
+/// array into one alternation.
+const REPORTER_PATTERNS: &[&str] = &[
+    "archi.collapsePattern",
+    "archi.filters.includeOnly.path",
+    "archi.filters.focus.path",
+    "archi.filters.exclude.path",
+    "dot.collapsePattern",
+    "dot.filters.includeOnly.path",
+    "dot.filters.focus.path",
+    "dot.filters.exclude.path",
+    "ddot.collapsePattern",
+    "ddot.filters.includeOnly.path",
+    "ddot.filters.focus.path",
+    "ddot.filters.exclude.path",
+];
+
+/// `normalizeReporterOptions`: each pattern of [`REPORTER_PATTERNS`] given as an array becomes
+/// its items joined with `|`; anything else is kept as it is.
+pub fn normalize_reporter_options(reporter_options: &mut Value) {
+    for path in REPORTER_PATTERNS {
+        let pointer = format!("/{}", path.replace('.', "/"));
+        if let Some(at) = reporter_options.pointer_mut(&pointer)
+            && let Value::Array(items) = at
+        {
+            let joined = items
+                .iter()
+                .map(|i| match i {
+                    Value::String(s) => s.clone(),
+                    Value::Null => String::new(),
+                    other => other.to_string(),
+                })
+                .collect::<Vec<_>>()
+                .join("|");
+            *at = Value::String(joined);
+        }
+    }
+}
+
 /// The options `summary.optionsUsed` reports: dependency-cruiser's defaults, the configuration's
 /// options and the command line's, in that order of precedence.
 pub fn options_used(
@@ -379,6 +435,9 @@ pub fn options_used(
     }
     for key in ["doNotFollow", "exclude"] {
         map.entry(key).or_insert_with(|| json!({}));
+    }
+    if let Some(reporter_options) = map.get_mut("reporterOptions") {
+        normalize_reporter_options(reporter_options);
     }
     map.insert("outputType".into(), json!(output_type));
     map.insert("outputTo".into(), json!(output_to));
@@ -532,7 +591,68 @@ mod tests {
             ..CruiseArgs::default()
         };
         assert!(apply_flags(&mut config, &wrong, &c).is_err());
+        // `--no-metrics` wins over an earlier `--metrics`; clap leaves only the later one set.
+        let cancelled = CruiseArgs {
+            metrics: true,
+            no_metrics: true,
+            ..CruiseArgs::default()
+        };
+        apply_flags(&mut plain, &cancelled, &c)?;
+        assert_eq!(plain.options.metrics, Some(false));
         let _ = std::fs::remove_dir_all(&dir);
         Ok(())
+    }
+
+    #[test]
+    fn metrics_follow_the_flag_the_reporter_and_the_rules() -> Result<(), ConfigError> {
+        let load = |text: &str| {
+            rb_config::load_text(
+                text,
+                Syntax::Json,
+                std::path::Path::new("/"),
+                &LoadOptions::default(),
+            )
+        };
+        let plain = load(
+            r#"{"options":{"reporterOptions":{"dot":{"showMetrics":true},"ddot":{"showMetrics":"yes"}}}}"#,
+        )?;
+        assert!(wants_metrics(&plain, true, "err"));
+        assert!(wants_metrics(&plain, false, "metrics"));
+        assert!(
+            wants_metrics(&plain, false, "dot"),
+            "showMetrics: true on the reporter"
+        );
+        assert!(
+            !wants_metrics(&plain, false, "ddot"),
+            "only the boolean true counts"
+        );
+        assert!(!wants_metrics(&plain, false, "err"));
+        let folders = load(
+            r#"{"forbidden":[{"name":"f","scope":"folder","from":{},"to":{"circular":true}}]}"#,
+        )?;
+        assert!(wants_metrics(&folders, false, "err"));
+        Ok(())
+    }
+
+    #[test]
+    fn reporter_patterns_are_normalised() {
+        let mut options = json!({
+            "dot": { "collapsePattern": ["^src/[^/]+", "^lib"], "filters": { "focus": { "path": ["a", "b"] }, "reaches": { "path": ["c"] } } },
+            "archi": { "collapsePattern": "^x" },
+            "flat": { "collapsePattern": ["kept", "as is"] }
+        });
+        normalize_reporter_options(&mut options);
+        assert_eq!(options["dot"]["collapsePattern"], json!("^src/[^/]+|^lib"));
+        assert_eq!(options["dot"]["filters"]["focus"]["path"], json!("a|b"));
+        assert_eq!(
+            options["dot"]["filters"]["reaches"]["path"],
+            json!(["c"]),
+            "upstream leaves reaches"
+        );
+        assert_eq!(options["archi"]["collapsePattern"], json!("^x"));
+        assert_eq!(options["flat"]["collapsePattern"], json!(["kept", "as is"]));
+        let mut mixed = json!({ "ddot": { "collapsePattern": ["a", null, 1] } });
+        normalize_reporter_options(&mut mixed);
+        assert_eq!(mixed["ddot"]["collapsePattern"], json!("a||1"));
     }
 }

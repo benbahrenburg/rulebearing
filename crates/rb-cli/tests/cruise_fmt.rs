@@ -96,8 +96,8 @@ fn every_wave_1_reporter_reports_and_the_gating_ones_exit_with_the_count()
     }
     let unknown = run(&dir, &["cruise", "-T", "pdf", "src"])?;
     assert_eq!(unknown.status.code(), Some(3));
-    let later = run(&dir, &["cruise", "-T", "dot", "src"])?;
-    assert_ne!(later.status.code(), Some(0), "a wave 2 reporter is refused");
+    let later = run(&dir, &["cruise", "-T", "x-dot-webpage", "src"])?;
+    assert_ne!(later.status.code(), Some(0), "a wave 3 reporter is refused");
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }

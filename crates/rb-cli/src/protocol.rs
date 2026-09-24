@@ -10,9 +10,19 @@ use serde_json::Value;
 
 use crate::{Outcome, RunExit};
 
-/// `rulebearing validate`: one engine request on stdin, the answer on stdout.
+/// `rulebearing validate`: one engine request on stdin, the answer on stdout. A request for a
+/// reporter module (`#report/...`) is answered by the reporters, any other by the engine.
 pub fn validate(stdin: &str) -> Outcome {
-    match rb_rules::conformance::answer(stdin) {
+    let module = serde_json::from_str::<Value>(stdin)
+        .ok()
+        .and_then(|r| r.get("module").and_then(Value::as_str).map(str::to_owned))
+        .unwrap_or_default();
+    let answered = if rb_report::conformance::handles(&module) {
+        rb_report::conformance::answer(stdin)
+    } else {
+        rb_rules::conformance::answer(stdin)
+    };
+    match answered {
         Ok(reply) => Outcome::printed(reply),
         Err(error) => Outcome::failed(
             RunExit::InvalidConfig,
@@ -62,7 +72,11 @@ mod tests {
         let rendered = report("null", r#"{"result":{"summary":{"error":4}}}"#);
         let parsed: Value = serde_json::from_str(&rendered.stdout).unwrap_or(Value::Null);
         assert_eq!(parsed, serde_json::json!({ "exitCode": 4, "output": "" }));
-        assert_eq!(report("dot", r#"{"result":{}}"#).code, 3);
+        assert_eq!(report("x-dot-webpage", r#"{"result":{}}"#).code, 3);
+        let reporter = validate(
+            r##"{"module":"#report/dot/module-utl.mjs","export":"attributizeObject","calls":[[{"a":1}]]}"##,
+        );
+        assert_eq!(reporter.stdout, r#"{"result":"a=\"1\""}"#);
         assert_eq!(report("err", "{").code, 3);
     }
 }
