@@ -6,7 +6,8 @@
 //! - Coverage: [coverage § Rules](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#rules)
 //!   (every Wave 1 row)
 //! - Plan: [Wave 1, Step 5](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-5-matchers-and-restriction-evaluation-1b)
-//! - Requirements: [FR-RULE-01](../../../docs/prd.md#fr-rule-01), [FR-RULE-08](../../../docs/prd.md#fr-rule-08)
+//! - Requirements: [FR-RULE-01](../../../docs/prd.md#fr-rule-01), [FR-RULE-08](../../../docs/prd.md#fr-rule-08),
+//!   [FR-RULE-02](../../../docs/prd.md#fr-rule-02) (the cross-language keys, through [`ModuleFacts`])
 //!
 //! | Upstream module | Here |
 //! | --- | --- |
@@ -24,12 +25,12 @@ use serde_json::{Value, json};
 
 use crate::js;
 use crate::matchers::{
-    from_groups, match_to_module_path, match_to_module_path_not, matches_ancestor,
-    matches_from_path, matches_from_path_not, matches_module_path, matches_module_path_not,
-    matches_more_than_one_dependency_type, matches_to_dependency_types,
-    matches_to_dependency_types_not, matches_to_is_more_unstable, matches_to_path,
-    matches_to_path_not, matches_to_via, matches_to_via_only, module_groups, pattern,
-    property_equals, property_matches, property_matches_not,
+    ModuleFacts, from_groups, match_to_module_path, match_to_module_path_not, matches_ancestor,
+    matches_from_cross_language, matches_from_path, matches_from_path_not, matches_module_path,
+    matches_module_path_not, matches_more_than_one_dependency_type, matches_to_cross_language,
+    matches_to_dependency_types, matches_to_dependency_types_not, matches_to_is_more_unstable,
+    matches_to_path, matches_to_path_not, matches_to_via, matches_to_via_only, module_groups,
+    pattern, property_equals, property_matches, property_matches_not,
 };
 use crate::patterns;
 
@@ -64,18 +65,18 @@ impl Matcher {
         }
     }
 
-    /// `match(from, to)(rule)`.
-    pub fn matches(self, rule: &Rule, from: &Value, to: &Value) -> bool {
+    /// `match(from, to)(rule)`, with the facts the cross-language keys read.
+    pub fn matches(self, rule: &Rule, from: &Value, to: &Value, facts: &ModuleFacts) -> bool {
         match self {
-            Self::Module => module_match(rule, from),
-            Self::Dependency => dependency_match(rule, from, to),
+            Self::Module => module_match(rule, from, facts),
+            Self::Dependency => dependency_match(rule, from, to, facts),
             Self::Folder => folder_match(rule, from, to),
         }
     }
 }
 
-/// `match-dependency-rule`'s `match(from, to)(rule)`.
-pub fn dependency_match(rule: &Rule, from: &Value, to: &Value) -> bool {
+/// `match-dependency-rule`'s `match(from, to)(rule)`, then the cross-language keys.
+pub fn dependency_match(rule: &Rule, from: &Value, to: &Value, facts: &ModuleFacts) -> bool {
     let groups = from_groups(rule, &js::text(from, "source"));
     matches_from_path(rule, from)
         && matches_from_path_not(rule, from)
@@ -97,14 +98,17 @@ pub fn dependency_match(rule: &Rule, from: &Value, to: &Value) -> bool {
         && matches_to_via_only(rule, to, &groups)
         && matches_to_is_more_unstable(rule, from, to)
         && matches_ancestor(rule, from, to)
+        && matches_from_cross_language(rule, from, facts)
+        && matches_to_cross_language(rule, to, facts)
 }
 
-/// `matchesOrphanRule`.
-pub fn matches_orphan_rule(rule: &Rule, module: &Value) -> bool {
+/// `matchesOrphanRule`, then the cross-language keys of `from`.
+pub fn matches_orphan_rule(rule: &Rule, module: &Value, facts: &ModuleFacts) -> bool {
     rule.from.orphan.is_some_and(|orphan| {
         module.get("orphan") == Some(&Value::Bool(orphan))
             && matches_from_path(rule, module)
             && matches_from_path_not(rule, module)
+            && matches_from_cross_language(rule, module, facts)
     })
 }
 
@@ -177,8 +181,8 @@ pub fn matches_dependents_rule(rule: &Rule, module: &Value) -> bool {
 }
 
 /// `match-module-rule`'s `match(module)(rule)`.
-pub fn module_match(rule: &Rule, module: &Value) -> bool {
-    matches_orphan_rule(rule, module)
+pub fn module_match(rule: &Rule, module: &Value, facts: &ModuleFacts) -> bool {
+    matches_orphan_rule(rule, module, facts)
         || matches_reachable_rule(rule, module)
         || matches_reaches_rule(rule, module)
         || matches_dependents_rule(rule, module)
@@ -244,7 +248,13 @@ fn summary(severity: Option<Severity>, name: &str) -> Value {
 }
 
 /// `validateAgainstRules`: `{ valid: true }` or `{ valid: false, rules: [...] }`.
-pub fn validate(rules: &DependencyRules, from: &Value, to: &Value, matcher: Matcher) -> Value {
+pub fn validate(
+    rules: &DependencyRules,
+    from: &Value,
+    to: &Value,
+    matcher: Matcher,
+    facts: &ModuleFacts,
+) -> Value {
     let mut found: Vec<(Option<Severity>, Value)> = Vec::new();
     if !rules.allowed.is_empty() {
         let interesting: Vec<&Rule> = rules
@@ -252,7 +262,11 @@ pub fn validate(rules: &DependencyRules, from: &Value, to: &Value, matcher: Matc
             .iter()
             .filter(|r| matcher.is_interesting(r))
             .collect();
-        if !interesting.is_empty() && !interesting.iter().any(|r| matcher.matches(r, from, to)) {
+        if !interesting.is_empty()
+            && !interesting
+                .iter()
+                .any(|r| matcher.matches(r, from, to, facts))
+        {
             found.push((
                 rules.allowed_severity,
                 summary(rules.allowed_severity, "not-in-allowed"),
@@ -262,7 +276,7 @@ pub fn validate(rules: &DependencyRules, from: &Value, to: &Value, matcher: Matc
     for rule in rules
         .forbidden
         .iter()
-        .filter(|r| matcher.is_interesting(r) && matcher.matches(r, from, to))
+        .filter(|r| matcher.is_interesting(r) && matcher.matches(r, from, to, facts))
     {
         found.push((
             Some(rule.severity()),
@@ -288,23 +302,33 @@ pub fn validate(rules: &DependencyRules, from: &Value, to: &Value, matcher: Matc
 }
 
 /// `validateModule`.
-pub fn validate_module(rules: &DependencyRules, module: &Value) -> Value {
-    validate(rules, module, &js::object(), Matcher::Module)
+pub fn validate_module(rules: &DependencyRules, module: &Value, facts: &ModuleFacts) -> Value {
+    validate(rules, module, &js::object(), Matcher::Module, facts)
 }
 
 /// `validateDependency`.
-pub fn validate_dependency(rules: &DependencyRules, from: &Value, to: &Value) -> Value {
-    validate(rules, from, to, Matcher::Dependency)
+pub fn validate_dependency(
+    rules: &DependencyRules,
+    from: &Value,
+    to: &Value,
+    facts: &ModuleFacts,
+) -> Value {
+    validate(rules, from, to, Matcher::Dependency, facts)
 }
 
-/// `validateFolder`.
+/// `validateFolder`. Folders carry none of the facts the cross-language keys read, and the
+/// loader refuses those keys on a folder-scoped rule.
 pub fn validate_folder(rules: &DependencyRules, from: &Value, to: &Value) -> Value {
-    validate(rules, from, to, Matcher::Folder)
+    validate(rules, from, to, Matcher::Folder, &ModuleFacts::default())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn none() -> ModuleFacts {
+        ModuleFacts::default()
+    }
 
     fn rules(value: Value) -> DependencyRules {
         let map = match value {
@@ -323,12 +347,12 @@ mod tests {
         let from = json!({ "source": "koos koets" });
         let to = json!({ "resolved": "robby van de kerkhof" });
         assert_eq!(
-            validate_dependency(&rules(json!({})), &from, &to),
+            validate_dependency(&rules(json!({})), &from, &to, &none()),
             json!({ "valid": true })
         );
         let all = rules(json!({ "allowed": [{ "from": {}, "to": {} }] }));
         assert_eq!(
-            validate_dependency(&all, &from, &to),
+            validate_dependency(&all, &from, &to, &none()),
             json!({ "valid": true })
         );
     }
@@ -342,6 +366,7 @@ mod tests {
             &set,
             &json!({ "source": "koos koets" }),
             &json!({ "resolved": "robby" }),
+            &none(),
         );
         assert_eq!(
             result,
@@ -356,8 +381,12 @@ mod tests {
             { "name": "e", "severity": "error", "from": {}, "to": {} },
             { "name": "w", "severity": "warn", "from": {}, "to": {} }
         ] }));
-        let result =
-            validate_dependency(&set, &json!({ "source": "a" }), &json!({ "resolved": "b" }));
+        let result = validate_dependency(
+            &set,
+            &json!({ "source": "a" }),
+            &json!({ "resolved": "b" }),
+            &none(),
+        );
         let names: Vec<&str> = result["rules"]
             .as_array()
             .map(|r| r.iter().filter_map(|x| x["name"].as_str()).collect())
@@ -439,8 +468,12 @@ mod tests {
                 },
                 ..DependencyRules::default()
             };
-            let result =
-                validate_dependency(&set, &json!({ "source": "a" }), &json!({ "resolved": "b" }));
+            let result = validate_dependency(
+                &set,
+                &json!({ "source": "a" }),
+                &json!({ "resolved": "b" }),
+                &none(),
+            );
             let names: Vec<&str> = js::array(&result, "rules")
                 .iter()
                 .map(|r| match js::str_of(r, "name") {
@@ -457,12 +490,12 @@ mod tests {
         let set = rules(json!({ "allowed": [{ "from": {}, "to": {} }],
                                 "forbidden": [{ "name": "no-orphans", "from": { "orphan": true }, "to": {} }] }));
         assert_eq!(
-            validate_module(&set, &json!({ "source": "koos koets" })),
+            validate_module(&set, &json!({ "source": "koos koets" }), &none()),
             json!({ "valid": true })
         );
         let orphan = json!({ "source": "x", "orphan": true });
         assert_eq!(
-            validate_module(&set, &orphan)["rules"][0]["name"],
+            validate_module(&set, &orphan, &none())["rules"][0]["name"],
             "no-orphans"
         );
     }
@@ -476,23 +509,27 @@ mod tests {
         assert!(dependency_match(
             &r,
             &from,
-            &json!({ "resolved": "apps/api/y.ts" })
+            &json!({ "resolved": "apps/api/y.ts" }),
+            &none()
         ));
         assert!(!dependency_match(
             &r,
             &from,
-            &json!({ "resolved": "apps/web/y.ts" })
+            &json!({ "resolved": "apps/web/y.ts" }),
+            &none()
         ));
         let flags = rule(json!({ "to": { "circular": true, "dynamic": false } }));
         assert!(dependency_match(
             &flags,
             &from,
-            &json!({ "circular": true, "dynamic": false })
+            &json!({ "circular": true, "dynamic": false }),
+            &none()
         ));
         assert!(!dependency_match(
             &flags,
             &from,
-            &json!({ "circular": true })
+            &json!({ "circular": true }),
+            &none()
         ));
     }
 
@@ -501,19 +538,23 @@ mod tests {
         let orphan = rule(json!({ "from": { "orphan": true, "pathNot": "^x" }, "to": {} }));
         assert!(matches_orphan_rule(
             &orphan,
-            &json!({ "source": "a", "orphan": true })
+            &json!({ "source": "a", "orphan": true }),
+            &none()
         ));
         assert!(!matches_orphan_rule(
             &orphan,
-            &json!({ "source": "x", "orphan": true })
+            &json!({ "source": "x", "orphan": true }),
+            &none()
         ));
         assert!(!matches_orphan_rule(
             &orphan,
-            &json!({ "source": "a", "orphan": false })
+            &json!({ "source": "a", "orphan": false }),
+            &none()
         ));
         assert!(!matches_orphan_rule(
             &rule(json!({})),
-            &json!({ "orphan": true })
+            &json!({ "orphan": true }),
+            &none()
         ));
 
         let unreachable = rule(
@@ -579,7 +620,8 @@ mod tests {
         ));
         assert!(module_match(
             &orphan,
-            &json!({ "source": "a", "orphan": true })
+            &json!({ "source": "a", "orphan": true }),
+            &none()
         ));
     }
 
@@ -633,7 +675,8 @@ mod tests {
             validate_dependency(
                 &set,
                 &json!({ "source": "a" }),
-                &json!({ "circular": true })
+                &json!({ "circular": true }),
+                &none()
             )["valid"],
             true
         );
@@ -676,8 +719,11 @@ mod tests {
             json!({ "required": [{ "name": "req", "severity": "error", "module": { "path": "^src/" }, "to": { "path": "^lib/" } }] }),
         );
         assert_eq!(
-            validate_module(&set, &json!({ "source": "src/a.ts", "dependencies": [] }))["rules"][0]
-                ["name"],
+            validate_module(
+                &set,
+                &json!({ "source": "src/a.ts", "dependencies": [] }),
+                &none()
+            )["rules"][0]["name"],
             "req"
         );
     }
@@ -705,8 +751,8 @@ mod tests {
         ));
         assert!(!matches_reachable_rule(&unreachable, &record("u", true)));
         // Only the reachable rule matches; the other three helpers do not.
-        assert!(module_match(&unreachable, &record("u", false)));
-        assert!(!module_match(&unreachable, &record("u", true)));
+        assert!(module_match(&unreachable, &record("u", false), &none()));
+        assert!(!module_match(&unreachable, &record("u", true), &none()));
     }
 
     #[test]
@@ -716,7 +762,7 @@ mod tests {
         );
         let reaching = |target: &str| json!({ "source": "a", "reaches": [{ "asDefinedInRule": "r", "modules": [{ "source": target, "via": [] }] }] });
         assert!(matches_reaches_rule(&reaches, &reaching("b.ts")));
-        assert!(module_match(&reaches, &reaching("b.ts")));
+        assert!(module_match(&reaches, &reaching("b.ts"), &none()));
         assert!(!matches_reaches_rule(&reaches, &reaching("c.ts")));
         assert!(!matches_reaches_rule(&reaches, &reaching("b/private.ts")));
         let named_without_reachable =
@@ -746,9 +792,9 @@ mod tests {
             json!({ "required": [{ "name": "req", "severity": "error", "module": { "path": "^src/" }, "to": { "path": "^lib/" } }] }),
         );
         let from = json!({ "source": "src/a.ts", "dependencies": [] });
-        assert_eq!(validate_module(&set, &from)["valid"], false);
+        assert_eq!(validate_module(&set, &from, &none())["valid"], false);
         assert_eq!(
-            validate_dependency(&set, &from, &json!({ "resolved": "x.ts" })),
+            validate_dependency(&set, &from, &json!({ "resolved": "x.ts" }), &none()),
             json!({ "valid": true })
         );
     }
@@ -757,8 +803,12 @@ mod tests {
     fn allowed_without_severity_names_only() {
         let mut set = rules(json!({ "allowed": [{ "from": { "path": "^x" }, "to": {} }] }));
         set.allowed_severity = None;
-        let result =
-            validate_dependency(&set, &json!({ "source": "a" }), &json!({ "resolved": "b" }));
+        let result = validate_dependency(
+            &set,
+            &json!({ "source": "a" }),
+            &json!({ "resolved": "b" }),
+            &none(),
+        );
         assert_eq!(result["rules"][0], json!({ "name": "not-in-allowed" }));
     }
 }
