@@ -1,4 +1,4 @@
-//! Slice rules: types grouped by a namespace pattern, and the two conditions on the groups.
+//! Slice rules: types or modules grouped by a pattern, and the two conditions on the groups.
 //!
 //! - Source: [design § Slice rules](../../../docs/artifacts/design.md#slice-rules)
 //! - Coverage: [`ArchUnitNET` § Slices](../../../docs/artifacts/archunitnet-0.13.4-coverage.md#slices-sliceruledefinition)

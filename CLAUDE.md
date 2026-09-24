@@ -138,7 +138,8 @@ typos && actionlint && git ls-files '*.sh' | xargs shellcheck --severity=style
 conformance/dependency-cruiser/run.sh                   # gate 1, layers 1 to 4 (needs Node 22)
 conformance/dependency-cruiser/scripts/run-layer-5.sh --all        # layer 5: zero-diff on the three oracles (clones them)
 conformance/dependency-cruiser/scripts/run-layer-5.sh --mutations  # layer 5: the twelve-mutation branch
-scripts/gate2-check.sh && scripts/ratchets.sh           # gate 2 fixture check; the conformance ratchets
+scripts/gate2-check.sh && scripts/ratchets.sh && scripts/gate2-ratchet.sh   # gate 2 fixture checks; the conformance ratchets
+cargo test -p rb-rules --test gate2 --test gate2_netarchtest -- --nocapture   # gate 2: every ported ArchUnitNET and NetArchTest case
 cargo test -p rb-extract-ts --test extract_fixtures -- --nocapture   # layer 1 alone: prints passed/total/ratio
 conformance/archunitnet/scripts/spike-b-attribution.sh # .NET attribution over the oracles (needs the .NET SDK)
 fuzz/run.sh metadata_reader 600                         # fuzz the metadata reader (nightly toolchain, cargo-fuzz)
