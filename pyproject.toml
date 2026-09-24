@@ -13,6 +13,8 @@ extend-exclude = [
     "conformance/*/upstream",
     "conformance/*/fixtures",
     "docs/artifacts",
+    # Fixture packages are extractor input, written to exercise import forms, not to pass lint.
+    "crates/*/tests/fixtures",
 ]
 
 [tool.ruff.lint]
@@ -43,7 +45,7 @@ warn_unreachable = true
 warn_unused_configs = true
 disallow_any_generics = true
 no_implicit_reexport = true
-exclude = "(^|/)(target|node_modules|\\.venv|testbeds/checkouts|conformance/.*/(upstream|fixtures))/"
+exclude = "(^|/)(target|node_modules|\\.venv|testbeds/checkouts|conformance/.*/(upstream|fixtures)|crates/[^/]+/tests/fixtures)/"
 
 [tool.pytest.ini_options]
 addopts = "--cov --cov-report=term-missing --cov-fail-under=70"
