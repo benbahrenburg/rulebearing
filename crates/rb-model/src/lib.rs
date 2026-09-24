@@ -34,16 +34,19 @@ pub mod schema;
 pub mod violation_id;
 pub mod vocab;
 
-pub use code::{AttributeElement, CallElement, CodeLayer, Location, MemberElement, TypeElement};
+pub use code::{
+    Accessor, AttributeElement, CallElement, CodeLayer, ElementDependency, Location, MemberElement,
+    NamedArgument, TypeElement,
+};
 pub use document::{
-    Change, Dependency, Environment, EnvironmentIssue, ExperimentalStats, ExpiredEntry,
-    ExtensionFound, Folder, FolderDependency, FolderDependent, GraphDocument, Inspected,
-    InstabilityMetric, MiniDependency, Module, RatchetResult, RatchetStatus, Reachable,
+    AttributionCounts, Change, Dependency, Environment, EnvironmentIssue, ExperimentalStats,
+    ExpiredEntry, ExtensionFound, Folder, FolderDependency, FolderDependent, GraphDocument,
+    Inspected, InstabilityMetric, MiniDependency, Module, RatchetResult, RatchetStatus, Reachable,
     ReachedModule, Reaches, Receipt, RevisionData, RuleSummary, Summary, TranspilerFound,
     VacuousRule, Violation, ViolationMetrics,
 };
 pub use extract::{ExtractError, Extraction, Extractor, Warning};
-pub use options::{DotnetOptions, PythonOptions, TypeScriptOptions};
+pub use options::{DirectoryFilter, DotnetOptions, PythonOptions, TypeScriptOptions};
 pub use vocab::{
     Attribution, ChangeType, DependencyKind, DependencyType, ExternalModuleResolutionStrategy,
     Language, ModuleSystem, Parser, Protocol, Severity, UnknownValue, ViolationType,

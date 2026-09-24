@@ -1,6 +1,6 @@
 # Plan 0002: Wave 2: .NET, Python, element rules, migration
 
-- **Status:** Pending
+- **Status:** In progress: 2A
 - **Owner:** Ben Bahrenburg (@benbahrenburg)
 - **Created:** 2026-09-20
 - **Calendar estimate:** 10 weeks at ~10 h/week (from [design § Waves](../../artifacts/design.md#waves), row 2)
@@ -759,7 +759,7 @@ public class ArchitectureRules
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 2A | ADR-0003 branch confirmed from the wave 0 table | Not started | link to the wave 0 status row |
+| 2A | ADR-0003 branch confirmed from the wave 0 table | Done | [ADR-0022](../../adr/0022-dotnet-reader-in-rust-confirmed.md): the Rust reader stays (trigger figure 0.9929); plan 0000 row 0D |
 | 2A | Discovery (`.sln`, `.slnx`, `.csproj`, `Directory.*.props`, loader options) | Not started | `tests/discover.rs` |
 | 2A | ECMA-335 tables, signatures, IL walker | Not started | `tests/ecma335.rs` |
 | 2A | Portable PDB, embedded PDB, SourceLink unmapping | Not started | `tests/pdb.rs` |

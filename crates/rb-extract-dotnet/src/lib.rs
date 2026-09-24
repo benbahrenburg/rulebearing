@@ -284,11 +284,7 @@ impl Extractor for DotnetExtractor {
         Ok(Extraction {
             modules,
             code: None,
-            inspected: Receipt {
-                files: count,
-                assemblies: report.assemblies.len() as u64,
-                modules: count,
-            },
+            inspected: Receipt::counts(count, report.assemblies.len() as u64, count),
             warnings,
         })
     }

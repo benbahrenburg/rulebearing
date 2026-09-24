@@ -212,14 +212,55 @@
       ],
       "type": "string"
     },
+    "DirectoryFilter": {
+      "additionalProperties": false,
+      "description": "One `languages.dotnet.directories` entry.",
+      "properties": {
+        "dir": {
+          "description": "The folder, relative to the working directory.",
+          "type": "string"
+        },
+        "filter": {
+          "description": "A file-name glob such as `MyApp.*.dll`. Default: `*.dll`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "dir"
+      ],
+      "type": "object"
+    },
     "DotnetOptions": {
       "additionalProperties": false,
       "description": "`languages.dotnet`.",
       "properties": {
+        "assemblies": {
+          "description": "Assemblies to read instead of a solution's projects, as globs relative to the working\ndirectory (`ArchLoader.LoadAssembly`, `LoadAssemblies`).",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
         "configuration": {
           "description": "The build configuration whose output is read. Default: `Debug`.",
           "type": [
             "string",
+            "null"
+          ]
+        },
+        "directories": {
+          "description": "Folders whose assemblies are read, each with an optional file-name filter\n(`LoadFilteredDirectory`).",
+          "items": {
+            "$ref": "#/$defs/DirectoryFilter"
+          },
+          "type": [
+            "array",
             "null"
           ]
         },
@@ -233,6 +274,23 @@
             }
           ],
           "description": "Project paths to leave out, as patterns."
+        },
+        "includeDependencies": {
+          "description": "Also read the assemblies the loaded ones reference, when they sit beside them\n(`LoadAssembliesIncludingDependencies`). Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "namespaces": {
+          "description": "Keep only types in these namespaces or below (`LoadNamespacesWithinAssembly`).",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
         },
         "solution": {
           "description": "The `.sln` or `.slnx` to read. Default: the only one in the working directory.",

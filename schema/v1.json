@@ -3,11 +3,24 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
   "definitions": {
+    "Accessor": {
+      "description": "An accessor of a property: whether it exists is `Some`, and its visibility.",
+      "properties": {
+        "visibility": {
+          "description": "Visibility, as for [`TypeElement::visibility`].",
+          "type": "string"
+        }
+      },
+      "required": [
+        "visibility"
+      ],
+      "type": "object"
+    },
     "AttributeElement": {
       "description": "An attribute or decorator applied to a type or member.",
       "properties": {
         "arguments": {
-          "description": "Constructor and named arguments, as literal text.",
+          "description": "Positional (constructor) arguments, as literal text: a string's value, a number, `true`,\na type's full name.",
           "items": {
             "type": "string"
           },
@@ -50,6 +63,13 @@
             "null"
           ]
         },
+        "namedArguments": {
+          "description": "Named arguments (fields and properties set in the attribute), in declaration order.",
+          "items": {
+            "$ref": "#/definitions/NamedArgument"
+          },
+          "type": "array"
+        },
         "target": {
           "description": "The full name of the type or `Type.member` it is applied to.",
           "type": "string"
@@ -69,6 +89,36 @@
         "none"
       ],
       "type": "string"
+    },
+    "AttributionCounts": {
+      "additionalProperties": false,
+      "description": "`summary.inspected.<language>.attribution`: how many types each attribution reached.",
+      "properties": {
+        "inferred": {
+          "description": "Attributed by nesting or naming convention.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "none": {
+          "description": "Not attributed to a file.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "pdb": {
+          "description": "Attributed through the portable PDB.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "pdb",
+        "inferred",
+        "none"
+      ],
+      "type": "object"
     },
     "CallElement": {
       "description": "A call from one member to another.",
@@ -503,6 +553,40 @@
       ],
       "type": "string"
     },
+    "ElementDependency": {
+      "description": "One dependency of a type or member on a type: what `dependOnAny`, `onlyDependOn` and\n`haveDependencyInMethodBodyTo` read.",
+      "properties": {
+        "kind": {
+          "description": "What formed the dependency: `inherits`, `implements`, `field`, `signature`, `body`,\n`attribute`, `generic-argument`, `typeof`, `import`.",
+          "type": "string"
+        },
+        "line": {
+          "description": "1-based line of the reference.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "member": {
+          "description": "The member reference that formed it, when there is one (`Save`, `_context`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "target": {
+          "description": "The target type's full name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target",
+        "kind"
+      ],
+      "type": "object"
+    },
     "Environment": {
       "additionalProperties": false,
       "description": "`summary.environment`.",
@@ -840,12 +924,48 @@
           "description": "The declaring type's full name.",
           "type": "string"
         },
+        "dependencies": {
+          "description": "The types this member depends on, sorted by target then kind.",
+          "items": {
+            "$ref": "#/definitions/ElementDependency"
+          },
+          "type": "array"
+        },
         "file": {
           "description": "Repository-relative path, absent when attribution failed.",
           "type": [
             "string",
             "null"
           ]
+        },
+        "fullName": {
+          "description": "The member's full name in `ArchUnitNET`'s spelling (`Namespace.Type::Method(System.Int32)`\nfor .NET, `module.Class.method` for Python).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "getter": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Accessor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The property's getter, when it has one."
+        },
+        "initSetter": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Accessor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The property's `init` setter (C# 9), when it has one."
         },
         "kind": {
           "description": "`method`, `constructor`, `property`, `field`, `event`, `getter`, `setter`.",
@@ -892,6 +1012,17 @@
             "string",
             "null"
           ]
+        },
+        "setter": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Accessor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The property's setter, when it has one."
         },
         "static": {
           "description": "Static.",
@@ -1168,6 +1299,24 @@
       ],
       "type": "string"
     },
+    "NamedArgument": {
+      "description": "One named argument of an attribute.",
+      "properties": {
+        "name": {
+          "description": "The field or property name.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The value, as literal text.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "type": "object"
+    },
     "Protocol": {
       "enum": [
         "data:",
@@ -1311,7 +1460,7 @@
     },
     "Receipt": {
       "additionalProperties": false,
-      "description": "What one language's extractor inspected.",
+      "description": "What one language's extractor inspected.\n\nThe .NET and Python additions are the observability counts of\n[Wave 2 § 1.8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#18-quality-attributes):\nabsent for a language that has no such thing, so a TypeScript receipt keeps its wave 1 shape.",
       "properties": {
         "assemblies": {
           "default": 0,
@@ -1319,6 +1468,17 @@
           "format": "uint64",
           "minimum": 0,
           "type": "integer"
+        },
+        "attribution": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AttributionCounts"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Types by how they were attributed to a file (.NET)."
         },
         "files": {
           "description": "Source files read.",
@@ -1331,6 +1491,48 @@
           "format": "uint64",
           "minimum": 0,
           "type": "integer"
+        },
+        "pdbDocuments": {
+          "description": "Source documents the portable PDBs list (.NET).",
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "projects": {
+          "description": "Projects discovered (.NET).",
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "roots": {
+          "description": "The import roots, repository-relative (Python).",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "site": {
+          "description": "The installed-distributions index (Python): its path, or `none` when no environment was\nfound and every non-local, non-stdlib import is `unresolved`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stdlibVersion": {
+          "description": "The standard-library snapshot used (Python), for example `3.12`.",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "required": [
@@ -1588,6 +1790,13 @@
             "null"
           ]
         },
+        "assemblyQualifiedName": {
+          "description": "The assembly-qualified name in reflection's spelling (.NET).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "attribution": {
           "anyOf": [
             {
@@ -1606,6 +1815,13 @@
             "null"
           ]
         },
+        "baseTypes": {
+          "description": "Every base type up the chain, nearest first, as far as the loaded code declares them\n(`areAssignableTo` walks it).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "column": {
           "description": "1-based column.",
           "format": "uint32",
@@ -1615,6 +1831,13 @@
             "null"
           ]
         },
+        "dependencies": {
+          "description": "The types this type depends on, sorted by target then kind.",
+          "items": {
+            "$ref": "#/definitions/ElementDependency"
+          },
+          "type": "array"
+        },
         "file": {
           "description": "Repository-relative path, absent when attribution failed.",
           "type": [
@@ -1622,12 +1845,26 @@
             "null"
           ]
         },
+        "files": {
+          "description": "Every other file that declares part of the type (a C# partial type), sorted.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "fullName": {
           "description": "Fully qualified name (`CleanArchitecture.Domain.TodoItem`, `src/a.ts#Widget`).",
           "type": "string"
         },
         "generic": {
           "description": "Generic.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "immutable": {
+          "description": "Immutable: every field read-only and no settable property (a frozen dataclass in Python).",
           "type": [
             "boolean",
             "null"
@@ -1679,6 +1916,13 @@
             "null"
           ]
         },
+        "nestedIn": {
+          "description": "The enclosing type's full name, for a nested type.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "record": {
           "description": "A record type.",
           "type": [
@@ -1695,6 +1939,13 @@
         },
         "static": {
           "description": "Static.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "valueType": {
+          "description": "A value type (.NET struct or enum).",
           "type": [
             "boolean",
             "null"
