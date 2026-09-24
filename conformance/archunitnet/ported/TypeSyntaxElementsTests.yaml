@@ -1,0 +1,3984 @@
+# Ported from ArchUnitNET 0.13.4 ArchUnitNETTests/Fluent/Syntax/Elements/TypeSyntaxElementsTests.cs by conformance/archunitnet/tools/port.py. Do not edit; rerun the tool.
+source: ArchUnitNETTests/Fluent/Syntax/Elements/TypeSyntaxElementsTests.cs
+architecture: [TypeAssembly]
+cases:
+- id: BeSystemTypeTest#1
+  alsoCovers: [BeSystemTypeTest#2]
+  query: Types that are "TypeNamespace.RegularClass" should be "TypeNamespace.RegularClass"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(helper.RegularClassSystemType)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be: [TypeNamespace.RegularClass]
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: BeSystemTypeTest#3
+  query: Types that are "TypeNamespace.RegularClass" should be types that are "TypeNamespace.RegularClass"
+  csharp: Types().That().Are(helper.RegularClass).Should().BeTypesThat().Are(helper.RegularClass)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      beTypesThat:
+        kind: type
+        where:
+          are: [TypeNamespace.RegularClass]
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: BeSystemTypeTest#4
+  alsoCovers: [BeSystemTypeTest#5]
+  query: Types that are "TypeNamespace.RegularClass" should be Types that are "TypeNamespace.RegularClass"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().Are(helper.RegularClassSystemType))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where:
+          are: [TypeNamespace.RegularClass]
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: BeSystemTypeTest#6
+  alsoCovers: [BeSystemTypeTest#7]
+  query: Types that are "TypeNamespace.OtherRegularClass" should be "TypeNamespace.RegularClass"
+  csharp: Types().That().Are(helper.OtherRegularClass).Should().Be(helper.RegularClassSystemType)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OtherRegularClass]
+    should:
+      be: [TypeNamespace.RegularClass]
+  expect:
+    pass: []
+    fail: [TypeNamespace.OtherRegularClass]
+- id: BeSystemTypeTest#8
+  alsoCovers: [BeSystemTypeTest#9]
+  query: Types that are "TypeNamespace.OtherRegularClass" should be Types that are "TypeNamespace.RegularClass"
+  csharp: Types().That().Are(helper.OtherRegularClass).Should().Be(Types().That().Are(helper.RegularClassSystemType))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OtherRegularClass]
+    should:
+      be:
+        kind: type
+        where:
+          are: [TypeNamespace.RegularClass]
+  expect:
+    pass: []
+    fail: [TypeNamespace.OtherRegularClass]
+- id: BeSystemTypeTest#10
+  query: Types that are "TypeNamespace.RegularClass" should not exist
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(new List<System.Type>())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be: []
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: BeSystemTypeTest#11
+  query: Types that are "TypeNamespace.RegularClass" should be Types that do not exist
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().Are(new List<System.Type>()))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where:
+          are: []
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: BeSystemTypeTest#12
+  alsoCovers: [BeSystemTypeTest#13]
+  query: Types that are "TypeNamespace.RegularClass" should be "AttributeNamespace.ClassWithoutAttributes"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(typeof(AttributeNamespace.ClassWithoutAttributes))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: BeSystemTypeTest#14
+  alsoCovers: [BeSystemTypeTest#15]
+  query: Types that are "TypeNamespace.RegularClass" should be Types that are "AttributeNamespace.ClassWithoutAttributes"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().Are(typeof(AttributeNamespace.ClassWithoutAttributes)))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where:
+          are: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: BeSystemTypeTest#16
+  alsoCovers: [BeSystemTypeTest#17]
+  query: Types that are "TypeNamespace.RegularClass" should be "TypeNamespace.RegularClass" or "TypeNamespace.OtherRegularClass"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(helper.RegularClassSystemType, helper.OtherRegularClassSystemType)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be: [TypeNamespace.RegularClass, TypeNamespace.OtherRegularClass]
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: BeSystemTypeTest#18
+  alsoCovers: [BeSystemTypeTest#19]
+  query: Types that are "TypeNamespace.RegularClass" should be Types that are "TypeNamespace.RegularClass" or "TypeNamespace.OtherRegularClass"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().Are(helper.RegularClassSystemType, helper.OtherRegularClassSystemType))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where:
+          are: [TypeNamespace.RegularClass, TypeNamespace.OtherRegularClass]
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: BeSystemTypeTest#20
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.OtherRegularClass" should be "TypeNamespace.RegularClass"
+  csharp: Types().That().Are(helper.RegularClass, helper.OtherRegularClass).Should().Be(helper.RegularClassSystemType)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.OtherRegularClass]
+    should:
+      be: [TypeNamespace.RegularClass]
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: [TypeNamespace.OtherRegularClass]
+- id: NotBeSystemTypeTest#1
+  alsoCovers: [NotBeSystemTypeTest#2]
+  query: Types that are "TypeNamespace.OtherRegularClass" should not be "TypeNamespace.RegularClass"
+  csharp: Types().That().Are(helper.OtherRegularClass).Should().NotBe(helper.RegularClassSystemType)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OtherRegularClass]
+    should:
+      notBe: [TypeNamespace.RegularClass]
+  expect:
+    pass: [TypeNamespace.OtherRegularClass]
+    fail: []
+- id: NotBeSystemTypeTest#3
+  alsoCovers: [NotBeSystemTypeTest#4]
+  query: Types that are "TypeNamespace.OtherRegularClass" should be Types that are not "TypeNamespace.RegularClass"
+  csharp: Types().That().Are(helper.OtherRegularClass).Should().Be(Types().That().AreNot(helper.RegularClassSystemType))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OtherRegularClass]
+    should:
+      be:
+        kind: type
+        where:
+          areNot: [TypeNamespace.RegularClass]
+  expect:
+    pass: [TypeNamespace.OtherRegularClass]
+    fail: []
+- id: NotBeSystemTypeTest#5
+  alsoCovers: [NotBeSystemTypeTest#6]
+  query: Types that are "TypeNamespace.RegularClass" should not be "TypeNamespace.RegularClass"
+  csharp: Types().That().Are(helper.RegularClass).Should().NotBe(helper.RegularClassSystemType)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      notBe: [TypeNamespace.RegularClass]
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: NotBeSystemTypeTest#7
+  alsoCovers: [NotBeSystemTypeTest#8]
+  query: Types that are "TypeNamespace.RegularClass" should be Types that are not "TypeNamespace.RegularClass"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().AreNot(helper.RegularClassSystemType))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where:
+          areNot: [TypeNamespace.RegularClass]
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: NotBeSystemTypeTest#9
+  query: Types that are "TypeNamespace.RegularClass" should exist
+  csharp: Types().That().Are(helper.RegularClass).Should().NotBe(new List<System.Type>())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      notBe: []
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotBeSystemTypeTest#10
+  query: Types that are "TypeNamespace.RegularClass" should be Types that are all types
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().AreNot(new List<System.Type>()))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where:
+          areNot: []
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotBeSystemTypeTest#11
+  alsoCovers: [NotBeSystemTypeTest#12]
+  query: Types that are "TypeNamespace.RegularClass" should not be "AttributeNamespace.ClassWithoutAttributes"
+  csharp: Types().That().Are(helper.RegularClass).Should().NotBe(typeof(AttributeNamespace.ClassWithoutAttributes))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      notBe: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: NotBeSystemTypeTest#13
+  alsoCovers: [NotBeSystemTypeTest#14]
+  query: Types that are "TypeNamespace.RegularClass" should be Types that are not "AttributeNamespace.ClassWithoutAttributes"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().AreNot(typeof(AttributeNamespace.ClassWithoutAttributes)))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where:
+          areNot: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: NotBeSystemTypeTest#15
+  alsoCovers: [NotBeSystemTypeTest#16]
+  query: Types that are "TypeNamespace.OtherRegularClass" should not be "TypeNamespace.RegularClass" or "TypeNamespace.ClassWithProperty"
+  csharp: Types().That().Are(helper.OtherRegularClass).Should().NotBe(helper.RegularClassSystemType, helper.ClassWithPropertySystemType)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OtherRegularClass]
+    should:
+      notBe: [TypeNamespace.RegularClass, TypeNamespace.ClassWithProperty]
+  expect:
+    pass: [TypeNamespace.OtherRegularClass]
+    fail: []
+- id: NotBeSystemTypeTest#17
+  alsoCovers: [NotBeSystemTypeTest#18]
+  query: Types that are "TypeNamespace.OtherRegularClass" should be Types that are not "TypeNamespace.RegularClass" or "TypeNamespace.ClassWithProperty"
+  csharp: Types().That().Are(helper.OtherRegularClass).Should().Be(Types().That().AreNot(helper.RegularClassSystemType, helper.ClassWithPropertySystemType))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OtherRegularClass]
+    should:
+      be:
+        kind: type
+        where:
+          areNot: [TypeNamespace.RegularClass, TypeNamespace.ClassWithProperty]
+  expect:
+    pass: [TypeNamespace.OtherRegularClass]
+    fail: []
+- id: NotBeSystemTypeTest#19
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.OtherRegularClass" should not be "TypeNamespace.RegularClass"
+  csharp: Types().That().Are(helper.RegularClass, helper.OtherRegularClass).Should().NotBe(helper.RegularClassSystemType)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.OtherRegularClass]
+    should:
+      notBe: [TypeNamespace.RegularClass]
+  expect:
+    pass: [TypeNamespace.OtherRegularClass]
+    fail: [TypeNamespace.RegularClass]
+- id: BeAssignableToTest#1
+  alsoCovers: [BeAssignableToTest#2, BeAssignableToTest#4, BeAssignableToTest#5]
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should be assignable to "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().BeAssignableTo(helper.BaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      beAssignableTo: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.DerivedClassForAssign]
+    fail: []
+- id: BeAssignableToTest#3
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should be assignable to Types that are "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().BeAssignableTo(Types().That().Are(helper.BaseClassForAssign))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      beAssignableTo:
+        kind: type
+        where:
+          are: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.DerivedClassForAssign]
+    fail: []
+- id: BeAssignableToTest#6
+  alsoCovers: [BeAssignableToTest#7, BeAssignableToTest#9, BeAssignableToTest#10]
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should be Types that are assignable to "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().Be(Types().That().AreAssignableTo(helper.BaseClassForAssign))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areAssignableTo: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.DerivedClassForAssign]
+    fail: []
+- id: BeAssignableToTest#8
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should be Types that are assignable to Types that are "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().Be(Types().That().AreAssignableTo(Types().That().Are(helper.BaseClassForAssign)))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areAssignableTo:
+            kind: type
+            where:
+              are: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.DerivedClassForAssign]
+    fail: []
+- id: BeAssignableToTest#11
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should be assignable to types that are "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().BeAssignableToTypesThat().Are(helper.BaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      beAssignableToTypesThat:
+        kind: type
+        where:
+          are: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.DerivedClassForAssign]
+    fail: []
+- id: BeAssignableToTest#12
+  alsoCovers: [BeAssignableToTest#13, BeAssignableToTest#15, BeAssignableToTest#16]
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should be assignable to "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().BeAssignableTo(helper.BaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      beAssignableTo: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.UnrelatedClassForAssign]
+- id: BeAssignableToTest#14
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should be assignable to Types that are "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().BeAssignableTo(Types().That().Are(helper.BaseClassForAssign))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      beAssignableTo:
+        kind: type
+        where:
+          are: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.UnrelatedClassForAssign]
+- id: BeAssignableToTest#17
+  alsoCovers: [BeAssignableToTest#18, BeAssignableToTest#20, BeAssignableToTest#21]
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should be Types that are assignable to "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().Be(Types().That().AreAssignableTo(helper.BaseClassForAssign))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areAssignableTo: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.UnrelatedClassForAssign]
+- id: BeAssignableToTest#19
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should be Types that are assignable to Types that are "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().Be(Types().That().AreAssignableTo(Types().That().Are(helper.BaseClassForAssign)))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areAssignableTo:
+            kind: type
+            where:
+              are: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.UnrelatedClassForAssign]
+- id: BeAssignableToTest#22
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should be assignable to types that are "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().BeAssignableToTypesThat().Are(helper.BaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      beAssignableToTypesThat:
+        kind: type
+        where:
+          are: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.UnrelatedClassForAssign]
+- id: BeAssignableToTest#23
+  alsoCovers: [BeAssignableToTest#24, BeAssignableToTest#26, BeAssignableToTest#27]
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should be assignable to "TypeNamespace.BaseClassForAssign" or "TypeNamespace.OtherBaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().BeAssignableTo(helper.BaseClassForAssign, helper.OtherBaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      beAssignableTo: [TypeNamespace.BaseClassForAssign, TypeNamespace.OtherBaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.UnrelatedClassForAssign]
+- id: BeAssignableToTest#25
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should be assignable to Types that are "TypeNamespace.BaseClassForAssign" or "TypeNamespace.OtherBaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().BeAssignableTo(Types().That().Are(helper.BaseClassForAssign, helper.OtherBaseClassForAssign))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      beAssignableTo:
+        kind: type
+        where:
+          are: [TypeNamespace.BaseClassForAssign, TypeNamespace.OtherBaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.UnrelatedClassForAssign]
+- id: BeAssignableToTest#28
+  alsoCovers: [BeAssignableToTest#29, BeAssignableToTest#31, BeAssignableToTest#32]
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should be Types that are assignable to "TypeNamespace.BaseClassForAssign" or "TypeNamespace.OtherBaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().Be(Types().That().AreAssignableTo(helper.BaseClassForAssign, helper.OtherBaseClassForAssign))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areAssignableTo: [TypeNamespace.BaseClassForAssign, TypeNamespace.OtherBaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.UnrelatedClassForAssign]
+- id: BeAssignableToTest#30
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should be Types that are assignable to Types that are "TypeNamespace.BaseClassForAssign" or "TypeNamespace.OtherBaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().Be(Types().That().AreAssignableTo(Types().That().Are(helper.BaseClassForAssign, helper.OtherBaseClassForAssign)))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areAssignableTo:
+            kind: type
+            where:
+              are: [TypeNamespace.BaseClassForAssign, TypeNamespace.OtherBaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.UnrelatedClassForAssign]
+- id: BeAssignableToTest#33
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should be assignable to types that are "TypeNamespace.BaseClassForAssign" or "TypeNamespace.OtherBaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().BeAssignableToTypesThat().Are(helper.BaseClassForAssign, helper.OtherBaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      beAssignableToTypesThat:
+        kind: type
+        where:
+          are: [TypeNamespace.BaseClassForAssign, TypeNamespace.OtherBaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.UnrelatedClassForAssign]
+- id: BeAssignableToTest#34
+  query: Types that are "TypeNamespace.DerivedClassForAssign" or "TypeNamespace.OtherDerivedClassForAssign" should be assignable to "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign, helper.OtherDerivedClassForAssign).Should().BeAssignableTo(helper.BaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign, TypeNamespace.OtherDerivedClassForAssign]
+    should:
+      beAssignableTo: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.DerivedClassForAssign, TypeNamespace.OtherDerivedClassForAssign]
+    fail: []
+- id: BeAssignableToTest#35
+  query: Types that are "TypeNamespace.DerivedClassForAssign" or "TypeNamespace.UnrelatedClassForAssign" should be assignable to "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign, helper.UnrelatedClassForAssign).Should().BeAssignableTo(helper.BaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign, TypeNamespace.UnrelatedClassForAssign]
+    should:
+      beAssignableTo: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.DerivedClassForAssign]
+    fail: [TypeNamespace.UnrelatedClassForAssign]
+- id: BeAssignableToTest#36
+  query: Types that are "TypeNamespace.BaseClassForAssign" should be assignable to "AttributeNamespace.ClassWithoutAttributes"
+  csharp: Types().That().Are(helper.BaseClassForAssign).Should().BeAssignableTo(new List<System.Type> { typeof(AttributeNamespace.ClassWithoutAttributes) })
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.BaseClassForAssign]
+    should:
+      beAssignableTo: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: BeAssignableToTest#37
+  query: Types that are "TypeNamespace.BaseClassForAssign" should be Types that are assignable to "AttributeNamespace.ClassWithoutAttributes"
+  csharp: Types().That().Are(helper.BaseClassForAssign).Should().Be(Types().That().AreAssignableTo(new List<System.Type> { typeof(AttributeNamespace.ClassWithoutAttributes) }))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.BaseClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areAssignableTo: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: BeAssignableToTest#38
+  alsoCovers: [BeAssignableToTest#39]
+  query: Types that are "TypeNamespace.BaseClassForAssign" should be assignable to no types (always false)
+  csharp: Types().That().Are(helper.BaseClassForAssign).Should().BeAssignableTo(new List<IType>())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.BaseClassForAssign]
+    should:
+      beAssignableTo: []
+  expect:
+    pass: []
+    fail: [TypeNamespace.BaseClassForAssign]
+- id: BeAssignableToTest#40
+  alsoCovers: [BeAssignableToTest#41]
+  query: Types that are "TypeNamespace.BaseClassForAssign" should be Types that are assignable to no types (always false)
+  csharp: Types().That().Are(helper.BaseClassForAssign).Should().Be(Types().That().AreAssignableTo(new List<IType>()))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.BaseClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areAssignableTo: []
+  expect:
+    pass: []
+    fail: [TypeNamespace.BaseClassForAssign]
+- id: NotBeAssignableToTest#1
+  alsoCovers: [NotBeAssignableToTest#2, NotBeAssignableToTest#4, NotBeAssignableToTest#5]
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should not be assignable to "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().NotBeAssignableTo(helper.BaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      notBeAssignableTo: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.UnrelatedClassForAssign]
+    fail: []
+- id: NotBeAssignableToTest#3
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should not be assignable to Types that are "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().NotBeAssignableTo(Types().That().Are(helper.BaseClassForAssign))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      notBeAssignableTo:
+        kind: type
+        where:
+          are: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.UnrelatedClassForAssign]
+    fail: []
+- id: NotBeAssignableToTest#6
+  alsoCovers: [NotBeAssignableToTest#7, NotBeAssignableToTest#9, NotBeAssignableToTest#10]
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should be Types that are not assignable to "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().Be(Types().That().AreNotAssignableTo(helper.BaseClassForAssign))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areNotAssignableTo: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.UnrelatedClassForAssign]
+    fail: []
+- id: NotBeAssignableToTest#8
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should be Types that are not assignable to Types that are "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().Be(Types().That().AreNotAssignableTo(Types().That().Are(helper.BaseClassForAssign)))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areNotAssignableTo:
+            kind: type
+            where:
+              are: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.UnrelatedClassForAssign]
+    fail: []
+- id: NotBeAssignableToTest#11
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" should not be assignable to types that are "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign).Should().NotBeAssignableToTypesThat().Are(helper.BaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign]
+    should:
+      notBeAssignableToTypesThat:
+        kind: type
+        where:
+          are: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.UnrelatedClassForAssign]
+    fail: []
+- id: NotBeAssignableToTest#12
+  alsoCovers: [NotBeAssignableToTest#13, NotBeAssignableToTest#15, NotBeAssignableToTest#16]
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should not be assignable to "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().NotBeAssignableTo(helper.BaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      notBeAssignableTo: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.DerivedClassForAssign]
+- id: NotBeAssignableToTest#14
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should not be assignable to Types that are "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().NotBeAssignableTo(Types().That().Are(helper.BaseClassForAssign))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      notBeAssignableTo:
+        kind: type
+        where:
+          are: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.DerivedClassForAssign]
+- id: NotBeAssignableToTest#17
+  alsoCovers: [NotBeAssignableToTest#18, NotBeAssignableToTest#20, NotBeAssignableToTest#21]
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should be Types that are not assignable to "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().Be(Types().That().AreNotAssignableTo(helper.BaseClassForAssign))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areNotAssignableTo: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.DerivedClassForAssign]
+- id: NotBeAssignableToTest#19
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should be Types that are not assignable to Types that are "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().Be(Types().That().AreNotAssignableTo(Types().That().Are(helper.BaseClassForAssign)))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areNotAssignableTo:
+            kind: type
+            where:
+              are: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.DerivedClassForAssign]
+- id: NotBeAssignableToTest#22
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should not be assignable to types that are "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().NotBeAssignableToTypesThat().Are(helper.BaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      notBeAssignableToTypesThat:
+        kind: type
+        where:
+          are: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.DerivedClassForAssign]
+- id: NotBeAssignableToTest#23
+  alsoCovers: [NotBeAssignableToTest#24, NotBeAssignableToTest#26, NotBeAssignableToTest#27]
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should not be assignable to "TypeNamespace.BaseClassForAssign" or "TypeNamespace.OtherBaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().NotBeAssignableTo(helper.BaseClassForAssign, helper.OtherBaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      notBeAssignableTo: [TypeNamespace.BaseClassForAssign, TypeNamespace.OtherBaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.DerivedClassForAssign]
+- id: NotBeAssignableToTest#25
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should not be assignable to Types that are "TypeNamespace.BaseClassForAssign" or "TypeNamespace.OtherBaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().NotBeAssignableTo(Types().That().Are(helper.BaseClassForAssign, helper.OtherBaseClassForAssign))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      notBeAssignableTo:
+        kind: type
+        where:
+          are: [TypeNamespace.BaseClassForAssign, TypeNamespace.OtherBaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.DerivedClassForAssign]
+- id: NotBeAssignableToTest#28
+  alsoCovers: [NotBeAssignableToTest#29, NotBeAssignableToTest#31, NotBeAssignableToTest#32]
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should be Types that are not assignable to "TypeNamespace.BaseClassForAssign" or "TypeNamespace.OtherBaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().Be(Types().That().AreNotAssignableTo(helper.BaseClassForAssign, helper.OtherBaseClassForAssign))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areNotAssignableTo: [TypeNamespace.BaseClassForAssign, TypeNamespace.OtherBaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.DerivedClassForAssign]
+- id: NotBeAssignableToTest#30
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should be Types that are not assignable to Types that are "TypeNamespace.BaseClassForAssign" or "TypeNamespace.OtherBaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().Be(Types().That().AreNotAssignableTo(Types().That().Are(helper.BaseClassForAssign, helper.OtherBaseClassForAssign)))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areNotAssignableTo:
+            kind: type
+            where:
+              are: [TypeNamespace.BaseClassForAssign, TypeNamespace.OtherBaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.DerivedClassForAssign]
+- id: NotBeAssignableToTest#33
+  query: Types that are "TypeNamespace.DerivedClassForAssign" should not be assignable to types that are "TypeNamespace.BaseClassForAssign" or "TypeNamespace.OtherBaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign).Should().NotBeAssignableToTypesThat().Are(helper.BaseClassForAssign, helper.OtherBaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign]
+    should:
+      notBeAssignableToTypesThat:
+        kind: type
+        where:
+          are: [TypeNamespace.BaseClassForAssign, TypeNamespace.OtherBaseClassForAssign]
+  expect:
+    pass: []
+    fail: [TypeNamespace.DerivedClassForAssign]
+- id: NotBeAssignableToTest#34
+  query: Types that are "TypeNamespace.UnrelatedClassForAssign" or "TypeNamespace.OtherUnrelatedClassForAssign" should not be assignable to "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.UnrelatedClassForAssign, helper.OtherUnrelatedClassForAssign).Should().NotBeAssignableTo(helper.BaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.UnrelatedClassForAssign, TypeNamespace.OtherUnrelatedClassForAssign]
+    should:
+      notBeAssignableTo: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.OtherUnrelatedClassForAssign, TypeNamespace.UnrelatedClassForAssign]
+    fail: []
+- id: NotBeAssignableToTest#35
+  query: Types that are "TypeNamespace.DerivedClassForAssign" or "TypeNamespace.UnrelatedClassForAssign" should not be assignable to "TypeNamespace.BaseClassForAssign"
+  csharp: Types().That().Are(helper.DerivedClassForAssign, helper.UnrelatedClassForAssign).Should().NotBeAssignableTo(helper.BaseClassForAssign)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.DerivedClassForAssign, TypeNamespace.UnrelatedClassForAssign]
+    should:
+      notBeAssignableTo: [TypeNamespace.BaseClassForAssign]
+  expect:
+    pass: [TypeNamespace.UnrelatedClassForAssign]
+    fail: [TypeNamespace.DerivedClassForAssign]
+- id: NotBeAssignableToTest#36
+  query: Types that are "TypeNamespace.BaseClassForAssign" should not be assignable to "AttributeNamespace.ClassWithoutAttributes"
+  csharp: Types().That().Are(helper.BaseClassForAssign).Should().NotBeAssignableTo(new List<System.Type> { typeof(AttributeNamespace.ClassWithoutAttributes) })
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.BaseClassForAssign]
+    should:
+      notBeAssignableTo: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: NotBeAssignableToTest#37
+  query: Types that are "TypeNamespace.BaseClassForAssign" should be Types that are not assignable to "AttributeNamespace.ClassWithoutAttributes"
+  csharp: Types().That().Are(helper.BaseClassForAssign).Should().Be(Types().That().AreNotAssignableTo(new List<System.Type> { typeof(AttributeNamespace.ClassWithoutAttributes) }))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.BaseClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areNotAssignableTo: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: NotBeAssignableToTest#38
+  alsoCovers: [NotBeAssignableToTest#39]
+  query: Types that are "TypeNamespace.BaseClassForAssign" should not be assignable to no types (always true)
+  csharp: Types().That().Are(helper.BaseClassForAssign).Should().NotBeAssignableTo(new List<IType>())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.BaseClassForAssign]
+    should:
+      notBeAssignableTo: []
+  expect:
+    pass: [TypeNamespace.BaseClassForAssign]
+    fail: []
+- id: NotBeAssignableToTest#40
+  alsoCovers: [NotBeAssignableToTest#41]
+  query: Types that are "TypeNamespace.BaseClassForAssign" should be Types that are not assignable to no types (always true)
+  csharp: Types().That().Are(helper.BaseClassForAssign).Should().Be(Types().That().AreNotAssignableTo(new List<IType>()))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.BaseClassForAssign]
+    should:
+      be:
+        kind: type
+        where:
+          areNotAssignableTo: []
+  expect:
+    pass: [TypeNamespace.BaseClassForAssign]
+    fail: []
+- id: BeNestedInTest#1
+  alsoCovers: [BeNestedInTest#2, BeNestedInTest#4, BeNestedInTest#5]
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" should be nested in "TypeNamespace.OuterClassA"
+  csharp: Types().That().Are(helper.InnerClassA).Should().BeNestedIn(helper.OuterClassA)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA]
+    should:
+      beNestedIn: [TypeNamespace.OuterClassA]
+  expect:
+    pass: [TypeNamespace.OuterClassA+InnerClassA]
+    fail: []
+- id: BeNestedInTest#3
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" should be nested in Types that are "TypeNamespace.OuterClassA"
+  csharp: Types().That().Are(helper.InnerClassA).Should().BeNestedIn(Types().That().Are(helper.OuterClassA))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA]
+    should:
+      beNestedIn:
+        kind: type
+        where:
+          are: [TypeNamespace.OuterClassA]
+  expect:
+    pass: [TypeNamespace.OuterClassA+InnerClassA]
+    fail: []
+- id: BeNestedInTest#6
+  alsoCovers: [BeNestedInTest#7, BeNestedInTest#9, BeNestedInTest#10]
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" should be Types that are nested in "TypeNamespace.OuterClassA"
+  csharp: Types().That().Are(helper.InnerClassA).Should().Be(Types().That().AreNestedIn(helper.OuterClassA))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA]
+    should:
+      be:
+        kind: type
+        where:
+          areNestedIn: [TypeNamespace.OuterClassA]
+  expect:
+    pass: [TypeNamespace.OuterClassA+InnerClassA]
+    fail: []
+- id: BeNestedInTest#8
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" should be Types that are nested in Types that are "TypeNamespace.OuterClassA"
+  csharp: Types().That().Are(helper.InnerClassA).Should().Be(Types().That().AreNestedIn(Types().That().Are(helper.OuterClassA)))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA]
+    should:
+      be:
+        kind: type
+        where:
+          areNestedIn:
+            kind: type
+            where:
+              are: [TypeNamespace.OuterClassA]
+  expect:
+    pass: [TypeNamespace.OuterClassA+InnerClassA]
+    fail: []
+- id: BeNestedInTest#11
+  alsoCovers: [BeNestedInTest#12, BeNestedInTest#14, BeNestedInTest#15]
+  query: Types that are "TypeNamespace.NonNestedClass" should be nested in "TypeNamespace.OuterClassA"
+  csharp: Types().That().Are(helper.NonNestedClass).Should().BeNestedIn(helper.OuterClassA)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.NonNestedClass]
+    should:
+      beNestedIn: [TypeNamespace.OuterClassA]
+  expect:
+    pass: []
+    fail: [TypeNamespace.NonNestedClass]
+- id: BeNestedInTest#13
+  query: Types that are "TypeNamespace.NonNestedClass" should be nested in Types that are "TypeNamespace.OuterClassA"
+  csharp: Types().That().Are(helper.NonNestedClass).Should().BeNestedIn(Types().That().Are(helper.OuterClassA))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.NonNestedClass]
+    should:
+      beNestedIn:
+        kind: type
+        where:
+          are: [TypeNamespace.OuterClassA]
+  expect:
+    pass: []
+    fail: [TypeNamespace.NonNestedClass]
+- id: BeNestedInTest#16
+  alsoCovers: [BeNestedInTest#17, BeNestedInTest#19, BeNestedInTest#20]
+  query: Types that are "TypeNamespace.NonNestedClass" should be Types that are nested in "TypeNamespace.OuterClassA"
+  csharp: Types().That().Are(helper.NonNestedClass).Should().Be(Types().That().AreNestedIn(helper.OuterClassA))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.NonNestedClass]
+    should:
+      be:
+        kind: type
+        where:
+          areNestedIn: [TypeNamespace.OuterClassA]
+  expect:
+    pass: []
+    fail: [TypeNamespace.NonNestedClass]
+- id: BeNestedInTest#18
+  query: Types that are "TypeNamespace.NonNestedClass" should be Types that are nested in Types that are "TypeNamespace.OuterClassA"
+  csharp: Types().That().Are(helper.NonNestedClass).Should().Be(Types().That().AreNestedIn(Types().That().Are(helper.OuterClassA)))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.NonNestedClass]
+    should:
+      be:
+        kind: type
+        where:
+          areNestedIn:
+            kind: type
+            where:
+              are: [TypeNamespace.OuterClassA]
+  expect:
+    pass: []
+    fail: [TypeNamespace.NonNestedClass]
+- id: BeNestedInTest#21
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" or "TypeNamespace.OuterClassA+OtherInnerClassA" should be nested in "TypeNamespace.OuterClassA"
+  csharp: Types().That().Are(helper.InnerClassA, helper.OtherInnerClassA).Should().BeNestedIn(helper.OuterClassA)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA, TypeNamespace.OuterClassA+OtherInnerClassA]
+    should:
+      beNestedIn: [TypeNamespace.OuterClassA]
+  expect:
+    pass: [TypeNamespace.OuterClassA+InnerClassA, TypeNamespace.OuterClassA+OtherInnerClassA]
+    fail: []
+- id: BeNestedInTest#22
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" or "TypeNamespace.NonNestedClass" should be nested in "TypeNamespace.OuterClassA"
+  csharp: Types().That().Are(helper.InnerClassA, helper.NonNestedClass).Should().BeNestedIn(helper.OuterClassA)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA, TypeNamespace.NonNestedClass]
+    should:
+      beNestedIn: [TypeNamespace.OuterClassA]
+  expect:
+    pass: [TypeNamespace.OuterClassA+InnerClassA]
+    fail: [TypeNamespace.NonNestedClass]
+- id: BeNestedInTest#23
+  alsoCovers: [BeNestedInTest#24, BeNestedInTest#25, BeNestedInTest#26]
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" should be nested in "TypeNamespace.OuterClassA" or "TypeNamespace.NonNestedClass"
+  csharp: Types().That().Are(helper.InnerClassA).Should().BeNestedIn(helper.OuterClassA, helper.NonNestedClass)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA]
+    should:
+      beNestedIn: [TypeNamespace.OuterClassA, TypeNamespace.NonNestedClass]
+  expect:
+    pass: [TypeNamespace.OuterClassA+InnerClassA]
+    fail: []
+- id: BeNestedInTest#27
+  alsoCovers: [BeNestedInTest#28, BeNestedInTest#29, BeNestedInTest#30]
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" should be Types that are nested in "TypeNamespace.OuterClassA" or "TypeNamespace.NonNestedClass"
+  csharp: Types().That().Are(helper.InnerClassA).Should().Be(Types().That().AreNestedIn(helper.OuterClassA, helper.NonNestedClass))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA]
+    should:
+      be:
+        kind: type
+        where:
+          areNestedIn: [TypeNamespace.OuterClassA, TypeNamespace.NonNestedClass]
+  expect:
+    pass: [TypeNamespace.OuterClassA+InnerClassA]
+    fail: []
+- id: BeNestedInTest#31
+  alsoCovers: [BeNestedInTest#32]
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" should be nested in no types (always false)
+  csharp: Types().That().Are(helper.InnerClassA).Should().BeNestedIn(new List<IType>())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA]
+    should:
+      beNestedIn: []
+  expect:
+    pass: []
+    fail: [TypeNamespace.OuterClassA+InnerClassA]
+- id: BeNestedInTest#33
+  alsoCovers: [BeNestedInTest#34]
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" should be Types that are nested in no types (always false)
+  csharp: Types().That().Are(helper.InnerClassA).Should().Be(Types().That().AreNestedIn(new List<IType>()))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA]
+    should:
+      be:
+        kind: type
+        where:
+          areNestedIn: []
+  expect:
+    pass: []
+    fail: [TypeNamespace.OuterClassA+InnerClassA]
+- id: BeValueTypesTest#1
+  query: Types that are "TypeNamespace.SimpleEnum" should be value types
+  csharp: Types().That().Are(helper.SimpleEnum).Should().BeValueTypes()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum]
+    should: {beValueTypes: true}
+  expect:
+    pass: [TypeNamespace.SimpleEnum]
+    fail: []
+- id: BeValueTypesTest#2
+  query: Types that are "TypeNamespace.SimpleStruct" should be value types
+  csharp: Types().That().Are(helper.SimpleStruct).Should().BeValueTypes()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct]
+    should: {beValueTypes: true}
+  expect:
+    pass: [TypeNamespace.SimpleStruct]
+    fail: []
+- id: BeValueTypesTest#3
+  query: Types that are "TypeNamespace.SimpleEnum" should be Types that are value types
+  csharp: Types().That().Are(helper.SimpleEnum).Should().Be(Types().That().AreValueTypes())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum]
+    should:
+      be:
+        kind: type
+        where: {areValueTypes: true}
+  expect:
+    pass: [TypeNamespace.SimpleEnum]
+    fail: []
+- id: BeValueTypesTest#4
+  query: Types that are "TypeNamespace.SimpleStruct" should be Types that are value types
+  csharp: Types().That().Are(helper.SimpleStruct).Should().Be(Types().That().AreValueTypes())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct]
+    should:
+      be:
+        kind: type
+        where: {areValueTypes: true}
+  expect:
+    pass: [TypeNamespace.SimpleStruct]
+    fail: []
+- id: BeValueTypesTest#5
+  query: Types that are "TypeNamespace.RegularClass" should be value types
+  csharp: Types().That().Are(helper.RegularClass).Should().BeValueTypes()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {beValueTypes: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: BeValueTypesTest#6
+  query: Types that are "TypeNamespace.RegularClass" should be Types that are value types
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().AreValueTypes())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {areValueTypes: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: BeValueTypesTest#7
+  query: Types that are "TypeNamespace.SimpleEnum" or "TypeNamespace.SimpleStruct" should be value types
+  csharp: Types().That().Are(helper.SimpleEnum, helper.SimpleStruct).Should().BeValueTypes()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum, TypeNamespace.SimpleStruct]
+    should: {beValueTypes: true}
+  expect:
+    pass: [TypeNamespace.SimpleEnum, TypeNamespace.SimpleStruct]
+    fail: []
+- id: BeValueTypesTest#8
+  query: Types that are "TypeNamespace.SimpleEnum" or "TypeNamespace.RegularClass" should be value types
+  csharp: Types().That().Are(helper.SimpleEnum, helper.RegularClass).Should().BeValueTypes()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum, TypeNamespace.RegularClass]
+    should: {beValueTypes: true}
+  expect:
+    pass: [TypeNamespace.SimpleEnum]
+    fail: [TypeNamespace.RegularClass]
+- id: NotBeValueTypesTest#1
+  query: Types that are "TypeNamespace.RegularClass" should not be value types
+  csharp: Types().That().Are(helper.RegularClass).Should().NotBeValueTypes()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {notBeValueTypes: true}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotBeValueTypesTest#2
+  query: Types that are "TypeNamespace.RegularClass" should be Types that are not value types
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().AreNotValueTypes())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {areNotValueTypes: true}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotBeValueTypesTest#3
+  query: Types that are "TypeNamespace.SimpleEnum" should not be value types
+  csharp: Types().That().Are(helper.SimpleEnum).Should().NotBeValueTypes()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum]
+    should: {notBeValueTypes: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.SimpleEnum]
+- id: NotBeValueTypesTest#4
+  query: Types that are "TypeNamespace.SimpleStruct" should not be value types
+  csharp: Types().That().Are(helper.SimpleStruct).Should().NotBeValueTypes()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct]
+    should: {notBeValueTypes: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.SimpleStruct]
+- id: NotBeValueTypesTest#5
+  query: Types that are "TypeNamespace.SimpleEnum" should be Types that are not value types
+  csharp: Types().That().Are(helper.SimpleEnum).Should().Be(Types().That().AreNotValueTypes())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum]
+    should:
+      be:
+        kind: type
+        where: {areNotValueTypes: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.SimpleEnum]
+- id: NotBeValueTypesTest#6
+  query: Types that are "TypeNamespace.SimpleStruct" should be Types that are not value types
+  csharp: Types().That().Are(helper.SimpleStruct).Should().Be(Types().That().AreNotValueTypes())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct]
+    should:
+      be:
+        kind: type
+        where: {areNotValueTypes: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.SimpleStruct]
+- id: NotBeValueTypesTest#7
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.OtherRegularClass" should not be value types
+  csharp: Types().That().Are(helper.RegularClass, helper.OtherRegularClass).Should().NotBeValueTypes()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.OtherRegularClass]
+    should: {notBeValueTypes: true}
+  expect:
+    pass: [TypeNamespace.OtherRegularClass, TypeNamespace.RegularClass]
+    fail: []
+- id: NotBeValueTypesTest#8
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.SimpleEnum" should not be value types
+  csharp: Types().That().Are(helper.RegularClass, helper.SimpleEnum).Should().NotBeValueTypes()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.SimpleEnum]
+    should: {notBeValueTypes: true}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: [TypeNamespace.SimpleEnum]
+- id: BeEnumsTest#1
+  query: Types that are "TypeNamespace.SimpleEnum" should be enums
+  csharp: Types().That().Are(helper.SimpleEnum).Should().BeEnums()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum]
+    should: {beEnums: true}
+  expect:
+    pass: [TypeNamespace.SimpleEnum]
+    fail: []
+- id: BeEnumsTest#2
+  query: Types that are "TypeNamespace.SimpleEnum" should be Types that are enums
+  csharp: Types().That().Are(helper.SimpleEnum).Should().Be(Types().That().AreEnums())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum]
+    should:
+      be:
+        kind: type
+        where: {areEnums: true}
+  expect:
+    pass: [TypeNamespace.SimpleEnum]
+    fail: []
+- id: BeEnumsTest#3
+  query: Types that are "TypeNamespace.RegularClass" should be enums
+  csharp: Types().That().Are(helper.RegularClass).Should().BeEnums()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {beEnums: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: BeEnumsTest#4
+  query: Types that are "TypeNamespace.SimpleStruct" should be enums
+  csharp: Types().That().Are(helper.SimpleStruct).Should().BeEnums()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct]
+    should: {beEnums: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.SimpleStruct]
+- id: BeEnumsTest#5
+  query: Types that are "TypeNamespace.RegularClass" should be Types that are enums
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().AreEnums())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {areEnums: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: BeEnumsTest#6
+  query: Types that are "TypeNamespace.SimpleStruct" should be Types that are enums
+  csharp: Types().That().Are(helper.SimpleStruct).Should().Be(Types().That().AreEnums())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct]
+    should:
+      be:
+        kind: type
+        where: {areEnums: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.SimpleStruct]
+- id: BeEnumsTest#7
+  query: Types that are "TypeNamespace.SimpleEnum" or "TypeNamespace.OtherEnum" should be enums
+  csharp: Types().That().Are(helper.SimpleEnum, helper.OtherEnum).Should().BeEnums()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum, TypeNamespace.OtherEnum]
+    should: {beEnums: true}
+  expect:
+    pass: [TypeNamespace.OtherEnum, TypeNamespace.SimpleEnum]
+    fail: []
+- id: BeEnumsTest#8
+  query: Types that are "TypeNamespace.SimpleEnum" or "TypeNamespace.RegularClass" should be enums
+  csharp: Types().That().Are(helper.SimpleEnum, helper.RegularClass).Should().BeEnums()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum, TypeNamespace.RegularClass]
+    should: {beEnums: true}
+  expect:
+    pass: [TypeNamespace.SimpleEnum]
+    fail: [TypeNamespace.RegularClass]
+- id: NotBeEnumsTest#1
+  query: Types that are "TypeNamespace.RegularClass" should not be enums
+  csharp: Types().That().Are(helper.RegularClass).Should().NotBeEnums()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {notBeEnums: true}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotBeEnumsTest#2
+  query: Types that are "TypeNamespace.SimpleStruct" should not be enums
+  csharp: Types().That().Are(helper.SimpleStruct).Should().NotBeEnums()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct]
+    should: {notBeEnums: true}
+  expect:
+    pass: [TypeNamespace.SimpleStruct]
+    fail: []
+- id: NotBeEnumsTest#3
+  query: Types that are "TypeNamespace.RegularClass" should be Types that are not enums
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().AreNotEnums())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {areNotEnums: true}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotBeEnumsTest#4
+  query: Types that are "TypeNamespace.SimpleStruct" should be Types that are not enums
+  csharp: Types().That().Are(helper.SimpleStruct).Should().Be(Types().That().AreNotEnums())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct]
+    should:
+      be:
+        kind: type
+        where: {areNotEnums: true}
+  expect:
+    pass: [TypeNamespace.SimpleStruct]
+    fail: []
+- id: NotBeEnumsTest#5
+  query: Types that are "TypeNamespace.SimpleEnum" should not be enums
+  csharp: Types().That().Are(helper.SimpleEnum).Should().NotBeEnums()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum]
+    should: {notBeEnums: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.SimpleEnum]
+- id: NotBeEnumsTest#6
+  query: Types that are "TypeNamespace.SimpleEnum" should be Types that are not enums
+  csharp: Types().That().Are(helper.SimpleEnum).Should().Be(Types().That().AreNotEnums())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum]
+    should:
+      be:
+        kind: type
+        where: {areNotEnums: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.SimpleEnum]
+- id: NotBeEnumsTest#7
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.SimpleStruct" should not be enums
+  csharp: Types().That().Are(helper.RegularClass, helper.SimpleStruct).Should().NotBeEnums()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.SimpleStruct]
+    should: {notBeEnums: true}
+  expect:
+    pass: [TypeNamespace.RegularClass, TypeNamespace.SimpleStruct]
+    fail: []
+- id: NotBeEnumsTest#8
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.SimpleEnum" should not be enums
+  csharp: Types().That().Are(helper.RegularClass, helper.SimpleEnum).Should().NotBeEnums()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.SimpleEnum]
+    should: {notBeEnums: true}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: [TypeNamespace.SimpleEnum]
+- id: BeStructsTest#1
+  query: Types that are "TypeNamespace.SimpleStruct" should be structs
+  csharp: Types().That().Are(helper.SimpleStruct).Should().BeStructs()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct]
+    should: {beStructs: true}
+  expect:
+    pass: [TypeNamespace.SimpleStruct]
+    fail: []
+- id: BeStructsTest#2
+  query: Types that are "TypeNamespace.SimpleStruct" should be Types that are structs
+  csharp: Types().That().Are(helper.SimpleStruct).Should().Be(Types().That().AreStructs())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct]
+    should:
+      be:
+        kind: type
+        where: {areStructs: true}
+  expect:
+    pass: [TypeNamespace.SimpleStruct]
+    fail: []
+- id: BeStructsTest#3
+  query: Types that are "TypeNamespace.RegularClass" should be structs
+  csharp: Types().That().Are(helper.RegularClass).Should().BeStructs()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {beStructs: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: BeStructsTest#4
+  query: Types that are "TypeNamespace.SimpleEnum" should be structs
+  csharp: Types().That().Are(helper.SimpleEnum).Should().BeStructs()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum]
+    should: {beStructs: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.SimpleEnum]
+- id: BeStructsTest#5
+  query: Types that are "TypeNamespace.RegularClass" should be Types that are structs
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().AreStructs())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {areStructs: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: BeStructsTest#6
+  query: Types that are "TypeNamespace.SimpleEnum" should be Types that are structs
+  csharp: Types().That().Are(helper.SimpleEnum).Should().Be(Types().That().AreStructs())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum]
+    should:
+      be:
+        kind: type
+        where: {areStructs: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.SimpleEnum]
+- id: BeStructsTest#7
+  query: Types that are "TypeNamespace.SimpleStruct" or "TypeNamespace.OtherStruct" should be structs
+  csharp: Types().That().Are(helper.SimpleStruct, helper.OtherStruct).Should().BeStructs()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct, TypeNamespace.OtherStruct]
+    should: {beStructs: true}
+  expect:
+    pass: [TypeNamespace.OtherStruct, TypeNamespace.SimpleStruct]
+    fail: []
+- id: BeStructsTest#8
+  query: Types that are "TypeNamespace.SimpleStruct" or "TypeNamespace.RegularClass" should be structs
+  csharp: Types().That().Are(helper.SimpleStruct, helper.RegularClass).Should().BeStructs()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct, TypeNamespace.RegularClass]
+    should: {beStructs: true}
+  expect:
+    pass: [TypeNamespace.SimpleStruct]
+    fail: [TypeNamespace.RegularClass]
+- id: NotBeStructsTest#1
+  query: Types that are "TypeNamespace.RegularClass" should not be structs
+  csharp: Types().That().Are(helper.RegularClass).Should().NotBeStructs()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {notBeStructs: true}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotBeStructsTest#2
+  query: Types that are "TypeNamespace.SimpleEnum" should not be structs
+  csharp: Types().That().Are(helper.SimpleEnum).Should().NotBeStructs()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum]
+    should: {notBeStructs: true}
+  expect:
+    pass: [TypeNamespace.SimpleEnum]
+    fail: []
+- id: NotBeStructsTest#3
+  query: Types that are "TypeNamespace.RegularClass" should be Types that are not structs
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().AreNotStructs())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {areNotStructs: true}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotBeStructsTest#4
+  query: Types that are "TypeNamespace.SimpleEnum" should be Types that are not structs
+  csharp: Types().That().Are(helper.SimpleEnum).Should().Be(Types().That().AreNotStructs())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleEnum]
+    should:
+      be:
+        kind: type
+        where: {areNotStructs: true}
+  expect:
+    pass: [TypeNamespace.SimpleEnum]
+    fail: []
+- id: NotBeStructsTest#5
+  query: Types that are "TypeNamespace.SimpleStruct" should not be structs
+  csharp: Types().That().Are(helper.SimpleStruct).Should().NotBeStructs()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct]
+    should: {notBeStructs: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.SimpleStruct]
+- id: NotBeStructsTest#6
+  query: Types that are "TypeNamespace.SimpleStruct" should be Types that are not structs
+  csharp: Types().That().Are(helper.SimpleStruct).Should().Be(Types().That().AreNotStructs())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.SimpleStruct]
+    should:
+      be:
+        kind: type
+        where: {areNotStructs: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.SimpleStruct]
+- id: NotBeStructsTest#7
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.SimpleEnum" should not be structs
+  csharp: Types().That().Are(helper.RegularClass, helper.SimpleEnum).Should().NotBeStructs()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.SimpleEnum]
+    should: {notBeStructs: true}
+  expect:
+    pass: [TypeNamespace.RegularClass, TypeNamespace.SimpleEnum]
+    fail: []
+- id: NotBeStructsTest#8
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.SimpleStruct" should not be structs
+  csharp: Types().That().Are(helper.RegularClass, helper.SimpleStruct).Should().NotBeStructs()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.SimpleStruct]
+    should: {notBeStructs: true}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: [TypeNamespace.SimpleStruct]
+- id: ImplementInterfaceTest#1
+  alsoCovers: [ImplementInterfaceTest#2]
+  query: Types that are "TypeNamespace.ClassImplementingInterface" should implement interface "TypeNamespace.ITestInterface"
+  csharp: Types().That().Are(helper.ClassImplementingInterface).Should().ImplementInterface(helper.TestInterface)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassImplementingInterface]
+    should:
+      implementInterface: [TypeNamespace.ITestInterface]
+  expect:
+    pass: [TypeNamespace.ClassImplementingInterface]
+    fail: []
+- id: ImplementInterfaceTest#3
+  alsoCovers: [ImplementInterfaceTest#4]
+  query: Types that are "TypeNamespace.ClassImplementingInterface" should be Types that implement interface "TypeNamespace.ITestInterface"
+  csharp: Types().That().Are(helper.ClassImplementingInterface).Should().Be(Types().That().ImplementInterface(helper.TestInterface))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassImplementingInterface]
+    should:
+      be:
+        kind: type
+        where:
+          implementInterface: [TypeNamespace.ITestInterface]
+  expect:
+    pass: [TypeNamespace.ClassImplementingInterface]
+    fail: []
+- id: ImplementInterfaceTest#5
+  alsoCovers: [ImplementInterfaceTest#6]
+  query: Types that are "TypeNamespace.ClassNotImplementingInterface" should implement interface "TypeNamespace.ITestInterface"
+  csharp: Types().That().Are(helper.ClassNotImplementingInterface).Should().ImplementInterface(helper.TestInterface)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassNotImplementingInterface]
+    should:
+      implementInterface: [TypeNamespace.ITestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassNotImplementingInterface]
+- id: ImplementInterfaceTest#7
+  alsoCovers: [ImplementInterfaceTest#8]
+  query: Types that are "TypeNamespace.ClassNotImplementingInterface" should be Types that implement interface "TypeNamespace.ITestInterface"
+  csharp: Types().That().Are(helper.ClassNotImplementingInterface).Should().Be(Types().That().ImplementInterface(helper.TestInterface))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassNotImplementingInterface]
+    should:
+      be:
+        kind: type
+        where:
+          implementInterface: [TypeNamespace.ITestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassNotImplementingInterface]
+- id: ImplementInterfaceTest#9
+  query: Types that are "TypeNamespace.ClassImplementingInterface" or "TypeNamespace.ClassNotImplementingInterface" should implement interface "TypeNamespace.ITestInterface"
+  csharp: Types().That().Are(helper.ClassImplementingInterface, helper.ClassNotImplementingInterface).Should().ImplementInterface(helper.TestInterface)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassImplementingInterface, TypeNamespace.ClassNotImplementingInterface]
+    should:
+      implementInterface: [TypeNamespace.ITestInterface]
+  expect:
+    pass: [TypeNamespace.ClassImplementingInterface]
+    fail: [TypeNamespace.ClassNotImplementingInterface]
+- id: ImplementInterfaceTest#10
+  query: Types that are "TypeNamespace.ClassImplementingInterface" should implement interface "System.IDisposable"
+  csharp: Types().That().Are(helper.ClassImplementingInterface).Should().ImplementInterface(typeof(System.IDisposable))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassImplementingInterface]
+    should:
+      implementInterface: [System.IDisposable]
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassImplementingInterface]
+- id: ImplementInterfaceTest#11
+  query: Types that are "TypeNamespace.ClassImplementingInterface" should be Types that implement interface "System.IDisposable"
+  csharp: Types().That().Are(helper.ClassImplementingInterface).Should().Be(Types().That().ImplementInterface(typeof(System.IDisposable)))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassImplementingInterface]
+    should:
+      be:
+        kind: type
+        where:
+          implementInterface: [System.IDisposable]
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassImplementingInterface]
+- id: NotImplementInterfaceTest#1
+  alsoCovers: [NotImplementInterfaceTest#2]
+  query: Types that are "TypeNamespace.ClassNotImplementingInterface" should not implement interface "TypeNamespace.ITestInterface"
+  csharp: Types().That().Are(helper.ClassNotImplementingInterface).Should().NotImplementInterface(helper.TestInterface)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassNotImplementingInterface]
+    should:
+      notImplementInterface: [TypeNamespace.ITestInterface]
+  expect:
+    pass: [TypeNamespace.ClassNotImplementingInterface]
+    fail: []
+- id: NotImplementInterfaceTest#3
+  alsoCovers: [NotImplementInterfaceTest#4]
+  query: Types that are "TypeNamespace.ClassNotImplementingInterface" should be Types that do not implement interface "TypeNamespace.ITestInterface"
+  csharp: Types().That().Are(helper.ClassNotImplementingInterface).Should().Be(Types().That().DoNotImplementInterface(helper.TestInterface))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassNotImplementingInterface]
+    should:
+      be:
+        kind: type
+        where:
+          doNotImplementInterface: [TypeNamespace.ITestInterface]
+  expect:
+    pass: [TypeNamespace.ClassNotImplementingInterface]
+    fail: []
+- id: NotImplementInterfaceTest#5
+  alsoCovers: [NotImplementInterfaceTest#6]
+  query: Types that are "TypeNamespace.ClassImplementingInterface" should not implement interface "TypeNamespace.ITestInterface"
+  csharp: Types().That().Are(helper.ClassImplementingInterface).Should().NotImplementInterface(helper.TestInterface)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassImplementingInterface]
+    should:
+      notImplementInterface: [TypeNamespace.ITestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassImplementingInterface]
+- id: NotImplementInterfaceTest#7
+  alsoCovers: [NotImplementInterfaceTest#8]
+  query: Types that are "TypeNamespace.ClassImplementingInterface" should be Types that do not implement interface "TypeNamespace.ITestInterface"
+  csharp: Types().That().Are(helper.ClassImplementingInterface).Should().Be(Types().That().DoNotImplementInterface(helper.TestInterface))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassImplementingInterface]
+    should:
+      be:
+        kind: type
+        where:
+          doNotImplementInterface: [TypeNamespace.ITestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassImplementingInterface]
+- id: NotImplementInterfaceTest#9
+  query: Types that are "TypeNamespace.ClassNotImplementingInterface" or "TypeNamespace.ClassImplementingInterface" should not implement interface "TypeNamespace.ITestInterface"
+  csharp: Types().That().Are(helper.ClassNotImplementingInterface, helper.ClassImplementingInterface).Should().NotImplementInterface(helper.TestInterface)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassNotImplementingInterface, TypeNamespace.ClassImplementingInterface]
+    should:
+      notImplementInterface: [TypeNamespace.ITestInterface]
+  expect:
+    pass: [TypeNamespace.ClassNotImplementingInterface]
+    fail: [TypeNamespace.ClassImplementingInterface]
+- id: NotImplementInterfaceTest#10
+  query: Types that are "TypeNamespace.ClassImplementingInterface" should not implement interface "System.IDisposable"
+  csharp: Types().That().Are(helper.ClassImplementingInterface).Should().NotImplementInterface(typeof(System.IDisposable))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassImplementingInterface]
+    should:
+      notImplementInterface: [System.IDisposable]
+  expect:
+    pass: [TypeNamespace.ClassImplementingInterface]
+    fail: []
+- id: NotImplementInterfaceTest#11
+  query: Types that are "TypeNamespace.ClassImplementingInterface" should be Types that do not implement interface "System.IDisposable"
+  csharp: Types().That().Are(helper.ClassImplementingInterface).Should().Be(Types().That().DoNotImplementInterface(typeof(System.IDisposable)))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassImplementingInterface]
+    should:
+      be:
+        kind: type
+        where:
+          doNotImplementInterface: [System.IDisposable]
+  expect:
+    pass: [TypeNamespace.ClassImplementingInterface]
+    fail: []
+- id: ImplementAnyInterfacesTest#1
+  alsoCovers: [ImplementAnyInterfacesTest#2, ImplementAnyInterfacesTest#3, ImplementAnyInterfacesTest#4]
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should implement "TypeNamespace.ITestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().ImplementAnyInterfaces(helper.TestInterface)
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      implementAnyInterfaces: [TypeNamespace.ITestInterface]
+  expect:
+    pass: [TypeNamespace.IChildTestInterface]
+    fail: []
+- id: ImplementAnyInterfacesTest#5
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should implement any Interfaces that are "TypeNamespace.ITestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().ImplementAnyInterfaces(Interfaces().That().Are(helper.TestInterface))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      implementAnyInterfaces:
+        kind: interface
+        where:
+          are: [TypeNamespace.ITestInterface]
+  expect:
+    pass: [TypeNamespace.IChildTestInterface]
+    fail: []
+- id: ImplementAnyInterfacesTest#6
+  alsoCovers: [ImplementAnyInterfacesTest#7, ImplementAnyInterfacesTest#8, ImplementAnyInterfacesTest#9]
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should be Interfaces that implement "TypeNamespace.ITestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().Be(Interfaces().That().ImplementAnyInterfaces(helper.TestInterface))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          implementAnyInterfaces: [TypeNamespace.ITestInterface]
+  expect:
+    pass: [TypeNamespace.IChildTestInterface]
+    fail: []
+- id: ImplementAnyInterfacesTest#10
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should be Interfaces that implement any Interfaces that are "TypeNamespace.ITestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().Be(Interfaces().That().ImplementAnyInterfaces(Interfaces().That().Are(helper.TestInterface)))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          implementAnyInterfaces:
+            kind: interface
+            where:
+              are: [TypeNamespace.ITestInterface]
+  expect:
+    pass: [TypeNamespace.IChildTestInterface]
+    fail: []
+- id: ImplementAnyInterfacesTest#11
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should implement any interfaces that are "TypeNamespace.ITestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().ImplementAnyInterfacesThat().Are(helper.TestInterface)
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      implementAnyInterfacesThat:
+        kind: interface
+        where:
+          are: [TypeNamespace.ITestInterface]
+  expect:
+    pass: [TypeNamespace.IChildTestInterface]
+    fail: []
+- id: ImplementAnyInterfacesTest#12
+  alsoCovers: [ImplementAnyInterfacesTest#13, ImplementAnyInterfacesTest#14, ImplementAnyInterfacesTest#15]
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should implement "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().ImplementAnyInterfaces(helper.OtherTestInterface)
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      implementAnyInterfaces: [TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: ImplementAnyInterfacesTest#16
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should implement any Interfaces that are "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().ImplementAnyInterfaces(Interfaces().That().Are(helper.OtherTestInterface))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      implementAnyInterfaces:
+        kind: interface
+        where:
+          are: [TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: ImplementAnyInterfacesTest#17
+  alsoCovers: [ImplementAnyInterfacesTest#18, ImplementAnyInterfacesTest#19, ImplementAnyInterfacesTest#20]
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should be Interfaces that implement "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().Be(Interfaces().That().ImplementAnyInterfaces(helper.OtherTestInterface))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          implementAnyInterfaces: [TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: ImplementAnyInterfacesTest#21
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should be Interfaces that implement any Interfaces that are "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().Be(Interfaces().That().ImplementAnyInterfaces(Interfaces().That().Are(helper.OtherTestInterface)))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          implementAnyInterfaces:
+            kind: interface
+            where:
+              are: [TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: ImplementAnyInterfacesTest#22
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should implement any interfaces that are "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().ImplementAnyInterfacesThat().Are(helper.OtherTestInterface)
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      implementAnyInterfacesThat:
+        kind: interface
+        where:
+          are: [TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: ImplementAnyInterfacesTest#23
+  alsoCovers: [ImplementAnyInterfacesTest#24, ImplementAnyInterfacesTest#25]
+  query: Interfaces that are "TypeNamespace.ITestInterface" or "TypeNamespace.IChildTestInterface" should implement any of no interfaces (always false)
+  csharp: Interfaces().That().Are(helper.TestInterface, helper.ChildTestInterface).Should().ImplementAnyInterfaces()
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.ITestInterface, TypeNamespace.IChildTestInterface]
+    should:
+      implementAnyInterfaces: []
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface, TypeNamespace.ITestInterface]
+- id: ImplementAnyInterfacesTest#26
+  query: Interfaces that are "TypeNamespace.ITestInterface" or "TypeNamespace.IChildTestInterface" should implement any Interfaces that have name "NotTheNameOfAnyObject"
+  csharp: Interfaces().That().Are(helper.TestInterface, helper.ChildTestInterface).Should().ImplementAnyInterfaces(Interfaces().That().HaveName(helper.NonExistentObjectName))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.ITestInterface, TypeNamespace.IChildTestInterface]
+    should:
+      implementAnyInterfaces:
+        kind: interface
+        where: {haveName: NotTheNameOfAnyObject}
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface, TypeNamespace.ITestInterface]
+- id: ImplementAnyInterfacesTest#27
+  alsoCovers: [ImplementAnyInterfacesTest#28, ImplementAnyInterfacesTest#29]
+  query: Interfaces that are "TypeNamespace.ITestInterface" or "TypeNamespace.IChildTestInterface" should be Interfaces that implement any of no interfaces (always false)
+  csharp: Interfaces().That().Are(helper.TestInterface, helper.ChildTestInterface).Should().Be(Interfaces().That().ImplementAnyInterfaces())
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.ITestInterface, TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          implementAnyInterfaces: []
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface, TypeNamespace.ITestInterface]
+- id: ImplementAnyInterfacesTest#30
+  query: Interfaces that are "TypeNamespace.ITestInterface" or "TypeNamespace.IChildTestInterface" should be Interfaces that implement any Interfaces that have name "NotTheNameOfAnyObject"
+  csharp: Interfaces().That().Are(helper.TestInterface, helper.ChildTestInterface).Should().Be(Interfaces().That().ImplementAnyInterfaces(Interfaces().That().HaveName(helper.NonExistentObjectName)))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.ITestInterface, TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          implementAnyInterfaces:
+            kind: interface
+            where: {haveName: NotTheNameOfAnyObject}
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface, TypeNamespace.ITestInterface]
+- id: ImplementAnyInterfacesTest#31
+  query: Interfaces that are "TypeNamespace.ITestInterface" or "TypeNamespace.IChildTestInterface" should implement any interfaces that are any of no objects (always empty)
+  csharp: Interfaces().That().Are(helper.TestInterface, helper.ChildTestInterface).Should().ImplementAnyInterfacesThat().Are(new List<Interface>())
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.ITestInterface, TypeNamespace.IChildTestInterface]
+    should:
+      implementAnyInterfacesThat:
+        kind: interface
+        where:
+          are: []
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface, TypeNamespace.ITestInterface]
+- id: ImplementAnyInterfacesTest#32
+  alsoCovers: [ImplementAnyInterfacesTest#33, ImplementAnyInterfacesTest#34, ImplementAnyInterfacesTest#35]
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should implement any "TypeNamespace.IOtherTestInterface" or "TypeNamespace.IOtherChildTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().ImplementAnyInterfaces(helper.OtherTestInterface, helper.OtherChildTestInterface)
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      implementAnyInterfaces: [TypeNamespace.IOtherTestInterface, TypeNamespace.IOtherChildTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: ImplementAnyInterfacesTest#36
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should implement any Interfaces that are "TypeNamespace.IOtherTestInterface" or "TypeNamespace.IOtherChildTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().ImplementAnyInterfaces(Interfaces().That().Are(helper.OtherTestInterface, helper.OtherChildTestInterface))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      implementAnyInterfaces:
+        kind: interface
+        where:
+          are: [TypeNamespace.IOtherTestInterface, TypeNamespace.IOtherChildTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: ImplementAnyInterfacesTest#37
+  alsoCovers: [ImplementAnyInterfacesTest#38, ImplementAnyInterfacesTest#39, ImplementAnyInterfacesTest#40]
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should be Interfaces that implement any "TypeNamespace.IOtherTestInterface" or "TypeNamespace.IOtherChildTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().Be(Interfaces().That().ImplementAnyInterfaces(helper.OtherTestInterface, helper.OtherChildTestInterface))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          implementAnyInterfaces: [TypeNamespace.IOtherTestInterface, TypeNamespace.IOtherChildTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: ImplementAnyInterfacesTest#41
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should be Interfaces that implement any Interfaces that are "TypeNamespace.IOtherTestInterface" or "TypeNamespace.IOtherChildTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().Be(Interfaces().That().ImplementAnyInterfaces(Interfaces().That().Are(helper.OtherTestInterface, helper.OtherChildTestInterface)))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          implementAnyInterfaces:
+            kind: interface
+            where:
+              are: [TypeNamespace.IOtherTestInterface, TypeNamespace.IOtherChildTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: ImplementAnyInterfacesTest#42
+  alsoCovers: [ImplementAnyInterfacesTest#43, ImplementAnyInterfacesTest#44, ImplementAnyInterfacesTest#45, ImplementAnyInterfacesTest#47]
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should implement any interfaces that are "TypeNamespace.IOtherTestInterface" or "TypeNamespace.IOtherChildTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().ImplementAnyInterfacesThat().Are(helper.OtherTestInterface, helper.OtherChildTestInterface)
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      implementAnyInterfacesThat:
+        kind: interface
+        where:
+          are: [TypeNamespace.IOtherTestInterface, TypeNamespace.IOtherChildTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: ImplementAnyInterfacesTest#46
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should implement any interfaces that are Interfaces that are "TypeNamespace.IOtherTestInterface" or "TypeNamespace.IOtherChildTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().ImplementAnyInterfacesThat().Are(Interfaces().That().Are(helper.OtherTestInterface, helper.OtherChildTestInterface))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      implementAnyInterfacesThat:
+        kind: interface
+        where:
+          are:
+            kind: interface
+            where:
+              are: [TypeNamespace.IOtherTestInterface, TypeNamespace.IOtherChildTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: NotImplementAnyInterfacesTest#1
+  alsoCovers: [NotImplementAnyInterfacesTest#2, NotImplementAnyInterfacesTest#3, NotImplementAnyInterfacesTest#4]
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should not implement "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().NotImplementAnyInterfaces(helper.OtherTestInterface)
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      notImplementAnyInterfaces: [TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: [TypeNamespace.IChildTestInterface]
+    fail: []
+- id: NotImplementAnyInterfacesTest#5
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should not implement any Interfaces that are "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().NotImplementAnyInterfaces(Interfaces().That().Are(helper.OtherTestInterface))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      notImplementAnyInterfaces:
+        kind: interface
+        where:
+          are: [TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: [TypeNamespace.IChildTestInterface]
+    fail: []
+- id: NotImplementAnyInterfacesTest#6
+  alsoCovers: [NotImplementAnyInterfacesTest#7, NotImplementAnyInterfacesTest#8, NotImplementAnyInterfacesTest#9]
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should be Interfaces that do not implement "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().Be(Interfaces().That().DoNotImplementAnyInterfaces(helper.OtherTestInterface))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          doNotImplementAnyInterfaces: [TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: [TypeNamespace.IChildTestInterface]
+    fail: []
+- id: NotImplementAnyInterfacesTest#10
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should be Interfaces that do not implement any Interfaces that are "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().Be(Interfaces().That().DoNotImplementAnyInterfaces(Interfaces().That().Are(helper.OtherTestInterface)))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          doNotImplementAnyInterfaces:
+            kind: interface
+            where:
+              are: [TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: [TypeNamespace.IChildTestInterface]
+    fail: []
+- id: NotImplementAnyInterfacesTest#11
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should not implement any interfaces that are "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().NotImplementAnyInterfacesThat().Are(helper.OtherTestInterface)
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      notImplementAnyInterfacesThat:
+        kind: interface
+        where:
+          are: [TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: [TypeNamespace.IChildTestInterface]
+    fail: []
+- id: NotImplementAnyInterfacesTest#12
+  alsoCovers: [NotImplementAnyInterfacesTest#13, NotImplementAnyInterfacesTest#14, NotImplementAnyInterfacesTest#15]
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should not implement "TypeNamespace.ITestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().NotImplementAnyInterfaces(helper.TestInterface)
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      notImplementAnyInterfaces: [TypeNamespace.ITestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: NotImplementAnyInterfacesTest#16
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should not implement any Interfaces that are "TypeNamespace.ITestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().NotImplementAnyInterfaces(Interfaces().That().Are(helper.TestInterface))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      notImplementAnyInterfaces:
+        kind: interface
+        where:
+          are: [TypeNamespace.ITestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: NotImplementAnyInterfacesTest#17
+  alsoCovers: [NotImplementAnyInterfacesTest#18, NotImplementAnyInterfacesTest#19, NotImplementAnyInterfacesTest#20]
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should be Interfaces that do not implement "TypeNamespace.ITestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().Be(Interfaces().That().DoNotImplementAnyInterfaces(helper.TestInterface))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          doNotImplementAnyInterfaces: [TypeNamespace.ITestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: NotImplementAnyInterfacesTest#21
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should be Interfaces that do not implement any Interfaces that are "TypeNamespace.ITestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().Be(Interfaces().That().DoNotImplementAnyInterfaces(Interfaces().That().Are(helper.TestInterface)))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          doNotImplementAnyInterfaces:
+            kind: interface
+            where:
+              are: [TypeNamespace.ITestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: NotImplementAnyInterfacesTest#22
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should not implement any interfaces that are "TypeNamespace.ITestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().NotImplementAnyInterfacesThat().Are(helper.TestInterface)
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      notImplementAnyInterfacesThat:
+        kind: interface
+        where:
+          are: [TypeNamespace.ITestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: NotImplementAnyInterfacesTest#23
+  alsoCovers: [NotImplementAnyInterfacesTest#24, NotImplementAnyInterfacesTest#25]
+  query: Interfaces that are "TypeNamespace.ITestInterface" or "TypeNamespace.IChildTestInterface" should not implement any of no interfaces (always true)
+  csharp: Interfaces().That().Are(helper.TestInterface, helper.ChildTestInterface).Should().NotImplementAnyInterfaces()
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.ITestInterface, TypeNamespace.IChildTestInterface]
+    should:
+      notImplementAnyInterfaces: []
+  expect:
+    pass: [TypeNamespace.IChildTestInterface, TypeNamespace.ITestInterface]
+    fail: []
+- id: NotImplementAnyInterfacesTest#26
+  query: Interfaces that are "TypeNamespace.ITestInterface" or "TypeNamespace.IChildTestInterface" should not implement any Interfaces that have name "NotTheNameOfAnyObject"
+  csharp: Interfaces().That().Are(helper.TestInterface, helper.ChildTestInterface).Should().NotImplementAnyInterfaces(Interfaces().That().HaveName(helper.NonExistentObjectName))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.ITestInterface, TypeNamespace.IChildTestInterface]
+    should:
+      notImplementAnyInterfaces:
+        kind: interface
+        where: {haveName: NotTheNameOfAnyObject}
+  expect:
+    pass: [TypeNamespace.IChildTestInterface, TypeNamespace.ITestInterface]
+    fail: []
+- id: NotImplementAnyInterfacesTest#27
+  alsoCovers: [NotImplementAnyInterfacesTest#28, NotImplementAnyInterfacesTest#29]
+  query: Interfaces that are "TypeNamespace.ITestInterface" or "TypeNamespace.IChildTestInterface" should be Interfaces that do not implement any of no interfaces (always true)
+  csharp: Interfaces().That().Are(helper.TestInterface, helper.ChildTestInterface).Should().Be(Interfaces().That().DoNotImplementAnyInterfaces())
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.ITestInterface, TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          doNotImplementAnyInterfaces: []
+  expect:
+    pass: [TypeNamespace.IChildTestInterface, TypeNamespace.ITestInterface]
+    fail: []
+- id: NotImplementAnyInterfacesTest#30
+  query: Interfaces that are "TypeNamespace.ITestInterface" or "TypeNamespace.IChildTestInterface" should be Interfaces that do not implement any Interfaces that have name "NotTheNameOfAnyObject"
+  csharp: Interfaces().That().Are(helper.TestInterface, helper.ChildTestInterface).Should().Be(Interfaces().That().DoNotImplementAnyInterfaces(Interfaces().That().HaveName(helper.NonExistentObjectName)))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.ITestInterface, TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          doNotImplementAnyInterfaces:
+            kind: interface
+            where: {haveName: NotTheNameOfAnyObject}
+  expect:
+    pass: [TypeNamespace.IChildTestInterface, TypeNamespace.ITestInterface]
+    fail: []
+- id: NotImplementAnyInterfacesTest#31
+  query: Interfaces that are "TypeNamespace.ITestInterface" or "TypeNamespace.IChildTestInterface" should not implement any interfaces that are any of no objects (always empty)
+  csharp: Interfaces().That().Are(helper.TestInterface, helper.ChildTestInterface).Should().NotImplementAnyInterfacesThat().Are(new List<Interface>())
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.ITestInterface, TypeNamespace.IChildTestInterface]
+    should:
+      notImplementAnyInterfacesThat:
+        kind: interface
+        where:
+          are: []
+  expect:
+    pass: [TypeNamespace.IChildTestInterface, TypeNamespace.ITestInterface]
+    fail: []
+- id: NotImplementAnyInterfacesTest#32
+  alsoCovers: [NotImplementAnyInterfacesTest#33, NotImplementAnyInterfacesTest#34, NotImplementAnyInterfacesTest#35]
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should not implement any "TypeNamespace.ITestInterface" or "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().NotImplementAnyInterfaces(helper.TestInterface, helper.OtherTestInterface)
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      notImplementAnyInterfaces: [TypeNamespace.ITestInterface, TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: NotImplementAnyInterfacesTest#36
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should not implement any Interfaces that are "TypeNamespace.ITestInterface" or "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().NotImplementAnyInterfaces(Interfaces().That().Are(helper.TestInterface, helper.OtherTestInterface))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      notImplementAnyInterfaces:
+        kind: interface
+        where:
+          are: [TypeNamespace.ITestInterface, TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: NotImplementAnyInterfacesTest#37
+  alsoCovers: [NotImplementAnyInterfacesTest#38, NotImplementAnyInterfacesTest#39, NotImplementAnyInterfacesTest#40]
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should be Interfaces that do not implement any "TypeNamespace.ITestInterface" or "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().Be(Interfaces().That().DoNotImplementAnyInterfaces(helper.TestInterface, helper.OtherTestInterface))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          doNotImplementAnyInterfaces: [TypeNamespace.ITestInterface, TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: NotImplementAnyInterfacesTest#41
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should be Interfaces that do not implement any Interfaces that are "TypeNamespace.ITestInterface" or "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().Be(Interfaces().That().DoNotImplementAnyInterfaces(Interfaces().That().Are(helper.TestInterface, helper.OtherTestInterface)))
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      be:
+        kind: interface
+        where:
+          doNotImplementAnyInterfaces:
+            kind: interface
+            where:
+              are: [TypeNamespace.ITestInterface, TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: NotImplementAnyInterfacesTest#42
+  query: Interfaces that are "TypeNamespace.IChildTestInterface" should not implement any interfaces that are "TypeNamespace.ITestInterface" or "TypeNamespace.IOtherTestInterface"
+  csharp: Interfaces().That().Are(helper.ChildTestInterface).Should().NotImplementAnyInterfacesThat().Are(helper.TestInterface, helper.OtherTestInterface)
+  rule:
+    select:
+      kind: interface
+      where:
+        are: [TypeNamespace.IChildTestInterface]
+    should:
+      notImplementAnyInterfacesThat:
+        kind: interface
+        where:
+          are: [TypeNamespace.ITestInterface, TypeNamespace.IOtherTestInterface]
+  expect:
+    pass: []
+    fail: [TypeNamespace.IChildTestInterface]
+- id: ResideInNamespaceTest#1
+  query: Types that are "TypeNamespace.RegularClass" should reside in namespace with full name "TypeNamespace"
+  csharp: Types().That().Are(helper.RegularClass).Should().ResideInNamespace("TypeNamespace")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {resideInNamespace: TypeNamespace}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: ResideInNamespaceTest#2
+  query: Types that are "TypeNamespace.RegularClass" should be Types that reside in namespace with full name "TypeNamespace"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().ResideInNamespace("TypeNamespace"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {resideInNamespace: TypeNamespace}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: ResideInNamespaceTest#3
+  query: Types that are "TypeNamespace.RegularClass" should reside in namespace with full name "NonExistentNamespace"
+  csharp: Types().That().Are(helper.RegularClass).Should().ResideInNamespace("NonExistentNamespace")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {resideInNamespace: NonExistentNamespace}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: ResideInNamespaceTest#4
+  query: Types that are "TypeNamespace.RegularClass" should be Types that reside in namespace with full name "NonExistentNamespace"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().ResideInNamespace("NonExistentNamespace"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {resideInNamespace: NonExistentNamespace}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: ResideInNamespaceTest#5
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.OtherRegularClass" should reside in namespace with full name "TypeNamespace"
+  csharp: Types().That().Are(helper.RegularClass, helper.OtherRegularClass).Should().ResideInNamespace("TypeNamespace")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.OtherRegularClass]
+    should: {resideInNamespace: TypeNamespace}
+  expect:
+    pass: [TypeNamespace.OtherRegularClass, TypeNamespace.RegularClass]
+    fail: []
+- id: NotResideInNamespaceTest#1
+  query: Types that are "TypeNamespace.RegularClass" should not reside in namespace with full name "NonExistentNamespace"
+  csharp: Types().That().Are(helper.RegularClass).Should().NotResideInNamespace("NonExistentNamespace")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {notResideInNamespace: NonExistentNamespace}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotResideInNamespaceTest#2
+  query: Types that are "TypeNamespace.RegularClass" should be Types that do not reside in namespace with full name "NonExistentNamespace"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().DoNotResideInNamespace("NonExistentNamespace"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {doNotResideInNamespace: NonExistentNamespace}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotResideInNamespaceTest#3
+  query: Types that are "TypeNamespace.RegularClass" should not reside in namespace with full name "TypeNamespace"
+  csharp: Types().That().Are(helper.RegularClass).Should().NotResideInNamespace("TypeNamespace")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {notResideInNamespace: TypeNamespace}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: NotResideInNamespaceTest#4
+  query: Types that are "TypeNamespace.RegularClass" should be Types that do not reside in namespace with full name "TypeNamespace"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().DoNotResideInNamespace("TypeNamespace"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {doNotResideInNamespace: TypeNamespace}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: NotResideInNamespaceTest#5
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.OtherRegularClass" should not reside in namespace with full name "NonExistentNamespace"
+  csharp: Types().That().Are(helper.RegularClass, helper.OtherRegularClass).Should().NotResideInNamespace("NonExistentNamespace")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.OtherRegularClass]
+    should: {notResideInNamespace: NonExistentNamespace}
+  expect:
+    pass: [TypeNamespace.OtherRegularClass, TypeNamespace.RegularClass]
+    fail: []
+- id: ResideInNamespaceMatchingTest#1
+  query: Types that are "TypeNamespace.RegularClass" should reside in namespace with full name matching "TypeName.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().ResideInNamespaceMatching("TypeName.*")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {resideInNamespaceMatching: TypeName.*}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: ResideInNamespaceMatchingTest#2
+  query: Types that are "TypeNamespace.RegularClass" should be Types that reside in namespace with full name matching "TypeName.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().ResideInNamespaceMatching("TypeName.*"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {resideInNamespaceMatching: TypeName.*}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: ResideInNamespaceMatchingTest#3
+  query: Types that are "TypeNamespace.RegularClass" should reside in namespace with full name matching "NonExistent.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().ResideInNamespaceMatching("NonExistent.*")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {resideInNamespaceMatching: NonExistent.*}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: ResideInNamespaceMatchingTest#4
+  query: Types that are "TypeNamespace.RegularClass" should be Types that reside in namespace with full name matching "NonExistent.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().ResideInNamespaceMatching("NonExistent.*"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {resideInNamespaceMatching: NonExistent.*}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: ResideInNamespaceMatchingTest#5
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.OtherRegularClass" should reside in namespace with full name matching "TypeName.*"
+  csharp: Types().That().Are(helper.RegularClass, helper.OtherRegularClass).Should().ResideInNamespaceMatching("TypeName.*")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.OtherRegularClass]
+    should: {resideInNamespaceMatching: TypeName.*}
+  expect:
+    pass: [TypeNamespace.OtherRegularClass, TypeNamespace.RegularClass]
+    fail: []
+- id: NotResideInNamespaceMatchingTest#1
+  query: Types that are "TypeNamespace.RegularClass" should not reside in namespace with full name matching "NonExistent.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().NotResideInNamespaceMatching("NonExistent.*")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {notResideInNamespaceMatching: NonExistent.*}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotResideInNamespaceMatchingTest#2
+  query: Types that are "TypeNamespace.RegularClass" should be Types that do not reside in namespace with full name matching "NonExistent.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().DoNotResideInNamespaceMatching("NonExistent.*"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {doNotResideInNamespaceMatching: NonExistent.*}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotResideInNamespaceMatchingTest#3
+  query: Types that are "TypeNamespace.RegularClass" should not reside in namespace with full name matching "TypeName.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().NotResideInNamespaceMatching("TypeName.*")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {notResideInNamespaceMatching: TypeName.*}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: NotResideInNamespaceMatchingTest#4
+  query: Types that are "TypeNamespace.RegularClass" should be Types that do not reside in namespace with full name matching "TypeName.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().DoNotResideInNamespaceMatching("TypeName.*"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {doNotResideInNamespaceMatching: TypeName.*}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: NotResideInNamespaceMatchingTest#5
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.OtherRegularClass" should not reside in namespace with full name matching "NonExistent.*"
+  csharp: Types().That().Are(helper.RegularClass, helper.OtherRegularClass).Should().NotResideInNamespaceMatching("NonExistent.*")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.OtherRegularClass]
+    should: {notResideInNamespaceMatching: NonExistent.*}
+  expect:
+    pass: [TypeNamespace.OtherRegularClass, TypeNamespace.RegularClass]
+    fail: []
+- id: ResideInAssemblyTest#1
+  alsoCovers: [ResideInAssemblyTest#2, ResideInAssemblyTest#3]
+  query: Types that are "TypeNamespace.RegularClass" should reside in assembly "TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
+  csharp: Types().That().Are(helper.RegularClass).Should().ResideInAssembly(typeof(TypeNamespace.RegularClass).Assembly)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {resideInAssembly: 'TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4'}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: ResideInAssemblyTest#4
+  query: Types that are "TypeNamespace.RegularClass" should reside in assembly with full name matching "TypeAssembly.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().ResideInAssemblyMatching("TypeAssembly.*")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {resideInAssemblyMatching: TypeAssembly.*}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: ResideInAssemblyTest#5
+  alsoCovers: [ResideInAssemblyTest#6, ResideInAssemblyTest#7]
+  query: Types that are "TypeNamespace.RegularClass" should be Types that reside in assembly "TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().ResideInAssembly(typeof(TypeNamespace.RegularClass).Assembly))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {resideInAssembly: 'TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4'}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: ResideInAssemblyTest#8
+  query: Types that are "TypeNamespace.RegularClass" should be Types that reside in assembly with full name matching "TypeAssembly.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().ResideInAssemblyMatching("TypeAssembly.*"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {resideInAssemblyMatching: TypeAssembly.*}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: ResideInAssemblyTest#9
+  query: Types that are "TypeNamespace.RegularClass" should reside in assembly with full name "NonExistentAssembly"
+  csharp: Types().That().Are(helper.RegularClass).Should().ResideInAssembly("NonExistentAssembly")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {resideInAssembly: NonExistentAssembly}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: ResideInAssemblyTest#10
+  query: Types that are "TypeNamespace.RegularClass" should reside in assembly with full name matching "NonExistent.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().ResideInAssemblyMatching("NonExistent.*")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {resideInAssemblyMatching: NonExistent.*}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: ResideInAssemblyTest#11
+  query: Types that are "TypeNamespace.RegularClass" should be Types that reside in assembly with full name "NonExistentAssembly"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().ResideInAssembly("NonExistentAssembly"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {resideInAssembly: NonExistentAssembly}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: ResideInAssemblyTest#12
+  query: Types that are "TypeNamespace.RegularClass" should be Types that reside in assembly with full name matching "NonExistent.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().ResideInAssemblyMatching("NonExistent.*"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {resideInAssemblyMatching: NonExistent.*}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: ResideInAssemblyTest#13
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.OtherRegularClass" should reside in assembly with full name "TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
+  csharp: Types().That().Are(helper.RegularClass, helper.OtherRegularClass).Should().ResideInAssembly(helper.Architecture.Assemblies.First().FullName)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.OtherRegularClass]
+    should: {resideInAssembly: 'TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4'}
+  expect:
+    pass: [TypeNamespace.OtherRegularClass, TypeNamespace.RegularClass]
+    fail: []
+- id: ResideInAssemblyTest#14
+  alsoCovers: [ResideInAssemblyTest#15]
+  query: Types that are "TypeNamespace.RegularClass" should reside in assembly "TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4" or "TypeAssembly, Version=1.0.0.0, Culture=neu...
+  csharp: Types().That().Are(helper.RegularClass).Should().ResideInAssembly(helper.Architecture.Assemblies.First(), helper.Architecture.Assemblies.First())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      resideInAssembly: ['TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4', 'TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4']
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: ResideInAssemblyTest#16
+  alsoCovers: [ResideInAssemblyTest#17]
+  query: Types that are "TypeNamespace.RegularClass" should be Types that reside in assembly "TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4" or "TypeAssembly, Version=1.0.0....
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().ResideInAssembly(helper.Architecture.Assemblies.First(), helper.Architecture.Assemblies.First()))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where:
+          resideInAssembly: ['TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4', 'TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4']
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotResideInAssemblyTest#1
+  query: Types that are "TypeNamespace.RegularClass" should not reside in assembly with full name "NonExistentAssembly"
+  csharp: Types().That().Are(helper.RegularClass).Should().NotResideInAssembly("NonExistentAssembly")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {notResideInAssembly: NonExistentAssembly}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotResideInAssemblyTest#2
+  query: Types that are "TypeNamespace.RegularClass" should not reside in assembly with full name matching "NonExistent.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().NotResideInAssemblyMatching("NonExistent.*")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {notResideInAssemblyMatching: NonExistent.*}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotResideInAssemblyTest#3
+  query: Types that are "TypeNamespace.RegularClass" should be Types that do not reside in assembly with full name "NonExistentAssembly"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().DoNotResideInAssembly("NonExistentAssembly"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {doNotResideInAssembly: NonExistentAssembly}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotResideInAssemblyTest#4
+  query: Types that are "TypeNamespace.RegularClass" should be Types that do not reside in assembly with full name matching "NonExistent.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().DoNotResideInAssemblyMatching("NonExistent.*"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {doNotResideInAssemblyMatching: NonExistent.*}
+  expect:
+    pass: [TypeNamespace.RegularClass]
+    fail: []
+- id: NotResideInAssemblyTest#5
+  alsoCovers: [NotResideInAssemblyTest#6, NotResideInAssemblyTest#7]
+  query: Types that are "TypeNamespace.RegularClass" should not reside in assembly "TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
+  csharp: Types().That().Are(helper.RegularClass).Should().NotResideInAssembly(typeof(TypeNamespace.RegularClass).Assembly)
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {notResideInAssembly: 'TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4'}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: NotResideInAssemblyTest#8
+  query: Types that are "TypeNamespace.RegularClass" should not reside in assembly with full name matching "TypeAssembly.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().NotResideInAssemblyMatching("TypeAssembly.*")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should: {notResideInAssemblyMatching: TypeAssembly.*}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: NotResideInAssemblyTest#9
+  alsoCovers: [NotResideInAssemblyTest#10, NotResideInAssemblyTest#11]
+  query: Types that are "TypeNamespace.RegularClass" should be Types that do not reside in assembly "TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().DoNotResideInAssembly(typeof(TypeNamespace.RegularClass).Assembly))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {doNotResideInAssembly: 'TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4'}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: NotResideInAssemblyTest#12
+  query: Types that are "TypeNamespace.RegularClass" should be Types that do not reside in assembly with full name matching "TypeAssembly.*"
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().DoNotResideInAssemblyMatching("TypeAssembly.*"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where: {doNotResideInAssemblyMatching: TypeAssembly.*}
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: NotResideInAssemblyTest#13
+  query: Types that are "TypeNamespace.RegularClass" or "TypeNamespace.OtherRegularClass" should not reside in assembly with full name "NonExistentAssembly"
+  csharp: Types().That().Are(helper.RegularClass, helper.OtherRegularClass).Should().NotResideInAssembly("NonExistentAssembly")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass, TypeNamespace.OtherRegularClass]
+    should: {notResideInAssembly: NonExistentAssembly}
+  expect:
+    pass: [TypeNamespace.OtherRegularClass, TypeNamespace.RegularClass]
+    fail: []
+- id: NotResideInAssemblyTest#14
+  alsoCovers: [NotResideInAssemblyTest#15]
+  query: Types that are "TypeNamespace.RegularClass" should not reside in assembly "TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4" or "TypeAssembly, Version=1.0.0.0, Culture...
+  csharp: Types().That().Are(helper.RegularClass).Should().NotResideInAssembly(helper.Architecture.Assemblies.First(), helper.Architecture.Assemblies.First())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      notResideInAssembly: ['TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4', 'TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4']
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: NotResideInAssemblyTest#16
+  alsoCovers: [NotResideInAssemblyTest#17]
+  query: Types that are "TypeNamespace.RegularClass" should be Types that do not reside in assembly "TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4" or "TypeAssembly, Version...
+  csharp: Types().That().Are(helper.RegularClass).Should().Be(Types().That().DoNotResideInAssembly(helper.Architecture.Assemblies.First(), helper.Architecture.Assemblies.First()))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.RegularClass]
+    should:
+      be:
+        kind: type
+        where:
+          doNotResideInAssembly: ['TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4', 'TypeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4']
+  expect:
+    pass: []
+    fail: [TypeNamespace.RegularClass]
+- id: HavePropertyMemberWithNameTest#1
+  query: Types that are "TypeNamespace.ClassWithProperty" should have a property member with name "PropertyA"
+  csharp: Types().That().Are(helper.ClassWithProperty).Should().HavePropertyMemberWithName("PropertyA")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithProperty]
+    should: {havePropertyMemberWithName: PropertyA}
+  expect:
+    pass: [TypeNamespace.ClassWithProperty]
+    fail: []
+- id: HavePropertyMemberWithNameTest#2
+  query: Types that are "TypeNamespace.ClassWithProperty" should be Types that have property member with name"PropertyA"
+  csharp: Types().That().Are(helper.ClassWithProperty).Should().Be(Types().That().HavePropertyMemberWithName("PropertyA"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithProperty]
+    should:
+      be:
+        kind: type
+        where: {havePropertyMemberWithName: PropertyA}
+  expect:
+    pass: [TypeNamespace.ClassWithProperty]
+    fail: []
+- id: HavePropertyMemberWithNameTest#3
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should have a property member with name "PropertyA"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().HavePropertyMemberWithName("PropertyA")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should: {havePropertyMemberWithName: PropertyA}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithoutMembers]
+- id: HavePropertyMemberWithNameTest#4
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should be Types that have property member with name"PropertyA"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().Be(Types().That().HavePropertyMemberWithName("PropertyA"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should:
+      be:
+        kind: type
+        where: {havePropertyMemberWithName: PropertyA}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithoutMembers]
+- id: HavePropertyMemberWithNameTest#5
+  query: Types that are "TypeNamespace.ClassWithProperty" or "TypeNamespace.ClassWithoutMembers" should have a property member with name "PropertyA"
+  csharp: Types().That().Are(helper.ClassWithProperty, helper.ClassWithoutMembers).Should().HavePropertyMemberWithName("PropertyA")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithProperty, TypeNamespace.ClassWithoutMembers]
+    should: {havePropertyMemberWithName: PropertyA}
+  expect:
+    pass: [TypeNamespace.ClassWithProperty]
+    fail: [TypeNamespace.ClassWithoutMembers]
+- id: NotHavePropertyMemberWithNameTest#1
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should not have property member with name "PropertyA"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().NotHavePropertyMemberWithName("PropertyA")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should: {notHavePropertyMemberWithName: PropertyA}
+  expect:
+    pass: [TypeNamespace.ClassWithoutMembers]
+    fail: []
+- id: NotHavePropertyMemberWithNameTest#2
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should be Types that do not have property member with name "PropertyA"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().Be(Types().That().DoNotHavePropertyMemberWithName("PropertyA"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should:
+      be:
+        kind: type
+        where: {doNotHavePropertyMemberWithName: PropertyA}
+  expect:
+    pass: [TypeNamespace.ClassWithoutMembers]
+    fail: []
+- id: NotHavePropertyMemberWithNameTest#3
+  query: Types that are "TypeNamespace.ClassWithProperty" should not have property member with name "PropertyA"
+  csharp: Types().That().Are(helper.ClassWithProperty).Should().NotHavePropertyMemberWithName("PropertyA")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithProperty]
+    should: {notHavePropertyMemberWithName: PropertyA}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithProperty]
+- id: NotHavePropertyMemberWithNameTest#4
+  query: Types that are "TypeNamespace.ClassWithProperty" should be Types that do not have property member with name "PropertyA"
+  csharp: Types().That().Are(helper.ClassWithProperty).Should().Be(Types().That().DoNotHavePropertyMemberWithName("PropertyA"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithProperty]
+    should:
+      be:
+        kind: type
+        where: {doNotHavePropertyMemberWithName: PropertyA}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithProperty]
+- id: NotHavePropertyMemberWithNameTest#5
+  query: Types that are "TypeNamespace.ClassWithoutMembers" or "TypeNamespace.ClassWithProperty" should not have property member with name "PropertyA"
+  csharp: Types().That().Are(helper.ClassWithoutMembers, helper.ClassWithProperty).Should().NotHavePropertyMemberWithName("PropertyA")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers, TypeNamespace.ClassWithProperty]
+    should: {notHavePropertyMemberWithName: PropertyA}
+  expect:
+    pass: [TypeNamespace.ClassWithoutMembers]
+    fail: [TypeNamespace.ClassWithProperty]
+- id: HaveFieldMemberWithNameTest#1
+  query: Types that are "TypeNamespace.ClassWithField" should have a field member with name "FieldA"
+  csharp: Types().That().Are(helper.ClassWithField).Should().HaveFieldMemberWithName("FieldA")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithField]
+    should: {haveFieldMemberWithName: FieldA}
+  expect:
+    pass: [TypeNamespace.ClassWithField]
+    fail: []
+- id: HaveFieldMemberWithNameTest#2
+  query: Types that are "TypeNamespace.ClassWithField" should be Types that have field member with name "FieldA"
+  csharp: Types().That().Are(helper.ClassWithField).Should().Be(Types().That().HaveFieldMemberWithName("FieldA"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithField]
+    should:
+      be:
+        kind: type
+        where: {haveFieldMemberWithName: FieldA}
+  expect:
+    pass: [TypeNamespace.ClassWithField]
+    fail: []
+- id: HaveFieldMemberWithNameTest#3
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should have a field member with name "FieldA"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().HaveFieldMemberWithName("FieldA")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should: {haveFieldMemberWithName: FieldA}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithoutMembers]
+- id: HaveFieldMemberWithNameTest#4
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should be Types that have field member with name "FieldA"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().Be(Types().That().HaveFieldMemberWithName("FieldA"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should:
+      be:
+        kind: type
+        where: {haveFieldMemberWithName: FieldA}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithoutMembers]
+- id: HaveFieldMemberWithNameTest#5
+  query: Types that are "TypeNamespace.ClassWithField" or "TypeNamespace.ClassWithoutMembers" should have a field member with name "FieldA"
+  csharp: Types().That().Are(helper.ClassWithField, helper.ClassWithoutMembers).Should().HaveFieldMemberWithName("FieldA")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithField, TypeNamespace.ClassWithoutMembers]
+    should: {haveFieldMemberWithName: FieldA}
+  expect:
+    pass: [TypeNamespace.ClassWithField]
+    fail: [TypeNamespace.ClassWithoutMembers]
+- id: NotHaveFieldMemberWithNameTest#1
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should not have field member with name "FieldA"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().NotHaveFieldMemberWithName("FieldA")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should: {notHaveFieldMemberWithName: FieldA}
+  expect:
+    pass: [TypeNamespace.ClassWithoutMembers]
+    fail: []
+- id: NotHaveFieldMemberWithNameTest#2
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should be Types that do not have field member with name "FieldA"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().Be(Types().That().DoNotHaveFieldMemberWithName("FieldA"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should:
+      be:
+        kind: type
+        where: {doNotHaveFieldMemberWithName: FieldA}
+  expect:
+    pass: [TypeNamespace.ClassWithoutMembers]
+    fail: []
+- id: NotHaveFieldMemberWithNameTest#3
+  query: Types that are "TypeNamespace.ClassWithField" should not have field member with name "FieldA"
+  csharp: Types().That().Are(helper.ClassWithField).Should().NotHaveFieldMemberWithName("FieldA")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithField]
+    should: {notHaveFieldMemberWithName: FieldA}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithField]
+- id: NotHaveFieldMemberWithNameTest#4
+  query: Types that are "TypeNamespace.ClassWithField" should be Types that do not have field member with name "FieldA"
+  csharp: Types().That().Are(helper.ClassWithField).Should().Be(Types().That().DoNotHaveFieldMemberWithName("FieldA"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithField]
+    should:
+      be:
+        kind: type
+        where: {doNotHaveFieldMemberWithName: FieldA}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithField]
+- id: NotHaveFieldMemberWithNameTest#5
+  query: Types that are "TypeNamespace.ClassWithoutMembers" or "TypeNamespace.ClassWithField" should not have field member with name "FieldA"
+  csharp: Types().That().Are(helper.ClassWithoutMembers, helper.ClassWithField).Should().NotHaveFieldMemberWithName("FieldA")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers, TypeNamespace.ClassWithField]
+    should: {notHaveFieldMemberWithName: FieldA}
+  expect:
+    pass: [TypeNamespace.ClassWithoutMembers]
+    fail: [TypeNamespace.ClassWithField]
+- id: HaveMethodMemberWithNameTest#1
+  query: Types that are "TypeNamespace.ClassWithMethod" should have a method member with name "MethodA()"
+  csharp: Types().That().Are(helper.ClassWithMethod).Should().HaveMethodMemberWithName("MethodA()")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithMethod]
+    should: {haveMethodMemberWithName: MethodA()}
+  expect:
+    pass: [TypeNamespace.ClassWithMethod]
+    fail: []
+- id: HaveMethodMemberWithNameTest#2
+  query: Types that are "TypeNamespace.ClassWithMethod" should be Types that have method member with name "MethodA()"
+  csharp: Types().That().Are(helper.ClassWithMethod).Should().Be(Types().That().HaveMethodMemberWithName("MethodA()"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithMethod]
+    should:
+      be:
+        kind: type
+        where: {haveMethodMemberWithName: MethodA()}
+  expect:
+    pass: [TypeNamespace.ClassWithMethod]
+    fail: []
+- id: HaveMethodMemberWithNameTest#3
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should have a method member with name "MethodA()"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().HaveMethodMemberWithName("MethodA()")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should: {haveMethodMemberWithName: MethodA()}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithoutMembers]
+- id: HaveMethodMemberWithNameTest#4
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should be Types that have method member with name "MethodA()"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().Be(Types().That().HaveMethodMemberWithName("MethodA()"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should:
+      be:
+        kind: type
+        where: {haveMethodMemberWithName: MethodA()}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithoutMembers]
+- id: HaveMethodMemberWithNameTest#5
+  query: Types that are "TypeNamespace.ClassWithMethod" or "TypeNamespace.ClassWithoutMembers" should have a method member with name "MethodA()"
+  csharp: Types().That().Are(helper.ClassWithMethod, helper.ClassWithoutMembers).Should().HaveMethodMemberWithName("MethodA()")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithMethod, TypeNamespace.ClassWithoutMembers]
+    should: {haveMethodMemberWithName: MethodA()}
+  expect:
+    pass: [TypeNamespace.ClassWithMethod]
+    fail: [TypeNamespace.ClassWithoutMembers]
+- id: NotHaveMethodMemberWithNameTest#1
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should not have method member with name "MethodA()"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().NotHaveMethodMemberWithName("MethodA()")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should: {notHaveMethodMemberWithName: MethodA()}
+  expect:
+    pass: [TypeNamespace.ClassWithoutMembers]
+    fail: []
+- id: NotHaveMethodMemberWithNameTest#2
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should be Types that do not have method member with name "MethodA()"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().Be(Types().That().DoNotHaveMethodMemberWithName("MethodA()"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should:
+      be:
+        kind: type
+        where: {doNotHaveMethodMemberWithName: MethodA()}
+  expect:
+    pass: [TypeNamespace.ClassWithoutMembers]
+    fail: []
+- id: NotHaveMethodMemberWithNameTest#3
+  query: Types that are "TypeNamespace.ClassWithMethod" should not have method member with name "MethodA()"
+  csharp: Types().That().Are(helper.ClassWithMethod).Should().NotHaveMethodMemberWithName("MethodA()")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithMethod]
+    should: {notHaveMethodMemberWithName: MethodA()}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithMethod]
+- id: NotHaveMethodMemberWithNameTest#4
+  query: Types that are "TypeNamespace.ClassWithMethod" should be Types that do not have method member with name "MethodA()"
+  csharp: Types().That().Are(helper.ClassWithMethod).Should().Be(Types().That().DoNotHaveMethodMemberWithName("MethodA()"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithMethod]
+    should:
+      be:
+        kind: type
+        where: {doNotHaveMethodMemberWithName: MethodA()}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithMethod]
+- id: NotHaveMethodMemberWithNameTest#5
+  query: Types that are "TypeNamespace.ClassWithoutMembers" or "TypeNamespace.ClassWithMethod" should not have method member with name "MethodA()"
+  csharp: Types().That().Are(helper.ClassWithoutMembers, helper.ClassWithMethod).Should().NotHaveMethodMemberWithName("MethodA()")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers, TypeNamespace.ClassWithMethod]
+    should: {notHaveMethodMemberWithName: MethodA()}
+  expect:
+    pass: [TypeNamespace.ClassWithoutMembers]
+    fail: [TypeNamespace.ClassWithMethod]
+- id: HaveMemberWithNameTest#1
+  query: Types that are "TypeNamespace.ClassWithAllMembers" should have a member with name "PropertyB"
+  csharp: Types().That().Are(helper.ClassWithAllMembers).Should().HaveMemberWithName("PropertyB")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithAllMembers]
+    should: {haveMemberWithName: PropertyB}
+  expect:
+    pass: [TypeNamespace.ClassWithAllMembers]
+    fail: []
+- id: HaveMemberWithNameTest#2
+  query: Types that are "TypeNamespace.ClassWithAllMembers" should be Types that have member with name "PropertyB"
+  csharp: Types().That().Are(helper.ClassWithAllMembers).Should().Be(Types().That().HaveMemberWithName("PropertyB"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithAllMembers]
+    should:
+      be:
+        kind: type
+        where: {haveMemberWithName: PropertyB}
+  expect:
+    pass: [TypeNamespace.ClassWithAllMembers]
+    fail: []
+- id: HaveMemberWithNameTest#3
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should have a member with name "PropertyB"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().HaveMemberWithName("PropertyB")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should: {haveMemberWithName: PropertyB}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithoutMembers]
+- id: HaveMemberWithNameTest#4
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should be Types that have member with name "PropertyB"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().Be(Types().That().HaveMemberWithName("PropertyB"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should:
+      be:
+        kind: type
+        where: {haveMemberWithName: PropertyB}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithoutMembers]
+- id: HaveMemberWithNameTest#5
+  query: Types that are "TypeNamespace.ClassWithAllMembers" or "TypeNamespace.ClassWithoutMembers" should have a member with name "PropertyB"
+  csharp: Types().That().Are(helper.ClassWithAllMembers, helper.ClassWithoutMembers).Should().HaveMemberWithName("PropertyB")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithAllMembers, TypeNamespace.ClassWithoutMembers]
+    should: {haveMemberWithName: PropertyB}
+  expect:
+    pass: [TypeNamespace.ClassWithAllMembers]
+    fail: [TypeNamespace.ClassWithoutMembers]
+- id: NotHaveMemberWithNameTest#1
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should not have member with name "PropertyB"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().NotHaveMemberWithName("PropertyB")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should: {notHaveMemberWithName: PropertyB}
+  expect:
+    pass: [TypeNamespace.ClassWithoutMembers]
+    fail: []
+- id: NotHaveMemberWithNameTest#2
+  query: Types that are "TypeNamespace.ClassWithoutMembers" should be Types that do not have member with name "PropertyB"
+  csharp: Types().That().Are(helper.ClassWithoutMembers).Should().Be(Types().That().DoNotHaveMemberWithName("PropertyB"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers]
+    should:
+      be:
+        kind: type
+        where: {doNotHaveMemberWithName: PropertyB}
+  expect:
+    pass: [TypeNamespace.ClassWithoutMembers]
+    fail: []
+- id: NotHaveMemberWithNameTest#3
+  query: Types that are "TypeNamespace.ClassWithAllMembers" should not have member with name "PropertyB"
+  csharp: Types().That().Are(helper.ClassWithAllMembers).Should().NotHaveMemberWithName("PropertyB")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithAllMembers]
+    should: {notHaveMemberWithName: PropertyB}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithAllMembers]
+- id: NotHaveMemberWithNameTest#4
+  query: Types that are "TypeNamespace.ClassWithAllMembers" should be Types that do not have member with name "PropertyB"
+  csharp: Types().That().Are(helper.ClassWithAllMembers).Should().Be(Types().That().DoNotHaveMemberWithName("PropertyB"))
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithAllMembers]
+    should:
+      be:
+        kind: type
+        where: {doNotHaveMemberWithName: PropertyB}
+  expect:
+    pass: []
+    fail: [TypeNamespace.ClassWithAllMembers]
+- id: NotHaveMemberWithNameTest#5
+  query: Types that are "TypeNamespace.ClassWithoutMembers" or "TypeNamespace.ClassWithAllMembers" should not have member with name "PropertyB"
+  csharp: Types().That().Are(helper.ClassWithoutMembers, helper.ClassWithAllMembers).Should().NotHaveMemberWithName("PropertyB")
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.ClassWithoutMembers, TypeNamespace.ClassWithAllMembers]
+    should: {notHaveMemberWithName: PropertyB}
+  expect:
+    pass: [TypeNamespace.ClassWithoutMembers]
+    fail: [TypeNamespace.ClassWithAllMembers]
+- id: BeNestedTest#1
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" should be nested
+  csharp: Types().That().Are(helper.InnerClassA).Should().BeNested()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA]
+    should: {beNested: true}
+  expect:
+    pass: [TypeNamespace.OuterClassA+InnerClassA]
+    fail: []
+- id: BeNestedTest#2
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" should be Types that are nested
+  csharp: Types().That().Are(helper.InnerClassA).Should().Be(Types().That().AreNested())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA]
+    should:
+      be:
+        kind: type
+        where: {areNested: true}
+  expect:
+    pass: [TypeNamespace.OuterClassA+InnerClassA]
+    fail: []
+- id: BeNestedTest#3
+  query: Types that are "TypeNamespace.NonNestedClass" should be nested
+  csharp: Types().That().Are(helper.NonNestedClass).Should().BeNested()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.NonNestedClass]
+    should: {beNested: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.NonNestedClass]
+- id: BeNestedTest#4
+  query: Types that are "TypeNamespace.NonNestedClass" should be Types that are nested
+  csharp: Types().That().Are(helper.NonNestedClass).Should().Be(Types().That().AreNested())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.NonNestedClass]
+    should:
+      be:
+        kind: type
+        where: {areNested: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.NonNestedClass]
+- id: BeNestedTest#5
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" or "TypeNamespace.OuterClassA+OtherInnerClassA" should be nested
+  csharp: Types().That().Are(helper.InnerClassA, helper.OtherInnerClassA).Should().BeNested()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA, TypeNamespace.OuterClassA+OtherInnerClassA]
+    should: {beNested: true}
+  expect:
+    pass: [TypeNamespace.OuterClassA+InnerClassA, TypeNamespace.OuterClassA+OtherInnerClassA]
+    fail: []
+- id: BeNestedTest#6
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" or "TypeNamespace.NonNestedClass" should be nested
+  csharp: Types().That().Are(helper.InnerClassA, helper.NonNestedClass).Should().BeNested()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA, TypeNamespace.NonNestedClass]
+    should: {beNested: true}
+  expect:
+    pass: [TypeNamespace.OuterClassA+InnerClassA]
+    fail: [TypeNamespace.NonNestedClass]
+- id: NotBeNestedTest#1
+  query: Types that are "TypeNamespace.NonNestedClass" should not be nested
+  csharp: Types().That().Are(helper.NonNestedClass).Should().NotBeNested()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.NonNestedClass]
+    should: {notBeNested: true}
+  expect:
+    pass: [TypeNamespace.NonNestedClass]
+    fail: []
+- id: NotBeNestedTest#2
+  query: Types that are "TypeNamespace.NonNestedClass" should be Types that are not nested
+  csharp: Types().That().Are(helper.NonNestedClass).Should().Be(Types().That().AreNotNested())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.NonNestedClass]
+    should:
+      be:
+        kind: type
+        where: {areNotNested: true}
+  expect:
+    pass: [TypeNamespace.NonNestedClass]
+    fail: []
+- id: NotBeNestedTest#3
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" should not be nested
+  csharp: Types().That().Are(helper.InnerClassA).Should().NotBeNested()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA]
+    should: {notBeNested: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.OuterClassA+InnerClassA]
+- id: NotBeNestedTest#4
+  query: Types that are "TypeNamespace.OuterClassA+InnerClassA" should be Types that are not nested
+  csharp: Types().That().Are(helper.InnerClassA).Should().Be(Types().That().AreNotNested())
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.OuterClassA+InnerClassA]
+    should:
+      be:
+        kind: type
+        where: {areNotNested: true}
+  expect:
+    pass: []
+    fail: [TypeNamespace.OuterClassA+InnerClassA]
+- id: NotBeNestedTest#5
+  query: Types that are "TypeNamespace.NonNestedClass" or "TypeNamespace.RegularClass" should not be nested
+  csharp: Types().That().Are(helper.NonNestedClass, helper.RegularClass).Should().NotBeNested()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.NonNestedClass, TypeNamespace.RegularClass]
+    should: {notBeNested: true}
+  expect:
+    pass: [TypeNamespace.NonNestedClass, TypeNamespace.RegularClass]
+    fail: []
+- id: NotBeNestedTest#6
+  query: Types that are "TypeNamespace.NonNestedClass" or "TypeNamespace.OuterClassA+InnerClassA" should not be nested
+  csharp: Types().That().Are(helper.NonNestedClass, helper.InnerClassA).Should().NotBeNested()
+  rule:
+    select:
+      kind: type
+      where:
+        are: [TypeNamespace.NonNestedClass, TypeNamespace.OuterClassA+InnerClassA]
+    should: {notBeNested: true}
+  expect:
+    pass: [TypeNamespace.NonNestedClass]
+    fail: [TypeNamespace.OuterClassA+InnerClassA]

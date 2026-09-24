@@ -30,6 +30,9 @@ ignore = [
 # Tests assert, use fixtures and need no docstring on every function.
 "**/tests/**" = ["S101", "D100", "D103", "PLR2004", "INP001"]
 "**/conftest.py" = ["INP001"]
+# Conformance tools are standalone scripts run by path (python3 conformance/<gate>/tools/x.py),
+# not an importable package.
+"conformance/*/tools/*.py" = ["INP001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -46,6 +49,12 @@ warn_unused_configs = true
 disallow_any_generics = true
 no_implicit_reexport = true
 exclude = "(^|/)(target|node_modules|\\.venv|testbeds/checkouts|conformance/.*/(upstream|fixtures)|crates/[^/]+/tests/fixtures)/"
+
+# PyYAML ships no type stubs and the lint job installs only ruff and mypy; the conformance tools
+# (conformance/archunitnet/tools/port.py) call yaml.safe_dump and type what it returns.
+[[tool.mypy.overrides]]
+module = ["yaml"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 addopts = "--cov --cov-report=term-missing --cov-fail-under=70"
