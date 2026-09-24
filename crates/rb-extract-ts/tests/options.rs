@@ -1186,3 +1186,45 @@ fn a_dotted_name_as_long_as_the_file_is_read_or_refused_by_name()
     );
     Ok(())
 }
+
+/// Vue's `generic` attribute holds a `>` inside its quotes; the start tag ends at the `>` after
+/// it, so both imports are found, as `@vue/compiler-sfc` hands them to upstream, under the
+/// default (acorn) flavour and under tsc alike, at the lines they have in the component. Before,
+/// the body began inside the attribute, and an import on the tag's line was lost.
+#[test]
+fn a_generic_script_setup_keeps_its_imports() -> Result<(), Box<dyn std::error::Error>> {
+    let expected = vec![
+        (
+            "./format".to_owned(),
+            "src/format.ts".to_owned(),
+            vec!["local".to_owned(), "import".to_owned()],
+        ),
+        (
+            "./item".to_owned(),
+            "src/item.ts".to_owned(),
+            vec!["local".to_owned(), "import".to_owned()],
+        ),
+    ];
+    for options in ["{}", r#"{"tsPreCompilationDeps": true}"#] {
+        let extraction = run("sfc-generic", options, &["src"])?;
+        assert_eq!(edges(&extraction, "src/Generic.vue"), expected, "{options}");
+        assert_eq!(
+            positions(&extraction, "src/Generic.vue"),
+            [
+                ("./format".to_owned(), Some(2), Some(1)),
+                ("./item".to_owned(), Some(3), Some(1)),
+            ],
+            "{options}"
+        );
+        // The first import on the start tag's own line, which blanking the line would lose.
+        assert_eq!(
+            positions(&extraction, "src/Inline.vue"),
+            [
+                ("./format".to_owned(), Some(1), Some(69)),
+                ("./item".to_owned(), Some(2), Some(1)),
+            ],
+            "{options}"
+        );
+    }
+    Ok(())
+}
