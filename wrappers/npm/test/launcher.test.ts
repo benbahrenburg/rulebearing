@@ -273,3 +273,23 @@ describe('launch', () => {
     expect(fx.codes).toEqual([]);
   });
 });
+
+describe('the package entry point', () => {
+  // eslint-plugin-rulebearing imports resolveBinary from `rulebearing` (plan 0002, Step 13), so
+  // the export map must name the compiled launcher and its declarations, and the package ship both.
+  it('exports the launcher with its declarations, and ships what it exports', () => {
+    const manifest = JSON.parse(
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+    ) as {
+      exports: Record<string, unknown>;
+      files: string[];
+    };
+    expect(manifest.exports['.']).toEqual({
+      types: './dist/launcher.d.ts',
+      default: './dist/launcher.js',
+    });
+    for (const file of ['dist/launcher.js', 'dist/launcher.d.ts', 'dist/platforms.d.ts']) {
+      expect(manifest.files).toContain(file);
+    }
+  });
+});

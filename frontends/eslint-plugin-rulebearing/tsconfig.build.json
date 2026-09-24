@@ -1,0 +1,15 @@
+{
+  "//": "Compiles src/ to dist/ for the published package (npm run build). `rulebearing` is the npm wrapper, which the published package depends on; in this repository it is wrappers/npm, built first (npm run build there), so its declarations stand in for the installed package. Linting uses the root tsconfig.json.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declarationMap": false,
+    "sourceMap": false,
+    "types": ["node"],
+    "paths": {
+      "rulebearing": ["../../wrappers/npm/dist/launcher.d.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

@@ -51,11 +51,11 @@ The npm wrapper (wave 1) and the NuGet and PyPI wrappers (wave 2) replace the pl
 
 | Job | Runs on | What it does |
 | --- | --- | --- |
-| `npm-pack` | every trigger | checks that a tag carries the workspace version, builds the launcher, runs `wrappers/npm/scripts/stage.mjs` over the six archives, and packs the seven packages with `npm pack` into the `npm-packages` artefact |
+| `npm-pack` | every trigger | checks that a tag carries the workspace version, builds the launcher, runs `wrappers/npm/scripts/stage.mjs` over the six archives, builds and stages [`eslint-plugin-rulebearing`](../frontends/eslint-plugin-rulebearing/README.md) with the version stamped into it and its `rulebearing` dependency ([plan 0002 Step 13](plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)), and packs the eight packages with `npm pack` into the `npm-packages` artefact |
 | `npm-install-check` | every trigger | on macOS arm64, Linux x64 and Windows x64, installs `rulebearing` and the host's platform package from those tarballs into an empty project and asserts that `npx rulebearing --version` prints `rulebearing <version>` |
-| `npm-publish` | a `vX.Y.Z` tag only, after `release` and the install check | `npm publish --provenance --access public` for the six platform packages, then `rulebearing`, from the same tarballs |
+| `npm-publish` | a `vX.Y.Z` tag only, after `release` and the install check | `npm publish --provenance --access public` for the six platform packages, then `rulebearing`, then `eslint-plugin-rulebearing`, from the same tarballs |
 
-A dry run (a manual run or an `-rc` tag) therefore packs and install-checks exactly what a release would publish, and publishes nothing. `npm-publish` alone holds `id-token: write`, which provenance needs; every other job keeps `contents: read` ([ADR-0025](adr/0025-ci-and-supply-chain-hardening.md)). It reads the `NPM_TOKEN` repository secret, an npm automation token with publish rights on the seven package names; the platform names are created by the first publish.
+A dry run (a manual run or an `-rc` tag) therefore packs and install-checks exactly what a release would publish, and publishes nothing. `npm-publish` alone holds `id-token: write`, which provenance needs; every other job keeps `contents: read` ([ADR-0025](adr/0025-ci-and-supply-chain-hardening.md)). It reads the `NPM_TOKEN` repository secret, an npm automation token with publish rights on the eight package names; the platform names and `eslint-plugin-rulebearing` are created by their first publish.
 
 To stage and install the packages by hand on one machine, without publishing:
 
