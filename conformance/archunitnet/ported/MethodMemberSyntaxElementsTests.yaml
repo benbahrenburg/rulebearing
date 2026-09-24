@@ -1,0 +1,1808 @@
+# Ported from ArchUnitNET 0.13.4 ArchUnitNETTests/Fluent/Syntax/Elements/MethodMemberSyntaxElementsTests.cs by conformance/archunitnet/tools/port.py. Do not edit; rerun the tool.
+source: ArchUnitNETTests/Fluent/Syntax/Elements/MethodMemberSyntaxElementsTests.cs
+architecture: [MethodMemberAssembly, DuplicateFullNameAssembly, OtherDuplicateFullNameAssembly]
+cases:
+- id: BeConstructorTest#1
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()" should be a constructor
+  csharp: MethodMembers().That().Are(helper.ClassWithVirtualMethodConstructor).Should().BeConstructor()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+    should: {beConstructor: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+    fail: []
+- id: BeConstructorTest#2
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()" should be Method members that are constructors
+  csharp: MethodMembers().That().Are(helper.ClassWithVirtualMethodConstructor).Should().Be(MethodMembers().That().AreConstructors())
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+    should:
+      be:
+        kind: method
+        where: {areConstructors: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+    fail: []
+- id: BeConstructorTest#3
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" should be a constructor
+  csharp: MethodMembers().That().Are(helper.VirtualMethod).Should().BeConstructor()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    should: {beConstructor: true}
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+- id: BeConstructorTest#4
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" should be Method members that are constructors
+  csharp: MethodMembers().That().Are(helper.VirtualMethod).Should().Be(MethodMembers().That().AreConstructors())
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    should:
+      be:
+        kind: method
+        where: {areConstructors: true}
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+- id: BeConstructorTest#5
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()" or "System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::.ctor()" should be a constructor
+  csharp: MethodMembers().That().Are(helper.ClassWithVirtualMethodConstructor, helper.ClassWithNonVirtualMethodConstructor).Should().BeConstructor()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()', 'System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::.ctor()']
+    should: {beConstructor: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::.ctor()', 'System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+    fail: []
+- id: BeConstructorTest#6
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()" or "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" should be a constructor
+  csharp: MethodMembers().That().Are(helper.ClassWithVirtualMethodConstructor, helper.VirtualMethod).Should().BeConstructor()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()', 'System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    should: {beConstructor: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+    fail: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+- id: BeNoConstructorTest#1
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" should be no constructor
+  csharp: MethodMembers().That().Are(helper.VirtualMethod).Should().BeNoConstructor()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    should: {beNoConstructor: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    fail: []
+- id: BeNoConstructorTest#2
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" should be Method members that are no constructors
+  csharp: MethodMembers().That().Are(helper.VirtualMethod).Should().Be(MethodMembers().That().AreNoConstructors())
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    should:
+      be:
+        kind: method
+        where: {areNoConstructors: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    fail: []
+- id: BeNoConstructorTest#3
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()" should be no constructor
+  csharp: MethodMembers().That().Are(helper.ClassWithVirtualMethodConstructor).Should().BeNoConstructor()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+    should: {beNoConstructor: true}
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+- id: BeNoConstructorTest#4
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()" should be Method members that are no constructors
+  csharp: MethodMembers().That().Are(helper.ClassWithVirtualMethodConstructor).Should().Be(MethodMembers().That().AreNoConstructors())
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+    should:
+      be:
+        kind: method
+        where: {areNoConstructors: true}
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+- id: BeNoConstructorTest#5
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" or "System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::No... should be no constructor
+  csharp: MethodMembers().That().Are(helper.VirtualMethod, helper.NonVirtualMethod).Should().BeNoConstructor()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()', 'System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()']
+    should: {beNoConstructor: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()', 'System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    fail: []
+- id: BeNoConstructorTest#6
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" or "System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()" should be no constructor
+  csharp: MethodMembers().That().Are(helper.VirtualMethod, helper.ClassWithVirtualMethodConstructor).Should().BeNoConstructor()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()', 'System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+    should: {beNoConstructor: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    fail: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+- id: BeVirtualTest#1
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" should be virtual
+  csharp: MethodMembers().That().Are(helper.VirtualMethod).Should().BeVirtual()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    should: {beVirtual: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    fail: []
+- id: BeVirtualTest#2
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" should be Method members that are virtual
+  csharp: MethodMembers().That().Are(helper.VirtualMethod).Should().Be(MethodMembers().That().AreVirtual())
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    should:
+      be:
+        kind: method
+        where: {areVirtual: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    fail: []
+- id: BeVirtualTest#3
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()" should be virtual
+  csharp: MethodMembers().That().Are(helper.NonVirtualMethod).Should().BeVirtual()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()']
+    should: {beVirtual: true}
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()']
+- id: BeVirtualTest#4
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()" should be Method members that are virtual
+  csharp: MethodMembers().That().Are(helper.NonVirtualMethod).Should().Be(MethodMembers().That().AreVirtual())
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()']
+    should:
+      be:
+        kind: method
+        where: {areVirtual: true}
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()']
+- id: BeVirtualTest#5
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" or "System.Void MethodMemberNamespace.OtherClassWithVirtualMethod::... should be virtual
+  csharp: MethodMembers().That().Are(helper.VirtualMethod, helper.OtherVirtualMethod).Should().BeVirtual()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()', 'System.Void MethodMemberNamespace.OtherClassWithVirtualMethod::OtherVirtualMethod()']
+    should: {beVirtual: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()', 'System.Void MethodMemberNamespace.OtherClassWithVirtualMethod::OtherVirtualMethod()']
+    fail: []
+- id: BeVirtualTest#6
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" or "System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::No... should be virtual
+  csharp: MethodMembers().That().Are(helper.VirtualMethod, helper.NonVirtualMethod).Should().BeVirtual()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()', 'System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()']
+    should: {beVirtual: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    fail: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()']
+- id: NotBeVirtualTest#1
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()" should not be virtual
+  csharp: MethodMembers().That().Are(helper.NonVirtualMethod).Should().NotBeVirtual()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()']
+    should: {notBeVirtual: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()']
+    fail: []
+- id: NotBeVirtualTest#2
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()" should be Method members that are not virtual
+  csharp: MethodMembers().That().Are(helper.NonVirtualMethod).Should().Be(MethodMembers().That().AreNotVirtual())
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()']
+    should:
+      be:
+        kind: method
+        where: {areNotVirtual: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()']
+    fail: []
+- id: NotBeVirtualTest#3
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" should not be virtual
+  csharp: MethodMembers().That().Are(helper.VirtualMethod).Should().NotBeVirtual()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    should: {notBeVirtual: true}
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+- id: NotBeVirtualTest#4
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" should be Method members that are not virtual
+  csharp: MethodMembers().That().Are(helper.VirtualMethod).Should().Be(MethodMembers().That().AreNotVirtual())
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    should:
+      be:
+        kind: method
+        where: {areNotVirtual: true}
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+- id: NotBeVirtualTest#5
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()" or "System.String MethodMemberNamespace.ClassWithStringReturn... should not be virtual
+  csharp: MethodMembers().That().Are(helper.NonVirtualMethod, helper.MethodReturningString).Should().NotBeVirtual()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()', 'System.String MethodMemberNamespace.ClassWithStringReturnType::MethodReturningString()']
+    should: {notBeVirtual: true}
+  expect:
+    pass: ['System.String MethodMemberNamespace.ClassWithStringReturnType::MethodReturningString()', 'System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()']
+    fail: []
+- id: NotBeVirtualTest#6
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()" or "System.Void MethodMemberNamespace.ClassWithVirtualMethod:... should not be virtual
+  csharp: MethodMembers().That().Are(helper.NonVirtualMethod, helper.VirtualMethod).Should().NotBeVirtual()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()', 'System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    should: {notBeVirtual: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithNonVirtualMethod::NonVirtualMethod()']
+    fail: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+- id: BeCalledByTest#1
+  alsoCovers: [BeCalledByTest#2, BeCalledByTest#4, BeCalledByTest#5]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be called by "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().BeCalledBy(helper.MethodDependencyClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      beCalledBy: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    fail: []
+- id: BeCalledByTest#3
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be called by any Types that are "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().BeCalledBy(Types().That().Are(helper.MethodDependencyClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      beCalledBy:
+        kind: type
+        where:
+          are: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    fail: []
+- id: BeCalledByTest#6
+  alsoCovers: [BeCalledByTest#7, BeCalledByTest#9, BeCalledByTest#10]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be Method members that are called by "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().Be(MethodMembers().That().AreCalledBy(helper.MethodDependencyClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          areCalledBy: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    fail: []
+- id: BeCalledByTest#8
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be Method members that are called by any Types that are "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().Be(MethodMembers().That().AreCalledBy(Types().That().Are(helper.MethodDependencyClass)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          areCalledBy:
+            kind: type
+            where:
+              are: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    fail: []
+- id: BeCalledByTest#11
+  alsoCovers: [BeCalledByTest#12, BeCalledByTest#14, BeCalledByTest#15]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should be called by "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().BeCalledBy(helper.MethodDependencyClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      beCalledBy: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+- id: BeCalledByTest#13
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should be called by any Types that are "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().BeCalledBy(Types().That().Are(helper.MethodDependencyClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      beCalledBy:
+        kind: type
+        where:
+          are: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+- id: BeCalledByTest#16
+  alsoCovers: [BeCalledByTest#17, BeCalledByTest#19, BeCalledByTest#20]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should be Method members that are called by "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().Be(MethodMembers().That().AreCalledBy(helper.MethodDependencyClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      be:
+        kind: method
+        where:
+          areCalledBy: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+- id: BeCalledByTest#18
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should be Method members that are called by any Types that are "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().Be(MethodMembers().That().AreCalledBy(Types().That().Are(helper.MethodDependencyClass)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      be:
+        kind: method
+        where:
+          areCalledBy:
+            kind: type
+            where:
+              are: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+- id: BeCalledByTest#21
+  alsoCovers: [BeCalledByTest#22, BeCalledByTest#23, BeCalledByTest#24]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be called by any "MethodMemberNamespace.MethodDependencyClass" or "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().BeCalledBy(helper.MethodDependencyClass, helper.OtherCallingClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      beCalledBy: [MethodMemberNamespace.MethodDependencyClass, MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    fail: []
+- id: BeCalledByTest#25
+  alsoCovers: [BeCalledByTest#26, BeCalledByTest#27, BeCalledByTest#28]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be Method members that are called by any "MethodMemberNamespace.MethodDependencyClass" or "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().Be(MethodMembers().That().AreCalledBy(helper.MethodDependencyClass, helper.OtherCallingClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          areCalledBy: [MethodMemberNamespace.MethodDependencyClass, MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    fail: []
+- id: BeCalledByTest#29
+  alsoCovers: [BeCalledByTest#30]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be called by one of no types (impossible)
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().BeCalledBy(new List<IType>())
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      beCalledBy: []
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+- id: BeCalledByTest#31
+  alsoCovers: [BeCalledByTest#32]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be Method members that are called by one of no types (impossible)
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().Be(MethodMembers().That().AreCalledBy(new List<IType>()))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          areCalledBy: []
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+- id: BeCalledByTest#33
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be called by "AttributeNamespace.ClassWithoutAttributes"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().BeCalledBy(new List<System.Type> { typeof(AttributeNamespace.ClassWithoutAttributes) })
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      beCalledBy: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: BeCalledByTest#34
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be Method members that are called by "AttributeNamespace.ClassWithoutAttributes"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().Be(MethodMembers().That().AreCalledBy(new List<System.Type> { typeof(AttributeNamespace.ClassWithoutAttributes) }))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          areCalledBy: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: BeCalledByTest#35
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" or "System.Void MethodMemberNamespace.MethodDependencyClass::OtherCal... should be called by "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.CalledMethod, helper.OtherCalledMethod).Should().BeCalledBy(helper.MethodDependencyClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()', 'System.Void MethodMemberNamespace.MethodDependencyClass::OtherCalledMethod()']
+    should:
+      beCalledBy: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()', 'System.Void MethodMemberNamespace.MethodDependencyClass::OtherCalledMethod()']
+    fail: []
+- id: BeCalledByTest#36
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" or "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWi... should be called by "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.CalledMethod, helper.MethodWithoutDependencies).Should().BeCalledBy(helper.MethodDependencyClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()', 'System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      beCalledBy: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+- id: NotBeCalledByTest#1
+  alsoCovers: [NotBeCalledByTest#2, NotBeCalledByTest#4, NotBeCalledByTest#5]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should not be called by "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().NotBeCalledBy(helper.MethodDependencyClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      notBeCalledBy: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: []
+- id: NotBeCalledByTest#3
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should not be called by any Types that are "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().NotBeCalledBy(Types().That().Are(helper.MethodDependencyClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      notBeCalledBy:
+        kind: type
+        where:
+          are: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: []
+- id: NotBeCalledByTest#6
+  alsoCovers: [NotBeCalledByTest#7, NotBeCalledByTest#9, NotBeCalledByTest#10]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should be Method members that are not called by "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().Be(MethodMembers().That().AreNotCalledBy(helper.MethodDependencyClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      be:
+        kind: method
+        where:
+          areNotCalledBy: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: []
+- id: NotBeCalledByTest#8
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should be Method members that are not called by any Types that are "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().Be(MethodMembers().That().AreNotCalledBy(Types().That().Are(helper.MethodDependencyClass)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      be:
+        kind: method
+        where:
+          areNotCalledBy:
+            kind: type
+            where:
+              are: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: []
+- id: NotBeCalledByTest#11
+  alsoCovers: [NotBeCalledByTest#12, NotBeCalledByTest#14, NotBeCalledByTest#15]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should not be called by "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().NotBeCalledBy(helper.MethodDependencyClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      notBeCalledBy: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+- id: NotBeCalledByTest#13
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should not be called by any Types that are "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().NotBeCalledBy(Types().That().Are(helper.MethodDependencyClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      notBeCalledBy:
+        kind: type
+        where:
+          are: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+- id: NotBeCalledByTest#16
+  alsoCovers: [NotBeCalledByTest#17, NotBeCalledByTest#19, NotBeCalledByTest#20]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be Method members that are not called by "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().Be(MethodMembers().That().AreNotCalledBy(helper.MethodDependencyClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          areNotCalledBy: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+- id: NotBeCalledByTest#18
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be Method members that are not called by any Types that are "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().Be(MethodMembers().That().AreNotCalledBy(Types().That().Are(helper.MethodDependencyClass)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          areNotCalledBy:
+            kind: type
+            where:
+              are: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+- id: NotBeCalledByTest#21
+  alsoCovers: [NotBeCalledByTest#22, NotBeCalledByTest#23, NotBeCalledByTest#24]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should not be called by any "MethodMemberNamespace.MethodDependencyClass" or "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().NotBeCalledBy(helper.MethodDependencyClass, helper.OtherCallingClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      notBeCalledBy: [MethodMemberNamespace.MethodDependencyClass, MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: []
+- id: NotBeCalledByTest#25
+  alsoCovers: [NotBeCalledByTest#26, NotBeCalledByTest#27, NotBeCalledByTest#28]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should be Method members that are not called by any "MethodMemberNamespace.MethodDependencyClass" or "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().Be(MethodMembers().That().AreNotCalledBy(helper.MethodDependencyClass, helper.OtherCallingClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      be:
+        kind: method
+        where:
+          areNotCalledBy: [MethodMemberNamespace.MethodDependencyClass, MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: []
+- id: NotBeCalledByTest#29
+  alsoCovers: [NotBeCalledByTest#30]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should not be called by one of no types (always true)
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().NotBeCalledBy(new List<IType>())
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      notBeCalledBy: []
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    fail: []
+- id: NotBeCalledByTest#31
+  alsoCovers: [NotBeCalledByTest#32]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be Method members that are not called by one of no types (always true)
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().Be(MethodMembers().That().AreNotCalledBy(new List<IType>()))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          areNotCalledBy: []
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    fail: []
+- id: NotBeCalledByTest#33
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should not be called by "AttributeNamespace.ClassWithoutAttributes"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().NotBeCalledBy(new List<System.Type> { typeof(AttributeNamespace.ClassWithoutAttributes) })
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      notBeCalledBy: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: NotBeCalledByTest#34
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" should be Method members that are not called by "AttributeNamespace.ClassWithoutAttributes"
+  csharp: MethodMembers().That().Are(helper.CalledMethod).Should().Be(MethodMembers().That().AreNotCalledBy(new List<System.Type> { typeof(AttributeNamespace.ClassWithoutAttributes) }))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          areNotCalledBy: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: NotBeCalledByTest#35
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" or "System.Void MethodMemberNamespace.OtherCallingClass:... should not be called by "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies, helper.MethodCallingCalledMethod).Should().NotBeCalledBy(helper.MethodDependencyClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()', 'System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      notBeCalledBy: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()', 'System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    fail: []
+- id: NotBeCalledByTest#36
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()" or "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWi... should not be called by "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.CalledMethod, helper.MethodWithoutDependencies).Should().NotBeCalledBy(helper.MethodDependencyClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()', 'System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      notBeCalledBy: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+- id: HaveDependencyInMethodBodyToTest#1
+  alsoCovers: [HaveDependencyInMethodBodyToTest#2, HaveDependencyInMethodBodyToTest#4, HaveDependencyInMethodBodyToTest#5]
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should have dependencies in method body to "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().HaveDependencyInMethodBodyTo(helper.MethodDependencyClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      haveDependencyInMethodBodyTo: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    fail: []
+- id: HaveDependencyInMethodBodyToTest#3
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should have dependencies in method body to any Types that are "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().HaveDependencyInMethodBodyTo(Types().That().Are(helper.MethodDependencyClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      haveDependencyInMethodBodyTo:
+        kind: type
+        where:
+          are: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    fail: []
+- id: HaveDependencyInMethodBodyToTest#6
+  alsoCovers: [HaveDependencyInMethodBodyToTest#7, HaveDependencyInMethodBodyToTest#9, HaveDependencyInMethodBodyToTest#10]
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should be Method members that have dependencies in method body to "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().Be(MethodMembers().That().HaveDependencyInMethodBodyTo(helper.MethodDependencyClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          haveDependencyInMethodBodyTo: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    fail: []
+- id: HaveDependencyInMethodBodyToTest#8
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should be Method members that have dependencies in method body to any Types that are "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().Be(MethodMembers().That().HaveDependencyInMethodBodyTo(Types().That().Are(helper.MethodDependencyClass)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          haveDependencyInMethodBodyTo:
+            kind: type
+            where:
+              are: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    fail: []
+- id: HaveDependencyInMethodBodyToTest#11
+  alsoCovers: [HaveDependencyInMethodBodyToTest#12, HaveDependencyInMethodBodyToTest#14, HaveDependencyInMethodBodyToTest#15]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should have dependencies in method body to "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().HaveDependencyInMethodBodyTo(helper.OtherCallingClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      haveDependencyInMethodBodyTo: [MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+- id: HaveDependencyInMethodBodyToTest#13
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should have dependencies in method body to any Types that are "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().HaveDependencyInMethodBodyTo(Types().That().Are(helper.OtherCallingClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      haveDependencyInMethodBodyTo:
+        kind: type
+        where:
+          are: [MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+- id: HaveDependencyInMethodBodyToTest#16
+  alsoCovers: [HaveDependencyInMethodBodyToTest#17, HaveDependencyInMethodBodyToTest#19, HaveDependencyInMethodBodyToTest#20]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should be Method members that have dependencies in method body to "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().Be(MethodMembers().That().HaveDependencyInMethodBodyTo(helper.OtherCallingClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      be:
+        kind: method
+        where:
+          haveDependencyInMethodBodyTo: [MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+- id: HaveDependencyInMethodBodyToTest#18
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should be Method members that have dependencies in method body to any Types that are "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().Be(MethodMembers().That().HaveDependencyInMethodBodyTo(Types().That().Are(helper.OtherCallingClass)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      be:
+        kind: method
+        where:
+          haveDependencyInMethodBodyTo:
+            kind: type
+            where:
+              are: [MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+- id: HaveDependencyInMethodBodyToTest#21
+  alsoCovers: [HaveDependencyInMethodBodyToTest#22, HaveDependencyInMethodBodyToTest#23, HaveDependencyInMethodBodyToTest#24]
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should have dependencies in method body to any "MethodMemberNamespace.MethodDependencyClass" or "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().HaveDependencyInMethodBodyTo(helper.MethodDependencyClass, helper.OtherCallingClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      haveDependencyInMethodBodyTo: [MethodMemberNamespace.MethodDependencyClass, MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    fail: []
+- id: HaveDependencyInMethodBodyToTest#25
+  alsoCovers: [HaveDependencyInMethodBodyToTest#26, HaveDependencyInMethodBodyToTest#27, HaveDependencyInMethodBodyToTest#28]
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should be Method members that have dependencies in method body to any "MethodMemberNamespace.MethodDependencyClass" or "MethodMemberNamespace.OtherCalling...
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().Be(MethodMembers().That().HaveDependencyInMethodBodyTo(helper.MethodDependencyClass, helper.OtherCallingClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          haveDependencyInMethodBodyTo: [MethodMemberNamespace.MethodDependencyClass, MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    fail: []
+- id: HaveDependencyInMethodBodyToTest#29
+  alsoCovers: [HaveDependencyInMethodBodyToTest#30]
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should have dependencies in method body to one of no types (impossible)
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().HaveDependencyInMethodBodyTo(new List<IType>())
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      haveDependencyInMethodBodyTo: []
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+- id: HaveDependencyInMethodBodyToTest#31
+  alsoCovers: [HaveDependencyInMethodBodyToTest#32]
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should be Method members that have dependencies in method body to one of no types (impossible)
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().Be(MethodMembers().That().HaveDependencyInMethodBodyTo(new List<IType>()))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          haveDependencyInMethodBodyTo: []
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+- id: HaveDependencyInMethodBodyToTest#33
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should have dependencies in method body to "AttributeNamespace.ClassWithoutAttributes"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().HaveDependencyInMethodBodyTo(new List<System.Type> { typeof(AttributeNamespace.ClassWithoutAttributes) })
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      haveDependencyInMethodBodyTo: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: HaveDependencyInMethodBodyToTest#34
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should be Method members that have dependencies in method body to "AttributeNamespace.ClassWithoutAttributes"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().Be(MethodMembers().That().HaveDependencyInMethodBodyTo(new List<System.Type> { typeof(AttributeNamespace.ClassWithoutAttributes) }))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          haveDependencyInMethodBodyTo: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: HaveDependencyInMethodBodyToTest#35
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" or "System.Void MethodMemberNamespace.OtherCallingClass::Ano... should have dependencies in method body to "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod, helper.AnotherMethodCallingCalledMethod).Should().HaveDependencyInMethodBodyTo(helper.MethodDependencyClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()', 'System.Void MethodMemberNamespace.OtherCallingClass::AnotherMethodCallingCalledMethod()']
+    should:
+      haveDependencyInMethodBodyTo: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.OtherCallingClass::AnotherMethodCallingCalledMethod()', 'System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    fail: []
+- id: HaveDependencyInMethodBodyToTest#36
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" or "System.Void MethodMemberNamespace.MethodDependencyClass:... should have dependencies in method body to "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod, helper.MethodWithoutDependencies).Should().HaveDependencyInMethodBodyTo(helper.MethodDependencyClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()', 'System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      haveDependencyInMethodBodyTo: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    fail: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+- id: NotHaveDependencyInMethodBodyToTest#1
+  alsoCovers: [NotHaveDependencyInMethodBodyToTest#2, NotHaveDependencyInMethodBodyToTest#4, NotHaveDependencyInMethodBodyToTest#5]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should not have dependencies in method body to "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().NotHaveDependencyInMethodBodyTo(helper.OtherCallingClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      notHaveDependencyInMethodBodyTo: [MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: []
+- id: NotHaveDependencyInMethodBodyToTest#3
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should not have dependencies in method body to any Types that are "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().NotHaveDependencyInMethodBodyTo(Types().That().Are(helper.OtherCallingClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      notHaveDependencyInMethodBodyTo:
+        kind: type
+        where:
+          are: [MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: []
+- id: NotHaveDependencyInMethodBodyToTest#6
+  alsoCovers: [NotHaveDependencyInMethodBodyToTest#7, NotHaveDependencyInMethodBodyToTest#9, NotHaveDependencyInMethodBodyToTest#10]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should be Method members that do not have dependencies in method body to "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().Be(MethodMembers().That().DoNotHaveDependencyInMethodBodyTo(helper.OtherCallingClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveDependencyInMethodBodyTo: [MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: []
+- id: NotHaveDependencyInMethodBodyToTest#8
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should be Method members that do not have dependencies in method body to any Types that are "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().Be(MethodMembers().That().DoNotHaveDependencyInMethodBodyTo(Types().That().Are(helper.OtherCallingClass)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveDependencyInMethodBodyTo:
+            kind: type
+            where:
+              are: [MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: []
+- id: NotHaveDependencyInMethodBodyToTest#11
+  alsoCovers: [NotHaveDependencyInMethodBodyToTest#12, NotHaveDependencyInMethodBodyToTest#14, NotHaveDependencyInMethodBodyToTest#15]
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should not have dependencies in method body to "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().NotHaveDependencyInMethodBodyTo(helper.MethodDependencyClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      notHaveDependencyInMethodBodyTo: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+- id: NotHaveDependencyInMethodBodyToTest#13
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should not have dependencies in method body to any Types that are "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().NotHaveDependencyInMethodBodyTo(Types().That().Are(helper.MethodDependencyClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      notHaveDependencyInMethodBodyTo:
+        kind: type
+        where:
+          are: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+- id: NotHaveDependencyInMethodBodyToTest#16
+  alsoCovers: [NotHaveDependencyInMethodBodyToTest#17, NotHaveDependencyInMethodBodyToTest#19, NotHaveDependencyInMethodBodyToTest#20]
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should be Method members that do not have dependencies in method body to "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().Be(MethodMembers().That().DoNotHaveDependencyInMethodBodyTo(helper.MethodDependencyClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveDependencyInMethodBodyTo: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+- id: NotHaveDependencyInMethodBodyToTest#18
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should be Method members that do not have dependencies in method body to any Types that are "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().Be(MethodMembers().That().DoNotHaveDependencyInMethodBodyTo(Types().That().Are(helper.MethodDependencyClass)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveDependencyInMethodBodyTo:
+            kind: type
+            where:
+              are: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+- id: NotHaveDependencyInMethodBodyToTest#21
+  alsoCovers: [NotHaveDependencyInMethodBodyToTest#22, NotHaveDependencyInMethodBodyToTest#23, NotHaveDependencyInMethodBodyToTest#24]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should not have dependencies in method body to any "MethodMemberNamespace.MethodDependencyClass" or "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().NotHaveDependencyInMethodBodyTo(helper.MethodDependencyClass, helper.OtherCallingClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      notHaveDependencyInMethodBodyTo: [MethodMemberNamespace.MethodDependencyClass, MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: []
+- id: NotHaveDependencyInMethodBodyToTest#25
+  alsoCovers: [NotHaveDependencyInMethodBodyToTest#26, NotHaveDependencyInMethodBodyToTest#27, NotHaveDependencyInMethodBodyToTest#28]
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" should be Method members that do not have dependencies in method body to any "MethodMemberNamespace.MethodDependencyClass" or "MethodMemberNamespace.Other...
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies).Should().Be(MethodMembers().That().DoNotHaveDependencyInMethodBodyTo(helper.MethodDependencyClass, helper.OtherCallingClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveDependencyInMethodBodyTo: [MethodMemberNamespace.MethodDependencyClass, MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: []
+- id: NotHaveDependencyInMethodBodyToTest#29
+  alsoCovers: [NotHaveDependencyInMethodBodyToTest#30]
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should not have dependencies in method body to one of no types (always true)
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().NotHaveDependencyInMethodBodyTo(new List<IType>())
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      notHaveDependencyInMethodBodyTo: []
+  expect:
+    pass: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    fail: []
+- id: NotHaveDependencyInMethodBodyToTest#31
+  alsoCovers: [NotHaveDependencyInMethodBodyToTest#32]
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should be Method members that do not have dependencies in method body to one of no types (always true)
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().Be(MethodMembers().That().DoNotHaveDependencyInMethodBodyTo(new List<IType>()))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveDependencyInMethodBodyTo: []
+  expect:
+    pass: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    fail: []
+- id: NotHaveDependencyInMethodBodyToTest#33
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should not have dependencies in method body to "AttributeNamespace.ClassWithoutAttributes"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().NotHaveDependencyInMethodBodyTo(new List<System.Type> { typeof(AttributeNamespace.ClassWithoutAttributes) })
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      notHaveDependencyInMethodBodyTo: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: NotHaveDependencyInMethodBodyToTest#34
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" should be Method members that do not have dependencies in method body to "AttributeNamespace.ClassWithoutAttributes"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod).Should().Be(MethodMembers().That().DoNotHaveDependencyInMethodBodyTo(new List<System.Type> { typeof(AttributeNamespace.ClassWithoutAttributes) }))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveDependencyInMethodBodyTo: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: NotHaveDependencyInMethodBodyToTest#35
+  query: Method members that are "System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()" or "System.Void MethodMemberNamespace.MethodDependencyCl... should not have dependencies in method body to "MethodMemberNamespace.OtherCallingClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithoutDependencies, helper.CalledMethod).Should().NotHaveDependencyInMethodBodyTo(helper.OtherCallingClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()', 'System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()']
+    should:
+      notHaveDependencyInMethodBodyTo: [MethodMemberNamespace.OtherCallingClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::CalledMethod()', 'System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: []
+- id: NotHaveDependencyInMethodBodyToTest#36
+  query: Method members that are "System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()" or "System.Void MethodMemberNamespace.MethodDependencyClass:... should not have dependencies in method body to "MethodMemberNamespace.MethodDependencyClass"
+  csharp: MethodMembers().That().Are(helper.MethodCallingCalledMethod, helper.MethodWithoutDependencies).Should().NotHaveDependencyInMethodBodyTo(helper.MethodDependencyClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()', 'System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    should:
+      notHaveDependencyInMethodBodyTo: [MethodMemberNamespace.MethodDependencyClass]
+  expect:
+    pass: ['System.Void MethodMemberNamespace.MethodDependencyClass::MethodWithoutDependencies()']
+    fail: ['System.Void MethodMemberNamespace.OtherCallingClass::MethodCallingCalledMethod()']
+- id: HaveReturnTypeTest#1
+  alsoCovers: [HaveReturnTypeTest#2, HaveReturnTypeTest#4, HaveReturnTypeTest#5]
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should have return type "MethodMemberNamespace.RegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().HaveReturnType(helper.RegularClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      haveReturnType: [MethodMemberNamespace.RegularClass]
+  expect:
+    pass: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    fail: []
+- id: HaveReturnTypeTest#3
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should have return type Types that are "MethodMemberNamespace.RegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().HaveReturnType(Types().That().Are(helper.RegularClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      haveReturnType:
+        kind: type
+        where:
+          are: [MethodMemberNamespace.RegularClass]
+  expect:
+    pass: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    fail: []
+- id: HaveReturnTypeTest#6
+  alsoCovers: [HaveReturnTypeTest#7, HaveReturnTypeTest#9, HaveReturnTypeTest#10]
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should be Method members that have return type "MethodMemberNamespace.RegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().Be(MethodMembers().That().HaveReturnType(helper.RegularClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      be:
+        kind: method
+        where:
+          haveReturnType: [MethodMemberNamespace.RegularClass]
+  expect:
+    pass: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    fail: []
+- id: HaveReturnTypeTest#8
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should be Method members that have return type Types that are "MethodMemberNamespace.RegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().Be(MethodMembers().That().HaveReturnType(Types().That().Are(helper.RegularClass)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      be:
+        kind: method
+        where:
+          haveReturnType:
+            kind: type
+            where:
+              are: [MethodMemberNamespace.RegularClass]
+  expect:
+    pass: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    fail: []
+- id: HaveReturnTypeTest#11
+  alsoCovers: [HaveReturnTypeTest#12, HaveReturnTypeTest#14, HaveReturnTypeTest#15]
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should have return type "MethodMemberNamespace.OtherRegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().HaveReturnType(helper.OtherRegularClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      haveReturnType: [MethodMemberNamespace.OtherRegularClass]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+- id: HaveReturnTypeTest#13
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should have return type Types that are "MethodMemberNamespace.OtherRegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().HaveReturnType(Types().That().Are(helper.OtherRegularClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      haveReturnType:
+        kind: type
+        where:
+          are: [MethodMemberNamespace.OtherRegularClass]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+- id: HaveReturnTypeTest#16
+  alsoCovers: [HaveReturnTypeTest#17, HaveReturnTypeTest#19, HaveReturnTypeTest#20]
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should be Method members that have return type "MethodMemberNamespace.OtherRegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().Be(MethodMembers().That().HaveReturnType(helper.OtherRegularClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      be:
+        kind: method
+        where:
+          haveReturnType: [MethodMemberNamespace.OtherRegularClass]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+- id: HaveReturnTypeTest#18
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should be Method members that have return type Types that are "MethodMemberNamespace.OtherRegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().Be(MethodMembers().That().HaveReturnType(Types().That().Are(helper.OtherRegularClass)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      be:
+        kind: method
+        where:
+          haveReturnType:
+            kind: type
+            where:
+              are: [MethodMemberNamespace.OtherRegularClass]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+- id: HaveReturnTypeTest#21
+  alsoCovers: [HaveReturnTypeTest#22, HaveReturnTypeTest#23, HaveReturnTypeTest#24]
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should have return type "MethodMemberNamespace.RegularClass" or "MethodMemberNamespace.OtherRegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().HaveReturnType(helper.RegularClass, helper.OtherRegularClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      haveReturnType: [MethodMemberNamespace.RegularClass, MethodMemberNamespace.OtherRegularClass]
+  expect:
+    pass: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    fail: []
+- id: HaveReturnTypeTest#25
+  alsoCovers: [HaveReturnTypeTest#26, HaveReturnTypeTest#27, HaveReturnTypeTest#28]
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should be Method members that have return type "MethodMemberNamespace.RegularClass" or "MethodMemberNamespace.OtherRegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().Be(MethodMembers().That().HaveReturnType(helper.RegularClass, helper.OtherRegularClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      be:
+        kind: method
+        where:
+          haveReturnType: [MethodMemberNamespace.RegularClass, MethodMemberNamespace.OtherRegularClass]
+  expect:
+    pass: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    fail: []
+- id: HaveReturnTypeTest#29
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" or "MethodMemberNames... should have return type "MethodMemberNamespace.RegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass, helper.MethodReturningOtherRegularClass).Should().HaveReturnType(helper.RegularClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()', 'MethodMemberNamespace.OtherRegularClass MethodMemberNamespace.ClassWithOtherRegularClassReturnType::MethodReturningOtherRegularClass()']
+    should:
+      haveReturnType: [MethodMemberNamespace.RegularClass]
+  expect:
+    pass: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    fail: ['MethodMemberNamespace.OtherRegularClass MethodMemberNamespace.ClassWithOtherRegularClassReturnType::MethodReturningOtherRegularClass()']
+- id: HaveReturnTypeTest#30
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" or "MethodMemberNames... should have return type "MethodMemberNamespace.RegularClass" or "MethodMemberNamespace.OtherRegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass, helper.MethodReturningOtherRegularClass).Should().HaveReturnType(helper.RegularClass, helper.OtherRegularClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()', 'MethodMemberNamespace.OtherRegularClass MethodMemberNamespace.ClassWithOtherRegularClassReturnType::MethodReturningOtherRegularClass()']
+    should:
+      haveReturnType: [MethodMemberNamespace.RegularClass, MethodMemberNamespace.OtherRegularClass]
+  expect:
+    pass: ['MethodMemberNamespace.OtherRegularClass MethodMemberNamespace.ClassWithOtherRegularClassReturnType::MethodReturningOtherRegularClass()', 'MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    fail: []
+- id: HaveReturnTypeTest#31
+  alsoCovers: [HaveReturnTypeTest#32]
+  query: Method members that are "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGene... should have return type "MethodMemberNamespace.GenericClass`1"
+  csharp: MethodMembers().That().Are(helper.MethodReturningGenericClass).Should().HaveReturnType(typeof(GenericClass<>))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    should:
+      haveReturnType: [MethodMemberNamespace.GenericClass`1]
+  expect:
+    pass: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    fail: []
+- id: HaveReturnTypeTest#33
+  alsoCovers: [HaveReturnTypeTest#34]
+  query: Method members that are "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGene... should be Method members that have return type "MethodMemberNamespace.GenericClass`1"
+  csharp: MethodMembers().That().Are(helper.MethodReturningGenericClass).Should().Be(MethodMembers().That().HaveReturnType(typeof(GenericClass<>)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    should:
+      be:
+        kind: method
+        where:
+          haveReturnType: [MethodMemberNamespace.GenericClass`1]
+  expect:
+    pass: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    fail: []
+- id: HaveReturnTypeTest#43
+  query: Method members that are "MethodMemberNamespace.GenericClass`2<MethodMemberNamespace.RegularClass,MethodMemberNamespace.OtherRegularClass> MethodMemberNamespace.ClassWi... should have return type "MethodMemberNamespace.GenericClass`2"
+  csharp: MethodMembers().That().Are(helper.MethodReturningTwoArgGenericClass).Should().HaveReturnType(typeof(GenericClass<,>))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`2<MethodMemberNamespace.RegularClass,MethodMemberNamespace.OtherRegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningTwoArgGenericClass()']
+    should:
+      haveReturnType: [MethodMemberNamespace.GenericClass`2]
+  expect:
+    pass: ['MethodMemberNamespace.GenericClass`2<MethodMemberNamespace.RegularClass,MethodMemberNamespace.OtherRegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningTwoArgGenericClass()']
+    fail: []
+- id: HaveReturnTypeTest#44
+  query: Method members that are "MethodMemberNamespace.GenericClass`2<MethodMemberNamespace.RegularClass,MethodMemberNamespace.OtherRegularClass> MethodMemberNamespace.ClassWi... should be Method members that have return type "MethodMemberNamespace.GenericClass`2"
+  csharp: MethodMembers().That().Are(helper.MethodReturningTwoArgGenericClass).Should().Be(MethodMembers().That().HaveReturnType(typeof(GenericClass<,>)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`2<MethodMemberNamespace.RegularClass,MethodMemberNamespace.OtherRegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningTwoArgGenericClass()']
+    should:
+      be:
+        kind: method
+        where:
+          haveReturnType: [MethodMemberNamespace.GenericClass`2]
+  expect:
+    pass: ['MethodMemberNamespace.GenericClass`2<MethodMemberNamespace.RegularClass,MethodMemberNamespace.OtherRegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningTwoArgGenericClass()']
+    fail: []
+- id: DoNotHaveReturnTypeTest#1
+  alsoCovers: [DoNotHaveReturnTypeTest#2, DoNotHaveReturnTypeTest#4, DoNotHaveReturnTypeTest#5]
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should not have return type "MethodMemberNamespace.OtherRegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().NotHaveReturnType(helper.OtherRegularClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      notHaveReturnType: [MethodMemberNamespace.OtherRegularClass]
+  expect:
+    pass: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    fail: []
+- id: DoNotHaveReturnTypeTest#3
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should not have return type Types that are "MethodMemberNamespace.OtherRegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().NotHaveReturnType(Types().That().Are(helper.OtherRegularClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      notHaveReturnType:
+        kind: type
+        where:
+          are: [MethodMemberNamespace.OtherRegularClass]
+  expect:
+    pass: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    fail: []
+- id: DoNotHaveReturnTypeTest#6
+  alsoCovers: [DoNotHaveReturnTypeTest#7, DoNotHaveReturnTypeTest#9, DoNotHaveReturnTypeTest#10]
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should be Method members that do not have return type "MethodMemberNamespace.OtherRegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().Be(MethodMembers().That().DoNotHaveReturnType(helper.OtherRegularClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveReturnType: [MethodMemberNamespace.OtherRegularClass]
+  expect:
+    pass: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    fail: []
+- id: DoNotHaveReturnTypeTest#8
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should be Method members that do not have return type Types that are "MethodMemberNamespace.OtherRegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().Be(MethodMembers().That().DoNotHaveReturnType(Types().That().Are(helper.OtherRegularClass)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveReturnType:
+            kind: type
+            where:
+              are: [MethodMemberNamespace.OtherRegularClass]
+  expect:
+    pass: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    fail: []
+- id: DoNotHaveReturnTypeTest#11
+  alsoCovers: [DoNotHaveReturnTypeTest#12, DoNotHaveReturnTypeTest#14, DoNotHaveReturnTypeTest#15]
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should not have return type "MethodMemberNamespace.RegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().NotHaveReturnType(helper.RegularClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      notHaveReturnType: [MethodMemberNamespace.RegularClass]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+- id: DoNotHaveReturnTypeTest#13
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should not have return type Types that are "MethodMemberNamespace.RegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().NotHaveReturnType(Types().That().Are(helper.RegularClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      notHaveReturnType:
+        kind: type
+        where:
+          are: [MethodMemberNamespace.RegularClass]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+- id: DoNotHaveReturnTypeTest#16
+  alsoCovers: [DoNotHaveReturnTypeTest#17, DoNotHaveReturnTypeTest#19, DoNotHaveReturnTypeTest#20]
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should be Method members that do not have return type "MethodMemberNamespace.RegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().Be(MethodMembers().That().DoNotHaveReturnType(helper.RegularClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveReturnType: [MethodMemberNamespace.RegularClass]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+- id: DoNotHaveReturnTypeTest#18
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should be Method members that do not have return type Types that are "MethodMemberNamespace.RegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().Be(MethodMembers().That().DoNotHaveReturnType(Types().That().Are(helper.RegularClass)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveReturnType:
+            kind: type
+            where:
+              are: [MethodMemberNamespace.RegularClass]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+- id: DoNotHaveReturnTypeTest#21
+  alsoCovers: [DoNotHaveReturnTypeTest#22, DoNotHaveReturnTypeTest#23, DoNotHaveReturnTypeTest#24]
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should not have return type "MethodMemberNamespace.OtherRegularClass" or "MethodMemberNamespace.RegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().NotHaveReturnType(helper.OtherRegularClass, helper.RegularClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      notHaveReturnType: [MethodMemberNamespace.OtherRegularClass, MethodMemberNamespace.RegularClass]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+- id: DoNotHaveReturnTypeTest#25
+  alsoCovers: [DoNotHaveReturnTypeTest#26, DoNotHaveReturnTypeTest#27, DoNotHaveReturnTypeTest#28]
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" should be Method members that do not have return type "MethodMemberNamespace.OtherRegularClass" or "MethodMemberNamespace.RegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass).Should().Be(MethodMembers().That().DoNotHaveReturnType(helper.OtherRegularClass, helper.RegularClass))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveReturnType: [MethodMemberNamespace.OtherRegularClass, MethodMemberNamespace.RegularClass]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+- id: DoNotHaveReturnTypeTest#29
+  query: Method members that are "MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()" or "MethodMemberNames... should not have return type "MethodMemberNamespace.RegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodReturningRegularClass, helper.MethodReturningOtherRegularClass).Should().NotHaveReturnType(helper.RegularClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()', 'MethodMemberNamespace.OtherRegularClass MethodMemberNamespace.ClassWithOtherRegularClassReturnType::MethodReturningOtherRegularClass()']
+    should:
+      notHaveReturnType: [MethodMemberNamespace.RegularClass]
+  expect:
+    pass: ['MethodMemberNamespace.OtherRegularClass MethodMemberNamespace.ClassWithOtherRegularClassReturnType::MethodReturningOtherRegularClass()']
+    fail: ['MethodMemberNamespace.RegularClass MethodMemberNamespace.ClassWithRegularClassReturnType::MethodReturningRegularClass()']
+- id: DoNotHaveReturnTypeTest#30
+  alsoCovers: [DoNotHaveReturnTypeTest#31]
+  query: Method members that are "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGene... should not have return type "MethodMemberNamespace.GenericClass`1"
+  csharp: MethodMembers().That().Are(helper.MethodReturningGenericClass).Should().NotHaveReturnType(typeof(GenericClass<>))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    should:
+      notHaveReturnType: [MethodMemberNamespace.GenericClass`1]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+- id: DoNotHaveReturnTypeTest#32
+  alsoCovers: [DoNotHaveReturnTypeTest#33]
+  query: Method members that are "MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGene... should be Method members that do not have return type "MethodMemberNamespace.GenericClass`1"
+  csharp: MethodMembers().That().Are(helper.MethodReturningGenericClass).Should().Be(MethodMembers().That().DoNotHaveReturnType(typeof(GenericClass<>)))
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+    should:
+      be:
+        kind: method
+        where:
+          doNotHaveReturnType: [MethodMemberNamespace.GenericClass`1]
+  expect:
+    pass: []
+    fail: ['MethodMemberNamespace.GenericClass`1<MethodMemberNamespace.RegularClass> MethodMemberNamespace.ClassWithGenericReturnType::MethodReturningGenericClass()']
+- id: HaveReturnTypeWithAmbiguousReturnTypeTest#1
+  query: Method members that are "DuplicateClassAcrossAssemblies.DuplicateClass DuplicateFullNameAssembly.ClassWithAmbiguousReturnType::MethodWithAmbiguousReturnType()" should have return type "MethodMemberNamespace.RegularClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithAmbiguousReturnType).Should().HaveReturnType(helper.RegularClass)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['DuplicateClassAcrossAssemblies.DuplicateClass DuplicateFullNameAssembly.ClassWithAmbiguousReturnType::MethodWithAmbiguousReturnType()']
+    should:
+      haveReturnType: [MethodMemberNamespace.RegularClass]
+  expect:
+    pass: []
+    fail: ['DuplicateClassAcrossAssemblies.DuplicateClass DuplicateFullNameAssembly.ClassWithAmbiguousReturnType::MethodWithAmbiguousReturnType()']
+- id: HaveReturnTypeWithAmbiguousReturnTypeTest#2
+  query: Method members that are "DuplicateClassAcrossAssemblies.DuplicateClass DuplicateFullNameAssembly.ClassWithAmbiguousReturnType::MethodWithAmbiguousReturnType()" should not have return type "DuplicateClassAcrossAssemblies.DuplicateClass"
+  csharp: MethodMembers().That().Are(helper.MethodWithAmbiguousReturnType).Should().NotHaveReturnType(helper.AmbiguousReturnType)
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['DuplicateClassAcrossAssemblies.DuplicateClass DuplicateFullNameAssembly.ClassWithAmbiguousReturnType::MethodWithAmbiguousReturnType()']
+    should:
+      notHaveReturnType: [DuplicateClassAcrossAssemblies.DuplicateClass]
+  expect:
+    pass: []
+    fail: ['DuplicateClassAcrossAssemblies.DuplicateClass DuplicateFullNameAssembly.ClassWithAmbiguousReturnType::MethodWithAmbiguousReturnType()']
+- id: BeMethodMembersThatTest#1
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()" should be method members that are constructors
+  csharp: MethodMembers().That().Are(helper.ClassWithVirtualMethodConstructor).Should().BeMethodMembersThat().AreConstructors()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+    should:
+      beMethodMembersThat:
+        kind: method
+        where: {areConstructors: true}
+  expect:
+    pass: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::.ctor()']
+    fail: []
+- id: BeMethodMembersThatTest#2
+  query: Method members that are "System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()" should be method members that are constructors
+  csharp: MethodMembers().That().Are(helper.VirtualMethod).Should().BeMethodMembersThat().AreConstructors()
+  rule:
+    select:
+      kind: method
+      where:
+        are: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
+    should:
+      beMethodMembersThat:
+        kind: method
+        where: {areConstructors: true}
+  expect:
+    pass: []
+    fail: ['System.Void MethodMemberNamespace.ClassWithVirtualMethod::VirtualMethod()']
