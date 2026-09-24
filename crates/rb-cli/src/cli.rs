@@ -224,7 +224,8 @@ pub struct CruiseArgs {
     /// graph built by another tool, such as scripts/cargo-graph.sh for this repository)
     #[arg(long, value_name = "FILE")]
     pub graph: Option<String>,
-    /// Output type: err, err-long, json, text, csv, teamcity, azure-devops, github-annotations, agent, null
+    /// Output type: err, err-long, json, text, csv, teamcity, azure-devops, github-annotations, agent,
+    /// baseline, sarif, junit, trx, null
     #[arg(short = 'T', long, value_name = "TYPE")]
     pub output_type: Option<String>,
     /// File to write output to; - for stdout

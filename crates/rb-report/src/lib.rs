@@ -15,7 +15,8 @@
 //!
 //! Reporters read the result as JSON, as dependency-cruiser's do, so a result with a missing or
 //! extra field renders the way it would upstream. Wave 1 ships the reporters of
-//! [`OUTPUT_TYPES`] marked wave 1; asking for a later one is a named error.
+//! [`OUTPUT_TYPES`] marked wave 1, and wave 2 adds `baseline`, `sarif`, `junit` and `trx`; asking
+//! for one not yet built is a named error.
 
 pub mod agent;
 pub mod azure_devops;
@@ -25,10 +26,12 @@ pub mod csv;
 pub mod err;
 pub mod github_annotations;
 pub mod json;
+pub mod junit;
 pub mod sarif;
 pub mod style;
 pub mod teamcity;
 pub mod text;
+pub mod trx;
 
 use serde_json::Value;
 
@@ -109,7 +112,7 @@ pub enum ReportError {
     Unknown(String),
     /// An output type a later wave delivers.
     #[error(
-        "the `{name}` reporter arrives in wave {wave}; use err, err-long, json, text, csv, teamcity, azure-devops, github-annotations, agent or null"
+        "the `{name}` reporter arrives in wave {wave}; use err, err-long, json, text, csv, teamcity, azure-devops, github-annotations, agent, baseline, sarif, junit, trx or null"
     )]
     NotYet {
         /// The type.
@@ -191,6 +194,8 @@ pub fn render_with(
         "csv" => csv::render(result),
         "baseline" => baseline::render(result, &options.baseline),
         "sarif" => sarif::render(result, &options.path_prefix),
+        "junit" => junit::render(result, &options.timestamp),
+        "trx" => trx::render(result, &options.timestamp),
         "teamcity" => teamcity::render(result, &options.timestamp),
         "azure-devops" => azure_devops::render(result),
         "github-annotations" => github_annotations::render(result, &options.path_prefix),

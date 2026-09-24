@@ -1940,9 +1940,11 @@ dependencies = [
  "proptest",
  "rb-model",
  "rb-rules",
+ "regex",
  "roxmltree",
  "serde",
  "serde_json",
+ "sha2",
  "thiserror",
 ]
 
