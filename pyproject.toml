@@ -39,6 +39,8 @@ ignore = [
 # adapters/python/pytest-rulebearing/hatch_version.py); it sits beside pyproject.toml, outside the
 # package it builds. The two names differ so that `mypy .` sees two modules, not one twice.
 "**/hatch_*.py" = ["INP001"]
+# The oracle harness's scripts, run by path from testbeds/oracles/*.sh (plan 0002, Step 11).
+"testbeds/oracles/*.py" = ["INP001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -60,6 +62,12 @@ exclude = "(^|/)(target|node_modules|\\.venv|testbeds/checkouts|conformance/.*/(
 # (conformance/archunitnet/tools/port.py) call yaml.safe_dump and type what it returns.
 [[tool.mypy.overrides]]
 module = ["yaml"]
+ignore_missing_imports = true
+
+# import-linter is installed only in the oracle harness's throwaway environment
+# (testbeds/oracles/python.sh), not in the lint job.
+[[tool.mypy.overrides]]
+module = ["importlinter", "importlinter.*"]
 ignore_missing_imports = true
 
 # Each Python package is its own coverage gate at 70% of lines (docs/adr/0018): name the package

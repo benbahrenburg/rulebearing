@@ -453,6 +453,17 @@ jobs:
       - run: cargo run -p rb-model --example emit-schema
       - run: git diff --exit-code schema/
 
+  oracle-table:
+    name: oracle-table
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # README.md's oracle agreement table is generated from testbeds/results/*.json; a table
+      # that does not match the committed results fails here
+      # (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11).
+      - run: python3 testbeds/oracles/table.py --check README.md
+
   docs-links:
     name: docs-links
     runs-on: ubuntu-latest

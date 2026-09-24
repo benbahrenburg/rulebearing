@@ -21,118 +21,118 @@ rules:
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/billing/web(/|\\.py$)"
+          path: "^app/billing/web(/.*)?\\.py$"
         to:
-          path: "^app/billing/api(/|\\.py$)"
+          path: "^app/billing/api(/.*)?\\.py$"
           reachable: true
       - name: layered:app.billing:api-to-web
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/billing/api(/|\\.py$)"
+          path: "^app/billing/api(/.*)?\\.py$"
         to:
-          path: "^app/billing/web(/|\\.py$)"
+          path: "^app/billing/web(/.*)?\\.py$"
           reachable: true
       - name: layered:app.billing:infra-to-web
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/billing/infra(/|\\.py$)"
+          path: "^app/billing/infra(/.*)?\\.py$"
         to:
-          path: "^app/billing/web(/|\\.py$)"
+          path: "^app/billing/web(/.*)?\\.py$"
           reachable: true
         allowEmpty: true
       - name: layered:app.billing:infra-to-api
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/billing/infra(/|\\.py$)"
+          path: "^app/billing/infra(/.*)?\\.py$"
         to:
-          path: "^app/billing/api(/|\\.py$)"
+          path: "^app/billing/api(/.*)?\\.py$"
           reachable: true
         allowEmpty: true
       - name: layered:app.billing:domain-to-web
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/billing/domain(/|\\.py$)"
+          path: "^app/billing/domain(/.*)?\\.py$"
         to:
-          path: "^app/billing/web(/|\\.py$)"
+          path: "^app/billing/web(/.*)?\\.py$"
           reachable: true
       - name: layered:app.billing:domain-to-api
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/billing/domain(/|\\.py$)"
+          path: "^app/billing/domain(/.*)?\\.py$"
         to:
-          path: "^app/billing/api(/|\\.py$)"
+          path: "^app/billing/api(/.*)?\\.py$"
           reachable: true
       - name: layered:app.billing:domain-to-infra
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/billing/domain(/|\\.py$)"
+          path: "^app/billing/domain(/.*)?\\.py$"
         to:
-          path: "^app/billing/infra(/|\\.py$)"
+          path: "^app/billing/infra(/.*)?\\.py$"
           reachable: true
         allowEmpty: true
       - name: layered:app.shipping:web-to-api
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/shipping/web(/|\\.py$)"
+          path: "^app/shipping/web(/.*)?\\.py$"
         to:
-          path: "^app/shipping/api(/|\\.py$)"
+          path: "^app/shipping/api(/.*)?\\.py$"
           reachable: true
       - name: layered:app.shipping:api-to-web
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/shipping/api(/|\\.py$)"
+          path: "^app/shipping/api(/.*)?\\.py$"
         to:
-          path: "^app/shipping/web(/|\\.py$)"
+          path: "^app/shipping/web(/.*)?\\.py$"
           reachable: true
       - name: layered:app.shipping:infra-to-web
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/shipping/infra(/|\\.py$)"
+          path: "^app/shipping/infra(/.*)?\\.py$"
         to:
-          path: "^app/shipping/web(/|\\.py$)"
+          path: "^app/shipping/web(/.*)?\\.py$"
           reachable: true
         allowEmpty: true
       - name: layered:app.shipping:infra-to-api
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/shipping/infra(/|\\.py$)"
+          path: "^app/shipping/infra(/.*)?\\.py$"
         to:
-          path: "^app/shipping/api(/|\\.py$)"
+          path: "^app/shipping/api(/.*)?\\.py$"
           reachable: true
         allowEmpty: true
       - name: layered:app.shipping:domain-to-web
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/shipping/domain(/|\\.py$)"
+          path: "^app/shipping/domain(/.*)?\\.py$"
         to:
-          path: "^app/shipping/web(/|\\.py$)"
+          path: "^app/shipping/web(/.*)?\\.py$"
           reachable: true
       - name: layered:app.shipping:domain-to-api
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/shipping/domain(/|\\.py$)"
+          path: "^app/shipping/domain(/.*)?\\.py$"
         to:
-          path: "^app/shipping/api(/|\\.py$)"
+          path: "^app/shipping/api(/.*)?\\.py$"
           reachable: true
       - name: layered:app.shipping:domain-to-infra
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
         from:
-          path: "^app/shipping/domain(/|\\.py$)"
+          path: "^app/shipping/domain(/.*)?\\.py$"
         to:
-          path: "^app/shipping/infra(/|\\.py$)"
+          path: "^app/shipping/infra(/.*)?\\.py$"
           reachable: true
         allowEmpty: true
       # import-linter contract `top-level` (layers): Top level
@@ -141,15 +141,15 @@ rules:
         comment: "import-linter contract: Top level"
         severity: error
         from:
-          path: "^app/core(/|\\.py$)"
+          path: "^app/core(/.*)?\\.py$"
         to:
-          path: "^app/billing(/|\\.py$)"
+          path: "^app/billing(/.*)?\\.py$"
           reachable: true
       - name: top-level:app.core-to-app.shipping
         comment: "import-linter contract: Top level"
         severity: error
         from:
-          path: "^app/core(/|\\.py$)"
+          path: "^app/core(/.*)?\\.py$"
         to:
-          path: "^app/shipping(/|\\.py$)"
+          path: "^app/shipping(/.*)?\\.py$"
           reachable: true

@@ -1,0 +1,650 @@
+{
+  "repo": "langgenius/dify",
+  "sha": "3a017e8cccb316f23f601af65d2e8ce92e68f788",
+  "tool": "import-linter",
+  "importLinterVersion": "2.15",
+  "settings": "api/.importlinter",
+  "config": "imported",
+  "status": "compared",
+  "summary": {
+    "total": 37,
+    "agree": 36,
+    "disagree": 1,
+    "stays": 0,
+    "not-imported": 0,
+    "error": 0
+  },
+  "contracts": [
+    {
+      "id": "backend-layers",
+      "name": "Backend modules follow the transport, application, domain, and shared-library layers",
+      "type": "layers",
+      "importLinter": "kept",
+      "rules": 6,
+      "violations": 156373,
+      "rulebearing": "broken",
+      "verdict": "disagree",
+      "filtered": {
+        "mechanisms": [
+          "ignore_imports",
+          "namespace portions below a root package",
+          "imports by modules outside the root packages"
+        ],
+        "violations": 0,
+        "sufficientAlone": []
+      },
+      "cause": "import-linter's graph has no ignore_imports, namespace portions below a root package, imports by modules outside the root packages, together; with the same imports removed from Rulebearing's graph the contract is kept too. The import writes ignore_imports as knownViolations, which excuse a violation but cut no chain, and has no form for the other filters",
+      "sample": [
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/agent_access.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/app_access.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/audio_response.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/controller_schemas.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/errors.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/fields.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/helpers.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/human_input.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/rbac/__init__.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/rbac/checks.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/rbac/locators.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/schema.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/session.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/wraps.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/console/__init__.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/console/admin.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/console/agent/__init__.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/console/agent/app_helpers.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/console/agent/composer.py",
+        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/console/agent/roster.py"
+      ]
+    },
+    {
+      "id": "no-direct-rsa-imports",
+      "name": "Only the key provider abstraction may import libs.rsa directly",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "machinery-framework-boundary",
+      "name": "API machinery is framework neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "workspace-query-service-boundary",
+      "name": "Workspace query application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "init-validation-service-boundary",
+      "name": "Initialization validation application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "explore-banner-query-service-boundary",
+      "name": "Explore banner query application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "account-application-boundary",
+      "name": "Account application services and contracts are framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "app-definition-query-service-boundary",
+      "name": "App definition query application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "app-site-service-boundary",
+      "name": "App site application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "end-user-query-service-boundary",
+      "name": "App-scoped end user query service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "end-user-command-service-boundary",
+      "name": "App-scoped end user command service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "app-tracing-config-service-boundary",
+      "name": "App tracing configuration service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "message-file-preview-service-boundary",
+      "name": "Message file preview application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "upload-file-delivery-service-boundary",
+      "name": "Upload file delivery application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "webapp-access-query-service-boundary",
+      "name": "Web app access query application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "web-app-runtime-query-service-boundary",
+      "name": "Web app runtime query application service does not directly depend on configuration, feature implementation, transport, or ORM modules",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "feature-query-service-boundary",
+      "name": "Feature query application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "data-source-oauth-service-boundary",
+      "name": "Data source OAuth application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "oauth-server-application-service-boundary",
+      "name": "OAuth server application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "workspace-member-query-service-boundary",
+      "name": "Workspace member query application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "setup-service-boundary",
+      "name": "Setup application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "schema-definition-service-boundary",
+      "name": "Schema definition application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "inner-mail-service-boundary",
+      "name": "Inner mail application service is framework and implementation neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "web-passport-service-boundary",
+      "name": "Web passport application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "file-grant-service-boundary",
+      "name": "File grant application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "plugin-file-upload-service-boundary",
+      "name": "Plugin file upload application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "account-activation-service-boundary",
+      "name": "Account activation application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "tag-application-service-boundary",
+      "name": "Tag application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "tool-file-download-service-boundary",
+      "name": "Tool file download application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "recommended-app-query-service-boundary",
+      "name": "Recommended app query application service is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "recommended-app-catalog-gateway-boundary",
+      "name": "Recommended app catalog gateway does not depend on Flask",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "trial-app-application-boundary",
+      "name": "Trial app access and generation services are framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "app-preview-query-boundary",
+      "name": "App preview queries are framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "message-suggested-questions-boundary",
+      "name": "Message suggested questions port is framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "billing-application-boundary",
+      "name": "Billing application services and ports are framework and infrastructure neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "workflow-run-archive-application-boundary",
+      "name": "Workflow run archive application service and task domain are framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "app-audio-boundary",
+      "name": "App audio operations and values are framework and persistence neutral",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    }
+  ],
+  "graph": {
+    "rootPackages": [
+      "core",
+      "constants",
+      "context",
+      "configs",
+      "controllers",
+      "extensions",
+      "factories",
+      "libs",
+      "machinery",
+      "models",
+      "repositories",
+      "tasks",
+      "services"
+    ],
+    "importLinter": 6429,
+    "rulebearing": 8581,
+    "equal": false,
+    "unexplained": 0,
+    "onlyRulebearing": {
+      "allReexport": {
+        "count": 7,
+        "sample": [
+          [
+            "controllers/console/__init__.py",
+            "controllers/console/agent/__init__.py"
+          ],
+          [
+            "controllers/console/__init__.py",
+            "controllers/console/app/__init__.py"
+          ],
+          [
+            "controllers/console/__init__.py",
+            "controllers/console/billing/__init__.py"
+          ],
+          [
+            "controllers/console/__init__.py",
+            "controllers/console/workspace/__init__.py"
+          ],
+          [
+            "controllers/service_api/__init__.py",
+            "controllers/service_api/app/__init__.py"
+          ],
+          [
+            "controllers/service_api/__init__.py",
+            "controllers/service_api/dataset/__init__.py"
+          ],
+          [
+            "controllers/service_api/__init__.py",
+            "controllers/service_api/end_user/__init__.py"
+          ]
+        ]
+      },
+      "notGrimpModule": {
+        "count": 2447,
+        "sample": [
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/key_provider/azure_keyvault_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/storage/aliyun_oss_storage_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/storage/amazon_s3_storage_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/storage/azure_blob_storage_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/storage/baidu_obs_storage_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/storage/clickzetta_volume_storage_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/storage/google_cloud_storage_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/storage/huawei_obs_storage_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/storage/oci_storage_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/storage/opendal_storage_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/storage/supabase_storage_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/storage/tencent_cos_storage_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/storage/volcengine_tos_storage_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/vdb/alibabacloud_mysql_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/vdb/analyticdb_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/vdb/baidu_vector_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/vdb/chroma_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/vdb/clickzetta_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/vdb/couchbase_config.py"
+          ],
+          [
+            "configs/middleware/__init__.py",
+            "configs/middleware/vdb/elasticsearch_config.py"
+          ]
+        ]
+      }
+    },
+    "onlyImportLinter": {
+      "ancestorOfMissing": {
+        "count": 302,
+        "sample": [
+          [
+            "configs/middleware/__init__.py",
+            "configs/__init__.py"
+          ],
+          [
+            "configs/observability/__init__.py",
+            "configs/__init__.py"
+          ],
+          [
+            "controllers/console/__init__.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/agent/composer.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/agent/roster.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/apikey.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/app/advanced_prompt_template.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/app/agent.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/app/agent_app_access.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/app/agent_app_feature.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/app/agent_app_sandbox.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/app/agent_config_inspector.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/app/annotation.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/app/app.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/app/app.py",
+            "services/__init__.py"
+          ],
+          [
+            "controllers/console/app/app_import.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/app/app_import.py",
+            "core/__init__.py"
+          ],
+          [
+            "controllers/console/app/audio.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/app/completion.py",
+            "controllers/__init__.py"
+          ],
+          [
+            "controllers/console/app/conversation.py",
+            "controllers/__init__.py"
+          ]
+        ]
+      }
+    }
+  },
+  "agrees": false
+}
