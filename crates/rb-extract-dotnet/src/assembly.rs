@@ -30,6 +30,8 @@ pub struct TypeInfo {
     pub enclosing: Option<u32>,
     /// `MethodDef` rows of the type's methods.
     pub methods: Range<u32>,
+    /// The `MethodDef` row of the type's first instance constructor (`.ctor`), if it has one.
+    pub first_constructor: Option<u32>,
     /// Whether the type carries `CompilerGeneratedAttribute`.
     pub compiler_generated: bool,
     /// Whether the type is `<Module>`, the pseudo-type holding global members.
@@ -190,8 +192,16 @@ impl TypeReader<'_, '_> {
             } else {
                 method_count + 1
             };
+            let mut first_constructor = None;
+            for method in start..end.max(start) {
+                if self.metadata.string(t.cell(id::METHOD_DEF, method, 3)?)? == ".ctor" {
+                    first_constructor = Some(method);
+                    break;
+                }
+            }
             types.push(TypeInfo {
                 row,
+                first_constructor,
                 is_module_type: row == 1 && name == "<Module>",
                 namespace,
                 full_name: String::new(),

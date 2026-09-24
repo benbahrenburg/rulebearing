@@ -760,15 +760,15 @@ public class ArchitectureRules
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
 | 2A | ADR-0003 branch confirmed from the wave 0 table | Done | [ADR-0022](../../adr/0022-dotnet-reader-in-rust-confirmed.md): the Rust reader stays (trigger figure 0.9929); plan 0000 row 0D |
-| 2A | Discovery (`.sln`, `.slnx`, `.csproj`, `Directory.*.props`, loader options) | Not started | `tests/discover.rs` |
-| 2A | ECMA-335 tables, signatures, IL walker | Not started | `tests/ecma335.rs` |
-| 2A | Portable PDB, embedded PDB, SourceLink unmapping | Not started | `tests/pdb.rs` |
-| 2A | Attribution flow and partial classes | Not started | `tests/extract.rs` |
-| 2A | Edge projection, `dependencyKind`, `dependencyTypes`, `dynamic`, `license` | Not started | expectation fixture |
-| 2A | .NET code layer | Not started | expectation fixture |
-| 2A | Defaults and receipt | Not started | preset snapshot, receipt fixture |
-| 2A | Fuzz targets | Not started | nightly job link |
-| 2A | Attribution rate on oracles at 99% or above | Not started | nightly job output |
+| 2A | Discovery (`.sln`, `.slnx`, `.csproj`, `Directory.*.props`, loader options) | Done | `crates/rb-extract-dotnet/tests/discover.rs` over `tests/fixtures/solutions/` (one test per loader row; `--no-cache` arrives with the cache in 2G), `src/discover/` unit tests |
+| 2A | ECMA-335 tables, signatures, IL walker | Done | `tests/ecma335.rs`: row counts, three signatures and three IL operand streams equal what System.Reflection.Metadata reads (`conformance/archunitnet/tools/MetadataDump`); the table set and the predicate needing each are in `src/loader.rs` |
+| 2A | Portable PDB, embedded PDB, SourceLink unmapping | Done | `tests/pdb.rs` (documents and every sequence point of three methods equal System.Reflection.Metadata's); `/_/` documents relative to the cruise root (`repository_prefix`) |
+| 2A | Attribution flow and partial classes | Done | `tests/extract.rs` (`files[]`, the constructor's declaring file, missing PDB gives `none` and a warning, Windows PDB is exit 2) |
+| 2A | Edge projection, `dependencyKind`, `dependencyTypes`, `dynamic`, `license` | Done | `tests/fixtures/sample.expected.json`, `test-assembly.expected.json` (reviewed); `src/edges.rs` table test for every .NET `dependencyTypes` value and the `.nuspec` licence |
+| 2A | .NET code layer | Done | the two expectations; `tests/extract.rs` asserts ArchUnitNET's rules (record by `<Clone>$`, init setters, backing fields dropped, lambdas and iterator state machines followed, compiler-generated targets skipped) |
+| 2A | Defaults and receipt | Done | `presets/rulebearing/dotnet.yaml` with `the_dotnet_preset_sets_the_dotnet_defaults` in `rb-config`; the receipt (`projects`, `pdbDocuments`, `attribution`) in both expectations |
+| 2A | Fuzz targets | In progress | `fuzz/fuzz_targets/ecma335.rs` and `pdb.rs` in `.github/workflows/fuzz.yml`; ten clean minutes each locally (`ecma335`: 416,642 runs); the nightly link lands after merge |
+| 2A | Attribution rate on oracles at 99% or above | Done | `conformance/archunitnet/scripts/spike-b-attribution.sh` re-run 2026-09-24: trigger figure 0.9929 (4,463 of 4,495), PDB-only share 0.9335 (ADR-0022); ten of eleven oracles built, TNG/ArchUnitNET needs the newer SDK its `global.json` pins, as in wave 0 |
 
 ### Wave 2B: `rb-extract-python`
 

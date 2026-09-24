@@ -38,5 +38,19 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "ecma335"
+path = "fuzz_targets/ecma335.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pdb"
+path = "fuzz_targets/pdb.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 members = ["."]

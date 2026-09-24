@@ -28,6 +28,7 @@ pub struct Metadata<'a> {
     /// The runtime version string, for example `v4.0.30319`.
     pub version: &'a str,
     strings: &'a [u8],
+    user_strings: &'a [u8],
     blobs: &'a [u8],
     guids: &'a [u8],
     /// The `#Pdb` stream, present in a portable PDB.
@@ -122,6 +123,7 @@ impl<'a> Metadata<'a> {
         Ok(Self {
             version,
             strings: find("#Strings").unwrap_or_default(),
+            user_strings: find("#US").unwrap_or_default(),
             blobs: find("#Blob").unwrap_or_default(),
             guids: find("#GUID").unwrap_or_default(),
             pdb_stream,
@@ -135,6 +137,23 @@ impl<'a> Metadata<'a> {
     /// When the index is out of range or the string is not NUL-terminated UTF-8.
     pub fn string(&self, index: u32) -> Read<&'a str> {
         Reader::new(self.strings, index as usize, "#Strings heap").c_string()
+    }
+
+    /// A string literal from the `#US` heap (II.24.2.4): UTF-16LE with a trailing flag byte.
+    ///
+    /// # Errors
+    /// When the index or the length is out of range.
+    pub fn user_string(&self, index: u32) -> Read<String> {
+        let mut r = Reader::new(self.user_strings, index as usize, "#US heap");
+        let length = r.compressed_u32()? as usize;
+        let bytes = r.bytes(length)?;
+        let units: Vec<u16> = bytes
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|pair| u16::from_le_bytes(*pair))
+            .collect();
+        Ok(String::from_utf16_lossy(&units))
     }
 
     /// A blob from the `#Blob` heap, without its length prefix.
@@ -218,6 +237,7 @@ pub(crate) mod tests {
             ("#Strings", b"\0Hello\0".to_vec()),
             ("#Blob", vec![0, 3, 1, 2, 3]),
             ("#GUID", (1u8..=16).collect()),
+            ("#US", vec![0, 5, b'h', 0, b'i', 0, 0]),
         ]);
         let metadata = Metadata::parse(&data, None);
         let metadata = metadata.as_ref().ok();
@@ -231,6 +251,11 @@ pub(crate) mod tests {
         );
         assert!(metadata.is_some_and(|m| m.guid(2).is_err()));
         assert!(metadata.is_some_and(|m| m.string(99).is_err()));
+        assert_eq!(
+            metadata.and_then(|m| m.user_string(1).ok()).as_deref(),
+            Some("hi")
+        );
+        assert!(metadata.is_some_and(|m| m.user_string(40).is_err()));
         assert!(metadata.is_some_and(|m| m.pdb_stream.is_none()));
         assert!(Metadata::parse(b"XXXX", None).is_err());
         assert!(Metadata::parse(&root(&[("#Strings", vec![0])]), None).is_err());
