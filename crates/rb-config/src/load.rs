@@ -394,6 +394,18 @@ fn assemble(
         .map_err(|e| invalid("defines", e))?
         .unwrap_or_default();
     let allow_empty = allow_empty(&canonical, &mut rules, &ratchets)?;
+    let family = |key: &str| {
+        canonical
+            .get(key)
+            .cloned()
+            .unwrap_or(Value::Array(Vec::new()))
+    };
+    let mut elements = crate::elements::parse_elements(&family("elements"))?;
+    let slices = crate::elements::parse_slices(&family("slices"))?;
+    let diagrams = crate::elements::parse_diagrams(&family("diagrams"))?;
+    for rule in &mut elements {
+        rule.allow_empty |= allow_empty.contains(&rule.name);
+    }
     Ok(Config {
         schema,
         extends: written_extends,
@@ -409,6 +421,9 @@ fn assemble(
             ratchets,
             layers: expanded.layers,
             independence: expanded.independence,
+            elements,
+            slices,
+            diagrams,
         },
         known_violations,
         compat,

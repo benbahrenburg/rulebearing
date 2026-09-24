@@ -82,6 +82,9 @@ const CANONICAL_KEYS: &[&str] = &[
     "ratchets",
     "layers",
     "independence",
+    "elements",
+    "slices",
+    "diagrams",
 ];
 /// The native top-level additions, a warning in a dependency-cruiser file.
 const NATIVE_TOP_KEYS: &[&str] = &[
@@ -91,6 +94,9 @@ const NATIVE_TOP_KEYS: &[&str] = &[
     "ratchets",
     "layers",
     "independence",
+    "elements",
+    "slices",
+    "diagrams",
 ];
 
 /// Every option key dependency-cruiser 18.2.0's schema defines, plus the command-line-only keys

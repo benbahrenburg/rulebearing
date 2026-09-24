@@ -188,7 +188,7 @@ pub struct FilterOption {
     pub depth: Option<u32>,
 }
 
-/// The rule families. Element, slice and diagram rules are wave 2.
+/// The rule families.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Rules {
     /// `rules.dependencies`, which is dependency-cruiser's rule set.
@@ -199,6 +199,12 @@ pub struct Rules {
     pub layers: Vec<LayersShorthand>,
     /// `rules.independence`, already expanded into `dependencies.forbidden`.
     pub independence: Vec<IndependenceShorthand>,
+    /// `rules.elements` ([`crate::elements`]).
+    pub elements: Vec<crate::elements::ElementRule>,
+    /// `rules.slices`.
+    pub slices: Vec<crate::elements::SliceRule>,
+    /// `rules.diagrams`.
+    pub diagrams: Vec<crate::elements::DiagramRule>,
 }
 
 impl Rules {
