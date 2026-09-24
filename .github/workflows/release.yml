@@ -1,16 +1,21 @@
 # Builds the `rulebearing` binary for the six targets of docs/architecture.md#distribution and, on a
-# release tag, attaches them to a GitHub release and publishes the npm wrapper and
-# eslint-plugin-rulebearing at the same version (wave 1; the plugin with wave 2, Step 13; NuGet and
-# PyPI join with wave 2). The 0.0.1 name reservations were a manual, one-day
-# procedure in docs/release.md (docs/adr/0020).
+# release tag, attaches them to a GitHub release and publishes every wrapper at the same version:
+# npm (`rulebearing`, its six platform packages, and `rulebearing/vitest` inside it; wave 1;
+# `eslint-plugin-rulebearing`, wave 2 Step 13), PyPI
+# (the six `rulebearing` wheels and `pytest-rulebearing`) and NuGet (the `Rulebearing` dotnet tool
+# and whatever else wrappers/nuget/pack.sh packs) (wave 2). The 0.0.1 name reservations were a
+# manual, one-day procedure in docs/release.md (docs/adr/0020).
 #
 # Dry run: a tag ending in `-rc.N` (for example v0.0.1-rc.1), or a manual run with `dry_run` left
-# on, builds every target, stages and packs the npm packages, runs the npm install matrix from the
-# packed tarballs, and uploads everything as workflow artefacts without releasing or publishing.
+# on, builds every target, packs the npm, PyPI and NuGet packages, runs each registry's install
+# check from those packages, and uploads everything as workflow artefacts without releasing or
+# publishing.
 # Plans: docs/plans/pending/0000-wave-0-spike.md, Step 11 (binaries);
 # docs/plans/pending/0001-wave-1-typescript-parity.md, Step 19 (npm);
-# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 13 (eslint-plugin-rulebearing).
-# Hardening: docs/adr/0025.
+# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Steps 13 (eslint-plugin-rulebearing)
+# and 14 (PyPI, NuGet).
+# Hardening: docs/adr/0025. Only the npm publish job holds id-token: write (provenance); the PyPI
+# and NuGet publish jobs push with repository secrets and keep contents: read.
 name: release
 
 on:
@@ -95,24 +100,16 @@ jobs:
             dist/*.tar.gz
             dist/SHA256SUMS
 
-  npm-pack:
-    name: npm packages
-    needs: binaries
+  # The workspace version is the release version (docs/release.md); a tag must carry it. Every
+  # registry's packages are stamped with this one value (FR-DIST-01).
+  version:
+    name: release version
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 22
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          pattern: rulebearing-*
-          path: dist
-          merge-multiple: true
-      # The workspace version is the release version (docs/release.md); a tag must carry it.
       - name: version
         id: version
         env:
@@ -127,19 +124,37 @@ jobs:
             esac
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  npm-pack:
+    name: npm packages
+    needs: [binaries, version]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      version: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: rulebearing-*
+          path: dist
+          merge-multiple: true
       - run: npm ci --no-audit --no-fund --ignore-scripts
       - run: npm run build
         working-directory: wrappers/npm
       # Six platform packages and the main package, version stamped (wrappers/npm/src/stage.ts).
       - run: node wrappers/npm/scripts/stage.mjs dist "$VERSION" staged
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.version.outputs.version }}
       # eslint-plugin-rulebearing, built against the wrapper's declarations and staged beside the
       # wrapper with the release version stamped into it and into its `rulebearing` dependency;
       # the source tree's package.json is copied, never edited.
       - name: stage eslint-plugin-rulebearing
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
           plugin=frontends/eslint-plugin-rulebearing
           (cd "$plugin" && npm run build)
@@ -201,6 +216,10 @@ jobs:
           out="$(npx --no-install rulebearing --version | tr -d '\r')"
           echo "$out"
           test "$out" = "rulebearing $VERSION"
+          # The rulebearing/vitest entry point resolves from the installed package, with vitest as
+          # its peer (plan 0002, Step 14: `npm install rulebearing/vitest` works).
+          npm install --no-audit --no-fund vitest@5
+          node --input-type=module -e "const m = await import('rulebearing/vitest'); if (typeof m.defineArchitectureTests !== 'function' || typeof m.RulebearingReporter !== 'function') { console.error('rulebearing/vitest exports are missing'); process.exit(1); }"
 
   npm-publish:
     name: npm publish
@@ -254,3 +273,211 @@ jobs:
           publish "./packages/rulebearing-$VERSION.tgz"
           # The plugin last: it depends on `rulebearing` at the same version.
           publish "./packages/eslint-plugin-rulebearing-$VERSION.tgz"
+
+  # PyPI (plan 0002, Step 14): one `rulebearing` wheel per release target, the binary in the package
+  # data, and the `pytest-rulebearing` wheel pinned to it, all at the release version
+  # (wrappers/pip/scripts/build-wheels.sh). Runs on every trigger; `twine check` validates the
+  # metadata PyPI will read.
+  pypi-build:
+    name: PyPI packages
+    needs: [binaries, version]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: rulebearing-*
+          path: dist
+          merge-multiple: true
+      - run: python -m pip install --quiet build==1.6.1 hatchling==1.32.4 packaging==26.3 twine==7.0.0
+      - run: wrappers/pip/scripts/build-wheels.sh dist "$VERSION" pypi
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          PYTHON: python
+      - name: check
+        run: |
+          count="$(find pypi -name 'rulebearing-*.whl' | wc -l)"
+          if [ "$count" -ne 6 ]; then
+            echo "::error::expected 6 rulebearing wheels, found $count"
+            exit 1
+          fi
+          python -m twine check --strict pypi/*.whl
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pypi-packages
+          path: pypi/*.whl
+          if-no-files-found: error
+
+  # The smoke job of plan 0002 Step 14 for PyPI: install the built wheels into a new virtual
+  # environment on each host, run the console script, then run pytest-rulebearing over the shared
+  # adapter fixture, whose five rules must give three failures and two passes.
+  pypi-install-check:
+    name: pip install rulebearing (${{ matrix.os }})
+    needs: [pypi-build, version]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: adapters/fixture
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: pypi-packages
+          path: pypi
+      - name: install and run
+        shell: bash
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          scripts="$RUNNER_TEMP/venv/bin"
+          if [ "$RUNNER_OS" = "Windows" ]; then scripts="$RUNNER_TEMP/venv/Scripts"; fi
+          # The two packages from the built wheels only; pytest, their one other dependency, from PyPI.
+          "$scripts/python" -m pip install --quiet --no-index --find-links pypi "rulebearing==$VERSION"
+          "$scripts/python" -m pip install --quiet --find-links pypi "pytest-rulebearing==$VERSION"
+          out="$("$scripts/rulebearing" --version | tr -d '\r')"
+          echo "$out"
+          test "$out" = "rulebearing $VERSION"
+          project="$RUNNER_TEMP/pytest-check"
+          cp -R adapters/fixture "$project"
+          printf '[pytest]\nrulebearing = true\n' > "$project/pytest.ini"
+          cd "$project"
+          status=0
+          "$scripts/python" -m pytest -q -p no:cacheprovider > pytest.out 2>&1 || status=$?
+          cat pytest.out
+          test "$status" -eq 1
+          grep -q "3 failed, 2 passed" pytest.out
+          grep -q "is vacuous: its from side matched nothing" pytest.out
+
+  pypi-publish:
+    name: PyPI publish
+    needs: [pypi-build, pypi-install-check, release]
+    # Only a real tag publishes: not a manual run, not an -rc tag (the same rule as `release`).
+    if: github.event_name == 'push' && !contains(github.ref_name, '-rc')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # twine with the PYPI_TOKEN repository secret, an API token scoped to the two projects; no
+    # OIDC token is requested, so this job keeps the workflow's contents: read (docs/adr/0025).
+    steps:
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: pypi-packages
+          path: pypi
+      - run: python -m pip install --quiet twine==7.0.0
+      # The rulebearing wheels first, so pytest-rulebearing never pins a version PyPI lacks.
+      # --skip-existing lets a rerun after a partial upload finish the release.
+      - name: publish
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          python -m twine upload --non-interactive --skip-existing pypi/rulebearing-*.whl
+          python -m twine upload --non-interactive --skip-existing pypi/pytest_rulebearing-*.whl
+
+  # NuGet (plan 0002, Step 14): wrappers/nuget/pack.sh turns the six release archives into the
+  # `Rulebearing` dotnet tool (the binaries under runtimes/<rid>/native/ and the launcher) and any
+  # other package it owns, at the release version. Its contract is in docs/release.md.
+  nuget-pack:
+    name: NuGet packages
+    needs: [binaries, version]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: rulebearing-*
+          path: dist
+          merge-multiple: true
+      - name: pack
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          if [ ! -x wrappers/nuget/pack.sh ]; then
+            echo "::error::wrappers/nuget/pack.sh is missing; it is the NuGet packing entry point docs/release.md names"
+            exit 1
+          fi
+          wrappers/nuget/pack.sh dist "$VERSION" nuget
+          if [ ! -f "nuget/Rulebearing.$VERSION.nupkg" ]; then
+            echo "::error::pack.sh did not write nuget/Rulebearing.$VERSION.nupkg"
+            exit 1
+          fi
+          ls -l nuget
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nuget-packages
+          path: nuget/*.nupkg
+          if-no-files-found: error
+
+  # The smoke job of plan 0002 Step 14 for NuGet: install the tool from the built package into a
+  # tool path on each host and run it.
+  nuget-install-check:
+    name: dotnet tool install Rulebearing (${{ matrix.os }})
+    needs: [nuget-pack, version]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: nuget-packages
+          path: nuget
+      - name: install and run
+        shell: bash
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          tools="$RUNNER_TEMP/tools"
+          dotnet tool install Rulebearing --version "$VERSION" --tool-path "$tools" --add-source "$PWD/nuget"
+          out="$("$tools/rulebearing" --version | tr -d '\r')"
+          echo "$out"
+          test "$out" = "rulebearing $VERSION"
+
+  nuget-publish:
+    name: NuGet publish
+    needs: [nuget-pack, nuget-install-check, release]
+    # Only a real tag publishes: not a manual run, not an -rc tag (the same rule as `release`).
+    if: github.event_name == 'push' && !contains(github.ref_name, '-rc')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # dotnet nuget push with the NUGET_API_KEY repository secret, scoped to the Rulebearing package
+    # prefix; no OIDC token is requested, so this job keeps contents: read (docs/adr/0025).
+    steps:
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: nuget-packages
+          path: nuget
+      # --skip-duplicate lets a rerun after a partial push finish the release.
+      - name: publish
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          for package in nuget/*.nupkg; do
+            dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done

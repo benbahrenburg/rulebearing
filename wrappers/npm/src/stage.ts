@@ -16,6 +16,7 @@ import { execFileSync } from 'node:child_process';
 import {
   chmodSync,
   copyFileSync,
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -182,7 +183,8 @@ function stageMain(
       throw new StageError(`${from} is missing; run \`npm run build\` in ${packageDir} first`);
     }
     mkdirSync(dirname(join(dir, file)), { recursive: true });
-    copyFileSync(from, join(dir, file));
+    // A directory entry (`dist/vitest/`, the rulebearing/vitest entry point) is copied whole.
+    cpSync(from, join(dir, file), { recursive: true });
   }
   copyFileSync(license, join(dir, 'LICENSE'));
   writeJson(join(dir, 'package.json'), mainManifest(source, version));
