@@ -6,6 +6,7 @@ The upstream tools' test suites are Rulebearing's specification ([ADR-0009](../d
 | --- | --- | --- | --- | --- |
 | 1 | [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) (MIT) | [18.2.0](dependency-cruiser/PIN) | Layer 1: 296 of 296 recorded `test/extract` cases. Layer 2: 34 of 34 `test/validate` and `test/graph-utl` specs, unmodified. Layer 3: the wave 1 `test/report` specs, byte for byte. Layer 4: output and configurations against the upstream schemas. Layer 5: zero difference on three oracle repositories and the mutation branch | `conformance-gate-1`, `conformance-gate-1-layer-5` |
 | 2 | [ArchUnitNET](https://github.com/TNG/ArchUnitNET) (Apache-2.0) | [0.13.4](archunitnet/PIN) | The committed fixtures verified (hashes, portable PDBs, notice); every case under `archunitnet/ported/` reproduces upstream over the committed graphs (`cargo test -p rb-rules --test gate2`, 1567 of 1605 upstream cases; the rest are listed in `archunitnet/unported.json` with reasons), and the graphs are current with the fixtures | `conformance-gate-2`, `gate2-ratchet` |
+| 2 | [NetArchTest](https://github.com/BenMorris/NetArchTest) (MIT) | [1.3.2](netarchtest/PIN) | Its own unit tests: 323 cases, each NetArchTest's verdict over the committed `NetArchTest.TestStructure` fixtures, reproduced by the element engine (`crates/rb-rules/tests/gate2_netarchtest.rs`); fixtures and counts verified by `scripts/gate2-netarchtest-check.sh` ([netarchtest/README.md](netarchtest/README.md)) | `conformance-gate-2` |
 
 The ratchets are checked by `scripts/ratchets.sh` in the `ratchets` job against the base branch:
 
@@ -15,6 +16,8 @@ The ratchets are checked by `scripts/ratchets.sh` in the `ratchets` job against 
 | Layer 1 threshold | [dependency-cruiser/threshold.json](dependency-cruiser/threshold.json) | may only rise (0.95 from sub-wave 0C, 1.0 from wave 1) |
 | Ported ArchUnitNET tests | [archunitnet/ported.json](archunitnet/ported.json) | `ported` may only rise |
 | Unported ArchUnitNET tests | [archunitnet/unported.json](archunitnet/unported.json) | may only shrink, and holds no `not-yet` entry once plan 0002 is implemented (`scripts/gate2-ratchet.sh`, job `gate2-ratchet`) |
+| Ported NetArchTest tests | [netarchtest/ported.json](netarchtest/ported.json) | `ported` may only rise |
+| Unported NetArchTest tests | [netarchtest/unported.json](netarchtest/unported.json) | may only shrink, and holds no `not-yet` entry once plan 0002 is implemented (`scripts/gate2-ratchet.sh`) |
 
 A ratchet compares against a base recorded at the same upstream `pin`. A pin bump re-vendors and re-records, and the pull request that bumps it must show the new figures.
 
@@ -53,6 +56,7 @@ node conformance/dependency-cruiser/harness/run-layer-2.mjs <checkout> --record 
 conformance/dependency-cruiser/scripts/run-layer-5.sh --all        # layer 5: the three oracles
 conformance/dependency-cruiser/scripts/run-layer-5.sh --mutations  # layer 5: the mutation branch
 conformance/archunitnet/scripts/build-test-assembly.sh    # once; rebuild only on a PIN bump
+conformance/netarchtest/scripts/build-test-assemblies.sh  # once; rebuild only on a PIN bump
 scripts/gate2-check.sh && scripts/ratchets.sh && scripts/gate2-ratchet.sh
 cargo test -p rb-rules --test gate2 -- --nocapture       # gate 2: every ported case
 RB_UPDATE_SNAPSHOTS=1 cargo test -p rb-extract-dotnet --test gate2_graphs   # regenerate the graphs
@@ -78,8 +82,14 @@ conformance/
 │       ├── extract/                 # test/extract inputs, INDEX.json, expectations/*.json
 │       ├── report/, report-json/    # test/report verbatim; its cruise results as JSON (rb-model round trip)
 │       └── schemas/                 # the 18.2.0 cruise-result and configuration schemas
-└── archunitnet/
-    ├── PIN, ported.json             # 0.13.4; the port counter
-    ├── scripts/build-test-assembly.sh
-    └── fixtures/                    # TestAssembly.dll and .pdb, SHA256SUMS, LICENSE, NOTICE, README.md
+├── archunitnet/
+│   ├── PIN, ported.json             # 0.13.4; the port counter
+│   ├── scripts/build-test-assembly.sh
+│   └── fixtures/                    # TestAssembly.dll and .pdb, SHA256SUMS, LICENSE, NOTICE, README.md
+└── netarchtest/
+    ├── PIN, ported.json, unported.json  # 1.3.2; the port counter; every test with no case, and why
+    ├── scripts/build-test-assemblies.sh
+    ├── tools/Port/                  # runs each upstream chain with NetArchTest and writes ported/
+    ├── ported/, graphs/             # the cases; the fixtures' graphs
+    └── fixtures/                    # NetArchTest.TestStructure and CrossAssemblyTest.{A,B}, SHA256SUMS, LICENSE, README.md
 ```

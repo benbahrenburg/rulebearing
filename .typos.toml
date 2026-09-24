@@ -34,3 +34,10 @@ flate = "flate"
 # Yarn Plug'n'Play, spelled PnP throughout dependency-cruiser's options and this project's docs.
 PnP = "PnP"
 pnp = "pnp"
+# NetArchTest 1.3.2's own identifiers, quoted verbatim by conformance/netarchtest (the upstream
+# test names and the dependency-search parameter they cite).
+HaveDepencency_MatchesFound_ClassSelected = "HaveDepencency_MatchesFound_ClassSelected"
+HaveDepencencyOnAny_MatchesFound_ClassSelected = "HaveDepencencyOnAny_MatchesFound_ClassSelected"
+HaveDepencencyOnAll_MatchesFound_ClassSelected = "HaveDepencencyOnAll_MatchesFound_ClassSelected"
+DoNotHaveDepencency_MatchesFound_ClassSelected = "DoNotHaveDepencency_MatchesFound_ClassSelected"
+serachForDependencyInFieldConstant = "serachForDependencyInFieldConstant"

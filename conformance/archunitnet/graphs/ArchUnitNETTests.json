@@ -548,6 +548,24 @@
           "dependencyKind": "inherits"
         },
         {
+          "module": "System.Exception",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 27,
+          "column": 5,
+          "dependencyKind": "signature"
+        },
+        {
           "module": "System.Runtime.CompilerServices.ExtensionAttribute",
           "resolved": "System.Runtime",
           "coreModule": true,
@@ -24365,6 +24383,11 @@
             "line": 90
           },
           {
+            "target": "System.Exception",
+            "kind": "signature",
+            "line": 87
+          },
+          {
             "target": "System.Func`1",
             "kind": "body",
             "member": ".ctor",
@@ -24757,6 +24780,11 @@
           },
           {
             "target": "AssertException+<T>",
+            "kind": "signature",
+            "line": 27
+          },
+          {
+            "target": "System.Exception",
             "kind": "signature",
             "line": 27
           },
@@ -45059,6 +45087,11 @@
             "target": "ArchUnitNET.Domain.IMember",
             "kind": "signature",
             "line": 73
+          },
+          {
+            "target": "ArchUnitNET.Domain.IType",
+            "kind": "signature",
+            "line": 18
           },
           {
             "target": "ArchUnitNET.Domain.IType",
@@ -75115,6 +75148,11 @@
             "line": 262
           },
           {
+            "target": "System.Reflection.MemberInfo",
+            "kind": "signature",
+            "line": 300
+          },
+          {
             "target": "System.Reflection.MethodBase",
             "kind": "body",
             "line": 142
@@ -75184,7 +75222,17 @@
           {
             "target": "System.Reflection.MethodBase",
             "kind": "signature",
+            "line": 259
+          },
+          {
+            "target": "System.Reflection.MethodBase",
+            "kind": "signature",
             "line": 272
+          },
+          {
+            "target": "System.Reflection.MethodBase",
+            "kind": "signature",
+            "line": 294
           },
           {
             "target": "System.Reflection.MethodInfo",
@@ -144342,6 +144390,11 @@
             "line": 90
           },
           {
+            "target": "System.Exception",
+            "kind": "signature",
+            "line": 87
+          },
+          {
             "target": "System.Func`1",
             "kind": "body",
             "member": ".ctor",
@@ -144701,6 +144754,11 @@
           },
           {
             "target": "AssertException+<T>",
+            "kind": "signature",
+            "line": 27
+          },
+          {
+            "target": "System.Exception",
             "kind": "signature",
             "line": 27
           },
@@ -177025,6 +177083,11 @@
             "kind": "body",
             "member": "get_Attributes",
             "line": 36
+          },
+          {
+            "target": "ArchUnitNET.Domain.IType",
+            "kind": "signature",
+            "line": 18
           },
           {
             "target": "System.ArgumentNullException",
@@ -214444,6 +214507,11 @@
             "line": 302
           },
           {
+            "target": "System.Reflection.MemberInfo",
+            "kind": "signature",
+            "line": 300
+          },
+          {
             "target": "System.Runtime.CompilerServices.ExtensionAttribute",
             "kind": "attribute",
             "line": 300
@@ -214958,6 +215026,11 @@
             "kind": "body",
             "member": "get_IsPublic",
             "line": 295
+          },
+          {
+            "target": "System.Reflection.MethodBase",
+            "kind": "signature",
+            "line": 294
           },
           {
             "target": "System.Runtime.CompilerServices.ExtensionAttribute",
@@ -215859,6 +215932,11 @@
             "kind": "body",
             "member": "get_Name",
             "line": 262
+          },
+          {
+            "target": "System.Reflection.MethodBase",
+            "kind": "signature",
+            "line": 259
           },
           {
             "target": "System.Runtime.CompilerServices.ExtensionAttribute",

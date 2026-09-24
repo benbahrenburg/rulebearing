@@ -1,0 +1,576 @@
+# Ported from NetArchTest 1.3.2 test/NetArchTest.Rules.UnitTests/DependencySearch/VariousTests.cs by conformance/netarchtest/tools/Port. Do not edit; rerun the tool.
+source: test/NetArchTest.Rules.UnitTests/DependencySearch/VariousTests.cs
+architecture: [NetArchTest.TestStructure]
+cases:
+- id: DependencySearch_IndirectReference_NotFound#1
+  csharp: "Utils.RunDependencyTest(typeof(IndirectReference), typeof(ExampleDependency), false, false)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: IndirectReference
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: []
+    fail: [NetArchTest.TestStructure.Dependencies.Search.IndirectReference]
+- id: DependencySearch_IndirectReference_NotFound#2
+  csharp: "Utils.RunDependencyTest(typeof(IndirectReference), typeof(ExampleDependency), false, false)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: IndirectReference
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: []
+    fail: [NetArchTest.TestStructure.Dependencies.Search.IndirectReference]
+- id: DependencySearch_Garbage_NotFound
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType(typeof(IndirectReference)), new List<string> { \"System.Object::.ctor()\", \"T\", \"T1\", \"T2\", \"ctor()\", \"!1)\", \"::.ctor(!0\" }, false)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"System.Object::.ctor()\", \"T\", \"T1\", \"T2\", \"ctor()\", \"!1)\", \"::.ctor(!0\"])"
+  note: "No analysed type has a full name the strings begin in whole segments, so the selector selects none."
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh]"
+          - doNotHaveName: IndirectReference
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:System\\.Object::\\.ctor\\(\\)|T|T1|T2|ctor\\(\\)|!1\\)|::\\.ctor\\(!0)(?:$|[.+])"
+  expect:
+    pass: []
+    fail:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AsyncMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnEvent
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnField
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnParameter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnProperty
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnReturnValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ConstructorPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ConstructorPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.DefaultInterfaceMethodBody
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.DelegateDeclaration
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventAdd
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventRemove
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.FieldPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.FieldPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericConstraintClass`1
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericConstraintMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericMethodTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericMethodTypeArgumentOneOpenOneClosedTypeArgument`1
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ImplementedInterface
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.IndexerPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InheritedBaseClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionCtor
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionStaticClassTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionStaticMethodTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionThrow
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.LambdaCapturedVariable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodParameter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodPrivateBody
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodReturnType
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PInvoke
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyGetter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertySetter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.StaticLocalFunction
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.SwitchPatternMatching
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatch
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatchBlock
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatchExceptionFilter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryFinallyBlock
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.UsingStatement
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.Yield
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+      - NetArchTest.TestStructure.Dependencies.Search.ReferringType
+- id: DependencySearch_PartiallyMatchingDependency_NotFound#1
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(IndirectReference)]), typeof(ExampleDep), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDep\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh]"
+          - doNotHaveName: IndirectReference
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDep)(?:$|[.+])"
+  expect:
+    pass: []
+    fail:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AsyncMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnEvent
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnField
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnParameter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnProperty
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnReturnValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ConstructorPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ConstructorPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.DefaultInterfaceMethodBody
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.DelegateDeclaration
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventAdd
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventRemove
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.FieldPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.FieldPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericConstraintClass`1
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericConstraintMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericMethodTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericMethodTypeArgumentOneOpenOneClosedTypeArgument`1
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ImplementedInterface
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.IndexerPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InheritedBaseClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionCtor
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionStaticClassTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionStaticMethodTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionThrow
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.LambdaCapturedVariable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodParameter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodPrivateBody
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodReturnType
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PInvoke
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyGetter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertySetter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.StaticLocalFunction
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.SwitchPatternMatching
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatch
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatchBlock
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatchExceptionFilter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryFinallyBlock
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.UsingStatement
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.Yield
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+      - NetArchTest.TestStructure.Dependencies.Search.ReferringType
+- id: DependencySearch_PartiallyMatchingNamespace_NotFound#1
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(IndirectReference)]), typeof(ExampleDependencyInPartiallyMatchingNamespace), false, false)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Example.ExampleDependencyInPartiallyMatchingNamespace\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh]"
+          - doNotHaveName: IndirectReference
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Example\\.ExampleDependencyInPartiallyMatchingNamespace)(?:$|[.+])"
+  expect:
+    pass: []
+    fail:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AsyncMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnEvent
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnField
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnParameter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnProperty
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnReturnValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ConstructorPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ConstructorPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.DefaultInterfaceMethodBody
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.DelegateDeclaration
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventAdd
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventRemove
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.FieldPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.FieldPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericConstraintClass`1
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericConstraintMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericMethodTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericMethodTypeArgumentOneOpenOneClosedTypeArgument`1
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ImplementedInterface
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.IndexerPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InheritedBaseClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionCtor
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionStaticClassTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionStaticMethodTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionThrow
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.LambdaCapturedVariable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodParameter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodPrivateBody
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodReturnType
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PInvoke
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyGetter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertySetter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.StaticLocalFunction
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.SwitchPatternMatching
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatch
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatchBlock
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatchExceptionFilter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryFinallyBlock
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.UsingStatement
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.Yield
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+      - NetArchTest.TestStructure.Dependencies.Search.ReferringType
+- id: DependencySearch_PartiallyMatchingNamespace_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(IndirectReference)]), typeof(ExampleDependencyInPartiallyMatchingNamespace), false, false)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Example\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh]"
+          - doNotHaveName: IndirectReference
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Example)(?:$|[.+])"
+  expect:
+    pass: []
+    fail:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AsyncMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnEvent
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnField
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnParameter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnProperty
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnReturnValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ConstructorPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ConstructorPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.DefaultInterfaceMethodBody
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.DelegateDeclaration
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventAdd
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventRemove
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.FieldPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.FieldPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericConstraintClass`1
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericConstraintMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericMethodTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericMethodTypeArgumentOneOpenOneClosedTypeArgument`1
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ImplementedInterface
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.IndexerPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InheritedBaseClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionCtor
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionStaticClassTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionStaticMethodTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionThrow
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.LambdaCapturedVariable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodParameter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodPrivateBody
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodReturnType
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PInvoke
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyGetter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertySetter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.StaticLocalFunction
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.SwitchPatternMatching
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatch
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatchBlock
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatchExceptionFilter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryFinallyBlock
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.UsingStatement
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.Yield
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+      - NetArchTest.TestStructure.Dependencies.Search.ReferringType
+- id: DependencySearch_DependencyWithDifferentCaseOfCharacters_NotFound#1
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(IndirectReference)]), typeof(ExampleDEPENDENCY), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDEPENDENCY\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh]"
+          - doNotHaveName: IndirectReference
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDEPENDENCY)(?:$|[.+])"
+  expect:
+    pass: []
+    fail:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AsyncMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnEvent
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnField
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnParameter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnProperty
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnReturnValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ConstructorPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ConstructorPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.DefaultInterfaceMethodBody
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.DelegateDeclaration
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventAdd
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.EventRemove
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.FieldPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.FieldPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericConstraintClass`1
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericConstraintMethod
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericMethodTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericMethodTypeArgumentOneOpenOneClosedTypeArgument`1
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.ImplementedInterface
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.IndexerPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InheritedBaseClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionCtor
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionStaticClassTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionStaticMethodTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionThrow
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.LambdaCapturedVariable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodParameter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodPrivateBody
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.MethodReturnType
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PInvoke
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyGetter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyPrivate
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertyPublic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.PropertySetter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.StaticLocalFunction
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.SwitchPatternMatching
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatch
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatchBlock
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryCatchExceptionFilter
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.TryFinallyBlock
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.UsingStatement
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.Yield
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+      - NetArchTest.TestStructure.Dependencies.Search.ReferringType
+- id: FindTypesWithAllDependencies_PatternMatchedClasses_NotReturned
+  csharp: "Types.InAssembly(Assembly.GetAssembly(typeof(HasDependency))).That().HaveName(\"ClassMatchingExample\").GetTypeDefinitions()"
+  search: "FindTypesThatHaveDependencyOnAll(typeList, [\"NetArchTest.TestStructure.FalsePositives.NamespaceMatch.PatternMatch\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ClassMatchingExample
+    should:
+      all:
+        - dependOnAny:
+            kind: type
+            where:
+              haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.FalsePositives\\.NamespaceMatch\\.PatternMatch)(?:$|[.+])"
+  expect:
+    pass: []
+    fail: [NetArchTest.TestStructure.FalsePositives.ClassMatchingExample]
+- id: FindTypesWithAllDependencies_PatternMatchedNamespaces_NotReturned
+  csharp: "Types.InAssembly(Assembly.GetAssembly(typeof(HasDependency))).That().HaveName(\"NamespaceMatchingExample\").GetTypeDefinitions()"
+  search: "FindTypesThatHaveDependencyOnAll(typeList, [\"NetArchTest.TestStructure.FalsePositives.NamespaceMatch\"])"
+  note: "The upstream selection is empty: NetArchTest passes an empty selection, Rulebearing reports it vacuous (ADR-0007)."
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: NamespaceMatchingExample
+    should:
+      all:
+        - dependOnAny:
+            kind: type
+            where:
+              haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.FalsePositives\\.NamespaceMatch)(?:$|[.+])"
+  expect:
+    vacuous: true
