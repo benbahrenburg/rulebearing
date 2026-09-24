@@ -63,21 +63,21 @@
       "test": "ArchRuleEqualityTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "api-only: C# Equals on IArchRule objects; Rulebearing rules are YAML data"
     },
     {
       "source": "ArchUnitNETTests/Fluent/DescriptionTests.cs",
       "test": "CustomDescriptionTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "api-only: the C# As() custom description; a Rulebearing rule is described by its name, comment and because"
     },
     {
       "source": "ArchUnitNETTests/Fluent/DescriptionTests.cs",
       "test": "DescriptionTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "api-only: the C# Description string a fluent chain renders; a Rulebearing rule is described by its name, comment and because"
     },
     {
       "source": "ArchUnitNETTests/Fluent/FreezeTests.cs",
@@ -115,13 +115,6 @@
       "reason": "not-yet: non-snapshot"
     },
     {
-      "source": "ArchUnitNETTests/Fluent/MultipleConditionRulesTests.cs",
-      "test": "AssignCorrectTypeToEvaluationResults",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
       "source": "ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs",
       "test": "ComponentDiagramFromCustomDependenciesTest",
       "block": null,
@@ -150,39 +143,18 @@
       "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
-      "source": "ArchUnitNETTests/Fluent/RuleEvaluationTests.cs",
-      "test": "AssertArchRuleTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/RuleEvaluationTests.cs",
-      "test": "CheckArchRuleTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/RuleEvaluationTests.cs",
-      "test": "CreateErrorMessageTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
       "source": "ArchUnitNETTests/Fluent/Syntax/ConjunctionFactoryTest.cs",
       "test": "CreateSyntaxElementTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "api-only: the reflection factory ConjunctionFactory.Create behind the fluent C# syntax"
     },
     {
       "source": "ArchUnitNETTests/Fluent/Syntax/ConjunctionFactoryTest.cs",
       "test": "CreateSyntaxElementWithInvalidParametersThrowsExceptionTest",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "api-only: the reflection factory ConjunctionFactory.Create behind the fluent C# syntax"
     },
     {
       "source": "ArchUnitNETTests/Fluent/Syntax/Elements/CustomSyntaxElementsTests.cs",
@@ -295,13 +267,6 @@
       "block": 8,
       "query": "Types that are \"TypeDependencyNamespace.BaseClass\" should be types that follow custom predicate",
       "reason": "custom-predicate"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
-      "test": "VisibilityTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
     }
   ]
 }
