@@ -2,6 +2,6 @@
   "$comment": "Conformance gate 2, NetArchTest half (docs/adr/0009-conformance-suites-as-specification.md): `ported` may only rise. Written by conformance/netarchtest/tools/Port. `total` counts every case and every unported entry; `ported` counts the cases in ported/*.yaml; `customPredicate` counts the unported.json entries whose reason is custom-predicate.",
   "pin": "1.3.2",
   "total": 406,
-  "ported": 323,
+  "ported": 326,
   "customPredicate": 2
 }

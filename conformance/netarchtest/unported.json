@@ -1,5 +1,5 @@
 {
-  "$comment": "NetArchTest unit tests, or single searches of them, with no case in ported/, each with a reason, written by conformance/netarchtest/tools/Port (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7). `block` is the 1-based entry of `test` (its case or search), or null for a whole test. Reasons: custom-predicate (MeetCustomRule, a C# predicate); api-only: <what> (NetArchTest's own API, with no rule counterpart); constructed-type, external-namespace and vocabulary-gap: <what> (no element-rule key gives NetArchTest's verdict); dependency-definition: <what> (NetArchTest counts as a dependency something ArchUnitNET's definition, which the graph document follows, does not, or the reverse).",
+  "$comment": "NetArchTest unit tests, or single searches of them, with no case in ported/, each with a reason, written by conformance/netarchtest/tools/Port (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7). `block` is the 1-based entry of `test` (its case or search), or null for a whole test. Reasons: custom-predicate (MeetCustomRule, a C# predicate); api-only: <what> (NetArchTest's own API, with no rule counterpart); constructed-type and vocabulary-gap: <what> (no element-rule key gives NetArchTest's verdict); dependency-definition: <what> (NetArchTest counts as a dependency something ArchUnitNET's definition, which the graph document follows, does not, or the reverse).",
   "pin": "1.3.2",
   "entries": [
     {
@@ -424,13 +424,6 @@
     },
     {
       "source": "test/NetArchTest.Rules.UnitTests/DependencySearch/DependencyTypeTests.cs",
-      "test": "DependencySearch_VariableGenericTypeArgument_NotFound",
-      "block": 2,
-      "query": "Utils.RunDependencyTest(typeof(VariableGenericTypeArgument), typeof(List<ExampleDependency>), false, false): FindTypesThatHaveDependencyOnAny(subjects, [\"System.Collections.Generic\"])",
-      "reason": "external-namespace: the search names a namespace outside the analysed assembly; a nested selector ranges over the analysed types only, so an element rule cannot ask for a dependency on any type of an external namespace"
-    },
-    {
-      "source": "test/NetArchTest.Rules.UnitTests/DependencySearch/DependencyTypeTests.cs",
       "test": "DependencySearch_VariableGenericTypeArgumentNested_Found",
       "block": 1,
       "query": "Utils.RunDependencyTest(typeof(VariableGenericTypeArgumentNested), typeof(GenericClass<GenericClass<ExampleDependency>>), true, true): FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.GenericClass`1[[NetArchTest.TestStructure.Dependencies.Examples.GenericClass`1[[NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency, NetArchTest.TestStructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], NetArchTest.TestStructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]\"])",
@@ -487,24 +480,10 @@
     },
     {
       "source": "test/NetArchTest.Rules.UnitTests/DependencySearch/DependencyTypeTests.cs",
-      "test": "DependencySearch_VariableTuple_Found",
-      "block": 2,
-      "query": "Utils.RunDependencyTest(typeof(VariableTuple), typeof(Tuple<int, ExampleDependency>), true, true): FindTypesThatHaveDependencyOnAny(subjects, [\"System\"])",
-      "reason": "external-namespace: the search names a namespace outside the analysed assembly; a nested selector ranges over the analysed types only, so an element rule cannot ask for a dependency on any type of an external namespace"
-    },
-    {
-      "source": "test/NetArchTest.Rules.UnitTests/DependencySearch/DependencyTypeTests.cs",
       "test": "DependencySearch_VariableTuple_NotFound",
       "block": 1,
       "query": "Utils.RunDependencyTest(typeof(VariableTuple), typeof(Tuple<int, double>), false, true): FindTypesThatHaveDependencyOnAny(subjects, [\"System.Tuple`2[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Double, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]\"])",
       "reason": "constructed-type: NetArchTest's search tree tells an array, pointer, by-reference or closed generic type (ExampleDependency[], ExampleDependency<int>, ExampleDependency&) apart from its element type; the graph document records a dependency on the type definition and each generic argument, so no element-rule key distinguishes the constructed type from its element type"
-    },
-    {
-      "source": "test/NetArchTest.Rules.UnitTests/DependencySearch/DependencyTypeTests.cs",
-      "test": "DependencySearch_VariableTuple_NotFound",
-      "block": 2,
-      "query": "Utils.RunDependencyTest(typeof(VariableTuple), typeof(Tuple<int, double>), false, true): FindTypesThatHaveDependencyOnAny(subjects, [\"System\"])",
-      "reason": "external-namespace: the search names a namespace outside the analysed assembly; a nested selector ranges over the analysed types only, so an element rule cannot ask for a dependency on any type of an external namespace"
     },
     {
       "source": "test/NetArchTest.Rules.UnitTests/DependencySearch/DependencyTypeTests.cs",
