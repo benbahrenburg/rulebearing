@@ -16,10 +16,17 @@
 //! languages found (or named with `--preset`) choose the presets: one language extends its own
 //! preset and `rulebearing:recommended`, its own first so that its exclusions win and no other
 //! language's are carried; several extend `rulebearing:recommended`, which composes all three.
+//! A .NET or Python project in a folder below the root (`dotnet/`, `python/`) is found too, and
+//! the proposal's `languages` block names it: the solution listing the most projects, or every
+//! project file when there is no solution, and the import roots of each Python project or uv
+//! workspace member.
 //! The proposal adds one fence per boundary found, each with a `comment` and a `fix`. A cruise
-//! then runs over it: a rule that would be vacuous is dropped, and every current finding is
-//! written into the baseline ([`crate::cmd::adopt::baseline`]), so the file is written only when
-//! a second cruise with it exits 0.
+//! then runs over it, and the rules its graph calls for are added: the layers the .NET namespaces
+//! name and the order of the top-level Python packages ([`crate::cmd::init_graph`], plan
+//! [Wave 2, Step 15](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-upstream-offers-second-maintainer-2i)).
+//! A rule that would be vacuous is dropped, and every current finding is written into the
+//! baseline ([`crate::cmd::adopt::baseline`]), so the file is written only when a second cruise
+//! with it exits 0.
 
 use std::fmt::Write as _;
 use std::path::Path;
@@ -31,6 +38,7 @@ use rb_config::read::Syntax;
 use serde_json::Value;
 
 use crate::cmd::adopt::{self, BaselineArgs};
+use crate::cmd::init_graph;
 use crate::context::Context;
 use crate::pipeline::{self, RunOptions};
 use crate::progress::Progress;
@@ -106,10 +114,15 @@ pub struct Discovery {
     /// `package.json` at the root.
     pub package_json: bool,
     /// The languages whose presets the proposal extends: those found (TypeScript for a
-    /// `tsconfig.json` or `package.json`, .NET for a `.sln`, `.slnx` or `.csproj`, or
-    /// `Directory.Build.props`, Python for a `pyproject.toml`, `setup.py` or `setup.cfg`, each at
-    /// the root), or those `--preset` names.
+    /// `tsconfig.json` or `package.json` at the root; .NET for a `.sln`, `.slnx`, `.csproj` or
+    /// `Directory.Build.props`, and Python for a `pyproject.toml`, `setup.py` or `setup.cfg`, each
+    /// at the root or in a folder directly below it), or those `--preset` names.
     pub languages: Vec<Preset>,
+    /// Where the .NET projects are, when found.
+    pub dotnet: Option<DotnetSource>,
+    /// The Python import roots to write, when the project is not at the root (a folder below it, or
+    /// a uv workspace's members); empty when the extractor's own discovery at the root applies.
+    pub python_roots: Vec<String>,
     /// Folders under `apps/`.
     pub apps: Vec<String>,
     /// Folders under `packages/`.
@@ -120,6 +133,18 @@ pub struct Discovery {
     pub frameworks: Vec<&'static str>,
     /// The roots to cruise.
     pub roots: Vec<String>,
+}
+
+/// Where the .NET projects are, and so what `languages.dotnet` says.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DotnetSource {
+    /// The one solution at the root, which the extractor finds without being told.
+    Root,
+    /// This solution, repository-relative: the one listing the most projects, when there are
+    /// several at the root, or when the solutions are in the folders below it.
+    Solution(String),
+    /// Every project file under the root (`languages.dotnet: {}`): there is no solution.
+    Projects,
 }
 
 fn folders(dir: &Path) -> Vec<String> {
@@ -161,6 +186,227 @@ const FRAMEWORKS: &[(&str, &[&str])] = &[
     ("storybook", &[".storybook/main.ts", ".storybook/main.js"]),
 ];
 
+fn files_with(dir: &Path, extensions: &[&str]) -> Vec<String> {
+    let mut out: Vec<String> = std::fs::read_dir(dir)
+        .map(|entries| {
+            entries
+                .flatten()
+                .filter(|e| e.path().is_file())
+                .map(|e| e.file_name().to_string_lossy().into_owned())
+                .filter(|name| {
+                    Path::new(name)
+                        .extension()
+                        .and_then(|x| x.to_str())
+                        .is_some_and(|x| extensions.contains(&x.to_ascii_lowercase().as_str()))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    out.sort();
+    out
+}
+
+/// How many projects a solution lists: `Project(` lines of a `.sln`, `<Project ` elements of a
+/// `.slnx`.
+pub fn solution_size(text: &str) -> usize {
+    text.lines()
+        .map(str::trim_start)
+        .filter(|line| line.starts_with("Project(") || line.starts_with("<Project "))
+        .count()
+}
+
+/// The solution among `candidates` (repository-relative) that lists the most projects; the first
+/// by name on a tie.
+fn largest_solution(root: &Path, candidates: Vec<String>) -> Option<String> {
+    let mut sized: Vec<(usize, String)> = candidates
+        .into_iter()
+        .map(|c| {
+            let size = std::fs::read_to_string(root.join(&c)).map_or(0, |t| solution_size(&t));
+            (size, c)
+        })
+        .collect();
+    sized.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.cmp(&b.1)));
+    sized.into_iter().next().map(|(_, c)| c)
+}
+
+fn has_dotnet_project(dir: &Path) -> bool {
+    dir.join("Directory.Build.props").is_file() || !files_with(dir, &["csproj"]).is_empty()
+}
+
+/// The .NET projects at the root or in a folder directly below it.
+pub fn find_dotnet(root: &Path) -> Option<DotnetSource> {
+    let here = files_with(root, &["sln", "slnx"]);
+    if here.len() == 1 {
+        return Some(DotnetSource::Root);
+    }
+    if !here.is_empty() {
+        return largest_solution(root, here).map(DotnetSource::Solution);
+    }
+    if has_dotnet_project(root) {
+        return Some(DotnetSource::Projects);
+    }
+    let below = folders(root);
+    let nested: Vec<String> = below
+        .iter()
+        .flat_map(|f| {
+            files_with(&root.join(f), &["sln", "slnx"])
+                .into_iter()
+                .map(move |s| format!("{f}/{s}"))
+        })
+        .collect();
+    if !nested.is_empty() {
+        return largest_solution(root, nested).map(DotnetSource::Solution);
+    }
+    below
+        .iter()
+        .any(|f| has_dotnet_project(&root.join(f)))
+        .then_some(DotnetSource::Projects)
+}
+
+const PYTHON_MARKERS: &[&str] = &["pyproject.toml", "setup.py", "setup.cfg"];
+
+/// Whether `name` matches a glob segment in which `*` stands for any run of characters.
+fn segment_matches(pattern: &str, name: &str) -> bool {
+    match pattern.split_once('*') {
+        None => pattern == name,
+        Some((head, tail)) => name.strip_prefix(head).is_some_and(|rest| {
+            (0..=rest.len())
+                .filter(|i| rest.is_char_boundary(*i))
+                .any(|i| segment_matches(tail, &rest[i..]))
+        }),
+    }
+}
+
+/// The folders under `root` that a relative glob such as `packages/*` names.
+fn expand_glob(root: &Path, glob: &str) -> Vec<String> {
+    let mut found = vec![String::new()];
+    for segment in glob.split('/').filter(|s| !s.is_empty() && *s != ".") {
+        found = found
+            .into_iter()
+            .flat_map(|base| {
+                let dir = if base.is_empty() {
+                    root.to_path_buf()
+                } else {
+                    root.join(&base)
+                };
+                folders(&dir)
+                    .into_iter()
+                    .filter(|name| segment_matches(segment, name))
+                    .map(move |name| {
+                        if base.is_empty() {
+                            name
+                        } else {
+                            format!("{base}/{name}")
+                        }
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+    }
+    found.retain(|f| !f.is_empty());
+    found
+}
+
+/// The members of the uv workspace whose `pyproject.toml` is in `dir` (repository-relative, `""`
+/// for the root), sorted; empty when it declares none.
+pub fn workspace_members(root: &Path, dir: &str) -> Vec<String> {
+    let base = if dir.is_empty() {
+        root.to_path_buf()
+    } else {
+        root.join(dir)
+    };
+    let Ok(text) = std::fs::read_to_string(base.join("pyproject.toml")) else {
+        return Vec::new();
+    };
+    let Ok(value) = toml::from_str::<toml::Table>(&text) else {
+        return Vec::new();
+    };
+    let workspace = value
+        .get("tool")
+        .and_then(|t| t.get("uv"))
+        .and_then(|u| u.get("workspace"));
+    let globs = |key: &str| -> Vec<String> {
+        workspace
+            .and_then(|w| w.get(key))
+            .and_then(toml::Value::as_array)
+            .map(|a| {
+                a.iter()
+                    .filter_map(toml::Value::as_str)
+                    .flat_map(|g| expand_glob(&base, g))
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    let excluded = globs("exclude");
+    let mut members: Vec<String> = globs("members")
+        .into_iter()
+        .filter(|m| !excluded.contains(m) && any_file(&base.join(m), PYTHON_MARKERS))
+        .map(|m| {
+            if dir.is_empty() {
+                m
+            } else {
+                format!("{dir}/{m}")
+            }
+        })
+        .collect();
+    members.sort();
+    members.dedup();
+    members
+}
+
+/// A Python project's own import roots, relative to it: what the Python extractor's discovery
+/// reads from its project files, else `src` when it exists, else the project folder.
+fn project_roots(dir: &Path) -> Vec<String> {
+    #[cfg(feature = "extract-python")]
+    if let Ok(layout) = rb_extract_python::discover::discover(dir, None) {
+        return layout.roots;
+    }
+    vec![if dir.join("src").is_dir() { "src" } else { "." }.to_owned()]
+}
+
+/// The Python projects at the root or in the folders directly below it: `None` when there is
+/// none, an empty list when the root is the project (the extractor's discovery applies), else the
+/// import roots of every project found, repository-relative.
+pub fn find_python(root: &Path) -> Option<Vec<String>> {
+    let projects = if any_file(root, PYTHON_MARKERS) {
+        let members = workspace_members(root, "");
+        if members.is_empty() {
+            return Some(Vec::new());
+        }
+        members
+    } else {
+        let mut projects = Vec::new();
+        for folder in folders(root) {
+            if any_file(&root.join(&folder), PYTHON_MARKERS) {
+                let members = workspace_members(root, &folder);
+                if members.is_empty() {
+                    projects.push(folder);
+                } else {
+                    projects.extend(members);
+                }
+            }
+        }
+        if projects.is_empty() {
+            return None;
+        }
+        projects
+    };
+    let mut roots: Vec<String> = Vec::new();
+    for project in projects {
+        for r in project_roots(&root.join(&project)) {
+            let joined = if r == "." {
+                project.clone()
+            } else {
+                format!("{project}/{r}")
+            };
+            if !roots.contains(&joined) {
+                roots.push(joined);
+            }
+        }
+    }
+    Some(roots)
+}
+
 /// Reads the tree under `root`.
 pub fn discover(root: &Path) -> Discovery {
     let apps = folders(&root.join("apps"));
@@ -196,23 +442,12 @@ pub fn discover(root: &Path) -> Discovery {
     }
     let typescript = root.join("tsconfig.json").is_file();
     let package_json = root.join("package.json").is_file();
-    let dotnet = any_file(root, &["Directory.Build.props"])
-        || std::fs::read_dir(root).is_ok_and(|entries| {
-            entries.flatten().any(|e| {
-                e.path().is_file()
-                    && e.path()
-                        .extension()
-                        .and_then(|x| x.to_str())
-                        .is_some_and(|x| {
-                            ["sln", "slnx", "csproj"].contains(&x.to_ascii_lowercase().as_str())
-                        })
-            })
-        });
-    let python = any_file(root, &["pyproject.toml", "setup.py", "setup.cfg"]);
+    let dotnet = find_dotnet(root);
+    let python = find_python(root);
     let languages = [
         (typescript || package_json, Preset::Typescript),
-        (dotnet, Preset::Dotnet),
-        (python, Preset::Python),
+        (dotnet.is_some(), Preset::Dotnet),
+        (python.is_some(), Preset::Python),
     ]
     .into_iter()
     .filter_map(|(found, preset)| found.then_some(preset))
@@ -221,6 +456,8 @@ pub fn discover(root: &Path) -> Discovery {
         typescript,
         package_json,
         languages,
+        dotnet,
+        python_roots: python.unwrap_or_default(),
         apps,
         packages,
         features,
@@ -279,7 +516,7 @@ fn orphan_exclusions(found: &Discovery) -> Vec<String> {
 }
 
 /// A string as a YAML double-quoted scalar (JSON's escaping is valid YAML).
-fn quoted(text: &str) -> String {
+pub(crate) fn quoted(text: &str) -> String {
     serde_json::to_string(text).unwrap_or_default()
 }
 
@@ -316,7 +553,7 @@ fn fence(name: &str, comment: &str, fix: &str, folder: &str) -> Proposed {
     }
 }
 
-fn regex_escape(text: &str) -> String {
+pub(crate) fn regex_escape(text: &str) -> String {
     text.chars().fold(String::new(), |mut out, c| {
         if ".^$*+?()[]{}|\\".contains(c) {
             out.push('\\');
@@ -405,6 +642,14 @@ pub fn render(found: &Discovery, rules: &[Proposed], entries: &[Value], today: &
             Preset::Typescript if !found.typescript && found.package_json => {
                 "JavaScript".to_owned()
             }
+            Preset::Dotnet => match &found.dotnet {
+                Some(DotnetSource::Solution(solution)) => format!(".NET ({solution})"),
+                Some(DotnetSource::Projects) => ".NET (project files, no solution)".to_owned(),
+                _ => Preset::Dotnet.label().to_owned(),
+            },
+            Preset::Python if !found.python_roots.is_empty() => {
+                format!("Python ({})", found.python_roots.join(", "))
+            }
             other => other.label().to_owned(),
         });
     }
@@ -430,9 +675,26 @@ pub fn render(found: &Discovery, rules: &[Proposed], entries: &[Value], today: &
         "# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too."
     );
     let _ = writeln!(out, "extends: {}", extends_for(&found.languages));
-    if found.typescript {
-        out.push_str("languages:\n  typescript:\n    tsConfig: { fileName: tsconfig.json }\n    tsPreCompilationDeps: true\n");
+    let dotnet = match (&found.dotnet, found.languages.contains(&Preset::Dotnet)) {
+        (Some(DotnetSource::Solution(solution)), true) => {
+            Some(format!("  dotnet: {{ solution: {} }}\n", quoted(solution)))
+        }
+        (Some(DotnetSource::Projects), true) => Some("  dotnet: {}\n".to_owned()),
+        _ => None,
+    };
+    let python = (!found.python_roots.is_empty() && found.languages.contains(&Preset::Python))
+        .then(|| {
+            let roots: Vec<String> = found.python_roots.iter().map(|r| quoted(r)).collect();
+            format!("  python:\n    roots: [{}]\n", roots.join(", "))
+        });
+    if found.typescript || dotnet.is_some() || python.is_some() {
+        out.push_str("languages:\n");
     }
+    if found.typescript {
+        out.push_str("  typescript:\n    tsConfig: { fileName: tsconfig.json }\n    tsPreCompilationDeps: true\n");
+    }
+    out.push_str(&dotnet.unwrap_or_default());
+    out.push_str(&python.unwrap_or_default());
     out.push_str("rules:\n  dependencies:\n    forbidden:\n");
     for rule in rules {
         out.push_str(&rule.yaml);
@@ -459,7 +721,9 @@ fn load_text(ctx: &Context<'_>, text: &str) -> Result<rb_config::Config, String>
         .map_err(|e| e.to_string())
 }
 
-/// Cruises the proposal, dropping vacuous rules and baselining findings, until a run exits 0.
+/// Cruises the proposal, adds the rules the first cruise's graph calls for
+/// ([`init_graph::graph_rules`]), drops vacuous rules and baselines findings, until a run exits 0.
+/// Each pass either adds the graph's rules (once) or drops at least one rule, so it ends.
 ///
 /// # Errors
 /// An [`Outcome`] naming what could not be made to pass.
@@ -478,7 +742,8 @@ pub fn converge(
         paths: found.roots.clone(),
     };
     let mut dropped = Vec::new();
-    for _ in 0..=rules.len() {
+    let mut derived = false;
+    loop {
         let text = render(found, &rules, &[], &today);
         let config = load_text(ctx, &text).map_err(|m| {
             Outcome::failed(
@@ -488,6 +753,17 @@ pub fn converge(
         })?;
         let run = pipeline::run(ctx, &config, &options, &mut Progress::new(None))
             .map_err(|e| failed(e.to_string()))?;
+        if !derived {
+            derived = true;
+            let extra: Vec<Proposed> = init_graph::graph_rules(&run.document)
+                .into_iter()
+                .filter(|r| rules.iter().all(|mine| mine.name != r.name))
+                .collect();
+            if !extra.is_empty() {
+                rules.extend(extra);
+                continue;
+            }
+        }
         if !run.evaluation.vacuous.is_empty() {
             let vacuous: Vec<String> = run
                 .evaluation
@@ -521,7 +797,6 @@ pub fn converge(
         }
         return Ok((text, dropped, entries.len()));
     }
-    Err(failed("no proposal converged".into()))
 }
 
 /// Runs `init`.
@@ -536,7 +811,7 @@ pub fn run(ctx: &mut Context<'_>, args: &InitArgs) -> Outcome {
     if found.languages.is_empty() {
         return Outcome::failed(
             RunExit::Untrustworthy,
-            "rulebearing init: no package.json, tsconfig.json, .sln, .slnx, .csproj, Directory.Build.props, pyproject.toml, setup.py or setup.cfg here; run it at the repository root, or name the languages with --preset typescript,dotnet,python\n",
+            "rulebearing init: no package.json, tsconfig.json, .sln, .slnx, .csproj, Directory.Build.props, pyproject.toml, setup.py or setup.cfg here or in a folder directly below; run it at the repository root, or name the languages with --preset typescript,dotnet,python\n",
         );
     }
     let target = ctx.resolve(&args.output);
@@ -821,6 +1096,202 @@ mod tests {
         let text = render(&found, &[], &[], "2026-09-24");
         assert!(text.contains("# Found: JavaScript, .NET.\n"), "{text}");
         assert!(text.contains("extends: rulebearing:recommended\n"));
+    }
+
+    fn tree(name: &str, files: &[(&str, &str)]) -> Result<std::path::PathBuf, std::io::Error> {
+        let dir = std::env::temp_dir().join(format!("rb-init-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir)?;
+        for (file, text) in files {
+            let path = dir.join(file);
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            std::fs::write(path, text)?;
+        }
+        Ok(dir)
+    }
+
+    #[test]
+    fn solutions_are_sized_by_the_projects_they_list() {
+        let sln = "Microsoft Visual Studio Solution File\nProject(\"{FAE0}\") = \"A\", \"A\\A.csproj\", \"{1}\"\nEndProject\n  Project(\"{FAE0}\") = \"B\", \"B\\B.csproj\", \"{2}\"\nEndProject\n";
+        assert_eq!(solution_size(sln), 2);
+        let slnx = "<Solution>\n  <Folder Name=\"/src/\">\n    <Project Path=\"a/A.csproj\" />\n  </Folder>\n</Solution>\n";
+        assert_eq!(solution_size(slnx), 1);
+        assert_eq!(solution_size(""), 0);
+    }
+
+    type Files<'a> = &'a [(&'a str, &'a str)];
+
+    #[test]
+    fn dotnet_is_found_at_the_root_or_one_folder_below() -> Result<(), Box<dyn std::error::Error>> {
+        let one = "<Solution>\n  <Project Path=\"a/A.csproj\" />\n</Solution>\n";
+        let two = "<Solution>\n  <Project Path=\"a/A.csproj\" />\n  <Project Path=\"b/B.csproj\" />\n</Solution>\n";
+        let cases: [(&str, Files<'_>, Option<DotnetSource>); 7] = [
+            ("root-one", &[("App.sln", "")], Some(DotnetSource::Root)),
+            (
+                "root-two",
+                &[("A.slnx", one), ("B.slnx", two)],
+                Some(DotnetSource::Solution("B.slnx".into())),
+            ),
+            (
+                "root-project",
+                &[("App.csproj", "<Project />")],
+                Some(DotnetSource::Projects),
+            ),
+            (
+                "nested",
+                &[
+                    ("dotnet/Small.slnx", one),
+                    ("dotnet/Big.slnx", two),
+                    ("other/Tie.slnx", two),
+                ],
+                Some(DotnetSource::Solution("dotnet/Big.slnx".into())),
+            ),
+            (
+                "nested-project",
+                &[("svc/Svc.csproj", "<Project />")],
+                Some(DotnetSource::Projects),
+            ),
+            (
+                "nested-props",
+                &[("dotnet/Directory.Build.props", "<Project />")],
+                Some(DotnetSource::Projects),
+            ),
+            ("deep", &[("a/b/Deep.sln", "")], None),
+        ];
+        for (name, files, expected) in cases {
+            let dir = tree(name, files)?;
+            assert_eq!(find_dotnet(&dir), expected, "{name}");
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn globs_match_whole_segments() {
+        for (pattern, name, expected) in [
+            ("*", "anything", true),
+            ("pkg-*", "pkg-core", true),
+            ("pkg-*", "core", false),
+            ("*-ext", "autogen-ext", true),
+            ("a*c", "abbc", true),
+            ("a*c", "abcd", false),
+            ("exact", "exact", true),
+            ("exact", "exactly", false),
+        ] {
+            assert_eq!(segment_matches(pattern, name), expected, "{pattern} {name}");
+        }
+    }
+
+    #[test]
+    fn python_is_found_at_the_root_below_it_and_in_uv_workspaces()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let project = "[project]\nname = \"x\"\nversion = \"0\"\n";
+        let root = tree(
+            "py-root",
+            &[("pyproject.toml", project), ("src/x/__init__.py", "")],
+        )?;
+        assert_eq!(
+            find_python(&root),
+            Some(Vec::new()),
+            "the extractor's own discovery"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+        let below = tree(
+            "py-below",
+            &[("python/setup.cfg", ""), ("python/x/__init__.py", "")],
+        )?;
+        assert_eq!(find_python(&below), Some(vec!["python".to_owned()]));
+        let _ = std::fs::remove_dir_all(&below);
+        let workspace = tree(
+            "py-workspace",
+            &[
+                (
+                    "pyproject.toml",
+                    "[tool.uv.workspace]\nmembers = [\"libs/*\", \"tools/cli\"]\nexclude = [\"libs/old\"]\n",
+                ),
+                ("libs/a/pyproject.toml", project),
+                ("libs/a/src/a/__init__.py", ""),
+                ("libs/b/pyproject.toml", project),
+                ("libs/b/b/__init__.py", ""),
+                ("libs/old/pyproject.toml", project),
+                ("libs/docs/README.md", ""),
+                ("tools/cli/setup.py", ""),
+            ],
+        )?;
+        assert_eq!(
+            workspace_members(&workspace, ""),
+            ["libs/a", "libs/b", "tools/cli"]
+        );
+        assert_eq!(
+            find_python(&workspace),
+            Some(vec![
+                "libs/a/src".to_owned(),
+                "libs/b".to_owned(),
+                "tools/cli".to_owned()
+            ])
+        );
+        assert!(workspace_members(&workspace, "libs/a").is_empty());
+        let _ = std::fs::remove_dir_all(&workspace);
+        let none = tree("py-none", &[("README.md", "")])?;
+        assert_eq!(find_python(&none), None);
+        let _ = std::fs::remove_dir_all(&none);
+        Ok(())
+    }
+
+    #[test]
+    fn the_languages_block_names_what_the_extractors_cannot_find_alone()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let found = Discovery {
+            languages: vec![Preset::Dotnet, Preset::Python],
+            dotnet: Some(DotnetSource::Solution("dotnet/App.slnx".into())),
+            python_roots: vec!["python".into(), "libs/a/src".into()],
+            roots: vec![".".into()],
+            ..Discovery::default()
+        };
+        let text = render(&found, &[], &[], "2026-09-24");
+        assert!(
+            text.contains("# Found: .NET (dotnet/App.slnx), Python (python, libs/a/src).\n"),
+            "{text}"
+        );
+        assert!(
+            text.contains("languages:\n  dotnet: { solution: \"dotnet/App.slnx\" }\n  python:\n    roots: [\"python\", \"libs/a/src\"]\nrules:\n"),
+            "{text}"
+        );
+        let config = load::load_text(&text, Syntax::Yaml, Path::new("."), &LoadOptions::default())?;
+        assert_eq!(
+            config.languages.dotnet.and_then(|d| d.solution).as_deref(),
+            Some("dotnet/App.slnx")
+        );
+        let projects = Discovery {
+            dotnet: Some(DotnetSource::Projects),
+            python_roots: Vec::new(),
+            languages: vec![Preset::Dotnet],
+            ..found.clone()
+        };
+        let text = render(&projects, &[], &[], "2026-09-24");
+        assert!(
+            text.contains("languages:\n  dotnet: {}\nrules:\n"),
+            "{text}"
+        );
+        assert!(
+            text.contains("# Found: .NET (project files, no solution).\n"),
+            "{text}"
+        );
+        let root = Discovery {
+            dotnet: Some(DotnetSource::Root),
+            ..projects
+        };
+        assert!(!render(&root, &[], &[], "2026-09-24").contains("languages:"));
+        // A --preset that leaves a found language out writes nothing for it.
+        let named = Discovery {
+            languages: vec![Preset::Python],
+            python_roots: Vec::new(),
+            ..found
+        };
+        assert!(!render(&named, &[], &[], "2026-09-24").contains("dotnet"));
+        Ok(())
     }
 
     #[test]

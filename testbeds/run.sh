@@ -73,6 +73,12 @@ PY
 }
 
 if [ "$tool" = "none" ]; then
+  # A greenfield or scale row with its own nightly job (testbeds/greenfield.sh, testbeds/scale.sh)
+  # has written its result already; that result is kept.
+  if [ -f "$out/result.json" ]; then
+    echo "run: $repo: kept the result its own job wrote"
+    exit 0
+  fi
   result idle "no incumbent tool; the Rulebearing column starts in wave 1"
   exit 0
 fi
