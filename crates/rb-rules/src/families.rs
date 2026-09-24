@@ -197,6 +197,12 @@ pub fn evaluate(
         if outcome.vacuous {
             empty.push(VacuousRule::new(rule.name.clone(), "select"));
         }
+        for at in &outcome.unmatched_ignores {
+            empty.push(VacuousRule::new(
+                rule.name.clone(),
+                format!("graph.ignore[{at}]"),
+            ));
+        }
         for failure in &outcome.failures {
             let from = failure.slices.first().cloned().unwrap_or_default();
             let to = failure

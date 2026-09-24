@@ -23,6 +23,7 @@ use rb_config::model::DependencyRules;
 use rb_model::Severity;
 use serde_json::{Value, json};
 
+use crate::graph::view::View;
 use crate::js;
 use crate::matchers::{
     ModuleFacts, from_groups, match_to_module_path, match_to_module_path_not, matches_ancestor,
@@ -75,7 +76,9 @@ impl Matcher {
     }
 }
 
-/// `match-dependency-rule`'s `match(from, to)(rule)`, then the cross-language keys.
+/// `match-dependency-rule`'s `match(from, to)(rule)`, then the cross-language keys, then the
+/// rule's `graph`: an edge the rule's graph lacks matches nothing
+/// ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).
 pub fn dependency_match(rule: &Rule, from: &Value, to: &Value, facts: &ModuleFacts) -> bool {
     let groups = from_groups(rule, &js::text(from, "source"));
     matches_from_path(rule, from)
@@ -100,6 +103,14 @@ pub fn dependency_match(rule: &Rule, from: &Value, to: &Value, facts: &ModuleFac
         && matches_ancestor(rule, from, to)
         && matches_from_cross_language(rule, from, facts)
         && matches_to_cross_language(rule, to, facts)
+        && in_rule_graph(rule, from, to)
+}
+
+/// Whether the rule's graph has the edge: always without `graph`.
+fn in_rule_graph(rule: &Rule, from: &Value, to: &Value) -> bool {
+    rule.graph
+        .as_ref()
+        .is_none_or(|g| !View::new(g).removes_dependency(&js::text(from, "source"), to))
 }
 
 /// `matchesOrphanRule`, then the cross-language keys of `from`.

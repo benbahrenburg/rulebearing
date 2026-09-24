@@ -12,11 +12,14 @@
 //! With `skipAnalysisNotInRules`, a derivation no rule reads is skipped, exactly where upstream
 //! skips it; `forceDeriveDependents` derives `dependents[]` regardless.
 
+use std::collections::HashMap;
+
 use rb_config::Rule;
 use rb_config::model::DependencyRules;
 use serde_json::{Value, json};
 
 use crate::graph::indexed::{DependencySet, IndexedGraph};
+use crate::graph::view::View;
 use crate::js;
 use crate::matchers::{match_to_module_path, match_to_module_path_not, pattern};
 use crate::patterns;
@@ -269,14 +272,30 @@ fn merge_reachable(module: &mut Value, rule: &Rule, reachable: bool, from: &str)
 }
 
 /// `deriveReachables`: `reaches[]` for rules that ask what a module reaches, `reachable[]` for
-/// rules that ask whether it is reached.
+/// rules that ask whether it is reached. A rule with `graph` walks the graph it narrows
+/// ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)); rules with the same
+/// `graph` share one, and the rest share the document's.
 pub fn reachables(modules: &mut [Value], rules: &DependencyRules) {
     let rules = reachable_rules(rules);
     if rules.is_empty() {
         return;
     }
-    let graph = IndexedGraph::new(modules, "source");
+    let whole = IndexedGraph::new(modules, "source");
+    let mut narrowed: HashMap<String, IndexedGraph> = HashMap::new();
+    for rule in &rules {
+        if let Some(filter) = &rule.graph {
+            let key = serde_json::to_string(filter).unwrap_or_default();
+            narrowed
+                .entry(key)
+                .or_insert_with(|| IndexedGraph::narrowed(modules, &View::new(filter)));
+        }
+    }
     for rule in rules {
+        let graph = rule
+            .graph
+            .as_ref()
+            .and_then(|f| narrowed.get(&serde_json::to_string(f).unwrap_or_default()))
+            .unwrap_or(&whole);
         // Only `source` is read from the other modules, so the snapshot carries only that.
         let snapshot: Vec<Value> = modules
             .iter()

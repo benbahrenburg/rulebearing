@@ -26,6 +26,10 @@
 //! JavaScript and Python modules, joined by their imports (the capability table's slice unit):
 //! a TypeScript module by its path, a Python module by its dotted name.
 //!
+//! A slice rule's `graph` ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md))
+//! takes module imports out before the slices are joined; an `ignore` entry that matches no
+//! import is reported as the rule's vacuous side `graph.ignore[<n>]`, unless `allowEmpty`.
+//!
 //! `notDependOnEachOther` fails each slice with a dependency on another, listing the edges;
 //! `beFreeOfCycles` fails each cycle of the slice graph (Tarjan's strongly connected components of
 //! more than one slice).
@@ -37,6 +41,7 @@ use rb_config::elements::{SliceCondition, SliceRule};
 use rb_model::Language;
 
 use crate::elements::{Architecture, ElementError};
+use crate::graph::view::View;
 
 /// How a namespace is sliced.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -151,6 +156,9 @@ pub struct SliceOutcome {
     pub failures: Vec<SliceFailure>,
     /// No type fell in any slice and the rule does not allow it.
     pub vacuous: bool,
+    /// The `graph.ignore` entries, by index, that match no module import, when the rule does
+    /// not allow it.
+    pub unmatched_ignores: Vec<usize>,
 }
 
 /// Tarjan's strongly connected components over slice indexes.
@@ -211,18 +219,23 @@ fn components(graph: &BTreeMap<usize, BTreeSet<usize>>, count: usize) -> Vec<Vec
     state.found
 }
 
-/// One thing a slice can hold: its identity, the text the pattern is matched against, and the
-/// identities it depends on.
+/// One thing a slice can hold: its identity, the text the pattern is matched against, the
+/// identities it depends on, and whether it is a .NET type.
 struct Member<'a> {
     key: &'a str,
     text: &'a str,
     targets: Vec<&'a str>,
+    is_type: bool,
 }
 
 /// What slices group, per language ([`slice_unit`]): the analysed types by namespace with their
 /// dependencies, or the analysed modules with their imports, by path when the pattern's separator
 /// is `/` and by dotted name otherwise.
-fn members<'a>(architecture: &Architecture<'a>, separator: char) -> Vec<Member<'a>> {
+fn members<'a>(
+    architecture: &Architecture<'a>,
+    separator: char,
+    view: Option<&View>,
+) -> Vec<Member<'a>> {
     let by_types =
         |language: Option<Language>| language.is_some_and(|l| slice_unit(l) == SliceUnit::Types);
     let mut members: Vec<Member<'a>> = architecture
@@ -233,6 +246,7 @@ fn members<'a>(architecture: &Architecture<'a>, separator: char) -> Vec<Member<'
             key: t.full_name.as_str(),
             text: t.namespace.as_deref().unwrap_or_default(),
             targets: t.dependencies.iter().map(|d| d.target.as_str()).collect(),
+            is_type: true,
         })
         .collect();
     for module in architecture.modules {
@@ -258,8 +272,18 @@ fn members<'a>(architecture: &Architecture<'a>, separator: char) -> Vec<Member<'
                 targets: module
                     .dependencies
                     .iter()
+                    .filter(|d| {
+                        view.is_none_or(|v| {
+                            !v.removes(
+                                &module.source,
+                                &d.resolved,
+                                d.dependency_types.iter().map(|t| t.as_str()),
+                            )
+                        })
+                    })
                     .map(|d| d.resolved.as_str())
                     .collect(),
+                is_type: false,
             });
         }
     }
@@ -285,7 +309,8 @@ pub fn evaluate(
     let assignment = parse(&rule.matching).map_err(error)?;
     let mut slices: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let mut slice_of: BTreeMap<&str, String> = BTreeMap::new();
-    let members = members(architecture, assignment.separator);
+    let view = rule.graph.as_ref().map(View::new);
+    let members = members(architecture, assignment.separator, view.as_ref());
     for member in &members {
         let assigned = assignment
             .slice(member.text)
@@ -318,6 +343,12 @@ pub fn evaluate(
             if !crate::patterns::test(where_, &slice) {
                 continue;
             }
+        }
+        if member.is_type && view.is_some() {
+            return Err(ElementError::SliceGraph {
+                rule: rule.name.clone(),
+                object: member.key.to_owned(),
+            });
         }
         slice_of.insert(member.key, slice.clone());
         slices
@@ -392,8 +423,19 @@ pub fn evaluate(
         }
     }
     failures.sort_by(|a, b| (&a.slices, a.condition as u8).cmp(&(&b.slices, b.condition as u8)));
+    let unmatched_ignores = match &view {
+        Some(view) if !rule.allow_empty => {
+            view.unmatched(architecture.modules.iter().flat_map(|m| {
+                m.dependencies
+                    .iter()
+                    .map(|d| (m.source.as_str(), d.resolved.as_str()))
+            }))
+        }
+        _ => Vec::new(),
+    };
     Ok(SliceOutcome {
         rule: rule.name.clone(),
+        unmatched_ignores,
         vacuous: slices.is_empty() && !rule.allow_empty,
         slices,
         failures,

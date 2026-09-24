@@ -30,6 +30,7 @@ use serde_json::{Map, Value, json};
 use crate::derive::{self, DependentsWhen};
 use crate::folders::folders;
 use crate::graph::filters::{Filter, add_focus};
+use crate::graph::view::{self, View};
 use crate::js;
 use crate::known::KnownSet;
 use crate::matchers::{ModuleFacts, matches_from_cross_language, pattern};
@@ -288,6 +289,7 @@ fn stats_and_liveness(
 ) -> (Vec<RuleStats>, Vec<VacuousRule>) {
     let mut stats = Vec::new();
     let mut vacuous = Vec::new();
+    let mut edges = None;
     let lists: [(Family, &[Rule]); 3] = [
         (Family::Forbidden, &rules.forbidden),
         (Family::Allowed, &rules.allowed),
@@ -314,6 +316,19 @@ fn stats_and_liveness(
                         "from"
                     },
                 ));
+            }
+            // An `ignore` entry that matches no edge excuses nothing any more (ADR-0038).
+            if let Some(filter) = rule.graph.as_ref().filter(|g| !g.ignore.is_empty())
+                && liveness
+                && !rule.meta.allow_empty
+            {
+                let all = edges.get_or_insert_with(|| view::edges(modules));
+                for at in View::new(filter).unmatched(all.iter().copied()) {
+                    vacuous.push(VacuousRule::new(
+                        name.clone(),
+                        format!("graph.ignore[{at}]"),
+                    ));
+                }
             }
             stats.push(RuleStats {
                 name,

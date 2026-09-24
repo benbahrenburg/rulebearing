@@ -19,6 +19,7 @@ use std::collections::{HashMap, HashSet};
 
 use serde_json::{Value, json};
 
+use crate::graph::view::View;
 use crate::js;
 
 /// One step of a path or cycle: `{ name, dependencyTypes }`.
@@ -41,17 +42,38 @@ pub struct IndexedGraph {
     /// The vertex each edge leads to, by index, parallel to `vertices[i].edges`; `None` for an
     /// edge to a name no module has.
     targets: Vec<Vec<Option<usize>>>,
+    /// Vertices a path may end at but not continue from (a rule's `graph.chainsThrough`,
+    /// [ADR-0038](../../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)); empty when
+    /// every vertex continues.
+    blocked: Vec<bool>,
 }
 
 impl IndexedGraph {
     /// Indexes `modules` by the string at `attribute`; a later duplicate replaces an earlier
     /// one, as `new Map(entries)` does.
     pub fn new(modules: &[Value], attribute: &str) -> Self {
+        Self::build(modules, attribute, |_, _| true)
+    }
+
+    /// The graph a rule with `graph` sees
+    /// ([ADR-0038](../../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)): modules
+    /// indexed by `source`, without the edges `view` removes, and with a path continuing only
+    /// from the vertices `view` lets a chain pass. A path's start always continues.
+    pub fn narrowed(modules: &[Value], view: &View) -> Self {
+        let mut graph = Self::build(modules, "source", |from, d| {
+            !view.removes_dependency(from, d)
+        });
+        graph.blocked = graph.names.iter().map(|n| !view.passes(n)).collect();
+        graph
+    }
+
+    fn build(modules: &[Value], attribute: &str, keep: impl Fn(&str, &Value) -> bool) -> Self {
         let mut graph = Self::default();
         for module in modules {
             let name = js::text(module, attribute).into_owned();
             let edges = js::array(module, "dependencies")
                 .iter()
+                .filter(|d| keep(&name, d))
                 .map(|d| {
                     let name = match d.get("name") {
                         Some(n) if js::truthy(Some(n)) => js::text(d, "name").into_owned(),
@@ -160,6 +182,11 @@ impl IndexedGraph {
         component
     }
 
+    /// Whether a path may continue from the vertex at `at`.
+    fn continues(&self, at: usize) -> bool {
+        !self.blocked.get(at).copied().unwrap_or(false)
+    }
+
     /// Whether `a` and `b` share a strongly connected component.
     pub fn same_component(&self, a: &str, b: &str) -> bool {
         match (self.index.get(a), self.index.get(b)) {
@@ -242,7 +269,9 @@ impl IndexedGraph {
                     && !seen[next]
                 {
                     seen[next] = true;
-                    stack.push(next);
+                    if self.continues(next) {
+                        stack.push(next);
+                    }
                 }
             }
         }
@@ -284,7 +313,7 @@ impl IndexedGraph {
                 reversed.push(Self::step(name, types));
                 return;
             }
-            if let Some(next) = target {
+            if let Some(next) = target.filter(|t| self.continues(*t)) {
                 self.path_from(next, to, visited, reversed);
                 if !reversed.is_empty() {
                     reversed.push(Self::step(name, types));
@@ -595,6 +624,10 @@ mod tests {
                 if name == to {
                     return vec![IndexedGraph::step(name, types)];
                 }
+                // A chain stops at a vertex `chainsThrough` does not let it pass (ADR-0038).
+                if graph.index.get(name).is_some_and(|&i| !graph.continues(i)) {
+                    continue;
+                }
                 let rest = reference_path(graph, name, to, visited);
                 if !rest.is_empty() {
                     let mut out = vec![IndexedGraph::step(name, types)];
@@ -606,7 +639,116 @@ mod tests {
         Vec::new()
     }
 
+    fn narrowed(edges: &[(&str, &[&str])], graph: Value) -> IndexedGraph {
+        let modules: Vec<Value> = edges
+            .iter()
+            .map(|(source, to)| {
+                let dependencies: Vec<Value> = to
+                    .iter()
+                    .map(|t| json!({ "resolved": t, "dependencyTypes": ["local"] }))
+                    .collect();
+                json!({ "source": source, "dependencies": dependencies })
+            })
+            .collect();
+        let filter = serde_json::from_value(graph).unwrap_or_default();
+        IndexedGraph::narrowed(&modules, &View::new(&filter))
+    }
+
+    #[test]
+    fn a_narrowed_graph_drops_edges_and_stops_chains() {
+        let edges: &[(&str, &[&str])] =
+            &[("a", &["b", "x"]), ("b", &["c"]), ("x", &["c"]), ("c", &[])];
+        let whole = narrowed(edges, json!({}));
+        assert_eq!(names(&whole.path("a", "c")), ["b", "c"]);
+        let ignored = narrowed(edges, json!({ "ignore": [{ "from": "^a$", "to": "^b$" }] }));
+        assert_eq!(
+            names(&ignored.path("a", "c")),
+            ["x", "c"],
+            "the chain through b is cut"
+        );
+        assert!(ignored.path("a", "b").is_empty());
+        let through = narrowed(
+            edges,
+            json!({ "ignore": [{ "from": "^a$", "to": "^b$" }], "chainsThrough": "^[abc]$" }),
+        );
+        assert!(
+            through.path("a", "c").is_empty(),
+            "x may end a chain, not carry one"
+        );
+        assert!(!through.may_reach(&through.reachable_from("a"), "c"));
+        assert_eq!(names(&through.path("a", "x")), ["x"]);
+        assert!(through.may_reach(&through.reachable_from("a"), "x"));
+        let start = narrowed(edges, json!({ "chainsThrough": "^[bc]$" }));
+        assert_eq!(
+            names(&start.path("a", "c")),
+            ["b", "c"],
+            "a chain's start continues whether or not it matches"
+        );
+        assert!(start.may_reach(&start.reachable_from("a"), "c"));
+        let dropped = narrowed(edges, json!({ "modulesNot": "^b$" }));
+        assert_eq!(names(&dropped.path("a", "c")), ["x", "c"]);
+        assert!(dropped.path("b", "c").is_empty());
+        assert!(dropped.contains("b"), "the module stays a vertex");
+        assert_eq!(
+            whole.cycle("a", "b"),
+            Vec::<Step>::new(),
+            "cycles read the same edges"
+        );
+    }
+
     proptest::proptest! {
+        /// Over a narrowed graph, every path is upstream's search over the remaining edges,
+        /// stopping at a vertex `chainsThrough` does not pass, and `may_reach` agrees with it.
+        #[test]
+        fn a_narrowed_path_is_upstreams_search_with_stops(
+            edges in proptest::collection::vec((0u8..6, 0u8..6), 0..20),
+            through in 0u8..6,
+            ignored in proptest::option::of((0u8..6, 0u8..6)),
+        ) {
+            let names: Vec<String> = (0..6).map(|n| format!("m{n}")).collect();
+            let modules: Vec<Value> = names
+                .iter()
+                .enumerate()
+                .map(|(at, name)| {
+                    let dependencies: Vec<Value> = edges
+                        .iter()
+                        .filter(|(from, _)| usize::from(*from) == at)
+                        .map(|(_, to)| json!({ "resolved": names[usize::from(*to)] }))
+                        .collect();
+                    json!({ "source": name, "dependencies": dependencies })
+                })
+                .collect();
+            let mut graph = json!({ "chainsThrough": format!("^m[0-{through}]$") });
+            if let Some((a, b)) = ignored {
+                graph["ignore"] = json!([{ "from": format!("^m{a}$"), "to": format!("^m{b}$") }]);
+            }
+            let filter = serde_json::from_value(graph).unwrap_or_default();
+            let narrowed = IndexedGraph::narrowed(&modules, &View::new(&filter));
+            for from in &names {
+                let reach = narrowed.reachable_from(from);
+                for to in &names {
+                    let path = narrowed.path(from, to);
+                    proptest::prop_assert_eq!(
+                        &path,
+                        &reference_path(&narrowed, from, to, &mut HashSet::new()),
+                        "{} to {}", from, to
+                    );
+                    if let Some((a, b)) = ignored {
+                        let cut = (format!("m{a}"), format!("m{b}"));
+                        let steps: Vec<&str> = path.iter().filter_map(|s| s["name"].as_str()).collect();
+                        let mut previous = from.as_str();
+                        for step in &steps {
+                            proptest::prop_assert!((previous, *step) != (cut.0.as_str(), cut.1.as_str()));
+                            previous = step;
+                        }
+                    }
+                    if to != from {
+                        proptest::prop_assert_eq!(narrowed.may_reach(&reach, to), !path.is_empty(), "{} to {}", from, to);
+                    }
+                }
+            }
+        }
+
         /// Every path, between vertices and to a name no module has (m8, m9), is upstream's.
         #[test]
         fn path_is_upstreams_depth_first_search(
