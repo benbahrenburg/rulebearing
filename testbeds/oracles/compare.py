@@ -101,22 +101,23 @@ def patterns(side: object) -> list[re.Pattern[str]]:
 
 
 def contract_notes(text: str) -> dict[str, str]:
-    """The reason the importer wrote under a contract's heading comment, by contract id."""
+    """The reason the importer wrote under a contract's heading comment, by id and by name."""
     notes: dict[str, str] = {}
-    heading = re.compile(r"^\s*# import-linter contract `([^`]+)` \([^)]*\): ")
-    current: str | None = None
+    heading = re.compile(r"^\s*# import-linter contract `([^`]+)` \([^)]*\): (.*)$")
+    current: list[str] = []
     for line in text.splitlines():
         found = heading.match(line)
         if found:
-            current = found.group(1)
+            current = [found.group(1), found.group(2).strip()]
             continue
         stripped = line.strip()
-        if current is None or not stripped.startswith("#"):
-            current = None
+        if not current or not stripped.startswith("#"):
+            current = []
             continue
         body = stripped[1:].strip()
         if body and not stripped.startswith("#   ") and not body.startswith("- name:"):
-            notes.setdefault(current, body)
+            for key in current:
+                notes.setdefault(key, body)
     return notes
 
 
@@ -214,10 +215,15 @@ def without(
     graph: dict[str, Any],
     edges: set[tuple[str, str]],
     unwalked: set[str],
+    outside: set[str],
     *,
     type_only: bool,
 ) -> dict[str, Any]:
-    """The graph document with these imports, type-only ones, and the unwalked files' removed."""
+    """The graph document without the imports import-linter's graph does not have.
+
+    These are the ignored imports, type-only ones when asked, every import of or by a file
+    grimp does not walk, and every import by a file outside the root packages.
+    """
     document: dict[str, Any] = json.loads(json.dumps(graph))
     by_importer: dict[str, set[str]] = {}
     for importer, imported in edges:
@@ -233,11 +239,27 @@ def without(
                 any(".".join(parts[:n]) in ignored for n in range(1, len(parts) + 1))
                 or module["source"] in unwalked
                 or resolved in unwalked
+                or module["source"] in outside
             )
             if not dropped and not (type_only and "type-only" in dependency["dependencyTypes"]):
                 kept.append(dependency)
         module["dependencies"] = kept
     return document
+
+
+def outside_files(incumbent: dict[str, Any], graph: dict[str, Any]) -> set[str]:
+    """Python files outside the root packages, which import-linter's graph never leaves from.
+
+    grimp builds the graph of the root packages only; any other module, even one in the same
+    repository, is at most an external package, squashed and with no imports of its own, so no
+    chain import-linter follows passes through it.
+    """
+    inside = root_inside(incumbent)
+    return {
+        m["source"]
+        for m in graph["modules"]
+        if m.get("language") == "python" and not inside(m["source"])
+    }
 
 
 def unwalked_files(incumbent: dict[str, Any], graph: dict[str, Any]) -> set[str]:
@@ -287,25 +309,29 @@ def explain(
 
     import-linter removes each `ignore_imports` import, and with
     `exclude_type_checking_imports` every `TYPE_CHECKING` import, from the graph before it
-    follows chains, and grimp does not read a namespace portion below a root package; the import
-    expresses none of these. The contract is re-checked by `rulebearing cruise --graph` over
-    Rulebearing's own graph with those imports, and the unread files' imports, removed.
+    follows chains; grimp does not read a namespace portion below a root package, and a module
+    outside the root packages has no imports in its graph. The import expresses none of these.
+    The contract is re-checked by `rulebearing cruise --graph` over Rulebearing's own graph with
+    the same imports removed.
     """
     incumbent = context["incumbent"]
     edges = ignored_edges(contract, incumbent)
     type_only = bool(incumbent["excludeTypeCheckingImports"])
     unwalked = unwalked_files(incumbent, context["graph"])
+    outside = outside_files(incumbent, context["graph"])
     mechanisms = (
         (["ignore_imports"] if edges else [])
         + (["exclude_type_checking_imports"] if type_only else [])
         + (["namespace portions grimp does not read"] if unwalked else [])
+        + (["modules outside the root packages, where chains stop"] if outside else [])
     )
     if not mechanisms or context.get("bin") is None:
         return
     work = Path(context["work"])
     stem = f"recheck-{contract['id'] or context['incumbent']['contracts'].index(contract)}"
     graph = work / f"{stem}.json"
-    graph.write_text(json.dumps(without(context["graph"], edges, unwalked, type_only=type_only)))
+    filtered = without(context["graph"], edges, unwalked, outside, type_only=type_only)
+    graph.write_text(json.dumps(filtered))
     report = work / f"{stem}.xml"
     status = junit_run(context, graph, report)
     try:
@@ -340,6 +366,16 @@ def our_edges(
     """
     inside = root_inside(incumbent)
     skip_type_only = bool(incumbent["excludeTypeCheckingImports"])
+    # The folder each root package's folder sits in (`src/` in a src layout), for module names.
+    prefixes = sorted(
+        {
+            folder.removesuffix(package.replace(".", "/") + "/")
+            for package, folder in incumbent.get("rootFolders", {}).items()
+            if folder and folder.endswith(package.replace(".", "/") + "/")
+        },
+        key=len,
+        reverse=True,
+    )
     types: dict[tuple[str, str], set[str]] = {}
     unresolved: dict[str, list[tuple[str, str]]] = {}
     for module in cruise["modules"]:
@@ -349,12 +385,24 @@ def our_edges(
             edge = (module["source"], dependency["resolved"])
             kinds = set(dependency["dependencyTypes"])
             unresolved.setdefault(module["source"], []).append(
-                (dependency["module"], dependency["resolved"])
+                (dotted(dependency, prefixes), dependency["resolved"])
             )
             local = "local" in kinds and inside(edge[1]) and edge[0] != edge[1]
             if local and not (skip_type_only and kinds == {"local", "type-only"}):
                 types.setdefault(edge, set()).update(kinds)
     return types, unresolved
+
+
+def dotted(dependency: dict[str, Any], prefixes: list[str]) -> str:
+    """An import's absolute module name: from the file it resolved to, else as written."""
+    resolved = str(dependency["resolved"])
+    if not resolved.endswith(".py"):
+        return str(dependency["module"])
+    for prefix in prefixes:
+        if resolved.startswith(prefix):
+            resolved = resolved[len(prefix) :]
+            break
+    return resolved.removesuffix(".py").removesuffix("/__init__").replace("/", ".")
 
 
 def kinds_summary(groups: dict[str, list[tuple[str, str]]]) -> dict[str, Any]:
@@ -460,7 +508,7 @@ def python_rows(
             "rules": attribution.rules_per_contract.get(name, 0),
             "violations": len(found),
         }
-        note = notes.get(str(contract["id"]), "")
+        note = notes.get(str(contract["id"]), notes.get(name, ""))
         if row["rules"] == 0:
             row["rulebearing"] = None
             row["verdict"] = "stays" if note.startswith("stays in") else "not-imported"
