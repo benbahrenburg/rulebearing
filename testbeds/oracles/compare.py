@@ -657,18 +657,22 @@ def trx_tests(path: Path) -> list[dict[str, str]]:
 def class_files(tests_dir: Path, cwd: Path) -> dict[str, set[str]]:
     """The architecture-test files under the test folder that declare each class, by name.
 
-    An architecture test is one whose file uses ArchUnitNET or NetArchTest: a test project also
-    holds unit tests, and a repository can name the libraries only as data (a package whose
-    licence it checks), so a test in any other file is out of scope.
+    An architecture test is one whose file uses ArchUnitNET or NetArchTest, or any file of a
+    folder where a `global using` brings one in: a test project also holds unit tests, and a
+    repository can name the libraries only as data (a package whose licence it checks), so a
+    test in any other file is out of scope.
     """
     declared: dict[str, set[str]] = {}
     pattern = re.compile(r"\b(?:class|record)\s+([A-Za-z_]\w*)")
     uses = re.compile(r"\b(?:using\s+(?:static\s+)?|global::)(?:ArchUnitNET|NetArchTest)\b")
-    for path in sorted(tests_dir.rglob("*.cs")):
-        if {"bin", "obj"} & set(path.relative_to(tests_dir).parts):
-            continue
-        text = path.read_text(errors="replace")
-        if not uses.search(text):
+    files = [
+        (path, path.read_text(errors="replace"))
+        for path in sorted(tests_dir.rglob("*.cs"))
+        if not {"bin", "obj"} & set(path.relative_to(tests_dir).parts)
+    ]
+    everywhere = any(re.search(r"\bglobal\s+" + uses.pattern, text) for _, text in files)
+    for path, text in files:
+        if not everywhere and not uses.search(text):
             continue
         shown = path.resolve().relative_to(cwd).as_posix()
         for name in pattern.findall(text):
