@@ -25,6 +25,8 @@ __pycache__/
 !/conformance/dependency-cruiser/fixtures/**
 # The option fixtures' mini-repositories carry node_modules for the same reason (plan 0001, 1C).
 !/crates/rb-extract-ts/tests/options/**
+# The Python extractor's fixture carries a tiny fake .venv as data for the site index (plan 0002, 2B).
+!/crates/rb-extract-python/tests/fixtures/**
 /conformance/dependency-cruiser/fixtures/extract/test/extract/__mocks__/symlinked
 /testbeds/out/
 /fuzz/corpus/
