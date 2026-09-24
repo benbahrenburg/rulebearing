@@ -12,8 +12,9 @@
 //! names the fixture assemblies its architecture loads (per case, or for the whole file), the
 //! rule, and the expectation: the passing and failing object sets, an error
 //! (`TypeDoesNotExistInArchitecture`), or a vacuous selection. A case's `family` is `element`
-//! (the default), `slice`, `diagram` (a diagram rule over `conformance/archunitnet/diagrams/`)
-//! or `plantuml` (a diagram parsed on its own). The graphs are
+//! (the default), `slice`, `diagram` (a diagram rule over `conformance/archunitnet/diagrams/`),
+//! `plantuml` (a diagram parsed on its own) or `association` (a diagram associated with one type
+//! of the architecture, as `ClassDiagramAssociation` does). The graphs are
 //! `conformance/archunitnet/graphs/<Assembly>.json`.
 //! `RB_GATE2_REPORT=1` writes the differing cases to `<temp>/rb-gate2-failures.txt`.
 
@@ -59,8 +60,8 @@ fn strings(value: Option<&Value>) -> BTreeSet<String> {
 }
 
 /// One case's verdict against its expectation: `None` when they agree. `family` picks how
-/// the case is read: an element rule (the default), a slice rule, a diagram rule, or a
-/// `PlantUML` diagram parsed on its own.
+/// the case is read: an element rule (the default), a slice rule, a diagram rule, a
+/// `PlantUML` diagram parsed on its own, or a diagram associated with a type.
 fn check(architecture: &Architecture<'_>, id: &str, case: &Value) -> Option<String> {
     let mut rule = case.get("rule").cloned().unwrap_or(Value::Null);
     if let Value::Object(map) = &mut rule {
@@ -85,6 +86,7 @@ fn check(architecture: &Architecture<'_>, id: &str, case: &Value) -> Option<Stri
             Err(e) => Some(format!("{id}: the rule does not parse: {e}")),
         },
         "plantuml" => check_plantuml(id, case, &expect),
+        "association" => check_association(architecture, id, case, &expect),
         other => Some(format!("{id}: unknown family {other}")),
     }
 }
@@ -200,31 +202,58 @@ fn check_slice(
     (!differences.is_empty()).then(|| format!("{id}: {}", differences.join("; ")))
 }
 
-/// A `PlantUML` parse case: the diagram inline (`diagram`) or a file under `diagrams/`
-/// (`file`); `components` lists `{name, stereotypes, alias}`, `dependencies` the
-/// `[origin, target]` component names, `error` the exception a malformed diagram raises.
-fn check_plantuml(id: &str, case: &Value, expect: &Value) -> Option<String> {
-    let text = match (
+/// A case's diagram text: inline (`diagram`) or a file under `diagrams/` (`file`).
+fn diagram_text(id: &str, case: &Value) -> Result<String, String> {
+    match (
         case.get("diagram").and_then(Value::as_str),
         case.get("file").and_then(Value::as_str),
     ) {
-        (Some(text), _) => text.to_owned(),
-        (None, Some(file)) => {
-            match std::fs::read_to_string(conformance().join("diagrams").join(file)) {
-                Ok(text) => text,
-                Err(e) => return Some(format!("{id}: {file}: {e}")),
-            }
+        (Some(text), _) => Ok(text.to_owned()),
+        (None, Some(file)) => std::fs::read_to_string(conformance().join("diagrams").join(file))
+            .map_err(|e| format!("{id}: {file}: {e}")),
+        (None, None) => Err(format!("{id}: neither diagram nor file")),
+    }
+}
+
+/// An error expectation on a diagram: `error` names the exception, `message` is the whole
+/// message (`Assert.Equal`), `messageContains` parts of it (`Assert.Contains`).
+fn check_diagram_error(
+    id: &str,
+    expect: &Value,
+    error: &rb_rules::plantuml::DiagramError,
+) -> Option<String> {
+    let Some(name) = expect.get("error").and_then(Value::as_str) else {
+        return Some(format!("{id}: {error}"));
+    };
+    let mut differences = Vec::new();
+    if error.exception.name() != name {
+        differences.push(format!("expected {name}, got {error}"));
+    }
+    if let Some(message) = expect.get("message").and_then(Value::as_str)
+        && error.message != message
+    {
+        differences.push(format!("message {:?}", error.message));
+    }
+    for part in strings(expect.get("messageContains")) {
+        if !error.message.contains(&part) {
+            differences.push(format!("message {:?} lacks {part:?}", error.message));
         }
-        (None, None) => return Some(format!("{id}: neither diagram nor file")),
+    }
+    (!differences.is_empty()).then(|| format!("{id}: {}", differences.join("; ")))
+}
+
+/// A `PlantUML` parse case: the diagram inline (`diagram`) or a file under `diagrams/`
+/// (`file`); `components` lists `{name, stereotypes, alias}` in order, `dependencies` the
+/// `[origin, target]` component names as a set, `dependenciesOf` a component's targets in the
+/// order the diagram draws them, `error` the exception a malformed diagram raises.
+fn check_plantuml(id: &str, case: &Value, expect: &Value) -> Option<String> {
+    let text = match diagram_text(id, case) {
+        Ok(text) => text,
+        Err(e) => return Some(e),
     };
     let diagram = match rb_rules::plantuml::parse(&text) {
         Ok(diagram) => diagram,
-        Err(message) => {
-            return match expect.get("error").and_then(Value::as_str) {
-                Some(error) if message.contains(error) => None,
-                _ => Some(format!("{id}: {message}")),
-            };
-        }
+        Err(error) => return check_diagram_error(id, expect, &error),
     };
     let mut differences = Vec::new();
     if let Some(error) = expect.get("error").and_then(Value::as_str) {
@@ -246,15 +275,12 @@ fn check_plantuml(id: &str, case: &Value, expect: &Value) -> Option<String> {
             differences.push(format!("components {got:?}"));
         }
     }
+    let name = |index: &usize| diagram.components[*index].name.clone();
     if let Some(dependencies) = expect.get("dependencies") {
         let got: Vec<Value> = diagram
             .dependencies
             .iter()
-            .flat_map(|(from, targets)| {
-                targets
-                    .iter()
-                    .map(|to| json!([diagram.components[*from].name, diagram.components[*to].name]))
-            })
+            .flat_map(|(from, targets)| targets.iter().map(|to| json!([name(from), name(to)])))
             .collect();
         let want: BTreeSet<String> = dependencies
             .as_array()
@@ -267,7 +293,77 @@ fn check_plantuml(id: &str, case: &Value, expect: &Value) -> Option<String> {
             differences.push(format!("dependencies {have:?}"));
         }
     }
+    if let Some(Value::Object(of)) = expect.get("dependenciesOf") {
+        for (component, want) in of {
+            let Some(index) = diagram.components.iter().position(|c| &c.name == component) else {
+                differences.push(format!("no component {component}"));
+                continue;
+            };
+            let got: Vec<String> = diagram.dependencies_of(index).iter().map(name).collect();
+            if json!(got) != *want {
+                differences.push(format!("{component} depends on {got:?}"));
+            }
+        }
+    }
     (!differences.is_empty()).then(|| format!("{id}: {}", differences.join("; ")))
+}
+
+/// A `ClassDiagramAssociation` case: the diagram (`diagram` or `file`) associated, then `ask`
+/// about `object` (a type's full name in the case's architecture): `namespaceIdentifiers` or
+/// `targetNamespaceIdentifiers` (expect `value`, a list compared as a set), `contains` (expect
+/// `value`, a boolean); or an `error` from associating or asking.
+fn check_association(
+    architecture: &Architecture<'_>,
+    id: &str,
+    case: &Value,
+    expect: &Value,
+) -> Option<String> {
+    use rb_rules::plantuml::{Association, name_of, namespace_of, parse};
+    let text = match diagram_text(id, case) {
+        Ok(text) => text,
+        Err(e) => return Some(e),
+    };
+    let association = match parse(&text).and_then(Association::new) {
+        Ok(association) => association,
+        Err(error) => return check_diagram_error(id, expect, &error),
+    };
+    let object = case
+        .get("object")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    let (name, namespace) = (
+        name_of(architecture, object),
+        namespace_of(architecture, object),
+    );
+    let answer = match case.get("ask").and_then(Value::as_str) {
+        Some("namespaceIdentifiers") => association
+            .namespace_identifiers_of(&name, &namespace)
+            .map(|v| json!(v.iter().collect::<BTreeSet<_>>())),
+        Some("targetNamespaceIdentifiers") => association
+            .target_namespace_identifiers(&name, &namespace)
+            .map(|v| json!(v.iter().collect::<BTreeSet<_>>())),
+        Some("contains") => association.contains(&namespace).map(|b| json!(b)),
+        other => return Some(format!("{id}: unknown ask {other:?}")),
+    };
+    match answer {
+        Err(error) => check_diagram_error(id, expect, &error),
+        Ok(_) if expect.get("error").is_some() => {
+            Some(format!("{id}: expected {}, got an answer", expect["error"]))
+        }
+        Ok(got) => {
+            let want = match expect.get("value") {
+                Some(Value::Array(items)) => json!(
+                    items
+                        .iter()
+                        .filter_map(Value::as_str)
+                        .collect::<BTreeSet<_>>()
+                ),
+                Some(other) => other.clone(),
+                None => Value::Null,
+            };
+            (got != want).then(|| format!("{id}: got {got}"))
+        }
+    }
 }
 
 /// The architecture a case loads: its own `architecture`, or its file's.

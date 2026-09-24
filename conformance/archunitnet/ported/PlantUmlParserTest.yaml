@@ -1,0 +1,1866 @@
+# Ported from ArchUnitNET 0.13.4 ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs by hand: each parse assertion is a plantuml case over the diagram TestDiagram writes
+source: ArchUnitNETTests/Domain/PlantUml/PlantUmlParserTest.cs
+cases:
+- id: ParsesCorrectNumberOfComponents#1
+  query: the diagram's components
+  csharp: Assert.Equal(2, diagram.AllComponents.Count)
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    @enduml
+  rule: {}
+  expect:
+    components:
+    - name: SomeOrigin
+      stereotypes: [Origin.*]
+    - name: SomeTarget
+      stereotypes: [Target.*]
+- id: ParsesASimpleComponent#1
+  alsoCovers: [ParsesASimpleComponentWithFile#1]
+  query: the one component's stereotypes and alias
+  csharp: Assert.Equal(origin.Stereotypes.SingleOrDefault(), new Stereotype("Origin.*")); Assert.Null(origin.Alias)
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    @enduml
+  rule: {}
+  expect:
+    components:
+    - name: SomeOrigin
+      stereotypes: [Origin.*]
+- id: ParsesDependencyOfSimpleComponentDiagram#1
+  query: SomeOrigin's one dependency, SomeTarget, with no dependency, its stereotype and no alias
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget")); Assert.Empty(target.Dependencies); Assert.Equal(new Stereotype("Target.*"), target.Stereotypes.Single()); Assert.Null(target.Alias)
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] --> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    components:
+    - name: SomeOrigin
+      stereotypes: [Origin.*]
+    - name: SomeTarget
+      stereotypes: [Target.*]
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+      SomeTarget: []
+- id: ParsesDependencyOfSimpleComponentDiagram#2
+  query: SomeOrigin's one dependency, SomeTarget, with no dependency, its stereotype and no alias
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget")); Assert.Empty(target.Dependencies); Assert.Equal(new Stereotype("Target.*"), target.Stereotypes.Single()); Assert.Null(target.Alias)
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    components:
+    - name: SomeOrigin
+      stereotypes: [Origin.*]
+    - name: SomeTarget
+      stereotypes: [Target.*]
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+      SomeTarget: []
+- id: ParsesVariousTypesOfDependencyArrows#1
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#2
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#3
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] --> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] --> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#4
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#5
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ---> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ---> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#6
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <--- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <--- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#7
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ----> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ----> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#8
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <---- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <---- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#9
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -----> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -----> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#10
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <----- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <----- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#11
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ------> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ------> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#12
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <------ [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <------ [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#13
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -------> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -------> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#14
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <------- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <------- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#15
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] --------> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] --------> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#16
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-------- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-------- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#17
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ---------> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ---------> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#18
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <--------- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <--------- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#19
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ----------> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ----------> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#20
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <---------- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <---------- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#21
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -left-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -left-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#22
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-left- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-left- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#23
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -right-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -right-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#24
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-right- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-right- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#25
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -up-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -up-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#26
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-up- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-up- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#27
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -down-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -down-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#28
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-down- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-down- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#29
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -[#green]-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -[#green]-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#30
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-[#green]- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-[#green]- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#31
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] --left-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] --left-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#32
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <--left- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <--left- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#33
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] --right-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] --right-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#34
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <--right- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <--right- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#35
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] --up-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] --up-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#36
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <--up- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <--up- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#37
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] --down-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] --down-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#38
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <--down- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <--down- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#39
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] --[#green]-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] --[#green]-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#40
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <--[#green]- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <--[#green]- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#41
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ---left-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ---left-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#42
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <---left- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <---left- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#43
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ---right-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ---right-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#44
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <---right- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <---right- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#45
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ---up-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ---up-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#46
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <---up- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <---up- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#47
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ---down-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ---down-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#48
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <---down- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <---down- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#49
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ---[#green]-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ---[#green]-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#50
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <---[#green]- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <---[#green]- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#51
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ----left-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ----left-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#52
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <----left- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <----left- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#53
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ----right-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ----right-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#54
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <----right- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <----right- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#55
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ----up-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ----up-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#56
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <----up- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <----up- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#57
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ----down-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ----down-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#58
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <----down- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <----down- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#59
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ----[#green]-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ----[#green]-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#60
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <----[#green]- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <----[#green]- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#61
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -----left-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -----left-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#62
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-----left- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-----left- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#63
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -----right-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -----right-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#64
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-----right- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-----right- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#65
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -----up-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -----up-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#66
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-----up- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-----up- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#67
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -----down-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -----down-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#68
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-----down- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-----down- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#69
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -----[#green]-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -----[#green]-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#70
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-----[#green]- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-----[#green]- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#71
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ------left-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ------left-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#72
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <------left- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <------left- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#73
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ------right-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ------right-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#74
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <------right- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <------right- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#75
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ------up-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ------up-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#76
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <------up- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <------up- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#77
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ------down-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ------down-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#78
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <------down- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <------down- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#79
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ------[#green]-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ------[#green]-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#80
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <------[#green]- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <------[#green]- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#81
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -------left-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -------left-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#82
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-------left- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-------left- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#83
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -------right-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -------right-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#84
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-------right- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-------right- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#85
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -------up-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -------up-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#86
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-------up- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-------up- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#87
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -------down-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -------down-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#88
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-------down- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-------down- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#89
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] -------[#green]-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] -------[#green]-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#90
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <-------[#green]- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <-------[#green]- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#91
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] --------left-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] --------left-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#92
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <--------left- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <--------left- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#93
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] --------right-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] --------right-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#94
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <--------right- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <--------right- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#95
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] --------up-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] --------up-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#96
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <--------up- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <--------up- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#97
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] --------down-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] --------down-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#98
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <--------down- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <--------down- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#99
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] --------[#green]-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] --------[#green]-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#100
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <--------[#green]- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <--------[#green]- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#101
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ---------left-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ---------left-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#102
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <---------left- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <---------left- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#103
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ---------right-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ---------right-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#104
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <---------right- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <---------right- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#105
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ---------up-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ---------up-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#106
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <---------up- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <---------up- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#107
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ---------down-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ---------down-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#108
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <---------down- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <---------down- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#109
+  query: SomeOrigin's one dependency drawn as `[SomeOrigin] ---------[#green]-> [SomeTarget]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeOrigin] ---------[#green]-> [SomeTarget]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: ParsesVariousTypesOfDependencyArrows#110
+  query: SomeOrigin's one dependency drawn as `[SomeTarget] <---------[#green]- [SomeOrigin]`
+  csharp: Assert.Equal(target.ComponentName, new ComponentName("SomeTarget"))
+  family: plantuml
+  diagram: |
+    @startuml
+    [SomeOrigin] <<Origin.*>>
+    [SomeTarget] <<Target.*>>
+    [SomeTarget] <---------[#green]- [SomeOrigin]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      SomeOrigin: [SomeTarget]
+- id: DoesNotIncludeCommentedOutLines#1
+  query: the one uncommented component, with no dependency
+  csharp: Assert.Equal(diagram.AllComponents.Single(), uncommentedComponent); Assert.Empty(uncommentedComponent.Dependencies)
+  family: plantuml
+  diagram: |
+    @startuml
+    [uncommentedComponent] <<UncommentedNamespace.*>> as uncommentedAlias
+      '  [commentedComponent] <<CommentedNamespace.*>> as commentedAlias
+
+     ' [uncommentedComponent] --> [commentedComponent]
+    @enduml
+  rule: {}
+  expect:
+    components:
+    - name: uncommentedComponent
+      stereotypes: [UncommentedNamespace.*]
+      alias: uncommentedAlias
+    dependenciesOf:
+      uncommentedComponent: []
+- id: DoesNotIncludeDependencyDescriptions#1
+  query: the target of a dependency with a description
+  csharp: Assert.Equal(targetOfDescribedDependency.ComponentName, new ComponentName("otherComponent"))
+  family: plantuml
+  diagram: "@startuml\n[component] <<SomeNamespace.*>>\n[otherComponent] <<SomeNamespace2.*>>\n[component] --> [otherComponent] : this part should be ignored, no matter the comment tick ' \n@enduml\n"
+  rule: {}
+  expect:
+    dependenciesOf:
+      component: [otherComponent]
+- id: ThrowsExceptionWithComponentsThatAreNotYetDefined#1
+  query: a dependency between components the diagram does not define
+  csharp: Assert.Throws<IllegalDiagramException>(...); Assert.Contains("There is no Component with name or alias = 'NotYetDefined'", exception.Message); Assert.Contains("Components must be specified separately from dependencies", exception.Message)
+  family: plantuml
+  diagram: |
+    @startuml
+    [NotYetDefined] --> [AlsoNotYetDefined]
+    @enduml
+  rule: {}
+  expect:
+    error: IllegalDiagramException
+    messageContains: [There is no Component with name or alias = 'NotYetDefined', Components must be specified separately from dependencies]
+- id: ThrowsExceptionWithComponentsWithoutStereotypes#1
+  query: a component without a stereotype
+  csharp: Assert.Throws<IllegalDiagramException>(...); Assert.Contains("componentWithoutStereotype", exception.Message); Assert.Contains("at least one stereotype specifying the namespace identifier (<<.*>>)", exception.Message)
+  family: plantuml
+  diagram: |
+    @startuml
+    [componentWithoutStereotype]
+    @enduml
+  rule: {}
+  expect:
+    error: IllegalDiagramException
+    messageContains: [componentWithoutStereotype, at least one stereotype specifying the namespace identifier (<<.*>>)]
+- id: ParsesTwoIdenticalComponentsNoDependency#1
+  query: two identical component lines are one component
+  csharp: Assert.Equal(new[] { GetComponentWithName("someName", diagram) }, diagram.AllComponents)
+  family: plantuml
+  diagram: |
+    @startuml
+    [someName] <<someStereotype>> as someAlias
+    [someName] <<someStereotype>> as someAlias
+    @enduml
+  rule: {}
+  expect:
+    components:
+    - name: someName
+      stereotypes: [someStereotype]
+      alias: someAlias
+- id: RejectsAComponentWithAnIllegalAlias#1
+  query: an alias holding brackets
+  csharp: 'Assert.Throws<IllegalDiagramException>(...); Assert.Contains("Alias ''ill[]egal'' should not contain character(s): ''['' or '']'' or ''\"''", exception.Message)'
+  family: plantuml
+  diagram: |
+    @startuml
+    [irrelevant] <<Irrelevant.*>> as ill[]egal
+    @enduml
+  rule: {}
+  expect:
+    error: IllegalDiagramException
+    messageContains: ['Alias ''ill[]egal'' should not contain character(s): ''['' or '']'' or ''"''']
+- id: ParsesATrickyAlias#1
+  query: an alias with a quote and a name holding the word `as`
+  csharp: Assert.Equal(new Alias("other"), trickyAsHell.Alias); Assert.Equal(new Alias("because it's quoted"), tricky.Alias)
+  family: plantuml
+  diagram: |
+    @startuml
+    [tricky] <<Tricky.*>> as because it's quoted
+    [tricky as hell cause of as keyword] <<Other.*>> as other
+    @enduml
+  rule: {}
+  expect:
+    components:
+    - name: tricky
+      stereotypes: [Tricky.*]
+      alias: because it's quoted
+    - name: tricky as hell cause of as keyword
+      stereotypes: [Other.*]
+      alias: other
+- id: ParsesComponentDiagramWithMultipleStereotypes#1
+  query: a component's three stereotypes
+  csharp: Assert.Equal(new[] { new Stereotype("FirstNamespace.*"), new Stereotype("SecondNamespace.*"), new Stereotype("ThirdNamespace.*") }, component.Stereotypes.OrderBy(st => st.AsString()))
+  family: plantuml
+  diagram: |
+    @startuml
+    [someComponent] <<FirstNamespace.*>> <<SecondNamespace.*>> <<ThirdNamespace.*>>
+    @enduml
+  rule: {}
+  expect:
+    components:
+    - name: someComponent
+      stereotypes: [FirstNamespace.*, SecondNamespace.*, ThirdNamespace.*]
+- id: ParsesComponentDiagramWithMultipleStereotypesAndAlias#1
+  query: the alias of a component with three stereotypes
+  csharp: Assert.Equal(new Alias("someAlias"), component.Alias)
+  family: plantuml
+  diagram: |
+    @startuml
+    [someComponent] <<FirstNamespace.*>> <<SecondNamespace.*>> <<ThirdNamespace.*>> as someAlias
+    @enduml
+  rule: {}
+  expect:
+    components:
+    - name: someComponent
+      stereotypes: [FirstNamespace.*, SecondNamespace.*, ThirdNamespace.*]
+      alias: someAlias
+- id: ParsesDiagramWithDependenciesThatUseAlias#1
+  query: a dependency drawn between aliases
+  csharp: Assert.Equal(aliasForA, GetComponentWithName("A", diagram)); Assert.Equal(aliasForB, GetComponentWithName("B", diagram)); Assert.Equal(new[] { aliasForB }, aliasForA.Dependencies)
+  family: plantuml
+  diagram: |
+    @startuml
+    [A] <<Controller.*>> as aliasForA
+    [B] <<Service.*>> as aliasForB
+    aliasForA --> aliasForB
+    @enduml
+  rule: {}
+  expect:
+    components:
+    - name: A
+      stereotypes: [Controller.*]
+      alias: aliasForA
+    - name: B
+      stereotypes: [Service.*]
+      alias: aliasForB
+    dependenciesOf:
+      A: [B]
+- id: ParsesDependenciesBetweenComponentsWithoutBrackets#1
+  query: a dependency drawn between unbracketed names
+  csharp: Assert.Equal(new[] { b }, a.Dependencies)
+  family: plantuml
+  diagram: |
+    @startuml
+    [A] <<Origin.*>>
+    [B] <<Target.*>>
+    A --> B
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      A: [B]
+- id: ParsesMultipleComponentsAndDependencies#1
+  query: four components and two dependencies
+  csharp: Assert.Equal(new[] { component1, component2, component3, component4 }, diagram.AllComponents.OrderBy(c => c.ComponentName.AsString())); Assert.Equal(new[] { component2 }, component1.Dependencies); Assert.Empty(component2.Dependencies); Assert.Equal(new[] { component4 }, component3.Dependencies); Assert.Empty(component4.Dependencies)
+  family: plantuml
+  diagram: |
+    @startuml
+    [Component1] <<Origin1.*>>
+    [Component2] <<Target1.*>>
+    [Component3] <<Origin2.*>>
+    [Component4] <<Target2.*>>
+    Component1 --> Component2
+    Component3 --> Component4
+    @enduml
+  rule: {}
+  expect:
+    components:
+    - name: Component1
+      stereotypes: [Origin1.*]
+    - name: Component2
+      stereotypes: [Target1.*]
+    - name: Component3
+      stereotypes: [Origin2.*]
+    - name: Component4
+      stereotypes: [Target2.*]
+    dependenciesOf:
+      Component1: [Component2]
+      Component2: []
+      Component3: [Component4]
+      Component4: []
+- id: ParsesADiagramWithNoUniqueOrigins#1
+  query: one origin with two targets, in the order drawn
+  csharp: Assert.Equal(new[] { component2, component3 }, component1.Dependencies)
+  family: plantuml
+  diagram: |
+    @startuml
+    [Component1] <<Origin.*>>
+    [Component2] <<Target1.*>>
+    [Component3] <<Target2.*>>
+    [Component1] --> [Component2]
+    [Component1] --> [Component3]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      Component1: [Component2, Component3]
+- id: ParseADiagramWithNonUniqueTargets#1
+  query: two origins with one target
+  csharp: Assert.Equal(new[] { component3 }, component1.Dependencies); Assert.Equal(new[] { component3 }, component2.Dependencies)
+  family: plantuml
+  diagram: |
+    @startuml
+    [Component1] <<Origin1.*>>
+    [Component2] <<Origin2.*>>
+    [Component3] <<Target.*>>
+    [Component1] --> [Component3]
+    [Component2] --> [Component3]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      Component1: [Component3]
+      Component2: [Component3]
+- id: ParseAComponentDiagramWithBothAliasAndNamesUsed#1
+  query: dependencies drawn with a name one way and an alias the other
+  csharp: Assert.Equal(new[] { componentFoo }, componentB.Dependencies); Assert.Equal(new[] { componentB }, componentFoo.Dependencies)
+  family: plantuml
+  diagram: |
+    @startuml
+    [A] <<.Service.*>> as foo
+    [B] <<Controller.*>>
+    [B] --> foo
+    foo --> [B]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      B: [A]
+      A: [B]
+- id: ParsesAComponentDiagramThatUsesAliasWithAndWithoutBrackets#1
+  query: one dependency drawn with bare and bracketed aliases
+  csharp: Assert.Equal(new[] { bar }, foo.Dependencies); Assert.Empty(bar.Dependencies)
+  family: plantuml
+  diagram: |
+    @startuml
+    [A] <<Origin.*>> as foo
+    [B] <<Target.*>> as bar
+    foo --> bar
+    [foo] --> [bar]
+    @enduml
+  rule: {}
+  expect:
+    dependenciesOf:
+      A: [B]
+      B: []
