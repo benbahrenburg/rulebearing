@@ -1445,6 +1445,62 @@
             "kind": "inherits"
           }
         ]
+      },
+      {
+        "fullName": "System.Attribute",
+        "name": "Attribute",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.AttributeUsageAttribute",
+        "name": "AttributeUsageAttribute",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Int32",
+        "name": "Int32",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Object",
+        "name": "Object",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "name": "CompilerGeneratedAttribute",
+        "namespace": "System.Runtime.CompilerServices",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.String",
+        "name": "String",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Type",
+        "name": "Type",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
       }
     ],
     "members": [

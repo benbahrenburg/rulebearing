@@ -711,6 +711,9 @@ pub struct Selector {
     pub languages: Vec<rb_model::Language>,
     /// The filter, when there is one.
     pub where_: Option<Expr>,
+    /// Also select the types the code references but does not define (`ArchUnitNET`'s
+    /// `Types(true)`, `Classes(true)`, `Interfaces(true)`, `Attributes(true)`).
+    pub include_referenced: bool,
 }
 
 /// One element rule.
@@ -1094,10 +1097,15 @@ pub fn parse_selector(value: &Value, context: &str) -> Result<Selector, ConfigEr
         return Err(invalid(context, "`select` must be { kind, where }"));
     };
     for key in map.keys() {
-        if !matches!(key.as_str(), "kind" | "where" | "language") {
+        if !matches!(
+            key.as_str(),
+            "kind" | "where" | "language" | "includeReferenced"
+        ) {
             return Err(invalid(
                 context,
-                format!("`{key}` is not a select key; use kind, language and where"),
+                format!(
+                    "`{key}` is not a select key; use kind, language, where and includeReferenced"
+                ),
             ));
         }
     }
@@ -1125,10 +1133,21 @@ pub fn parse_selector(value: &Value, context: &str) -> Result<Selector, ConfigEr
             })
             .collect::<Result<_, _>>()?,
     };
+    let include_referenced = match map.get("includeReferenced") {
+        None => false,
+        Some(Value::Bool(b)) => *b,
+        Some(_) => {
+            return Err(invalid(
+                context,
+                "`select.includeReferenced` must be true or false",
+            ));
+        }
+    };
     Ok(Selector {
         kind,
         languages,
         where_,
+        include_referenced,
     })
 }
 
@@ -1587,6 +1606,22 @@ mod tests {
             assert!(message.contains(why), "{value}: {message}");
         }
         assert!(distance("kitten", "sitting") == 3 && distance("", "abc") == 3);
+    }
+
+    #[test]
+    fn referenced_types_are_selected_only_when_asked() -> Result<(), ConfigError> {
+        let plain = parse_selector(&json!({ "kind": "type" }), "t")?;
+        assert!(
+            !plain.include_referenced,
+            "referenced types are left out by default"
+        );
+        let referenced =
+            parse_selector(&json!({ "kind": "type", "includeReferenced": true }), "t")?;
+        assert!(referenced.include_referenced);
+        assert!(
+            parse_selector(&json!({ "kind": "type", "includeReferenced": "yes" }), "t").is_err()
+        );
+        Ok(())
     }
 
     #[test]

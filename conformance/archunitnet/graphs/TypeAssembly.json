@@ -121,6 +121,62 @@
   "code": {
     "types": [
       {
+        "fullName": "System.Enum",
+        "name": "Enum",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Int32",
+        "name": "Int32",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Object",
+        "name": "Object",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "name": "CompilerGeneratedAttribute",
+        "namespace": "System.Runtime.CompilerServices",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.String",
+        "name": "String",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.ValueType",
+        "name": "ValueType",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Void",
+        "name": "Void",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
         "fullName": "TypeNamespace.BaseClassForAssign",
         "name": "BaseClassForAssign",
         "namespace": "TypeNamespace",

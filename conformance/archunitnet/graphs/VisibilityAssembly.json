@@ -70,6 +70,14 @@
   "code": {
     "types": [
       {
+        "fullName": "System.Object",
+        "name": "Object",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
         "fullName": "VisibilityNamespace.InternalClass",
         "name": "InternalClass",
         "namespace": "VisibilityNamespace",

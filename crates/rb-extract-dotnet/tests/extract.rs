@@ -356,9 +356,11 @@ fn a_missing_pdb_gives_attribution_none_and_a_warning() -> Result<(), Box<dyn st
     );
     let code = extraction.code.unwrap_or_default();
     assert!(!code.types.is_empty(), "element rules still see the types");
+    // Referenced stubs have no attribution at all; every defined type has `none`.
     assert!(
         code.types
             .iter()
+            .filter(|t| t.referenced.is_none())
             .all(|t| t.attribution == Some(Attribution::None))
     );
     Ok(())
