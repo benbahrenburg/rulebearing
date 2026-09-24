@@ -21,10 +21,16 @@
 //! honoured and is reported as expired; whether or not it is honoured, every entry records
 //! whether some violation still matches it, which is what `baseline --baseline-mode shrink-only`
 //! reads.
+//!
+//! A baseline can hold an entry per violation (`init` writes one for every violation it finds,
+//! 33,000 on home-assistant/core), so each finding is tested only against the entries an index
+//! names as candidates, by id, by `from` and rule, by type and rule, or through a
+//! [`SameIndex`], instead of against every entry
+//! ([NFR-PERF-01](../../../docs/prd.md#nfr-perf-01)). The test itself is unchanged.
 
 use chrono::NaiveDate;
 use rb_config::model::KnownViolation;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use rb_model::violation_id::violation_id;
 use rb_model::{GraphDocument, Summary};
@@ -32,7 +38,7 @@ use serde_json::{Value, json};
 
 use crate::evaluate::Expired;
 use crate::js;
-use crate::summarize::{is_same_violation, violation_stats};
+use crate::summarize::{SameIndex, Side, is_same_violation, violation_stats};
 
 /// One entry, as the matching reads it.
 struct Entry {
@@ -45,6 +51,87 @@ struct Entry {
 pub struct KnownSet {
     entries: Vec<Entry>,
     matched: Vec<bool>,
+    index: Index,
+    /// Test every entry, as before the index: the oracle the tests compare the index with.
+    #[cfg(test)]
+    scan_all: bool,
+}
+
+/// Where each entry can match: every entry a finding's test could accept is in one of the
+/// lists its keys name.
+#[derive(Debug, Default)]
+struct Index {
+    /// Entries with an id, by it.
+    by_id: HashMap<String, Vec<usize>>,
+    /// `module` and `reachability` entries with a string `from` and a rule name, by both.
+    modules: HashMap<(String, String), Vec<usize>>,
+    /// `element` and `slice` entries with a rule name, by type and rule name.
+    objects: HashMap<(String, String), Vec<usize>>,
+    /// `dependency`, `cycle` and `instability` entries, for `is_same_violation(entry, finding)`.
+    edges: SameIndex,
+}
+
+impl Index {
+    fn new(entries: &[Entry]) -> Self {
+        let mut index = Self::default();
+        for (at, entry) in entries.iter().enumerate() {
+            if let Some(id) = &entry.id {
+                index.by_id.entry(id.clone()).or_default().push(at);
+            }
+            let shape = &entry.shape;
+            match (kind_of(shape), rule_name(shape)) {
+                (Some("module" | "reachability"), Some(rule)) => {
+                    if let Some(from) = js::str_of(shape, "from") {
+                        index
+                            .modules
+                            .entry((from.to_owned(), rule.to_owned()))
+                            .or_default()
+                            .push(at);
+                    }
+                }
+                (Some(kind @ ("element" | "slice")), Some(rule)) => index
+                    .objects
+                    .entry((kind.to_owned(), rule.to_owned()))
+                    .or_default()
+                    .push(at),
+                (Some("dependency" | "cycle" | "instability"), _) => index.edges.insert(at, shape),
+                _ => {}
+            }
+        }
+        index
+    }
+
+    fn ids(&self, id: &str) -> &[usize] {
+        self.by_id.get(id).map_or(&[], Vec::as_slice)
+    }
+
+    fn modules(&self, from: &str, rule: &str) -> &[usize] {
+        self.modules
+            .get(&(from.to_owned(), rule.to_owned()))
+            .map_or(&[], Vec::as_slice)
+    }
+
+    /// The candidates for a violation of `summary.violations[]`.
+    fn violation(&self, violation: &Value) -> Vec<usize> {
+        let mut out = self.edges.candidates(violation, Side::Right);
+        if let Some(id) = js::str_of(violation, "id") {
+            out.extend_from_slice(self.ids(id));
+        }
+        if let Some(rule) = rule_name(violation) {
+            if let Some(from) = js::str_of(violation, "from") {
+                out.extend_from_slice(self.modules(from, rule));
+            }
+            if let Some(kind) = kind_of(violation) {
+                out.extend(
+                    self.objects
+                        .get(&(kind.to_owned(), rule.to_owned()))
+                        .into_iter()
+                        .flatten(),
+                );
+            }
+        }
+        out
+    }
 }
 
 fn kind_of(value: &Value) -> Option<&str> {
@@ -124,9 +211,13 @@ impl KnownSet {
             });
         }
         let matched = vec![false; out.len()];
+        let index = Index::new(&out);
         Self {
             entries: out,
             matched,
+            index,
+            #[cfg(test)]
+            scan_all: false,
         }
     }
 
@@ -135,11 +226,22 @@ impl KnownSet {
         self.entries.is_empty()
     }
 
-    /// Marks every entry `test` accepts as matched; true when one of them is honoured, so the
-    /// violation is softened.
-    fn hit(&mut self, test: impl Fn(&Entry) -> bool) -> bool {
+    /// Marks every entry among `candidates` that `test` accepts as matched; true when one of
+    /// them is honoured, so the violation is softened. The candidates are a superset of the
+    /// entries `test` accepts, so this is the scan over every entry it replaces.
+    fn hit(&mut self, candidates: Vec<usize>, test: impl Fn(&Entry) -> bool) -> bool {
+        #[cfg(test)]
+        let candidates = if self.scan_all {
+            (0..self.entries.len()).collect()
+        } else {
+            candidates
+        };
         let mut soften = false;
-        for (entry, matched) in self.entries.iter().zip(self.matched.iter_mut()) {
+        for at in candidates {
+            let (Some(entry), Some(matched)) = (self.entries.get(at), self.matched.get_mut(at))
+            else {
+                continue;
+            };
             if test(entry) {
                 *matched = true;
                 soften |= entry.honoured;
@@ -173,7 +275,9 @@ impl KnownSet {
                     let name = js::text(rule, "name").into_owned();
                     let id = violation_id(&name, &source, &source, "");
                     let key = json!({ "type": "module", "rule": { "name": name }, "from": source });
-                    if self.hit(|k| {
+                    let mut candidates = self.index.ids(&id).to_vec();
+                    candidates.extend_from_slice(self.index.modules(&source, &name));
+                    if self.hit(candidates, |k| {
                         k.id.as_deref() == Some(id.as_str())
                             || (matches!(kind_of(&k.shape), Some("module" | "reachability"))
                                 && shape_matches(&k.shape, &key))
@@ -208,7 +312,9 @@ impl KnownSet {
                 if let Some(cycle) = &cycle {
                     js::set(&mut key, "cycle", cycle.clone());
                 }
-                if self.hit(|k| {
+                let mut candidates = self.index.edges.candidates(&key, Side::Right);
+                candidates.extend_from_slice(self.index.ids(&id));
+                if self.hit(candidates, |k| {
                     k.id.as_deref() == Some(id.as_str())
                         || (matches!(
                             kind_of(&k.shape),
@@ -230,8 +336,10 @@ impl KnownSet {
         for violation in violations.iter_mut() {
             let id = js::str_of(violation, "id").map(str::to_owned);
             let snapshot = violation.clone();
-            if self.hit(|k| (k.id.is_some() && k.id == id) || shape_matches(&k.shape, &snapshot))
-                && let Some(rule) = violation.get_mut("rule")
+            let candidates = self.index.violation(&snapshot);
+            if self.hit(candidates, |k| {
+                (k.id.is_some() && k.id == id) || shape_matches(&k.shape, &snapshot)
+            }) && let Some(rule) = violation.get_mut("rule")
             {
                 js::set(rule, "severity", json!("ignore"));
             }
@@ -412,6 +520,140 @@ mod tests {
             .iter()
             .map(|v| js::text(&v["rule"], "severity").into_owned())
             .collect()
+    }
+
+    mod oracle {
+        use super::*;
+        use proptest::prelude::*;
+
+        fn name() -> impl Strategy<Value = Option<String>> {
+            proptest::option::of((0u8..3).prop_map(|n| format!("m{n}")))
+        }
+
+        fn rule() -> impl Strategy<Value = Option<String>> {
+            proptest::option::of(prop_oneof![Just("p".to_owned()), Just("q".to_owned())])
+        }
+
+        fn kind() -> impl Strategy<Value = Option<&'static str>> {
+            proptest::option::of(proptest::sample::select(vec![
+                "module",
+                "reachability",
+                "dependency",
+                "cycle",
+                "instability",
+                "element",
+                "slice",
+                "folder",
+            ]))
+        }
+
+        fn steps() -> impl Strategy<Value = Option<Value>> {
+            proptest::option::of(
+                proptest::collection::vec(
+                    (0u8..3).prop_map(|n| json!({ "name": format!("m{n}") })),
+                    0..4,
+                )
+                .prop_map(Value::Array),
+            )
+        }
+
+        /// Ids the module and dependency findings below can carry, and one nothing carries.
+        fn id() -> impl Strategy<Value = Option<String>> {
+            proptest::option::of(proptest::sample::select(vec![
+                violation_id("p", "m0", "m0", ""),
+                violation_id("p", "m0", "m1", "import"),
+                violation_id("q", "m1", "m2", ""),
+                "RB-none".to_owned(),
+            ]))
+        }
+
+        fn shape() -> impl Strategy<Value = Value> {
+            (
+                id(),
+                kind(),
+                rule(),
+                name(),
+                name(),
+                steps(),
+                steps(),
+                any::<bool>(),
+            )
+                .prop_map(|(id, kind, rule, from, to, cycle, via, past)| {
+                    let mut v = json!({});
+                    for (key, value) in [
+                        ("id", id.map(Value::String)),
+                        ("type", kind.map(|k| json!(k))),
+                        ("rule", rule.map(|r| json!({ "name": r }))),
+                        ("from", from.map(Value::String)),
+                        ("to", to.map(Value::String)),
+                        ("cycle", cycle),
+                        ("via", via),
+                        ("expires", past.then(|| json!("2020-01-01"))),
+                    ] {
+                        if let Some(value) = value {
+                            js::set(&mut v, key, value);
+                        }
+                    }
+                    v
+                })
+        }
+
+        fn module() -> impl Strategy<Value = Value> {
+            let dependency = (name(), any::<bool>(), proptest::collection::vec(rule(), 0..3), steps(), any::<bool>())
+                .prop_map(|(to, valid, rules, cycle, import)| {
+                    let rules: Vec<Value> = rules
+                        .into_iter()
+                        .map(|r| r.map_or_else(|| json!({ "severity": "error" }), |r| json!({ "name": r, "severity": "error" })))
+                        .collect();
+                    let mut d = json!({ "resolved": to.unwrap_or_default(), "valid": valid, "rules": rules });
+                    if import {
+                        js::set(&mut d, "dependencyKind", json!("import"));
+                    }
+                    if let Some(cycle) = cycle {
+                        js::set(&mut d, "cycle", cycle);
+                    }
+                    d
+                });
+            (name(), any::<bool>(), proptest::collection::vec(rule(), 0..3), proptest::collection::vec(dependency, 0..3))
+                .prop_map(|(source, valid, rules, dependencies)| {
+                    let rules: Vec<Value> = rules
+                        .into_iter()
+                        .flatten()
+                        .map(|r| json!({ "name": r, "severity": "warn" }))
+                        .collect();
+                    json!({ "source": source.unwrap_or_default(), "valid": valid, "rules": rules, "dependencies": dependencies })
+                })
+        }
+
+        fn found() -> impl Strategy<Value = Value> {
+            shape().prop_map(|mut v| {
+                if let Some(rule) = v.get_mut("rule") {
+                    js::set(rule, "severity", json!("error"));
+                }
+                v
+            })
+        }
+
+        proptest! {
+            #[test]
+            fn the_index_softens_and_matches_what_a_scan_of_every_entry_does(
+                shapes in proptest::collection::vec(shape(), 0..12),
+                modules in proptest::collection::vec(module(), 0..5),
+                violations in proptest::collection::vec(found(), 0..8),
+            ) {
+                let list: Vec<KnownViolation> =
+                    shapes.into_iter().filter_map(|s| serde_json::from_value(s).ok()).collect();
+                let run = |scan_all: bool| {
+                    let mut set = KnownSet::new(&list, day(2026, 1, 1), &mut Vec::new());
+                    set.scan_all = scan_all;
+                    let (mut m, mut v) = (modules.clone(), violations.clone());
+                    set.soften_modules(&mut m);
+                    set.soften_violations(&mut v);
+                    (m, v, set.unmatched())
+                };
+                prop_assert_eq!(run(false), run(true));
+            }
+        }
     }
 
     #[test]
