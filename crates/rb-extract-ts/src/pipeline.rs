@@ -398,9 +398,25 @@ fn type_declarations(source: &str, source_type: SourceType) -> Vec<Span> {
 
 /// [`Transpiled`] for a TypeScript source. `esm` is upstream's ESM flavour (`.mts`, `.d.mts`),
 /// which targets ES2022 and keeps `export * as ns` as it is.
-pub fn transpiled(source: &str, source_type: SourceType, esm: bool) -> Transpiled {
+///
+/// # Errors
+/// When a dotted name is longer than [`walk::MAX_SEMANTIC_CHAIN`] segments, which oxc's semantic
+/// analysis could not walk without overflowing the stack.
+pub fn transpiled(
+    source: &str,
+    source_type: SourceType,
+    esm: bool,
+) -> Result<Transpiled, walk::ParseError> {
     let allocator = Allocator::default();
     let parsed = OxcParser::new(&allocator, source, source_type).parse();
+    let longest = walk::longest_chain(&parsed.program);
+    if longest > walk::MAX_SEMANTIC_CHAIN {
+        return Err(walk::ParseError(format!(
+            "a dotted name of {longest} segments is longer than the {} the TypeScript import \
+             elision reads; shorten the name",
+            walk::MAX_SEMANTIC_CHAIN
+        )));
+    }
     let mut result = Transpiled {
         elided: elided_imports(&parsed.program),
         lowered_to_import: Vec::new(),
@@ -427,7 +443,7 @@ pub fn transpiled(source: &str, source_type: SourceType, esm: bool) -> Transpile
             _ => {}
         }
     }
-    result
+    Ok(result)
 }
 
 /// The names read by computed property keys that TypeScript's checker marks as value uses and
@@ -444,6 +460,8 @@ impl ComputedKeyNames {
     fn collect(&mut self, computed: bool, key: &oxc_ast::ast::PropertyKey<'_>) {
         struct Names<'n>(&'n mut BTreeSet<String>);
         impl<'a> Visit<'a> for Names<'_> {
+            crate::walk::iterative_chains!();
+
             fn visit_identifier_reference(&mut self, it: &oxc_ast::ast::IdentifierReference<'a>) {
                 self.0.insert(it.name.to_string());
             }
@@ -468,6 +486,8 @@ impl ComputedKeyNames {
 }
 
 impl<'a> Visit<'a> for ComputedKeyNames {
+    crate::walk::iterative_chains!();
+
     fn visit_ts_property_signature(&mut self, it: &oxc_ast::ast::TSPropertySignature<'a>) {
         self.collect(it.computed, &it.key);
         oxc_ast_visit::walk::walk_ts_property_signature(self, it);
@@ -699,7 +719,7 @@ fn forms(
             let esm = path
                 .to_str()
                 .is_some_and(|p| matches!(resolve::extension(p), ".mts" | ".d.mts"));
-            let compiled = transpiled(source, source_type, esm);
+            let compiled = transpiled(source, source_type, esm).map_err(parse_error)?;
             let (mut found, collected) =
                 walk::walk_source_then(source, source_type, Flavour::Acorn, &options, then)
                     .map_err(parse_error)?;
@@ -1601,10 +1621,48 @@ mod tests {
         assert!(is_glob("src/**/*.ts") && !is_glob("src/a.ts"));
     }
 
+    /// The bound on a dotted name's length holds on a rayon worker's 2 MiB stack in an
+    /// unoptimised build: a name at the bound goes through oxc's semantic analysis, one segment
+    /// more is refused by name, for an expression and a type alike.
+    #[test]
+    fn dotted_names_past_the_bound_are_refused_by_name() {
+        let at = walk::MAX_SEMANTIC_CHAIN;
+        let outcomes = std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn(move || {
+                let mut outcomes = Vec::new();
+                for segments in [at, at + 1] {
+                    let chain = format!("a{}", ".b".repeat(segments - 1));
+                    for source in [
+                        format!("import a from './a';\nexport class X extends {chain} {{}}\n"),
+                        format!("import a from './a';\nlet v: {chain};\n"),
+                    ] {
+                        outcomes.push(
+                            transpiled(&source, SourceType::ts(), false)
+                                .map(|compiled| compiled.elided.len())
+                                .map_err(|e| e.0),
+                        );
+                    }
+                }
+                outcomes
+            })
+            .map(std::thread::JoinHandle::join);
+        let refused = format!(
+            "a dotted name of {} segments is longer than the {at} the TypeScript import \
+             elision reads; shorten the name",
+            at + 1
+        );
+        let expected = vec![Ok(0), Ok(1), Err(refused.clone()), Err(refused)];
+        assert!(
+            matches!(&outcomes, Ok(Ok(outcomes)) if *outcomes == expected),
+            "{outcomes:?}; a value use keeps the import, a type use elides it"
+        );
+    }
+
     #[test]
     fn type_only_and_unused_imports_are_elided_as_compilation_would() {
         let source = "import type A from './a';\nimport { B } from './b';\nimport { C } from './c';\nimport './d';\nimport { E } from './e';\nconst x: B = C;\n";
-        let compiled = transpiled(source, SourceType::ts(), false);
+        let compiled = transpiled(source, SourceType::ts(), false).unwrap_or_default();
         let elided: Vec<&str> = compiled
             .elided
             .iter()
@@ -1650,6 +1708,7 @@ mod tests {
             .filter(|(body, kept)| {
                 let source = format!("import {{ m }} from './a';\n{body}\n");
                 transpiled(&source, SourceType::ts(), false)
+                    .unwrap_or_default()
                     .elided
                     .is_empty()
                     != *kept
@@ -1669,7 +1728,7 @@ mod tests {
                 .map(|s| source[s.start as usize..s.end as usize].to_owned())
                 .collect()
         };
-        let compiled = transpiled(source, SourceType::ts(), false);
+        let compiled = transpiled(source, SourceType::ts(), false).unwrap_or_default();
         let mut elided = text(&compiled.elided);
         elided.sort();
         assert_eq!(
@@ -1690,6 +1749,7 @@ mod tests {
         // The ESM flavour targets ES2022, which has `export * as ns`.
         assert!(
             transpiled(source, SourceType::ts(), true)
+                .unwrap_or_default()
                 .lowered_to_import
                 .is_empty()
         );

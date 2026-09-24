@@ -1137,3 +1137,52 @@ fn the_extractor_trait_runs_from_the_working_directory() {
     assert_eq!(extraction.inspected.files, 2);
     assert_eq!(extraction.inspected.modules, 2);
 }
+
+/// A dotted name as long as the file (100,001 segments) run through the whole extraction on
+/// rayon's 2 MiB workers: every walker and the code layer read it without recursing per segment,
+/// so the tsc flavour finds the import; the default flavour's import elision is oxc's semantic
+/// analysis, which does recurse, so it refuses the file by name instead of aborting.
+#[test]
+fn a_dotted_name_as_long_as_the_file_is_read_or_refused_by_name()
+-> Result<(), Box<dyn std::error::Error>> {
+    let cwd = Path::new(env!("CARGO_TARGET_TMPDIR")).join("deep-chain");
+    std::fs::create_dir_all(cwd.join("src"))?;
+    std::fs::write(cwd.join("src/a.ts"), "export default {};\n")?;
+    let chain = format!("a{}", ".b".repeat(100_000));
+    std::fs::write(
+        cwd.join("src/deep.ts"),
+        format!(
+            "import a from './a';\nexport class X extends {chain} {{}}\nlet v: {chain};\n{chain}();\n"
+        ),
+    )?;
+    let (mut settings, config) = prepare(
+        &serde_json::from_str(r#"{"tsPreCompilationDeps": true}"#)?,
+        &cwd,
+    )?;
+    settings.code_layer = true;
+    let tsc = extract_with(&[PathBuf::from("src")], &settings, &config)?;
+    let deep = module(&tsc, "src/deep.ts").ok_or("src/deep.ts")?;
+    assert_eq!(
+        deep.dependencies
+            .iter()
+            .map(|d| d.resolved.as_str())
+            .collect::<Vec<_>>(),
+        ["src/a.ts"]
+    );
+    assert!(
+        tsc.code
+            .as_ref()
+            .is_some_and(|code| code.types.iter().any(|t| t.full_name == "src/deep.ts#X"))
+    );
+    let refused = run_in(&cwd, "{}", &["src"]);
+    assert!(
+        matches!(
+            &refused,
+            Err(ExtractError::UnsupportedFile { path, reason })
+                if path.ends_with("src/deep.ts")
+                    && reason.contains("a dotted name of 100001 segments")
+        ),
+        "expected the file refused by name, got {refused:?}"
+    );
+    Ok(())
+}

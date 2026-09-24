@@ -288,29 +288,47 @@ pub fn collect(program: &Program<'_>, source: &str, file: &str) -> FileCode {
     out
 }
 
-/// The identifier chain an expression is (`a`, `a.b.c`), if it is one.
+/// The identifier chain an expression is (`a`, `a.b.c`), if it is one. Walked iteratively, as
+/// an untrusted file can nest a chain as deep as it is long.
 fn expression_segments(expression: &Expression<'_>) -> Option<Vec<String>> {
-    match expression.get_inner_expression() {
-        Expression::Identifier(identifier) => Some(vec![identifier.name.to_string()]),
-        Expression::StaticMemberExpression(member) => {
-            let mut segments = expression_segments(&member.object)?;
-            segments.push(member.property.name.to_string());
-            Some(segments)
+    let mut segments = Vec::new();
+    let mut current = expression;
+    loop {
+        match current.get_inner_expression() {
+            Expression::Identifier(identifier) => {
+                segments.push(identifier.name.to_string());
+                break;
+            }
+            Expression::StaticMemberExpression(member) => {
+                segments.push(member.property.name.to_string());
+                current = &member.object;
+            }
+            _ => return None,
         }
-        _ => None,
     }
+    segments.reverse();
+    Some(segments)
 }
 
+/// The identifier chain a type name is (`A`, `ns.A`), if it is one; iterative, as above.
 fn type_name_segments(name: &TSTypeName<'_>) -> Option<Vec<String>> {
-    match name {
-        TSTypeName::IdentifierReference(identifier) => Some(vec![identifier.name.to_string()]),
-        TSTypeName::QualifiedName(qualified) => {
-            let mut segments = type_name_segments(&qualified.left)?;
-            segments.push(qualified.right.name.to_string());
-            Some(segments)
+    let mut segments = Vec::new();
+    let mut current = name;
+    loop {
+        match current {
+            TSTypeName::IdentifierReference(identifier) => {
+                segments.push(identifier.name.to_string());
+                break;
+            }
+            TSTypeName::QualifiedName(qualified) => {
+                segments.push(qualified.right.name.to_string());
+                current = &qualified.left;
+            }
+            TSTypeName::ThisExpression(_) => return None,
         }
-        TSTypeName::ThisExpression(_) => None,
     }
+    segments.reverse();
+    Some(segments)
 }
 
 /// A class member's name as written: `#name` for a private name; `None` for a computed key.
@@ -1745,6 +1763,8 @@ struct TypeNames {
 }
 
 impl<'a> Visit<'a> for TypeNames {
+    crate::walk::iterative_chains!();
+
     fn visit_ts_type_reference(&mut self, it: &oxc_ast::ast::TSTypeReference<'a>) {
         if let Some(segments) = type_name_segments(&it.type_name) {
             self.found.push((segments, it.span.start));
@@ -1838,6 +1858,8 @@ impl BodyWalker<'_, '_> {
 }
 
 impl<'a> Visit<'a> for BodyWalker<'_, '_> {
+    crate::walk::iterative_chains!();
+
     fn visit_function(&mut self, it: &Function<'a>, flags: ScopeFlags) {
         self.function_depth += 1;
         self.scoped(|this| {
@@ -2736,5 +2758,36 @@ mod tests {
         assert_eq!(names, ["z.ts#A", "z.ts#Z"]);
         let counts = collected("z.ts", "export class Z { m() { this.m(); } }\n").counts();
         assert_eq!(counts, (1, 1, 0, 1));
+    }
+
+    #[test]
+    fn a_dotted_chain_as_long_as_the_file_does_not_overflow_a_worker_stack() {
+        use crate::walk::{Flavour, WalkOptions, walk_source_then};
+        // 100,000 segments each in an `extends`, type references, a `new` and calls, analysed by
+        // every walker and the code layer on a thread with a rayon worker's 2 MiB stack.
+        let chain = format!("a{}", ".b".repeat(100_000));
+        let source = format!(
+            "export class X extends {chain} {{\n  m(p: {chain}) {{ new {chain}(); return this.n({chain}()); }}\n  n(q: unknown) {{}}\n}}\nlet v: {chain};\n{chain}();\n"
+        );
+        let analysed = std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn(move || {
+                let options = WalkOptions::default();
+                [Flavour::Acorn, Flavour::Swc, Flavour::Tsc]
+                    .into_iter()
+                    .map(|flavour| {
+                        walk_source_then(&source, SourceType::ts(), flavour, &options, |program| {
+                            collect(program, &source, "x.ts").counts()
+                        })
+                        .map(|(_, counts)| counts)
+                        .ok()
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .map(std::thread::JoinHandle::join);
+        assert!(
+            matches!(&analysed, Ok(Ok(counts)) if *counts == vec![Some((1, 2, 0, 2)); 3]),
+            "{analysed:?}"
+        );
     }
 }

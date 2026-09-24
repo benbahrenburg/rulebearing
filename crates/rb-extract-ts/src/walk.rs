@@ -102,6 +102,119 @@ impl Found {
     }
 }
 
+/// The most segments a dotted name (`a.b.c`, `A.B.C`) may have in a file whose imports go
+/// through oxc's semantic analysis ([`crate::pipeline::transpiled`]). That analysis is oxc's own
+/// and recurses once per segment: at a rayon worker's 2 MiB stack an unoptimised build overflows
+/// near 2,000 segments and a release build near 20,000. No written code comes near the bound; a
+/// file past it is refused with a named reason instead of aborting the process.
+pub const MAX_SEMANTIC_CHAIN: usize = 1_000;
+
+/// The number of segments in the longest dotted name `program` holds, walked without recursing
+/// per segment.
+pub fn longest_chain(program: &Program<'_>) -> usize {
+    struct Longest(usize);
+    impl<'a> Visit<'a> for Longest {
+        fn visit_static_member_expression(
+            &mut self,
+            it: &oxc_ast::ast::StaticMemberExpression<'a>,
+        ) {
+            let mut length = 2;
+            let mut object = &it.object;
+            while let Expression::StaticMemberExpression(inner) = object {
+                length += 1;
+                object = &inner.object;
+            }
+            self.0 = self.0.max(length);
+            walk_member_chain(self, it);
+        }
+
+        fn visit_ts_qualified_name(&mut self, it: &oxc_ast::ast::TSQualifiedName<'a>) {
+            let mut length = 2;
+            let mut left = &it.left;
+            while let oxc_ast::ast::TSTypeName::QualifiedName(inner) = left {
+                length += 1;
+                left = &inner.left;
+            }
+            self.0 = self.0.max(length);
+            walk_qualified_chain(self, it);
+        }
+    }
+    let mut longest = Longest(0);
+    longest.visit_program(program);
+    longest.0
+}
+
+/// `a.b.c` and `A.B.C` walked without a stack frame per segment, visiting every node in the order
+/// [`walk::walk_static_member_expression`] and [`walk::walk_ts_qualified_name`] would. oxc's
+/// visitor recurses once per `.segment`, and an untrusted file can make a chain as long as the
+/// file, which would overflow a worker's stack; every [`Visit`] in this crate routes both
+/// through here with `iterative_chains!`.
+pub(crate) fn walk_member_chain<'a, V: Visit<'a>>(
+    visitor: &mut V,
+    it: &oxc_ast::ast::StaticMemberExpression<'a>,
+) {
+    use oxc_ast::AstKind;
+    let mut links = vec![it];
+    while let Expression::StaticMemberExpression(inner) = &links[links.len() - 1].object {
+        links.push(inner);
+    }
+    let mut kinds = Vec::with_capacity(links.len());
+    for link in &links {
+        let kind = AstKind::StaticMemberExpression(visitor.alloc(*link));
+        visitor.enter_node(kind);
+        visitor.visit_span(&link.span);
+        kinds.push(kind);
+    }
+    visitor.visit_expression(&links[links.len() - 1].object);
+    for (link, kind) in links.iter().zip(kinds).rev() {
+        visitor.visit_identifier_name(&link.property);
+        visitor.leave_node(kind);
+    }
+}
+
+/// [`walk_member_chain`] for a qualified type name.
+pub(crate) fn walk_qualified_chain<'a, V: Visit<'a>>(
+    visitor: &mut V,
+    it: &oxc_ast::ast::TSQualifiedName<'a>,
+) {
+    use oxc_ast::AstKind;
+    use oxc_ast::ast::TSTypeName;
+    let mut links = vec![it];
+    while let TSTypeName::QualifiedName(inner) = &links[links.len() - 1].left {
+        links.push(inner);
+    }
+    let mut kinds = Vec::with_capacity(links.len());
+    for link in &links {
+        let kind = AstKind::TSQualifiedName(visitor.alloc(*link));
+        visitor.enter_node(kind);
+        visitor.visit_span(&link.span);
+        kinds.push(kind);
+    }
+    visitor.visit_ts_type_name(&links[links.len() - 1].left);
+    for (link, kind) in links.iter().zip(kinds).rev() {
+        visitor.visit_identifier_name(&link.right);
+        visitor.leave_node(kind);
+    }
+}
+
+/// The two [`Visit`] methods that send dotted chains through [`walk_member_chain`] and
+/// [`walk_qualified_chain`]; every visitor in the crate expands it.
+macro_rules! iterative_chains {
+    () => {
+        fn visit_static_member_expression(
+            &mut self,
+            it: &oxc_ast::ast::StaticMemberExpression<'a>,
+        ) {
+            $crate::walk::walk_member_chain(self, it);
+        }
+
+        fn visit_ts_qualified_name(&mut self, it: &oxc_ast::ast::TSQualifiedName<'a>) {
+            $crate::walk::walk_qualified_chain(self, it);
+        }
+    };
+}
+pub(crate) use iterative_chains;
+
 /// The source could not be parsed at all.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("could not parse: {0}")]
@@ -276,17 +389,26 @@ fn expression_string<'a>(expression: &'a Expression<'a>) -> Option<&'a str> {
     }
 }
 
-/// The callee as dotted names, when it is `a`, `a.b` or `a.b.c` made of identifiers.
+/// The callee as dotted names, when it is `a`, `a.b` or `a.b.c` made of identifiers. Walked
+/// iteratively, as an untrusted file can make the chain as long as it likes.
 fn callee_path(callee: &Expression<'_>) -> Option<Vec<String>> {
-    match callee {
-        Expression::Identifier(id) => Some(vec![id.name.to_string()]),
-        Expression::StaticMemberExpression(member) => {
-            let mut path = callee_path(&member.object)?;
-            path.push(member.property.name.to_string());
-            Some(path)
+    let mut path = Vec::new();
+    let mut current = callee;
+    loop {
+        match current {
+            Expression::Identifier(id) => {
+                path.push(id.name.to_string());
+                break;
+            }
+            Expression::StaticMemberExpression(member) => {
+                path.push(member.property.name.to_string());
+                current = &member.object;
+            }
+            _ => return None,
         }
-        _ => None,
     }
+    path.reverse();
+    Some(path)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -489,6 +611,8 @@ fn import_type_module(import: &oxc_ast::ast::TSImportType<'_>, source: &str) -> 
 }
 
 impl<'a> Visit<'a> for TscNested<'_> {
+    crate::walk::iterative_chains!();
+
     fn visit_call_expression(&mut self, call: &CallExpression<'a>) {
         if let Some(module) = string_argument(&call.arguments) {
             let path = callee_path(&call.callee);
@@ -572,6 +696,8 @@ struct SwcVisitor<'o> {
 }
 
 impl<'a> Visit<'a> for SwcVisitor<'_> {
+    crate::walk::iterative_chains!();
+
     fn visit_import_declaration(&mut self, import: &ImportDeclaration<'a>) {
         self.found.push(Found::new(
             &import.source.value,
@@ -746,6 +872,8 @@ impl<'o> AcornCjs<'o> {
 }
 
 impl<'a> Visit<'a> for AcornCjs<'_> {
+    crate::walk::iterative_chains!();
+
     fn visit_call_expression(&mut self, call: &CallExpression<'a>) {
         walk::walk_call_expression(self, call);
         let Some(path) = callee_path(&call.callee) else {
@@ -820,6 +948,8 @@ fn beyond_es2020(program: &Program<'_>) -> bool {
 struct BeyondEs2020(bool);
 
 impl<'a> Visit<'a> for BeyondEs2020 {
+    crate::walk::iterative_chains!();
+
     fn visit_property_definition(&mut self, _: &oxc_ast::ast::PropertyDefinition<'a>) {
         self.0 = true;
     }
@@ -884,6 +1014,8 @@ struct AcornEs6 {
 const LOOSE_PLACEHOLDER: &str = "\u{2716}";
 
 impl<'a> Visit<'a> for AcornEs6 {
+    crate::walk::iterative_chains!();
+
     fn visit_jsx_text(&mut self, text: &oxc_ast::ast::JSXText<'a>) {
         if !self.loose {
             return;
@@ -956,6 +1088,8 @@ struct AcornAmd<'o> {
 }
 
 impl<'a> Visit<'a> for AcornAmd<'_> {
+    crate::walk::iterative_chains!();
+
     fn visit_expression_statement(&mut self, statement: &oxc_ast::ast::ExpressionStatement<'a>) {
         walk::walk_expression_statement(self, statement);
         let Expression::CallExpression(call) = &statement.expression else {
@@ -1007,6 +1141,20 @@ impl<'a> Visit<'a> for AcornAmd<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_longest_chain_counts_segments_of_values_and_types() {
+        let longest = |source: &str| {
+            let allocator = Allocator::default();
+            longest_chain(&parse(&allocator, source, SourceType::ts()).program)
+        };
+        assert_eq!(longest("a;"), 0);
+        assert_eq!(longest("a.b;"), 2);
+        assert_eq!(longest("x.y; f(a.b.c.d);"), 4);
+        assert_eq!(longest("let v: A.B.C;"), 3);
+        assert_eq!(longest("let v: A.B<C.D.E.F.G>;"), 5);
+        assert_eq!(longest("a.b(c.d.e).f;"), 3);
+    }
 
     #[test]
     fn tsc_type_only_imports_look_at_named_bindings_only() {
