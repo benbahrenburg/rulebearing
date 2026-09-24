@@ -35,7 +35,19 @@ fn impact_prints_text_by_default_and_json_on_request() -> Result {
         unknown.starts_with("src/new.ts (not in the graph yet)\n  rules that mention it: none\n"),
         "{unknown}"
     );
+    assert!(dir.join(".graph/cache").is_dir(), "answered from the cache");
     clean(&dir);
+
+    // --no-cache extracts without reading or writing an entry.
+    let fresh = tree("impact-no-cache")?;
+    let uncached = run(
+        &fresh,
+        &["impact", "src/web/view.ts", "--no-cache", "--json"],
+    )?;
+    assert_eq!(code(&uncached), Some(0), "{}", stderr(&uncached));
+    assert_eq!(json(&uncached)?["known"], true);
+    assert!(!fresh.join(".graph").exists());
+    clean(&fresh);
     Ok(())
 }
 
