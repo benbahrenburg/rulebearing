@@ -22,7 +22,7 @@ pub mod concepts;
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use rb_config::elements::{ElementRule, Expr, Kind, Objects, Operand, Selector, Test};
+use rb_config::elements::{ElementRule, Expr, Kind, Objects, Operand, Selector};
 use rb_model::{
     AttributeElement, CodeLayer, GraphDocument, Language, MemberElement, Module, TypeElement,
 };
@@ -445,19 +445,37 @@ impl<'r, 'a> Evaluator<'r, 'a> {
     }
 }
 
-/// Whether `should` is the selection-level `exist` / `notExist` condition, and its polarity.
-fn existence(expr: &Expr) -> Option<bool> {
+/// Whether an expression mentions `exist` or `notExist`: `ArchUnitNET` then stops requiring a
+/// positive result (`AddObjectCondition.Exist`, `NotExist` set `RequirePositiveResults = false`).
+fn mentions_existence(expr: &Expr) -> bool {
     match expr {
-        Expr::Test(Test {
-            concept: rb_config::elements::Concept::Exist,
-            negated,
-            ..
-        }) => Some(!negated),
-        _ => None,
+        Expr::All(items) | Expr::Any(items) => items.iter().any(mentions_existence),
+        Expr::Not(inner) => mentions_existence(inner),
+        Expr::Test(test) => test.concept == rb_config::elements::Concept::Exist,
+    }
+}
+
+/// What a condition says about an empty selection, `ICondition.CheckEmpty` folded as
+/// `ConditionManager.CheckEmpty` folds it: `exist` is false, `notExist` true, every other
+/// condition true.
+fn empty_verdict(expr: &Expr) -> bool {
+    match expr {
+        Expr::All(items) => items.iter().all(empty_verdict),
+        Expr::Any(items) => items.iter().any(empty_verdict),
+        // Only `not: exist` is a condition of its own (`notExist`); any other negation is the
+        // negated condition, whose empty verdict is true like every other.
+        Expr::Not(inner) if mentions_existence(inner) => !empty_verdict(inner),
+        Expr::Test(test) if test.concept == rb_config::elements::Concept::Exist => test.negated,
+        Expr::Not(_) | Expr::Test(_) => true,
     }
 }
 
 /// Evaluates one element rule.
+///
+/// An empty selection is vacuous ([ADR-0007](../../../../docs/adr/0007-vacuous-rules-fail-by-default.md),
+/// `ArchUnitNET`'s positive-result requirement) unless the rule allows it or its conditions
+/// mention `exist` / `notExist`; then the conditions' empty verdict decides, and a false one is
+/// [`Outcome::existence_failed`] ("There are no objects matching the criteria").
 ///
 /// # Errors
 /// [`ElementError`]: an unknown name, an unanswerable key, a bad pattern.
@@ -468,25 +486,7 @@ pub fn evaluate(
     capability::validate(architecture, rule)?;
     let evaluator = Evaluator::new(architecture, &rule.name);
     let selected = evaluator.select(&rule.select)?;
-    // `Exist()` / `NotExist()` judge the selection as a whole.
-    if let Some(should_exist) = existence(&rule.should) {
-        let passed = selected.is_empty() != should_exist;
-        let mut results: Vec<ObjectResult> = selected
-            .iter()
-            .map(|o| ObjectResult {
-                object: o.key().to_owned(),
-                file: o.file().map(str::to_owned),
-                passed,
-            })
-            .collect();
-        results.sort_by(|a, b| a.object.cmp(&b.object));
-        return Ok(Outcome {
-            rule: rule.name.clone(),
-            vacuous: false,
-            existence_failed: !passed,
-            results,
-        });
-    }
+    let existence = mentions_existence(&rule.should);
     let mut results = Vec::with_capacity(selected.len());
     for object in &selected {
         results.push(ObjectResult {
@@ -497,10 +497,11 @@ pub fn evaluate(
     }
     results.sort_by(|a, b| a.object.cmp(&b.object));
     results.dedup_by(|a, b| a.object == b.object);
+    let empty = selected.is_empty();
     Ok(Outcome {
         rule: rule.name.clone(),
-        vacuous: selected.is_empty() && !rule.allow_empty,
-        existence_failed: false,
+        vacuous: empty && !rule.allow_empty && !existence,
+        existence_failed: empty && existence && !empty_verdict(&rule.should),
         results,
     })
 }
