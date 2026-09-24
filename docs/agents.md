@@ -25,7 +25,7 @@ Both `--from-hook` commands answer in Claude Code's hook protocol and exit 0, so
 
 | Command | Answers |
 | --- | --- |
-| `rulebearing can-import <from> <to>` | Would this import be allowed? `yes` (exit 0), or `no` with the rule, its comment and its `fix` (exit 1). It answers from the worktree-aware cache, so it is fast. The target's kind (`npm-dev`, `core`, its licence) comes from the graph; a target the graph has never seen and that is not a file on disk exits 2 rather than guess |
+| `rulebearing can-import <from> <to>` | Would this import be allowed? `yes` (exit 0), or `no` with the rule, its comment and its `fix` (exit 1). It answers from the worktree-aware cache, so it is fast. The target's kind (`npm-dev`, `core`, its licence) comes from the graph; a target the graph has never seen and that is not a file on disk exits 2 rather than guess. `--json` prints the same answer as one object (`verdict`, `from`, `to`, `violations` with each rule's `name`, `severity`, `id`, `comment` and `fix`, and `warnings`), with the violation id the gate would give the edge; [eslint-plugin-rulebearing](../frontends/eslint-plugin-rulebearing/README.md) reads it |
 | `rulebearing impact <file> [--depth N] [--json]` | What the file is subject to: the rules that mention it, its dependents to depth N, whether it sits on a cycle and the ratchets its edges count toward; text, or JSON with `--json` |
 | `rulebearing explain <rule> [--plain]` | The rule as one English sentence, why it exists, what to do, and the first edges it matched |
 | `rulebearing rules --json` | Every rule, its family, severity, `fix`, and how many modules each side matches |
