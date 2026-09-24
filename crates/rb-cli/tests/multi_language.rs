@@ -2,7 +2,7 @@
 //! pass, one receipt per language.
 //!
 //! - Requirement: [FR-CORE-01](../../../docs/prd.md#fr-core-01) ("oracle runs on dify and
-//!   OpenMetadata produce one graph with `language` on every module")
+//!   `OpenMetadata` produce one graph with `language` on every module")
 //! - Source: [design § One engine, three languages](../../../docs/artifacts/design.md#one-engine-three-languages-one-monorepo)
 //! - Decision: [ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md) (no edge
 //!   joins two languages)

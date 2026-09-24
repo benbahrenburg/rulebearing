@@ -28,6 +28,7 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 oxc_span = { workspace = true }
+proptest = { workspace = true }
 
 [lints]
 workspace = true

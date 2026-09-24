@@ -120,6 +120,22 @@ pub fn walk_source(
     flavour: Flavour,
     options: &WalkOptions,
 ) -> Result<Vec<Found>, ParseError> {
+    walk_source_then(source, source_type, flavour, options, |_| ()).map(|(found, ())| found)
+}
+
+/// [`walk_source`], and `then` over the same parsed program, so a second reading of the file
+/// (the code layer) costs a walk, not a parse. Every byte offset in the program is one in
+/// `source`: the rewrites before parsing keep lengths.
+///
+/// # Errors
+/// As [`walk_source`].
+pub fn walk_source_then<T>(
+    source: &str,
+    source_type: SourceType,
+    flavour: Flavour,
+    options: &WalkOptions,
+    then: impl FnOnce(&Program<'_>) -> T,
+) -> Result<(Vec<Found>, T), ParseError> {
     let plain = plain_template_imports(source);
     let loose: String;
     let allocator = Allocator::default();
@@ -143,11 +159,12 @@ pub fn walk_source(
     // Like tsc's parser and acorn's loose fallback, carry on with whatever oxc recovered: a
     // syntax error loses the forms after it, never the whole file.
     let program = &parsed.program;
-    Ok(match flavour {
+    let found = match flavour {
         Flavour::Tsc => tsc(program, source, options),
         Flavour::Swc => swc(program, options),
         Flavour::Acorn => acorn(program, options),
-    })
+    };
+    Ok((found, then(program)))
 }
 
 /// oxc with the options every flavour shares.
