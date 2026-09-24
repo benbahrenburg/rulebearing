@@ -392,14 +392,14 @@ fn restricted_paths(
             .iter()
             .map(|t| pattern::path_or_glob(&relative(t)))
             .collect();
-        let froms = strings(zone.get("from"));
+        let from_paths = strings(zone.get("from"));
         let excepts = strings(zone.get("except"));
-        let to: Vec<String> = froms
+        let to: Vec<String> = from_paths
             .iter()
             .map(|f| pattern::path_or_glob(&relative(f)))
             .collect();
         let mut not = Vec::new();
-        for from in &froms {
+        for from in &from_paths {
             for except in &excepts {
                 if pattern::is_glob(from) {
                     not.push(pattern::path_or_glob(&relative(except)));

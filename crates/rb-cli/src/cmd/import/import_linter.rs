@@ -989,12 +989,12 @@ fn ignore_imports(contract: &Contract, layout: &Layout, produced: &[Produced], o
             continue;
         };
         let (source, target) = (source.trim(), target.trim());
-        let froms: Vec<String> = layout
+        let source_files: Vec<String> = layout
             .expand(source)
             .iter()
             .filter_map(|m| layout.module_file(m))
             .collect();
-        let tos: Vec<String> = if layout.is_local(target) {
+        let target_files: Vec<String> = if layout.is_local(target) {
             layout
                 .expand(target)
                 .iter()
@@ -1005,7 +1005,7 @@ fn ignore_imports(contract: &Contract, layout: &Layout, produced: &[Produced], o
         } else {
             vec![target.to_owned()]
         };
-        if froms.is_empty() || tos.is_empty() {
+        if source_files.is_empty() || target_files.is_empty() {
             out.notes.push(format!(
                 "`{}`: `{line}` names no module file under the repository, so it has no entry",
                 contract.id
@@ -1013,8 +1013,8 @@ fn ignore_imports(contract: &Contract, layout: &Layout, produced: &[Produced], o
             continue;
         }
         let mut matched = false;
-        for from in &froms {
-            for to in &tos {
+        for from in &source_files {
+            for to in &target_files {
                 for rule in produced {
                     let hit = |patterns: &[String], text: &str| {
                         patterns
