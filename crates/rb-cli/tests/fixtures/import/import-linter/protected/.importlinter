@@ -1,0 +1,16 @@
+[importlinter]
+root_packages =
+    lib
+
+[importlinter:contract:db]
+name = Only the API and the jobs reach the database
+type = protected
+protected_modules =
+    lib.db
+allowed_importers =
+    lib.api
+    lib.jobs
+
+[importlinter:contract:empty]
+name = Nothing named
+type = protected

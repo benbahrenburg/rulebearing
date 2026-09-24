@@ -1,0 +1,58 @@
+# Imported from .importlinter by `rulebearing import import-linter`.
+# Each rule's comment names its import-linter contract; the contract's options are written above its first rule.
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+languages:
+  python:
+    roots: [src]
+rules:
+  slices:
+    # import-linter contract `siblings` (acyclic_siblings): Siblings are acyclic
+    #   ancestors = core
+    #   ignore_imports = core.a -> core.b
+    # ignore_imports: a slice rule has no knownViolations entry, so these imports still count toward a cycle
+    - name: siblings:core
+      comment: "import-linter contract: Siblings are acyclic"
+      severity: error
+      matching: "core.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: siblings:core.a
+      comment: "import-linter contract: Siblings are acyclic"
+      severity: error
+      matching: "core.a.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: siblings:core.a.deep
+      comment: "import-linter contract: Siblings are acyclic"
+      severity: error
+      matching: "core.a.deep.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: siblings:core.b
+      comment: "import-linter contract: Siblings are acyclic"
+      severity: error
+      matching: "core.b.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    # import-linter contract `top` (acyclic_siblings): Only the top is sliced
+    #   ancestors = core, core.missing
+    #   skip_descendants = true
+    # the package `core.missing` was not found under the repository, so only it is sliced, not the packages below it
+    - name: top:core
+      comment: "import-linter contract: Only the top is sliced"
+      severity: error
+      matching: "core.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: top:core.missing
+      comment: "import-linter contract: Only the top is sliced"
+      severity: error
+      matching: "core.missing.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true

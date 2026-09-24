@@ -26,7 +26,7 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 
 `cruise --init [oneshot]` is `depcruise --init` without the questions: it writes what `init` writes, to `--config FILE` or `rulebearing.yaml`, with `--preset typescript,dotnet,python` naming the languages instead of detecting them. `yes`, a bare `--init` and any other name write the configuration; `x-scripts` also adds `rulebearing`, `rulebearing:text` and `rulebearing:focus` run scripts to `package.json` after the existing ones and, as dependency-cruiser does, leaves an existing configuration be. dependency-cruiser's graph and HTML scripts need the `dot`, `archi` and `err-html` reporters and `wrap-html`, and are not written until those exist. One language extends its own preset first, `[rulebearing:python, rulebearing:recommended]`, so its exclusions win; several extend `rulebearing:recommended` ([config.md](config.md#presets)).
 
-`import` arrives with the importers of wave 2; `diff`, `guard`, `snapshot`, `changelog` and `serve` in wave 3. Each exits 2 now and names its wave.
+`diff`, `guard`, `snapshot`, `changelog` and `serve` arrive in wave 3. Each exits 2 now and names its wave.
 
 ## Baselines
 

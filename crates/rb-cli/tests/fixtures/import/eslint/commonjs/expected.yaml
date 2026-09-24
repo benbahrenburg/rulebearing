@@ -1,0 +1,10 @@
+# Imported from .eslintrc.cjs by `rulebearing import eslint`.
+# Each rule is preceded by the ESLint setting it came from. Package imports in the configuration were not run, so rules from shareable configurations are not here.
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+rules:
+  dependencies:
+    forbidden: []
+      # boundaries/element-types (config): {"default":"allow","rules":[{"from":"domain","disallow":[["application",{"name":"x"}]]}]}
+      # eslint-plugin-boundaries gives a file to the first element whose pattern matches; the patterns below do not encode that order
+      # not imported: `["application",{"name":"x"}]` selects by captured values, which the importer does not translate
+      # - name: boundaries
