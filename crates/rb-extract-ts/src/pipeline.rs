@@ -38,7 +38,9 @@ use regex::Regex;
 use crate::babel::BabelAliases;
 use crate::codelayer::{self, FileCode};
 use crate::collate;
+use crate::md;
 use crate::resolve::{self, Context, ResolveConfig, SCANNABLE_EXTENSIONS};
+use crate::sfc;
 use crate::walk::{self, Flavour, Found, WalkOptions};
 
 /// An option could not be used.
@@ -124,7 +126,8 @@ pub enum PreCompilation {
 #[expect(
     clippy::struct_excessive_bools,
     reason = "each flag is one independent option (detectJSDocImports, \
-              detectProcessBuiltinModuleCalls, experimentalStats, the code layer), not a state"
+              detectProcessBuiltinModuleCalls, experimentalStats, the code layer, Markdown fences), \
+              not a state"
 )]
 #[derive(Debug, Clone)]
 pub struct Settings {
@@ -161,6 +164,11 @@ pub struct Settings {
     /// Whether each extracted file's code layer is read from the same parse
     /// ([`codelayer`]); on by default.
     pub code_layer: bool,
+    /// Whether a `.md` file that `extraExtensionsToScan` lists has its JavaScript and TypeScript
+    /// fences read ([`md`]). Off by default, which is dependency-cruiser's behaviour (a listed
+    /// extension is never read); the command line turns it on for a native configuration
+    /// ([ADR-0036](../../../docs/adr/0036-markdown-fences-follow-the-configuration-format.md)).
+    pub markdown_fences: bool,
 }
 
 impl Settings {
@@ -195,6 +203,7 @@ impl Settings {
             experimental_stats: options.experimental_stats.unwrap_or(false),
             babel: None,
             code_layer: true,
+            markdown_fences: false,
         })
     }
 
@@ -355,6 +364,36 @@ pub struct Transpiled {
     /// `export * as ns from "x"`, which the ES2015 target lowers to `import * as ns_1 from "x"`
     /// plus a local export, so acorn reads an import.
     pub lowered_to_import: Vec<Span>,
+}
+
+/// The spans of a TypeScript source's type-only declarations: `import type`, `export type ...
+/// from` and `export type * from`, which stripping the types removes.
+fn type_declarations(source: &str, source_type: SourceType) -> Vec<Span> {
+    let allocator = Allocator::default();
+    let parsed = OxcParser::new(&allocator, source, source_type).parse();
+    parsed
+        .program
+        .body
+        .iter()
+        .filter_map(|statement| match statement {
+            Statement::ImportDeclaration(import)
+                if import.import_kind == ImportOrExportKind::Type =>
+            {
+                Some(import.span)
+            }
+            Statement::ExportFromDeclaration(export)
+                if export.export_kind == ImportOrExportKind::Type =>
+            {
+                Some(export.span)
+            }
+            Statement::ExportAllDeclaration(export)
+                if export.export_kind == ImportOrExportKind::Type =>
+            {
+                Some(export.span)
+            }
+            _ => None,
+        })
+        .collect()
 }
 
 /// [`Transpiled`] for a TypeScript source. `esm` is upstream's ESM flavour (`.mts`, `.d.mts`),
@@ -555,77 +594,66 @@ fn read(path: &Path) -> Result<String, PipelineError> {
     })
 }
 
-/// The script of a Vue single-file component, as `@vue/compiler-sfc` hands it to upstream's
-/// parsers: the `<script>` and `<script setup>` contents. Everything else is blanked to spaces,
-/// newlines kept, so every byte offset (and so every line and column) is the one in the file.
-/// Also returns the first script's `lang`.
-pub fn vue_script(source: &str) -> (String, Option<String>) {
-    let mut out: Vec<u8> = source
-        .bytes()
-        .map(|b| if b == b'\n' || b == b'\r' { b } else { b' ' })
-        .collect();
-    let mut lang = None;
-    let mut from = 0;
-    while let Some(at) = source[from..].find("<script").map(|i| i + from) {
-        let after_name = at + "<script".len();
-        let boundary = source[after_name..].chars().next();
-        let Some(open_end) = source[after_name..].find('>').map(|i| i + after_name) else {
-            break;
-        };
-        if !matches!(boundary, Some(c) if c == '>' || c.is_whitespace()) {
-            from = after_name;
-            continue;
-        }
-        let attributes = &source[after_name..open_end];
-        if lang.is_none() {
-            lang = attribute(attributes, "lang");
-        }
-        let body_start = open_end + 1;
-        let body_end = source[body_start..]
-            .find("</script>")
-            .map_or(source.len(), |i| i + body_start);
-        out[body_start..body_end].copy_from_slice(&source.as_bytes()[body_start..body_end]);
-        from = body_end;
-    }
-    // Only ASCII bytes were replaced, and whole script bodies copied back, so this is UTF-8
-    // unless a multi-byte character straddled a tag, which the tags' ASCII delimiters rule out.
-    (String::from_utf8(out).unwrap_or_default(), lang)
+/// What part of a file a text to parse is.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Script {
+    /// The whole file.
+    Whole,
+    /// The script blocks of a `.vue` or `.svelte` component, with the first one's `lang`
+    /// ([`sfc`]).
+    Component(Option<String>),
+    /// One code fence of a Markdown file, with its normalised language ([`md`]).
+    Fence(&'static str),
 }
 
-/// The value of `name="..."` (or `'...'`, or unquoted) in a tag's attribute text.
-fn attribute(attributes: &str, name: &str) -> Option<String> {
-    let at = attributes.find(&format!("{name}="))? + name.len() + 1;
-    let rest = &attributes[at..];
-    let value = match rest.chars().next()? {
-        quote @ ('"' | '\'') => rest[1..].split(quote).next()?,
-        _ => rest.split(|c: char| c.is_whitespace() || c == '/').next()?,
-    };
-    Some(value.to_owned())
-}
-
-/// A file's source as the walker reads it: a `.vue` file's script, anything else whole. The
-/// second value is the Vue script's `lang`.
-fn source_of(settings: &Settings, file: &str) -> Result<(String, Option<String>), PipelineError> {
+/// A file's source, and the texts the walker reads from it: a component's scripts, a Markdown
+/// file's fences (when `extraExtensionsToScan` lists `.md`), anything else whole. Every text is
+/// the file's length, so offsets in it are offsets in the file.
+fn source_of(
+    settings: &Settings,
+    file: &str,
+) -> Result<(String, Vec<(String, Script)>), PipelineError> {
     let source = read(&settings.on_disk(file))?;
-    if node_extname(file) == ".vue" {
-        Ok(vue_script(&source))
+    let extension = node_extname(file);
+    let texts = if sfc::is_component(extension) {
+        let scripts = sfc::scripts(&source);
+        vec![(scripts.text, Script::Component(scripts.lang))]
+    } else if reads_fences(settings, file) {
+        md::fences(&source)
+            .into_iter()
+            .map(|fence| (fence.text, Script::Fence(fence.lang)))
+            .collect()
     } else {
-        Ok((source, None))
+        vec![(source.clone(), Script::Whole)]
+    };
+    Ok((source, texts))
+}
+
+/// Whether `file` is Markdown whose fences are read: [`Settings::markdown_fences`] is on,
+/// `extraExtensionsToScan` lists `.md`, and the file is not literate CoffeeScript (`.coffee.md`,
+/// which is the sidecar's).
+fn reads_fences(settings: &Settings, file: &str) -> bool {
+    settings.markdown_fences
+        && resolve::extension(file) == ".md"
+        && settings.extra_extensions_to_scan.iter().any(|e| e == ".md")
+}
+
+/// The walker a text of `file` gets: a fence gets the one a file with its language's extension
+/// would.
+fn flavour_of(settings: &Settings, file: &str, script: &Script) -> Flavour {
+    match script {
+        Script::Fence(lang) => flavour_for(settings, &format!("fence.{lang}")),
+        Script::Whole | Script::Component(_) => flavour_for(settings, file),
     }
 }
 
-/// The syntax a file is parsed with. A Vue script is TypeScript when it says so, or when tsc
-/// reads it (tsc parses an unknown extension as TypeScript).
-fn syntax_for(file: &str, vue_lang: Option<&str>, flavour: Flavour) -> SourceType {
-    if node_extname(file) != ".vue" {
-        return source_type_for(file);
-    }
-    match vue_lang {
-        Some("tsx") => SourceType::tsx(),
-        Some("ts") => SourceType::ts(),
-        Some("jsx") => SourceType::mjs().with_jsx(true),
-        _ if flavour == Flavour::Tsc => SourceType::ts(),
-        _ => SourceType::mjs(),
+/// The syntax a text is parsed with. A component's script is TypeScript when it says so, or
+/// when tsc reads it (tsc parses an unknown extension as TypeScript).
+fn syntax_for(file: &str, script: &Script, flavour: Flavour) -> SourceType {
+    match script {
+        Script::Whole => source_type_for(file),
+        Script::Component(lang) => sfc::syntax(lang.as_deref(), flavour == Flavour::Tsc),
+        Script::Fence(lang) => md::syntax(lang),
     }
 }
 
@@ -636,7 +664,7 @@ fn forms(
     path: &Path,
     source: &str,
     source_type: SourceType,
-    flavour: Flavour,
+    (flavour, component): (Flavour, bool),
     code: Option<&str>,
 ) -> Result<(Vec<Found>, Option<FileCode>), PipelineError> {
     let parse_error = |e: walk::ParseError| PipelineError::Parse {
@@ -648,6 +676,17 @@ fn forms(
         code.map(|file| codelayer::collect(program, source, file))
     };
     match flavour {
+        Flavour::Acorn if component && source_type.is_typescript() => {
+            // A component's TypeScript is not compiled by `transpileModule`: Vue hands acorn the
+            // script as written and Svelte strips types only, keeping every value import (the
+            // template may use it). What goes is the type-only declarations.
+            let stripped = type_declarations(source, source_type);
+            let (mut found, collected) =
+                walk::walk_source_then(source, source_type, Flavour::Acorn, &options, then)
+                    .map_err(parse_error)?;
+            found.retain(|f| !stripped.iter().any(|s| s.contains_inclusive(f.span)));
+            Ok((found, collected))
+        }
         Flavour::Acorn if source_type.is_typescript() => {
             // acorn reads TypeScript only after compiling it, which drops imports used as types
             // and type-only re-exports, and lowers `export * as ns` for the ES2015 target.
@@ -744,7 +783,7 @@ fn unique_key(found: &Found) -> String {
 fn pre_compilation_only(
     settings: &Settings,
     (file, path): (&str, &Path),
-    (source, vue_lang): (&str, Option<&str>),
+    (source, script): (&str, &Script),
     flavour: Flavour,
     found: &[Found],
 ) -> Result<Option<Vec<bool>>, PipelineError> {
@@ -755,8 +794,8 @@ fn pre_compilation_only(
         settings,
         path,
         source,
-        syntax_for(file, vue_lang, Flavour::Acorn),
-        Flavour::Acorn,
+        syntax_for(file, script, Flavour::Acorn),
+        (Flavour::Acorn, matches!(script, Script::Component(_))),
         None,
     )?;
     Ok(Some(
@@ -828,36 +867,48 @@ fn resolved_dependencies(
     config: &ResolveConfig,
     collect: bool,
 ) -> Result<Resolved, PipelineError> {
-    if settings
-        .extra_extensions_to_scan
-        .iter()
-        .any(|e| e == node_extname(file))
+    if !reads_fences(settings, file)
+        && settings
+            .extra_extensions_to_scan
+            .iter()
+            .any(|e| e == node_extname(file))
     {
         return Ok((Vec::new(), None, None));
     }
     let mut first_found = None;
-    let flavour = flavour_for(settings, file);
     let path = settings.on_disk(file);
-    let (source, vue_lang) = source_of(settings, file)?;
-    let source_type = syntax_for(file, vue_lang.as_deref(), flavour);
-    let (mut found, mut code) = forms(
-        settings,
-        &path,
-        &source,
-        source_type,
-        flavour,
-        collect.then_some(file),
-    )?;
-    if flavour == Flavour::Acorn {
-        apply_babel_aliases(settings, &path, &mut found);
+    let (source, texts) = source_of(settings, file)?;
+    let mut found = Vec::new();
+    let mut pre_compilation: Vec<Option<bool>> = Vec::new();
+    let mut code = None;
+    for (text, script) in &texts {
+        let flavour = flavour_of(settings, file, script);
+        let source_type = syntax_for(file, script, flavour);
+        // A Markdown fence is an example, not a part of the program: it has no code layer.
+        let layer = (collect && !matches!(script, Script::Fence(_))).then_some(file);
+        let (mut forms_found, collected) = forms(
+            settings,
+            &path,
+            text,
+            source_type,
+            (flavour, matches!(script, Script::Component(_))),
+            layer,
+        )?;
+        if flavour == Flavour::Acorn {
+            apply_babel_aliases(settings, &path, &mut forms_found);
+        }
+        let only = pre_compilation_only(
+            settings,
+            (file, &path),
+            (text, script),
+            flavour,
+            &forms_found,
+        )?;
+        pre_compilation
+            .extend((0..forms_found.len()).map(|i| only.as_ref().and_then(|o| o.get(i).copied())));
+        found.append(&mut forms_found);
+        code = code.or(collected);
     }
-    let pre_compilation = pre_compilation_only(
-        settings,
-        (file, &path),
-        (&source, vue_lang.as_deref()),
-        flavour,
-        &found,
-    )?;
     let lines = Lines::new(&source);
     // Module attributes first, then unique by module, system and type-only-ness.
     let mut seen = BTreeSet::new();
@@ -871,7 +922,7 @@ fn resolved_dependencies(
         file_dir: &file_dir,
     };
     for (index, mut form) in found.drain(..).enumerate() {
-        let only = pre_compilation.as_ref().and_then(|p| p.get(index).copied());
+        let only = pre_compilation.get(index).copied().flatten();
         if only == Some(true) {
             form.dependency_types
                 .push(DependencyType::PreCompilationOnly);
@@ -1464,30 +1515,45 @@ mod tests {
     }
 
     #[test]
-    fn a_vue_file_is_read_as_its_scripts_at_their_own_offsets() {
-        let source = "<template>\n  <div>é</div>\n</template>\n<script lang=\"ts\">\nimport a from './a';\n</script>\n<script setup>\nimport b from './b';\n</script>\n<scripts>x</scripts>\n";
-        let (script, lang) = vue_script(source);
-        assert_eq!(lang.as_deref(), Some("ts"));
-        assert_eq!(script.len(), source.len());
-        assert_eq!(script.matches('\n').count(), source.matches('\n').count());
-        let at = source.find("import a").unwrap_or_default();
-        assert_eq!(&script[at..at + 20], "import a from './a';");
-        assert!(script.contains("import b from './b';"));
-        assert!(!script.contains("template") && !script.contains("<script"));
-        assert_eq!(vue_script("<script>x").0, "        x");
-        assert_eq!(
-            attribute("setup lang='tsx'", "lang").as_deref(),
-            Some("tsx")
-        );
-        assert_eq!(attribute("lang=js setup", "lang").as_deref(), Some("js"));
-        assert_eq!(attribute("setup", "lang"), None);
-        let check = |lang: Option<&str>, flavour: Flavour| syntax_for("a.vue", lang, flavour);
+    fn component_and_fence_syntax_and_walkers() -> Result<(), PipelineError> {
+        let check = |lang: Option<&str>, flavour: Flavour| {
+            syntax_for(
+                "a.vue",
+                &Script::Component(lang.map(str::to_owned)),
+                flavour,
+            )
+        };
         assert!(check(Some("tsx"), Flavour::Acorn).is_jsx());
         assert!(check(Some("ts"), Flavour::Acorn).is_typescript());
         assert!(check(None, Flavour::Tsc).is_typescript());
         assert!(check(Some("jsx"), Flavour::Acorn).is_jsx());
         assert!(!check(None, Flavour::Acorn).is_typescript());
-        assert!(syntax_for("a.ts", None, Flavour::Acorn).is_typescript());
+        assert!(syntax_for("a.ts", &Script::Whole, Flavour::Acorn).is_typescript());
+        assert!(syntax_for("a.md", &Script::Fence("ts"), Flavour::Acorn).is_typescript());
+        let settings = Settings::new(
+            &TypeScriptOptions {
+                parser: Some(Parser::Tsc),
+                ..TypeScriptOptions::default()
+            },
+            Path::new("."),
+        )?;
+        assert_eq!(
+            flavour_of(&settings, "a.md", &Script::Fence("ts")),
+            Flavour::Tsc
+        );
+        assert_eq!(
+            flavour_of(&settings, "a.md", &Script::Fence("jsx")),
+            Flavour::Acorn
+        );
+        assert_eq!(
+            flavour_of(&settings, "a.svelte", &Script::Component(None)),
+            Flavour::Acorn
+        );
+        assert_eq!(
+            flavour_of(&settings, "a.vue", &Script::Component(None)),
+            Flavour::Tsc
+        );
+        Ok(())
     }
 
     #[test]

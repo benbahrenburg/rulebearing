@@ -23,6 +23,8 @@
 //! | [`npm`] | `package.json` lookup and the `npm*` dependency types |
 //! | [`core`] | runtime built-in modules |
 //! | [`babel`] | `babelConfig`'s module-resolver aliases |
+//! | [`sfc`] | the `<script>` blocks of `.vue` and `.svelte` components |
+//! | [`md`] | the JavaScript and TypeScript fences of Markdown, when `extraExtensionsToScan` lists `.md` |
 //! | [`codelayer`] | classes, interfaces, enums, type aliases, functions, members, decorators and calls |
 //! | [`collate`] | JavaScript's `localeCompare` order, which dependency-cruiser sorts with |
 //! | [`pipeline`] | files to resolved, filtered, sorted dependencies, and the reachable modules |
@@ -36,9 +38,11 @@ pub mod codelayer;
 pub use rb_model::collate;
 pub mod core;
 pub mod jsdoc;
+pub mod md;
 pub mod npm;
 pub mod pipeline;
 pub mod resolve;
+pub mod sfc;
 pub mod walk;
 
 use std::path::{Path, PathBuf};

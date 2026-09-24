@@ -208,8 +208,11 @@ pub fn extract_with_warnings(
         } else {
             paths.iter().map(PathBuf::from).collect()
         };
-        let (settings, mut resolve) =
+        let (mut settings, mut resolve) =
             rb_extract_ts::prepare(&config.languages.typescript, &ctx.cwd)?;
+        // Markdown fences are a native addition; a dependency-cruiser configuration never has a
+        // file of `extraExtensionsToScan` read (ADR-0036).
+        settings.markdown_fences = config.compat == rb_config::CompatMode::Native;
         // Licences and deprecations are read from package.json only when a rule asks for them, as
         // upstream's ruleSetHasLicenseRule and ruleSetHasDeprecationRule decide.
         resolve.resolve_licenses = rb_rules::derive::has_license_rule(&config.rules.dependencies);
