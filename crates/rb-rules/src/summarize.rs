@@ -130,11 +130,63 @@ pub fn summarize_modules(modules: &[Value], rules: Option<&DependencyRules>) -> 
         }
     }
     violations.sort_by(compare_violations);
+    unique_violations(violations)
+}
+
+/// `uniqWith(violations, isSameViolation)`: the first of each set of equal violations, in order.
+///
+/// Upstream compares each violation with every one kept before it. Two violations can only be
+/// the same when they name the same rule, and then either both carry a cycle or their `from`
+/// and `to` are equal, so each violation is compared only with the kept ones of its rule that
+/// share its ends or, when it carries a cycle, that carry one too. The same violations are kept,
+/// without the quadratic scan that took minutes on an import-linter oracle's hundred thousand
+/// reachability violations.
+pub fn unique_violations(violations: Vec<Value>) -> Vec<Value> {
+    type Rule = Option<String>;
+    let rule_of = |v: &Value| {
+        v.get("rule")
+            .and_then(|r| js::str_of(r, "name"))
+            .map(str::to_owned)
+    };
+    let ends_of = |v: &Value| match (v.get("from"), v.get("to")) {
+        (Some(Value::String(from)), Some(Value::String(to))) => Some((from.clone(), to.clone())),
+        _ => None,
+    };
     let mut unique: Vec<Value> = Vec::with_capacity(violations.len());
+    let mut by_ends: std::collections::HashMap<(Rule, String, String), Vec<usize>> =
+        std::collections::HashMap::new();
+    let mut other_ends: std::collections::HashMap<Rule, Vec<usize>> =
+        std::collections::HashMap::new();
+    let mut cycles: std::collections::HashMap<Rule, Vec<usize>> = std::collections::HashMap::new();
     for violation in violations {
-        if !unique.iter().any(|u| is_same_violation(&violation, u)) {
-            unique.push(violation);
+        let rule = rule_of(&violation);
+        let ends = ends_of(&violation);
+        let cycle = js::truthy(violation.get("cycle"));
+        let same_ends = match &ends {
+            Some((from, to)) => by_ends.get(&(rule.clone(), from.clone(), to.clone())),
+            None => other_ends.get(&rule),
+        };
+        let with_cycle = if cycle { cycles.get(&rule) } else { None };
+        let seen = same_ends
+            .into_iter()
+            .chain(with_cycle)
+            .flatten()
+            .any(|&at| is_same_violation(&violation, &unique[at]));
+        if seen {
+            continue;
         }
+        let at = unique.len();
+        match ends {
+            Some((from, to)) => by_ends
+                .entry((rule.clone(), from, to))
+                .or_default()
+                .push(at),
+            None => other_ends.entry(rule.clone()).or_default().push(at),
+        }
+        if cycle {
+            cycles.entry(rule).or_default().push(at);
+        }
+        unique.push(violation);
     }
     unique
 }
@@ -440,6 +492,44 @@ mod tests {
         assert_eq!(v[1]["metrics"]["from"]["instability"], 0.1);
         assert_eq!(v[0]["cycle"], json!([{ "name": "b" }, { "name": "a" }]));
         assert!(!js::has(&v[2], "cycle"));
+    }
+
+    proptest::proptest! {
+        /// The bucketed scan keeps exactly what upstream's pairwise scan keeps.
+        #[test]
+        fn unique_violations_is_upstreams_uniq_with(
+            items in proptest::collection::vec(
+                (0u8..2, 0u8..3, 0u8..3, 0u8..3, proptest::option::of(0u8..3)),
+                0..40,
+            )
+        ) {
+            let steps = |n: u8| -> Value {
+                let names = [["a"].as_slice(), &["a", "b"], &["b", "a"]][usize::from(n)];
+                Value::Array(names.iter().map(|s| json!({ "name": s })).collect())
+            };
+            let violations: Vec<Value> = items
+                .iter()
+                .map(|&(rule, from, to, extra, shape)| {
+                    let mut v = json!({ "rule": { "name": format!("r{rule}") } });
+                    // A non-string end now and then, which the scan must still compare.
+                    v["from"] = if from == 2 { json!(null) } else { json!(format!("f{from}")) };
+                    v["to"] = json!(format!("t{to}"));
+                    match shape {
+                        Some(0) => v["cycle"] = steps(extra),
+                        Some(1) => v["via"] = steps(extra),
+                        _ => {}
+                    }
+                    v
+                })
+                .collect();
+            let mut naive: Vec<Value> = Vec::new();
+            for v in &violations {
+                if !naive.iter().any(|u| is_same_violation(v, u)) {
+                    naive.push(v.clone());
+                }
+            }
+            proptest::prop_assert_eq!(unique_violations(violations), naive);
+        }
     }
 
     #[test]
