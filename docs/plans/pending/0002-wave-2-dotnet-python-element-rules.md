@@ -879,12 +879,12 @@ public class ArchitectureRules
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 2G | `docs --format agents-md / contributing / skill`, `--verify` | Not started | CLI fixtures, CI check |
-| 2G | `propose --from/--to`, `--select/--where`, `--from-example` | Not started | CLI fixtures |
-| 2G | `impact`, `place` | Not started | CLI fixtures |
-| 2G | `test --generate` | Not started | CLI fixture |
-| 2G | `decisions`, `decisions new` | Not started | CLI fixtures |
-| 2G | Worktree-aware cache key | Not started | `cache_worktree.rs` |
+| 2G | `docs --format agents-md / contributing / skill`, `--verify` | Done | `crates/rb-cli/tests/cmd/docs.rs` (the three formats, a determinism check, `--verify` stale and current); `AGENTS.md` generated between markers; the `self-check` job runs `rulebearing docs --format agents-md --verify --out AGENTS.md` |
+| 2G | `propose --from/--to`, `--select/--where`, `--from-example` | Done | `crates/rb-cli/tests/cmd/propose.rs`: each form over the wave 1 tree and the `TestAssembly` graph; every draft loads and fires |
+| 2G | `impact`, `place` | Done | `crates/rb-cli/tests/cmd/impact.rs` (text snapshot, `--json`, a cycle, `--no-cache`), `crates/rb-cli/tests/cmd/place.rs` (legal folders, none legal, a cycle it would close) |
+| 2G | `test --generate` | Done | `crates/rb-cli/tests/cmd/generate.rs`: examples written in place, comments kept, `--force` required to overwrite, `rulebearing test` passes afterwards |
+| 2G | `decisions`, `decisions new` | Done | `crates/rb-cli/tests/cmd/decisions.rs`: table and `--json`, exit 1 on a dangling `adr:NNNN`, the ADR-0001 template scaffolded |
+| 2G | Worktree-aware cache key | Done | `crates/rb-cli/tests/cache_worktree.rs` (two worktrees at different `HEAD`s: different directories, neither reads the other's graph; a commit and `git pack-refs` handled); `crates/rb-cli/src/cache/key.rs` unit tests |
 | 2G | `eslint-plugin-rulebearing` | Not started | vitest coverage, agreement test |
 
 ### Wave 2H: test adapters and wrappers
