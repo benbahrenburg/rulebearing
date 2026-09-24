@@ -1,0 +1,43 @@
+extends:
+- rulebearing:python
+- rulebearing:recommended
+languages:
+  python:
+    roots:
+    - src
+rules:
+  dependencies:
+    forbidden:
+    - name: no-legacy-imports
+      comment: The legacy packages are frozen. adr:0003
+      fix: Import the replacement under src/app/ instead.
+      severity: error
+      from:
+        path: ^src/app/
+      to:
+        path: ^src/(old|older)/
+    - name: clean:2-to-1
+      severity: error
+      from:
+        path: ^src/application/
+      to:
+        path: ^src/web/
+    - name: clean:3-to-1
+      severity: error
+      from:
+        path: ^src/domain/
+      to:
+        path: ^src/web/
+    - name: clean:3-to-2
+      severity: error
+      from:
+        path: ^src/domain/
+      to:
+        path: ^src/application/
+    - name: features
+      severity: error
+      from:
+        path: ^src/features/([^/]+)/
+      to:
+        path: ^src/features/([^/]+)/
+        pathNot: ^src/features/$1/

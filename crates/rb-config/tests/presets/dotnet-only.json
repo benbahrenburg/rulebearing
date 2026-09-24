@@ -1,0 +1,117 @@
+{
+  "forbidden": [
+    {
+      "comment": "A module nothing imports and that imports nothing is usually dead code.",
+      "fix": "Delete the module, import it from where it belongs, or add its path to this rule's from.pathNot if it is an entry point or a configuration file.",
+      "from": {
+        "orphan": true,
+        "pathNot": [
+          "(^|/)(Program|Startup|AssemblyInfo)\\.cs$",
+          "(^|/)Migrations/"
+        ]
+      },
+      "name": "no-orphans",
+      "severity": "warn",
+      "to": {}
+    },
+    {
+      "comment": "A module that is part of a cycle cannot be changed, tested or moved on its own.",
+      "fix": "Break the cycle: move the shared code into a module both sides import, or invert one edge behind an interface. Type-only imports do not count.",
+      "from": {},
+      "name": "no-circular",
+      "severity": "error",
+      "to": {
+        "circular": true,
+        "dependencyTypesNot": [
+          "type-only"
+        ]
+      }
+    },
+    {
+      "comment": "An import that resolves to nothing fails at run time or hides a missing package.",
+      "fix": "Fix the specifier, or add the package to package.json; for a path alias, check tsConfig and enhancedResolveOptions.",
+      "from": {},
+      "name": "not-to-unresolvable",
+      "severity": "error",
+      "to": {
+        "couldNotResolve": true
+      }
+    },
+    {
+      "comment": "An npm import missing from package.json works only by accident of hoisting.",
+      "fix": "Add the package to dependencies (or devDependencies for test and build code) of the nearest package.json.",
+      "from": {},
+      "name": "no-non-package-json",
+      "severity": "error",
+      "to": {
+        "dependencyTypes": [
+          "npm-no-pkg",
+          "npm-unknown"
+        ]
+      }
+    },
+    {
+      "comment": "A deprecated Node built-in will be removed.",
+      "fix": "Replace the module: punycode with the url API, domain with async hooks or try/catch, constants with os.constants or fs.constants, sys with util.",
+      "from": {},
+      "name": "no-deprecated-core",
+      "severity": "error",
+      "to": {
+        "dependencyTypes": [
+          "core"
+        ],
+        "path": "^(?:punycode|domain|constants|sys|_linklist|_stream_wrap)$"
+      }
+    },
+    {
+      "comment": "A package listed in more than one dependencies section installs unpredictably.",
+      "fix": "Keep the package in exactly one section of package.json: dependencies for run-time code, devDependencies otherwise.",
+      "from": {},
+      "name": "no-duplicate-dep-types",
+      "severity": "warn",
+      "to": {
+        "dependencyTypesNot": [
+          "type-only"
+        ],
+        "moreThanOneDependencyType": true
+      }
+    }
+  ],
+  "languages": {
+    "python": {
+      "stubs": false
+    }
+  },
+  "options": {
+    "doNotFollow": {
+      "path": "node_modules"
+    },
+    "enhancedResolveOptions": {
+      "conditionNames": [
+        "import",
+        "require",
+        "node",
+        "default",
+        "types"
+      ],
+      "exportsFields": [
+        "exports"
+      ],
+      "mainFields": [
+        "module",
+        "main",
+        "types",
+        "typings"
+      ]
+    },
+    "exclude": {
+      "path": [
+        "(^|/)(obj|bin)/.+\\.cs$",
+        "\\.g\\.cs$",
+        "\\.Designer\\.cs$",
+        "(^|/)GlobalUsings\\.g\\.cs$"
+      ]
+    },
+    "tsPreCompilationDeps": true
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "forbidden": [
+    {
+      "comment": "A module nothing imports and that imports nothing is usually dead code.",
+      "fix": "Delete the module, import it from where it belongs, or add its path to this rule's from.pathNot if it is an entry point or a configuration file.",
+      "from": {
+        "orphan": true,
+        "pathNot": [
+          "(^|/)(Program|Startup|AssemblyInfo)\\.cs$",
+          "(^|/)Migrations/"
+        ]
+      },
+      "name": "no-orphans",
+      "severity": "warn",
+      "to": {}
+    }
+  ],
+  "options": {
+    "exclude": {
+      "path": [
+        "(^|/)(obj|bin)/.+\\.cs$",
+        "\\.g\\.cs$",
+        "\\.Designer\\.cs$",
+        "(^|/)GlobalUsings\\.g\\.cs$"
+      ]
+    }
+  }
+}

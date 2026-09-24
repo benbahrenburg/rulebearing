@@ -2,22 +2,29 @@
 //!
 //! - Source: [design § The developer relations hat](../../../../docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo)
 //!   ("reads the repo before it asks anything ... every rule already passing or baselined")
-//! - Plan: [Wave 1, Step 16](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-16-init-1f)
-//! - Requirement: [FR-CLI-03](../../../../docs/prd.md#fr-cli-03)
+//! - Plans: [Wave 1, Step 16](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-16-init-1f),
+//!   [Wave 2, Step 9](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
+//!   ("`init` (wave 1) selects presets from the languages it detects")
+//! - Source: [design § What stays honest across the boundary](../../../../docs/artifacts/design.md#what-stays-honest-across-the-boundary)
+//!   (per-language presets, composed by `rulebearing:recommended`)
+//! - Requirements: [FR-CLI-03](../../../../docs/prd.md#fr-cli-03), [FR-CFG-06](../../../../docs/prd.md#fr-cfg-06)
 //!
-//! Discovery reads the tree: TypeScript (`tsconfig.json`) or JavaScript (`package.json`), an
-//! `apps/` and `packages/` split, `src/features/*` layouts, and the entry files and conventions a
-//! framework implies, which `no-orphans` must not report. The proposal extends
-//! `rulebearing:recommended` and adds one fence per boundary found, each with a `comment` and a
-//! `fix`. A cruise then runs over it: a rule that would be vacuous is dropped, and every current
-//! finding is written into the baseline ([`crate::cmd::adopt::baseline`]), so the file is written
-//! only when a second cruise with it exits 0. .NET and Python discovery arrive with their
-//! extractors in wave 2.
+//! Discovery reads the tree: TypeScript (`tsconfig.json`) or JavaScript (`package.json`), .NET (a
+//! solution, a project file or `Directory.Build.props` at the root), Python (`pyproject.toml`,
+//! `setup.py` or `setup.cfg`), an `apps/` and `packages/` split, `src/features/*` layouts, and the
+//! entry files and conventions a framework implies, which `no-orphans` must not report. The
+//! languages found (or named with `--preset`) choose the presets: one language extends its own
+//! preset and `rulebearing:recommended`, its own first so that its exclusions win and no other
+//! language's are carried; several extend `rulebearing:recommended`, which composes all three.
+//! The proposal adds one fence per boundary found, each with a `comment` and a `fix`. A cruise
+//! then runs over it: a rule that would be vacuous is dropped, and every current finding is
+//! written into the baseline ([`crate::cmd::adopt::baseline`]), so the file is written only when
+//! a second cruise with it exits 0.
 
 use std::fmt::Write as _;
 use std::path::Path;
 
-use clap::Args;
+use clap::{Args, ValueEnum};
 use rb_config::extends::{self, Target};
 use rb_config::load::{self, LoadOptions};
 use rb_config::read::Syntax;
@@ -29,9 +36,54 @@ use crate::pipeline::{self, RunOptions};
 use crate::progress::Progress;
 use crate::{Outcome, RunExit};
 
+/// A language whose defaults are a bundled preset (`rulebearing:<name>`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+pub enum Preset {
+    /// TypeScript and JavaScript: `rulebearing:typescript`.
+    Typescript,
+    /// .NET: `rulebearing:dotnet`.
+    Dotnet,
+    /// Python: `rulebearing:python`.
+    Python,
+}
+
+impl Preset {
+    /// The preset's name after `rulebearing:`.
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Typescript => "typescript",
+            Self::Dotnet => "dotnet",
+            Self::Python => "python",
+        }
+    }
+
+    /// The language as the proposal's header names it.
+    const fn label(self) -> &'static str {
+        match self {
+            Self::Typescript => "TypeScript",
+            Self::Dotnet => ".NET",
+            Self::Python => "Python",
+        }
+    }
+}
+
+/// The `extends` a proposal for `languages` writes: one language's preset before
+/// `rulebearing:recommended`, so its exclusions win; otherwise `rulebearing:recommended`, the
+/// composition of all three.
+pub fn extends_for(languages: &[Preset]) -> String {
+    match languages {
+        [one] => format!("[rulebearing:{}, rulebearing:recommended]", one.name()),
+        _ => "rulebearing:recommended".to_owned(),
+    }
+}
+
 /// `init`.
 #[derive(Debug, Clone, Default, Args)]
 pub struct InitArgs {
+    /// Use these languages' presets instead of the ones found: typescript, dotnet, python
+    /// (repeat, or separate with commas)
+    #[arg(long, value_enum, value_delimiter = ',', value_name = "LANGUAGE")]
+    pub preset: Vec<Preset>,
     /// Print the proposal and do not write it
     #[arg(long)]
     pub dry_run: bool,
@@ -53,6 +105,11 @@ pub struct Discovery {
     pub typescript: bool,
     /// `package.json` at the root.
     pub package_json: bool,
+    /// The languages whose presets the proposal extends: those found (TypeScript for a
+    /// `tsconfig.json` or `package.json`, .NET for a `.sln`, `.slnx` or `.csproj`, or
+    /// `Directory.Build.props`, Python for a `pyproject.toml`, `setup.py` or `setup.cfg`, each at
+    /// the root), or those `--preset` names.
+    pub languages: Vec<Preset>,
     /// Folders under `apps/`.
     pub apps: Vec<String>,
     /// Folders under `packages/`.
@@ -137,9 +194,33 @@ pub fn discover(root: &Path) -> Discovery {
             .to_owned(),
         );
     }
+    let typescript = root.join("tsconfig.json").is_file();
+    let package_json = root.join("package.json").is_file();
+    let dotnet = any_file(root, &["Directory.Build.props"])
+        || std::fs::read_dir(root).is_ok_and(|entries| {
+            entries.flatten().any(|e| {
+                e.path().is_file()
+                    && e.path()
+                        .extension()
+                        .and_then(|x| x.to_str())
+                        .is_some_and(|x| {
+                            ["sln", "slnx", "csproj"].contains(&x.to_ascii_lowercase().as_str())
+                        })
+            })
+        });
+    let python = any_file(root, &["pyproject.toml", "setup.py", "setup.cfg"]);
+    let languages = [
+        (typescript || package_json, Preset::Typescript),
+        (dotnet, Preset::Dotnet),
+        (python, Preset::Python),
+    ]
+    .into_iter()
+    .filter_map(|(found, preset)| found.then_some(preset))
+    .collect();
     Discovery {
-        typescript: root.join("tsconfig.json").is_file(),
-        package_json: root.join("package.json").is_file(),
+        typescript,
+        package_json,
+        languages,
         apps,
         packages,
         features,
@@ -148,28 +229,34 @@ pub fn discover(root: &Path) -> Discovery {
     }
 }
 
-/// The `no-orphans` exclusions: `rulebearing:recommended`'s, then the conventions found.
+/// The `no-orphans` exclusions: the chosen preset's (one language's own, else
+/// `rulebearing:recommended`'s), then the conventions found.
 fn orphan_exclusions(found: &Discovery) -> Vec<String> {
-    let mut out: Vec<String> = match extends::resolve("rulebearing:recommended", Path::new(".")) {
-        Ok(Target::NativePreset(_, text)) => serde_yaml::from_str::<Value>(text)
-            .ok()
-            .and_then(|preset| {
-                preset
-                    .pointer("/rules/dependencies/forbidden")
-                    .and_then(Value::as_array)
-                    .and_then(|rules| rules.iter().find(|r| r["name"] == "no-orphans"))
-                    .and_then(|r| r.pointer("/from/pathNot"))
-                    .and_then(Value::as_array)
-                    .map(|p| {
-                        p.iter()
-                            .filter_map(Value::as_str)
-                            .map(str::to_owned)
-                            .collect()
-                    })
-            })
-            .unwrap_or_default(),
-        _ => Vec::new(),
+    let preset = match found.languages.as_slice() {
+        [one] => one.name(),
+        _ => "recommended",
     };
+    let mut out: Vec<String> =
+        match extends::resolve(&format!("rulebearing:{preset}"), Path::new(".")) {
+            Ok(Target::NativePreset(_, text)) => serde_yaml::from_str::<Value>(text)
+                .ok()
+                .and_then(|preset| {
+                    preset
+                        .pointer("/rules/dependencies/forbidden")
+                        .and_then(Value::as_array)
+                        .and_then(|rules| rules.iter().find(|r| r["name"] == "no-orphans"))
+                        .and_then(|r| r.pointer("/from/pathNot"))
+                        .and_then(Value::as_array)
+                        .map(|p| {
+                            p.iter()
+                                .filter_map(Value::as_str)
+                                .map(str::to_owned)
+                                .collect()
+                        })
+                })
+                .unwrap_or_default(),
+            _ => Vec::new(),
+        };
     out.push(r"(^|/)(src/)?(main|index|cli|server|app)\.[cm]?[jt]sx?$".into());
     out.push(r"(^|/)(scripts|tools|bin)/".into());
     if found
@@ -313,10 +400,13 @@ pub fn render(found: &Discovery, rules: &[Proposed], entries: &[Value], today: &
         "# rulebearing.yaml, written by `rulebearing init` on {today}."
     );
     let mut seen = Vec::new();
-    if found.typescript {
-        seen.push("TypeScript".to_owned());
-    } else if found.package_json {
-        seen.push("JavaScript".to_owned());
+    for language in &found.languages {
+        seen.push(match language {
+            Preset::Typescript if !found.typescript && found.package_json => {
+                "JavaScript".to_owned()
+            }
+            other => other.label().to_owned(),
+        });
     }
     if !found.apps.is_empty() {
         seen.push(format!("{} apps", found.apps.len()));
@@ -339,7 +429,7 @@ pub fn render(found: &Discovery, rules: &[Proposed], entries: &[Value], today: &
         out,
         "# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too."
     );
-    let _ = writeln!(out, "extends: rulebearing:recommended");
+    let _ = writeln!(out, "extends: {}", extends_for(&found.languages));
     if found.typescript {
         out.push_str("languages:\n  typescript:\n    tsConfig: { fileName: tsconfig.json }\n    tsPreCompilationDeps: true\n");
     }
@@ -436,11 +526,17 @@ pub fn converge(
 
 /// Runs `init`.
 pub fn run(ctx: &mut Context<'_>, args: &InitArgs) -> Outcome {
-    let found = discover(&ctx.cwd);
-    if !found.typescript && !found.package_json {
+    let mut found = discover(&ctx.cwd);
+    if !args.preset.is_empty() {
+        let mut named = args.preset.clone();
+        named.sort_unstable();
+        named.dedup();
+        found.languages = named;
+    }
+    if found.languages.is_empty() {
         return Outcome::failed(
             RunExit::Untrustworthy,
-            "rulebearing init: no package.json or tsconfig.json here. Wave 1 initialises TypeScript and JavaScript repositories; run it at the repository root (.NET and Python arrive in wave 2)\n",
+            "rulebearing init: no package.json, tsconfig.json, .sln, .slnx, .csproj, Directory.Build.props, pyproject.toml, setup.py or setup.cfg here; run it at the repository root, or name the languages with --preset typescript,dotnet,python\n",
         );
     }
     let target = ctx.resolve(&args.output);
@@ -504,6 +600,122 @@ pub fn run(ctx: &mut Context<'_>, args: &InitArgs) -> Outcome {
     Outcome::printed(report)
 }
 
+/// The run scripts `--init x-scripts` adds to `package.json`: dependency-cruiser's
+/// `compileRunScripts`, with `rulebearing cruise` for `depcruise`, over the roots found. Its
+/// `depcruise:graph`, `depcruise:graph:dev`, `depcruise:graph:archi` and `depcruise:html` scripts
+/// pipe the `dot`, `archi` and `err-html` reporters through `depcruise-wrap-stream-in-html`,
+/// which this build does not have, so they are not written rather than written broken.
+pub fn run_scripts(roots: &[String]) -> Vec<(String, String)> {
+    let roots = roots.join(" ");
+    vec![
+        (
+            "rulebearing".to_owned(),
+            format!("rulebearing cruise {roots}"),
+        ),
+        (
+            "rulebearing:text".to_owned(),
+            format!("rulebearing cruise {roots} --progress --output-type text"),
+        ),
+        (
+            "rulebearing:focus".to_owned(),
+            format!("rulebearing cruise {roots} --progress --output-type text --focus"),
+        ),
+    ]
+}
+
+/// dependency-cruiser's `addRunScriptsToManifest`: each script whose name the manifest's
+/// `scripts` does not have yet is added after the existing ones, which stay as they are. Returns
+/// the names added.
+pub fn add_run_scripts(
+    manifest: &mut serde_json::Map<String, Value>,
+    scripts: &[(String, String)],
+) -> Vec<String> {
+    let existing = manifest
+        .get("scripts")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let mut merged = existing.clone();
+    let mut added = Vec::new();
+    for (name, command) in scripts {
+        if !existing.contains_key(name) {
+            merged.insert(name.clone(), Value::String(command.clone()));
+            added.push(name.clone());
+        }
+    }
+    manifest.insert("scripts".to_owned(), Value::Object(merged));
+    added
+}
+
+fn write_run_scripts(ctx: &Context<'_>, roots: &[String]) -> Result<Vec<String>, String> {
+    let path = ctx.resolve("package.json");
+    let text = std::fs::read_to_string(&path)
+        .map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    let mut manifest = match serde_json::from_str::<Value>(&text) {
+        Ok(Value::Object(map)) => map,
+        Ok(_) => return Err(format!("{} is not a JSON object", path.display())),
+        Err(e) => return Err(format!("{} does not parse: {e}", path.display())),
+    };
+    let added = add_run_scripts(&mut manifest, &run_scripts(roots));
+    let mut out = serde_json::to_string_pretty(&manifest).map_err(|e| e.to_string())?;
+    if text.ends_with('\n') {
+        out.push('\n');
+    }
+    std::fs::write(&path, out).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+    Ok(added)
+}
+
+/// `cruise --init [oneshot]`: dependency-cruiser's `depcruise --init`, without the questions.
+/// Every one-shot name writes the configuration `init` writes, to `--config FILE` or
+/// `rulebearing.yaml`, with `--preset` choosing the languages; as upstream, a name other than
+/// `x-scripts` is `yes`. `x-scripts` also adds [`run_scripts`] to `package.json` when there is
+/// one, and, as upstream, leaves an existing configuration be and still adds them. A bare
+/// `--init`, which asks questions upstream, is `yes`: the proposal is read from the repository.
+pub fn oneshot(ctx: &mut Context<'_>, oneshot: &str, args: &crate::cli::CruiseArgs) -> Outcome {
+    let output = args
+        .config
+        .config
+        .as_deref()
+        .filter(|c| !c.is_empty() && *c != "-")
+        .unwrap_or("rulebearing.yaml")
+        .to_owned();
+    let scripts = oneshot == "x-scripts" && ctx.resolve("package.json").is_file();
+    let mut report = String::new();
+    if !(scripts && ctx.resolve(&output).is_file()) {
+        let init = InitArgs {
+            preset: args.preset.clone(),
+            output,
+            ..InitArgs::default()
+        };
+        let outcome = run(ctx, &init);
+        if outcome.code != 0 {
+            return outcome;
+        }
+        report.push_str(&outcome.stdout);
+    }
+    if scripts {
+        match write_run_scripts(ctx, &discover(&ctx.cwd).roots) {
+            Ok(added) if added.is_empty() => {
+                report.push_str("package.json already has the rulebearing run scripts\n");
+            }
+            Ok(added) => {
+                let _ = writeln!(
+                    report,
+                    "added run scripts to package.json: {}",
+                    added.join(", ")
+                );
+            }
+            Err(message) => {
+                return Outcome::failed(
+                    RunExit::Untrustworthy,
+                    format!("rulebearing cruise --init: {message}\n"),
+                );
+            }
+        }
+    }
+    Outcome::printed(report)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -548,6 +760,109 @@ mod tests {
     }
 
     #[test]
+    fn languages_choose_the_presets() -> Result<(), Box<dyn std::error::Error>> {
+        assert_eq!(
+            extends_for(&[Preset::Dotnet]),
+            "[rulebearing:dotnet, rulebearing:recommended]"
+        );
+        assert_eq!(
+            extends_for(&[Preset::Typescript, Preset::Python]),
+            "rulebearing:recommended"
+        );
+        assert_eq!(extends_for(&[]), "rulebearing:recommended");
+        let names: Vec<&str> = [Preset::Typescript, Preset::Dotnet, Preset::Python]
+            .iter()
+            .map(|p| p.name())
+            .collect();
+        assert_eq!(names, ["typescript", "dotnet", "python"]);
+        let dir = std::env::temp_dir().join(format!("rb-init-languages-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir)?;
+        std::fs::write(dir.join("App.SLN"), "")?;
+        std::fs::write(dir.join("setup.cfg"), "")?;
+        let found = discover(&dir);
+        assert!(!found.typescript && !found.package_json);
+        assert_eq!(found.languages, [Preset::Dotnet, Preset::Python]);
+        std::fs::remove_file(dir.join("App.SLN"))?;
+        std::fs::write(dir.join("Directory.Build.props"), "")?;
+        assert_eq!(discover(&dir).languages, [Preset::Dotnet, Preset::Python]);
+        std::fs::remove_file(dir.join("Directory.Build.props"))?;
+        assert_eq!(discover(&dir).languages, [Preset::Python]);
+        let _ = std::fs::remove_dir_all(&dir);
+        Ok(())
+    }
+
+    #[test]
+    fn one_language_s_exclusions_are_its_own() {
+        let dotnet = orphan_exclusions(&Discovery {
+            languages: vec![Preset::Dotnet],
+            ..Discovery::default()
+        });
+        assert!(dotnet.iter().any(|p| p.contains("Program")), "{dotnet:?}");
+        assert!(
+            !dotnet
+                .iter()
+                .any(|p| p.contains("tsconfig") || p.contains("__main__"))
+        );
+        let both = orphan_exclusions(&Discovery {
+            languages: vec![Preset::Dotnet, Preset::Python],
+            ..Discovery::default()
+        });
+        assert!(
+            both.iter().any(|p| p.contains("Program"))
+                && both.iter().any(|p| p.contains("__main__"))
+        );
+        let found = Discovery {
+            package_json: true,
+            languages: vec![Preset::Typescript, Preset::Dotnet],
+            roots: vec![".".into()],
+            ..Discovery::default()
+        };
+        let text = render(&found, &[], &[], "2026-09-24");
+        assert!(text.contains("# Found: JavaScript, .NET.\n"), "{text}");
+        assert!(text.contains("extends: rulebearing:recommended\n"));
+    }
+
+    #[test]
+    fn run_scripts_are_added_after_the_existing_ones() {
+        let scripts = run_scripts(&["src".to_owned(), "test".to_owned()]);
+        assert_eq!(
+            scripts[0],
+            (
+                "rulebearing".to_owned(),
+                "rulebearing cruise src test".to_owned()
+            )
+        );
+        let mut manifest = serde_json::Map::new();
+        manifest.insert("name".into(), Value::String("x".into()));
+        manifest.insert(
+            "scripts".into(),
+            serde_json::json!({ "rulebearing": "mine", "build": "tsc" }),
+        );
+        let added = add_run_scripts(&mut manifest, &scripts);
+        assert_eq!(added, ["rulebearing:text", "rulebearing:focus"]);
+        assert_eq!(
+            manifest["scripts"]["rulebearing"], "mine",
+            "an existing script is kept"
+        );
+        let order: Vec<&String> = manifest["scripts"]
+            .as_object()
+            .map(|s| s.keys().collect())
+            .unwrap_or_default();
+        assert_eq!(
+            order,
+            [
+                "rulebearing",
+                "build",
+                "rulebearing:text",
+                "rulebearing:focus"
+            ]
+        );
+        let mut bare = serde_json::Map::new();
+        assert_eq!(add_run_scripts(&mut bare, &scripts).len(), 3);
+    }
+
+    #[test]
     fn exclusions_start_from_the_preset() {
         let plain = orphan_exclusions(&Discovery::default());
         assert!(plain.iter().any(|p| p.contains("tsconfig")), "{plain:?}");
@@ -563,6 +878,7 @@ mod tests {
     fn rendered_text_loads() -> Result<(), Box<dyn std::error::Error>> {
         let found = Discovery {
             typescript: true,
+            languages: vec![Preset::Typescript],
             apps: vec!["a".into(), "b".into()],
             packages: vec!["p".into()],
             features: vec!["src/features".into()],

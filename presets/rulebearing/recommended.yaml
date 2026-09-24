@@ -1,7 +1,17 @@
 # rulebearing:recommended. Original to Rulebearing (not copied from dependency-cruiser's presets,
-# which live beside this file under presets/dependency-cruiser/). Every rule has a `fix`, and every
+# which live beside this file under presets/dependency-cruiser/). It composes the three
+# per-language presets and adds the rules every language shares. Every rule has a `fix`, and every
 # rule selects every module on its `from` side, so none is vacuous on a repository that has files.
-# Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 3. Requirement: FR-CFG-06.
+#
+# dependency-cruiser's merge replaces a rule's `from` and an option's value whole rather than
+# joining them, so the `no-orphans` exclusions and the `exclude` pattern below are the union of the
+# three presets', in the order extends lists them; crates/rb-config/tests/presets.rs fails when
+# they drift. A single-language repository puts its own preset first
+# (`extends: [rulebearing:python, rulebearing:recommended]`), which then wins, and carries no other
+# language's exclusions. Source: docs/artifacts/design.md#what-stays-honest-across-the-boundary.
+# Plans: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 3;
+# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 9. Requirement: FR-CFG-06.
+extends: [rulebearing:typescript, rulebearing:dotnet, rulebearing:python]
 rules:
   dependencies:
     forbidden:
@@ -17,24 +27,6 @@ rules:
         severity: error
         from: {}
         to: { couldNotResolve: true }
-      - name: no-non-package-json
-        comment: "An npm import missing from package.json works only by accident of hoisting."
-        fix: "Add the package to dependencies (or devDependencies for test and build code) of the nearest package.json."
-        severity: error
-        from: {}
-        to: { dependencyTypes: [npm-no-pkg, npm-unknown] }
-      - name: no-deprecated-core
-        comment: "A deprecated Node built-in will be removed."
-        fix: "Replace the module: punycode with the url API, domain with async hooks or try/catch, constants with os.constants or fs.constants, sys with util."
-        severity: error
-        from: {}
-        to: { dependencyTypes: [core], path: "^(?:punycode|domain|constants|sys|_linklist|_stream_wrap)$" }
-      - name: no-duplicate-dep-types
-        comment: "A package listed in more than one dependencies section installs unpredictably."
-        fix: "Keep the package in exactly one section of package.json: dependencies for run-time code, devDependencies otherwise."
-        severity: warn
-        from: {}
-        to: { moreThanOneDependencyType: true, dependencyTypesNot: [type-only] }
       - name: no-orphans
         comment: "A module nothing imports and that imports nothing is usually dead code."
         fix: "Delete the module, import it from where it belongs, or add its path to this rule's from.pathNot if it is an entry point or a configuration file."
@@ -46,7 +38,17 @@ rules:
             - "\\.d\\.(c|m)?ts$"
             - "(^|/)tsconfig\\.json$"
             - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "(^|/)(Program|Startup|AssemblyInfo)\\.cs$"
+            - "(^|/)Migrations/"
+            - "(^|/)__main__\\.py$"
+            - "(^|/)conftest\\.py$"
         to: {}
 options:
-  doNotFollow:
-    path: node_modules
+  exclude:
+    path:
+      - "(^|/)(dist|build|coverage|\\.next|out)/"
+      - "(^|/)(obj|bin)/.+\\.cs$"
+      - "\\.g\\.cs$"
+      - "\\.Designer\\.cs$"
+      - "(^|/)GlobalUsings\\.g\\.cs$"
+      - "(^|/)(\\.venv|venv|site-packages|__pycache__)/"

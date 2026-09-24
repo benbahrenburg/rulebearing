@@ -34,7 +34,9 @@ rb-report = { workspace = true }
 rb-extract-ts = { workspace = true, optional = true }
 rb-extract-dotnet = { workspace = true, optional = true }
 rb-extract-python = { workspace = true, optional = true }
-serde_json = { workspace = true }
+# `preserve_order`: package.json and every JSON the CLI rewrites keep their key order in every
+# feature set, not only when oxc_resolver (extract-ts) happens to enable it.
+serde_json = { workspace = true, features = ["preserve_order"] }
 serde_yaml = { workspace = true }
 serde = { workspace = true }
 clap = { workspace = true }

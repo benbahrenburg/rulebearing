@@ -276,6 +276,20 @@ pub struct CruiseArgs {
     /// Show the languages, extensions and parsers this build supports
     #[arg(short = 'i', long)]
     pub info: bool,
+    /// Write a first configuration instead of cruising, as `init` does, never asking: `yes`
+    /// (the default), or `x-scripts` to also add run scripts to package.json
+    #[arg(long, value_name = "ONESHOT", num_args = 0..=1, default_missing_value = "yes")]
+    pub init: Option<String>,
+    /// With --init: the languages whose presets to use instead of the ones found: typescript,
+    /// dotnet, python
+    #[arg(
+        long,
+        value_enum,
+        value_delimiter = ',',
+        value_name = "LANGUAGE",
+        requires = "init"
+    )]
+    pub preset: Vec<crate::cmd::init::Preset>,
     /// Do not check whether rules match anything; the same as --liveness off
     #[arg(long)]
     pub no_liveness: bool,
