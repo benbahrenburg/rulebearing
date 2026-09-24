@@ -1,0 +1,155 @@
+# Imported from pyproject.toml by `rulebearing import import-linter`.
+# Each rule's comment names its import-linter contract; the contract's options are written above its first rule.
+#
+# import-linter contract `a-contract-of-our-own` (app.contracts.MyContract): A contract of our own
+# stays in import-linter: `app.contracts.MyContract` is a custom contract type, Python code the importer cannot translate
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+languages:
+  python:
+    roots: ["."]
+rules:
+  dependencies:
+    forbidden:
+      # import-linter contract `layered` (layers): Each bounded context is layered
+      #   containers = app.billing, app.shipping
+      #   exhaustive = true
+      #   exhaustive_ignores = tests
+      #   layers = web | api, (infra), domain
+      # exhaustive: every module directly under `app.billing` is a layer (checked when imported; no rule checks it on later runs)
+      # exhaustive: no layer holds app.shipping.tracking, so import-linter reports the contract broken until one does; no rule checks this
+      - name: layered:app.billing:web-to-api
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/billing/web(/|\\.py$)"
+        to:
+          path: "^app/billing/api(/|\\.py$)"
+          reachable: true
+      - name: layered:app.billing:api-to-web
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/billing/api(/|\\.py$)"
+        to:
+          path: "^app/billing/web(/|\\.py$)"
+          reachable: true
+      - name: layered:app.billing:infra-to-web
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/billing/infra(/|\\.py$)"
+        to:
+          path: "^app/billing/web(/|\\.py$)"
+          reachable: true
+        allowEmpty: true
+      - name: layered:app.billing:infra-to-api
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/billing/infra(/|\\.py$)"
+        to:
+          path: "^app/billing/api(/|\\.py$)"
+          reachable: true
+        allowEmpty: true
+      - name: layered:app.billing:domain-to-web
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/billing/domain(/|\\.py$)"
+        to:
+          path: "^app/billing/web(/|\\.py$)"
+          reachable: true
+      - name: layered:app.billing:domain-to-api
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/billing/domain(/|\\.py$)"
+        to:
+          path: "^app/billing/api(/|\\.py$)"
+          reachable: true
+      - name: layered:app.billing:domain-to-infra
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/billing/domain(/|\\.py$)"
+        to:
+          path: "^app/billing/infra(/|\\.py$)"
+          reachable: true
+        allowEmpty: true
+      - name: layered:app.shipping:web-to-api
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/shipping/web(/|\\.py$)"
+        to:
+          path: "^app/shipping/api(/|\\.py$)"
+          reachable: true
+      - name: layered:app.shipping:api-to-web
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/shipping/api(/|\\.py$)"
+        to:
+          path: "^app/shipping/web(/|\\.py$)"
+          reachable: true
+      - name: layered:app.shipping:infra-to-web
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/shipping/infra(/|\\.py$)"
+        to:
+          path: "^app/shipping/web(/|\\.py$)"
+          reachable: true
+        allowEmpty: true
+      - name: layered:app.shipping:infra-to-api
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/shipping/infra(/|\\.py$)"
+        to:
+          path: "^app/shipping/api(/|\\.py$)"
+          reachable: true
+        allowEmpty: true
+      - name: layered:app.shipping:domain-to-web
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/shipping/domain(/|\\.py$)"
+        to:
+          path: "^app/shipping/web(/|\\.py$)"
+          reachable: true
+      - name: layered:app.shipping:domain-to-api
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/shipping/domain(/|\\.py$)"
+        to:
+          path: "^app/shipping/api(/|\\.py$)"
+          reachable: true
+      - name: layered:app.shipping:domain-to-infra
+        comment: "import-linter contract: Each bounded context is layered"
+        severity: error
+        from:
+          path: "^app/shipping/domain(/|\\.py$)"
+        to:
+          path: "^app/shipping/infra(/|\\.py$)"
+          reachable: true
+        allowEmpty: true
+      # import-linter contract `top-level` (layers): Top level
+      #   layers = app.billing : app.shipping, app.core
+      - name: top-level:app.core-to-app.billing
+        comment: "import-linter contract: Top level"
+        severity: error
+        from:
+          path: "^app/core(/|\\.py$)"
+        to:
+          path: "^app/billing(/|\\.py$)"
+          reachable: true
+      - name: top-level:app.core-to-app.shipping
+        comment: "import-linter contract: Top level"
+        severity: error
+        from:
+          path: "^app/core(/|\\.py$)"
+        to:
+          path: "^app/shipping(/|\\.py$)"
+          reachable: true

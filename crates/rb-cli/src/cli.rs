@@ -82,6 +82,9 @@ pub enum Command {
     Adopt(crate::cmd::adopt::AdoptArgs),
     /// Write the current violations to a known-violations file, as depcruise-baseline does
     Baseline(crate::cmd::baseline::BaselineArgs),
+    /// Translate ArchUnitNET, NetArchTest, import-linter or eslint rules into a rulebearing.yaml
+    #[command(subcommand)]
+    Import(crate::cmd::import::ImportCommand),
     /// Conformance gate 1 layer 2's protocol (hidden).
     #[command(hide = true)]
     Validate(ProtocolArgs),

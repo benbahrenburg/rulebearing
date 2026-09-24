@@ -20,6 +20,7 @@ pub mod fmt;
 pub mod generate;
 pub mod hooks;
 pub mod impact;
+pub mod import;
 pub mod init;
 pub mod place;
 pub mod plain;
