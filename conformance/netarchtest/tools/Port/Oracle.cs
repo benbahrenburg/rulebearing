@@ -231,10 +231,6 @@ internal sealed partial class Oracle
         "document records a dependency on the type definition and each generic argument, so no element-rule key " +
         "distinguishes the constructed type from its element type";
 
-    private const string ExternalReason =
-        "external-namespace: the search names a namespace outside the analysed assembly; a nested selector ranges " +
-        "over the analysed types only, so an element rule cannot ask for a dependency on any type of an external namespace";
-
     /// <summary>
     /// The two searches of upstream's <c>Utils.RunDependencyTest(inputs, dependency, class, namespace)</c>:
     /// by the dependency's full name, then by its namespace.
@@ -253,7 +249,6 @@ internal sealed partial class Oracle
         var fullName = Name(dependency);
         var ns = dependency.Namespace ?? string.Empty;
         classReason ??= Constructed(dependency) ? ConstructedReason : null;
-        namespaceReason ??= ns.StartsWith("NetArchTest.", StringComparison.Ordinal) ? null : ExternalReason;
         if (classReason is not null)
         {
             Unported(test, $"{csharp}: FindTypesThatHaveDependencyOnAny(subjects, [\"{fullName}\"])", classReason);
