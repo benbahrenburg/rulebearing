@@ -7,10 +7,14 @@
 //! - Specification: `ArchUnitNET` 0.13.4 `Fluent/Slices/SliceRuleInitializer.cs` (`Matching`,
 //!   `MatchingWithPackages`, `AssignFunc`), `SlicesShould.cs`, `Domain/SliceIdentifier.cs`
 //!
-//! `matching` takes one `(*)` or one `(**)`. `(*)` names a slice by the namespace segment it
-//! stands for (several `(*)` by as many segments); `(**)` by everything after the prefix. A prefix
+//! `matching` takes `(*)` or one `(**)`, and either names a slice by everything between the
+//! prefix and the postfix: `ArchUnitNET` 0.13.4 rewrites `Ns.(*)` to `Ns.(**).` and keeps the
+//! count of `(*)` only for diagram generation, so its own `MatchingTest` finds seven slices for
+//! both `TestAssembly.Slices.(*)` and `(**)`. To slice by the first segment only, end the pattern
+//! with a separator after the asterisks (`Ns.(**)..`, three slices in the same test; in a path
+//! pattern, `src/features/(**)//`). A prefix
 //! starting with `.` is looked for anywhere in the namespace. A type whose namespace does not
-//! match belongs to no slice. The separator is `/` when the pattern has one (a TypeScript path),
+//! match belongs to no slice; one that matches but cannot be cut is [`ElementError::Slice`]. The separator is `/` when the pattern has one (a TypeScript path),
 //! `.` otherwise (a .NET namespace, a Python module).
 //!
 //! `notDependOnEachOther` fails each slice with a dependency on another, listing the edges;
@@ -26,10 +30,10 @@ use crate::elements::{Architecture, ElementError};
 /// How a namespace is sliced.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Assignment {
+    /// The pattern as `Parse` rewrites it: a single-asterisk pattern becomes `prefix(**).`.
+    pattern: String,
     prefix: String,
     postfix: String,
-    /// `Some(n)` for `n` single asterisks: the slice is the first `n` segments.
-    count: Option<usize>,
     separator: char,
 }
 
@@ -52,13 +56,12 @@ fn parse(pattern: &str) -> Result<Assignment, String> {
     }
     let separator = if pattern.contains('/') { '/' } else { '.' };
     let index = pattern.find("(*").unwrap_or(0);
-    let (effective, count) = if double {
-        (pattern.to_owned(), None)
+    // `ArchUnitNET` keeps the number of `(*)` only for diagram generation: a single-asterisk
+    // pattern names its slice by the whole remainder, exactly as `(**)` does.
+    let effective = if double {
+        pattern.to_owned()
     } else {
-        (
-            format!("{}(**){separator}", &pattern[..index]),
-            Some(pattern.matches("(*)").count()),
-        )
+        format!("{}(**){separator}", &pattern[..index])
     };
     let prefix = effective[..index].to_owned();
     let postfix = effective
@@ -66,58 +69,52 @@ fn parse(pattern: &str) -> Result<Assignment, String> {
         .map(|i| effective[i + 2..].to_owned())
         .unwrap_or_default();
     Ok(Assignment {
+        pattern: effective,
         prefix,
         postfix,
-        count,
         separator,
     })
 }
 
 impl Assignment {
-    /// The slice a namespace belongs to, as `AssignFunc` decides; `None` when it is ignored.
-    fn slice(&self, namespace: &str) -> Option<String> {
+    /// The slice a namespace belongs to, as `AssignFunc` decides: `Ok(None)` when it is ignored.
+    ///
+    /// # Errors
+    /// The namespace passes the prefix and postfix tests but the postfix does not occur in what
+    /// follows the prefix (`ArchUnitNET`'s "is not clearly assignable" `ArgumentException`).
+    fn slice(&self, namespace: &str) -> Result<Option<String>, ()> {
         let sep = self.separator;
         let mut prefix = self.prefix.as_str();
         if let Some(rest) = prefix.strip_prefix(sep) {
             prefix = rest;
             if !namespace.contains(prefix) {
-                return None;
+                return Ok(None);
             }
         } else if !namespace.starts_with(prefix) {
-            return None;
+            return Ok(None);
         }
-        let at = namespace.find(prefix).unwrap_or(0) + prefix.len();
-        let after = &namespace[at..];
+        let after = &namespace[namespace.find(prefix).unwrap_or(0) + prefix.len()..];
         let mut postfix = self.postfix.as_str();
         if let Some(rest) = postfix.strip_suffix(sep) {
             postfix = rest;
             if !after.contains(postfix) {
-                return None;
+                return Ok(None);
             }
         } else if !namespace.ends_with(postfix) {
-            return None;
+            return Ok(None);
         }
         let mut slice = if prefix.is_empty() {
-            namespace.to_owned()
+            namespace
         } else {
-            after.trim_start_matches(sep).to_owned()
+            after.trim_start_matches(sep)
         };
-        if !postfix.is_empty() {
-            let end = slice.find(postfix)?;
-            slice.truncate(end);
+        if !slice.contains(postfix) {
+            return Err(());
         }
-        let slice = slice.trim_end_matches(sep);
-        if slice.is_empty() {
-            return None;
+        if let Some(end) = slice.find(postfix).filter(|_| !postfix.is_empty()) {
+            slice = &slice[..end];
         }
-        Some(match self.count {
-            Some(n) => slice
-                .split(sep)
-                .take(n)
-                .collect::<Vec<_>>()
-                .join(&sep.to_string()),
-            None => slice.to_owned(),
-        })
+        Ok(Some(slice.to_owned()))
     }
 }
 
@@ -223,7 +220,14 @@ pub fn evaluate(
     let mut slices: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let mut slice_of: BTreeMap<&str, String> = BTreeMap::new();
     for ty in architecture.types.values() {
-        let Some(slice) = assignment.slice(ty.namespace.as_deref().unwrap_or_default()) else {
+        let assigned = assignment
+            .slice(ty.namespace.as_deref().unwrap_or_default())
+            .map_err(|()| ElementError::Slice {
+                rule: rule.name.clone(),
+                object: ty.full_name.clone(),
+                pattern: assignment.pattern.clone(),
+            })?;
+        let Some(slice) = assigned else {
             continue;
         };
         if rule.ignore.contains(&slice) {
@@ -327,31 +331,54 @@ mod tests {
 
     #[test]
     fn single_and_double_asterisks_name_slices_as_archunitnet_does() -> Result<(), String> {
+        let slice =
+            |a: &Assignment, ns: &str| a.slice(ns).map_err(|()| format!("{ns}: unassignable"));
         let single = parse("TestAssembly.Slices.(*)")?;
+        assert_eq!(single.pattern, "TestAssembly.Slices.(**).");
         assert_eq!(
-            single.slice("TestAssembly.Slices.Slice1"),
+            slice(&single, "TestAssembly.Slices.Slice1")?,
             Some("Slice1".into())
         );
         assert_eq!(
-            single.slice("TestAssembly.Slices.Slice3.Group1"),
-            Some("Slice3".into())
+            slice(&single, "TestAssembly.Slices.Slice3.Group1")?,
+            Some("Slice3.Group1".into()),
+            "(*) keeps the whole remainder, as (**) does"
         );
-        assert_eq!(single.slice("TestAssembly.Slices"), None);
-        assert_eq!(single.slice("Other.Slices.Slice1"), None);
+        assert_eq!(slice(&single, "TestAssembly.Slices")?, None);
+        assert_eq!(slice(&single, "Other.Slices.Slice1")?, None);
         let double = parse("TestAssembly.Slices.(**)")?;
         assert_eq!(
-            double.slice("TestAssembly.Slices.Slice3.Group1"),
+            slice(&double, "TestAssembly.Slices.Slice3.Group1")?,
             Some("Slice3.Group1".into())
         );
-        let middle = parse("App.(*).Service")?;
-        assert_eq!(middle.slice("App.Orders.Service"), Some("Orders".into()));
-        let anywhere = parse(".Slices.(*)")?;
-        assert_eq!(anywhere.slice("Deep.Down.Slices.X"), Some("X".into()));
-        let paths = parse("src/features/(*)")?;
+        let first = parse("TestAssembly.Slices.(**)..")?;
         assert_eq!(
-            paths.slice("src/features/cart/index.ts"),
+            slice(&first, "TestAssembly.Slices.Slice3.Group1")?,
+            Some("Slice3".into())
+        );
+        assert_eq!(
+            slice(&first, "TestAssembly.Slices.Slice3")?,
+            None,
+            "no segment after"
+        );
+        let middle = parse("App.(**).Service")?;
+        assert_eq!(slice(&middle, "App.Orders.Service")?, Some("Orders".into()));
+        assert_eq!(slice(&middle, "App.Orders.Other")?, None);
+        let anywhere = parse(".Slices.(**)")?;
+        assert_eq!(slice(&anywhere, "Deep.Down.Slices.X")?, Some("X".into()));
+        assert_eq!(slice(&anywhere, "Deep.Down.X")?, None);
+        let paths = parse("src/features/(**)//")?;
+        assert_eq!(paths.separator, '/');
+        assert_eq!(
+            slice(&paths, "src/features/cart/index.ts")?,
             Some("cart".into())
         );
+        let everything = parse("(**)")?;
+        assert_eq!(slice(&everything, "A.B")?, Some("A.B".into()));
+        // `ABC` starts with `AB` and ends with `BC`, but `C`, what follows the prefix, holds no
+        // `BC` to cut at.
+        let unclear = parse("AB(**)BC")?;
+        assert_eq!(unclear.slice("ABC"), Err(()));
         for bad in ["App.X", "App.(*).(**)", "A.(**).(**)"] {
             assert!(parse(bad).is_err(), "{bad}");
         }
