@@ -325,6 +325,7 @@ impl Builder<'_, '_, '_> {
                     kind: "attribute".to_owned(),
                     member: None,
                     line: location.line,
+                    form: None,
                 });
             }
             self.layer.attributes.push(AttributeElement {
@@ -392,6 +393,7 @@ impl Builder<'_, '_, '_> {
                         kind: "inherits".to_owned(),
                         member: None,
                         line: Some(line),
+                        form: None,
                     });
                 }
                 bases.push(base_name);

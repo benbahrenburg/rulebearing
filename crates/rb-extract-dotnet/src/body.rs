@@ -54,6 +54,12 @@ struct Callee {
     local: Option<u32>,
 }
 
+/// A found dependency with its body form set.
+fn with_form(mut found: Found, form: &'static str) -> Found {
+    found.form = Some(form);
+    found
+}
+
 impl Builder<'_> {
     /// The body dependencies of `method` of type `owner` in assembly `asm`, and its calls.
     pub(crate) fn body(&self, asm: usize, owner: &Type, method: &Method) -> Vec<Found> {
@@ -63,7 +69,10 @@ impl Builder<'_> {
         let (scanned, extra) = self.state_machine(asm, method, &mut visited);
         let scanned = scanned.unwrap_or((owner, method));
         for field_ref in extra {
-            found.push(self.found(asm, scanned.1, field_ref, DependencyKind::Body, None, None));
+            found.push(with_form(
+                self.found(asm, scanned.1, field_ref, DependencyKind::Body, None, None),
+                "body-type",
+            ));
         }
         self.scan(asm, scanned.0, scanned.1, &mut visited, &mut found, 0);
         found
@@ -141,7 +150,10 @@ impl Builder<'_> {
         let generics = Self::generics_of(owner, Some(method));
         for local in &method.locals {
             if let Some(r) = self.sig_ref(asm, local, generics) {
-                found.push(self.found(asm, method, r, DependencyKind::Body, None, None));
+                found.push(with_form(
+                    self.found(asm, method, r, DependencyKind::Body, None, None),
+                    "body-type",
+                ));
             }
         }
         let mut fields_seen = BTreeSet::new();
@@ -169,14 +181,19 @@ impl Builder<'_> {
                 (Use::Type | Use::Token, op)
                     if matches!(table, id::TYPE_DEF | id::TYPE_REF | id::TYPE_SPEC) =>
                 {
-                    let kind = match op {
-                        LDTOKEN => DependencyKind::Typeof,
-                        CASTCLASS | ISINST => DependencyKind::Body,
-                        op if BODY_TYPE_OPCODES.contains(&op) => DependencyKind::Body,
+                    let (kind, form) = match op {
+                        LDTOKEN => (DependencyKind::Typeof, None),
+                        CASTCLASS => (DependencyKind::Body, Some("cast")),
+                        ISINST => (DependencyKind::Body, Some("type-check")),
+                        op if BODY_TYPE_OPCODES.contains(&op) => {
+                            (DependencyKind::Body, Some("body-type"))
+                        }
                         _ => continue,
                     };
                     if let Some(r) = token_ref() {
-                        found.push(self.found(asm, method, r, kind, None, offset));
+                        let mut f = self.found(asm, method, r, kind, None, offset);
+                        f.form = form;
+                        found.push(f);
                     }
                 }
                 (Use::Field | Use::Token, _)
@@ -239,7 +256,10 @@ impl Builder<'_> {
                     let (machine, extra) = self.state_machine(asm, inner, visited);
                     let (o, m) = machine.unwrap_or((inner_owner, inner));
                     for r in extra {
-                        found.push(self.found(asm, m, r, DependencyKind::Body, None, None));
+                        found.push(with_form(
+                            self.found(asm, m, r, DependencyKind::Body, None, None),
+                            "body-type",
+                        ));
                     }
                     self.scan(asm, o, m, visited, found, depth + 1);
                 }
@@ -248,6 +268,7 @@ impl Builder<'_> {
             if let Some(dynamic) = literal.and_then(|text| self.dynamic_target(&callee, text)) {
                 let mut f = self.found(asm, method, dynamic, DependencyKind::Body, None, offset);
                 f.dynamic = true;
+                f.form = Some("call");
                 found.push(f);
             }
             if let Some(owner_ref) = callee.owner.clone() {

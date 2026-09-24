@@ -136,7 +136,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "DuplicateClassAcrossAssemblies.DuplicateClass, OtherDuplicateFullNameAssembly",
+        "assemblyQualifiedName": "DuplicateClassAcrossAssemblies.DuplicateClass, OtherDuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -170,7 +170,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "OtherDuplicateFullNameAssembly.OtherDuplicateFullNameAssembly, OtherDuplicateFullNameAssembly",
+        "assemblyQualifiedName": "OtherDuplicateFullNameAssembly.OtherDuplicateFullNameAssembly, OtherDuplicateFullNameAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",

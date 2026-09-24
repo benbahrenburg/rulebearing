@@ -127,7 +127,7 @@
           "System.Attribute"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.AbstractAttribute, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.AbstractAttribute, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Attribute",
@@ -162,7 +162,7 @@
           "System.Attribute"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.Attribute1, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.Attribute1, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.Attribute1",
@@ -262,7 +262,7 @@
           "System.Attribute"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.Attribute2, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.Attribute2, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.Attribute2",
@@ -362,7 +362,7 @@
           "System.Attribute"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.Attribute3, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.Attribute3, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.Attribute3",
@@ -461,7 +461,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.ClassWithSingleAttribute, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.ClassWithSingleAttribute, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.Attribute1",
@@ -499,7 +499,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.ClassWithSingleAttributeWithArguments, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.ClassWithSingleAttributeWithArguments, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.Attribute1",
@@ -541,7 +541,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.ClassWithSingleAttributeWithNamedArguments, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.ClassWithSingleAttributeWithNamedArguments, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.Attribute1",
@@ -579,7 +579,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.ClassWithSingleUniquelyUsedAttribute, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.ClassWithSingleUniquelyUsedAttribute, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.OnceUsedAttribute",
@@ -617,7 +617,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.ClassWithThreeAttributes, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.ClassWithThreeAttributes, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.Attribute1",
@@ -663,7 +663,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.ClassWithThreeAttributesWithArguments, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.ClassWithThreeAttributesWithArguments, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.Attribute1",
@@ -721,7 +721,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.ClassWithThreeAttributesWithNamedArguments, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.ClassWithThreeAttributesWithNamedArguments, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.Attribute1",
@@ -767,7 +767,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.ClassWithTwoAttributes, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.ClassWithTwoAttributes, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.Attribute1",
@@ -809,7 +809,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.ClassWithTwoAttributesWithArguments, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.ClassWithTwoAttributesWithArguments, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.Attribute1",
@@ -859,7 +859,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.ClassWithTwoAttributesWithNamedArguments, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.ClassWithTwoAttributesWithNamedArguments, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.Attribute1",
@@ -901,7 +901,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.ClassWithoutAttributes, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.ClassWithoutAttributes, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -936,7 +936,7 @@
           "System.Attribute"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.OnceUsedAttribute, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.OnceUsedAttribute, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.OnceUsedAttribute",
@@ -1035,7 +1035,7 @@
           "System.Attribute"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.OtherAbstractAttribute, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.OtherAbstractAttribute, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Attribute",
@@ -1069,7 +1069,7 @@
           "System.Attribute"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.OtherRegularAttribute, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.OtherRegularAttribute, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Attribute",
@@ -1103,7 +1103,7 @@
           "System.Attribute"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.OtherSealedAttribute, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.OtherSealedAttribute, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Attribute",
@@ -1137,7 +1137,7 @@
           "System.Attribute"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.RegularAttribute, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.RegularAttribute, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Attribute",
@@ -1171,7 +1171,7 @@
           "System.Attribute"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.SealedAttribute, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.SealedAttribute, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Attribute",
@@ -1205,7 +1205,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.TypeArgument1, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.TypeArgument1, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1239,7 +1239,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.TypeArgument2, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.TypeArgument2, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1273,7 +1273,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.TypeArgument3, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.TypeArgument3, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1308,7 +1308,7 @@
           "System.Attribute"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.UnusedAttribute, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.UnusedAttribute, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "AttributeNamespace.UnusedAttribute",
@@ -1407,7 +1407,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "AttributeNamespace.UnusedTypeArgument, AttributeAssembly",
+        "assemblyQualifiedName": "AttributeNamespace.UnusedTypeArgument, AttributeAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",

@@ -92,7 +92,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodDependencyNamespace.MethodDependencyClass, MethodDependencyAssembly",
+        "assemblyQualifiedName": "MethodDependencyNamespace.MethodDependencyClass, MethodDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "MethodDependencyNamespace.MethodDependencyClass",
@@ -152,7 +152,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "MethodDependencyNamespace.OtherCallingClass, MethodDependencyAssembly",
+        "assemblyQualifiedName": "MethodDependencyNamespace.OtherCallingClass, MethodDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "MethodDependencyNamespace.MethodDependencyClass",

@@ -45,6 +45,9 @@ pub enum EngineError {
     /// The annotated graph did not convert back into the document types.
     #[error("the annotated graph is not a valid document: {0}")]
     Document(#[from] serde_json::Error),
+    /// An element, slice or diagram rule cannot be evaluated as written (exit 3).
+    #[error(transparent)]
+    Element(#[from] crate::elements::ElementError),
 }
 
 /// How to evaluate.
@@ -471,6 +474,10 @@ fn add_validations(modules: &mut [Value], rules: &DependencyRules, validate: boo
 /// # Errors
 /// [`EngineError::Document`] if the annotated graph does not convert back into document types,
 /// which would be a bug in the engine rather than in the input.
+#[expect(
+    clippy::too_many_lines,
+    reason = "the engine's stages in dependency-cruiser's order, then the ArchUnitNET families"
+)]
 pub fn evaluate(
     document: GraphDocument,
     config: &Config,
@@ -481,6 +488,14 @@ pub fn evaluate(
     let skip = options.skip_analysis_not_in_rules.unwrap_or(false);
     let metrics = opts.metrics || needs_metrics(rules);
     let focus = focus_filter(&config.options);
+    let families = !config.rules.elements.is_empty()
+        || !config.rules.slices.is_empty()
+        || !config.rules.diagrams.is_empty();
+    let element_input = families.then(|| GraphDocument {
+        modules: document.modules.clone(),
+        code: document.code.clone(),
+        ..GraphDocument::default()
+    });
     let GraphDocument {
         modules,
         revision_data,
@@ -526,7 +541,14 @@ pub fn evaluate(
     violations.extend(summarize_folders(&folder_values, Some(rules)));
     violations.sort_by(crate::compare::compare_violations);
     annotate(&mut violations, &modules, rules);
-    let (rule_stats, vacuous) = stats_and_liveness(rules, &modules, &violations, opts.liveness);
+    let (rule_stats, mut vacuous) = stats_and_liveness(rules, &modules, &violations, opts.liveness);
+    if let Some(input) = &element_input {
+        let (found, empty) = crate::families::evaluate(input, config)?;
+        violations.extend(found);
+        if opts.liveness {
+            vacuous.extend(empty);
+        }
+    }
 
     let stats = violation_stats(&violations);
     let count = |k: &str| stats.get(k).and_then(Value::as_u64).unwrap_or(0);

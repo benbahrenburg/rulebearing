@@ -20,6 +20,8 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
+# Conformance gate 2 reads the ported cases (tests/gate2.rs).
+serde_yaml = { workspace = true }
 
 [lints]
 workspace = true
