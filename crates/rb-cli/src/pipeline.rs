@@ -220,6 +220,9 @@ pub fn extract_with_warnings(
             Ok(extraction) => {
                 merged.modules.extend(extraction.modules);
                 merged.warnings.extend(extraction.warnings);
+                if let Some(code) = extraction.code {
+                    merged.code.get_or_insert_with(Default::default).merge(code);
+                }
             }
             Err(ExtractError::NoModulesFound) => {}
             Err(error) => return Err(error),

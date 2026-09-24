@@ -1895,6 +1895,7 @@ dependencies = [
  "oxc_resolver",
  "oxc_semantic",
  "oxc_span",
+ "proptest",
  "rayon",
  "rb-model",
  "regex",

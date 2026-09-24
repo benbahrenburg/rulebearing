@@ -36,6 +36,7 @@ use rb_model::{
 use regex::Regex;
 
 use crate::babel::BabelAliases;
+use crate::codelayer::{self, FileCode};
 use crate::collate;
 use crate::resolve::{self, Context, ResolveConfig, SCANNABLE_EXTENSIONS};
 use crate::walk::{self, Flavour, Found, WalkOptions};
@@ -120,6 +121,11 @@ pub enum PreCompilation {
 }
 
 /// dependency-cruiser's cruise options, normalised for extraction.
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "each flag is one independent option (detectJSDocImports, \
+              detectProcessBuiltinModuleCalls, experimentalStats, the code layer), not a state"
+)]
 #[derive(Debug, Clone)]
 pub struct Settings {
     /// The process working directory; relative paths are taken against it.
@@ -152,6 +158,9 @@ pub struct Settings {
     pub experimental_stats: bool,
     /// `babelConfig`'s module-resolver aliases, applied to what the acorn walker finds.
     pub babel: Option<BabelAliases>,
+    /// Whether each extracted file's code layer is read from the same parse
+    /// ([`codelayer`]); on by default.
+    pub code_layer: bool,
 }
 
 impl Settings {
@@ -185,6 +194,7 @@ impl Settings {
             max_depth: u32::from(options.max_depth()),
             experimental_stats: options.experimental_stats.unwrap_or(false),
             babel: None,
+            code_layer: true,
         })
     }
 
@@ -619,19 +629,24 @@ fn syntax_for(file: &str, vue_lang: Option<&str>, flavour: Flavour) -> SourceTyp
     }
 }
 
-/// The forms in a source, as the chosen walker reports them, before resolution.
+/// The forms in a source, as the chosen walker reports them, before resolution; with `code`
+/// (the file's output path), also its code layer, read from the same parse.
 fn forms(
     settings: &Settings,
     path: &Path,
     source: &str,
     source_type: SourceType,
     flavour: Flavour,
-) -> Result<Vec<Found>, PipelineError> {
+    code: Option<&str>,
+) -> Result<(Vec<Found>, Option<FileCode>), PipelineError> {
     let parse_error = |e: walk::ParseError| PipelineError::Parse {
         path: path.to_path_buf(),
         reason: e.to_string(),
     };
     let options = settings.walk_options();
+    let then = |program: &oxc_ast::ast::Program<'_>| {
+        code.map(|file| codelayer::collect(program, source, file))
+    };
     match flavour {
         Flavour::Acorn if source_type.is_typescript() => {
             // acorn reads TypeScript only after compiling it, which drops imports used as types
@@ -640,8 +655,9 @@ fn forms(
                 .to_str()
                 .is_some_and(|p| matches!(resolve::extension(p), ".mts" | ".d.mts"));
             let compiled = transpiled(source, source_type, esm);
-            let mut found = walk::walk_source(source, source_type, Flavour::Acorn, &options)
-                .map_err(parse_error)?;
+            let (mut found, collected) =
+                walk::walk_source_then(source, source_type, Flavour::Acorn, &options, then)
+                    .map_err(parse_error)?;
             let within =
                 |spans: &[Span], f: &Found| spans.iter().any(|s| s.contains_inclusive(f.span));
             found.retain(|f| !within(&compiled.elided, f));
@@ -657,9 +673,10 @@ fn forms(
             if esm {
                 commonjs_output(&mut found, &options.module_systems);
             }
-            Ok(found)
+            Ok((found, collected))
         }
-        _ => walk::walk_source(source, source_type, flavour, &options).map_err(parse_error),
+        _ => walk::walk_source_then(source, source_type, flavour, &options, then)
+            .map_err(parse_error),
     }
 }
 
@@ -734,12 +751,13 @@ fn pre_compilation_only(
     if flavour != Flavour::Tsc || settings.pre_compilation != PreCompilation::Specify {
         return Ok(None);
     }
-    let compiled = forms(
+    let (compiled, _) = forms(
         settings,
         path,
         source,
         syntax_for(file, vue_lang, Flavour::Acorn),
         Flavour::Acorn,
+        None,
     )?;
     Ok(Some(
         found
@@ -782,30 +800,54 @@ pub fn extract_dependencies(
     settings: &Settings,
     config: &ResolveConfig,
 ) -> Result<Vec<Extracted>, PipelineError> {
-    resolved_dependencies(file, settings, config).map(|(extracted, _)| extracted)
+    resolved_dependencies(file, settings, config, false).map(|(extracted, _, _)| extracted)
 }
+
+/// What one file yields: its dependencies and, when [`Settings::code_layer`] is on, its code
+/// layer, still to be linked with the other files'.
+type FileResult = Result<(Vec<Extracted>, Option<FileCode>), PipelineError>;
+
+fn extract_file(file: &str, settings: &Settings, config: &ResolveConfig) -> FileResult {
+    resolved_dependencies(file, settings, config, settings.code_layer)
+        .map(|(extracted, _, code)| (extracted, code))
+}
+
+/// What [`resolved_dependencies`] returns.
+type Resolved = (
+    Vec<Extracted>,
+    Option<resolve::ExtensionList>,
+    Option<FileCode>,
+);
 
 /// [`extract_dependencies`], and the extension list of the file's first resolution that found
 /// a file, in upstream's resolving order (before filtering), for
-/// [`ResolveConfig::settle_followable`].
+/// [`ResolveConfig::settle_followable`]; with `collect`, also the file's code layer.
 fn resolved_dependencies(
     file: &str,
     settings: &Settings,
     config: &ResolveConfig,
-) -> Result<(Vec<Extracted>, Option<resolve::ExtensionList>), PipelineError> {
+    collect: bool,
+) -> Result<Resolved, PipelineError> {
     if settings
         .extra_extensions_to_scan
         .iter()
         .any(|e| e == node_extname(file))
     {
-        return Ok((Vec::new(), None));
+        return Ok((Vec::new(), None, None));
     }
     let mut first_found = None;
     let flavour = flavour_for(settings, file);
     let path = settings.on_disk(file);
     let (source, vue_lang) = source_of(settings, file)?;
     let source_type = syntax_for(file, vue_lang.as_deref(), flavour);
-    let mut found = forms(settings, &path, &source, source_type, flavour)?;
+    let (mut found, mut code) = forms(
+        settings,
+        &path,
+        &source,
+        source_type,
+        flavour,
+        collect.then_some(file),
+    )?;
     if flavour == Flavour::Acorn {
         apply_babel_aliases(settings, &path, &mut found);
     }
@@ -870,6 +912,15 @@ fn resolved_dependencies(
             column,
         });
     }
+    if let Some(code) = &mut code {
+        resolve_code_specifiers(code, &extracted, &context, config);
+    }
+    filter_and_sort(&mut extracted, settings);
+    Ok((extracted, first_found, code))
+}
+
+/// `exclude` and `includeOnly` over the resolutions, then upstream's order.
+fn filter_and_sort(extracted: &mut Vec<Extracted>, settings: &Settings) {
     extracted.retain(|d| {
         !settings
             .exclude
@@ -891,7 +942,40 @@ fn resolved_dependencies(
         };
         collate::compare(&key(a), &key(b))
     });
-    Ok((extracted, first_found))
+}
+
+/// Records where each module a code-layer name is imported from resolves to: the dependency the
+/// walk already resolved when there is one, otherwise a resolution of its own (an import used
+/// only as a type is elided from the dependencies but still names the type). Built-in and
+/// unresolvable modules are left out, so names from them stay as written.
+fn resolve_code_specifiers(
+    code: &mut FileCode,
+    extracted: &[Extracted],
+    context: &Context<'_>,
+    config: &ResolveConfig,
+) {
+    for specifier in code.specifiers() {
+        let known = extracted
+            .iter()
+            .find(|d| d.module == specifier)
+            .map(|d| (d.resolved.clone(), d.core_module || d.could_not_resolve));
+        let (resolved, unusable) = known.unwrap_or_else(|| {
+            let resolution = resolve::resolve(
+                &specifier,
+                ModuleSystem::Es6,
+                &[DependencyType::Import],
+                context,
+                config,
+            );
+            (
+                resolution.resolved,
+                resolution.core_module || resolution.could_not_resolve,
+            )
+        });
+        if !unusable {
+            code.set_resolved(specifier, resolved);
+        }
+    }
 }
 
 /// Settles which extension list decides `followable` for the run, as upstream's first
@@ -904,7 +988,7 @@ fn settle_followable(initial: &[String], settings: &Settings, config: &ResolveCo
         return;
     }
     for file in initial {
-        if let Ok((_, Some(list))) = resolved_dependencies(file, settings, config) {
+        if let Ok((_, Some(list), _)) = resolved_dependencies(file, settings, config, false) {
             config.settle_followable(list);
             return;
         }
@@ -1093,6 +1177,8 @@ pub struct ExtractedModule {
     pub experimental_stats: Option<ExperimentalStats>,
     /// For a module standing for an unfollowed dependency: the dependency's attributes.
     pub as_dependency: Option<Extracted>,
+    /// The file's code layer, before linking, when [`Settings::code_layer`] is on.
+    pub code: Option<FileCode>,
 }
 
 /// Whether a dependency leads to a file the walk extracts in turn.
@@ -1109,8 +1195,8 @@ fn reachable_dependencies(
     initial: &[String],
     settings: &Settings,
     config: &ResolveConfig,
-) -> BTreeMap<String, Result<Vec<Extracted>, PipelineError>> {
-    let mut done: BTreeMap<String, Result<Vec<Extracted>, PipelineError>> = BTreeMap::new();
+) -> BTreeMap<String, FileResult> {
+    let mut done: BTreeMap<String, FileResult> = BTreeMap::new();
     let mut seen: BTreeSet<&str> = BTreeSet::new();
     let mut frontier: Vec<String> = initial
         .iter()
@@ -1119,16 +1205,17 @@ fn reachable_dependencies(
         .collect();
     let mut depth = 0u32;
     while !frontier.is_empty() && (settings.max_depth == 0 || depth < settings.max_depth) {
-        let results: Vec<(String, Result<Vec<Extracted>, PipelineError>)> = frontier
+        let results: Vec<(String, FileResult)> = frontier
             .into_par_iter()
             .map(|file| {
-                let result = extract_dependencies(&file, settings, config);
+                let result = extract_file(&file, settings, config);
                 (file, result)
             })
             .collect();
         let mut next = BTreeSet::new();
         for (_, result) in &results {
-            for dependency in result.iter().flatten().filter(|d| followed(d)) {
+            let dependencies = result.iter().flat_map(|(d, _)| d);
+            for dependency in dependencies.filter(|d| followed(d)) {
                 next.insert(dependency.resolved.clone());
             }
         }
@@ -1148,7 +1235,7 @@ fn replay(
     initial: &[String],
     settings: &Settings,
     config: &ResolveConfig,
-    mut found: BTreeMap<String, Result<Vec<Extracted>, PipelineError>>,
+    mut found: BTreeMap<String, FileResult>,
 ) -> Result<Vec<ExtractedModule>, PipelineError> {
     struct Frame {
         follow: Vec<String>,
@@ -1163,13 +1250,13 @@ fn replay(
                      out: &mut Vec<ExtractedModule>|
      -> Result<Frame, PipelineError> {
         visited.insert(file.to_owned());
-        let dependencies = if settings.max_depth == 0 || depth < settings.max_depth {
+        let (dependencies, code) = if settings.max_depth == 0 || depth < settings.max_depth {
             match found.remove(file) {
                 Some(result) => result?,
-                None => extract_dependencies(file, settings, config)?,
+                None => extract_file(file, settings, config)?,
             }
         } else {
-            Vec::new()
+            (Vec::new(), None)
         };
         let follow = dependencies
             .iter()
@@ -1181,6 +1268,7 @@ fn replay(
             dependencies,
             experimental_stats: None,
             as_dependency: None,
+            code,
         });
         Ok(Frame {
             follow,
@@ -1243,6 +1331,7 @@ pub fn extract(
                 dependencies: Vec::new(),
                 experimental_stats: None,
                 as_dependency: Some(d.clone()),
+                code: None,
             })
             .collect();
         // Upstream compares with the modules before this one only, so one module's duplicate

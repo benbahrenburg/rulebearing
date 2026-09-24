@@ -22,6 +22,8 @@ export default defineConfig([
         'presets/dependency-cruiser/**',
         // The extractor's option fixtures are inputs, kept verbatim (plan 0001, sub-wave 1C).
         'crates/rb-extract-ts/tests/options/**',
+        // The code-layer fixture tree, whose lines and columns the expectation records (plan 0002, 2C).
+        'crates/rb-extract-ts/tests/fixtures/**',
         // Local only: fuzzing corpora (fuzz/README.md) and the worktrees of parallel agent sessions.
         'fuzz/corpus/**',
         '.claude/worktrees/**',

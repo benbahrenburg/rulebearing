@@ -4,8 +4,11 @@
 //! - Decisions: [ADR-0012](../../../docs/adr/0012-oxc-for-typescript.md),
 //!   [ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)
 //! - Plans: [Wave 0, Spike A](../../../docs/plans/pending/0000-wave-0-spike.md),
-//!   [Wave 1, sub-wave 1C](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#wave-1c-rb-extract-ts-completion)
-//! - Requirements: [FR-EXT-TS-01](../../../docs/prd.md#fr-ext-ts-01) to [FR-EXT-TS-05](../../../docs/prd.md#fr-ext-ts-05)
+//!   [Wave 1, sub-wave 1C](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#wave-1c-rb-extract-ts-completion),
+//!   [Wave 2C](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#wave-2c-element-slice-and-diagram-rules-the-capability-table-gate-2-to-zero)
+//!   (the code layer)
+//! - Requirements: [FR-EXT-TS-01](../../../docs/prd.md#fr-ext-ts-01) to [FR-EXT-TS-05](../../../docs/prd.md#fr-ext-ts-05),
+//!   [FR-CORE-01](../../../docs/prd.md#fr-core-01) (the code layer for every language)
 //! - Specification: dependency-cruiser 18.2.0's `test/extract` suite, recorded as conformance
 //!   gate 1 layer 1 ([ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md))
 //!
@@ -20,6 +23,7 @@
 //! | [`npm`] | `package.json` lookup and the `npm*` dependency types |
 //! | [`core`] | runtime built-in modules |
 //! | [`babel`] | `babelConfig`'s module-resolver aliases |
+//! | [`codelayer`] | classes, interfaces, enums, type aliases, functions, members, decorators and calls |
 //! | [`collate`] | JavaScript's `localeCompare` order, which dependency-cruiser sorts with |
 //! | [`pipeline`] | files to resolved, filtered, sorted dependencies, and the reachable modules |
 //!
@@ -27,6 +31,7 @@
 //! (`src/cache/`), never during extraction, and the cache is a later wave's surface.
 
 pub mod babel;
+pub mod codelayer;
 /// JavaScript's `localeCompare` order, shared with the engine through `rb-model`.
 pub use rb_model::collate;
 pub mod core;
@@ -40,7 +45,7 @@ use std::path::{Path, PathBuf};
 
 use rb_model::ExternalModuleResolutionStrategy;
 use rb_model::{
-    Dependency, DependencyKind, ExtractError, Extraction, Extractor, Language, Module, Receipt,
+    Dependency, DependencyKind, ExtractError, Extraction, Extractor, Module, Receipt,
     TypeScriptOptions,
 };
 
@@ -316,7 +321,7 @@ pub fn extract_with(
         .iter()
         .map(|r| r.to_string_lossy().replace('\\', "/"))
         .collect();
-    let extracted = pipeline::extract(&inputs, settings, config)?;
+    let mut extracted = pipeline::extract(&inputs, settings, config)?;
     if let Some(sidecar) = extracted
         .iter()
         .find(|m| m.as_dependency.is_none() && needs_sidecar(&m.source))
@@ -326,6 +331,14 @@ pub fn extract_with(
             reason: SIDECAR_REASON.to_owned(),
         });
     }
+    let code = settings.code_layer.then(|| {
+        codelayer::link(
+            extracted
+                .iter_mut()
+                .filter_map(|module| module.code.take())
+                .collect(),
+        )
+    });
     let mut modules = Vec::with_capacity(extracted.len());
     let mut files = 0u64;
     for module in extracted {
@@ -338,16 +351,9 @@ pub fn extract_with(
             node.dependency_types = Some(dependency.dependency_types.clone());
         } else {
             files += 1;
-            let typescript = Path::new(&module.source)
-                .extension()
-                .is_some_and(|e| matches!(e.to_str(), Some("ts" | "tsx" | "mts" | "cts")));
             node.dependencies = module.dependencies.iter().map(to_dependency).collect();
             node.experimental_stats = module.experimental_stats;
-            node.language = Some(if typescript {
-                Language::Typescript
-            } else {
-                Language::Javascript
-            });
+            node.language = Some(codelayer::language_of(&module.source));
         }
         modules.push(node);
     }
@@ -361,7 +367,7 @@ pub fn extract_with(
     let count = modules.len() as u64;
     Ok(Extraction {
         modules,
-        code: None,
+        code,
         inspected: Receipt::counts(files, 0, count),
         warnings: Vec::new(),
     })

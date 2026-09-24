@@ -10,11 +10,15 @@
 //! node testbeds/synth/gen.mjs /tmp/synth
 //! cargo run --release -p rb-extract-ts --example extract-timing -- /tmp/synth
 //! cargo run --release -p rb-extract-ts --example extract-timing -- /tmp/synth --ts-pre-compilation-deps
+//! cargo run --release -p rb-extract-ts --example extract-timing -- /tmp/synth --no-code-layer
 //! ```
 //!
 //! The directory is the base directory; its `apps` and `packages` folders are the roots when they
 //! exist, the directory itself otherwise, and its `tsconfig.json` is the `tsConfig` when present.
-//! Prints the module count, the edge count and the elapsed milliseconds.
+//! Prints the module count, the edge count, the code layer's type count and the elapsed
+//! milliseconds; `--no-code-layer` skips the code layer
+//! ([Wave 2C](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#wave-2c-element-slice-and-diagram-rules-the-capability-table-gate-2-to-zero)),
+//! so its cost can be read as the difference.
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -27,10 +31,14 @@ use rb_model::options::{FileReference, TsPreCompilationDeps};
 fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
     let Some(directory) = args.next().map(PathBuf::from) else {
-        eprintln!("usage: extract-timing <directory> [--ts-pre-compilation-deps]");
+        eprintln!(
+            "usage: extract-timing <directory> [--ts-pre-compilation-deps] [--no-code-layer]"
+        );
         return ExitCode::from(2);
     };
-    let pre_compilation = args.any(|a| a == "--ts-pre-compilation-deps");
+    let flags: Vec<String> = args.collect();
+    let pre_compilation = flags.iter().any(|a| a == "--ts-pre-compilation-deps");
+    let code_layer = !flags.iter().any(|a| a == "--no-code-layer");
     let directory = directory.canonicalize().unwrap_or(directory);
     let tsconfig = directory.join("tsconfig.json");
     let options = TypeScriptOptions {
@@ -49,7 +57,10 @@ fn main() -> ExitCode {
         roots.push(PathBuf::from("."));
     }
     let started = Instant::now();
-    let result = prepare(&options, &directory).and_then(|(s, c)| extract_with(&roots, &s, &c));
+    let result = prepare(&options, &directory).and_then(|(mut s, c)| {
+        s.code_layer = code_layer;
+        extract_with(&roots, &s, &c)
+    });
     let elapsed = started.elapsed();
     match result {
         Ok(extraction) => {
@@ -64,8 +75,9 @@ fn main() -> ExitCode {
                 .flat_map(|m| &m.dependencies)
                 .filter(|d| d.could_not_resolve)
                 .count();
+            let types = extraction.code.as_ref().map_or(0, |c| c.types.len());
             println!(
-                "extract-timing: modules={} edges={edges} unresolved={unresolved} ms={} threads={} tsPreCompilationDeps={pre_compilation}",
+                "extract-timing: modules={} edges={edges} unresolved={unresolved} types={types} ms={} threads={} tsPreCompilationDeps={pre_compilation}",
                 extraction.modules.len(),
                 elapsed.as_millis(),
                 rayon::current_num_threads(),
