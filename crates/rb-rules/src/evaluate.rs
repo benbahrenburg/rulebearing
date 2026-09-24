@@ -20,7 +20,7 @@
 use std::collections::HashMap;
 
 use chrono::NaiveDate;
-use rb_config::model::{DependencyRules, Family};
+use rb_config::model::{DependencyRules, Family, Rules};
 use rb_config::{Config, Rule, decision_token};
 use rb_model::violation_id::violation_id;
 use rb_model::{ExpiredEntry, Folder, GraphDocument, Module, Summary, VacuousRule, Violation};
@@ -327,21 +327,30 @@ fn stats_and_liveness(
     (stats, vacuous)
 }
 
-fn expired_rules(rules: &DependencyRules, today: NaiveDate) -> Vec<Expired> {
-    rules
+/// Every rule of every family past its `expires` date: the dependency rules, then the element,
+/// slice and diagram rules, each in the order written.
+fn expired_rules(rules: &Rules, today: NaiveDate) -> Vec<Expired> {
+    let dependency = rules
+        .dependencies
         .forbidden
         .iter()
-        .chain(&rules.allowed)
-        .chain(&rules.required)
-        .filter_map(|r| {
-            r.meta
-                .expires
-                .filter(|e| today > *e)
-                .map(|expires| Expired {
-                    name: r.name().to_owned(),
-                    expires,
-                    kind: "rule".into(),
-                })
+        .chain(&rules.dependencies.allowed)
+        .chain(&rules.dependencies.required)
+        .map(|r| (r.name(), r.meta.expires));
+    let families = rules
+        .elements
+        .iter()
+        .map(|r| (r.name.as_str(), r.expires))
+        .chain(rules.slices.iter().map(|r| (r.name.as_str(), r.expires)))
+        .chain(rules.diagrams.iter().map(|r| (r.name.as_str(), r.expires)));
+    dependency
+        .chain(families)
+        .filter_map(|(name, expires)| {
+            expires.filter(|e| today > *e).map(|expires| Expired {
+                name: name.to_owned(),
+                expires,
+                kind: "rule".into(),
+            })
         })
         .collect()
 }
@@ -455,7 +464,7 @@ pub fn evaluate(
         modules = add_focus(modules, focus);
     }
     add_validations(&mut modules, rules, opts.validate, &facts);
-    let mut expired = expired_rules(rules, opts.today);
+    let mut expired = expired_rules(&config.rules, opts.today);
     let mut known = KnownSet::new(&config.known_violations, opts.today, &mut expired);
     known.soften_modules(&mut modules);
 
@@ -727,6 +736,50 @@ mod tests {
         )?;
         assert!(on_the_day.expired.is_empty());
         assert_eq!(on_the_day.document.summary.expired, None);
+        Ok(())
+    }
+
+    #[test]
+    fn expired_element_slice_and_diagram_rules_fail_too() -> Result<(), EngineError> {
+        let cfg = config(json!({
+            "forbidden": [{ "name": "dep", "expires": "2026-09-20", "from": {}, "to": {} }],
+            "elements": [
+                { "name": "el", "expires": "2026-09-21", "select": { "kind": "class" }, "should": { "beSealed": true } },
+                { "name": "el-live", "expires": "2026-09-22", "select": { "kind": "class" }, "should": { "beSealed": true } }
+            ],
+            "slices": [{ "name": "sl", "expires": "2026-01-01", "matching": "src/(*)/", "should": "beFreeOfCycles" }],
+            "diagrams": [{ "name": "dg", "expires": "2025-12-31", "select": { "kind": "type" }, "adhereTo": "d.puml" }]
+        }));
+        assert_eq!(cfg.rules.elements.len(), 2, "the configuration loads");
+        let expired: Vec<(String, String)> = expired_rules(&cfg.rules, today())
+            .into_iter()
+            .map(|e| (e.name, e.expires.format("%Y-%m-%d").to_string()))
+            .collect();
+        assert_eq!(
+            expired,
+            [
+                ("dep".to_owned(), "2026-09-20".to_owned()),
+                ("el".to_owned(), "2026-09-21".to_owned()),
+                ("sl".to_owned(), "2026-01-01".to_owned()),
+                ("dg".to_owned(), "2025-12-31".to_owned()),
+            ],
+            "every family, in order; `el-live` expires today and still applies"
+        );
+        // Through the engine, an expired slice rule is counted by the exit code.
+        let slice_only = config(json!({
+            "slices": [{ "name": "sl", "expires": "2026-01-01", "matching": "apps/(*)/", "should": "beFreeOfCycles", "allowEmpty": true }]
+        }));
+        let result = evaluate(
+            document(),
+            &slice_only,
+            &EvalOptions {
+                today: today(),
+                ..EvalOptions::default()
+            },
+        )?;
+        assert_eq!(result.expired.len(), 1);
+        assert_eq!(result.expired[0].name, "sl");
+        assert!(result.error_count() >= 1);
         Ok(())
     }
 
