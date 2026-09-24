@@ -1,0 +1,682 @@
+# Ported from ArchUnitNET 0.13.4 ArchUnitNETTests/Fluent/Syntax/Elements/ClassSyntaxElementsTests.cs by conformance/archunitnet/tools/port.py. Do not edit; rerun the tool.
+source: ArchUnitNETTests/Fluent/Syntax/Elements/ClassSyntaxElementsTests.cs
+architecture: [ClassAssembly]
+cases:
+- id: BeAbstractTest#1
+  query: Classes that are "ClassNamespace.AbstractClass" should be abstract
+  csharp: Classes().That().Are(helper.AbstractClass).Should().BeAbstract()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.AbstractClass]
+    should: {beAbstract: true}
+  expect:
+    pass: [ClassNamespace.AbstractClass]
+    fail: []
+- id: BeAbstractTest#2
+  query: Classes that are "ClassNamespace.AbstractClass" should be Classes that are abstract
+  csharp: Classes().That().Are(helper.AbstractClass).Should().Be(Classes().That().AreAbstract())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.AbstractClass]
+    should:
+      be:
+        kind: class
+        where: {areAbstract: true}
+  expect:
+    pass: [ClassNamespace.AbstractClass]
+    fail: []
+- id: BeAbstractTest#3
+  query: Classes that are "ClassNamespace.RegularClass" should be abstract
+  csharp: Classes().That().Are(helper.RegularClass).Should().BeAbstract()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass]
+    should: {beAbstract: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.RegularClass]
+- id: BeAbstractTest#4
+  query: Classes that are "ClassNamespace.RegularClass" should be Classes that are abstract
+  csharp: Classes().That().Are(helper.RegularClass).Should().Be(Classes().That().AreAbstract())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass]
+    should:
+      be:
+        kind: class
+        where: {areAbstract: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.RegularClass]
+- id: BeAbstractTest#5
+  query: Classes that are "ClassNamespace.AbstractClass" or "ClassNamespace.OtherAbstractClass" should be abstract
+  csharp: Classes().That().Are(helper.AbstractClass, helper.OtherAbstractClass).Should().BeAbstract()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.AbstractClass, ClassNamespace.OtherAbstractClass]
+    should: {beAbstract: true}
+  expect:
+    pass: [ClassNamespace.AbstractClass, ClassNamespace.OtherAbstractClass]
+    fail: []
+- id: BeAbstractTest#6
+  query: Classes that are "ClassNamespace.AbstractClass" or "ClassNamespace.RegularClass" should be abstract
+  csharp: Classes().That().Are(helper.AbstractClass, helper.RegularClass).Should().BeAbstract()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.AbstractClass, ClassNamespace.RegularClass]
+    should: {beAbstract: true}
+  expect:
+    pass: [ClassNamespace.AbstractClass]
+    fail: [ClassNamespace.RegularClass]
+- id: NotBeAbstractTest#1
+  query: Classes that are "ClassNamespace.RegularClass" should not be abstract
+  csharp: Classes().That().Are(helper.RegularClass).Should().NotBeAbstract()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass]
+    should: {notBeAbstract: true}
+  expect:
+    pass: [ClassNamespace.RegularClass]
+    fail: []
+- id: NotBeAbstractTest#2
+  query: Classes that are "ClassNamespace.RegularClass" should be Classes that are not abstract
+  csharp: Classes().That().Are(helper.RegularClass).Should().Be(Classes().That().AreNotAbstract())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass]
+    should:
+      be:
+        kind: class
+        where: {areNotAbstract: true}
+  expect:
+    pass: [ClassNamespace.RegularClass]
+    fail: []
+- id: NotBeAbstractTest#3
+  query: Classes that are "ClassNamespace.AbstractClass" should not be abstract
+  csharp: Classes().That().Are(helper.AbstractClass).Should().NotBeAbstract()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.AbstractClass]
+    should: {notBeAbstract: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.AbstractClass]
+- id: NotBeAbstractTest#4
+  query: Classes that are "ClassNamespace.AbstractClass" should be Classes that are not abstract
+  csharp: Classes().That().Are(helper.AbstractClass).Should().Be(Classes().That().AreNotAbstract())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.AbstractClass]
+    should:
+      be:
+        kind: class
+        where: {areNotAbstract: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.AbstractClass]
+- id: NotBeAbstractTest#5
+  query: Classes that are "ClassNamespace.RegularClass" or "ClassNamespace.OtherRegularClass" should not be abstract
+  csharp: Classes().That().Are(helper.RegularClass, helper.OtherRegularClass).Should().NotBeAbstract()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass, ClassNamespace.OtherRegularClass]
+    should: {notBeAbstract: true}
+  expect:
+    pass: [ClassNamespace.OtherRegularClass, ClassNamespace.RegularClass]
+    fail: []
+- id: NotBeAbstractTest#6
+  query: Classes that are "ClassNamespace.RegularClass" or "ClassNamespace.AbstractClass" should not be abstract
+  csharp: Classes().That().Are(helper.RegularClass, helper.AbstractClass).Should().NotBeAbstract()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass, ClassNamespace.AbstractClass]
+    should: {notBeAbstract: true}
+  expect:
+    pass: [ClassNamespace.RegularClass]
+    fail: [ClassNamespace.AbstractClass]
+- id: BeSealedTest#1
+  query: Classes that are "ClassNamespace.SealedClass" should be sealed
+  csharp: Classes().That().Are(helper.SealedClass).Should().BeSealed()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.SealedClass]
+    should: {beSealed: true}
+  expect:
+    pass: [ClassNamespace.SealedClass]
+    fail: []
+- id: BeSealedTest#2
+  query: Classes that are "ClassNamespace.SealedClass" should be Classes that are sealed
+  csharp: Classes().That().Are(helper.SealedClass).Should().Be(Classes().That().AreSealed())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.SealedClass]
+    should:
+      be:
+        kind: class
+        where: {areSealed: true}
+  expect:
+    pass: [ClassNamespace.SealedClass]
+    fail: []
+- id: BeSealedTest#3
+  query: Classes that are "ClassNamespace.RegularClass" should be sealed
+  csharp: Classes().That().Are(helper.RegularClass).Should().BeSealed()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass]
+    should: {beSealed: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.RegularClass]
+- id: BeSealedTest#4
+  query: Classes that are "ClassNamespace.RegularClass" should be Classes that are sealed
+  csharp: Classes().That().Are(helper.RegularClass).Should().Be(Classes().That().AreSealed())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass]
+    should:
+      be:
+        kind: class
+        where: {areSealed: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.RegularClass]
+- id: BeSealedTest#5
+  query: Classes that are "ClassNamespace.SealedClass" or "ClassNamespace.OtherSealedClass" should be sealed
+  csharp: Classes().That().Are(helper.SealedClass, helper.OtherSealedClass).Should().BeSealed()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.SealedClass, ClassNamespace.OtherSealedClass]
+    should: {beSealed: true}
+  expect:
+    pass: [ClassNamespace.OtherSealedClass, ClassNamespace.SealedClass]
+    fail: []
+- id: BeSealedTest#6
+  query: Classes that are "ClassNamespace.SealedClass" or "ClassNamespace.RegularClass" should be sealed
+  csharp: Classes().That().Are(helper.SealedClass, helper.RegularClass).Should().BeSealed()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.SealedClass, ClassNamespace.RegularClass]
+    should: {beSealed: true}
+  expect:
+    pass: [ClassNamespace.SealedClass]
+    fail: [ClassNamespace.RegularClass]
+- id: NotBeSealedTest#1
+  query: Classes that are "ClassNamespace.RegularClass" should not be sealed
+  csharp: Classes().That().Are(helper.RegularClass).Should().NotBeSealed()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass]
+    should: {notBeSealed: true}
+  expect:
+    pass: [ClassNamespace.RegularClass]
+    fail: []
+- id: NotBeSealedTest#2
+  query: Classes that are "ClassNamespace.RegularClass" should be Classes that are not sealed
+  csharp: Classes().That().Are(helper.RegularClass).Should().Be(Classes().That().AreNotSealed())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass]
+    should:
+      be:
+        kind: class
+        where: {areNotSealed: true}
+  expect:
+    pass: [ClassNamespace.RegularClass]
+    fail: []
+- id: NotBeSealedTest#3
+  query: Classes that are "ClassNamespace.SealedClass" should not be sealed
+  csharp: Classes().That().Are(helper.SealedClass).Should().NotBeSealed()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.SealedClass]
+    should: {notBeSealed: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.SealedClass]
+- id: NotBeSealedTest#4
+  query: Classes that are "ClassNamespace.SealedClass" should be Classes that are not sealed
+  csharp: Classes().That().Are(helper.SealedClass).Should().Be(Classes().That().AreNotSealed())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.SealedClass]
+    should:
+      be:
+        kind: class
+        where: {areNotSealed: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.SealedClass]
+- id: NotBeSealedTest#5
+  query: Classes that are "ClassNamespace.RegularClass" or "ClassNamespace.OtherRegularClass" should not be sealed
+  csharp: Classes().That().Are(helper.RegularClass, helper.OtherRegularClass).Should().NotBeSealed()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass, ClassNamespace.OtherRegularClass]
+    should: {notBeSealed: true}
+  expect:
+    pass: [ClassNamespace.OtherRegularClass, ClassNamespace.RegularClass]
+    fail: []
+- id: NotBeSealedTest#6
+  query: Classes that are "ClassNamespace.RegularClass" or "ClassNamespace.SealedClass" should not be sealed
+  csharp: Classes().That().Are(helper.RegularClass, helper.SealedClass).Should().NotBeSealed()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass, ClassNamespace.SealedClass]
+    should: {notBeSealed: true}
+  expect:
+    pass: [ClassNamespace.RegularClass]
+    fail: [ClassNamespace.SealedClass]
+- id: BeRecordTest#1
+  query: Classes that are "ClassNamespace.RecordClass" should be record
+  csharp: Classes().That().Are(helper.RecordClass).Should().BeRecord()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RecordClass]
+    should: {beRecord: true}
+  expect:
+    pass: [ClassNamespace.RecordClass]
+    fail: []
+- id: BeRecordTest#2
+  query: Classes that are "ClassNamespace.RecordClass" should be Classes that are record
+  csharp: Classes().That().Are(helper.RecordClass).Should().Be(Classes().That().AreRecord())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RecordClass]
+    should:
+      be:
+        kind: class
+        where: {areRecord: true}
+  expect:
+    pass: [ClassNamespace.RecordClass]
+    fail: []
+- id: BeRecordTest#3
+  query: Classes that are "ClassNamespace.RegularClass" should be record
+  csharp: Classes().That().Are(helper.RegularClass).Should().BeRecord()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass]
+    should: {beRecord: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.RegularClass]
+- id: BeRecordTest#4
+  query: Classes that are "ClassNamespace.RegularClass" should be Classes that are record
+  csharp: Classes().That().Are(helper.RegularClass).Should().Be(Classes().That().AreRecord())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass]
+    should:
+      be:
+        kind: class
+        where: {areRecord: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.RegularClass]
+- id: BeRecordTest#5
+  query: Classes that are "ClassNamespace.RecordClass" or "ClassNamespace.OtherRecordClass" should be record
+  csharp: Classes().That().Are(helper.RecordClass, helper.OtherRecordClass).Should().BeRecord()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RecordClass, ClassNamespace.OtherRecordClass]
+    should: {beRecord: true}
+  expect:
+    pass: [ClassNamespace.OtherRecordClass, ClassNamespace.RecordClass]
+    fail: []
+- id: BeRecordTest#6
+  query: Classes that are "ClassNamespace.RecordClass" or "ClassNamespace.RegularClass" should be record
+  csharp: Classes().That().Are(helper.RecordClass, helper.RegularClass).Should().BeRecord()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RecordClass, ClassNamespace.RegularClass]
+    should: {beRecord: true}
+  expect:
+    pass: [ClassNamespace.RecordClass]
+    fail: [ClassNamespace.RegularClass]
+- id: NotBeRecordTest#1
+  query: Classes that are "ClassNamespace.RegularClass" should not be record
+  csharp: Classes().That().Are(helper.RegularClass).Should().NotBeRecord()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass]
+    should: {notBeRecord: true}
+  expect:
+    pass: [ClassNamespace.RegularClass]
+    fail: []
+- id: NotBeRecordTest#2
+  query: Classes that are "ClassNamespace.RegularClass" should be Classes that are not record
+  csharp: Classes().That().Are(helper.RegularClass).Should().Be(Classes().That().AreNotRecord())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass]
+    should:
+      be:
+        kind: class
+        where: {areNotRecord: true}
+  expect:
+    pass: [ClassNamespace.RegularClass]
+    fail: []
+- id: NotBeRecordTest#3
+  query: Classes that are "ClassNamespace.RecordClass" should not be record
+  csharp: Classes().That().Are(helper.RecordClass).Should().NotBeRecord()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RecordClass]
+    should: {notBeRecord: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.RecordClass]
+- id: NotBeRecordTest#4
+  query: Classes that are "ClassNamespace.RecordClass" should be Classes that are not record
+  csharp: Classes().That().Are(helper.RecordClass).Should().Be(Classes().That().AreNotRecord())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RecordClass]
+    should:
+      be:
+        kind: class
+        where: {areNotRecord: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.RecordClass]
+- id: NotBeRecordTest#5
+  query: Classes that are "ClassNamespace.RegularClass" or "ClassNamespace.OtherRegularClass" should not be record
+  csharp: Classes().That().Are(helper.RegularClass, helper.OtherRegularClass).Should().NotBeRecord()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass, ClassNamespace.OtherRegularClass]
+    should: {notBeRecord: true}
+  expect:
+    pass: [ClassNamespace.OtherRegularClass, ClassNamespace.RegularClass]
+    fail: []
+- id: NotBeRecordTest#6
+  query: Classes that are "ClassNamespace.RegularClass" or "ClassNamespace.RecordClass" should not be record
+  csharp: Classes().That().Are(helper.RegularClass, helper.RecordClass).Should().NotBeRecord()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.RegularClass, ClassNamespace.RecordClass]
+    should: {notBeRecord: true}
+  expect:
+    pass: [ClassNamespace.RegularClass]
+    fail: [ClassNamespace.RecordClass]
+- id: BeImmutableTest#1
+  query: Classes that are "ClassNamespace.ImmutableClass" should be immutable
+  csharp: Classes().That().Are(helper.ImmutableClass).Should().BeImmutable()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.ImmutableClass]
+    should: {beImmutable: true}
+  expect:
+    pass: [ClassNamespace.ImmutableClass]
+    fail: []
+- id: BeImmutableTest#2
+  query: Classes that are "ClassNamespace.ImmutableClass" should be Classes that are immutable
+  csharp: Classes().That().Are(helper.ImmutableClass).Should().Be(Classes().That().AreImmutable())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.ImmutableClass]
+    should:
+      be:
+        kind: class
+        where: {areImmutable: true}
+  expect:
+    pass: [ClassNamespace.ImmutableClass]
+    fail: []
+- id: BeImmutableTest#3
+  query: Classes that are "ClassNamespace.MutableClass" should be immutable
+  csharp: Classes().That().Are(helper.MutableClass).Should().BeImmutable()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.MutableClass]
+    should: {beImmutable: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.MutableClass]
+- id: BeImmutableTest#4
+  query: Classes that are "ClassNamespace.MutableClass" should be Classes that are immutable
+  csharp: Classes().That().Are(helper.MutableClass).Should().Be(Classes().That().AreImmutable())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.MutableClass]
+    should:
+      be:
+        kind: class
+        where: {areImmutable: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.MutableClass]
+- id: BeImmutableTest#5
+  query: Classes that are "ClassNamespace.ImmutableClass" or "ClassNamespace.OtherImmutableClass" should be immutable
+  csharp: Classes().That().Are(helper.ImmutableClass, helper.OtherImmutableClass).Should().BeImmutable()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.ImmutableClass, ClassNamespace.OtherImmutableClass]
+    should: {beImmutable: true}
+  expect:
+    pass: [ClassNamespace.ImmutableClass, ClassNamespace.OtherImmutableClass]
+    fail: []
+- id: BeImmutableTest#6
+  query: Classes that are "ClassNamespace.ImmutableClass" or "ClassNamespace.MutableClass" should be immutable
+  csharp: Classes().That().Are(helper.ImmutableClass, helper.MutableClass).Should().BeImmutable()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.ImmutableClass, ClassNamespace.MutableClass]
+    should: {beImmutable: true}
+  expect:
+    pass: [ClassNamespace.ImmutableClass]
+    fail: [ClassNamespace.MutableClass]
+- id: BeImmutableTest#7
+  query: Classes that are "ClassNamespace.ClassWithoutMembers" should be immutable
+  csharp: Classes().That().Are(helper.ClassWithoutMembers).Should().BeImmutable()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.ClassWithoutMembers]
+    should: {beImmutable: true}
+  expect:
+    pass: [ClassNamespace.ClassWithoutMembers]
+    fail: []
+- id: BeImmutableTest#8
+  query: Classes that are "ClassNamespace.ClassWithoutMembers" should be Classes that are immutable
+  csharp: Classes().That().Are(helper.ClassWithoutMembers).Should().Be(Classes().That().AreImmutable())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.ClassWithoutMembers]
+    should:
+      be:
+        kind: class
+        where: {areImmutable: true}
+  expect:
+    pass: [ClassNamespace.ClassWithoutMembers]
+    fail: []
+- id: BeImmutableTest#9
+  query: Classes that are "ClassNamespace.ClassWithOnlyStaticMembers" should be immutable
+  csharp: Classes().That().Are(helper.ClassWithOnlyStaticMembers).Should().BeImmutable()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.ClassWithOnlyStaticMembers]
+    should: {beImmutable: true}
+  expect:
+    pass: [ClassNamespace.ClassWithOnlyStaticMembers]
+    fail: []
+- id: BeImmutableTest#10
+  query: Classes that are "ClassNamespace.ClassWithOnlyStaticMembers" should be Classes that are immutable
+  csharp: Classes().That().Are(helper.ClassWithOnlyStaticMembers).Should().Be(Classes().That().AreImmutable())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.ClassWithOnlyStaticMembers]
+    should:
+      be:
+        kind: class
+        where: {areImmutable: true}
+  expect:
+    pass: [ClassNamespace.ClassWithOnlyStaticMembers]
+    fail: []
+- id: NotBeImmutableTest#1
+  query: Classes that are "ClassNamespace.MutableClass" should not be immutable
+  csharp: Classes().That().Are(helper.MutableClass).Should().NotBeImmutable()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.MutableClass]
+    should: {notBeImmutable: true}
+  expect:
+    pass: [ClassNamespace.MutableClass]
+    fail: []
+- id: NotBeImmutableTest#2
+  query: Classes that are "ClassNamespace.MutableClass" should be Classes that are not immutable
+  csharp: Classes().That().Are(helper.MutableClass).Should().Be(Classes().That().AreNotImmutable())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.MutableClass]
+    should:
+      be:
+        kind: class
+        where: {areNotImmutable: true}
+  expect:
+    pass: [ClassNamespace.MutableClass]
+    fail: []
+- id: NotBeImmutableTest#3
+  query: Classes that are "ClassNamespace.ImmutableClass" should not be immutable
+  csharp: Classes().That().Are(helper.ImmutableClass).Should().NotBeImmutable()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.ImmutableClass]
+    should: {notBeImmutable: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.ImmutableClass]
+- id: NotBeImmutableTest#4
+  query: Classes that are "ClassNamespace.ImmutableClass" should be Classes that are not immutable
+  csharp: Classes().That().Are(helper.ImmutableClass).Should().Be(Classes().That().AreNotImmutable())
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.ImmutableClass]
+    should:
+      be:
+        kind: class
+        where: {areNotImmutable: true}
+  expect:
+    pass: []
+    fail: [ClassNamespace.ImmutableClass]
+- id: NotBeImmutableTest#5
+  query: Classes that are "ClassNamespace.MutableClass" or "ClassNamespace.OtherMutableClass" should not be immutable
+  csharp: Classes().That().Are(helper.MutableClass, helper.OtherMutableClass).Should().NotBeImmutable()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.MutableClass, ClassNamespace.OtherMutableClass]
+    should: {notBeImmutable: true}
+  expect:
+    pass: [ClassNamespace.MutableClass, ClassNamespace.OtherMutableClass]
+    fail: []
+- id: NotBeImmutableTest#6
+  query: Classes that are "ClassNamespace.MutableClass" or "ClassNamespace.ImmutableClass" should not be immutable
+  csharp: Classes().That().Are(helper.MutableClass, helper.ImmutableClass).Should().NotBeImmutable()
+  rule:
+    select:
+      kind: class
+      where:
+        are: [ClassNamespace.MutableClass, ClassNamespace.ImmutableClass]
+    should: {notBeImmutable: true}
+  expect:
+    pass: [ClassNamespace.MutableClass]
+    fail: [ClassNamespace.ImmutableClass]
