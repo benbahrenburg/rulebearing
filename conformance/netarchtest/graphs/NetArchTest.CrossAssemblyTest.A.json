@@ -1,0 +1,140 @@
+{
+  "modules": [
+    {
+      "source": "netstandard",
+      "dependencies": [],
+      "valid": true,
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "framework"
+      ],
+      "language": "dotnet"
+    },
+    {
+      "source": "test/NetArchTest.CrossAssemblyTest.A/BaseClassFromA.cs",
+      "dependencies": [
+        {
+          "module": "System.Object",
+          "resolved": "netstandard",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "inherits"
+        },
+        {
+          "module": "System.Object",
+          "resolved": "netstandard",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "body",
+          "member": "System.Object..ctor"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "NetArchTest.CrossAssemblyTest.A.dll",
+      "namespaces": [
+        "NetArchTest.CrossAssemblyTest.A"
+      ],
+      "attribution": "pdb"
+    }
+  ],
+  "summary": {
+    "violations": [],
+    "error": 0,
+    "warn": 0,
+    "info": 0,
+    "totalCruised": 0,
+    "optionsUsed": {}
+  },
+  "code": {
+    "types": [
+      {
+        "fullName": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+        "name": "BaseClassFromA",
+        "namespace": "NetArchTest.CrossAssemblyTest.A",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "test/NetArchTest.CrossAssemblyTest.A/BaseClassFromA.cs",
+        "attribution": "pdb",
+        "assembly": "NetArchTest.CrossAssemblyTest.A",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA, NetArchTest.CrossAssemblyTest.A, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "assemblyFullName": "NetArchTest.CrossAssemblyTest.A, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      }
+    ],
+    "members": [
+      {
+        "declaringType": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "test/NetArchTest.CrossAssemblyTest.A/BaseClassFromA.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void NetArchTest.CrossAssemblyTest.A.BaseClassFromA::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      }
+    ],
+    "attributes": [],
+    "calls": [
+      {
+        "from": "System.Void NetArchTest.CrossAssemblyTest.A.BaseClassFromA::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "test/NetArchTest.CrossAssemblyTest.A/BaseClassFromA.cs"
+      }
+    ]
+  }
+}
