@@ -806,12 +806,12 @@ public class ArchitectureRules
 | 2C | Type predicates ported | Done | same run: `TypeSyntaxElementsTests`, closed generic return types included |
 | 2C | Class, attribute and member predicates ported | Done | same run: `Class`, `Attribute`, `Member`, `MethodMember`, `PropertyMember` syntax tests; referenced types for `DependenciesToOtherAssembliesTests` ([ADR-0035](../../adr/0035-referenced-types-in-the-code-layer.md), proposed) |
 | 2C | Combinators and rule operations ported | Done | same run: `LogicalConjunctionTests` (73 cases over the `ArchUnitNETTests` fixture), `RuleEvaluationTests`, `MultipleConditionRulesTests`; `exist` / `notExist` anywhere in a condition as upstream folds them |
-| 2C | `FreezeTests` (`FreezingArchRule`) ported | Not started | the five tests are the known-violations baseline, ported with it in 2E; `unported.json` lists them as `not-yet`, which `gate2-ratchet` refuses once this plan is implemented |
+| 2C | `FreezeTests` (`FreezingArchRule`) ported | Done | `conformance/archunitnet/ported/FreezeTests.yaml`: 8 cases over the known-violations reader `--ignore-known` uses, gate 2 1575 of 1575; the two XML violation-store tests are `api-only` (the store is the JSON known-violations file) |
 | 2C | Slices ported | Done | `SlicesTests` (13 cases) in gate 2; TypeScript path and Python dotted slices over the extractors' fixtures in `crates/rb-rules/tests/mappings.rs`; import-linter's `acyclic_siblings` compared on its own repository (`testbeds/oracles/python.sh seddonym/import-linter`: both contracts kept by both tools, 84 edges each; a mutation closing a sibling cycle breaks the contract in both) ([ADR-0034](../../adr/0034-slices-group-types-or-modules-and-segments.md), proposed) |
 | 2C | PlantUML `adhereTo` ported | Done | 146 cases in gate 2 (`PlantUmlParserTest`, `ClassDiagramAssociationTest`, `PlantUmlComponentTest`, `PlantUmlErrorMessagesCheck`, `PlantUmlDependenciesTest`, the two `AdhereToPlantUmlDiagram` tests); the 12 diagram-generation tests are the wave 3 `plantuml` reporter (section 1.2) |
 | 2C | NetArchTest test project ported | Done | `cargo test -p rb-rules --test gate2_netarchtest`: 326 of 326 cases, NetArchTest 1.3.2's own verdicts over its committed fixtures; `conformance/netarchtest/unported.json` gives each of the 80 others a reason |
 | 2C | TypeScript and Python mappings over fixture packages | Done | `crates/rb-rules/tests/mappings.rs` (visibility by `export` and by underscore, decorators, frozen dataclasses, the unanswerable keys, slices) |
-| 2C | `unported.json` lists only `custom-predicate` | Needs maintainer decision | ArchUnitNET: 16 `custom-predicate`, 12 `wave-3` (diagram generation), 5 `api-only` (rule descriptions, `IArchRule` equality, the `ConjunctionFactory` reflection factory), 5 `FreezeTests` (2E). NetArchTest: 2 `custom-predicate`, 16 `api-only`, 38 `constructed-type`, 16 `dependency-definition`, 8 `vocabulary-gap`. Each reason other than `custom-predicate` is argued in the entry; accepting, waiving or closing them is the maintainer's decision under section 3's rules |
+| 2C | `unported.json` lists only `custom-predicate` | Needs maintainer decision | ArchUnitNET: 16 `custom-predicate`, 12 `wave-3` (diagram generation), 7 `api-only` (rule descriptions, `IArchRule` equality, the `ConjunctionFactory` reflection factory, the XML violation store); none `not-yet`. NetArchTest: 2 `custom-predicate`, 16 `api-only`, 38 `constructed-type`, 16 `dependency-definition`, 8 `vocabulary-gap`. Each reason other than `custom-predicate` is argued in the entry; accepting, waiving or closing them is the maintainer's decision under section 3's rules |
 
 ### Wave 2D: cross-language rule additions, presets, Vue, Svelte, Markdown and the remaining wave 2 option rows
 
@@ -846,9 +846,9 @@ public class ArchitectureRules
 | 2E | `mermaid`, `d2` | Not started | gate 1 layer 3 |
 | 2E | `metrics`, `--metrics` | Not started | gate 1 layer 3 |
 | 2E | `err-html` | Not started | gate 1 layer 3 |
-| 2E | `baseline` reporter and command, three modes, `expires`, `owner`, `reason`, `--ignore-known` | Not started | `tests/baseline.rs` |
-| 2E | `sarif` with fingerprints | Not started | schema validation test |
-| 2E | `junit`, `trx` | Not started | XSD validation test |
+| 2E | `baseline` reporter and command, three modes, `expires`, `owner`, `reason`, `--ignore-known` | Done | `crates/rb-cli/tests/baseline.rs` (full, shrink-only, format; `expires` including the same day; `owner` and `reason` kept; `--ignore-known` / `--no-ignore-known` on `cruise` and `fmt`; element rules); `crates/rb-rules/src/known.rs` unit tests; gate 1 layer 3 `test/report/baseline`. dependency-cruiser 18.2.0 has no baseline modes, so the three are defined in [ADR-0037](../../adr/0037-baseline-modes.md) (proposed) |
+| 2E | `sarif` with fingerprints | Done | `crates/rb-report/tests/sarif_schema.rs`: 113 inputs validate against the vendored OASIS SARIF 2.1.0 schema; the fingerprint is the stable id, identical across runs |
+| 2E | `junit`, `trx` | Done | `crates/rb-report/tests/xml_schemas.rs`: `junit` against the vendored `junit-10.xsd` (MIT); `trx` against the structure `vstst.xsd` requires, whose licence forbids vendoring it; one test case per rule, vacuous rules as errors |
 
 ### Wave 2F: importers and oracle agreement
 
