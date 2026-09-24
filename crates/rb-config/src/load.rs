@@ -401,9 +401,15 @@ fn assemble(
             .unwrap_or(Value::Array(Vec::new()))
     };
     let mut elements = crate::elements::parse_elements(&family("elements"))?;
-    let slices = crate::elements::parse_slices(&family("slices"))?;
-    let diagrams = crate::elements::parse_diagrams(&family("diagrams"))?;
+    let mut slices = crate::elements::parse_slices(&family("slices"))?;
+    let mut diagrams = crate::elements::parse_diagrams(&family("diagrams"))?;
     for rule in &mut elements {
+        rule.allow_empty |= allow_empty.contains(&rule.name);
+    }
+    for rule in &mut slices {
+        rule.allow_empty |= allow_empty.contains(&rule.name);
+    }
+    for rule in &mut diagrams {
         rule.allow_empty |= allow_empty.contains(&rule.name);
     }
     Ok(Config {
@@ -437,7 +443,8 @@ fn assemble(
 }
 
 /// Reads `allowEmpty` (a native file's named liveness exceptions) and applies it: each named
-/// dependency rule gets `meta.allow_empty`, and `allowed[N]` names the Nth `allowed` entry. A name
+/// dependency rule gets `meta.allow_empty`, and `allowed[N]` names the Nth `allowed` entry; an
+/// element, slice or diagram rule may be named too, and the caller applies those once parsed. A name
 /// that is no rule or ratchet is an error, so an exception cannot outlive the rule it excused
 /// ([ADR-0032](../../../docs/adr/0032-liveness-follows-the-configuration-format.md)).
 fn allow_empty(
@@ -452,7 +459,8 @@ fn allow_empty(
         ConfigError::Invalid("`allowEmpty` must be a list of rule and ratchet names".into())
     })?;
     // Rules as written, before normalisation drops `ignore` rules: naming one is not an error.
-    let written: BTreeSet<&str> = ["forbidden", "required"]
+    // The element, slice and diagram families are applied by the caller once parsed.
+    let written: BTreeSet<&str> = ["forbidden", "required", "elements", "slices", "diagrams"]
         .iter()
         .filter_map(|list| canonical.get(*list).and_then(Value::as_array))
         .flatten()
@@ -587,6 +595,10 @@ mod tests {
                 ),
                 ("shape.yaml", "allowEmpty: stale\n"),
                 (
+                    "families.yaml",
+                    "allowEmpty: [el, sl, dg]\nrules:\n  elements:\n    - { name: el, select: { kind: class }, should: { beSealed: true } }\n    - { name: el-live, select: { kind: class }, should: { beSealed: true } }\n  slices:\n    - { name: sl, matching: \"src/(*)/\", should: beFreeOfCycles }\n  diagrams:\n    - { name: dg, select: { kind: type }, adhereTo: d.puml }\n",
+                ),
+                (
                     "dc-with-list.json",
                     r#"{ "allowEmpty": ["x"], "forbidden": [{ "name": "x", "from": {}, "to": {} }] }"#,
                 ),
@@ -622,6 +634,18 @@ mod tests {
             };
             assert!(message.contains(needle), "{file}: {message}");
         }
+        // Element, slice and diagram rules can be named too, and only the named ones are excused.
+        let families = repo.load("families.yaml")?;
+        let elements: Vec<(&str, bool)> = families
+            .rules
+            .elements
+            .iter()
+            .map(|r| (r.name.as_str(), r.allow_empty))
+            .collect();
+        assert_eq!(elements, [("el", true), ("el-live", false)]);
+        assert!(families.rules.slices[0].allow_empty);
+        assert!(families.rules.diagrams[0].allow_empty);
+        assert!(families.rules.diagrams[0].as_element_rule().allow_empty);
         // In a dependency-cruiser file the key is a native addition: loaded, with a warning.
         let dc = repo.load("dc-with-list.json")?;
         assert!(dc.warnings.iter().any(|w| w.message.contains("allowEmpty")));

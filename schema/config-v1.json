@@ -5489,6 +5489,17 @@
         "null"
       ]
     },
+    "allowEmpty": {
+      "default": null,
+      "description": "The rules allowed to match nothing: names of dependency rules (`allowed[N]` for the Nth\n`allowed` entry), ratchets, and element, slice and diagram rules. A name that is none of\nthese is an error, so an exception cannot outlive its rule (ADR-0032).",
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "allowed": {
       "default": null,
       "description": "dependency-cruiser's `allowed`, legal at the same place.",
