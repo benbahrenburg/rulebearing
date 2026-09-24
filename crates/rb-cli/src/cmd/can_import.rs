@@ -3,10 +3,13 @@
 //! - Source: [design § Questions an agent can ask before it writes the import](../../../../docs/artifacts/design.md#questions-an-agent-can-ask-before-it-writes-the-import)
 //! - Decision: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md)
 //! - Plan: [Wave 1, Step 14](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-14-rules---json-explain-explain---plain-test-can-import-1e)
-//!   (from the saved graph, in milliseconds; § 1.6: `.graph/cruise.json` or `--graph`)
+//!   (from the saved graph, in milliseconds), and
+//!   [Wave 2, Step 13](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)
+//!   (the graph is the worktree-aware cache entry; a miss re-extracts)
 //! - Requirement: [FR-CLI-02](../../../../docs/prd.md#fr-cli-02)
 //!
-//! Reads the saved graph, adds the hypothetical edge (circular when `to` already reaches `from`),
+//! Reads `--graph FILE`, else the cache entry for this worktree, commit and configuration
+//! ([`crate::cache`]), extracting and writing it on a miss; adds the hypothetical edge (circular when `to` already reaches `from`),
 //! and evaluates the dependency rules for that edge alone. Prints `yes`, or `no` with the deciding
 //! rule, its comment and its `fix`; exits 0 for yes, 1 for no.
 //!
@@ -27,7 +30,7 @@ use serde_json::{Value, json};
 use crate::cli::ConfigArgs;
 use crate::context::Context;
 use crate::pipeline::SAVED_GRAPH;
-use crate::{Outcome, RunExit, configure};
+use crate::{Outcome, RunExit, cache, configure};
 
 /// `can-import`.
 #[derive(Debug, Clone, Default, Args)]
@@ -36,9 +39,12 @@ pub struct CanImportArgs {
     pub from: String,
     /// The file it would import
     pub to: String,
-    /// The saved graph (default .graph/cruise.json)
+    /// A graph document to answer from instead of the cache (such as .graph/cruise.json)
     #[arg(long, value_name = "FILE")]
     pub graph: Option<String>,
+    /// Extract afresh, neither reading nor writing the cache
+    #[arg(long)]
+    pub no_cache: bool,
     /// Configuration
     #[command(flatten)]
     pub config: ConfigArgs,
@@ -162,10 +168,22 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
         Ok(c) => c,
         Err(o) => return o,
     };
-    let file = args.graph.clone().unwrap_or_else(|| SAVED_GRAPH.to_owned());
-    let graph = match load(ctx, &file) {
-        Ok(g) => g,
-        Err(o) => return o,
+    let (file, graph) = match &args.graph {
+        Some(file) => match load(ctx, file) {
+            Ok(g) => (file.clone(), g),
+            Err(o) => return o,
+        },
+        None => match cache::graph(ctx, &config, None, args.no_cache)
+            .and_then(|g| serde_json::from_str::<LightGraph>(&g.text).map_err(|e| e.to_string()))
+        {
+            Ok(g) => ("the graph of this worktree".to_owned(), g),
+            Err(m) => {
+                return Outcome::failed(
+                    RunExit::Untrustworthy,
+                    format!("rulebearing can-import: {m}\n"),
+                );
+            }
+        },
     };
     let edges: HashMap<&str, Vec<&str>> = graph
         .modules
@@ -182,7 +200,7 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
         return Outcome::failed(
             RunExit::Untrustworthy,
             format!(
-                "rulebearing can-import: {to_path} is not in {file} and is not a file here, so its kind of dependency is unknown; run `rulebearing cruise -T json -f {SAVED_GRAPH}` again after adding it\n"
+                "rulebearing can-import: {to_path} is not in {file} and is not a file here, so its kind of dependency is unknown; add it (or install it) first, or pass --graph with a graph that has it\n"
             ),
         );
     };

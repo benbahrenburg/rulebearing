@@ -14,6 +14,10 @@ Commands:
   hooks       Install agent hooks
   summary     A brief for an agent starting a session
   impact      What a file is subject to, before an edit
+  place       Where a new module with these imports would be legal
+  propose     Draft a rule from globs, a selector or one forbidden edge, with what it matches today
+  docs        Render the rules as AGENTS.md, a contributing table or a Claude Code skill
+  decisions   The decision records the rules cite, checked; `decisions new` scaffolds one
   attest      Write or verify a receipt of the configuration, inputs and results
   init        Write a first configuration from what the repository holds, passing on its first run
   adopt       Put an existing dependency-cruiser configuration behind a green gate, with a baseline
