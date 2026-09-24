@@ -15,8 +15,8 @@ The primary language is Rust (a Cargo workspace under `crates/`). TypeScript, C#
 | `crates/rb-model` | The graph document. Depends on nothing. | [ADR-0004](docs/adr/0004-graph-document-is-cruise-result-superset.md), [ADR-0010](docs/adr/0010-crate-layout-and-extractor-boundary.md) |
 | `crates/rb-config`, `rb-rules`, `rb-report`, `rb-ingest`, `rb-cli`, `rb-node` | Config, engine, reporters, ingest, CLI, Node binding | [architecture § Crate layout](docs/architecture.md#crate-layout) |
 | `crates/rb-extract-ts`, `rb-extract-dotnet`, `rb-extract-python` | The only crates that read files other than the config | [ADR-0010](docs/adr/0010-crate-layout-and-extractor-boundary.md), [ADR-0011](docs/adr/0011-read-dotnet-assemblies-not-source.md), [ADR-0012](docs/adr/0012-oxc-for-typescript.md), [ADR-0013](docs/adr/0013-ruff-parser-for-python.md) |
-| `conformance/` | The two conformance gates; the upstream test suites are the specification | [ADR-0009](docs/adr/0009-conformance-suites-as-specification.md) |
-| `testbeds/` | Pinned open-source repositories for the nightly proof | [design § Test beds](docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against) |
+| `conformance/` | The two conformance gates; the upstream test suites are the specification. Gate 2 has an ArchUnitNET half (`archunitnet/`) and a NetArchTest half (`netarchtest/`), each with fixtures, committed graphs, `ported/` cases and `unported.json` | [ADR-0009](docs/adr/0009-conformance-suites-as-specification.md), [conformance/README.md](conformance/README.md) |
+| `testbeds/` | Pinned open-source repositories for the nightly proof; `oracles/` compares each .NET and Python oracle's own tests with the imported rules, `results/` holds the agreement tables | [design § Test beds](docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against) |
 | `docs/adr/` | Decisions, numbered. Rules cite them as `adr:NNNN`. | [ADR-0001](docs/adr/0001-record-architecture-decisions.md) |
 | `docs/plans/pending/` and `implemented/` | One plan per wave; moved when its exit criteria are met | [docs/plans/README.md](docs/plans/README.md) |
 | `docs/artifacts/` | The exported design and coverage tabs. Read-only. | [docs/artifacts/README.md](docs/artifacts/README.md) |
@@ -24,7 +24,9 @@ The primary language is Rust (a Cargo workspace under `crates/`). TypeScript, C#
 | `xtask/` | The documentation link check and the one lint entry point for all four languages | [ADR-0023](docs/adr/0023-documentation-link-and-lint-gates.md) |
 | `.githooks/`, `.cargo/` | Opt-in git hooks; the cargo aliases and the mutation-testing scope | [ADR-0025](docs/adr/0025-ci-and-supply-chain-hardening.md), [ADR-0024](docs/adr/0024-test-quality-gates.md) |
 | `fuzz/` | cargo-fuzz targets, a workspace of its own; run nightly | [fuzz/README.md](fuzz/README.md) |
-| `wrappers/` | The npm, PyPI and NuGet wrappers (the 0.0.1 name reservations until waves 1 and 2), and the crates.io reservation | [docs/release.md](docs/release.md), [ADR-0020](docs/adr/0020-single-name-across-registries.md) |
+| `wrappers/` | The npm, PyPI and NuGet wrappers (the binary for each platform, never a re-implemented subcommand), and the crates.io reservation | [docs/release.md](docs/release.md), [ADR-0020](docs/adr/0020-single-name-across-registries.md) |
+| `adapters/` | Test adapters: `Rulebearing.TestAdapter` and its six framework packages (`dotnet/`), `pytest-rulebearing` (`python/`), `rulebearing/vitest` (`vitest/`); each yields one test per rule with the `junit` message | [Wave 2 plan, Step 14](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h) |
+| `frontends/` | `eslint-plugin-rulebearing` and `Rulebearing.Analyzer`, which ask the binary and must agree with the gate | [Wave 2 plan, Step 13](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g) |
 
 ## How work is organised
 
@@ -140,6 +142,11 @@ conformance/dependency-cruiser/scripts/run-layer-5.sh --all        # layer 5: ze
 conformance/dependency-cruiser/scripts/run-layer-5.sh --mutations  # layer 5: the twelve-mutation branch
 scripts/gate2-check.sh && scripts/ratchets.sh && scripts/gate2-ratchet.sh   # gate 2 fixture checks; the conformance ratchets
 cargo test -p rb-rules --test gate2 --test gate2_netarchtest -- --nocapture   # gate 2: every ported ArchUnitNET and NetArchTest case
+RB_UPDATE_SNAPSHOTS=1 cargo test -p rb-extract-dotnet --test gate2_graphs --test netarchtest_graphs   # regenerate the gate 2 graphs
+python3 conformance/archunitnet/tools/port.py          # regenerate the ported ArchUnitNET cases and counts
+testbeds/oracles/python.sh <owner/repo>                 # the Python oracle: import-linter against the imported contracts
+adapters/dotnet/test.sh && wrappers/nuget/smoke.sh      # the .NET adapters at their coverage floor; the dotnet tool installs and runs
+rulebearing docs --format reference --out docs/reference/element-rules.md   # the generated element-rule reference
 cargo test -p rb-extract-ts --test extract_fixtures -- --nocapture   # layer 1 alone: prints passed/total/ratio
 conformance/archunitnet/scripts/spike-b-attribution.sh # .NET attribution over the oracles (needs the .NET SDK)
 fuzz/run.sh metadata_reader 600                         # fuzz the metadata reader (nightly toolchain, cargo-fuzz)
