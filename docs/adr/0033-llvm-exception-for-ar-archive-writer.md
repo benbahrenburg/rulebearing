@@ -1,6 +1,6 @@
 # ADR-0033: One crate-scoped licence exception, Apache-2.0 WITH LLVM-exception for `ar_archive_writer`, which the Python parser's build requires
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-24, by the maintainer)
 - **Date:** 2026-09-24
 - **Derives from:** [ADR-0019](0019-mit-licence.md) (licence policy), [ADR-0013](0013-ruff-parser-for-python.md) (`ruff_python_parser` for Python), [ADR-0025](0025-ci-and-supply-chain-hardening.md) (`cargo deny` gates the supply chain), [ADR-0026](0026-bsl-exception-for-dragonbox.md) (the precedent for a crate-scoped exception)
 - **Constrains:** `deny.toml`
