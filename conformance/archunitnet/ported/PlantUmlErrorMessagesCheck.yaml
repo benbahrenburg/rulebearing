@@ -1,0 +1,14 @@
+# Ported from ArchUnitNET 0.13.4 ArchUnitNETTests/Domain/PlantUml/PlantUmlErrorMessagesCheck.cs by hand: the verdict per type, derived from TestAssembly/PlantUml's sources and the diagram
+source: ArchUnitNETTests/Domain/PlantUml/PlantUmlErrorMessagesCheck.cs
+architecture: [TestAssembly]
+cases:
+- id: NoDuplicatesInErrorMessageTest#1
+  query: 'types should adhere to zzz_test_version_with_errors.puml: it fails, and each failing type is reported once (one result per object, so no source and no target repeats)'
+  csharp: Assert.False(CheckByPuml(out var rawErrormessage)); Assert.True(ContainsNoDuplicates(rawErrormessage, out var explainErrormessage), errormessage)
+  family: diagram
+  rule:
+    select: {kind: type}
+    adhereTo: zzz_test_version_with_errors.puml
+  expect:
+    pass: [TestAssembly.AbstractRecord, TestAssembly.AssemblyTestAttribute, TestAssembly.Class1, TestAssembly.Class2, TestAssembly.Class3, TestAssembly.ClassCallingOtherMethod, TestAssembly.ClassUsingNullableReferenceType, TestAssembly.DependencyTargets.AttributeInTestAssembly, TestAssembly.DependencyTargets.ClassInTestAssembly, TestAssembly.DependencyTargets.IInterfaceInTestAssembly, TestAssembly.Diagram.ConfusingNamespaceNames.FooNamespace.BarNamespace.ClassInFooAndBarNamespace, TestAssembly.Diagram.NoDependencies.Independent.AnotherIndependenClass, TestAssembly.Diagram.NoDependencies.Independent.IndependentClass, TestAssembly.Diagram.NoDependencies.SomeNamespace.DependencyWithinNamespace, TestAssembly.Diagram.NoDependencies.SomeNamespace.IndependentOrigin, TestAssembly.Diagram.SimpleDependency.Origin.SomeOriginClass, TestAssembly.Diagram.SimpleDependency.Target.SomeTargetClass, TestAssembly.Domain.Entities.Entity1, TestAssembly.Domain.Entities.Entity2WithDependencyToEntity1, TestAssembly.Domain.Entities.EntityWithPublicSetters, TestAssembly.Domain.Marker.IEntity, TestAssembly.Domain.Marker.IRepository, TestAssembly.Domain.Marker.IService, TestAssembly.Domain.Repository.RepositoryWithDependencyToService, TestAssembly.Domain.Services.NotWellNamedService1, TestAssembly.Domain.Services.ServiceClassInWrongNamespaceService, TestAssembly.Domain.Services.TestService, TestAssembly.EmptyTestClass, TestAssembly.PlantUml.Xml.Processor.XmlProcessor, TestAssembly.PlantUml.Xml.Types.XmlTypes, TestAssembly.PlantUml.Xml.Utils.XmlUtils, TestAssembly.Record1, TestAssembly.Slices.Slice1.Service.Service1Class, TestAssembly.Slices.Slice1.Slice1Class, TestAssembly.Slices.Slice2.Service.Service2Class, TestAssembly.Slices.Slice2.Slice2Class, TestAssembly.Slices.Slice3.Group1.Group1Class, TestAssembly.Slices.Slice3.Group2.Group2Class, TestAssembly.Slices.Slice3.Slice3Class]
+    fail: [TestAssembly.PlantUml.Addresses.Address, TestAssembly.PlantUml.Catalog.ProductCatalog, TestAssembly.PlantUml.Customers.Customer, TestAssembly.PlantUml.Importer.ProductImport, TestAssembly.PlantUml.Orders.Order, TestAssembly.PlantUml.Products.Product]

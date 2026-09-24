@@ -1,0 +1,49 @@
+# Ported from ArchUnitNET 0.13.4 ArchUnitNETTests/Fluent/Syntax/Elements/TypeSyntaxElementsTests.cs by hand: the AdhereToPlantUmlDiagram tests, which have no snapshot; HasNoViolations as the verdict per type
+source: ArchUnitNETTests/Fluent/Syntax/Elements/TypeSyntaxElementsTests.cs
+architecture: [TestAssembly]
+cases:
+- id: AdhereToPlantUmlDiagramStreamTest#1
+  query: 'LoadNamespacesWithinAssembly(TestAssembly, "TestAssembly.Diagram.NoDependencies") as a namespace selector: types should adhere to a diagram of two unconnected components'
+  csharp: Assert.True(Types().Should().AdhereToPlantUmlDiagram(stream).HasNoViolations(architecture))
+  family: diagram
+  rule:
+    select: &id001
+      kind: type
+      where: {resideInNamespaceMatching: ^TestAssembly\.Diagram\.NoDependencies}
+    adhereTo: TypeSyntaxElementsTests.NoDependencies.puml
+  expect:
+    pass: &id002 [TestAssembly.Diagram.NoDependencies.Independent.AnotherIndependenClass, TestAssembly.Diagram.NoDependencies.Independent.IndependentClass, TestAssembly.Diagram.NoDependencies.SomeNamespace.DependencyWithinNamespace, TestAssembly.Diagram.NoDependencies.SomeNamespace.IndependentOrigin]
+    fail: []
+- id: AdhereToPlantUmlDiagramStreamTest#2
+  query: 'LoadNamespacesWithinAssembly(TestAssembly, "TestAssembly.Diagram.NoDependencies") as a namespace selector: types should adhere to a diagram whose one dependency no type uses'
+  csharp: Assert.True(Types().Should().AdhereToPlantUmlDiagram(stream).HasNoViolations(architecture))
+  family: diagram
+  rule:
+    select: *id001
+    adhereTo: TypeSyntaxElementsTests.NoDependenciesUnusedArrow.puml
+  expect:
+    pass: *id002
+    fail: []
+- id: AdhereToPlantUmlDiagramStreamTest#3
+  query: 'LoadNamespacesWithinAssembly(TestAssembly, "TestAssembly.Diagram.SimpleDependency") as a namespace selector: types should adhere to a diagram without the Origin to Target arrow'
+  csharp: Assert.False(Types().Should().AdhereToPlantUmlDiagram(stream).HasNoViolations(simpleDependencyArchitecture))
+  family: diagram
+  rule:
+    select: &id003
+      kind: type
+      where: {resideInNamespaceMatching: ^TestAssembly\.Diagram\.SimpleDependency}
+    adhereTo: TypeSyntaxElementsTests.SimpleDependencyNoArrow.puml
+  expect:
+    pass: [TestAssembly.Diagram.SimpleDependency.Target.SomeTargetClass]
+    fail: [TestAssembly.Diagram.SimpleDependency.Origin.SomeOriginClass]
+- id: AdhereToPlantUmlDiagramStreamTest#4
+  alsoCovers: [AdhereToPlantUmlDiagramFileTest#1]
+  query: 'LoadNamespacesWithinAssembly(TestAssembly, "TestAssembly.Diagram.SimpleDependency") as a namespace selector: types should adhere to a diagram with the Origin to Target arrow'
+  csharp: Assert.True(Types().Should().AdhereToPlantUmlDiagram(stream).HasNoViolations(simpleDependencyArchitecture))
+  family: diagram
+  rule:
+    select: *id003
+    adhereTo: TypeSyntaxElementsTests.SimpleDependency.puml
+  expect:
+    pass: [TestAssembly.Diagram.SimpleDependency.Origin.SomeOriginClass, TestAssembly.Diagram.SimpleDependency.Target.SomeTargetClass]
+    fail: []

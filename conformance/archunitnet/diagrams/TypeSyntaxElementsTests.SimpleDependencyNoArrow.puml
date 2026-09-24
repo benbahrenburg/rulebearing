@@ -1,0 +1,4 @@
+@startuml
+[Origin] <<TestAssembly.Diagram.SimpleDependency.Origin.*>>
+[Target] <<TestAssembly.Diagram.SimpleDependency.Target.*>>
+@enduml
