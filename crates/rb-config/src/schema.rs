@@ -11,10 +11,13 @@
 
 use std::collections::BTreeMap;
 
-use rb_model::{DotnetOptions, PythonOptions, Severity, TypeScriptOptions};
-use schemars::JsonSchema;
+use rb_model::{DotnetOptions, Language, PythonOptions, Severity, TypeScriptOptions};
+use schemars::{JsonSchema, Schema, SchemaGenerator};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Value, json};
+
+use crate::capability::{Capability, capability};
+use crate::elements::{Concept, Side, VOCABULARY, ValueKind, spellings, split_key};
 
 use crate::model::{
     Define, FilterOption, IndependenceShorthand, KnownViolation, LayersShorthand, Ratchet, Rule,
@@ -159,6 +162,268 @@ pub struct NativeRules {
     /// Independence contracts, expanded to one `$1` fence each.
     #[serde(default)]
     pub independence: Option<Vec<IndependenceShorthand>>,
+    /// Element rules: `ArchUnitNET`'s predicates and conditions over types, members and modules
+    /// of every language, each key's per-language answer in its description.
+    #[serde(default)]
+    #[schemars(schema_with = "element_rules")]
+    pub elements: Option<Vec<Value>>,
+    /// Slice rules: types grouped by a namespace, module or path pattern.
+    #[serde(default)]
+    #[schemars(schema_with = "slice_rules")]
+    pub slices: Option<Vec<Value>>,
+    /// Diagram rules: types that must adhere to a `PlantUML` component diagram.
+    #[serde(default)]
+    #[schemars(schema_with = "diagram_rules")]
+    pub diagrams: Option<Vec<Value>>,
+}
+
+/// A reference to the definition `name`, added by `define` when missing.
+fn reference(
+    generator: &mut SchemaGenerator,
+    name: &str,
+    define: impl FnOnce(&mut SchemaGenerator) -> Value,
+) -> Value {
+    if !generator.definitions().contains_key(name) {
+        // Reserve the name first, so a definition that refers to itself terminates.
+        generator
+            .definitions_mut()
+            .insert(name.to_owned(), Value::Bool(true));
+        let definition = define(generator);
+        generator
+            .definitions_mut()
+            .insert(name.to_owned(), definition);
+    }
+    json!({ "$ref": format!("#{}/{name}", generator.settings().definitions_path) })
+}
+
+/// The fields every rule of the three families shares.
+fn rule_metadata() -> serde_json::Map<String, Value> {
+    let severity: Vec<&str> = ["error", "warn", "info", "ignore"].to_vec();
+    json!({
+        "name": { "type": "string", "description": "The rule's name, unique in the configuration." },
+        "comment": { "type": "string", "description": "Why the rule exists; the decision token (`adr:NNNN`) goes here." },
+        "fix": { "type": "string", "description": "What to do about a violation; every reporter prints it." },
+        "severity": { "enum": severity, "description": "Default `error`." },
+    })
+    .as_object()
+    .cloned()
+    .unwrap_or_default()
+}
+
+/// `select`: the objects a rule is about.
+fn selector(generator: &mut SchemaGenerator) -> Value {
+    reference(generator, "ElementSelector", |generator| {
+        let predicate = expression(generator, Side::Where);
+        json!({
+            "type": "object",
+            "description": "The objects a rule selects: `ArchUnitNET`'s `Types()`, `Classes()`, ..., then `That()`.",
+            "required": ["kind"],
+            "additionalProperties": false,
+            "properties": {
+                "kind": {
+                    "enum": ["type", "class", "interface", "attribute", "member", "field", "method", "property", "function", "module"],
+                    "description": "`Types()`, `Classes()`, `Interfaces()`, `Attributes()`, `Members()`, `FieldMembers()`, `MethodMembers()`, `PropertyMembers()`; `function` and `module` are TypeScript and Python additions.",
+                },
+                "language": {
+                    "description": "Only objects of these languages: scopes a rule that uses a key some language cannot answer (ADR-0014).",
+                    "anyOf": [
+                        { "enum": LANGUAGES },
+                        { "type": "array", "items": { "enum": LANGUAGES } },
+                    ],
+                },
+                "includeReferenced": {
+                    "type": "boolean",
+                    "description": "Also select the types the code references but does not define (`Types(true)`). Default false.",
+                },
+                "where": predicate,
+            },
+        })
+    })
+}
+
+const LANGUAGES: [&str; 4] = ["typescript", "javascript", "dotnet", "python"];
+
+/// How each language answers `concept`, for a key's description.
+fn capabilities(concept: Concept) -> String {
+    let row = |language: Language| match capability(concept, language) {
+        Capability::Answerable => "answered as `ArchUnitNET` defines it".to_owned(),
+        Capability::Mapped(text) => text.to_owned(),
+        Capability::Unanswerable(why) => {
+            format!("unanswerable ({why}): exit 3 unless `select.language` leaves it out")
+        }
+    };
+    format!(
+        " .NET: {}. TypeScript: {}. JavaScript: {}. Python: {}.",
+        row(Language::Dotnet),
+        row(Language::Typescript),
+        row(Language::Javascript),
+        row(Language::Python)
+    )
+}
+
+/// The value a key of `kind` takes.
+fn value_schema(generator: &mut SchemaGenerator, kind: ValueKind) -> Value {
+    let names = json!({ "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }] });
+    match kind {
+        ValueKind::Flag => json!({ "type": "boolean" }),
+        ValueKind::Names => names,
+        ValueKind::Pattern | ValueKind::Diagram => json!({ "type": "string" }),
+        ValueKind::Objects => {
+            let nested = selector(generator);
+            json!({ "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }, nested] })
+        }
+        ValueKind::AttributeArguments | ValueKind::AttributeNamedArguments => {
+            let nested = selector(generator);
+            let arguments = if kind == ValueKind::AttributeArguments {
+                json!({ "type": "array" })
+            } else {
+                json!({ "type": "object" })
+            };
+            json!({
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "attribute": { "anyOf": [{ "type": "string" }, nested] },
+                    "arguments": arguments,
+                },
+            })
+        }
+        ValueKind::ArgumentValues => json!({ "type": "array" }),
+        ValueKind::NamedArgumentValues => json!({ "type": "object" }),
+    }
+}
+
+/// `where` (predicates) or `should` (conditions): one key, or `all`, `any`, `not` around more.
+fn expression(generator: &mut SchemaGenerator, side: Side) -> Value {
+    let (name, what) = match side {
+        Side::Where => ("ElementPredicate", "predicates (`That()`)"),
+        Side::Should => ("ElementCondition", "conditions (`Should()`)"),
+    };
+    reference(generator, name, |generator| {
+        let own = json!({ "$ref": format!("#{}/{name}", generator.settings().definitions_path) });
+        let mut properties = serde_json::Map::new();
+        properties.insert(
+            "all".into(),
+            json!({ "type": "array", "items": own, "description": "Every item holds (`And()`, `AndShould()`)." }),
+        );
+        properties.insert(
+            "any".into(),
+            json!({ "type": "array", "items": own, "description": "At least one item holds (`Or()`, `OrShould()`)." }),
+        );
+        properties.insert(
+            "not".into(),
+            json!({ "allOf": [own], "description": "The item does not hold." }),
+        );
+        for spelling in spellings(side) {
+            let (base, negated, _) = split_key(&spelling, side);
+            let Some((_, concept, kind, _)) = VOCABULARY.iter().find(|(n, ..)| *n == base) else {
+                continue;
+            };
+            let mut value = value_schema(generator, *kind);
+            if let Value::Object(map) = &mut value {
+                map.insert(
+                    "description".into(),
+                    Value::String(format!(
+                        "`{}`{}.{}",
+                        if base.is_empty() {
+                            "are"
+                        } else {
+                            base.as_str()
+                        },
+                        if negated { ", negated" } else { "" },
+                        capabilities(*concept)
+                    )),
+                );
+            }
+            properties.insert(spelling, value);
+        }
+        json!({
+            "type": "object",
+            "description": format!("One of `ArchUnitNET`'s {what}, or `all`, `any`, `not` around more. The loader rejects any other key and names the nearest one; `...That` forms (`dependOnAnyTypesThat`) take a nested selector."),
+            "properties": properties,
+        })
+    })
+}
+
+/// `rules.elements`.
+fn element_rules(generator: &mut SchemaGenerator) -> Schema {
+    let select = selector(generator);
+    let should = expression(generator, Side::Should);
+    let mut properties = rule_metadata();
+    properties.insert(
+        "because".into(),
+        json!({ "type": "string", "description": "`Because(reason)`." }),
+    );
+    properties.insert(
+        "allowEmpty".into(),
+        json!({ "type": "boolean", "description": "An empty selection passes (`WithoutRequiringPositiveResults()`). Default false: it is vacuous (ADR-0007)." }),
+    );
+    properties.insert("select".into(), select);
+    properties.insert("should".into(), should);
+    Schema::try_from(json!({
+        "type": "array",
+        "items": {
+            "type": "object",
+            "required": ["name", "select", "should"],
+            "additionalProperties": false,
+            "properties": properties,
+        },
+    }))
+    .unwrap_or_default()
+}
+
+/// `rules.slices`.
+fn slice_rules(_: &mut SchemaGenerator) -> Schema {
+    let condition = json!({ "enum": ["notDependOnEachOther", "beFreeOfCycles"] });
+    let mut properties = rule_metadata();
+    properties.insert(
+        "matching".into(),
+        json!({ "type": "string", "description": "`Matching(\"Ns.(*)\")` or `MatchingWithPackages(\"Ns.(**)\")`: a namespace, dotted module or path pattern; either names a slice by what follows the prefix, and `Ns.(**)..` by its first segment." }),
+    );
+    properties.insert(
+        "should".into(),
+        json!({ "anyOf": [condition, { "type": "array", "items": condition }], "description": "`NotDependOnEachOther()`, `BeFreeOfCycles()`, or both." }),
+    );
+    properties.insert(
+        "ignore".into(),
+        json!({ "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }], "description": "Slice names left out." }),
+    );
+    properties.insert("where".into(), json!({ "type": "string", "description": "A pattern a slice name must match to take part." }));
+    properties.insert(
+        "allowEmpty".into(),
+        json!({ "type": "boolean", "description": "An empty slicing is not vacuous." }),
+    );
+    Schema::try_from(json!({
+        "type": "array",
+        "items": {
+            "type": "object",
+            "required": ["name", "matching", "should"],
+            "additionalProperties": false,
+            "properties": properties,
+        },
+    }))
+    .unwrap_or_default()
+}
+
+/// `rules.diagrams`.
+fn diagram_rules(generator: &mut SchemaGenerator) -> Schema {
+    let select = selector(generator);
+    let mut properties = rule_metadata();
+    properties.insert("select".into(), select);
+    properties.insert(
+        "adhereTo".into(),
+        json!({ "type": "string", "description": "The `PlantUML` component diagram, relative to the configuration (`AdhereToPlantUmlDiagram`)." }),
+    );
+    Schema::try_from(json!({
+        "type": "array",
+        "items": {
+            "type": "object",
+            "required": ["name", "select", "adhereTo"],
+            "additionalProperties": false,
+            "properties": properties,
+        },
+    }))
+    .unwrap_or_default()
 }
 
 /// `rules.dependencies`.
@@ -213,6 +478,82 @@ mod tests {
 
     fn committed() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../schema/config-v1.json")
+    }
+
+    /// Every key of every `where` and `should` in the ported conformance cases.
+    fn case_keys(value: &Value, side: Side, out: &mut BTreeMap<String, Side>) {
+        let Value::Object(map) = value else {
+            return;
+        };
+        for (key, inner) in map {
+            match key.as_str() {
+                "all" | "any" => {
+                    for item in inner.as_array().into_iter().flatten() {
+                        case_keys(item, side, out);
+                    }
+                }
+                "not" => case_keys(inner, side, out),
+                _ => {
+                    out.insert(key.clone(), side);
+                    if let Some(nested) = inner.get("where") {
+                        case_keys(nested, Side::Where, out);
+                    }
+                    if let Some(nested) = inner.get("attribute").and_then(|a| a.get("where")) {
+                        case_keys(nested, Side::Where, out);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn every_key_the_conformance_cases_use_is_described() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let schema: Value = serde_json::from_str(&generate())?;
+        let described = |definition: &str| -> Vec<String> {
+            schema["$defs"][definition]["properties"]
+                .as_object()
+                .map(|m| m.keys().cloned().collect())
+                .unwrap_or_default()
+        };
+        let (predicates, conditions) =
+            (described("ElementPredicate"), described("ElementCondition"));
+        assert!(
+            predicates.contains(&"arePublic".to_owned())
+                && conditions.contains(&"bePublic".to_owned())
+        );
+        let mut keys = BTreeMap::new();
+        for suite in ["archunitnet", "netarchtest"] {
+            let folder = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../conformance")
+                .join(suite)
+                .join("ported");
+            for entry in std::fs::read_dir(folder)?.flatten() {
+                let doc: Value = serde_yaml::from_str(&std::fs::read_to_string(entry.path())?)?;
+                for case in doc["cases"].as_array().into_iter().flatten() {
+                    case_keys(&case["rule"]["select"]["where"], Side::Where, &mut keys);
+                    case_keys(&case["rule"]["should"], Side::Should, &mut keys);
+                }
+            }
+        }
+        assert!(keys.len() > 100, "{} keys", keys.len());
+        let missing: Vec<&String> = keys
+            .iter()
+            .filter(|(key, side)| {
+                let list = if **side == Side::Where {
+                    &predicates
+                } else {
+                    &conditions
+                };
+                !list.contains(key) && !key.ends_with("That")
+            })
+            .map(|(key, _)| key)
+            .collect();
+        assert!(
+            missing.is_empty(),
+            "keys the schema does not describe: {missing:?}"
+        );
+        Ok(())
     }
 
     #[test]
