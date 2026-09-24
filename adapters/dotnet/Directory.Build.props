@@ -48,11 +48,16 @@
     <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="/" Visible="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+  <!-- A project on Microsoft.Testing.Platform (TUnit) sets RulebearingTestPlatform to mtp and
+       measures coverage with coverlet.MTP instead; items see the project's own properties. -->
+  <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(RulebearingTestPlatform)' != 'mtp'">
     <PackageReference Include="coverlet.msbuild" Version="$(CoverletVersion)">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)tests/Shared/*.cs" LinkBase="Shared" />
   </ItemGroup>
 </Project>
