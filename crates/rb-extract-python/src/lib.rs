@@ -229,7 +229,7 @@ struct Parsed {
     warning: Option<Warning>,
 }
 
-fn fallback_identity(file: &str) -> Identity {
+fn fallback_identity(file: &str, unrooted: bool) -> Identity {
     let stem = file
         .strip_suffix(".pyi")
         .or_else(|| file.strip_suffix(".py"))
@@ -243,13 +243,14 @@ fn fallback_identity(file: &str) -> Identity {
         dotted,
         package,
         init: false,
+        unrooted,
     }
 }
 
 fn read_and_parse(settings: &Settings, index: &ModuleIndex, file: &str) -> Parsed {
     let identity = index
         .identity(file)
-        .unwrap_or_else(|| fallback_identity(file));
+        .unwrap_or_else(|| fallback_identity(file, index.is_unrooted(file)));
     let failed = |message: String| Parsed {
         identity: identity.clone(),
         specs: Vec::new(),
@@ -399,6 +400,9 @@ pub fn extract_with(inputs: &[PathBuf], settings: &Settings) -> Result<Extractio
             if !seen.insert(key) {
                 continue;
             }
+            if let Some(note) = &resolved.note {
+                warnings.push(Warning::about(file, note.clone()));
+            }
             let dependency = to_dependency(spec, resolved);
             if !known.contains(dependency.resolved.as_str()) {
                 targets
@@ -544,10 +548,10 @@ mod tests {
 
     #[test]
     fn identities_fall_back_to_the_path() {
-        let identity = fallback_identity("my-scripts/run.py");
+        let identity = fallback_identity("my-scripts/run.py", true);
         assert_eq!(identity.dotted, "my-scripts.run");
         assert_eq!(identity.package, "my-scripts");
-        assert_eq!(fallback_identity("x.pyi").package, "");
+        assert_eq!(fallback_identity("x.pyi", false).package, "");
     }
 
     #[test]
