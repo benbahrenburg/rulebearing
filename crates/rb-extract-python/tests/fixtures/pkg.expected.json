@@ -450,6 +450,7 @@
         "unresolved"
       ],
       "followable": false,
+      "language": "python",
       "source": "....",
       "valid": true
     },
@@ -461,6 +462,7 @@
         "stdlib"
       ],
       "followable": false,
+      "language": "python",
       "source": "abc",
       "valid": true
     },
@@ -472,6 +474,7 @@
         "unresolved"
       ],
       "followable": false,
+      "language": "python",
       "source": "app.missing_local",
       "valid": true
     },
@@ -483,6 +486,7 @@
         "stdlib"
       ],
       "followable": false,
+      "language": "python",
       "source": "collections",
       "valid": true
     },
@@ -494,6 +498,7 @@
         "stdlib"
       ],
       "followable": false,
+      "language": "python",
       "source": "csv",
       "valid": true
     },
@@ -505,6 +510,7 @@
         "stdlib"
       ],
       "followable": false,
+      "language": "python",
       "source": "dataclasses",
       "valid": true
     },
@@ -516,6 +522,7 @@
         "stdlib"
       ],
       "followable": false,
+      "language": "python",
       "source": "decimal",
       "valid": true
     },
@@ -527,6 +534,7 @@
         "unresolved"
       ],
       "followable": false,
+      "language": "python",
       "source": "distutils",
       "valid": true
     },
@@ -538,6 +546,7 @@
         "site"
       ],
       "followable": false,
+      "language": "python",
       "license": "MIT",
       "source": "fancylib",
       "valid": true
@@ -550,6 +559,7 @@
         "site"
       ],
       "followable": false,
+      "language": "python",
       "license": "MIT",
       "source": "fancylib.sub",
       "valid": true
@@ -562,6 +572,7 @@
         "stdlib"
       ],
       "followable": false,
+      "language": "python",
       "source": "importlib",
       "valid": true
     },
@@ -573,6 +584,7 @@
         "stdlib"
       ],
       "followable": false,
+      "language": "python",
       "source": "json",
       "valid": true
     },
@@ -584,6 +596,7 @@
         "unresolved"
       ],
       "followable": false,
+      "language": "python",
       "source": "missing_dependency",
       "valid": true
     },
@@ -595,6 +608,7 @@
         "stdlib"
       ],
       "followable": false,
+      "language": "python",
       "source": "os",
       "valid": true
     },
@@ -606,6 +620,7 @@
         "stdlib"
       ],
       "followable": false,
+      "language": "python",
       "source": "os.path",
       "valid": true
     },
@@ -617,6 +632,7 @@
         "unresolved"
       ],
       "followable": false,
+      "language": "python",
       "source": "pytest",
       "valid": true
     },
@@ -628,6 +644,7 @@
         "stdlib"
       ],
       "followable": false,
+      "language": "python",
       "source": "sqlite3",
       "valid": true
     },
@@ -1456,6 +1473,7 @@
         "stdlib"
       ],
       "followable": false,
+      "language": "python",
       "source": "tomllib",
       "valid": true
     },
@@ -1467,6 +1485,7 @@
         "stdlib"
       ],
       "followable": false,
+      "language": "python",
       "source": "typing",
       "valid": true
     }

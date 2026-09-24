@@ -1,6 +1,6 @@
 # Plan 0002: Wave 2: .NET, Python, element rules, migration
 
-- **Status:** In progress: 2A done except the nightly fuzz link; 2B in progress
+- **Status:** In progress: 2A and 2B done except the nightly links; 2C next
 - **Owner:** Ben Bahrenburg (@benbahrenburg)
 - **Created:** 2026-09-20
 - **Calendar estimate:** 10 weeks at ~10 h/week (from [design § Waves](../../artifacts/design.md#waves), row 2)
@@ -787,7 +787,7 @@ public class ArchitectureRules
 | 2B | Site index without executing Python | Done | `src/site.rs` tests; `tests/fixtures/pkg/.venv` (`fancylib`, licence `MIT`) in `tests/fixture.rs` |
 | 2B | Python code layer | Done | `src/codelayer.rs` tests; `code` section of `tests/fixtures/pkg.expected.json` (`src/app/shapes.py`) |
 | 2B | Defaults and receipt | Done | `presets/rulebearing/python.yaml` with `rb-config` `the_python_preset_sets_the_python_defaults`; receipt (`roots`, `stdlibVersion`, `site`) in `tests/fixtures/pkg.expected.json` |
-| 2B | import-linter oracle zero difference | Not started | nightly row |
+| 2B | import-linter oracle zero difference | Done | `testbeds/oracles/python.sh seddonym/import-linter` at the pinned SHA, 2026-09-24 ([`testbeds/results/seddonym__import-linter.json`](../../../testbeds/results/seddonym__import-linter.json)): both tools keep the `layers` contract, and the import graph equals grimp's, 84 edges on each side, none on one side only. The `acyclic_siblings` contract needs slice rules and is compared in 2C (row "Slices ported"); the nightly row lands with the 2F harness |
 
 ### Wave 2C: element, slice and diagram rules, the capability table, gate 2 to zero
 
