@@ -276,7 +276,11 @@ pub fn lower_bound(requires: &str) -> Option<String> {
             .unwrap_or(0);
         let patch_given = parts.next().is_some();
         let bound = if strict && !patch_given {
-            (major, minor + 1)
+            // `>3.4294967295` has no next minor version; the clause bounds nothing.
+            let Some(next) = minor.checked_add(1) else {
+                continue;
+            };
+            (major, next)
         } else {
             (major, minor)
         };
@@ -534,6 +538,9 @@ mod tests {
             ("!=3.9", None),
             (">=x", None),
             ("", None),
+            (">3.4294967295", None),
+            (">3.4294967295, >=3.10", Some("3.10")),
+            (">=3.4294967295", Some("3.4294967295")),
         ];
         for &(spec, expected) in table {
             assert_eq!(lower_bound(spec).as_deref(), expected, "{spec}");
