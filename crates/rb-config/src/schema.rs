@@ -38,6 +38,11 @@ pub struct NativeFile {
     /// Named values read from JSON files, substituted into patterns as `${name}`.
     #[serde(default)]
     pub defines: Option<BTreeMap<String, Define>>,
+    /// The rules allowed to match nothing: names of dependency rules (`allowed[N]` for the Nth
+    /// `allowed` entry), ratchets, and element, slice and diagram rules. A name that is none of
+    /// these is an error, so an exception cannot outlive its rule (ADR-0032).
+    #[serde(default)]
+    pub allow_empty: Option<Vec<String>>,
     /// Per-language settings.
     #[serde(default)]
     pub languages: Option<NativeLanguages>,
