@@ -34,6 +34,8 @@ depcruise = "depcruise"
 oxc = "oxc"
 # The flate2 crate, a candidate for the cache's `compress` option.
 flate = "flate"
+# Microsoft's Magentic-One agent: the magentic_one_cli package in autogen's init fixture.
+magentic = "magentic"
 
 [default.extend-identifiers]
 # Yarn Plug'n'Play, spelled PnP throughout dependency-cruiser's options and this project's docs.

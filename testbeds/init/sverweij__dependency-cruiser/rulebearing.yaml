@@ -4,7 +4,7 @@
 # Found: JavaScript.
 # Every rule says why it exists (comment) and what to do when it fires (fix);
 # `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
-extends: rulebearing:recommended
+extends: [rulebearing:typescript, rulebearing:recommended]
 rules:
   dependencies:
     forbidden:
