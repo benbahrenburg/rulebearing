@@ -781,12 +781,12 @@ public class ArchitectureRules
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 2B | Discovery: roots, `pyproject.toml`, `src/`, `setup.cfg`, namespace packages | Not started | fixture test |
-| 2B | Parser walk: imports, `__all__`, `TYPE_CHECKING`, dynamic | Not started | fixture test |
-| 2B | Resolver and stdlib snapshots | Not started | resolver table test |
-| 2B | Site index without executing Python | Not started | fixture with a `.venv` |
-| 2B | Python code layer | Not started | expectation fixture |
-| 2B | Defaults and receipt | Not started | preset snapshot |
+| 2B | Discovery: roots, `pyproject.toml`, `src/`, `setup.cfg`, namespace packages | Done | `crates/rb-extract-python/src/discover.rs` tests; `tests/fixture.rs` (`src/` layout, namespace package `src/app/plugins`) |
+| 2B | Parser walk: imports, `__all__`, `TYPE_CHECKING`, dynamic | Done | `src/parse.rs` tests; `tests/fixture.rs` against `tests/fixtures/pkg.expected.json` |
+| 2B | Resolver and stdlib snapshots | Done | `src/stdlib.rs` `modules_that_moved_between_versions` (3.8 to 3.14); `src/resolve.rs` resolution-order tables and proptest |
+| 2B | Site index without executing Python | Done | `src/site.rs` tests; `tests/fixtures/pkg/.venv` (`fancylib`, licence `MIT`) in `tests/fixture.rs` |
+| 2B | Python code layer | Done | `src/codelayer.rs` tests; `code` section of `tests/fixtures/pkg.expected.json` (`src/app/shapes.py`) |
+| 2B | Defaults and receipt | Done | `presets/rulebearing/python.yaml` with `rb-config` `the_python_preset_sets_the_python_defaults`; receipt (`roots`, `stdlibVersion`, `site`) in `tests/fixtures/pkg.expected.json` |
 | 2B | import-linter oracle zero difference | Not started | nightly row |
 
 ### Wave 2C: element, slice and diagram rules, the capability table, gate 2 to zero
