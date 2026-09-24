@@ -72,6 +72,19 @@ pub enum ElementError {
         /// What is wrong.
         message: String,
     },
+    /// A type's namespace matches a slice pattern's prefix and postfix but cannot be cut into a
+    /// slice name (`ArchUnitNET`'s `ArgumentException` "is not clearly assignable to a slice").
+    #[error(
+        "rule `{rule}`: \"{object}\" is not clearly assignable to a slice with the pattern: \"{pattern}\"; make the pattern's postfix occur after its prefix in every matching namespace"
+    )]
+    Slice {
+        /// The rule.
+        rule: String,
+        /// The type.
+        object: String,
+        /// The pattern as `ArchUnitNET` rewrites it.
+        pattern: String,
+    },
 }
 
 /// One object an element rule can select.

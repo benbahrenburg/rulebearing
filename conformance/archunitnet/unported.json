@@ -409,27 +409,6 @@
       "reason": "not-yet: non-snapshot"
     },
     {
-      "source": "ArchUnitNETTests/Fluent/Slices/SlicesTests.cs",
-      "test": "CycleDetectionTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/Slices/SlicesTests.cs",
-      "test": "MatchingTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/Slices/SlicesTests.cs",
-      "test": "NotDependOnEachOtherTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
       "source": "ArchUnitNETTests/Fluent/Syntax/ConjunctionFactoryTest.cs",
       "test": "CreateSyntaxElementTest",
       "block": null,
