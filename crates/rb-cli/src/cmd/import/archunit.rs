@@ -19,7 +19,7 @@
 //!
 //! | C# | Written as |
 //! | --- | --- |
-//! | `Types()` ... `PropertyMembers()`, `Types(true)` | `select.kind`, `includeReferenced` |
+//! | `Types()` ... `PropertyMembers()`, `Types(true)` | `select.kind`, `includeReferenced`, and `select.language: dotnet` |
 //! | a predicate or condition | its key, the method name in camelCase, checked against `rb-config`'s vocabulary |
 //! | `And()` / `Or()`, `AndShould()` / `OrShould()` | folded left to right into `all` / `any` |
 //! | `...TypesThat()` and what follows | a nested selector |
@@ -1032,7 +1032,12 @@ impl Program {
         let Some(mut should_expr) = builder.should.expr.take() else {
             return Mapped::Unmapped("the chain has no condition (`Should()...`)".into());
         };
-        let select = Self::select_node(kind, referenced, root_term, builder.where_.expr.take());
+        let select = dotnet_scoped(Self::select_node(
+            kind,
+            referenced,
+            root_term,
+            builder.where_.expr.take(),
+        ));
         for (op, other) in std::mem::take(&mut builder.combined) {
             match self.combine(&select, &other) {
                 Ok(theirs) => {
@@ -1791,6 +1796,26 @@ fn loader_roots<'e>(expr: &'e Expr, as_receiver: bool, out: &mut Vec<&'e Expr>) 
             }
         }
         _ => {}
+    }
+}
+
+/// A rule's top-level `select` with `language: dotnet` after its `kind`. An ArchUnitNET or
+/// NetArchTest test checks the assemblies it loads and nothing else, so the imported rule selects
+/// .NET objects only; unscoped, a key only .NET can answer (`resideInAssembly`) makes the whole
+/// run exit 3 in a repository that also holds TypeScript or Python
+/// ([ADR-0014](../../../../../docs/adr/0014-no-invented-cross-language-edges.md)). Nested selectors
+/// stay unscoped: they name what a .NET object may depend on, be or be assignable to.
+fn dotnet_scoped(select: Node) -> Node {
+    match select {
+        Node::Map(mut pairs) => {
+            let at = pairs
+                .iter()
+                .position(|(k, _)| k == "kind")
+                .map_or(0, |i| i + 1);
+            pairs.insert(at, ("language".to_owned(), Node::str("dotnet")));
+            Node::Map(pairs)
+        }
+        other => other,
     }
 }
 
