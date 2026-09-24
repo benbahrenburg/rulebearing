@@ -67,7 +67,9 @@ pub fn color(choice: ColorChoice, terminal: bool) -> bool {
 
 fn failed(error: &RunError, stderr: &str) -> Outcome {
     let code = match error {
-        RunError::Config(_) => RunExit::InvalidConfig,
+        RunError::Config(_) | RunError::Engine(rb_rules::EngineError::Element(_)) => {
+            RunExit::InvalidConfig
+        }
         RunError::Extract(_) | RunError::Engine(_) => RunExit::Untrustworthy,
     };
     Outcome {

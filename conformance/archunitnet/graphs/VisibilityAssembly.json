@@ -90,7 +90,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.InternalClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.InternalClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -124,7 +124,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OtherInternalClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OtherInternalClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -158,7 +158,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OtherPublicClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OtherPublicClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -192,7 +192,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OuterClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -227,7 +227,7 @@
         ],
         "nestedIn": "VisibilityNamespace.OuterClass",
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+InternalInnerClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+InternalInnerClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -262,7 +262,7 @@
         ],
         "nestedIn": "VisibilityNamespace.OuterClass",
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherInternalInnerClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherInternalInnerClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -297,7 +297,7 @@
         ],
         "nestedIn": "VisibilityNamespace.OuterClass",
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherPrivateInnerClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherPrivateInnerClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -332,7 +332,7 @@
         ],
         "nestedIn": "VisibilityNamespace.OuterClass",
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherPrivateProtectedInnerClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherPrivateProtectedInnerClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -367,7 +367,7 @@
         ],
         "nestedIn": "VisibilityNamespace.OuterClass",
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherProtectedInnerClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherProtectedInnerClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -402,7 +402,7 @@
         ],
         "nestedIn": "VisibilityNamespace.OuterClass",
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherProtectedInternalInnerClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherProtectedInternalInnerClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -437,7 +437,7 @@
         ],
         "nestedIn": "VisibilityNamespace.OuterClass",
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherPublicInnerClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherPublicInnerClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -472,7 +472,7 @@
         ],
         "nestedIn": "VisibilityNamespace.OuterClass",
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+PrivateInnerClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+PrivateInnerClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -507,7 +507,7 @@
         ],
         "nestedIn": "VisibilityNamespace.OuterClass",
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+PrivateProtectedInnerClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+PrivateProtectedInnerClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -542,7 +542,7 @@
         ],
         "nestedIn": "VisibilityNamespace.OuterClass",
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+ProtectedInnerClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+ProtectedInnerClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -577,7 +577,7 @@
         ],
         "nestedIn": "VisibilityNamespace.OuterClass",
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+ProtectedInternalInnerClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+ProtectedInternalInnerClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -612,7 +612,7 @@
         ],
         "nestedIn": "VisibilityNamespace.OuterClass",
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+PublicInnerClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+PublicInnerClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -646,7 +646,7 @@
           "System.Object"
         ],
         "valueType": false,
-        "assemblyQualifiedName": "VisibilityNamespace.PublicClass, VisibilityAssembly",
+        "assemblyQualifiedName": "VisibilityNamespace.PublicClass, VisibilityAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",

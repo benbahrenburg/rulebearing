@@ -125,6 +125,19 @@ pub fn rewrap(
     violations.extend(summarize_folders(&folder_values, rules));
     violations.sort_by(compare_violations);
     carry_additions(&mut violations, &saved);
+    // Element and slice violations belong to no module, so no module annotation can recompute
+    // them: they are kept as the engine found them.
+    violations.extend(
+        saved
+            .iter()
+            .filter(|v| {
+                matches!(
+                    v.get("type").and_then(Value::as_str),
+                    Some("element" | "slice")
+                )
+            })
+            .cloned(),
+    );
     let stats = violation_stats(&violations);
     let count = |k: &str| stats.get(k).and_then(Value::as_u64).unwrap_or(0);
     let mut merged = summary.options_used.clone();

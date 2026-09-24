@@ -33,14 +33,18 @@
 pub mod compare;
 pub mod conformance;
 pub mod derive;
+pub mod elements;
 pub mod evaluate;
+pub mod families;
 pub mod folders;
 pub mod graph;
 pub mod js;
 pub mod matchers;
 pub mod patterns;
+pub mod plantuml;
 pub mod ratchet;
 pub mod rewrap;
+pub mod slices;
 pub mod summarize;
 pub mod validate;
 

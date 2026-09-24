@@ -8,7 +8,8 @@
 //!   `MonoCecilTypeExtensions.BuildFullName` (a type's `FullName` with `/` replaced by `+`; a
 //!   generic parameter as `Declaring+<T>`), `MonoCecilMemberExtensions.BuildFullName` (a member's
 //!   Cecil `FullName`, nested types still written with `/`), `BuildMethodMemberName`
-//!   (`Name(Param,Param)`), and `Assembly.CreateQualifiedName(simpleName, fullName)`
+//!   (`Name(Param,Param)`), and `Assembly.CreateQualifiedName(assembly.FullName, fullName)` (the
+//!   assembly's display name)
 //! - Decision: [ADR-0005](../../../docs/adr/0005-native-config-superset-and-compat.md) (nothing
 //!   is renamed: a rule written for `ArchUnitNET` matches the same names here)
 //!
@@ -18,7 +19,7 @@
 //! | type in a signature | ``Ns.GenericClass`1<Ns.RegularClass>``, `System.Int32[]`, `System.String&` |
 //! | member full name | `System.Void Ns.Outer/Inner::Run(System.Int32,System.String)` |
 //! | method member name | `Run(System.Int32,System.String)` |
-//! | assembly-qualified name | `Ns.Outer+Inner, MyAssembly` |
+//! | assembly-qualified name | `Ns.Outer+Inner, MyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null` |
 
 use std::collections::BTreeMap;
 
@@ -295,7 +296,7 @@ fn generic_name(scope: Option<(&str, &[String])>, n: u32, prefix: &str, cecil: b
     }
 }
 
-/// `Assembly.CreateQualifiedName(assembly, fullName)`: `Full.Name, Assembly`.
+/// `Assembly.CreateQualifiedName(assembly, fullName)`: `Full.Name, <assembly display name>`.
 pub fn assembly_qualified_name(full_name: &str, assembly: &str) -> String {
     format!("{full_name}, {assembly}")
 }
