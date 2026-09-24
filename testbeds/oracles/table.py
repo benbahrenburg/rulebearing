@@ -49,8 +49,8 @@ def graph_cell(document: dict[str, Any]) -> str:
     graph = document.get("graph")
     if not graph:
         return ""
-    theirs, ours = graph["importLinter"], graph["rulebearing"]
-    if graph["equal"]:
+    theirs, ours = graph.get("importLinter", "?"), graph.get("rulebearing", "?")
+    if graph.get("equal"):
         return f"{theirs} = {ours}"
     return f"{theirs} vs {ours}, {graph.get('unexplained', '?')} unexplained"
 

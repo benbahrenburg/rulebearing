@@ -213,6 +213,13 @@ Rows: 52; error 2, failed 4, idle 19, ok 27. Zero-diff and the Rulebearing timin
 | [n8n-io/n8n](https://github.com/n8n-io/n8n/tree/f89687fd8751970cdf8b9cb76761a1258728ca62) | scale | none | idle |  |  |  |  |
 <!-- testbeds:end -->
 
+### Oracle agreement: migrated rules against the incumbent
+
+For the .NET and Python oracles the question is sharper than whether the tools agree on a graph: does a team's existing rule set, migrated with `rulebearing import archunit` or `rulebearing import import-linter`, give the verdict the incumbent gives, test by test and contract by contract ([plan 0002, Step 11](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)). The harness in [testbeds/oracles](testbeds/README.md#oracle-harness) runs both sides at the pinned commit and writes one file per repository; `stays` is a test or contract the importer leaves with the incumbent (a custom predicate or contract type), `not imported` one it could not translate, each with its reason in the file. The table is generated from those files by `python3 testbeds/oracles/table.py --readme README.md`, and CI fails when it is stale.
+
+<!-- oracles:start -->
+<!-- oracles:end -->
+
 ## Built the way it asks you to build
 
 This repository holds itself to the bar it proposes for yours. Every gate below was required and green before the first extractor line was written, so the extractors were built against the finished harness rather than alongside it.
