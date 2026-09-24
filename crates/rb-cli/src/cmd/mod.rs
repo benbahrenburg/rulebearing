@@ -22,6 +22,7 @@ pub mod hooks;
 pub mod impact;
 pub mod import;
 pub mod init;
+pub mod init_graph;
 pub mod place;
 pub mod plain;
 pub mod propose;
