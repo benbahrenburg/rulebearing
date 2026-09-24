@@ -38,6 +38,16 @@ The pull request template is the definition of done as a checklist. Name the pla
 
 An accepted ADR is never edited except to change its status; a reversal is a new ADR that supersedes it. If your change makes a decision, write the ADR in the same pull request.
 
+## Adding a ported gate 2 case
+
+Gate 2's cases are the upstream tests, ported as data ([ADR-0009](docs/adr/0009-conformance-suites-as-specification.md), [conformance/README.md](conformance/README.md)). A snapshot test in ArchUnitNET is ported by the tool: `python3 conformance/archunitnet/tools/port.py` rewrites `conformance/archunitnet/ported/` and the counts in `ported.json` and `unported.json`. A test whose assertions are C# is ported by hand:
+
+1. Add a file `conformance/archunitnet/ported/<TestClass>.yaml` whose first line starts `# Ported from ArchUnitNET 0.13.4 <path> by hand:` and says why. Give each case an `id` (`<Test>#<n>`), a `query` in words, the upstream `csharp` assertion, the `rule`, and the `expect`: `pass` and `fail` sets of full names, `passes` for `HasNoViolations`, `vacuous`, or an `error`. A `family` other than `element` (`slice`, `diagram`, `plantuml`, `association`, `baseline`) is read as `crates/rb-rules/tests/gate2.rs` describes.
+2. Rerun `port.py`: a hand-ported test replaces its one unported entry with its cases, and the tool must reproduce the counts you expect.
+3. Run `cargo test -p rb-rules --test gate2 -- --nocapture`, `scripts/gate2-check.sh` and `scripts/gate2-ratchet.sh`. A case that fails is a bug in the engine or the extractor, never in the expectation: fix the code, not the case.
+
+NetArchTest cases are written by `conformance/netarchtest/tools/Port`, which runs NetArchTest itself over the committed fixtures ([conformance/netarchtest/README.md](conformance/netarchtest/README.md)).
+
 ## A second maintainer
 
 The project has one maintainer, and a second is the goal by the end of wave 2 ([design § Open questions](docs/artifacts/design.md#open-questions)). The criterion is fixed in advance ([plan 0002 § 1.7](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#17-decisions-this-wave-must-make), "Second maintainer"):

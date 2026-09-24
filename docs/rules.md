@@ -19,6 +19,39 @@ The rule language is dependency-cruiser 18.2.0's, whole: every rule shape and at
 
 `from.orphan: true` matches modules that import nothing and are imported by nothing. `scope: folder` applies `circular` to folders rather than modules.
 
+## Element, slice and diagram rules
+
+Native configurations have three more families under `rules`, which carry ArchUnitNET's vocabulary to every language ([plan 0002, Steps 5 and 6](plans/pending/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)). Gate 2 holds them to ArchUnitNET's and NetArchTest's own tests ([conformance/README.md](../conformance/README.md)).
+
+```yaml
+rules:
+  elements:
+    - name: services-are-sealed
+      comment: "adr:0004"
+      select: { kind: class, where: { haveNameEndingWith: Service } }   # That()
+      should: { beSealed: true }                                         # Should()
+      because: services are composed, never extended
+  slices:
+    - name: bounded-contexts-do-not-know-each-other
+      comment: "adr:0005"
+      matching: "RiverBooks.(*)"
+      should: [notDependOnEachOther, beFreeOfCycles]
+  diagrams:
+    - name: matches-the-context-diagram
+      comment: "adr:0001"
+      select: { kind: type, where: { resideInNamespaceMatching: "^Shop\\." } }
+      adhereTo: docs/architecture/components.puml
+```
+
+- **Element rules.** `select.kind` is `type`, `class`, `interface`, `attribute`, `member`, `field`, `method`, `property`, `function` or `module`; `where` holds predicates (`arePublic`, `doNotHaveName`) and `should` conditions (`bePublic`, `notHaveName`); `all`, `any` and `not` combine them, and ArchUnitNET's `And` / `Or` chains are their left-to-right fold. A `...That` key (`dependOnAnyTypesThat`) takes a nested selector. `exist` and `notExist` may sit anywhere in a condition. An empty selection is vacuous unless `allowEmpty` is set or the conditions mention `exist`. `select.includeReferenced` also selects the types the code references but does not define ([ADR-0035](adr/0035-referenced-types-in-the-code-layer.md)).
+- **Every language.** Each key's answer in .NET, TypeScript, JavaScript and Python is in the [generated reference](reference/element-rules.md). A key a language cannot answer (`beSealed` in Python) is exit 3 naming the rule, unless `select.language` leaves that language out ([ADR-0014](adr/0014-no-invented-cross-language-edges.md)).
+- **Slices** group .NET types by namespace and TypeScript and Python modules by path or dotted name. `(*)` and `(**)` name a slice as ArchUnitNET does, by everything after the prefix; `Ns.(**)..` names it by the first segment, and `segments: 1` keeps one segment whatever follows, which is import-linter's `acyclic_siblings` ([ADR-0034](adr/0034-slices-group-types-or-modules-and-segments.md)).
+- **Diagrams** read the PlantUML component subset ArchUnitNET reads; a malformed diagram is exit 3 with ArchUnitNET's exception name.
+
+## Keys across languages
+
+A native dependency rule may also narrow `from` and `to` by `language`, `namespace` / `namespaceNot`, `project` / `projectNot` and `assembly` / `assemblyNot`, and `to` by `dependencyKind` / `dependencyKindNot` (`inherits`, `implements`, `attribute`, ...). They read what the extractors record on each module and edge, and a `.dependency-cruiser.*` configuration that uses one is exit 3 ([plan 0002, Step 8](plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)). `to.license` reads npm, NuGet and Python licences alike.
+
 ## Captures
 
 A capturing group in `from.path` is available in `to` as `$1` to `$9` (and `$0` for the whole match), escaped so it matches only itself. The common fence is one rule:

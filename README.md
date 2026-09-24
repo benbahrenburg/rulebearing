@@ -134,7 +134,23 @@ or in GitHub Actions, `uses: benbahrenburg/rulebearing@v0.1.0` with `args: --con
 
 The guides: [configuration](docs/config.md), [rules](docs/rules.md), [reporters](docs/reporters.md), [the command line](docs/cli.md) and [Rulebearing for coding agents](docs/agents.md).
 
-**Wave 2.** `dotnet tool install Rulebearing` and `pip install rulebearing`, with `rulebearing import archunit` and `rulebearing import import-linter` to bring existing rules across as a command rather than a rewrite.
+**.NET and Python (wave 2).** The .NET extractor reads the compiled assemblies and their portable PDBs, so build first; the Python extractor reads the source, without running an interpreter. Once the wave 2 release is published, install with `dotnet tool install -g Rulebearing` or `pip install rulebearing`; from source, use `./target/release/rulebearing` as above.
+
+```sh
+dotnet build -p:DebugType=portable                  # .NET: the assemblies and PDBs the extractor reads
+rulebearing init                                    # finds the solution or pyproject.toml and proposes rules that pass
+rulebearing cruise --output-type agent
+```
+
+Existing rules come across as a command, not a rewrite, with the original kept as a comment beside each rule:
+
+```sh
+rulebearing import archunit tests/Architecture.Tests --out rulebearing.yaml      # ArchUnitNET or NetArchTest chains
+rulebearing import import-linter --from pyproject.toml --out rulebearing.yaml     # or .importlinter, setup.cfg
+rulebearing import eslint --from eslint.config.js --out rulebearing.yaml          # no-restricted-paths, eslint-plugin-boundaries
+```
+
+The same rules run as tests in the suite you already have: `Rulebearing.TestAdapter` for xUnit, NUnit, MSTest and TUnit, `pytest-rulebearing`, and `rulebearing/vitest`, one test per rule with the fix in the failure message; `eslint-plugin-rulebearing` flags a boundary in the editor. ArchUnitNET's predicates are keys of [element rules](docs/rules.md), with each key's meaning in every language in the [generated reference](docs/reference/element-rules.md).
 
 ## Roadmap
 
