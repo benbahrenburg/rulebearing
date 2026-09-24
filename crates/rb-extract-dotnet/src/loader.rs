@@ -21,6 +21,7 @@
 //! | `EventMap`, `Event` | events as members |
 //! | `NestedClass` | `areNested`, `nestedIn`, the `+` in nested full names |
 //! | `GenericParam` | generic parameter names in member full names |
+//! | `GenericParamConstraint` | `signature` edges to a generic parameter's constraint types (`where T : Base`) |
 //! | `Assembly`, `AssemblyRef` | `resideInAssembly`, assembly-qualified names, `package` and `framework` classification |
 //!
 //! Every read is bounds-checked through [`crate::bytes`]; a malformed row or blob is a
@@ -194,6 +195,8 @@ pub struct Method {
     pub parameters: Vec<String>,
     /// Generic parameter names.
     pub generic_params: Vec<String>,
+    /// The constraint types of its generic parameters (`where T : Base`), in table order.
+    pub generic_constraints: Vec<Token>,
     /// The parsed body, when the method has one.
     pub body: Option<Body>,
     /// Local variable types.
@@ -251,6 +254,8 @@ pub struct Type {
     pub interfaces: Vec<Token>,
     /// Generic parameter names.
     pub generic_params: Vec<String>,
+    /// The constraint types of its generic parameters (`where T : Base`), in table order.
+    pub generic_constraints: Vec<Token>,
     /// Fields, in row order.
     pub fields: Vec<Field>,
     /// Methods, in row order.
@@ -335,6 +340,8 @@ impl Loaded {
 
 /// Generic parameters by owner (`TypeDef` or `MethodDef`), as (number, name).
 type GenericParams = BTreeMap<(TableId, u32), Vec<(u32, String)>>;
+/// Generic parameter constraint types by the parameter's owner (`TypeDef` or `MethodDef`).
+type GenericConstraints = BTreeMap<(TableId, u32), Vec<Token>>;
 /// A method body with its local types and `ldstr` literals.
 type BodyParts = (Body, Vec<TypeSig>, Vec<(u32, String)>);
 /// Positional and named attribute arguments.
@@ -644,6 +651,26 @@ impl Builder<'_, '_> {
         Ok(found)
     }
 
+    /// Every `GenericParamConstraint` row, gathered under its generic parameter's owner.
+    fn generic_constraints(&self) -> Read<GenericConstraints> {
+        let mut found: GenericConstraints = BTreeMap::new();
+        for row in 1..=self.rows(id::GENERIC_PARAM_CONSTRAINT) {
+            let parameter = self.cell(id::GENERIC_PARAM_CONSTRAINT, row, 0)?;
+            let Some(token) = Self::token(
+                Coded::TypeDefOrRef,
+                self.cell(id::GENERIC_PARAM_CONSTRAINT, row, 1)?,
+            ) else {
+                continue;
+            };
+            if let Some(owner) =
+                Coded::TypeOrMethodDef.decode(self.cell(id::GENERIC_PARAM, parameter, 2)?)
+            {
+                found.entry(owner).or_default().push(token);
+            }
+        }
+        Ok(found)
+    }
+
     fn body(&self, rva: u32) -> Read<Option<BodyParts>> {
         if rva == 0 {
             return Ok(None);
@@ -691,6 +718,10 @@ impl Builder<'_, '_> {
                 .into_iter()
                 .map(|(_, name)| name)
                 .collect()
+        };
+        let mut constraints = self.generic_constraints()?;
+        let mut take_constraints = |table: TableId, row: u32| -> Vec<Token> {
+            constraints.remove(&(table, row)).unwrap_or_default()
         };
         let mut enclosing = BTreeMap::new();
         for row in 1..=self.rows(id::NESTED_CLASS) {
@@ -788,6 +819,7 @@ impl Builder<'_, '_> {
                     sig,
                     parameters: parameters.into_iter().map(|(_, n)| n).collect(),
                     generic_params: take_generics(id::METHOD_DEF, m),
+                    generic_constraints: take_constraints(id::METHOD_DEF, m),
                     body,
                     locals,
                     strings,
@@ -823,6 +855,7 @@ impl Builder<'_, '_> {
                 enclosing: enclosing.get(&row).copied(),
                 interfaces: interfaces.remove(&row).unwrap_or_default(),
                 generic_params: take_generics(id::TYPE_DEF, row),
+                generic_constraints: take_constraints(id::TYPE_DEF, row),
                 fields,
                 methods,
                 properties,

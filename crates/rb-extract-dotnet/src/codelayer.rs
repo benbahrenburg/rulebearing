@@ -22,6 +22,7 @@
 //! | `ImplementsInterfaceDependency` (own and the loaded base chain's) | `implements` |
 //! | `FieldTypeDependency` | `field` |
 //! | `PropertyTypeDependency`, `MethodSignatureDependency` | `signature` |
+//! | `TypeGenericParameterTypeConstraintDependency`, `MemberGenericParameterTypeConstraintDependency` (phase 8 moves a generic parameter's constraint types to its type or member) | `signature` |
 //! | `MethodCallDependency`, `BodyTypeMemberDependency`, `CastTypeDependency`, `TypeCheckDependency`, `AccessFieldDependency` | `body` |
 //! | `MetaDataDependency` (`ldtoken`), `TypeReferenceDependency` (`typeof` in an attribute) | `typeof` |
 //! | `AttributeTypeDependency`, `AttributeMemberDependency` | `attribute` |
@@ -720,6 +721,15 @@ impl<'u> Builder<'u> {
                 &Self::at(r, DependencyKind::Implements, &location),
             );
         }
+        // A type-level generic parameter's constraints are the type's (phase 8).
+        for constraint in &ty.generic_constraints {
+            if let Some(r) = self.token_ref(asm, *constraint, generics) {
+                self.push(
+                    &mut type_deps,
+                    &Self::at(r, DependencyKind::Signature, &location),
+                );
+            }
+        }
         let mut attribute_elements = Vec::new();
         let mut attribute_deps = Vec::new();
         self.attributes(
@@ -938,6 +948,15 @@ impl<'u> Builder<'u> {
                     &mut deps,
                     &self.found(asm, method, r, DependencyKind::Signature, None, None),
                 );
+            }
+            // A method-level generic parameter's constraints are the method's (phase 8).
+            for constraint in &method.generic_constraints {
+                if let Some(r) = self.token_ref(asm, *constraint, method_generics) {
+                    self.push(
+                        &mut deps,
+                        &self.found(asm, method, r, DependencyKind::Signature, None, None),
+                    );
+                }
             }
             for found in self.body(asm, ty, method) {
                 if let Some(call) = &found.call {

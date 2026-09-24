@@ -62,6 +62,8 @@ pub mod id {
     pub const GENERIC_PARAM: TableId = 0x2A;
     /// `MethodSpec`.
     pub const METHOD_SPEC: TableId = 0x2B;
+    /// `GenericParamConstraint`.
+    pub const GENERIC_PARAM_CONSTRAINT: TableId = 0x2C;
     /// Portable PDB `Document`.
     pub const DOCUMENT: TableId = 0x30;
     /// Portable PDB `MethodDebugInformation`.

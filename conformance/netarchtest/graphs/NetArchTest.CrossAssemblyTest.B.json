@@ -1,0 +1,265 @@
+{
+  "modules": [
+    {
+      "source": "NetArchTest.CrossAssemblyTest.A",
+      "dependencies": [],
+      "valid": true,
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": true,
+      "dependencyTypes": [
+        "unresolved"
+      ],
+      "language": "dotnet"
+    },
+    {
+      "source": "test/NetArchTest.CrossAssemblyTest.B/AnotherDerivedClassFromB.cs",
+      "dependencies": [
+        {
+          "module": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+          "resolved": "NetArchTest.CrossAssemblyTest.A",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "inherits"
+        },
+        {
+          "module": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+          "resolved": "NetArchTest.CrossAssemblyTest.A",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "body",
+          "member": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA..ctor"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "NetArchTest.CrossAssemblyTest.B.dll",
+      "namespaces": [
+        "NetArchTest.CrossAssemblyTest.B"
+      ],
+      "attribution": "pdb"
+    },
+    {
+      "source": "test/NetArchTest.CrossAssemblyTest.B/DerivedClassFromB.cs",
+      "dependencies": [
+        {
+          "module": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+          "resolved": "NetArchTest.CrossAssemblyTest.A",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "inherits"
+        },
+        {
+          "module": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+          "resolved": "NetArchTest.CrossAssemblyTest.A",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "body",
+          "member": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA..ctor"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "NetArchTest.CrossAssemblyTest.B.dll",
+      "namespaces": [
+        "NetArchTest.CrossAssemblyTest.B"
+      ],
+      "attribution": "pdb"
+    }
+  ],
+  "summary": {
+    "violations": [],
+    "error": 0,
+    "warn": 0,
+    "info": 0,
+    "totalCruised": 0,
+    "optionsUsed": {}
+  },
+  "code": {
+    "types": [
+      {
+        "fullName": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+        "name": "BaseClassFromA",
+        "namespace": "NetArchTest.CrossAssemblyTest.A",
+        "kind": "class",
+        "language": "dotnet",
+        "assembly": "NetArchTest.CrossAssemblyTest.A",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "valueType": false,
+        "assemblyQualifiedName": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA, NetArchTest.CrossAssemblyTest.A, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "assemblyFullName": "NetArchTest.CrossAssemblyTest.A, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "referenced": true
+      },
+      {
+        "fullName": "NetArchTest.CrossAssemblyTest.B.AnotherDerivedClassFromB",
+        "name": "AnotherDerivedClassFromB",
+        "namespace": "NetArchTest.CrossAssemblyTest.B",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "test/NetArchTest.CrossAssemblyTest.B/AnotherDerivedClassFromB.cs",
+        "attribution": "pdb",
+        "assembly": "NetArchTest.CrossAssemblyTest.B",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+        "baseTypes": [
+          "NetArchTest.CrossAssemblyTest.A.BaseClassFromA"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "NetArchTest.CrossAssemblyTest.B.AnotherDerivedClassFromB, NetArchTest.CrossAssemblyTest.B, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "assemblyFullName": "NetArchTest.CrossAssemblyTest.B, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "dependencies": [
+          {
+            "target": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "NetArchTest.CrossAssemblyTest.B.DerivedClassFromB",
+        "name": "DerivedClassFromB",
+        "namespace": "NetArchTest.CrossAssemblyTest.B",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "test/NetArchTest.CrossAssemblyTest.B/DerivedClassFromB.cs",
+        "attribution": "pdb",
+        "assembly": "NetArchTest.CrossAssemblyTest.B",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+        "baseTypes": [
+          "NetArchTest.CrossAssemblyTest.A.BaseClassFromA"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "NetArchTest.CrossAssemblyTest.B.DerivedClassFromB, NetArchTest.CrossAssemblyTest.B, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "assemblyFullName": "NetArchTest.CrossAssemblyTest.B, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "dependencies": [
+          {
+            "target": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+            "kind": "inherits"
+          }
+        ]
+      }
+    ],
+    "members": [
+      {
+        "declaringType": "NetArchTest.CrossAssemblyTest.B.AnotherDerivedClassFromB",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "test/NetArchTest.CrossAssemblyTest.B/AnotherDerivedClassFromB.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void NetArchTest.CrossAssemblyTest.B.AnotherDerivedClassFromB::.ctor()",
+        "dependencies": [
+          {
+            "target": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "NetArchTest.CrossAssemblyTest.B.DerivedClassFromB",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "test/NetArchTest.CrossAssemblyTest.B/DerivedClassFromB.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void NetArchTest.CrossAssemblyTest.B.DerivedClassFromB::.ctor()",
+        "dependencies": [
+          {
+            "target": "NetArchTest.CrossAssemblyTest.A.BaseClassFromA",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      }
+    ],
+    "attributes": [],
+    "calls": [
+      {
+        "from": "System.Void NetArchTest.CrossAssemblyTest.B.AnotherDerivedClassFromB::.ctor()",
+        "to": "System.Void NetArchTest.CrossAssemblyTest.A.BaseClassFromA::.ctor()",
+        "language": "dotnet",
+        "file": "test/NetArchTest.CrossAssemblyTest.B/AnotherDerivedClassFromB.cs"
+      },
+      {
+        "from": "System.Void NetArchTest.CrossAssemblyTest.B.DerivedClassFromB::.ctor()",
+        "to": "System.Void NetArchTest.CrossAssemblyTest.A.BaseClassFromA::.ctor()",
+        "language": "dotnet",
+        "file": "test/NetArchTest.CrossAssemblyTest.B/DerivedClassFromB.cs"
+      }
+    ]
+  }
+}
