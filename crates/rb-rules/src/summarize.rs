@@ -798,6 +798,57 @@ mod tests {
         ]);
     }
 
+    #[test]
+    fn the_candidates_are_the_probes_own_buckets_and_no_more() {
+        let v = |from: Value, to: Value, cycle: Option<&[&str]>| {
+            let mut v = json!({ "rule": { "name": "r" }, "from": from, "to": to });
+            if let Some(names) = cycle {
+                v["cycle"] = steps(names);
+            }
+            v
+        };
+        let indexed = [
+            v(json!("a"), json!("b"), None),
+            v(json!(1), json!("b"), None),
+            v(json!("c"), json!("d"), Some(&["x", "y"])),
+            v(json!("e"), json!("f"), Some(&["x", "x"])),
+            v(json!("g"), json!("h"), Some(&["y", "x", "z"])),
+            v(json!("a"), json!(2), None),
+        ];
+        let mut index = SameIndex::default();
+        for (at, violation) in indexed.iter().enumerate() {
+            index.insert(at, violation);
+        }
+        let found = |probe: &Value, side: Side| {
+            let mut out = index.candidates(probe, side);
+            out.sort_unstable();
+            out.dedup();
+            out
+        };
+        let probe = |cycle: Option<&[&str]>| v(json!("p"), json!("q"), cycle);
+        let cases: [(Value, Side, &[usize]); 8] = [
+            (v(json!("a"), json!("b"), None), Side::Left, &[0]),
+            // Either end not a string: the one bucket of the rule.
+            (v(json!(1), json!("q"), None), Side::Left, &[1, 5]),
+            (v(json!("q"), json!(3), None), Side::Right, &[1, 5]),
+            // Distinct names: the indexed cycles with the same name set only.
+            (probe(Some(&["y", "x"])), Side::Left, &[2]),
+            // A repeated name on the left: every indexed cycle of the rule.
+            (probe(Some(&["x", "x"])), Side::Left, &[2, 3, 4]),
+            // On the right: the same name set, and every indexed cycle that repeats a name.
+            (probe(Some(&["x", "y"])), Side::Right, &[2, 3]),
+            (probe(Some(&["x", "x"])), Side::Right, &[3]),
+            (probe(None), Side::Right, &[]),
+        ];
+        for (probe, side, expected) in cases {
+            assert_eq!(found(&probe, side), expected, "{probe} {side:?}");
+        }
+        let mut other_rule = v(json!("a"), json!("b"), Some(&["x", "y"]));
+        other_rule["rule"]["name"] = json!("s");
+        assert!(found(&other_rule, Side::Left).is_empty());
+        assert!(found(&other_rule, Side::Right).is_empty());
+    }
+
     fn end() -> impl Strategy<Value = Option<Value>> {
         prop_oneof![
             Just(None),
