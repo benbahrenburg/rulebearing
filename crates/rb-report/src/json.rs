@@ -25,6 +25,9 @@ pub const DEPENDENCY_ADDITIONS: &[&str] = &[
 pub const VIOLATION_ADDITIONS: &[&str] = &["id", "fix", "decision"];
 /// Summary keys Rulebearing adds.
 pub const SUMMARY_ADDITIONS: &[&str] = &["inspected", "vacuousRules", "ratchets", "expired"];
+/// Rule-set keys Rulebearing adds (inside `summary.ruleSetUsed`): the element, slice and diagram
+/// rules.
+pub const RULE_SET_ADDITIONS: &[&str] = &["elements", "slices", "diagrams"];
 /// Rule keys Rulebearing adds (inside `summary.ruleSetUsed`).
 pub const RULE_ADDITIONS: &[&str] = &["fix", "examples", "owner", "expires", "allowEmpty"];
 
@@ -57,6 +60,7 @@ pub fn strip(result: &mut Value) {
             remove(v, VIOLATION_ADDITIONS);
         });
         if let Some(rules) = summary.get_mut("ruleSetUsed") {
+            remove(rules, RULE_SET_ADDITIONS);
             for list in ["forbidden", "allowed", "required"] {
                 each(rules, list, &mut |r| remove(r, RULE_ADDITIONS));
             }
@@ -88,7 +92,9 @@ mod tests {
         let result = json!({
             "modules": [{ "source": "a", "language": "typescript", "valid": true, "dependencies": [{ "resolved": "b", "line": 1, "column": 2, "dependencyKind": "import" }] }],
             "summary": { "violations": [{ "from": "a", "to": "b", "id": "RB-1", "fix": "f", "decision": "adr:1" }], "inspected": {}, "vacuousRules": [],
-                         "ruleSetUsed": { "forbidden": [{ "name": "r", "fix": "f", "allowEmpty": true }] } },
+                         "ruleSetUsed": { "forbidden": [{ "name": "r", "fix": "f", "allowEmpty": true }],
+                                          "elements": [{ "name": "sealedElement" }], "slices": [{ "name": "apartSlice" }],
+                                          "diagrams": [{ "name": "drawnDiagram" }] } },
             "code": {}
         });
         let stripped = render(&result, true).output;
@@ -101,6 +107,9 @@ mod tests {
             "vacuousRules",
             "allowEmpty",
             "\"code\"",
+            "sealedElement",
+            "apartSlice",
+            "drawnDiagram",
         ] {
             assert!(!stripped.contains(gone), "{gone}");
         }

@@ -845,6 +845,9 @@ pub struct KnownViolation {
     /// Who answers for the exception.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub owner: Option<String>,
+    /// Why the exception stands, and what removes it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
     /// Every other key, kept so an entry dependency-cruiser wrote round-trips.
     #[serde(flatten)]
     #[schemars(skip)]

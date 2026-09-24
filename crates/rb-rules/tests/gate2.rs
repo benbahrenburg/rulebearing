@@ -13,8 +13,10 @@
 //! rule, and the expectation: the passing and failing object sets, an error
 //! (`TypeDoesNotExistInArchitecture`), a vacuous selection, or `passes` (`HasNoViolations`). A
 //! case's `family` is `element` (the default), `slice`, `diagram` (a diagram rule over `conformance/archunitnet/diagrams/`),
-//! `plantuml` (a diagram parsed on its own) or `association` (a diagram associated with one type
-//! of the architecture, as `ClassDiagramAssociation` does). The graphs are
+//! `plantuml` (a diagram parsed on its own), `association` (a diagram associated with one type
+//! of the architecture, as `ClassDiagramAssociation` does) or `baseline` (an element or slice rule
+//! frozen against a known-violations file under `conformance/archunitnet/baselines/`, as
+//! `FreezingArchRule` is against its violation store). The graphs are
 //! `conformance/archunitnet/graphs/<Assembly>.json`.
 //! `RB_GATE2_REPORT=1` writes the differing cases to `<temp>/rb-gate2-failures.txt`. Reading the
 //! cases, joining the graphs and checking an element rule are shared with the NetArchTest half
@@ -60,6 +62,7 @@ fn check(architecture: &Architecture<'_>, id: &str, case: &Value) -> Option<Stri
             Err(e) => Some(format!("{id}: the rule does not parse: {e}")),
         },
         "plantuml" => check_plantuml(id, case, &expect),
+        "baseline" => check_baseline(id, case, &expect),
         "association" => check_association(architecture, id, case, &expect),
         other => Some(format!("{id}: unknown family {other}")),
     }
@@ -107,6 +110,73 @@ fn check_slice(
         differences.push(format!("expected vacuous={vacuous}"));
     }
     (!differences.is_empty()).then(|| format!("{id}: {}", differences.join("; ")))
+}
+
+/// A `FreezingArchRule` case: the rule (`ruleFamily` `element` or `slice`) under the name the
+/// store knows it by (`baselineRule`), with `knownViolations` read from `baselines/<file>` by the
+/// reader `--ignore-known` uses, evaluated by the engine `cruise` runs over the case's
+/// `architecture`. `passes` is whether no finding is left at severity `error`: every current
+/// violation is a stored one, which is `Freeze(rule).Check(architecture)` not throwing.
+fn check_baseline(id: &str, case: &Value, expect: &Value) -> Option<String> {
+    let mut rule = case.get("rule").cloned().unwrap_or(Value::Null);
+    let name = case
+        .get("baselineRule")
+        .and_then(Value::as_str)
+        .unwrap_or(id);
+    if let Value::Object(map) = &mut rule {
+        map.insert("name".into(), json!(name));
+    }
+    let family = match case.get("ruleFamily").and_then(Value::as_str) {
+        Some("element") => "elements",
+        Some("slice") => "slices",
+        other => {
+            return Some(format!(
+                "{id}: ruleFamily {other:?} is not element or slice"
+            ));
+        }
+    };
+    let mut canonical = serde_json::Map::new();
+    canonical.insert(family.into(), json!([rule]));
+    let mut config = match rb_config::load::from_canonical(canonical, rb_config::CompatMode::Native)
+    {
+        Ok(config) => config,
+        Err(e) => return Some(format!("{id}: the rule does not parse: {e}")),
+    };
+    let file = case
+        .get("knownViolations")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    config.known_violations =
+        match rb_config::load::known_violations_file(&conformance().join("baselines").join(file)) {
+            Ok(entries) => entries,
+            Err(e) => return Some(format!("{id}: {e}")),
+        };
+    let assemblies = strings(case.get("architecture"))
+        .into_iter()
+        .collect::<Vec<_>>();
+    let document = match gate2_common::architecture_document(&conformance(), &assemblies) {
+        Ok(document) => document,
+        Err(e) => return Some(format!("{id}: {e}")),
+    };
+    let options = rb_rules::EvalOptions {
+        liveness: false,
+        ..rb_rules::EvalOptions::default()
+    };
+    let evaluation = match rb_rules::evaluate(document, &config, &options) {
+        Ok(evaluation) => evaluation,
+        Err(e) => return Some(format!("{id}: {e}")),
+    };
+    let passes = evaluation.error_count() == 0;
+    let want = expect.get("passes").and_then(Value::as_bool);
+    (want != Some(passes)).then(|| {
+        let left: Vec<String> = evaluation
+            .violations()
+            .iter()
+            .filter(|v| v.rule.severity == rb_model::Severity::Error)
+            .map(|v| format!("{} -> {}", v.from, v.to))
+            .collect();
+        format!("{id}: expected passes={want:?}, got {passes}; not known: {left:?}")
+    })
 }
 
 /// A case's diagram text: inline (`diagram`) or a file under `diagrams/` (`file`).

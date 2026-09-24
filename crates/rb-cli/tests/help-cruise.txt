@@ -33,7 +33,7 @@ Options:
 
   -T, --output-type <TYPE>
           Output type: err, err-long, json, text, csv, teamcity, azure-devops, github-annotations,
-          agent, null
+          agent, baseline, sarif, junit, trx, null
 
   -f, --output-to <FILE>
           File to write output to; - for stdout
@@ -64,6 +64,14 @@ Options:
 
   -X, --do-not-follow <REGEX>
           Include modules matching the regex but do not follow their dependencies
+
+      --ignore-known [<FILE>]
+          Ignore the known violations saved in FILE, in place of options.knownViolations (default:
+          .dependency-cruiser-known-violations.json)
+
+      --no-ignore-known
+          Apply no known violations, options.knownViolations included: every finding at its rule's
+          severity
 
       --max-depth <NUMBER>
           How deep to follow dependencies from the roots; 0 for no limit

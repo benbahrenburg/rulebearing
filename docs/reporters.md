@@ -19,7 +19,16 @@
 
 **Gates** means the exit code is the number of error-severity violations. The others exit 0 on a trustworthy run, as in dependency-cruiser, so a pipeline can save JSON in one step and gate in the next ([ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). Every reporter exits 2 on a run that cannot be trusted and 3 on an invalid configuration ([ADR-0008](adr/0008-exit-code-contract.md)).
 
-`dot`, `ddot`, `archi`, `flat`, `mermaid`, `d2`, `baseline`, `metrics`, `sarif`, `junit` and `trx` arrive in wave 2; `html`, `markdown`, `anon` and `plantuml` in wave 3. Asking for one now exits 2 and names the wave.
+## Wave 2
+
+| Output type | Writes | Gates |
+| --- | --- | --- |
+| `baseline` | Every violation as a `knownViolations` entry, the file `rulebearing baseline` writes ([cli.md § Baselines](cli.md#baselines)) | no |
+| `sarif` | SARIF 2.1.0 for code scanning ([below](#sarif)) | no |
+| `junit` | JUnit XML, one test case per rule ([below](#junit-and-trx)) | no |
+| `trx` | Visual Studio TRX, one unit test per rule | no |
+
+`dot`, `ddot`, `archi`, `flat`, `mermaid`, `d2` and `metrics` arrive later in wave 2; `html`, `markdown`, `anon` and `plantuml` in wave 3. Asking for one now exits 2 and names the wave.
 
 ## Options
 
@@ -52,6 +61,14 @@
 ```
 
 `warning` for `warn` and `notice` for `info`; `ignore` is not printed. `line` and `col` come from the edge; a module finding has none.
+
+## `sarif`
+
+One SARIF rule per configuration rule: the name as `shortDescription`, the comment as `help.text`, and the comment followed by the `fix` in `help.markdown`, which code scanning shows as the recommendation. One result per violation at the rule's level (`warning` for `warn`, `note` for `info`), located at `from` with the edge's line and column, and fingerprinted with `partialFingerprints["rulebearing/v1"]`, the stable id, so an alert survives line churn. A known violation is reported with an external suppression; a vacuous rule and an expired entry are configuration notifications. Paths are from the repository root, as for `github-annotations`. The output validates against the OASIS SARIF 2.1.0 schema ([crates/rb-report/tests/sarif_schema.rs](../crates/rb-report/tests/sarif_schema.rs)).
+
+## `junit` and `trx`
+
+One test case per rule of every family, and one per ratchet. An error-severity violation fails the case: the message is the `fix` and the first five violations with their id, `from`, `to` and line, and the body lists every violation, one per object for an element rule. A vacuous rule, an expired rule or known violation and a ratchet without a budget are errors, not failures, because the rule could not be checked. Warn, info and known findings are listed in the case's output without failing it. The receipt (`summary.inspected`) is the test suite's properties in `junit` and the run's output in `trx`. `junit` validates against the Jenkins xUnit plugin's `junit-10.xsd`, and `trx` has the structure Visual Studio's `vstst.xsd` requires ([crates/rb-report/tests/xml_schemas.rs](../crates/rb-report/tests/xml_schemas.rs)).
 
 ## `agent`
 

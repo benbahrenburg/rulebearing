@@ -7,6 +7,7 @@
 
 pub mod adopt;
 pub mod attest;
+pub mod baseline;
 pub mod can_import;
 pub mod catalogue;
 pub mod config;

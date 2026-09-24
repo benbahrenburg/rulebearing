@@ -20,7 +20,7 @@
 use std::collections::HashMap;
 
 use chrono::NaiveDate;
-use rb_config::model::{DependencyRules, Family, KnownViolation};
+use rb_config::model::{DependencyRules, Family};
 use rb_config::{Config, Rule, decision_token};
 use rb_model::violation_id::violation_id;
 use rb_model::{ExpiredEntry, Folder, GraphDocument, Module, Summary, VacuousRule, Violation};
@@ -31,11 +31,11 @@ use crate::derive::{self, DependentsWhen};
 use crate::folders::folders;
 use crate::graph::filters::{Filter, add_focus};
 use crate::js;
+use crate::known::KnownSet;
 use crate::matchers::{ModuleFacts, matches_from_cross_language, pattern};
 use crate::patterns;
 use crate::summarize::{
-    is_same_violation, options_used, rule_set_used, summarize_folders, summarize_modules,
-    violation_stats,
+    options_used, rule_set_used, summarize_folders, summarize_modules, violation_stats,
 };
 use crate::validate::{validate_dependency, validate_module};
 
@@ -133,6 +133,9 @@ pub struct Evaluation {
     pub rule_stats: Vec<RuleStats>,
     /// Rules and known violations past their date; each fails the run.
     pub expired: Vec<Expired>,
+    /// The indices into `config.known_violations` of the entries no violation matched, expired or
+    /// not: what `baseline --baseline-mode shrink-only` removes and fails on.
+    pub unmatched_known: Vec<usize>,
 }
 
 impl Evaluation {
@@ -211,107 +214,8 @@ fn to_matches(rule: &Rule, family: Family, modules: &[Value]) -> usize {
     }
 }
 
-/// A known violation, as dependency-cruiser's softening reads it, with its expiry applied.
-struct Known {
-    shape: Value,
-    id: Option<String>,
-}
-
-fn known_entries(
-    entries: &[KnownViolation],
-    today: NaiveDate,
-    expired: &mut Vec<Expired>,
-) -> Vec<Known> {
-    let mut out = Vec::new();
-    for entry in entries {
-        if let Some(expires) = entry.expires
-            && today > expires
-        {
-            let name = entry.id.clone().unwrap_or_else(|| {
-                format!(
-                    "{} -> {}",
-                    entry.from.as_deref().unwrap_or("?"),
-                    entry.to.as_deref().unwrap_or("?")
-                )
-            });
-            expired.push(Expired {
-                name,
-                expires,
-                kind: "knownViolation".into(),
-            });
-            continue;
-        }
-        out.push(Known {
-            shape: serde_json::to_value(entry).unwrap_or(Value::Null),
-            id: entry.id.clone(),
-        });
-    }
-    out
-}
-
 fn kind_of(value: &Value) -> Option<&str> {
     js::str_of(value, "type")
-}
-
-/// `softenKnownViolations`, plus the id-keyed entries Rulebearing writes.
-fn soften(modules: &mut [Value], known: &[Known]) {
-    if known.is_empty() {
-        return;
-    }
-    let ignore = |rule: &mut Value| js::set(rule, "severity", json!("ignore"));
-    for module in modules.iter_mut() {
-        let source = js::text(module, "source").into_owned();
-        if module.get("valid") == Some(&Value::Bool(false))
-            && let Some(Value::Array(rules)) = module.get_mut("rules")
-        {
-            for rule in rules.iter_mut() {
-                let name = js::text(rule, "name").into_owned();
-                let id = violation_id(&name, &source, &source, "");
-                let hit = known.iter().any(|k| {
-                    k.id.as_deref() == Some(id.as_str())
-                        || (matches!(kind_of(&k.shape), Some("module" | "reachability"))
-                            && js::str_of(&k.shape, "from") == Some(source.as_str())
-                            && k.shape.get("rule").and_then(|r| js::str_of(r, "name"))
-                                == Some(name.as_str()))
-                });
-                if hit {
-                    ignore(rule);
-                }
-            }
-        }
-        if let Some(Value::Array(dependencies)) = module.get_mut("dependencies") {
-            for dependency in dependencies.iter_mut() {
-                if dependency.get("valid") != Some(&Value::Bool(false)) {
-                    continue;
-                }
-                let to = js::text(dependency, "resolved").into_owned();
-                let kind = js::str_of(dependency, "dependencyKind")
-                    .unwrap_or("")
-                    .to_owned();
-                let cycle = dependency.get("cycle").cloned();
-                if let Some(Value::Array(rules)) = dependency.get_mut("rules") {
-                    for rule in rules.iter_mut() {
-                        let name = js::text(rule, "name").into_owned();
-                        let id = violation_id(&name, &source, &to, &kind);
-                        let mut key = json!({ "rule": rule.clone(), "from": source, "to": to });
-                        if let Some(cycle) = &cycle {
-                            js::set(&mut key, "cycle", cycle.clone());
-                        }
-                        let hit = known.iter().any(|k| {
-                            k.id.as_deref() == Some(id.as_str())
-                                || (matches!(
-                                    kind_of(&k.shape),
-                                    Some("dependency" | "cycle" | "instability")
-                                ) && is_same_violation(&k.shape, &key))
-                        });
-                        if hit {
-                            ignore(rule);
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 /// Adds the stable id, the `fix` and the decision token to each violation.
@@ -552,8 +456,8 @@ pub fn evaluate(
     }
     add_validations(&mut modules, rules, opts.validate, &facts);
     let mut expired = expired_rules(rules, opts.today);
-    let known = known_entries(&config.known_violations, opts.today, &mut expired);
-    soften(&mut modules, &known);
+    let mut known = KnownSet::new(&config.known_violations, opts.today, &mut expired);
+    known.soften_modules(&mut modules);
 
     let folder_values = if metrics {
         folders(&modules, skip, rules)
@@ -567,7 +471,8 @@ pub fn evaluate(
     let (rule_stats, mut vacuous) =
         stats_and_liveness(rules, &modules, &violations, opts.liveness, &facts);
     if let Some(input) = &element_input {
-        let (found, empty) = crate::families::evaluate(input, config)?;
+        let (mut found, empty) = crate::families::evaluate(input, config)?;
+        known.soften_violations(&mut found);
         violations.extend(found);
         if opts.liveness {
             vacuous.extend(empty);
@@ -576,7 +481,8 @@ pub fn evaluate(
 
     let stats = violation_stats(&violations);
     let count = |k: &str| stats.get(k).and_then(Value::as_u64).unwrap_or(0);
-    let used = rule_set_used(rules);
+    let mut used = rule_set_used(rules);
+    used.extend(crate::families::rule_set_used(&config.rules));
     let summary = Summary {
         violations: violations
             .into_iter()
@@ -625,6 +531,7 @@ pub fn evaluate(
         vacuous,
         rule_stats,
         expired,
+        unmatched_known: known.unmatched(),
     })
 }
 
@@ -928,6 +835,93 @@ mod tests {
             result.expired.is_empty(),
             "an entry expiring today still applies today"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn element_violations_are_baselined_and_stale_entries_are_named() -> Result<(), EngineError> {
+        let class = |full: &str, file: &str, sealed: bool| {
+            json!({ "fullName": full, "name": full.rsplit('.').next().unwrap_or(full), "namespace": "S",
+                    "kind": "class", "language": "dotnet", "file": file, "sealed": sealed })
+        };
+        let code: rb_model::CodeLayer = serde_json::from_value(json!({ "types": [
+            class("S.A", "a.cs", false), class("S.B", "b.cs", false), class("S.C", "c.cs", true)
+        ] }))?;
+        let document = GraphDocument {
+            code: Some(code),
+            ..GraphDocument::default()
+        };
+        let cfg = config(json!({
+            "elements": [{ "name": "sealed", "fix": "Seal it.",
+                "select": { "kind": "class" }, "should": { "beSealed": true } }],
+            "options": { "knownViolations": [
+                { "type": "element", "rule": { "name": "sealed" }, "to": "S.A" },
+                { "id": violation_id("sealed", "b.cs", "S.B", "beSealed") },
+                { "type": "element", "rule": { "name": "sealed" }, "to": "S.Gone" }
+            ] }
+        }));
+        let result = evaluate(
+            document,
+            &cfg,
+            &EvalOptions {
+                today: today(),
+                liveness: false,
+                ..EvalOptions::default()
+            },
+        )?;
+        let found: Vec<(&str, Severity)> = result
+            .violations()
+            .iter()
+            .map(|v| (v.to.as_str(), v.rule.severity))
+            .collect();
+        assert_eq!(
+            found,
+            [("S.A", Severity::Ignore), ("S.B", Severity::Ignore)]
+        );
+        let summary = &result.document.summary;
+        assert_eq!((summary.error, summary.ignore), (0, Some(2)));
+        assert_eq!(result.unmatched_known, [2]);
+        assert_eq!(
+            summary
+                .rule_set_used
+                .as_ref()
+                .and_then(|r| r.get("elements"))
+                .cloned(),
+            Some(json!([{ "name": "sealed", "severity": "error", "fix": "Seal it." }]))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn slice_rules_see_the_module_layer() -> Result<(), EngineError> {
+        let module = |source: &str, deps: &[&str]| Module {
+            language: Some(rb_model::Language::Typescript),
+            dependencies: deps.iter().map(|d| edge(d)).collect(),
+            ..Module::new(source)
+        };
+        let document = GraphDocument {
+            modules: vec![
+                module("src/features/a/x.ts", &["src/features/b/y.ts"]),
+                module("src/features/b/y.ts", &[]),
+            ],
+            ..GraphDocument::default()
+        };
+        let cfg = config(json!({ "slices": [{ "name": "apart",
+            "matching": "src/features/(**)//", "should": "notDependOnEachOther" }] }));
+        let result = evaluate(
+            document,
+            &cfg,
+            &EvalOptions {
+                liveness: false,
+                ..EvalOptions::default()
+            },
+        )?;
+        let found: Vec<(&str, &str)> = result
+            .violations()
+            .iter()
+            .map(|v| (v.rule.name.as_str(), v.from.as_str()))
+            .collect();
+        assert_eq!(found, [("apart", "a")]);
         Ok(())
     }
 

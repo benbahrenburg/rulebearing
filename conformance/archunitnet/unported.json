@@ -81,38 +81,17 @@
     },
     {
       "source": "ArchUnitNETTests/Fluent/FreezeTests.cs",
-      "test": "FailFrozenRule",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/FreezeTests.cs",
       "test": "FailFrozenRuleUsingXmlViolationStore",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/FreezeTests.cs",
-      "test": "PassFrozenRules",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "api-only: XmlViolationStore is a C# IViolationStore that keeps the same rule-to-objects store as XML; Rulebearing's store is the dependency-cruiser known-violations JSON file (--ignore-known, options.knownViolations) and has no XML form. Freezing with that store is ported from PassFrozenRules and FailFrozenRule, whose stores hold the same violations"
     },
     {
       "source": "ArchUnitNETTests/Fluent/FreezeTests.cs",
       "test": "PassFrozenRulesUsingXmlViolationStore",
       "block": null,
       "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/FreezeTests.cs",
-      "test": "PassFrozenRulesWithCustomViolationStorePath",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
+      "reason": "api-only: XmlViolationStore is a C# IViolationStore that keeps the same rule-to-objects store as XML; Rulebearing's store is the dependency-cruiser known-violations JSON file (--ignore-known, options.knownViolations) and has no XML form. Freezing with that store is ported from PassFrozenRules and FailFrozenRule, whose stores hold the same violations"
     },
     {
       "source": "ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs",

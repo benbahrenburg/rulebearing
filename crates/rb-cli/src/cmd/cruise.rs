@@ -221,11 +221,12 @@ fn report(
         strict_schema: args.strict_schema,
         max_findings: args.max_findings,
         timestamp: ctx.timestamp.clone(),
-        path_prefix: if output_type == "github-annotations" {
+        path_prefix: if matches!(output_type, "github-annotations" | "sarif") {
             ctx.repository_prefix()
         } else {
             String::new()
         },
+        baseline: rb_report::baseline::Lifecycle::default(),
     };
     let rendered = match rb_report::render(output_type, &value, &options) {
         Ok(r) => r,

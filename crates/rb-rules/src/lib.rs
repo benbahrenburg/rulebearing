@@ -23,6 +23,7 @@
 //! | [`mod@derive`] | cycles, dependents, orphans, reachability, instability |
 //! | [`folders`] | the folder layer |
 //! | [`summarize`] | violations, counts, `ruleSetUsed`, `optionsUsed` |
+//! | [`known`] | known violations: softening, expiry, the entries that no longer occur |
 //! | [`compare`] | the orderings output is sorted by |
 //! | [`graph`] | the indexed graph, consolidation and filters |
 //! | [`rewrap`] | `fmt`'s re-summary of a saved result |
@@ -39,6 +40,7 @@ pub mod families;
 pub mod folders;
 pub mod graph;
 pub mod js;
+pub mod known;
 pub mod matchers;
 pub mod patterns;
 pub mod plantuml;
