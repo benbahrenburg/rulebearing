@@ -419,6 +419,10 @@ pub fn extract_with(inputs: &[PathBuf], settings: &Settings) -> Result<Extractio
         module.dependencies = dependencies;
         module.language = Some(Language::Python);
         module.project = result.identity.dotted.split('.').next().map(str::to_owned);
+        // The dotted module name, which a slice pattern (`app.(*)`) matches, as a .NET file's
+        // namespaces are.
+        module.namespaces =
+            (!result.identity.dotted.is_empty()).then(|| vec![result.identity.dotted.clone()]);
         modules.push(module);
     }
     modules.extend(targets.into_values());
