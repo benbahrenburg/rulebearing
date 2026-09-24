@@ -44,7 +44,7 @@ rows:
   - { repo: bridgecrewio/checkov, sha: 92ca0101e39e7f575c8182b5b1fd7c89b04e136b, role: oracle, languages: [python], tool: import-linter }
   - { repo: openedx/openedx-platform, sha: 23f45c133cf8e5074a723e6f6685137c87c01780, role: oracle, languages: [python], tool: import-linter, pip: ["openedx-core==1.4.0"] }
   - { repo: napari/napari, sha: 5ef58e212af1af11737bc005048cfd0fb7a1aefd, role: oracle, languages: [python], tool: import-linter }
-  - { repo: nolar/kopf, sha: e63c29c374cde63b6afa7378ae4486bb92062c0f, role: oracle, languages: [python], tool: import-linter, pip: [astpath] }
+  - { repo: nolar/kopf, sha: e63c29c374cde63b6afa7378ae4486bb92062c0f, role: oracle, languages: [python], tool: import-linter, pip: [astpath, lxml] }
   - { repo: online-ml/river, sha: d7085cde5bf90898b338d1ad522c71b9b9aa26f8, role: oracle, languages: [python], tool: import-linter }
   - { repo: wemake-services/wemake-python-styleguide, sha: b4d0171879edc9a6a71a1506a2ee5554f634e0ea, role: oracle, languages: [python], tool: import-linter }
   - { repo: google/langextract, sha: 62b933a2c757fd2bbb100498571b8d1692db4344, role: oracle, languages: [python], tool: import-linter }
