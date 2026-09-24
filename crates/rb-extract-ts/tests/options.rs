@@ -41,6 +41,32 @@ fn run(name: &str, options: &str, roots: &[&str]) -> Result<Extraction, ExtractE
     run_in(&fixture(name), options, roots)
 }
 
+/// [`run`] as a native configuration runs it: Markdown fences read when `.md` is listed
+/// (ADR-0036).
+fn run_native(name: &str, options: &str, roots: &[&str]) -> Result<Extraction, ExtractError> {
+    let options: TypeScriptOptions =
+        serde_json::from_str(options).map_err(|e| ExtractError::UnsupportedFile {
+            path: PathBuf::from("options"),
+            reason: e.to_string(),
+        })?;
+    let (mut settings, config) = prepare(&options, &fixture(name))?;
+    settings.markdown_fences = true;
+    let roots: Vec<PathBuf> = roots.iter().map(PathBuf::from).collect();
+    extract_with(&roots, &settings, &config)
+}
+
+/// `(module, line, column)` of every edge leaving `source`.
+fn positions(extraction: &Extraction, source: &str) -> Vec<(String, Option<u32>, Option<u32>)> {
+    module(extraction, source)
+        .map(|m| {
+            m.dependencies
+                .iter()
+                .map(|d| (d.module.clone(), d.line, d.column))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 fn module<'e>(extraction: &'e Extraction, source: &str) -> Option<&'e Module> {
     extraction.modules.iter().find(|m| m.source == source)
 }
@@ -638,6 +664,150 @@ fn extra_extensions_are_discovered_and_carry_no_dependencies() {
         module(&with, "src/notes.md").map(|m| m.dependencies.len()),
         Some(0)
     );
+}
+
+#[test]
+fn markdown_fences_are_read_for_a_native_configuration() -> Result<(), Box<dyn std::error::Error>> {
+    let options = r#"{"extraExtensionsToScan": [".md"]}"#;
+    // dependency-cruiser's behaviour, which a dependency-cruiser configuration keeps.
+    let upstream = run("markdown", options, &["src"])?;
+    assert_eq!(
+        module(&upstream, "src/usage.md").map(|m| m.dependencies.len()),
+        Some(0)
+    );
+    let native = run_native("markdown", options, &["src"])?;
+    assert_eq!(
+        edges(&native, "src/usage.md"),
+        [
+            (
+                "./index".to_owned(),
+                "src/index.ts".to_owned(),
+                vec!["local".to_owned(), "require".to_owned()]
+            ),
+            (
+                "./index".to_owned(),
+                "src/index.ts".to_owned(),
+                vec!["local".to_owned(), "import".to_owned()]
+            ),
+            (
+                "./missing".to_owned(),
+                "./missing".to_owned(),
+                vec!["unknown".to_owned()]
+            ),
+        ],
+        "the type-only import is elided as in a .ts file; python and untagged fences are not read"
+    );
+    assert_eq!(
+        positions(&native, "src/usage.md"),
+        [
+            ("./index".to_owned(), Some(12), Some(13)),
+            ("./index".to_owned(), Some(5), Some(1)),
+            ("./missing".to_owned(), Some(16), Some(13)),
+        ]
+    );
+    // Without `.md` listed, a native configuration does not gather Markdown at all.
+    let unlisted = run_native("markdown", "{}", &["src"])?;
+    assert!(module(&unlisted, "src/usage.md").is_none());
+    // Two runs serialise byte for byte.
+    let again = run_native("markdown", options, &["src"])?;
+    assert_eq!(
+        serde_json::to_string(&native.modules)?,
+        serde_json::to_string(&again.modules)?
+    );
+    Ok(())
+}
+
+#[test]
+fn vue_and_svelte_scripts_are_extracted_where_they_stand() -> Result<(), Box<dyn std::error::Error>>
+{
+    let extraction = run("sfc", "{}", &["src"])?;
+    let expected = |shared_line: u32, helper_line: u32, column: u32| {
+        (
+            vec![
+                (
+                    "./helper.js".to_owned(),
+                    "src/helper.js".to_owned(),
+                    vec!["local".to_owned(), "import".to_owned()],
+                ),
+                (
+                    "./shared".to_owned(),
+                    "src/shared.ts".to_owned(),
+                    vec!["local".to_owned(), "import".to_owned()],
+                ),
+            ],
+            vec![
+                ("./helper.js".to_owned(), Some(helper_line), Some(column)),
+                ("./shared".to_owned(), Some(shared_line), Some(column)),
+            ],
+        )
+    };
+    for (component, (edges_expected, positions_expected)) in [
+        ("src/App.vue", expected(5, 9, 1)),
+        ("src/Widget.svelte", expected(2, 7, 3)),
+    ] {
+        assert_eq!(edges(&extraction, component), edges_expected, "{component}");
+        assert_eq!(
+            positions(&extraction, component),
+            positions_expected,
+            "{component}"
+        );
+    }
+    // tsc reads a Vue script as TypeScript and keeps the type-only import; a Svelte component is
+    // compiled before it is read, so its type-only import is gone either way.
+    let tsc = run("sfc", r#"{"tsPreCompilationDeps": true}"#, &["src"])?;
+    let targets = |source: &str| -> Vec<String> {
+        edges(&tsc, source).into_iter().map(|(m, _, _)| m).collect()
+    };
+    assert_eq!(
+        targets("src/App.vue"),
+        ["./helper.js", "./props", "./shared"]
+    );
+    assert_eq!(targets("src/Widget.svelte"), ["./helper.js", "./shared"]);
+    Ok(())
+}
+
+#[test]
+fn a_webpack_resolve_block_reaches_the_resolver() -> Result<(), Box<dyn std::error::Error>> {
+    let cwd = fixture("webpack-resolve");
+    let (settings, mut config) = prepare(&TypeScriptOptions::default(), &cwd)?;
+    let src = cwd.join("src").to_string_lossy().into_owned();
+    let block = serde_json::json!({
+        "alias": { "@": src, "gone": false },
+        "modules": ["node_modules", "lib"],
+        "extensions": [".ts", ".js"]
+    });
+    let unread = rb_extract_ts::resolve::apply_resolve_block(
+        &mut config,
+        block.as_object().ok_or("an object")?,
+    );
+    assert!(unread.is_empty());
+    let extraction = extract_with(&[PathBuf::from("src/index.js")], &settings, &config)?;
+    assert_eq!(
+        edges(&extraction, "src/index.js"),
+        [
+            (
+                "@/util".to_owned(),
+                "src/util/index.ts".to_owned(),
+                vec![
+                    "aliased".to_owned(),
+                    "aliased-webpack".to_owned(),
+                    "local".to_owned(),
+                    "import".to_owned()
+                ]
+            ),
+            (
+                "gone".to_owned(),
+                "gone".to_owned(),
+                vec!["unknown".to_owned()]
+            ),
+            (
+                "thing".to_owned(),
+                "lib/thing.js".to_owned(),
+                vec!["localmodule".to_owned(), "import".to_owned()]
+            ),
+        ]
+    );
+    Ok(())
 }
 
 #[test]

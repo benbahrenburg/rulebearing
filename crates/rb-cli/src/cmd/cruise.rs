@@ -107,6 +107,9 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
             code: 0,
         };
     }
+    if let Some(oneshot) = &args.init {
+        return crate::cmd::init::oneshot(ctx, oneshot, args);
+    }
     let mut progress = Progress::new(if args.no_progress {
         None
     } else {

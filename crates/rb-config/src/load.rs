@@ -700,23 +700,20 @@ mod tests {
             .and_then(|r| r.from.path_not.clone())
             .map(|p| p.joined())
             .unwrap_or_default();
-        for part in [
-            "Program",
-            "Startup",
-            "AssemblyInfo",
-            "Migrations",
-            "tsconfig",
-        ] {
+        for part in ["Program", "Startup", "AssemblyInfo", "Migrations"] {
             assert!(orphans.contains(part), "{part} in {orphans}");
         }
-        assert!(
-            config
-                .rules
-                .dependencies
-                .forbidden
-                .iter()
-                .any(|r| r.name() == "no-circular"),
-            "the recommended rules are kept"
+        let names: Vec<&str> = config
+            .rules
+            .dependencies
+            .forbidden
+            .iter()
+            .map(crate::Rule::name)
+            .collect();
+        assert_eq!(
+            names,
+            ["no-orphans"],
+            "the preset carries its exclusions and nothing else"
         );
         Ok(())
     }
@@ -748,17 +745,12 @@ mod tests {
         assert!(
             orphans.contains("__main__")
                 && orphans.contains("conftest")
-                && orphans.contains("tsconfig"),
+                && !orphans.contains("tsconfig"),
             "{orphans}"
         );
         assert!(
-            config
-                .rules
-                .dependencies
-                .forbidden
-                .iter()
-                .any(|r| r.name() == "no-circular"),
-            "the recommended rules are kept"
+            !exclude.contains("obj") && !exclude.contains("node_modules"),
+            "rulebearing:python alone excludes nothing of another language's: {exclude}"
         );
         Ok(())
     }
