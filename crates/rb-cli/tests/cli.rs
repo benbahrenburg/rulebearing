@@ -6,8 +6,9 @@
 //!
 //! The help text is a promise: `rulebearing` claims flag parity with dependency-cruiser, so a
 //! flag that disappears or is renamed must show up in review rather than in a user's pipeline.
-//! The snapshot lives in `tests/help.txt`; regenerate it deliberately with
-//! `RB_UPDATE_SNAPSHOTS=1 cargo test -p rb-cli`.
+//! The snapshots live in `tests/help.txt` (the top level), `tests/help-cruise.txt` and
+//! `tests/help-init.txt`; regenerate them deliberately with `RB_UPDATE_SNAPSHOTS=1 cargo test -p
+//! rb-cli`.
 
 use std::error::Error;
 use std::path::PathBuf;
@@ -15,29 +16,44 @@ use std::process::Command;
 
 const BIN: &str = env!("CARGO_BIN_EXE_rulebearing");
 
-fn snapshot_path() -> PathBuf {
+fn snapshot_path(file: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
-        .join("help.txt")
+        .join(file)
 }
+
+/// The help texts snapshotted: the top level, and `cruise` and `init`, whose flags are
+/// dependency-cruiser's `depcruise` flags and `--init`'s presets.
+const HELP: &[(&[&str], &str)] = &[
+    (&["--help"], "help.txt"),
+    (&["cruise", "--help"], "help-cruise.txt"),
+    (&["init", "--help"], "help-init.txt"),
+];
 
 #[test]
 fn help_matches_the_snapshot() -> Result<(), Box<dyn Error>> {
-    let output = Command::new(BIN).arg("--help").output()?;
-    assert!(output.status.success(), "`--help` should exit 0");
-    let actual = String::from_utf8(output.stdout)?;
+    for (args, file) in HELP {
+        let output = Command::new(BIN).args(*args).output()?;
+        assert!(
+            output.status.success(),
+            "`{}` should exit 0",
+            args.join(" ")
+        );
+        let actual = String::from_utf8(output.stdout)?;
 
-    if std::env::var_os("RB_UPDATE_SNAPSHOTS").is_some() {
-        std::fs::write(snapshot_path(), &actual)?;
-        return Ok(());
+        if std::env::var_os("RB_UPDATE_SNAPSHOTS").is_some() {
+            std::fs::write(snapshot_path(file), &actual)?;
+            continue;
+        }
+
+        let expected = std::fs::read_to_string(snapshot_path(file))?;
+        assert_eq!(
+            actual.replace("\r\n", "\n"),
+            expected.replace("\r\n", "\n"),
+            "the help text of `{}` changed; if that was intended, regenerate with RB_UPDATE_SNAPSHOTS=1",
+            args.join(" ")
+        );
     }
-
-    let expected = std::fs::read_to_string(snapshot_path())?;
-    assert_eq!(
-        actual.replace("\r\n", "\n"),
-        expected.replace("\r\n", "\n"),
-        "the help text changed; if that was intended, regenerate with RB_UPDATE_SNAPSHOTS=1"
-    );
     Ok(())
 }
 

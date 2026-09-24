@@ -6,7 +6,7 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 
 | Command | For | dependency-cruiser |
 | --- | --- | --- |
-| `cruise [paths]` | Extract, evaluate, report | `depcruise`, with the same flags and short forms (`-T`, `-f`, `-c`, `-I`, `-F`, `-R`, `-x`, `-X`, `-P`, `-p`, `-m`, `-i`) |
+| `cruise [paths]` | Extract, evaluate, report | `depcruise`, with the same flags and short forms (`-T`, `-f`, `-c`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-X`, `-P`, `-p`, `-m`, `-i`), `--webpack-config` and `--init [oneshot]` |
 | `fmt <result.json>` | Re-report a saved result without extracting | `depcruise-fmt`, with its short forms (`-T`, `-f`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-e`, `-p`) |
 | `rules [--json]` | Every rule with its family, severity and match counts | |
 | `explain <rule> [--plain]` | One rule in a sentence, with its reason, `fix` and first edges | |
@@ -20,8 +20,10 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | `summary [--format agent\|text]` | The session brief: open violations, ratchet headroom, vacuous rules | |
 | `impact <file> [--depth N] [--from-hook]` | What a file is subject to, before an edit | |
 | `attest [--verify]` | Write or check a receipt of the configuration, inputs and results | |
-| `init` | A first configuration that passes on its first run, read from the repository rather than asked for | (`depcruise --init`, which asks questions, is a wave 2 row) |
+| `init [--preset LANGUAGE]` | A first configuration that passes on its first run, read from the repository rather than asked for; the languages found (or named) choose the presets | `depcruise --init`, as `cruise --init` (below) |
 | `adopt` | A dependency-cruiser repository behind a green gate with a baseline, in one pull request | |
+
+`cruise --init [oneshot]` is `depcruise --init` without the questions: it writes what `init` writes, to `--config FILE` or `rulebearing.yaml`, with `--preset typescript,dotnet,python` naming the languages instead of detecting them. `yes`, a bare `--init` and any other name write the configuration; `x-scripts` also adds `rulebearing`, `rulebearing:text` and `rulebearing:focus` run scripts to `package.json` after the existing ones and, as dependency-cruiser does, leaves an existing configuration be. dependency-cruiser's graph and HTML scripts need the `dot`, `archi` and `err-html` reporters and `wrap-html`, and are not written until those exist. One language extends its own preset first, `[rulebearing:python, rulebearing:recommended]`, so its exclusions win; several extend `rulebearing:recommended` ([config.md](config.md#presets)).
 
 `baseline`, `place`, `docs`, `import`, `propose` and `decisions` arrive in wave 2; `diff`, `guard`, `snapshot`, `changelog` and `serve` in wave 3. Each exits 2 now and names its wave.
 

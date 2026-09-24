@@ -16,7 +16,7 @@ use rb_config::{Config, ConfigError};
 use rb_model::Language;
 use rb_model::{ExtractError, GraphDocument, Inspected, Receipt};
 use rb_rules::graph::filters::{Filter, Filters};
-use rb_rules::rewrap::{FormatOptions, rewrap};
+use rb_rules::rewrap::{FormatOptions, collapse_pattern, rewrap};
 use rb_rules::{EngineError, EvalOptions, Evaluation, evaluate};
 use serde_json::{Map, Value};
 
@@ -208,8 +208,31 @@ pub fn extract_with_warnings(
         } else {
             paths.iter().map(PathBuf::from).collect()
         };
-        let (settings, mut resolve) =
+        let (mut settings, mut resolve) =
             rb_extract_ts::prepare(&config.languages.typescript, &ctx.cwd)?;
+        // Markdown fences are a native addition; a dependency-cruiser configuration never has a
+        // file of `extraExtensionsToScan` read (ADR-0036).
+        settings.markdown_fences = config.compat == rb_config::CompatMode::Native;
+        // The webpack configuration's `resolve` block wins over `enhancedResolveOptions`, as
+        // upstream spreads it last.
+        if let Some(block) = config
+            .options
+            .webpack_config_json
+            .as_ref()
+            .and_then(Value::as_object)
+        {
+            let unread = rb_extract_ts::resolve::apply_resolve_block(&mut resolve, block);
+            if !unread.is_empty() {
+                merged.warnings.push(rb_model::Warning {
+                    path: None,
+                    message: format!(
+                        "the webpack resolve keys {} are not applied; the resolver reads {}",
+                        unread.join(", "),
+                        rb_extract_ts::resolve::RESOLVE_BLOCK_KEYS.join(", ")
+                    ),
+                });
+            }
+        }
         // Licences and deprecations are read from package.json only when a rule asks for them, as
         // upstream's ruleSetHasLicenseRule and ruleSetHasDeprecationRule decide.
         resolve.resolve_licenses = rb_rules::derive::has_license_rule(&config.rules.dependencies);
@@ -286,16 +309,28 @@ pub fn extract_with_warnings(
     Ok((document, merged.warnings))
 }
 
-/// The report filters `cruise` applies after evaluation: `reaches` (the rest were applied while
-/// extracting and evaluating, and reapplying them changes nothing).
+/// The report filters `cruise` applies after evaluation: `reaches` and `highlight` (the rest were
+/// applied while extracting and evaluating, and reapplying them changes nothing).
 fn cruise_filters(config: &Config) -> Filters {
-    Filters {
-        reaches: config.options.reaches.as_ref().map(|r| Filter {
-            path: r.path.clone(),
+    let path_only = |option: Option<&rb_config::model::FilterOption>| {
+        option.map(|o| Filter {
+            path: o.path.clone(),
             depth: None,
-        }),
+        })
+    };
+    Filters {
+        reaches: path_only(config.options.reaches.as_ref()),
+        // `highlight` marks every module `matchesHighlight: true` or `false`, as upstream's
+        // reportWrap tags it from the cruise options.
+        highlight: path_only(config.options.highlight.as_ref()),
         ..Filters::default()
     }
+}
+
+/// `collapse` from the configuration or `--collapse`: a folder depth (a single digit) becomes
+/// upstream's pattern, anything else is the pattern itself.
+fn cruise_collapse(config: &Config) -> Option<String> {
+    config.options.collapse.as_ref().and_then(collapse_pattern)
 }
 
 /// Runs the stages over `paths`.
@@ -345,7 +380,7 @@ pub fn evaluate_document(
     progress.stage("evaluate");
     let format = FormatOptions {
         filters: cruise_filters(config),
-        collapse: None,
+        collapse: cruise_collapse(config),
         options: Map::new(),
     };
     let mut document = rewrap(

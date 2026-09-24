@@ -41,3 +41,4 @@ A rule in `rulebearing.yaml` cites a decision with the token `adr:NNNN` in its `
 | [0033](0033-llvm-exception-for-ar-archive-writer.md) | One crate-scoped licence exception: Apache-2.0 WITH LLVM-exception for `ar_archive_writer`, which the Python parser's build requires | Proposed |
 | [0034](0034-slices-group-types-or-modules-and-segments.md) | A slice groups .NET types or TypeScript and Python modules; `(*)` names a slice as `ArchUnitNET` does; `segments` keeps the first segments | Proposed |
 | [0035](0035-referenced-types-in-the-code-layer.md) | The code layer holds the types the analysed code references, as `ArchUnitNET`'s `ReferencedTypes` | Proposed |
+| [0036](0036-markdown-fences-follow-the-configuration-format.md) | Markdown fences are read for a native configuration; a dependency-cruiser one keeps upstream's `extraExtensionsToScan` | Proposed |

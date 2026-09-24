@@ -21,6 +21,40 @@ const value = loaded.default ?? loaded;
 process.stdout.write(JSON.stringify(value));
 "#;
 
+/// The script `node` runs for a webpack configuration: import it, apply
+/// [`super::WEBPACK_PICK`] with the `env` and `arguments` given as JSON, print the `resolve` block.
+fn webpack_script() -> String {
+    format!(
+        r#"
+const {{ pathToFileURL }} = await import("node:url");
+const loaded = await import(pathToFileURL(process.argv[1]).href);
+const pick = {pick};
+const value = pick(loaded.default ?? loaded, JSON.parse(process.argv[2]), JSON.parse(process.argv[3]));
+process.stdout.write(JSON.stringify(value));
+"#,
+        pick = super::WEBPACK_PICK
+    )
+}
+
+/// Evaluates the webpack configuration at `entry` with the local Node and returns its `resolve`
+/// block, as [`super::evaluate_webpack`] does in the sandbox.
+///
+/// # Errors
+/// See [`evaluate`].
+pub fn evaluate_webpack(
+    entry: &Path,
+    call: super::WebpackCall<'_>,
+) -> Result<serde_json::Value, JsError> {
+    let node = std::env::var("RULEBEARING_NODE").unwrap_or_else(|_| "node".to_owned());
+    let json = |v: &serde_json::Value| serde_json::to_string(v).unwrap_or_else(|_| "null".into());
+    run(
+        &node,
+        entry,
+        &webpack_script(),
+        &[json(call.env), json(call.arguments)],
+    )
+}
+
 /// Evaluates `entry` with the `node` found on the path (or `$RULEBEARING_NODE`).
 ///
 /// # Errors
@@ -36,6 +70,16 @@ pub fn evaluate(entry: &Path) -> Result<serde_json::Value, JsError> {
 /// # Errors
 /// See [`evaluate`].
 pub fn evaluate_with(node: &str, entry: &Path) -> Result<serde_json::Value, JsError> {
+    run(node, entry, SCRIPT, &[])
+}
+
+/// Runs `script` with `node`, `entry` and `extra` as its arguments, and reads its output as JSON.
+fn run(
+    node: &str,
+    entry: &Path,
+    script: &str,
+    extra: &[String],
+) -> Result<serde_json::Value, JsError> {
     let thrown = |message: String| JsError::Thrown {
         file: entry.to_path_buf(),
         message,
@@ -44,8 +88,9 @@ pub fn evaluate_with(node: &str, entry: &Path) -> Result<serde_json::Value, JsEr
     let output = Command::new(node)
         .arg("--input-type=module")
         .arg("-e")
-        .arg(SCRIPT)
+        .arg(script)
         .arg(entry)
+        .args(extra)
         .current_dir(dir)
         .output()
         .map_err(|e| thrown(format!("--config-via-node could not start `{node}`: {e}")))?;
@@ -88,6 +133,35 @@ mod tests {
             .unwrap_or_default();
         let _ = std::fs::remove_dir_all(&dir);
         assert!(error.contains("nope"), "{error}");
+        Ok(())
+    }
+
+    #[test]
+    fn node_evaluates_a_webpack_config_when_present() -> Result<(), Box<dyn std::error::Error>> {
+        if Command::new("node").arg("--version").output().is_err() {
+            return Ok(());
+        }
+        let dir = std::env::temp_dir().join(format!("rb-via-node-webpack-{}", std::process::id()));
+        std::fs::create_dir_all(&dir)?;
+        let file = dir.join("webpack.config.cjs");
+        std::fs::write(
+            &file,
+            "const path = require('node:path'); module.exports = (env, argv) => ({ resolve: { alias: { '@': path.join('/r', env.dir) }, extensions: [argv.mode] } });",
+        )?;
+        let env = serde_json::json!({ "dir": "src" });
+        let arguments = serde_json::json!({ "mode": ".ts" });
+        let value = evaluate_webpack(
+            &file,
+            super::super::WebpackCall {
+                env: &env,
+                arguments: &arguments,
+            },
+        )?;
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(
+            value,
+            serde_json::json!({ "alias": { "@": "/r/src" }, "extensions": [".ts"] })
+        );
         Ok(())
     }
 
