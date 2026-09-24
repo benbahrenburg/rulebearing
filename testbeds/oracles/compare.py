@@ -385,7 +385,7 @@ def our_edges(
             edge = (module["source"], dependency["resolved"])
             kinds = set(dependency["dependencyTypes"])
             unresolved.setdefault(module["source"], []).append(
-                (dotted(dependency, prefixes), dependency["resolved"])
+                (dotted(module["source"], dependency, prefixes), dependency["resolved"])
             )
             local = "local" in kinds and inside(edge[1]) and edge[0] != edge[1]
             if local and not (skip_type_only and kinds == {"local", "type-only"}):
@@ -393,16 +393,34 @@ def our_edges(
     return types, unresolved
 
 
-def dotted(dependency: dict[str, Any], prefixes: list[str]) -> str:
-    """An import's absolute module name: from the file it resolved to, else as written."""
-    resolved = str(dependency["resolved"])
-    if not resolved.endswith(".py"):
-        return str(dependency["module"])
+def module_name(path: str, prefixes: list[str]) -> str:
+    """The dotted module name of a Python file under a root."""
     for prefix in prefixes:
-        if resolved.startswith(prefix):
-            resolved = resolved[len(prefix) :]
+        if path.startswith(prefix):
+            path = path[len(prefix) :]
             break
-    return resolved.removesuffix(".py").removesuffix("/__init__").replace("/", ".")
+    return path.removesuffix(".py").removesuffix("/__init__").replace("/", ".")
+
+
+def dotted(source: str, dependency: dict[str, Any], prefixes: list[str]) -> str:
+    """An import's absolute module name.
+
+    From the file it resolved to, else as written, a relative import made absolute against the
+    importing file's package.
+    """
+    resolved = str(dependency["resolved"])
+    if resolved.endswith(".py"):
+        return module_name(resolved, prefixes)
+    written = str(dependency["module"])
+    level = len(written) - len(written.lstrip("."))
+    if level == 0:
+        return written
+    package = module_name(source, prefixes).split(".")
+    if not source.endswith("__init__.py"):
+        package = package[:-1]
+    base = package[: len(package) - (level - 1)] if level > 1 else package
+    rest = written[level:]
+    return ".".join([*base, rest] if rest else base)
 
 
 def kinds_summary(groups: dict[str, list[tuple[str, str]]]) -> dict[str, Any]:
