@@ -381,7 +381,9 @@ impl Rule {
 
 /// One vocabulary value or a list of them, as `dependencyTypes` is written: `dotnet` or
 /// `[inherits, implements]`. A value outside the vocabulary is a configuration error naming it,
-/// never a restriction that quietly matches nothing.
+/// never a restriction that quietly matches nothing; so is an empty list, which would match
+/// nothing (`language: []`) or everything (`dependencyKindNot: []`). Only the Rulebearing
+/// additions use this type; dependency-cruiser's own lists keep their upstream shape.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OneOrMany<T>(pub Vec<T>);
 
@@ -406,6 +408,9 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for OneOrMany<T> {
         // Buffered as JSON so a wrong value reports the vocabulary's own message ("`x` is not a
         // valid language") rather than an untagged enum's.
         match Value::deserialize(deserializer)? {
+            Value::Array(items) if items.is_empty() => Err(serde::de::Error::custom(
+                "an empty list matches nothing (or, negated, everything); name at least one value or leave the key out",
+            )),
             Value::Array(items) => items
                 .into_iter()
                 .map(|item| T::deserialize(item).map_err(serde::de::Error::custom))
@@ -426,7 +431,7 @@ impl<T: JsonSchema> JsonSchema for OneOrMany<T> {
     fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
         let one = generator.subschema_for::<T>();
         schemars::json_schema!({
-            "anyOf": [one.clone(), { "type": "array", "items": one }]
+            "anyOf": [one.clone(), { "type": "array", "minItems": 1, "items": one }]
         })
     }
 }
@@ -950,6 +955,40 @@ mod tests {
             [Family::Forbidden, Family::Allowed, Family::Required]
         );
         assert_eq!(Family::Allowed.as_str(), "allowed");
+    }
+
+    #[test]
+    fn one_or_many_refuses_an_empty_list() {
+        for text in [
+            r#"{"from":{"language":[]},"to":{}}"#,
+            r#"{"from":{},"to":{"dependencyKind":[]}}"#,
+            r#"{"from":{},"to":{"dependencyKindNot":[]}}"#,
+        ] {
+            let result = serde_json::from_str::<Rule>(text);
+            assert!(
+                result
+                    .as_ref()
+                    .err()
+                    .is_some_and(|e| e.to_string().contains("empty list")),
+                "{text}: {result:?}"
+            );
+        }
+        let one: Rule = serde_json::from_str(
+            r#"{"from":{"language":"dotnet"},"to":{"dependencyKind":["inherits","implements"]}}"#,
+        )
+        .unwrap_or_default();
+        assert_eq!(
+            one.from.cross.language.as_ref().map(OneOrMany::as_slice),
+            Some(&[rb_model::Language::Dotnet][..])
+        );
+        assert_eq!(
+            one.to.dependency_kind.as_ref().map(|k| k.as_slice().len()),
+            Some(2)
+        );
+        // dependency-cruiser's own lists are untouched: `dependencyTypesNot: []` still loads.
+        let upstream: Result<Rule, _> =
+            serde_json::from_str(r#"{"from":{},"to":{"dependencyTypesNot":[]}}"#);
+        assert!(upstream.is_ok());
     }
 
     #[test]
