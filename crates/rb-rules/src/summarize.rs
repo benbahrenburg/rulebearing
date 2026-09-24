@@ -142,32 +142,28 @@ pub fn summarize_modules(modules: &[Value], rules: Option<&DependencyRules>) -> 
 /// without the quadratic scan that took minutes on an import-linter oracle's hundred thousand
 /// reachability violations.
 pub fn unique_violations(violations: Vec<Value>) -> Vec<Value> {
-    type Rule = Option<String>;
-    let rule_of = |v: &Value| {
-        v.get("rule")
-            .and_then(|r| js::str_of(r, "name"))
-            .map(str::to_owned)
-    };
-    let ends_of = |v: &Value| match (v.get("from"), v.get("to")) {
-        (Some(Value::String(from)), Some(Value::String(to))) => Some((from.clone(), to.clone())),
-        _ => None,
+    type Key = (Option<String>, String, String);
+    // The rule as isSameViolation reads it, and the ends through a function of their values:
+    // violations it calls the same get equal keys, which is all the buckets need (a bucket may
+    // hold violations that differ, never miss one that is the same).
+    let key = |v: &Value| -> Key {
+        let rule = v.get("rule").and_then(|r| js::str_of(r, "name"));
+        (
+            rule.map(str::to_owned),
+            js::text(v, "from").into_owned(),
+            js::text(v, "to").into_owned(),
+        )
     };
     let mut unique: Vec<Value> = Vec::with_capacity(violations.len());
-    let mut by_ends: std::collections::HashMap<(Rule, String, String), Vec<usize>> =
+    let mut by_ends: std::collections::HashMap<Key, Vec<usize>> = std::collections::HashMap::new();
+    let mut cycles: std::collections::HashMap<Option<String>, Vec<usize>> =
         std::collections::HashMap::new();
-    let mut other_ends: std::collections::HashMap<Rule, Vec<usize>> =
-        std::collections::HashMap::new();
-    let mut cycles: std::collections::HashMap<Rule, Vec<usize>> = std::collections::HashMap::new();
     for violation in violations {
-        let rule = rule_of(&violation);
-        let ends = ends_of(&violation);
+        let ends = key(&violation);
         let cycle = js::truthy(violation.get("cycle"));
-        let same_ends = match &ends {
-            Some((from, to)) => by_ends.get(&(rule.clone(), from.clone(), to.clone())),
-            None => other_ends.get(&rule),
-        };
-        let with_cycle = if cycle { cycles.get(&rule) } else { None };
-        let seen = same_ends
+        let with_cycle = if cycle { cycles.get(&ends.0) } else { None };
+        let seen = by_ends
+            .get(&ends)
             .into_iter()
             .chain(with_cycle)
             .flatten()
@@ -176,16 +172,10 @@ pub fn unique_violations(violations: Vec<Value>) -> Vec<Value> {
             continue;
         }
         let at = unique.len();
-        match ends {
-            Some((from, to)) => by_ends
-                .entry((rule.clone(), from, to))
-                .or_default()
-                .push(at),
-            None => other_ends.entry(rule.clone()).or_default().push(at),
-        }
         if cycle {
-            cycles.entry(rule).or_default().push(at);
+            cycles.entry(ends.0.clone()).or_default().push(at);
         }
+        by_ends.entry(ends).or_default().push(at);
         unique.push(violation);
     }
     unique

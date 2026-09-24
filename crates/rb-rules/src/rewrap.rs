@@ -54,18 +54,23 @@ fn strip_self_transitions(module: &mut Value) {
     }
 }
 
-/// Carries `id`, `fix` and `decision` from the saved violations onto the recomputed ones.
+/// Carries `id`, `fix` and `decision` from the saved violations onto the recomputed ones: from
+/// the first saved violation with the same rule, `from` and `to`, found through an index rather
+/// than a scan per violation (an import-linter oracle has a hundred thousand of them).
 fn carry_additions(violations: &mut [Value], saved: &[Value]) {
+    let key = |v: &Value| {
+        (
+            v.get("rule").map(|r| js::text(r, "name").into_owned()),
+            js::text(v, "from").into_owned(),
+            js::text(v, "to").into_owned(),
+        )
+    };
+    let mut first = std::collections::HashMap::new();
+    for old in saved {
+        first.entry(key(old)).or_insert(old);
+    }
     for violation in violations {
-        let key = |v: &Value| {
-            (
-                v.get("rule").map(|r| js::text(r, "name").into_owned()),
-                js::text(v, "from").into_owned(),
-                js::text(v, "to").into_owned(),
-            )
-        };
-        let wanted = key(violation);
-        if let Some(old) = saved.iter().find(|s| key(s) == wanted) {
+        if let Some(old) = first.get(&key(violation)) {
             for field in ["id", "fix", "decision"] {
                 if let Some(value) = old.get(field) {
                     js::set(violation, field, value.clone());

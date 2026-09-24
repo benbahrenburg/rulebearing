@@ -646,6 +646,29 @@ mod tests {
     }
 
     #[test]
+    fn a_capture_group_picks_the_targets_per_selecting_module() {
+        // `$1` makes each module's targets its own feature's: a reaches its own b, which reaches
+        // x's b, but the rule does not ask about x's b from a; x reaches nothing of its own.
+        let mut modules = vec![
+            json!({ "source": "src/a/main.ts", "dependencies": [{ "resolved": "src/a/b.ts" }] }),
+            json!({ "source": "src/a/b.ts", "dependencies": [{ "resolved": "src/x/b.ts" }] }),
+            json!({ "source": "src/x/main.ts", "dependencies": [] }),
+            json!({ "source": "src/x/b.ts", "dependencies": [] }),
+        ];
+        let set = rules(json!({ "forbidden": [
+            { "name": "own-b", "from": { "path": "^src/([^/]+)/main" }, "to": { "path": "^src/$1/b", "reachable": true } }
+        ] }));
+        reachables(&mut modules, &set);
+        assert_eq!(
+            modules[0]["reaches"],
+            json!([{ "asDefinedInRule": "own-b", "modules": [
+                { "source": "src/a/b.ts", "via": [{ "name": "src/a/b.ts", "dependencyTypes": [] }] }
+            ] }])
+        );
+        assert!(!js::has(&modules[2], "reaches"));
+    }
+
+    #[test]
     fn capturing_groups_are_a_dollar_and_a_digit() {
         let to =
             |path: &str| rules(json!({ "forbidden": [{ "from": {}, "to": { "path": path } }] }));

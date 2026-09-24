@@ -265,53 +265,33 @@ impl IndexedGraph {
         };
         let mut visited = vec![false; self.vertices.len()];
         let mut reversed = Vec::new();
-        if self.path_from(
-            start,
-            to,
-            self.index.get(to).copied(),
-            &mut visited,
-            &mut reversed,
-        ) {
-            reversed.reverse();
-            reversed
-        } else {
-            Vec::new()
-        }
+        self.path_from(start, to, &mut visited, &mut reversed);
+        reversed.reverse();
+        reversed
     }
 
     /// Upstream's depth-first search, by vertex index: the edges in order, a visited vertex
     /// skipped, the first edge that names `to` ending the search. An edge to a name no module has
-    /// is only compared with `to`, since searching from it finds nothing. Returns whether `to`
-    /// was found, with the path's steps pushed last step first.
-    fn path_from(
-        &self,
-        at: usize,
-        to: &str,
-        to_index: Option<usize>,
-        visited: &mut [bool],
-        reversed: &mut Vec<Step>,
-    ) -> bool {
+    /// is only compared with `to`, since searching from it finds nothing. When `to` is found the
+    /// path's steps are pushed last step first; otherwise nothing is pushed.
+    fn path_from(&self, at: usize, to: &str, visited: &mut [bool], reversed: &mut Vec<Step>) {
         visited[at] = true;
         for ((name, types), &target) in self.vertices[at].edges.iter().zip(&self.targets[at]) {
             if target.is_some_and(|t| visited[t]) {
                 continue;
             }
-            let found = match (target, to_index) {
-                (Some(t), Some(wanted)) => t == wanted,
-                _ => name == to,
-            };
-            if found {
+            if name == to {
                 reversed.push(Self::step(name, types));
-                return true;
+                return;
             }
-            if let Some(next) = target
-                && self.path_from(next, to, to_index, visited, reversed)
-            {
-                reversed.push(Self::step(name, types));
-                return true;
+            if let Some(next) = target {
+                self.path_from(next, to, visited, reversed);
+                if !reversed.is_empty() {
+                    reversed.push(Self::step(name, types));
+                    return;
+                }
             }
         }
-        false
     }
 
     /// `getCycle(initial, current)`: the first cycle from `initial` through its edge to
