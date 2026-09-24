@@ -127,6 +127,13 @@ pub struct Method {
     pub line: usize,
     /// The statements, in order.
     pub body: Vec<Stmt>,
+    /// The parameter names, in order.
+    pub parameters: Vec<String>,
+    /// An extension method: the first parameter is `this`.
+    pub extension: bool,
+    /// Data rows of a parameterised test (`[InlineData]`, `[TestCase]`, `[DataRow]`): each
+    /// attribute as written and its argument expressions.
+    pub rows: Vec<(String, Vec<Expr>)>,
 }
 
 /// A field or property with a value.
@@ -557,11 +564,61 @@ impl Reader<'_, '_> {
             Some(block) => self.statements(block, &mut body),
             None => {}
         }
+        let parameters: Vec<Node<'_>> = node
+            .child_by_field_name("parameters")
+            .map(|list| {
+                named_children(list)
+                    .into_iter()
+                    .filter(|p| p.kind() == "parameter")
+                    .collect()
+            })
+            .unwrap_or_default();
+        let extension = parameters.first().is_some_and(|p| {
+            named_children(*p)
+                .iter()
+                .any(|m| m.kind() == "modifier" && text(*m, self.source) == "this")
+        });
         Method {
             name,
             line: line(node),
             body,
+            parameters: parameters
+                .iter()
+                .filter_map(|p| p.child_by_field_name("name").map(|n| self.text(n)))
+                .collect(),
+            extension,
+            rows: self.rows(node),
         }
+    }
+
+    /// The data rows of a parameterised test method.
+    fn rows(&self, method: Node<'_>) -> Vec<(String, Vec<Expr>)> {
+        named_children(method)
+            .into_iter()
+            .filter(|c| c.kind() == "attribute_list")
+            .flat_map(named_children)
+            .filter(|a| a.kind() == "attribute")
+            .filter(|a| {
+                a.child_by_field_name("name").is_some_and(|n| {
+                    let name = text(n, self.source);
+                    let name = name.rsplit('.').next().unwrap_or(name);
+                    matches!(
+                        name.trim_end_matches("Attribute"),
+                        "InlineData" | "TestCase" | "DataRow"
+                    )
+                })
+            })
+            .map(|a| {
+                let values = named_children(a)
+                    .into_iter()
+                    .filter(|c| c.kind() == "attribute_argument_list")
+                    .flat_map(named_children)
+                    .filter(|arg| arg.kind() == "attribute_argument")
+                    .filter_map(|arg| named_children(arg).last().map(|e| self.expr(*e)))
+                    .collect();
+                (format!("[{}]", self.text(a)), values)
+            })
+            .collect()
     }
 
     /// Flattens a statement (a block, an `if`, a `using`, a loop, a `try`) into `out`.

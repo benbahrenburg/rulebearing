@@ -417,3 +417,58 @@ fn imported_eslint_rules_gate_a_typescript_tree() -> Result<(), Box<dyn Error>> 
     );
     Ok(())
 }
+
+#[test]
+fn a_graph_names_the_types_no_source_declares() -> Result<(), Box<dyn Error>> {
+    let out = temp("archunit-graph")?;
+    let graph = out.join("cruise.json");
+    let mut document = serde_json::to_value(rb_model::GraphDocument::default())?;
+    document["code"] = serde_json::json!({
+        "types": [{
+            "fullName": "RiverBooks.Books.UnknownType",
+            "name": "UnknownType",
+            "namespace": "RiverBooks.Books",
+            "kind": "unavailable",
+            "language": "dotnet",
+            "referenced": true
+        }]
+    });
+    std::fs::write(&graph, serde_json::to_string(&document)?)?;
+    let dir = fixtures().join("archunit/fluent");
+    let with = run(
+        &dir,
+        &[
+            "import",
+            "archunit",
+            "tests/RiverBooks.ArchitectureTests",
+            "--graph",
+            graph.to_string_lossy().as_ref(),
+        ],
+    )?;
+    assert_eq!(
+        with.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&with.stderr)
+    );
+    let text = String::from_utf8(with.stdout)?;
+    assert!(
+        text.contains("are: [RiverBooks.Books.UnknownType]"),
+        "{text}"
+    );
+    assert!(text.contains("7 imported"), "{text}");
+    std::fs::write(&graph, "not json")?;
+    let broken = run(
+        &dir,
+        &[
+            "import",
+            "archunit",
+            "tests/RiverBooks.ArchitectureTests",
+            "--graph",
+            graph.to_string_lossy().as_ref(),
+        ],
+    )?;
+    assert_eq!(broken.status.code(), Some(3));
+    let _ = std::fs::remove_dir_all(&out);
+    Ok(())
+}

@@ -193,6 +193,10 @@ fn value_after_key(node: &Node, indent: usize, out: &mut Vec<String>) {
                 out[last].push(' ');
                 out[last].push_str(&text);
             } else {
+                // A list whose every item is commented out is still a list to the loader.
+                if items.iter().all(|i| i.disabled) {
+                    out[last].push_str(" []");
+                }
                 list(items, indent + 2, out);
             }
         }
@@ -366,6 +370,25 @@ mod tests {
             Some(1),
             "the disabled item is a comment"
         );
+    }
+
+    #[test]
+    fn a_list_of_only_commented_items_is_an_empty_list() {
+        let document = Document {
+            body: vec![(
+                "elements".into(),
+                Node::List(vec![Item {
+                    comments: vec!["why".into()],
+                    node: Node::map(vec![("name", Node::str("x"))]),
+                    disabled: true,
+                }]),
+            )],
+            ..Document::default()
+        };
+        let text = render(&document);
+        assert_eq!(text, "elements: []\n  # why\n  # - name: x\n");
+        let back: Value = serde_yaml::from_str(&text).unwrap_or_default();
+        assert_eq!(back["elements"], serde_json::json!([]));
     }
 
     #[test]

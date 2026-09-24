@@ -67,6 +67,10 @@ pub struct ArchunitArgs {
     /// above DIR, the nearest one holding a .sln or .slnx, else DIR itself)
     #[arg(long, value_name = "DIR")]
     pub sources: Vec<String>,
+    /// A saved cruise result whose code layer names the types a test refers to, the referenced
+    /// ones included, for types no source read declares (a package's interfaces)
+    #[arg(long, value_name = "FILE")]
+    pub graph: Option<String>,
     /// Write the configuration to FILE instead of stdout
     #[arg(long, value_name = "FILE")]
     pub out: Option<String>,
@@ -173,6 +177,7 @@ fn archunit_command(ctx: &Context<'_>, args: &ArchunitArgs) -> Result<yaml::Docu
         dir,
         shown: pattern::relative(&args.dir),
         sources,
+        graph: args.graph.as_ref().map(|g| ctx.resolve(g)),
         cwd: ctx.cwd.clone(),
     })
 }

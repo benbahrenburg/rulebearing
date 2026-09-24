@@ -57,6 +57,8 @@ pub struct Request {
     pub shown: String,
     /// More directories whose declarations resolve names.
     pub sources: Vec<PathBuf>,
+    /// A graph document whose code layer names more types.
+    pub graph: Option<PathBuf>,
     /// The working directory, which loader paths are relative to.
     pub cwd: PathBuf,
 }
@@ -274,6 +276,17 @@ impl Program {
             index,
             tests,
         }
+    }
+
+    /// Whether the sources declare an extension method of this name that does not itself run
+    /// the rule (a project's own helper over a fluent chain).
+    fn declares_extension(&self, name: &str) -> bool {
+        self.files.iter().any(|(_, file)| {
+            file.types
+                .iter()
+                .flat_map(|t| t.methods.iter())
+                .any(|m| m.extension && m.name == name)
+        })
     }
 
     fn decl(&self, full: &str) -> Option<(&PathBuf, &TypeDecl)> {
@@ -567,6 +580,13 @@ impl Program {
             Expr::Member(receiver, method) => {
                 // `Assembly.Load`, or `System.Reflection.Assembly.Load` written out.
                 let owner = match receiver.as_ref() {
+                    // C#'s "Color Color" rule: a property named `Types` of type `Types` does not
+                    // hide NetArchTest's static `Types.InAssembly(...)`.
+                    Expr::Name(owner)
+                        if owner == "Types" && NETARCHTEST_ROOTS.contains(&method.as_str()) =>
+                    {
+                        Some(owner.clone())
+                    }
                     Expr::Name(owner) if !self.bound(scope, owner) => Some(owner.clone()),
                     qualified @ Expr::Member(..) => {
                         let written = csharp::render(qualified);
@@ -591,6 +611,9 @@ impl Program {
                     };
                 }
                 match self.eval(scope, receiver, depth + 1)? {
+                    Val::Chain(_) if self.declares_extension(method) => Err(format!(
+                        "`{text}` calls `{method}`, an extension method the sources declare, whose result the importer does not evaluate"
+                    )),
                     Val::Chain(mut chain) => {
                         chain.calls.push(Call {
                             name: method.clone(),
@@ -1329,6 +1352,8 @@ pub struct Candidate {
     pub text: String,
     /// The sink call, rendered (`.Check(Architecture)`).
     pub sink: String,
+    /// The data row of a parameterised test, as written (`[InlineData("a")]`).
+    pub row: Option<String>,
     /// What the test expects.
     pub expect: Expect,
     /// The chain, or why it could not be read.
@@ -1336,86 +1361,162 @@ pub struct Candidate {
 }
 
 impl Program {
-    /// Every rule-running call in the test files, in file and line order.
+    /// Extension methods the sources declare that run the rule they extend (a project's own
+    /// `ShouldSucceed()` over NetArchTest's `GetResult()`), with what they expect of it.
+    fn extension_sinks(&self) -> BTreeMap<String, Expect> {
+        let mut out = BTreeMap::new();
+        for (_, file) in &self.files {
+            for method in file.types.iter().flat_map(|t| t.methods.iter()) {
+                let Some(subject) = method.parameters.first().filter(|_| method.extension) else {
+                    continue;
+                };
+                let subject = Expr::Name(subject.clone());
+                let mut expect = None;
+                for (index, stmt) in method.body.iter().enumerate() {
+                    let (expr, bind) = match stmt {
+                        Stmt::Expr { expr, .. } | Stmt::Assign { value: expr, .. } => (expr, None),
+                        Stmt::Local { name, value, .. } => (value, Some(name)),
+                    };
+                    let mut found = Vec::new();
+                    sinks(expr, Expect::Passes, &BTreeMap::new(), &mut found);
+                    for (receiver, sink, _, found_expect) in found {
+                        if *receiver != subject || expect.is_some() {
+                            continue;
+                        }
+                        // `var result = list.GetResult(); Assert.True(result.IsSuccessful);`
+                        expect = Some(match (sink.as_str(), bind) {
+                            ("GetResult", Some(name)) => {
+                                result_expectation(name, &method.body[index + 1..])
+                            }
+                            _ => found_expect,
+                        });
+                    }
+                }
+                if let Some(expect) = expect {
+                    out.insert(method.name.clone(), expect);
+                }
+            }
+        }
+        out
+    }
+
+    /// Every rule-running call in the test files, in file and line order; a parameterised test
+    /// is read once per data row, its parameters bound to the row's values.
     pub fn candidates(&self) -> Vec<Candidate> {
+        let extensions = self.extension_sinks();
         let mut out = Vec::new();
         for (path, file) in self.files.iter().take(self.tests) {
             for decl in &file.types {
-                for method in &decl.methods {
-                    let mut scope = Scope {
-                        path,
-                        decl,
-                        locals: Vec::new(),
-                    };
-                    for (index, stmt) in method.body.iter().enumerate() {
-                        let (expr, line, bind) = match stmt {
-                            Stmt::Local { name, value, line } => (value, *line, Some(name.clone())),
-                            Stmt::Assign {
-                                target,
-                                value,
-                                line,
-                            } => (
-                                value,
-                                *line,
-                                match target {
-                                    Expr::Name(n) => Some(n.clone()),
-                                    _ => None,
-                                },
-                            ),
-                            Stmt::Expr { expr, line } => (expr, *line, None),
+                for method in decl.methods.iter().filter(|m| !m.extension) {
+                    let rows: Vec<Option<&(String, Vec<Expr>)>> =
+                        if method.rows.is_empty() || method.parameters.is_empty() {
+                            vec![None]
+                        } else {
+                            method.rows.iter().map(Some).collect()
                         };
-                        let mut found = Vec::new();
-                        sinks(expr, Expect::Passes, &mut found);
-                        for (receiver, sink, sink_args, mut expect) in found {
-                            if sink == "GetResult"
-                                && let Some(var) = &bind
-                            {
-                                expect = result_expectation(var, &method.body[index + 1..]);
+                    for row in rows {
+                        let mut scope = Scope {
+                            path,
+                            decl,
+                            locals: Vec::new(),
+                        };
+                        if let Some((_, values)) = row {
+                            for (name, value) in method.parameters.iter().zip(values) {
+                                let read = self.eval(&scope, value, 0);
+                                scope.locals.push((name.clone(), read, value.clone()));
                             }
-                            let chain = match self.eval(&scope, receiver, 0) {
-                                Ok(Val::Chain(chain)) if chain.root != Root::Loader => Ok(chain),
-                                Ok(other) => {
-                                    if looks_like_rule(receiver, &scope) {
-                                        Err(format!("the rule is {}", other.describe()))
-                                    } else {
-                                        continue;
-                                    }
-                                }
-                                Err(reason) => {
-                                    if looks_like_rule(receiver, &scope) {
-                                        Err(reason)
-                                    } else {
-                                        continue;
-                                    }
-                                }
-                            };
-                            let text = match &chain {
-                                Ok(c) => c.text.clone(),
-                                Err(_) => csharp::render(receiver),
-                            };
-                            out.push(Candidate {
-                                file: file.shown.clone(),
-                                line,
-                                method: method.name.clone(),
-                                text,
-                                sink: format!(
-                                    ".{sink}({})",
-                                    sink_args
-                                        .iter()
-                                        .map(|a| csharp::render(&a.value))
-                                        .collect::<Vec<_>>()
-                                        .join(", ")
-                                ),
-                                expect,
-                                chain,
-                            });
+                        } else {
+                            for name in &method.parameters {
+                                scope.locals.push((
+                                    name.clone(),
+                                    Err(format!(
+                                        "`{name}` is a parameter of the test whose values do not come from literal rows ([MemberData], [TestCaseSource] or computed), which the importer does not evaluate"
+                                    )),
+                                    Expr::Name(name.clone()),
+                                ));
+                            }
                         }
-                        if let Some(name) = bind {
-                            let value = self.eval(&scope, expr, 0);
-                            scope.locals.push((name, value, expr.clone()));
-                        }
+                        out.extend(self.method_candidates(
+                            &mut scope,
+                            file,
+                            method,
+                            row.map(|(text, _)| text.as_str()),
+                            &extensions,
+                        ));
                     }
                 }
+            }
+        }
+        out
+    }
+
+    fn method_candidates(
+        &self,
+        scope: &mut Scope<'_>,
+        file: &SourceFile,
+        method: &csharp::Method,
+        row: Option<&str>,
+        extensions: &BTreeMap<String, Expect>,
+    ) -> Vec<Candidate> {
+        let mut out = Vec::new();
+        for (index, stmt) in method.body.iter().enumerate() {
+            let (expr, line, bind) = match stmt {
+                Stmt::Local { name, value, line } => (value, *line, Some(name.clone())),
+                Stmt::Assign {
+                    target,
+                    value,
+                    line,
+                } => (
+                    value,
+                    *line,
+                    match target {
+                        Expr::Name(n) => Some(n.clone()),
+                        _ => None,
+                    },
+                ),
+                Stmt::Expr { expr, line } => (expr, *line, None),
+            };
+            let mut found = Vec::new();
+            sinks(expr, Expect::Passes, extensions, &mut found);
+            for (receiver, sink, sink_args, mut expect) in found {
+                if sink == "GetResult"
+                    && let Some(var) = &bind
+                {
+                    expect = result_expectation(var, &method.body[index + 1..]);
+                }
+                let chain = match self.eval(scope, receiver, 0) {
+                    Ok(Val::Chain(chain)) if chain.root != Root::Loader => Ok(chain),
+                    Ok(other) if looks_like_rule(receiver, scope) => {
+                        Err(format!("the rule is {}", other.describe()))
+                    }
+                    Err(reason) if looks_like_rule(receiver, scope) => Err(reason),
+                    _ => continue,
+                };
+                let text = match &chain {
+                    Ok(c) => c.text.clone(),
+                    Err(_) => csharp::render(receiver),
+                };
+                out.push(Candidate {
+                    file: file.shown.clone(),
+                    line,
+                    method: method.name.clone(),
+                    text,
+                    sink: format!(
+                        ".{sink}({})",
+                        sink_args
+                            .iter()
+                            .map(|a| csharp::render(&a.value))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    ),
+                    row: row.map(str::to_owned),
+                    expect,
+                    chain,
+                });
+            }
+            if let Some(name) = bind {
+                let value = self.eval(scope, expr, 0);
+                scope.locals.push((name, value, expr.clone()));
             }
         }
         out
@@ -1482,10 +1583,24 @@ fn looks_like_rule(receiver: &Expr, scope: &Scope<'_>) -> bool {
 }
 
 /// Finds rule-running calls in `expr`, with what the surrounding assertion expects.
-fn sinks<'e>(expr: &'e Expr, expect: Expect, out: &mut Vec<(&'e Expr, String, &'e [Arg], Expect)>) {
+fn sinks<'e>(
+    expr: &'e Expr,
+    expect: Expect,
+    extra: &BTreeMap<String, Expect>,
+    out: &mut Vec<(&'e Expr, String, &'e [Arg], Expect)>,
+) {
     match expr {
         Expr::Call(function, args) => {
             if let Expr::Member(receiver, method) = function.as_ref() {
+                if let Some(own) = extra.get(method.as_str()) {
+                    let expect = if *own == Expect::Fails {
+                        expect.flip()
+                    } else {
+                        expect
+                    };
+                    out.push((receiver, method.clone(), args, expect));
+                    return;
+                }
                 if SINKS.contains(&method.as_str()) {
                     let expect = match method.as_str() {
                         "AssertOnlyViolations" | "AssertAnyViolations" => Expect::Fails,
@@ -1498,19 +1613,19 @@ fn sinks<'e>(expr: &'e Expr, expect: Expect, out: &mut Vec<(&'e Expr, String, &'
                     match (owner.as_str(), method.as_str()) {
                         ("Assert", "False" | "IsFalse") => {
                             for a in args.iter().take(1) {
-                                sinks(&a.value, expect.flip(), out);
+                                sinks(&a.value, expect.flip(), extra, out);
                             }
                             return;
                         }
                         ("Assert", "True" | "IsTrue" | "That") => {
                             for a in args.iter().take(1) {
-                                sinks(&a.value, expect, out);
+                                sinks(&a.value, expect, extra, out);
                             }
                             return;
                         }
                         ("Assert", m) if m.starts_with("Throws") => {
                             for a in args {
-                                sinks(&a.value, Expect::Fails, out);
+                                sinks(&a.value, Expect::Fails, extra, out);
                             }
                             return;
                         }
@@ -1525,48 +1640,48 @@ fn sinks<'e>(expr: &'e Expr, expect: Expect, out: &mut Vec<(&'e Expr, String, &'
                 }
                 match method.as_str() {
                     "ShouldBeFalse" | "BeFalse" => {
-                        sinks(strip_should(receiver), expect.flip(), out);
+                        sinks(strip_should(receiver), expect.flip(), extra, out);
                         return;
                     }
                     "ShouldBeTrue" | "BeTrue" => {
-                        sinks(strip_should(receiver), expect, out);
+                        sinks(strip_should(receiver), expect, extra, out);
                         return;
                     }
                     _ => {}
                 }
-                sinks(receiver, expect, out);
+                sinks(receiver, expect, extra, out);
             } else {
-                sinks(function, expect, out);
+                sinks(function, expect, extra, out);
             }
             for a in args {
-                sinks(&a.value, expect, out);
+                sinks(&a.value, expect, extra, out);
             }
         }
-        Expr::Member(receiver, _) => sinks(receiver, expect, out),
-        Expr::Not(inner) => sinks(inner, expect.flip(), out),
+        Expr::Member(receiver, _) => sinks(receiver, expect, extra, out),
+        Expr::Not(inner) => sinks(inner, expect.flip(), extra, out),
         Expr::Is(inner, pattern) => {
             let expect = if pattern.trim() == "false" {
                 expect.flip()
             } else {
                 expect
             };
-            sinks(inner, expect, out);
+            sinks(inner, expect, extra, out);
         }
         Expr::Binary(l, op, r) => {
             let flips = (op == "==" && matches!(r.as_ref(), Expr::Bool(false)))
                 || (op == "!=" && matches!(r.as_ref(), Expr::Bool(true)));
-            sinks(l, if flips { expect.flip() } else { expect }, out);
-            sinks(r, expect, out);
+            sinks(l, if flips { expect.flip() } else { expect }, extra, out);
+            sinks(r, expect, extra, out);
         }
-        Expr::Lambda(_, body) => sinks(body, expect, out),
+        Expr::Lambda(_, body) => sinks(body, expect, extra, out),
         Expr::Array(items) => {
             for i in items {
-                sinks(i, expect, out);
+                sinks(i, expect, extra, out);
             }
         }
         Expr::Tuple(args) | Expr::New(_, args, _) => {
             for a in args {
-                sinks(&a.value, expect, out);
+                sinks(&a.value, expect, extra, out);
             }
         }
         _ => {}
@@ -1721,6 +1836,9 @@ fn chain_comment(candidate: &Candidate) -> Vec<String> {
         "  {}   [{file}:{}]",
         candidate.sink, candidate.line
     ));
+    if let Some(row) = &candidate.row {
+        lines.push(format!("  with {row}"));
+    }
     lines
 }
 
@@ -2003,7 +2121,26 @@ pub fn import(request: &Request) -> Result<Document, ImportError> {
             }
         }
     }
-    let program = Program::read(&tests, &declarations, &root, &request.cwd)?;
+    let mut program = Program::read(&tests, &declarations, &root, &request.cwd)?;
+    if let Some(graph) = &request.graph {
+        let shown = graph.to_string_lossy().into_owned();
+        let text = std::fs::read_to_string(graph).map_err(|e| ImportError::Read {
+            file: shown.clone(),
+            reason: e.to_string(),
+        })?;
+        let document: rb_model::GraphDocument =
+            serde_json::from_str(&text).map_err(|e| ImportError::Parse {
+                file: shown,
+                reason: e.to_string(),
+            })?;
+        for t in document.code.iter().flat_map(|c| c.types.iter()) {
+            program.index.add_known(
+                &t.full_name,
+                t.namespace.as_deref().unwrap_or_default(),
+                t.assembly.as_deref(),
+            );
+        }
+    }
     Ok(document(&program, &request.shown))
 }
 
@@ -2108,7 +2245,7 @@ mod tests {
         let mut found = Vec::new();
         for stmt in &file.types[0].methods[0].body {
             if let Stmt::Expr { expr, .. } = stmt {
-                sinks(expr, Expect::Passes, &mut found);
+                sinks(expr, Expect::Passes, &BTreeMap::new(), &mut found);
             }
         }
         let expects: Vec<Expect> = found.iter().map(|f| f.3).collect();

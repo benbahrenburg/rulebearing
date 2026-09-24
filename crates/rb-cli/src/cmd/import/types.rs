@@ -212,7 +212,7 @@ impl Index {
                 return unique(set);
             }
         }
-        self.through_usings(name, &written, &segments, usings)
+        self.through_usings(name, &written, &segments, &scopes, usings)
     }
 
     /// A written name found through the using directives: one candidate, or an error naming
@@ -222,6 +222,7 @@ impl Index {
         name: &TypeName,
         written: &str,
         segments: &[String],
+        scopes: &[String],
         usings: &Usings,
     ) -> Result<TypeInfo, String> {
         let mut found = BTreeSet::new();
@@ -232,8 +233,18 @@ impl Index {
             .chain(self.global_usings.namespaces.iter())
             .chain(self.global_usings.statics.iter())
         {
-            if let Some(set) = self.one(&format!("{using}.{written}")) {
-                found.extend(set.iter().cloned());
+            // A using directive inside a namespace names its namespace relative to it
+            // (`namespace A.B; using C;` can mean `A.B.C`), or absolutely.
+            for scope in scopes {
+                let target = if scope.is_empty() {
+                    format!("{using}.{written}")
+                } else {
+                    format!("{scope}.{using}.{written}")
+                };
+                if let Some(set) = self.one(&target) {
+                    found.extend(set.iter().cloned());
+                    break;
+                }
             }
         }
         match found.len() {

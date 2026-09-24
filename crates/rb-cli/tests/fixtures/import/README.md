@@ -15,7 +15,7 @@ Inputs for `rulebearing import`, each folder with the `expected.yaml` the import
 | `eslint/commonjs` | `.eslintrc.cjs` with `require`, and a captured-value selector the importer refuses |
 | `eslint/package` | `eslintConfig` in `package.json`, `mode: full`, and a `basePattern` the importer refuses |
 | `archunit/fluent` | ArchUnitNET: a loader, a provider field, a `GetClassOfType` field, a local holding the rule, `And`/`Or`, `AndShould`/`OrShould`, `...TypesThat()`, `Because`, `WithoutRequiringPositiveResults`, `Types(true)`, a slice rule, an alias and nested types; five chains that are not imported, each with its reason |
-| `archunit/netarchtest` | NetArchTest: `InAssembly`, `InCurrentDomain`, `InNamespace`, `ShouldNot`, `Or`, ordinal comparison, the README table's patterns; `MeetCustomRule`, `BeImmutable`, an expected failure and `FromFile`, not imported |
+| `archunit/netarchtest` | NetArchTest: `InAssembly`, `InCurrentDomain`, `InNamespace`, `ShouldNot`, `Or`, ordinal comparison, the README table's patterns, a `[Theory]` read once per `[InlineData]` row, a project's own `ShouldSucceed()` extension, a property named `Types`, a relative `using`; `MeetCustomRule`, `BeImmutable`, an expected failure, `FromFile`, `[MemberData]` rows and a helper's result, not imported |
 | `archunit/roundtrip` | two ArchUnitNET test files, evaluated over the gate 2 graphs of `TestAssembly` and `ArchUnitNETTests` |
 
 A JavaScript or JSON input is committed with a `.fixture` suffix, which the test drops when it copies the folder, so the repository's own ESLint and Prettier do not read it.
