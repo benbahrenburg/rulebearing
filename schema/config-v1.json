@@ -309,6 +309,2938 @@
       },
       "type": "object"
     },
+    "ElementCondition": {
+      "description": "One of `ArchUnitNET`'s conditions (`Should()`), or `all`, `any`, `not` around more. The loader rejects any other key and names the nearest one; `...That` forms (`dependOnAnyTypesThat`) take a nested selector.",
+      "properties": {
+        "adhereToPlantUmlDiagram": {
+          "description": "`adhereToPlantUmlDiagram`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "string"
+        },
+        "all": {
+          "description": "Every item holds (`And()`, `AndShould()`).",
+          "items": {
+            "$ref": "#/$defs/ElementCondition"
+          },
+          "type": "array"
+        },
+        "any": {
+          "description": "At least one item holds (`Or()`, `OrShould()`).",
+          "items": {
+            "$ref": "#/$defs/ElementCondition"
+          },
+          "type": "array"
+        },
+        "be": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`are`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "beAbstract": {
+          "description": "`abstract`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: an `ABC` base or an `@abstractmethod`.",
+          "type": "boolean"
+        },
+        "beAssignableTo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`assignableTo`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
+        },
+        "beCalledBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`calledBy`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (method bodies are not analysed): exit 3 unless `select.language` leaves it out."
+        },
+        "beConstructor": {
+          "description": "`constructor`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: `__init__`.",
+          "type": "boolean"
+        },
+        "beDeclaredIn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`declaredIn`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "beEnums": {
+          "description": "`enums`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (enumerations are ordinary classes): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "beGeneric": {
+          "description": "`generic`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (generic parameters are not recorded): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "beImmutable": {
+          "description": "`immutable`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `readonly` fields and get-only accessors. JavaScript: reads `readonly` fields and get-only accessors. Python: `@dataclass(frozen=True)`.",
+          "type": "boolean"
+        },
+        "beInternal": {
+          "description": "`internal`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `export`: an exported declaration is public, any other internal to its module. JavaScript: reads `export`: an exported declaration is public, any other internal to its module. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "beNested": {
+          "description": "`nested`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "boolean"
+        },
+        "beNestedIn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`nestedIn`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "beNoConstructor": {
+          "description": "`constructor`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: `__init__`.",
+          "type": "boolean"
+        },
+        "bePrivate": {
+          "description": "`private`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads the `private` and `protected` modifiers and `#private` names on class members. JavaScript: reads the `private` and `protected` modifiers and `#private` names on class members. Python: reads the leading underscore: `_name` is private, any other name public.",
+          "type": "boolean"
+        },
+        "bePrivateProtected": {
+          "description": "`privateProtected`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "beProtected": {
+          "description": "`protected`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads the `private` and `protected` modifiers and `#private` names on class members. JavaScript: reads the `private` and `protected` modifiers and `#private` names on class members. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "beProtectedInternal": {
+          "description": "`protectedInternal`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "bePublic": {
+          "description": "`public`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `export`: an exported declaration is public, any other internal to its module. JavaScript: reads `export`: an exported declaration is public, any other internal to its module. Python: reads the leading underscore: `_name` is private, any other name public.",
+          "type": "boolean"
+        },
+        "beReadOnly": {
+          "description": "`readOnly`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `readonly` fields and get-only accessors. JavaScript: reads `readonly` fields and get-only accessors. Python: a `@property` without a setter.",
+          "type": "boolean"
+        },
+        "beRecord": {
+          "description": "`record`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no record types): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no record types): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no record types): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "beSealed": {
+          "description": "`sealed`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language cannot forbid subclassing): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language cannot forbid subclassing): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language cannot forbid subclassing): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "beStatic": {
+          "description": "`static`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: `@staticmethod` and `@classmethod`.",
+          "type": "boolean"
+        },
+        "beStructs": {
+          "description": "`structs`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "beValueTypes": {
+          "description": "`valueTypes`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "beVirtual": {
+          "description": "`virtual`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (every method can be overridden): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (every method can be overridden): exit 3 unless `select.language` leaves it out. Python: unanswerable (every method can be overridden): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "callAny": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`callAny`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (method bodies are not analysed): exit 3 unless `select.language` leaves it out."
+        },
+        "dependOnAny": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`dependOnAny`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "exist": {
+          "description": "`exist`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "boolean"
+        },
+        "haveAnyAttributes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`haveAnyAttributes`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorators. JavaScript: reads decorators. Python: reads decorators."
+        },
+        "haveAnyAttributesWithArguments": {
+          "description": "`haveAnyAttributesWithArguments`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "type": "array"
+        },
+        "haveAnyAttributesWithNamedArguments": {
+          "description": "`haveAnyAttributesWithNamedArguments`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "type": "object"
+        },
+        "haveAssemblyQualifiedName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "haveAssemblyQualifiedNameContaining": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedNameContaining`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "haveAssemblyQualifiedNameEndingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedNameEndingWith`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "haveAssemblyQualifiedNameMatching": {
+          "description": "`haveAssemblyQualifiedNameMatching`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out.",
+          "type": "string"
+        },
+        "haveAssemblyQualifiedNameStartingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedNameStartingWith`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "haveAttributeWithArguments": {
+          "additionalProperties": false,
+          "description": "`haveAttributeWithArguments`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "properties": {
+            "arguments": {
+              "type": "array"
+            },
+            "attribute": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/ElementSelector"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "haveAttributeWithNamedArguments": {
+          "additionalProperties": false,
+          "description": "`haveAttributeWithNamedArguments`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "properties": {
+            "arguments": {
+              "type": "object"
+            },
+            "attribute": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/ElementSelector"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "haveDependencyInMethodBodyTo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`haveDependencyInMethodBodyTo`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `new` expressions in method bodies. JavaScript: reads `new` expressions in method bodies. Python: unanswerable (method bodies are not analysed): exit 3 unless `select.language` leaves it out."
+        },
+        "haveFieldMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFieldMemberWithName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveFullName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveFullNameContaining": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullNameContaining`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveFullNameEndingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullNameEndingWith`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveFullNameMatching": {
+          "description": "`haveFullNameMatching`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "string"
+        },
+        "haveFullNameStartingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullNameStartingWith`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveGetter": {
+          "description": "`haveGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
+          "type": "boolean"
+        },
+        "haveInitOnlySetter": {
+          "description": "`haveInitOnlySetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveInternalGetter": {
+          "description": "`haveInternalGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveInternalSetter": {
+          "description": "`haveInternalSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveMemberWithName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveMethodMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveMethodMemberWithName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveNameContaining": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveNameContaining`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveNameEndingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveNameEndingWith`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveNameMatching": {
+          "description": "`haveNameMatching`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "string"
+        },
+        "haveNameStartingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveNameStartingWith`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveNoGetter": {
+          "description": "`haveGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
+          "type": "boolean"
+        },
+        "haveNoSetter": {
+          "description": "`haveSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
+          "type": "boolean"
+        },
+        "havePrivateGetter": {
+          "description": "`havePrivateGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "havePrivateProtectedGetter": {
+          "description": "`havePrivateProtectedGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "havePrivateProtectedSetter": {
+          "description": "`havePrivateProtectedSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "havePrivateSetter": {
+          "description": "`havePrivateSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "havePropertyMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`havePropertyMemberWithName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveProtectedGetter": {
+          "description": "`haveProtectedGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveProtectedInternalGetter": {
+          "description": "`haveProtectedInternalGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveProtectedInternalSetter": {
+          "description": "`haveProtectedInternalSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveProtectedSetter": {
+          "description": "`haveProtectedSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "havePublicGetter": {
+          "description": "`havePublicGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "havePublicSetter": {
+          "description": "`havePublicSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveReturnType": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`haveReturnType`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads the return type annotation. JavaScript: reads the return type annotation. Python: unanswerable (return annotations are not recorded): exit 3 unless `select.language` leaves it out."
+        },
+        "haveSetter": {
+          "description": "`haveSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
+          "type": "boolean"
+        },
+        "implementAnyInterfaces": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`implementAnyInterfaces`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
+        },
+        "implementInterface": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`implementInterface`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
+        },
+        "not": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ElementCondition"
+            }
+          ],
+          "description": "The item does not hold."
+        },
+        "notAdhereToPlantUmlDiagram": {
+          "description": "`adhereToPlantUmlDiagram`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "string"
+        },
+        "notBe": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`are`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notBeAbstract": {
+          "description": "`abstract`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: an `ABC` base or an `@abstractmethod`.",
+          "type": "boolean"
+        },
+        "notBeAssignableTo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`assignableTo`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
+        },
+        "notBeCalledBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`calledBy`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (method bodies are not analysed): exit 3 unless `select.language` leaves it out."
+        },
+        "notBeConstructor": {
+          "description": "`constructor`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: `__init__`.",
+          "type": "boolean"
+        },
+        "notBeDeclaredIn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`declaredIn`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notBeEnums": {
+          "description": "`enums`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (enumerations are ordinary classes): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notBeGeneric": {
+          "description": "`generic`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (generic parameters are not recorded): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notBeImmutable": {
+          "description": "`immutable`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `readonly` fields and get-only accessors. JavaScript: reads `readonly` fields and get-only accessors. Python: `@dataclass(frozen=True)`.",
+          "type": "boolean"
+        },
+        "notBeInternal": {
+          "description": "`internal`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `export`: an exported declaration is public, any other internal to its module. JavaScript: reads `export`: an exported declaration is public, any other internal to its module. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notBeNested": {
+          "description": "`nested`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "boolean"
+        },
+        "notBeNestedIn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`nestedIn`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notBePrivate": {
+          "description": "`private`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads the `private` and `protected` modifiers and `#private` names on class members. JavaScript: reads the `private` and `protected` modifiers and `#private` names on class members. Python: reads the leading underscore: `_name` is private, any other name public.",
+          "type": "boolean"
+        },
+        "notBePrivateProtected": {
+          "description": "`privateProtected`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notBeProtected": {
+          "description": "`protected`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads the `private` and `protected` modifiers and `#private` names on class members. JavaScript: reads the `private` and `protected` modifiers and `#private` names on class members. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notBeProtectedInternal": {
+          "description": "`protectedInternal`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notBePublic": {
+          "description": "`public`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `export`: an exported declaration is public, any other internal to its module. JavaScript: reads `export`: an exported declaration is public, any other internal to its module. Python: reads the leading underscore: `_name` is private, any other name public.",
+          "type": "boolean"
+        },
+        "notBeReadOnly": {
+          "description": "`readOnly`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `readonly` fields and get-only accessors. JavaScript: reads `readonly` fields and get-only accessors. Python: a `@property` without a setter.",
+          "type": "boolean"
+        },
+        "notBeRecord": {
+          "description": "`record`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no record types): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no record types): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no record types): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notBeSealed": {
+          "description": "`sealed`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language cannot forbid subclassing): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language cannot forbid subclassing): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language cannot forbid subclassing): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notBeStatic": {
+          "description": "`static`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: `@staticmethod` and `@classmethod`.",
+          "type": "boolean"
+        },
+        "notBeStructs": {
+          "description": "`structs`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notBeValueTypes": {
+          "description": "`valueTypes`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notBeVirtual": {
+          "description": "`virtual`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (every method can be overridden): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (every method can be overridden): exit 3 unless `select.language` leaves it out. Python: unanswerable (every method can be overridden): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notCallAny": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`callAny`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (method bodies are not analysed): exit 3 unless `select.language` leaves it out."
+        },
+        "notDependOnAny": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`dependOnAny`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notExist": {
+          "description": "`exist`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "boolean"
+        },
+        "notHaveAnyAttributes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`haveAnyAttributes`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorators. JavaScript: reads decorators. Python: reads decorators."
+        },
+        "notHaveAnyAttributesWithArguments": {
+          "description": "`haveAnyAttributesWithArguments`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "type": "array"
+        },
+        "notHaveAnyAttributesWithNamedArguments": {
+          "description": "`haveAnyAttributesWithNamedArguments`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "type": "object"
+        },
+        "notHaveAssemblyQualifiedName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "notHaveAssemblyQualifiedNameContaining": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedNameContaining`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "notHaveAssemblyQualifiedNameEndingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedNameEndingWith`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "notHaveAssemblyQualifiedNameMatching": {
+          "description": "`haveAssemblyQualifiedNameMatching`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out.",
+          "type": "string"
+        },
+        "notHaveAssemblyQualifiedNameStartingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedNameStartingWith`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "notHaveAttributeWithArguments": {
+          "additionalProperties": false,
+          "description": "`haveAttributeWithArguments`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "properties": {
+            "arguments": {
+              "type": "array"
+            },
+            "attribute": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/ElementSelector"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "notHaveAttributeWithNamedArguments": {
+          "additionalProperties": false,
+          "description": "`haveAttributeWithNamedArguments`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "properties": {
+            "arguments": {
+              "type": "object"
+            },
+            "attribute": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/ElementSelector"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "notHaveDependencyInMethodBodyTo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`haveDependencyInMethodBodyTo`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `new` expressions in method bodies. JavaScript: reads `new` expressions in method bodies. Python: unanswerable (method bodies are not analysed): exit 3 unless `select.language` leaves it out."
+        },
+        "notHaveFieldMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFieldMemberWithName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notHaveFullName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notHaveFullNameContaining": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullNameContaining`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notHaveFullNameEndingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullNameEndingWith`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notHaveFullNameMatching": {
+          "description": "`haveFullNameMatching`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "string"
+        },
+        "notHaveFullNameStartingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullNameStartingWith`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notHaveGetter": {
+          "description": "`haveGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
+          "type": "boolean"
+        },
+        "notHaveInitOnlySetter": {
+          "description": "`haveInitOnlySetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notHaveInternalGetter": {
+          "description": "`haveInternalGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notHaveInternalSetter": {
+          "description": "`haveInternalSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notHaveMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveMemberWithName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notHaveMethodMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveMethodMemberWithName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notHaveName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notHaveNameContaining": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveNameContaining`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notHaveNameEndingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveNameEndingWith`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notHaveNameMatching": {
+          "description": "`haveNameMatching`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "string"
+        },
+        "notHaveNameStartingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveNameStartingWith`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notHavePrivateGetter": {
+          "description": "`havePrivateGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notHavePrivateProtectedGetter": {
+          "description": "`havePrivateProtectedGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notHavePrivateProtectedSetter": {
+          "description": "`havePrivateProtectedSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notHavePrivateSetter": {
+          "description": "`havePrivateSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notHavePropertyMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`havePropertyMemberWithName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notHaveProtectedGetter": {
+          "description": "`haveProtectedGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notHaveProtectedInternalGetter": {
+          "description": "`haveProtectedInternalGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notHaveProtectedInternalSetter": {
+          "description": "`haveProtectedInternalSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notHaveProtectedSetter": {
+          "description": "`haveProtectedSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notHavePublicGetter": {
+          "description": "`havePublicGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notHavePublicSetter": {
+          "description": "`havePublicSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "notHaveReturnType": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`haveReturnType`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads the return type annotation. JavaScript: reads the return type annotation. Python: unanswerable (return annotations are not recorded): exit 3 unless `select.language` leaves it out."
+        },
+        "notHaveSetter": {
+          "description": "`haveSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
+          "type": "boolean"
+        },
+        "notImplementAnyInterfaces": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`implementAnyInterfaces`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
+        },
+        "notImplementInterface": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`implementInterface`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
+        },
+        "notOnlyDependOn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`onlyDependOn`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "notOnlyHaveAttributes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`onlyHaveAttributes`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorators. JavaScript: reads decorators. Python: reads decorators."
+        },
+        "notResideInAssembly": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`resideInAssembly`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "notResideInAssemblyMatching": {
+          "description": "`resideInAssemblyMatching`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out.",
+          "type": "string"
+        },
+        "notResideInNamespace": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`resideInNamespace`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: the namespace is the module's path. JavaScript: the namespace is the module's path. Python: the namespace is the dotted module path."
+        },
+        "notResideInNamespaceMatching": {
+          "description": "`resideInNamespaceMatching`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: the namespace is the module's path. JavaScript: the namespace is the module's path. Python: the namespace is the dotted module path.",
+          "type": "string"
+        },
+        "onlyDependOn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`onlyDependOn`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "onlyHaveAttributes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`onlyHaveAttributes`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorators. JavaScript: reads decorators. Python: reads decorators."
+        },
+        "resideInAssembly": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`resideInAssembly`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "resideInAssemblyMatching": {
+          "description": "`resideInAssemblyMatching`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out.",
+          "type": "string"
+        },
+        "resideInNamespace": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`resideInNamespace`. .NET: answered as `ArchUnitNET` defines it. TypeScript: the namespace is the module's path. JavaScript: the namespace is the module's path. Python: the namespace is the dotted module path."
+        },
+        "resideInNamespaceMatching": {
+          "description": "`resideInNamespaceMatching`. .NET: answered as `ArchUnitNET` defines it. TypeScript: the namespace is the module's path. JavaScript: the namespace is the module's path. Python: the namespace is the dotted module path.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ElementPredicate": {
+      "description": "One of `ArchUnitNET`'s predicates (`That()`), or `all`, `any`, `not` around more. The loader rejects any other key and names the nearest one; `...That` forms (`dependOnAnyTypesThat`) take a nested selector.",
+      "properties": {
+        "all": {
+          "description": "Every item holds (`And()`, `AndShould()`).",
+          "items": {
+            "$ref": "#/$defs/ElementPredicate"
+          },
+          "type": "array"
+        },
+        "any": {
+          "description": "At least one item holds (`Or()`, `OrShould()`).",
+          "items": {
+            "$ref": "#/$defs/ElementPredicate"
+          },
+          "type": "array"
+        },
+        "are": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`are`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "areAbstract": {
+          "description": "`abstract`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: an `ABC` base or an `@abstractmethod`.",
+          "type": "boolean"
+        },
+        "areAssignableTo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`assignableTo`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
+        },
+        "areCalledBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`calledBy`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (method bodies are not analysed): exit 3 unless `select.language` leaves it out."
+        },
+        "areConstructor": {
+          "description": "`constructor`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: `__init__`.",
+          "type": "boolean"
+        },
+        "areConstructors": {
+          "description": "`constructor`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: `__init__`.",
+          "type": "boolean"
+        },
+        "areDeclaredIn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`declaredIn`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "areEnums": {
+          "description": "`enums`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (enumerations are ordinary classes): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areGeneric": {
+          "description": "`generic`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (generic parameters are not recorded): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areImmutable": {
+          "description": "`immutable`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `readonly` fields and get-only accessors. JavaScript: reads `readonly` fields and get-only accessors. Python: `@dataclass(frozen=True)`.",
+          "type": "boolean"
+        },
+        "areInternal": {
+          "description": "`internal`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `export`: an exported declaration is public, any other internal to its module. JavaScript: reads `export`: an exported declaration is public, any other internal to its module. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areNested": {
+          "description": "`nested`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "boolean"
+        },
+        "areNestedIn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`nestedIn`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "areNoConstructors": {
+          "description": "`constructor`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: `__init__`.",
+          "type": "boolean"
+        },
+        "areNot": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`are`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "areNotAbstract": {
+          "description": "`abstract`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: an `ABC` base or an `@abstractmethod`.",
+          "type": "boolean"
+        },
+        "areNotAssignableTo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`assignableTo`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
+        },
+        "areNotCalledBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`calledBy`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (method bodies are not analysed): exit 3 unless `select.language` leaves it out."
+        },
+        "areNotConstructor": {
+          "description": "`constructor`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: `__init__`.",
+          "type": "boolean"
+        },
+        "areNotDeclaredIn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`declaredIn`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "areNotEnums": {
+          "description": "`enums`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (enumerations are ordinary classes): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areNotGeneric": {
+          "description": "`generic`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (generic parameters are not recorded): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areNotImmutable": {
+          "description": "`immutable`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `readonly` fields and get-only accessors. JavaScript: reads `readonly` fields and get-only accessors. Python: `@dataclass(frozen=True)`.",
+          "type": "boolean"
+        },
+        "areNotInternal": {
+          "description": "`internal`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `export`: an exported declaration is public, any other internal to its module. JavaScript: reads `export`: an exported declaration is public, any other internal to its module. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areNotNested": {
+          "description": "`nested`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "boolean"
+        },
+        "areNotNestedIn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`nestedIn`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "areNotPrivate": {
+          "description": "`private`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads the `private` and `protected` modifiers and `#private` names on class members. JavaScript: reads the `private` and `protected` modifiers and `#private` names on class members. Python: reads the leading underscore: `_name` is private, any other name public.",
+          "type": "boolean"
+        },
+        "areNotPrivateProtected": {
+          "description": "`privateProtected`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areNotProtected": {
+          "description": "`protected`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads the `private` and `protected` modifiers and `#private` names on class members. JavaScript: reads the `private` and `protected` modifiers and `#private` names on class members. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areNotProtectedInternal": {
+          "description": "`protectedInternal`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areNotPublic": {
+          "description": "`public`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `export`: an exported declaration is public, any other internal to its module. JavaScript: reads `export`: an exported declaration is public, any other internal to its module. Python: reads the leading underscore: `_name` is private, any other name public.",
+          "type": "boolean"
+        },
+        "areNotReadOnly": {
+          "description": "`readOnly`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `readonly` fields and get-only accessors. JavaScript: reads `readonly` fields and get-only accessors. Python: a `@property` without a setter.",
+          "type": "boolean"
+        },
+        "areNotRecord": {
+          "description": "`record`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no record types): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no record types): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no record types): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areNotSealed": {
+          "description": "`sealed`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language cannot forbid subclassing): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language cannot forbid subclassing): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language cannot forbid subclassing): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areNotStatic": {
+          "description": "`static`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: `@staticmethod` and `@classmethod`.",
+          "type": "boolean"
+        },
+        "areNotStructs": {
+          "description": "`structs`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areNotValueTypes": {
+          "description": "`valueTypes`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areNotVirtual": {
+          "description": "`virtual`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (every method can be overridden): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (every method can be overridden): exit 3 unless `select.language` leaves it out. Python: unanswerable (every method can be overridden): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "arePrivate": {
+          "description": "`private`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads the `private` and `protected` modifiers and `#private` names on class members. JavaScript: reads the `private` and `protected` modifiers and `#private` names on class members. Python: reads the leading underscore: `_name` is private, any other name public.",
+          "type": "boolean"
+        },
+        "arePrivateProtected": {
+          "description": "`privateProtected`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areProtected": {
+          "description": "`protected`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads the `private` and `protected` modifiers and `#private` names on class members. JavaScript: reads the `private` and `protected` modifiers and `#private` names on class members. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areProtectedInternal": {
+          "description": "`protectedInternal`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has only the leading-underscore convention): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "arePublic": {
+          "description": "`public`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `export`: an exported declaration is public, any other internal to its module. JavaScript: reads `export`: an exported declaration is public, any other internal to its module. Python: reads the leading underscore: `_name` is private, any other name public.",
+          "type": "boolean"
+        },
+        "areReadOnly": {
+          "description": "`readOnly`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `readonly` fields and get-only accessors. JavaScript: reads `readonly` fields and get-only accessors. Python: a `@property` without a setter.",
+          "type": "boolean"
+        },
+        "areRecord": {
+          "description": "`record`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no record types): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no record types): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no record types): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areSealed": {
+          "description": "`sealed`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language cannot forbid subclassing): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language cannot forbid subclassing): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language cannot forbid subclassing): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areStatic": {
+          "description": "`static`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: `@staticmethod` and `@classmethod`.",
+          "type": "boolean"
+        },
+        "areStructs": {
+          "description": "`structs`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areValueTypes": {
+          "description": "`valueTypes`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no value types): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "areVirtual": {
+          "description": "`virtual`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (every method can be overridden): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (every method can be overridden): exit 3 unless `select.language` leaves it out. Python: unanswerable (every method can be overridden): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "callAny": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`callAny`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (method bodies are not analysed): exit 3 unless `select.language` leaves it out."
+        },
+        "dependOnAny": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`dependOnAny`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotCallAny": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`callAny`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: unanswerable (method bodies are not analysed): exit 3 unless `select.language` leaves it out."
+        },
+        "doNotDependOnAny": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`dependOnAny`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotHaveAnyAttributes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`haveAnyAttributes`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorators. JavaScript: reads decorators. Python: reads decorators."
+        },
+        "doNotHaveAnyAttributesWithArguments": {
+          "description": "`haveAnyAttributesWithArguments`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "type": "array"
+        },
+        "doNotHaveAnyAttributesWithNamedArguments": {
+          "description": "`haveAnyAttributesWithNamedArguments`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "type": "object"
+        },
+        "doNotHaveAssemblyQualifiedName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "doNotHaveAssemblyQualifiedNameContaining": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedNameContaining`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "doNotHaveAssemblyQualifiedNameEndingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedNameEndingWith`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "doNotHaveAssemblyQualifiedNameMatching": {
+          "description": "`haveAssemblyQualifiedNameMatching`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out.",
+          "type": "string"
+        },
+        "doNotHaveAssemblyQualifiedNameStartingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedNameStartingWith`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "doNotHaveAttributeWithArguments": {
+          "additionalProperties": false,
+          "description": "`haveAttributeWithArguments`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "properties": {
+            "arguments": {
+              "type": "array"
+            },
+            "attribute": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/ElementSelector"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "doNotHaveAttributeWithNamedArguments": {
+          "additionalProperties": false,
+          "description": "`haveAttributeWithNamedArguments`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "properties": {
+            "arguments": {
+              "type": "object"
+            },
+            "attribute": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/ElementSelector"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "doNotHaveDependencyInMethodBodyTo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`haveDependencyInMethodBodyTo`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `new` expressions in method bodies. JavaScript: reads `new` expressions in method bodies. Python: unanswerable (method bodies are not analysed): exit 3 unless `select.language` leaves it out."
+        },
+        "doNotHaveFieldMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFieldMemberWithName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotHaveFullName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotHaveFullNameContaining": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullNameContaining`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotHaveFullNameEndingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullNameEndingWith`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotHaveFullNameMatching": {
+          "description": "`haveFullNameMatching`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "string"
+        },
+        "doNotHaveFullNameStartingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullNameStartingWith`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotHaveGetter": {
+          "description": "`haveGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
+          "type": "boolean"
+        },
+        "doNotHaveInitOnlySetter": {
+          "description": "`haveInitOnlySetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "doNotHaveInternalGetter": {
+          "description": "`haveInternalGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "doNotHaveInternalSetter": {
+          "description": "`haveInternalSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "doNotHaveMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveMemberWithName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotHaveMethodMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveMethodMemberWithName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotHaveName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotHaveNameContaining": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveNameContaining`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotHaveNameEndingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveNameEndingWith`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotHaveNameMatching": {
+          "description": "`haveNameMatching`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "string"
+        },
+        "doNotHaveNameStartingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveNameStartingWith`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotHavePrivateGetter": {
+          "description": "`havePrivateGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "doNotHavePrivateProtectedGetter": {
+          "description": "`havePrivateProtectedGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "doNotHavePrivateProtectedSetter": {
+          "description": "`havePrivateProtectedSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "doNotHavePrivateSetter": {
+          "description": "`havePrivateSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "doNotHavePropertyMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`havePropertyMemberWithName`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotHaveProtectedGetter": {
+          "description": "`haveProtectedGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "doNotHaveProtectedInternalGetter": {
+          "description": "`haveProtectedInternalGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "doNotHaveProtectedInternalSetter": {
+          "description": "`haveProtectedInternalSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "doNotHaveProtectedSetter": {
+          "description": "`haveProtectedSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "doNotHavePublicGetter": {
+          "description": "`havePublicGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "doNotHavePublicSetter": {
+          "description": "`havePublicSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "doNotHaveReturnType": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`haveReturnType`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads the return type annotation. JavaScript: reads the return type annotation. Python: unanswerable (return annotations are not recorded): exit 3 unless `select.language` leaves it out."
+        },
+        "doNotHaveSetter": {
+          "description": "`haveSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
+          "type": "boolean"
+        },
+        "doNotImplementAnyInterfaces": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`implementAnyInterfaces`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
+        },
+        "doNotImplementInterface": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`implementInterface`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
+        },
+        "doNotOnlyDependOn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`onlyDependOn`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "doNotOnlyHaveAttributes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`onlyHaveAttributes`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorators. JavaScript: reads decorators. Python: reads decorators."
+        },
+        "doNotResideInAssembly": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`resideInAssembly`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "doNotResideInAssemblyMatching": {
+          "description": "`resideInAssemblyMatching`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out.",
+          "type": "string"
+        },
+        "doNotResideInNamespace": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`resideInNamespace`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: the namespace is the module's path. JavaScript: the namespace is the module's path. Python: the namespace is the dotted module path."
+        },
+        "doNotResideInNamespaceMatching": {
+          "description": "`resideInNamespaceMatching`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: the namespace is the module's path. JavaScript: the namespace is the module's path. Python: the namespace is the dotted module path.",
+          "type": "string"
+        },
+        "haveAnyAttributes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`haveAnyAttributes`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorators. JavaScript: reads decorators. Python: reads decorators."
+        },
+        "haveAnyAttributesWithArguments": {
+          "description": "`haveAnyAttributesWithArguments`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "type": "array"
+        },
+        "haveAnyAttributesWithNamedArguments": {
+          "description": "`haveAnyAttributesWithNamedArguments`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "type": "object"
+        },
+        "haveAssemblyQualifiedName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "haveAssemblyQualifiedNameContaining": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedNameContaining`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "haveAssemblyQualifiedNameEndingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedNameEndingWith`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "haveAssemblyQualifiedNameMatching": {
+          "description": "`haveAssemblyQualifiedNameMatching`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out.",
+          "type": "string"
+        },
+        "haveAssemblyQualifiedNameStartingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveAssemblyQualifiedNameStartingWith`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "haveAttributeWithArguments": {
+          "additionalProperties": false,
+          "description": "`haveAttributeWithArguments`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "properties": {
+            "arguments": {
+              "type": "array"
+            },
+            "attribute": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/ElementSelector"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "haveAttributeWithNamedArguments": {
+          "additionalProperties": false,
+          "description": "`haveAttributeWithNamedArguments`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorator arguments. JavaScript: reads decorator arguments. Python: reads decorator arguments.",
+          "properties": {
+            "arguments": {
+              "type": "object"
+            },
+            "attribute": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/ElementSelector"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "haveDependencyInMethodBodyTo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`haveDependencyInMethodBodyTo`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `new` expressions in method bodies. JavaScript: reads `new` expressions in method bodies. Python: unanswerable (method bodies are not analysed): exit 3 unless `select.language` leaves it out."
+        },
+        "haveFieldMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFieldMemberWithName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveFullName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveFullNameContaining": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullNameContaining`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveFullNameEndingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullNameEndingWith`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveFullNameMatching": {
+          "description": "`haveFullNameMatching`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "string"
+        },
+        "haveFullNameStartingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveFullNameStartingWith`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveGetter": {
+          "description": "`haveGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
+          "type": "boolean"
+        },
+        "haveInitOnlySetter": {
+          "description": "`haveInitOnlySetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no init-only setters): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveInternalGetter": {
+          "description": "`haveInternalGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveInternalSetter": {
+          "description": "`haveInternalSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveMemberWithName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveMethodMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveMethodMemberWithName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveNameContaining": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveNameContaining`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveNameEndingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveNameEndingWith`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveNameMatching": {
+          "description": "`haveNameMatching`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it.",
+          "type": "string"
+        },
+        "haveNameStartingWith": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`haveNameStartingWith`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveNoGetter": {
+          "description": "`haveGetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
+          "type": "boolean"
+        },
+        "haveNoSetter": {
+          "description": "`haveSetter`, negated. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
+          "type": "boolean"
+        },
+        "havePrivateGetter": {
+          "description": "`havePrivateGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "havePrivateProtectedGetter": {
+          "description": "`havePrivateProtectedGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "havePrivateProtectedSetter": {
+          "description": "`havePrivateProtectedSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "havePrivateSetter": {
+          "description": "`havePrivateSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "havePropertyMemberWithName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`havePropertyMemberWithName`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "haveProtectedGetter": {
+          "description": "`haveProtectedGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveProtectedInternalGetter": {
+          "description": "`haveProtectedInternalGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveProtectedInternalSetter": {
+          "description": "`haveProtectedInternalSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no such access level): exit 3 unless `select.language` leaves it out. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveProtectedSetter": {
+          "description": "`haveProtectedSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "havePublicGetter": {
+          "description": "`havePublicGetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "havePublicSetter": {
+          "description": "`havePublicSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: unanswerable (accessors have no access level of their own): exit 3 unless `select.language` leaves it out.",
+          "type": "boolean"
+        },
+        "haveReturnType": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`haveReturnType`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads the return type annotation. JavaScript: reads the return type annotation. Python: unanswerable (return annotations are not recorded): exit 3 unless `select.language` leaves it out."
+        },
+        "haveSetter": {
+          "description": "`haveSetter`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `get` and `set` accessors. JavaScript: reads `get` and `set` accessors. Python: `@property` and `@name.setter`.",
+          "type": "boolean"
+        },
+        "implementAnyInterfaces": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`implementAnyInterfaces`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
+        },
+        "implementInterface": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`implementInterface`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads `extends` and `implements`. JavaScript: reads `extends` and `implements`. Python: reads base classes."
+        },
+        "not": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ElementPredicate"
+            }
+          ],
+          "description": "The item does not hold."
+        },
+        "onlyDependOn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`onlyDependOn`. .NET: answered as `ArchUnitNET` defines it. TypeScript: answered as `ArchUnitNET` defines it. JavaScript: answered as `ArchUnitNET` defines it. Python: answered as `ArchUnitNET` defines it."
+        },
+        "onlyHaveAttributes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ElementSelector"
+            }
+          ],
+          "description": "`onlyHaveAttributes`. .NET: answered as `ArchUnitNET` defines it. TypeScript: reads decorators. JavaScript: reads decorators. Python: reads decorators."
+        },
+        "resideInAssembly": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`resideInAssembly`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out."
+        },
+        "resideInAssemblyMatching": {
+          "description": "`resideInAssemblyMatching`. .NET: answered as `ArchUnitNET` defines it. TypeScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. JavaScript: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out. Python: unanswerable (the language has no assemblies): exit 3 unless `select.language` leaves it out.",
+          "type": "string"
+        },
+        "resideInNamespace": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "`resideInNamespace`. .NET: answered as `ArchUnitNET` defines it. TypeScript: the namespace is the module's path. JavaScript: the namespace is the module's path. Python: the namespace is the dotted module path."
+        },
+        "resideInNamespaceMatching": {
+          "description": "`resideInNamespaceMatching`. .NET: answered as `ArchUnitNET` defines it. TypeScript: the namespace is the module's path. JavaScript: the namespace is the module's path. Python: the namespace is the dotted module path.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ElementSelector": {
+      "additionalProperties": false,
+      "description": "The objects a rule selects: `ArchUnitNET`'s `Types()`, `Classes()`, ..., then `That()`.",
+      "properties": {
+        "includeReferenced": {
+          "description": "Also select the types the code references but does not define (`Types(true)`). Default false.",
+          "type": "boolean"
+        },
+        "kind": {
+          "description": "`Types()`, `Classes()`, `Interfaces()`, `Attributes()`, `Members()`, `FieldMembers()`, `MethodMembers()`, `PropertyMembers()`; `function` and `module` are TypeScript and Python additions.",
+          "enum": [
+            "type",
+            "class",
+            "interface",
+            "attribute",
+            "member",
+            "field",
+            "method",
+            "property",
+            "function",
+            "module"
+          ]
+        },
+        "language": {
+          "anyOf": [
+            {
+              "enum": [
+                "typescript",
+                "javascript",
+                "dotnet",
+                "python"
+              ]
+            },
+            {
+              "items": {
+                "enum": [
+                  "typescript",
+                  "javascript",
+                  "dotnet",
+                  "python"
+                ]
+              },
+              "type": "array"
+            }
+          ],
+          "description": "Only objects of these languages: scopes a rule that uses a key some language cannot answer (ADR-0014)."
+        },
+        "where": {
+          "$ref": "#/$defs/ElementPredicate"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "type": "object"
+    },
     "EnhancedResolveOptions": {
       "additionalProperties": false,
       "description": "`enhancedResolveOptions`: the resolver settings `oxc_resolver` receives.",
@@ -829,6 +3761,101 @@
           "default": null,
           "description": "dependency-cruiser's rule set."
         },
+        "diagrams": {
+          "default": null,
+          "description": "Diagram rules: types that must adhere to a `PlantUML` component diagram.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "adhereTo": {
+                "description": "The `PlantUML` component diagram, relative to the configuration (`AdhereToPlantUmlDiagram`).",
+                "type": "string"
+              },
+              "comment": {
+                "description": "Why the rule exists; the decision token (`adr:NNNN`) goes here.",
+                "type": "string"
+              },
+              "fix": {
+                "description": "What to do about a violation; every reporter prints it.",
+                "type": "string"
+              },
+              "name": {
+                "description": "The rule's name, unique in the configuration.",
+                "type": "string"
+              },
+              "select": {
+                "$ref": "#/$defs/ElementSelector"
+              },
+              "severity": {
+                "description": "Default `error`.",
+                "enum": [
+                  "error",
+                  "warn",
+                  "info",
+                  "ignore"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "select",
+              "adhereTo"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "elements": {
+          "default": null,
+          "description": "Element rules: `ArchUnitNET`'s predicates and conditions over types, members and modules\nof every language, each key's per-language answer in its description.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "allowEmpty": {
+                "description": "An empty selection passes (`WithoutRequiringPositiveResults()`). Default false: it is vacuous (ADR-0007).",
+                "type": "boolean"
+              },
+              "because": {
+                "description": "`Because(reason)`.",
+                "type": "string"
+              },
+              "comment": {
+                "description": "Why the rule exists; the decision token (`adr:NNNN`) goes here.",
+                "type": "string"
+              },
+              "fix": {
+                "description": "What to do about a violation; every reporter prints it.",
+                "type": "string"
+              },
+              "name": {
+                "description": "The rule's name, unique in the configuration.",
+                "type": "string"
+              },
+              "select": {
+                "$ref": "#/$defs/ElementSelector"
+              },
+              "severity": {
+                "description": "Default `error`.",
+                "enum": [
+                  "error",
+                  "warn",
+                  "info",
+                  "ignore"
+                ]
+              },
+              "should": {
+                "$ref": "#/$defs/ElementCondition"
+              }
+            },
+            "required": [
+              "name",
+              "select",
+              "should"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
         "independence": {
           "default": null,
           "description": "Independence contracts, expanded to one `$1` fence each.",
@@ -861,6 +3888,89 @@
             "array",
             "null"
           ]
+        },
+        "slices": {
+          "default": null,
+          "description": "Slice rules: types grouped by a namespace, module or path pattern.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "allowEmpty": {
+                "description": "An empty slicing is not vacuous.",
+                "type": "boolean"
+              },
+              "comment": {
+                "description": "Why the rule exists; the decision token (`adr:NNNN`) goes here.",
+                "type": "string"
+              },
+              "fix": {
+                "description": "What to do about a violation; every reporter prints it.",
+                "type": "string"
+              },
+              "ignore": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                ],
+                "description": "Slice names left out."
+              },
+              "matching": {
+                "description": "`Matching(\"Ns.(*)\")` or `MatchingWithPackages(\"Ns.(**)\")`: a namespace, dotted module or path pattern; either names a slice by what follows the prefix, and `Ns.(**)..` by its first segment.",
+                "type": "string"
+              },
+              "name": {
+                "description": "The rule's name, unique in the configuration.",
+                "type": "string"
+              },
+              "severity": {
+                "description": "Default `error`.",
+                "enum": [
+                  "error",
+                  "warn",
+                  "info",
+                  "ignore"
+                ]
+              },
+              "should": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "notDependOnEachOther",
+                      "beFreeOfCycles"
+                    ]
+                  },
+                  {
+                    "items": {
+                      "enum": [
+                        "notDependOnEachOther",
+                        "beFreeOfCycles"
+                      ]
+                    },
+                    "type": "array"
+                  }
+                ],
+                "description": "`NotDependOnEachOther()`, `BeFreeOfCycles()`, or both."
+              },
+              "where": {
+                "description": "A pattern a slice name must match to take part.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "matching",
+              "should"
+            ],
+            "type": "object"
+          },
+          "type": "array"
         }
       },
       "type": "object"
