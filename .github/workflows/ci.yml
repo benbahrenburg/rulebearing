@@ -336,7 +336,7 @@ jobs:
       # The released Action, as a user runs it: it downloads v0.1.0 from GitHub Releases and
       # checks it against SHA256SUMS. Pinned by commit, so `version` names the release
       # (docs/adr/0025-ci-and-supply-chain-hardening.md; plan 0001, Step 19).
-      - uses: benbahrenburg/rulebearing@2dfb8ca15249d82fb5a13df1ab558cc920cee2b3 # v0.1.0
+      - uses: benbahrenburg/rulebearing@7d177a75b45ccc9fa50dc2a79e89d9fc02473184 # v0.1.0
         with:
           version: 0.1.0
           output-type: err-long
