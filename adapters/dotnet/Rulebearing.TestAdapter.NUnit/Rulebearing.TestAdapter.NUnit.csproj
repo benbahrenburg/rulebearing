@@ -1,0 +1,12 @@
+<!-- NUnit: [RulebearingTestCaseSource("rulebearing.yaml")] yields one test case per rule.
+     Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H). -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>Rulebearing.TestAdapter.NUnit</PackageId>
+    <Description>NUnit test case source for Rulebearing: [RulebearingTestCaseSource("rulebearing.yaml")] runs one test case per architecture rule, failing with the rule's fix text and first violations.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Rulebearing.TestAdapter/Rulebearing.TestAdapter.csproj" />
+    <PackageReference Include="NUnit" Version="$(NUnitVersion)" />
+  </ItemGroup>
+</Project>

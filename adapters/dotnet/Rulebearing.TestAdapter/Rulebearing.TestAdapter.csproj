@@ -1,0 +1,13 @@
+<!-- The framework-neutral core: runs `rulebearing cruise -T json` (or reads a graph or a saved
+     result) and yields one RuleResult per rule, whose failure message is the `junit` reporter's.
+     Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
+     Coverage: docs/artifacts/archunitnet-0.13.4-coverage.md#test-framework-adapters. -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>Rulebearing.TestAdapter</PackageId>
+    <Description>Runs Rulebearing and yields one result per architecture rule, with the rule's fix text and first violations as the failure message. The framework packages (Rulebearing.TestAdapter.xUnit, .xUnitV3, .NUnit, .MSTestV2, .MSTestV4, .TUnit) turn it into one test per rule.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rulebearing.TestAdapter.Tests" />
+  </ItemGroup>
+</Project>
