@@ -158,10 +158,18 @@ rules:
 "#;
 
 fn run_with(config: &str, dir_tag: &str) -> Result<(Option<i32>, Value, String), Box<dyn Error>> {
+    run_as(config, dir_tag, "json")
+}
+
+fn run_as(
+    config: &str,
+    dir_tag: &str,
+    output_type: &str,
+) -> Result<(Option<i32>, Value, String), Box<dyn Error>> {
     let moved = repository(dir_tag)?;
     std::fs::write(moved.join("rulebearing.yaml"), config)?;
     let output = Command::new(BIN)
-        .args(["cruise", "-T", "json", "--no-progress", "py"])
+        .args(["cruise", "-T", output_type, "--no-progress", "py"])
         .current_dir(&moved)
         .output()?;
     let _ = std::fs::remove_dir_all(&moved);
@@ -215,5 +223,61 @@ fn element_rules_report_failing_objects_and_refuse_unanswerable_keys() -> Result
         stderr.contains("`beSealed` has no meaning in python"),
         "{stderr}"
     );
+    Ok(())
+}
+
+const PASSING_ELEMENT: &str = r#"languages:
+  dotnet:
+    assemblies: ["dotnet/*.dll"]
+  python:
+    roots: ["py"]
+rules:
+  elements:
+    - name: customers-exist
+      comment: "adr:0004"
+      select: { kind: class, language: dotnet, where: { resideInNamespace: Sample.Customers } }
+      should: { exist: true }
+"#;
+
+#[test]
+fn element_rule_metadata_and_empty_conditions_reach_the_exit_code() -> Result<(), Box<dyn Error>> {
+    let (code, _, stderr) = run_as(PASSING_ELEMENT, "element-pass", "err")?;
+    assert_eq!(code, Some(0), "the rule holds: {stderr}");
+
+    // An expired element rule fails the run the day after, as a dependency rule does.
+    let expired = PASSING_ELEMENT.replace(
+        "      comment: \"adr:0004\"\n",
+        "      comment: \"adr:0004\"\n      owner: \"@team\"\n      expires: \"2020-01-01\"\n",
+    );
+    let (code, _, stderr) = run_as(&expired, "element-expired-err", "err")?;
+    assert_eq!(code, Some(1), "{stderr}");
+    assert!(
+        stderr.contains("rule `customers-exist` expired on 2020-01-01"),
+        "{stderr}"
+    );
+    let (_, result, _) = run_with(&expired, "element-expired")?;
+    assert_eq!(
+        result["summary"]["expired"][0]["name"], "customers-exist",
+        "{}",
+        result["summary"]
+    );
+
+    // An empty `should` would pass every object: a configuration error naming the rule.
+    let empty = PASSING_ELEMENT.replace("should: { exist: true }", "should: {}");
+    let (code, _, stderr) = run_with(&empty, "element-empty")?;
+    assert_eq!(code, Some(3), "{stderr}");
+    assert!(
+        stderr.contains("rules.elements[customers-exist].should"),
+        "{stderr}"
+    );
+
+    // `examples` has no meaning on an element rule: refused, not ignored.
+    let examples = PASSING_ELEMENT.replace(
+        "should: { exist: true }",
+        "should: { exist: true }\n      examples: { allowed: [\"a -> b\"] }",
+    );
+    let (code, _, stderr) = run_with(&examples, "element-examples")?;
+    assert_eq!(code, Some(3), "{stderr}");
+    assert!(stderr.contains("`examples`"), "{stderr}");
     Ok(())
 }
