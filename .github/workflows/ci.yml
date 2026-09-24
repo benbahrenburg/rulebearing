@@ -300,6 +300,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # The committed TestAssembly fixture, its hashes, portable PDB and notice; ported.json.
       - run: scripts/gate2-check.sh
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      # Every ported case over the committed graphs, and the graphs current with the fixtures.
+      - run: cargo test -p rb-rules --test gate2 -- --nocapture
+      - run: cargo test -p rb-extract-dotnet --test gate2_graphs
+
+  gate2-ratchet:
+    name: gate2-ratchet
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      # unported.json may only shrink, and holds no not-yet entry once plan 0002 is implemented.
+      - run: scripts/gate2-ratchet.sh
 
   ratchets:
     name: ratchets
