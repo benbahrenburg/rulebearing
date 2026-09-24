@@ -46,7 +46,7 @@ if set(unported) != {"$comment", "pin", "entries"} or not isinstance(unported["e
     sys.exit("unported.json must be { $comment, pin, entries: [...] }")
 if unported["pin"] != pin:
     sys.exit("unported.json: pin does not match PIN")
-reason = re.compile(r"^(custom-predicate|not-yet: \S.*|[a-z][a-z-]*(: \S.*)?)$")
+reason = re.compile(r"^(custom-predicate|not-yet: \S.*|[a-z][a-z0-9-]*(: \S.*)?)$")
 for index, entry in enumerate(unported["entries"]):
     where = f"unported.json entries[{index}]"
     if not isinstance(entry, dict) or set(entry) != {"source", "test", "block", "query", "reason"}:
