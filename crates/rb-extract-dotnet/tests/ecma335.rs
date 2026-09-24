@@ -4,7 +4,7 @@
 //!   ("`tests/ecma335.rs` reads the committed `TestAssembly.dll` and asserts row counts, a
 //!   sample of decoded signatures and the IL operand stream of three known methods")
 //! - Expected values: printed once by `conformance/archunitnet/tools/MetadataDump`
-//!   (`dotnet run -c Release` with `../../fixtures/TestAssembly.dll` and the three method names)
+//!   (`dotnet run -c Release` with the Debug-built `../../fixtures/TestAssembly.dll` and the three method names)
 //! - Requirement: [NFR-SEC-01](../../../docs/prd.md#nfr-sec-01) (malformed input is an error)
 
 use std::path::{Path, PathBuf};
@@ -27,7 +27,7 @@ fn row_counts_agree_with_system_reflection_metadata() -> Result<(), Box<dyn std:
     let loaded = load()?;
     assert_eq!(loaded.identity.name, "TestAssembly");
     assert_eq!(loaded.identity.version, [1, 0, 0, 0]);
-    assert_eq!(loaded.type_refs.len(), 33);
+    assert_eq!(loaded.type_refs.len(), 35);
     assert_eq!(loaded.types.len(), 46);
     assert_eq!(
         loaded.types.iter().map(|t| t.fields.len()).sum::<usize>(),
@@ -37,7 +37,7 @@ fn row_counts_agree_with_system_reflection_metadata() -> Result<(), Box<dyn std:
         loaded.types.iter().map(|t| t.methods.len()).sum::<usize>(),
         95
     );
-    assert_eq!(loaded.member_refs.len(), 39);
+    assert_eq!(loaded.member_refs.len(), 40);
     assert_eq!(
         loaded
             .types
@@ -72,16 +72,16 @@ const METHODS: &[(&str, u32, &str, Operands)] = &[
         "TestAssembly.Class1::.ctor",
         20,
         "2001010E",
-        &[(0x1, 0x28, 0x0A00_0011), (0x8, 0x7D, 0x0400_0004)],
+        &[(0x1, 0x28, 0x0A00_0012), (0xA, 0x7D, 0x0400_0004)],
     ),
     (
         "TestAssembly.ClassCallingOtherMethod::CallingOther",
         27,
         "2001011210",
         &[
-            (0x1, 0x6F, 0x0A00_0016),
-            (0x6, 0x28, 0x0A00_0020),
-            (0xD, 0x6F, 0x0600_0016),
+            (0x2, 0x6F, 0x0A00_0017),
+            (0x7, 0x28, 0x0A00_0021),
+            (0xF, 0x6F, 0x0600_0016),
         ],
     ),
     (
@@ -89,16 +89,16 @@ const METHODS: &[(&str, u32, &str, Operands)] = &[
         71,
         "200001",
         &[
-            (0x0, 0x73, 0x0600_003F),
-            (0x7, 0x7B, 0x0400_0013),
-            (0xC, 0x6F, 0x0A00_0023),
-            (0x16, 0x28, 0x0A00_0024),
-            (0x1B, 0x6F, 0x0600_0039),
-            (0x22, 0x28, 0x0A00_0025),
-            (0x2D, 0xFE16, 0x1B00_0006),
-            (0x33, 0x6F, 0x0A00_0026),
-            (0x3B, 0x7B, 0x0400_0013),
-            (0x40, 0x6F, 0x0600_003C),
+            (0x1, 0x73, 0x0600_003F),
+            (0x9, 0x7B, 0x0400_0013),
+            (0xE, 0x6F, 0x0A00_0024),
+            (0x18, 0x28, 0x0A00_0025),
+            (0x20, 0x6F, 0x0600_0039),
+            (0x29, 0x28, 0x0A00_0026),
+            (0x34, 0xFE16, 0x1B00_0006),
+            (0x3A, 0x6F, 0x0A00_0027),
+            (0x43, 0x7B, 0x0400_0013),
+            (0x48, 0x6F, 0x0600_003C),
         ],
     ),
 ];

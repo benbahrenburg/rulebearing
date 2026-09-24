@@ -472,7 +472,11 @@ pub fn test<'a>(
                         .get(t.full_name.as_str())
                         .into_iter()
                         .flatten()
-                        .filter(|m| matches!(m.kind.as_str(), "field" | "property"))
+                        // Static state is not the instance's: ArchUnitNET reads instance
+                        // fields and properties only.
+                        .filter(|m| {
+                            matches!(m.kind.as_str(), "field" | "property") && !flag(m.r#static)
+                        })
                         .all(|m| member_immutable(m))
                 }),
                 _ => false,

@@ -619,10 +619,9 @@ impl<'u> Builder<'u> {
             .and_then(|a| a.attribution)
             .or(Some(Attribution::None));
         element.assembly = Some(loaded.identity.name.clone());
-        element.assembly_qualified_name = Some(assembly_qualified_name(
-            &ty.full_name,
-            &loaded.identity.display(),
-        ));
+        let display = loaded.identity.display();
+        element.assembly_qualified_name = Some(assembly_qualified_name(&ty.full_name, &display));
+        element.assembly_full_name = Some(display);
         element.visibility = Some(type_visibility(ty.flags).to_owned());
         let abstract_ = ty.flags & flags::ABSTRACT != 0;
         let sealed = ty.flags & flags::SEALED != 0;

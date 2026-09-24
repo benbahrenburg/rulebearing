@@ -204,6 +204,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.AbstractClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -239,6 +240,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.ClassWithOnlyStaticMembers, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.ClassWithOnlyStaticMembers",
@@ -290,6 +292,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.ClassWithoutMembers, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -325,6 +328,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.ImmutableClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.ImmutableClass",
@@ -394,6 +398,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.MutableClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.MutableClass",
@@ -446,6 +451,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.OtherAbstractClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -481,6 +487,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.OtherImmutableClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.OtherImmutableClass",
@@ -550,6 +557,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.OtherMutableClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.OtherMutableClass",
@@ -606,6 +614,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.OtherRecordClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.OtherRecordClass",
@@ -777,6 +786,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.OtherRegularClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -811,6 +821,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.OtherSealedClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -849,6 +860,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.RecordClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "ClassNamespace.RecordClass",
@@ -1020,6 +1032,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.RegularClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
@@ -1054,6 +1067,7 @@
         ],
         "valueType": false,
         "assemblyQualifiedName": "ClassNamespace.SealedClass, ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "ClassAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
         "dependencies": [
           {
             "target": "System.Object",
