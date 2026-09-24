@@ -1026,8 +1026,25 @@ fn named_arguments(value: &Value, context: &str) -> Result<Vec<(String, String)>
 ///
 /// # Errors
 /// [`ConfigError::Invalid`] for an unknown key (naming the nearest), a key used on the wrong
-/// side, or a value of the wrong shape.
+/// side, a value of the wrong shape, or an expression with no tests (`{}`, `[]`, `all: []`,
+/// `any: []`): an empty `should` would pass every object, an empty `any` would fail every one,
+/// and neither says what was meant. An empty `select.where` is the one empty expression
+/// allowed; [`parse_selector`] reads it as "no filter".
 pub fn parse_expr(value: &Value, side: Side, context: &str) -> Result<Expr, ConfigError> {
+    let empty = match value {
+        Value::Array(items) => items.is_empty(),
+        Value::Object(map) => map.is_empty(),
+        _ => false,
+    };
+    if empty {
+        return Err(invalid(
+            context,
+            format!(
+                "an empty expression tests nothing; name at least one {} (an empty `should` would pass every object)",
+                side_word(side)
+            ),
+        ));
+    }
     match value {
         Value::Array(items) => Ok(Expr::All(
             items
@@ -1060,6 +1077,15 @@ fn parse_entry(key: &str, value: &Value, side: Side, context: &str) -> Result<Ex
             let Value::Array(items) = value else {
                 return Err(invalid(&here, "must be a list of expressions"));
             };
+            if items.is_empty() {
+                return Err(invalid(
+                    &here,
+                    format!(
+                        "an empty `{key}` tests nothing; list at least one {}",
+                        side_word(side)
+                    ),
+                ));
+            }
             let items = items
                 .iter()
                 .map(|v| parse_expr(v, side, &here))
@@ -1173,10 +1199,13 @@ pub fn parse_selector(value: &Value, context: &str) -> Result<Selector, ConfigEr
         Some(Value::String(k)) => Kind::parse(k)?,
         _ => return Err(invalid(context, "`select.kind` is required")),
     };
-    let where_ = map
-        .get("where")
-        .map(|w| parse_expr(w, Side::Where, &format!("{context}.where")))
-        .transpose()?;
+    // An empty `where` filters nothing out: every object of the kind is selected.
+    let where_ = match map.get("where") {
+        None => None,
+        Some(Value::Object(m)) if m.is_empty() => None,
+        Some(Value::Array(a)) if a.is_empty() => None,
+        Some(w) => Some(parse_expr(w, Side::Where, &format!("{context}.where"))?),
+    };
     let languages = match map.get("language") {
         None => Vec::new(),
         Some(value) => text_list(value, &format!("{context}.language"))?
@@ -1681,6 +1710,37 @@ mod tests {
     }
 
     #[test]
+    fn an_empty_expression_is_refused_naming_the_rule() -> Result<(), ConfigError> {
+        let rule = |should: Value| json!([{ "name": "hollow", "select": { "kind": "class" }, "should": should }]);
+        for should in [
+            json!({}),
+            json!([]),
+            json!({ "all": [] }),
+            json!({ "any": [] }),
+            json!({ "not": {} }),
+            json!([{ "bePublic": true }, {}]),
+        ] {
+            let message = parse_elements(&rule(should.clone()))
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default();
+            assert!(
+                message.contains("rules.elements[hollow].should")
+                    && message.contains("tests nothing"),
+                "{should}: {message}"
+            );
+        }
+        // An empty `where` inside a combinator is still refused; at the top of `select` it
+        // means "every object of the kind".
+        assert!(parse_expr(&json!({ "any": [] }), Side::Where, "t").is_err());
+        for empty in [json!({}), json!([])] {
+            let selector = parse_selector(&json!({ "kind": "class", "where": empty }), "t")?;
+            assert_eq!(selector.where_, None);
+        }
+        Ok(())
+    }
+
+    #[test]
     fn referenced_types_are_selected_only_when_asked() -> Result<(), ConfigError> {
         let plain = parse_selector(&json!({ "kind": "type" }), "t")?;
         assert!(
@@ -1867,29 +1927,32 @@ mod tests {
                 json!([{ "name": "x", "select": { "kind": "type" } }]),
                 "elements",
             ),
-            (json!([{ "name": "x", "should": {} }]), "elements"),
             (
-                json!([{ "select": { "kind": "type" }, "should": {} }]),
+                json!([{ "name": "x", "should": { "bePublic": true } }]),
                 "elements",
             ),
             (
-                json!([{ "name": "x", "select": { "kind": "nope" }, "should": {} }]),
+                json!([{ "select": { "kind": "type" }, "should": { "bePublic": true } }]),
                 "elements",
             ),
             (
-                json!([{ "name": "x", "select": { "where": {} }, "should": {} }]),
+                json!([{ "name": "x", "select": { "kind": "nope" }, "should": { "bePublic": true } }]),
                 "elements",
             ),
             (
-                json!([{ "name": "x", "select": { "kind": "type", "extra": 1 }, "should": {} }]),
+                json!([{ "name": "x", "select": { "where": {} }, "should": { "bePublic": true } }]),
                 "elements",
             ),
             (
-                json!([{ "name": "x", "select": { "kind": "type" }, "should": {}, "typo": 1 }]),
+                json!([{ "name": "x", "select": { "kind": "type", "extra": 1 }, "should": { "bePublic": true } }]),
                 "elements",
             ),
             (
-                json!([{ "name": "x", "select": { "kind": "type" }, "should": {}, "severity": "loud" }]),
+                json!([{ "name": "x", "select": { "kind": "type" }, "should": { "bePublic": true }, "typo": 1 }]),
+                "elements",
+            ),
+            (
+                json!([{ "name": "x", "select": { "kind": "type" }, "should": { "bePublic": true }, "severity": "loud" }]),
                 "elements",
             ),
             (json!({}), "elements"),
