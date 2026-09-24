@@ -783,6 +783,28 @@ pub struct DiagramRule {
     pub adhere_to: String,
 }
 
+impl DiagramRule {
+    /// The element rule the diagram rule means: its `select` should adhere to the diagram.
+    #[must_use]
+    pub fn as_element_rule(&self) -> ElementRule {
+        ElementRule {
+            name: self.name.clone(),
+            comment: self.comment.clone(),
+            fix: self.fix.clone(),
+            severity: self.severity,
+            because: None,
+            allow_empty: false,
+            select: self.select.clone(),
+            should: Expr::Test(Test {
+                key: "adhereToPlantUmlDiagram".into(),
+                concept: Concept::AdhereToPlantUmlDiagram,
+                negated: false,
+                operand: Operand::Diagram(self.adhere_to.clone()),
+            }),
+        }
+    }
+}
+
 fn invalid(context: &str, message: impl std::fmt::Display) -> ConfigError {
     ConfigError::Invalid(format!("{context}: {message}"))
 }
