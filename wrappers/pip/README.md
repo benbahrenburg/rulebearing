@@ -46,7 +46,7 @@ pip install build hatchling packaging
 RULEBEARING_WHEEL_BINARY=target/release/rulebearing python -m build --wheel --no-isolation wrappers/pip
 ```
 
-The release workflow builds the six wheels from the release archives and publishes them ([docs/release.md](../../docs/release.md#wrappers-from-waves-1-and-2)).
+The release workflow builds the six wheels from the release archives and publishes them ([docs/release.md](../../docs/release.md#pypi-from-wave-2)).
 
 ## Developing this package
 
