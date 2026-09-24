@@ -790,6 +790,9 @@ const RESTRICTED: &[&str] = &["import/no-restricted-paths", "import-x/no-restric
 /// # Errors
 /// [`ImportError`] when the file cannot be read or evaluated.
 pub fn import(file: &Path, display: &str) -> Result<Document, ImportError> {
+    // One spelling of the path, so `import.meta.dirname` and the folder rules are relative to
+    // agree when the path runs through a symbolic link.
+    let file = &file.canonicalize().unwrap_or_else(|_| file.to_path_buf());
     let config = read_config(file, display)?;
     if config.is_null() {
         return Err(ImportError::Invalid(format!(
@@ -809,9 +812,18 @@ pub fn import(file: &Path, display: &str) -> Result<Document, ImportError> {
     let all = entries(&config);
     let mut items = Vec::new();
     let mut skipped = Vec::new();
+    let mut off = Vec::new();
     for entry in &all {
         for (name, value) in &entry.rules {
             let Some((severity, options)) = severity_and_options(value) else {
+                if RESTRICTED.contains(&name.as_str()) || name == "boundaries/element-types" {
+                    let files = if entry.files.is_empty() {
+                        String::new()
+                    } else {
+                        format!(" for files matching {}", entry.files.join(", "))
+                    };
+                    off.push(format!("{name} is off{files} ({})", entry.origin));
+                }
                 continue;
             };
             if RESTRICTED.contains(&name.as_str()) {
@@ -831,6 +843,12 @@ pub fn import(file: &Path, display: &str) -> Result<Document, ImportError> {
         header.push(format!(
             "Not imported (no forbidden-rule equivalent in this importer): {}",
             skipped.join(", ")
+        ));
+    }
+    if !off.is_empty() {
+        header.push(format!(
+            "ESLint turns a rule off later in the file: {}; the rules below still check those files.",
+            off.join("; ")
         ));
     }
     if items.is_empty() {

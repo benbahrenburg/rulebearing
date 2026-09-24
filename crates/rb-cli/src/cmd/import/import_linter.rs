@@ -131,10 +131,13 @@ struct Settings {
     contracts: Vec<Contract>,
 }
 
+/// Sections of an INI file, in the order written, each with its options.
+type Sections = Vec<(String, BTreeMap<String, String>)>;
+
 /// INI as `configparser` reads it: sections, `key = value` or `key: value`, indented
 /// continuation lines, `#` and `;` comments, keys lower-cased.
-fn parse_ini(text: &str) -> BTreeMap<String, BTreeMap<String, String>> {
-    let mut sections: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
+fn parse_ini(text: &str) -> Sections {
+    let mut sections: Sections = Vec::new();
     let mut section: Option<String> = None;
     let mut key: Option<String> = None;
     for raw in text.lines() {
@@ -148,7 +151,11 @@ fn parse_ini(text: &str) -> BTreeMap<String, BTreeMap<String, String>> {
         }
         let indented = line.len() != trimmed.len();
         if indented && let (Some(s), Some(k)) = (&section, &key) {
-            if let Some(value) = sections.get_mut(s).and_then(|m| m.get_mut(k)) {
+            if let Some(value) = sections
+                .iter_mut()
+                .rfind(|(name, _)| name == s)
+                .and_then(|(_, m)| m.get_mut(k))
+            {
                 value.push('\n');
                 value.push_str(trimmed);
             }
@@ -156,15 +163,15 @@ fn parse_ini(text: &str) -> BTreeMap<String, BTreeMap<String, String>> {
         }
         if let Some(name) = trimmed.strip_prefix('[').and_then(|r| r.strip_suffix(']')) {
             section = Some(name.trim().to_owned());
-            sections.entry(name.trim().to_owned()).or_default();
+            sections.push((name.trim().to_owned(), BTreeMap::new()));
             key = None;
             continue;
         }
         let split = trimmed.find(['=', ':']);
-        if let (Some(s), Some(at)) = (&section, split) {
+        if let (Some(_), Some(at), Some((_, options))) = (&section, split, sections.last_mut()) {
             let k = trimmed[..at].trim().to_ascii_lowercase();
             let v = trimmed[at + 1..].trim().to_owned();
-            sections.entry(s.clone()).or_default().insert(k.clone(), v);
+            options.insert(k.clone(), v);
             key = Some(k);
         }
     }
@@ -175,7 +182,12 @@ fn settings_from_ini(text: &str, file: &str) -> Result<Settings, ImportError> {
     let sections = parse_ini(text);
     let (prefix, top) = ["importlinter", "tool:importlinter"]
         .into_iter()
-        .find_map(|name| sections.get(name).map(|s| (name, s)))
+        .find_map(|name| {
+            sections
+                .iter()
+                .find(|(section, _)| section == name)
+                .map(|(_, s)| (name, s))
+        })
         .ok_or_else(|| {
             ImportError::Invalid(format!(
                 "{file} has no [importlinter] or [tool:importlinter] section"
@@ -635,6 +647,9 @@ struct Produced {
     name: String,
     from: Vec<String>,
     to: Vec<String>,
+    /// Whether the rule follows chains, which makes its violations dependency-cruiser's
+    /// `reachability` kind rather than `dependency`.
+    reachable: bool,
 }
 
 fn layers(contract: &Contract, layout: &Layout, out: &mut Output, produced: &mut Vec<Produced>) {
@@ -673,7 +688,12 @@ fn layers(contract: &Contract, layout: &Layout, out: &mut Output, produced: &mut
                 true,
                 low.1 || high.1,
             )));
-            produced.push(Produced { name, from, to });
+            produced.push(Produced {
+                name,
+                from,
+                to,
+                reachable: true,
+            });
         };
         for (lower, layer) in parsed.iter().enumerate() {
             if layer.independent {
@@ -715,7 +735,7 @@ fn layers(contract: &Contract, layout: &Layout, out: &mut Output, produced: &mut
                     ));
                 } else {
                     comments.push(format!(
-                        "exhaustive: {} sit in no layer, which import-linter reports as a broken contract; no rule checks it",
+                        "exhaustive: no layer holds {}, so import-linter reports the contract broken until one does; no rule checks this",
                         unnamed.join(", ")
                     ));
                 }
@@ -769,6 +789,7 @@ fn forbidden_contract(
             name: contract.id.clone(),
             from,
             to,
+            reachable,
         });
     }
 }
@@ -818,6 +839,7 @@ fn independence(
             name: contract.id.clone(),
             from: vec![pattern.clone()],
             to: vec![pattern],
+            reachable: false,
         });
         return;
     }
@@ -835,7 +857,12 @@ fn independence(
                 true,
                 false,
             )));
-            produced.push(Produced { name, from, to });
+            produced.push(Produced {
+                name,
+                from,
+                to,
+                reachable: true,
+            });
         }
     }
     if items.is_empty() {
@@ -891,6 +918,7 @@ fn protected(contract: &Contract, layout: &Layout, out: &mut Output, produced: &
             name: "not-in-allowed".into(),
             from: vec!["^".into()],
             to: protected,
+            reachable: false,
         });
     }
 }
@@ -995,7 +1023,13 @@ fn ignore_imports(contract: &Contract, layout: &Layout, produced: &[Produced], o
                     };
                     if hit(&rule.from, from) && hit(&rule.to, to) {
                         matched = true;
+                        let kind = if rule.reachable {
+                            "reachability"
+                        } else {
+                            "dependency"
+                        };
                         out.known.push(Item::plain(Node::map(vec![
+                            ("type", Node::str(kind)),
                             ("from", Node::str(from.clone())),
                             ("to", Node::str(to.clone())),
                             (
@@ -1072,6 +1106,9 @@ fn rules(
             disabled: false,
         });
         dependencies.push(("allowed", Node::List(allowed)));
+        // import-linter fails the lint on a broken protected contract; dependency-cruiser's
+        // default for an import no allowed rule matches is `warn`.
+        dependencies.push(("allowedSeverity", Node::str("error")));
     }
     if !dependencies.is_empty() {
         rules.push(("dependencies", Node::map(dependencies)));
@@ -1105,7 +1142,9 @@ fn document(settings: &Settings, layout: &Layout, display: &str) -> Document {
                 continue;
             }
         }
-        ignore_imports(contract, layout, &produced, &mut out);
+        if contract.kind != "acyclic_siblings" {
+            ignore_imports(contract, layout, &produced, &mut out);
+        }
     }
     let mut header = vec![
         format!("Imported from {display} by `rulebearing import import-linter`."),
@@ -1138,10 +1177,14 @@ fn document(settings: &Settings, layout: &Layout, display: &str) -> Document {
         )]),
     ));
     let mut key_comments = Vec::new();
-    if !out.known.is_empty() || !out.notes.is_empty() {
+    if out.known.is_empty() && !out.notes.is_empty() {
+        header.push(String::new());
+        header.extend(out.notes.iter().cloned());
+    }
+    if !out.known.is_empty() {
         let mut notes = vec![
             "ignore_imports: `rulebearing baseline --baseline-mode shrink-only` fails when an entry no longer occurs, which is import-linter's unmatched-ignore alerting.".to_owned(),
-            "An entry excuses the violation from its importer to its imported module; a chain through the ignored import from another module is still reported.".to_owned(),
+            "An entry excuses the import from its importer to its imported module. For a rule that follows chains (reachable), dependency-cruiser keys a violation by importer and rule, so the entry excuses that importer's chains to the rule's modules; a chain through the ignored import from another module is still reported.".to_owned(),
         ];
         notes.extend(out.notes.iter().cloned());
         key_comments.push(("options".to_owned(), notes));
@@ -1174,12 +1217,11 @@ mod tests {
         let sections = parse_ini(
             "# c\n[importlinter]\nroot_package = pkg\n\n[importlinter:contract:one]\nName: One\nlayers=\n    a\n    ; skipped\n    b | c\n",
         );
-        assert_eq!(sections["importlinter"]["root_package"], "pkg");
-        assert_eq!(sections["importlinter:contract:one"]["name"], "One");
-        assert_eq!(
-            sections["importlinter:contract:one"]["layers"],
-            "\na\nb | c"
-        );
+        assert_eq!(sections[0].0, "importlinter");
+        assert_eq!(sections[0].1["root_package"], "pkg");
+        assert_eq!(sections[1].0, "importlinter:contract:one");
+        assert_eq!(sections[1].1["name"], "One");
+        assert_eq!(sections[1].1["layers"], "\na\nb | c");
     }
 
     #[test]

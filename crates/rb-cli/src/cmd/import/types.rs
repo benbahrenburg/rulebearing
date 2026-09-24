@@ -66,30 +66,40 @@ pub struct Index {
 }
 
 impl Index {
+    /// Adds a type under its C# path. The same full name read twice is one type: an assembly
+    /// learnt from either reading is kept.
+    fn insert(&mut self, path: String, info: TypeInfo) {
+        let set = self.by_path.entry(path).or_default();
+        if let Some(existing) = set.iter().find(|t| t.full == info.full).cloned() {
+            if existing.assembly.is_some() || info.assembly.is_none() {
+                return;
+            }
+            set.remove(&existing);
+        }
+        set.insert(info);
+    }
+
     /// Adds a declaration from a source file.
     pub fn add_decl(&mut self, decl: &TypeDecl, assembly: Option<&str>) {
-        let full = decl.full_name();
-        self.by_path
-            .entry(decl.dotted())
-            .or_default()
-            .insert(TypeInfo {
-                name: arity_name(&decl.name, decl.arity),
-                namespace: decl.namespace.clone(),
-                full,
-                assembly: assembly.map(str::to_owned),
-            });
+        let info = TypeInfo {
+            name: arity_name(&decl.name, decl.arity),
+            namespace: decl.namespace.clone(),
+            full: decl.full_name(),
+            assembly: assembly.map(str::to_owned),
+        };
+        self.insert(decl.dotted(), info);
     }
 
     /// Adds a type known by its metadata full name (from a graph document, say).
     pub fn add_known(&mut self, full: &str, namespace: &str, assembly: Option<&str>) {
-        let dotted = full.replace('+', ".");
         let name = full.rsplit(['.', '+']).next().unwrap_or(full).to_owned();
-        self.by_path.entry(dotted).or_default().insert(TypeInfo {
+        let info = TypeInfo {
             full: full.to_owned(),
             name,
             namespace: namespace.to_owned(),
             assembly: assembly.map(str::to_owned),
-        });
+        };
+        self.insert(full.replace('+', "."), info);
     }
 
     /// Records the project that builds an assembly.
@@ -202,6 +212,18 @@ impl Index {
                 return unique(set);
             }
         }
+        self.through_usings(name, &written, &segments, usings)
+    }
+
+    /// A written name found through the using directives: one candidate, or an error naming
+    /// the ambiguity or the missing namespace.
+    fn through_usings(
+        &self,
+        name: &TypeName,
+        written: &str,
+        segments: &[String],
+        usings: &Usings,
+    ) -> Result<TypeInfo, String> {
         let mut found = BTreeSet::new();
         for using in usings
             .namespaces
@@ -215,6 +237,16 @@ impl Index {
             }
         }
         match found.len() {
+            // `System.IDisposable` written out: the platform's namespaces are not in the sources,
+            // and a name written from `System` or `Microsoft` names its namespace itself.
+            0 if segments.len() > 1 && matches!(segments[0].as_str(), "System" | "Microsoft") => {
+                Ok(TypeInfo {
+                    full: written.to_owned(),
+                    name: segments.last().cloned().unwrap_or_default(),
+                    namespace: segments[..segments.len() - 1].join("."),
+                    assembly: None,
+                })
+            }
             0 => Err(format!(
                 "the namespace of `{}` cannot be determined from the sources read (pass the folder that declares it with --sources)",
                 name.text
@@ -325,6 +357,25 @@ fn assembly_name(project: &str) -> Option<String> {
     (!name.is_empty() && !name.contains("$(")).then(|| name.to_owned())
 }
 
+impl Index {
+    /// Adds a file's declarations, in `assembly`, and its `global using` directives.
+    pub fn add_source(&mut self, file: &SourceFile, assembly: Option<&str>) {
+        for decl in &file.types {
+            self.add_decl(decl, assembly);
+        }
+        let globals = &file.global_usings;
+        self.global_usings
+            .namespaces
+            .extend(globals.namespaces.iter().cloned());
+        self.global_usings
+            .statics
+            .extend(globals.statics.iter().cloned());
+        self.global_usings
+            .aliases
+            .extend(globals.aliases.iter().cloned());
+    }
+}
+
 /// Adds every declaration of `files` to `index`, with the assemblies of their projects.
 pub fn index_files(index: &mut Index, files: &[(PathBuf, SourceFile)], stop: &Path, cwd: &Path) {
     for (path, file) in files {
@@ -340,22 +391,7 @@ pub fn index_files(index: &mut Index, files: &[(PathBuf, SourceFile)], stop: &Pa
             index.add_project(assembly, &shown);
             index.add_file(path, assembly);
         }
-        for decl in &file.types {
-            index.add_decl(decl, project.as_ref().map(|(a, _)| a.as_str()));
-        }
-        let globals = &file.global_usings;
-        index
-            .global_usings
-            .namespaces
-            .extend(globals.namespaces.iter().cloned());
-        index
-            .global_usings
-            .statics
-            .extend(globals.statics.iter().cloned());
-        index
-            .global_usings
-            .aliases
-            .extend(globals.aliases.iter().cloned());
+        index.add_source(file, project.as_ref().map(|(a, _)| a.as_str()));
     }
 }
 
@@ -389,7 +425,9 @@ mod tests {
         for decl in &a.types {
             index.add_decl(decl, Some("App"));
         }
+        index.add_known("Ext.Thing+Nested", "Ext", None);
         index.add_known("Ext.Thing+Nested", "Ext", Some("Ext"));
+        index.add_known("Ext.Thing+Nested", "Ext", None);
         Ok(index)
     }
 
@@ -428,11 +466,16 @@ mod tests {
             Ok("App.Domain.Repo`1".into())
         );
         assert_eq!(
-            resolve("global::Ext.Thing.Nested", "X").map(|t| t.full),
-            Ok("Ext.Thing+Nested".into())
+            resolve("global::Ext.Thing.Nested", "X").map(|t| (t.full, t.assembly)),
+            Ok(("Ext.Thing+Nested".into(), Some("Ext".into())))
         );
         assert!(resolve("global::Nope.X", "X").is_err());
         assert!(resolve("Missing", "X").is_err_and(|e| e.contains("cannot be determined")));
+        assert!(resolve("Lib.Missing", "X").is_err());
+        assert_eq!(
+            resolve("System.IDisposable", "X").map(|t| (t.full, t.namespace)),
+            Ok(("System.IDisposable".into(), "System".into()))
+        );
         assert_eq!(
             resolve("string", "X").map(|t| t.full),
             Ok("System.String".into())

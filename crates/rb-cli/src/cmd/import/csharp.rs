@@ -73,8 +73,8 @@ pub enum Expr {
     Is(Box<Expr>, String),
     /// `$"..."`: literal text and interpolated expressions.
     Interpolated(Vec<Part>),
-    /// `() => body`, an expression body only.
-    Lambda(Box<Expr>),
+    /// `parameters => body`, an expression body only; the parameters as written.
+    Lambda(String, Box<Expr>),
     /// Anything else, as written.
     Other(String),
 }
@@ -538,27 +538,24 @@ impl Reader<'_, '_> {
             .map(|n| self.text(n))
             .unwrap_or_default();
         let mut body = Vec::new();
-        if let Some(block) = node.child_by_field_name("body") {
-            if block.kind() == "arrow_expression_clause" {
-                if let Some(e) = block.named_child(0) {
+        // An expression body is the `body` field in some grammar versions and a plain child in
+        // others; either way it is read once.
+        let block = node.child_by_field_name("body").or_else(|| {
+            named_children(node)
+                .into_iter()
+                .find(|c| c.kind() == "arrow_expression_clause")
+        });
+        match block {
+            Some(arrow) if arrow.kind() == "arrow_expression_clause" => {
+                if let Some(e) = arrow.named_child(0) {
                     body.push(Stmt::Expr {
                         expr: self.expr(e),
                         line: line(e),
                     });
                 }
-            } else {
-                self.statements(block, &mut body);
             }
-        }
-        for child in named_children(node) {
-            if child.kind() == "arrow_expression_clause"
-                && let Some(e) = child.named_child(0)
-            {
-                body.push(Stmt::Expr {
-                    expr: self.expr(e),
-                    line: line(e),
-                });
-            }
+            Some(block) => self.statements(block, &mut body),
+            None => {}
         }
         Method {
             name,
@@ -910,7 +907,12 @@ impl Reader<'_, '_> {
                 }
             }
             "lambda_expression" => match node.child_by_field_name("body") {
-                Some(body) if body.kind() != "block" => Expr::Lambda(Box::new(self.expr(body))),
+                Some(body) if body.kind() != "block" => Expr::Lambda(
+                    node.child_by_field_name("parameters")
+                        .map(|p| self.text(p))
+                        .unwrap_or_default(),
+                    Box::new(self.expr(body)),
+                ),
                 _ => Expr::Other(self.text(node)),
             },
             "await_expression" | "checked_expression" | "ref_expression" => node
@@ -1023,7 +1025,7 @@ pub fn render(expr: &Expr) -> String {
             out.push('"');
             out
         }
-        Expr::Lambda(body) => format!("() => {}", render(body)),
+        Expr::Lambda(parameters, body) => format!("{parameters} => {}", render(body)),
         Expr::Other(text) => text.split_whitespace().collect::<Vec<_>>().join(" "),
     }
 }

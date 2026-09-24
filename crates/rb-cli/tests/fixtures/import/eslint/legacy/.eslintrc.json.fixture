@@ -1,0 +1,23 @@
+{
+    // A legacy configuration, JSON with comments.
+    "root": true,
+    "plugins": ["import"],
+    "extends": ["plugin:import/recommended"],
+    "rules": {
+        "import/no-restricted-paths": [
+            "warn",
+            { "zones": [{ "target": "lib/core", "from": "lib/plugins" }] }
+        ]
+    },
+    "overrides": [
+        {
+            "files": ["lib/ui/**"],
+            "rules": {
+                "import-x/no-restricted-paths": [
+                    2,
+                    { "zones": [{ "target": "lib/ui", "from": "lib/{db,server}/**", "except": ["lib/db/types/**"] }] }
+                ]
+            }
+        }
+    ]
+}

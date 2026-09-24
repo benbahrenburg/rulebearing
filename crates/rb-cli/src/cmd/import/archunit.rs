@@ -262,8 +262,12 @@ impl Program {
         })
     }
 
-    /// A program over sources already parsed, with an index the caller has filled.
-    pub fn from_parts(files: Vec<(PathBuf, SourceFile)>, index: Index) -> Self {
+    /// A program over sources already parsed, with an index the caller has filled (from a
+    /// graph document, say); the files' own declarations are added to it, with no assembly.
+    pub fn from_parts(files: Vec<(PathBuf, SourceFile)>, mut index: Index) -> Self {
+        for (_, file) in &files {
+            index.add_source(file, None);
+        }
         let tests = files.len();
         Self {
             files,
@@ -510,6 +514,14 @@ impl Program {
                 }
             }
         }
+        // ArchUnitNET's `IType.Namespace.FullName`.
+        if name == "FullName"
+            && let Expr::Member(inner, namespace) = receiver
+            && namespace == "Namespace"
+            && let Ok(Val::Type(t)) = self.eval(scope, inner, depth + 1)
+        {
+            return Ok(Val::Str(t.namespace));
+        }
         match (self.eval(scope, receiver, depth + 1)?, name) {
             (Val::Type(t), "FullName") => Ok(Val::Str(t.full)),
             (Val::Type(t), "Name") => Ok(Val::Str(t.name)),
@@ -553,9 +565,20 @@ impl Program {
                 self.name_call(scope, text, name, args, depth)
             }
             Expr::Member(receiver, method) => {
-                if let Expr::Name(owner) = receiver.as_ref()
-                    && !self.bound(scope, owner)
-                    && let Some(found) = self.static_call(scope, &text, owner, method, args, depth)
+                // `Assembly.Load`, or `System.Reflection.Assembly.Load` written out.
+                let owner = match receiver.as_ref() {
+                    Expr::Name(owner) if !self.bound(scope, owner) => Some(owner.clone()),
+                    qualified @ Expr::Member(..) => {
+                        let written = csharp::render(qualified);
+                        written
+                            .strip_prefix("System.Reflection.")
+                            .filter(|rest| !rest.contains('.'))
+                            .map(str::to_owned)
+                    }
+                    _ => None,
+                };
+                if let Some(owner) = owner
+                    && let Some(found) = self.static_call(scope, &text, &owner, method, args, depth)
                 {
                     return found;
                 }
@@ -1535,7 +1558,7 @@ fn sinks<'e>(expr: &'e Expr, expect: Expect, out: &mut Vec<(&'e Expr, String, &'
             sinks(l, if flips { expect.flip() } else { expect }, out);
             sinks(r, expect, out);
         }
-        Expr::Lambda(body) => sinks(body, expect, out),
+        Expr::Lambda(_, body) => sinks(body, expect, out),
         Expr::Array(items) => {
             for i in items {
                 sinks(i, expect, out);
@@ -1646,7 +1669,7 @@ fn loader_roots<'e>(expr: &'e Expr, as_receiver: bool, out: &mut Vec<&'e Expr>) 
             }
         }
         Expr::Member(receiver, _) => loader_roots(receiver, true, out),
-        Expr::Lambda(body) => loader_roots(body, false, out),
+        Expr::Lambda(_, body) => loader_roots(body, false, out),
         Expr::New(_, args, _) => {
             for a in args {
                 loader_roots(&a.value, false, out);
@@ -1902,7 +1925,20 @@ pub fn items(program: &Program, shown_dir: &str) -> Imported {
             Mapped::Custom => (
                 None,
                 false,
-                Some("stays in ArchUnitNET: custom predicate".to_owned()),
+                Some(
+                    if matches!(
+                        &candidate.chain,
+                        Ok(Chain {
+                            root: Root::NetArchTest { .. },
+                            ..
+                        })
+                    ) {
+                        "stays in NetArchTest: custom predicate (MeetCustomRule)"
+                    } else {
+                        "stays in ArchUnitNET: custom predicate"
+                    }
+                    .to_owned(),
+                ),
             ),
             Mapped::Unmapped(reason) => (None, false, Some(format!("not imported: {reason}"))),
         };
