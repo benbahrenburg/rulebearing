@@ -27,9 +27,9 @@ rules:
         comment: "import-linter contract: Orders do not reach payments"
         severity: error
         from:
-          path: "^src/shop/orders(/|\\.py$)"
+          path: "^src/shop/orders(/.*)?\\.py$"
         to:
-          path: ["^src/shop/payments(/|\\.py$)", "^requests(\\.|$)"]
+          path: ["^src/shop/payments(/.*)?\\.py$", "^requests(\\.|$)"]
           reachable: true
       # import-linter contract `models-direct` (forbidden): No module imports another package's models directly
       #   allow_indirect_imports = true

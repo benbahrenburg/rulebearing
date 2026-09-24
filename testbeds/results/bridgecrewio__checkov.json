@@ -1,0 +1,123 @@
+{
+  "repo": "bridgecrewio/checkov",
+  "sha": "92ca0101e39e7f575c8182b5b1fd7c89b04e136b",
+  "tool": "import-linter",
+  "importLinterVersion": "2.15",
+  "settings": "pyproject.toml",
+  "config": "imported",
+  "status": "compared",
+  "summary": {
+    "total": 6,
+    "agree": 5,
+    "disagree": 1,
+    "stays": 0,
+    "not-imported": 0,
+    "error": 0
+  },
+  "contracts": [
+    {
+      "id": null,
+      "name": "common forbidden to import other modules",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 5075,
+      "rulebearing": "broken",
+      "verdict": "disagree",
+      "filtered": {
+        "mechanisms": [
+          "ignore_imports",
+          "TYPE_CHECKING imports (exclude_type_checking_imports)",
+          "imports by modules outside the root packages"
+        ],
+        "violations": 0,
+        "sufficientAlone": []
+      },
+      "cause": "import-linter's graph has no ignore_imports, TYPE_CHECKING imports (exclude_type_checking_imports), imports by modules outside the root packages, together; with the same imports removed from Rulebearing's graph the contract is kept too. The import writes ignore_imports as knownViolations, which excuse a violation but cut no chain, and has no form for the other filters",
+      "sample": [
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/policies_3d/output.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/policies_3d/record.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/sast/checks_infra/base_check.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/sca_package_2/output.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/secrets/coordinator.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/data/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/data/aws/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/data/external/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/data/gcp/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/resource/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/resource/alicloud/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/resource/aws/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/resource/azure/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/resource/digitalocean/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/resource/gcp/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/resource/github/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/resource/gitlab/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/resource/kubernetes/__init__.py",
+        "common-forbidden-to-import-other-modules: checkov/common/bridgecrew/integration_features/base_integration_feature.py -> checkov/terraform/checks/resource/linode/__init__.py"
+      ]
+    },
+    {
+      "id": null,
+      "name": "kubernetes forbidden to import its children",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "sast forbidden to import its children",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "terraform forbidden to import its children",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "object runners forbidden to import its children",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "bicep forbidden to import arm",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    }
+  ],
+  "graph": {
+    "rootPackages": [
+      "checkov"
+    ],
+    "importLinter": 5499,
+    "rulebearing": 5499,
+    "equal": true,
+    "unexplained": 0,
+    "onlyRulebearing": {},
+    "onlyImportLinter": {}
+  },
+  "agrees": false
+}

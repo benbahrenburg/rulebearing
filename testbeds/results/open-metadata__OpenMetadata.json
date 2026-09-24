@@ -1,0 +1,8 @@
+{
+  "repo": "open-metadata/OpenMetadata",
+  "sha": "325c3ee7af5176f615f48b89747f027018d6d61a",
+  "tool": "import-linter",
+  "status": "error",
+  "detail": "import-linter could not run: ModuleNotFoundError: No module named 'pydantic'",
+  "agrees": false
+}

@@ -38,6 +38,9 @@ pub struct IndexedGraph {
     index: HashMap<String, usize>,
     vertices: Vec<Vertex>,
     component: Vec<usize>,
+    /// The vertex each edge leads to, by index, parallel to `vertices[i].edges`; `None` for an
+    /// edge to a name no module has.
+    targets: Vec<Vec<Option<usize>>>,
 }
 
 impl IndexedGraph {
@@ -74,6 +77,16 @@ impl IndexedGraph {
                 graph.vertices.push(vertex);
             }
         }
+        graph.targets = graph
+            .vertices
+            .iter()
+            .map(|v| {
+                v.edges
+                    .iter()
+                    .map(|(t, _)| graph.index.get(t).copied())
+                    .collect()
+            })
+            .collect();
         graph.component = graph.components();
         graph
     }
@@ -97,14 +110,9 @@ impl IndexedGraph {
         let mut next = 0;
         let mut count = 0;
         let targets: Vec<Vec<usize>> = self
-            .vertices
+            .targets
             .iter()
-            .map(|v| {
-                v.edges
-                    .iter()
-                    .filter_map(|(t, _)| self.index.get(t).copied())
-                    .collect()
-            })
+            .map(|t| t.iter().flatten().copied().collect())
             .collect();
         for root in 0..n {
             if index[root].is_some() {
@@ -215,30 +223,75 @@ impl IndexedGraph {
         json!({ "name": name, "dependencyTypes": types })
     }
 
-    /// `getPath(from, to)`: the first path found depth first, or empty.
-    pub fn path(&self, from: &str, to: &str) -> Vec<Step> {
-        self.path_from(from, to, &mut HashSet::new())
-    }
-
-    fn path_from(&self, from: &str, to: &str, visited: &mut HashSet<String>) -> Vec<Step> {
-        visited.insert(from.to_owned());
-        let Some(&at) = self.index.get(from) else {
-            return Vec::new();
+    /// Whether each vertex, by index, is reachable from `from` over one or more edges.
+    ///
+    /// [`Self::path`] is non-empty exactly when its `to` is one of these and is not `from`: the
+    /// depth-first search behind it visits every vertex it can reach before it gives up, and a
+    /// route back through `from` has a shorter one after it. So a caller that asks for many
+    /// paths from one module computes this once and asks only for the paths that exist, which
+    /// changes nothing but the running time (one walk instead of one per target).
+    pub fn reachable_from(&self, from: &str) -> Vec<bool> {
+        let mut seen = vec![false; self.vertices.len()];
+        let Some(&start) = self.index.get(from) else {
+            return seen;
         };
-        for (name, types) in &self.vertices[at].edges {
-            if !visited.contains(name) {
-                if name == to {
-                    return vec![Self::step(name, types)];
-                }
-                let rest = self.path_from(name, to, visited);
-                if !rest.is_empty() {
-                    let mut out = vec![Self::step(name, types)];
-                    out.extend(rest);
-                    return out;
+        let mut stack = vec![start];
+        while let Some(at) = stack.pop() {
+            for (name, _) in &self.vertices[at].edges {
+                if let Some(&next) = self.index.get(name)
+                    && !seen[next]
+                {
+                    seen[next] = true;
+                    stack.push(next);
                 }
             }
         }
-        Vec::new()
+        seen
+    }
+
+    /// Whether a path to `to` can exist, given a [`Self::reachable_from`] result: false only for
+    /// a vertex the walk did not reach. A name that is no vertex (an edge target the modules do
+    /// not list) is left to [`Self::path`] to decide.
+    pub fn may_reach(&self, reachable: &[bool], to: &str) -> bool {
+        self.index
+            .get(to)
+            .is_none_or(|&at| reachable.get(at).copied().unwrap_or(false))
+    }
+
+    /// `getPath(from, to)`: the first path found depth first, or empty.
+    pub fn path(&self, from: &str, to: &str) -> Vec<Step> {
+        let Some(&start) = self.index.get(from) else {
+            return Vec::new();
+        };
+        let mut visited = vec![false; self.vertices.len()];
+        let mut reversed = Vec::new();
+        self.path_from(start, to, &mut visited, &mut reversed);
+        reversed.reverse();
+        reversed
+    }
+
+    /// Upstream's depth-first search, by vertex index: the edges in order, a visited vertex
+    /// skipped, the first edge that names `to` ending the search. An edge to a name no module has
+    /// is only compared with `to`, since searching from it finds nothing. When `to` is found the
+    /// path's steps are pushed last step first; otherwise nothing is pushed.
+    fn path_from(&self, at: usize, to: &str, visited: &mut [bool], reversed: &mut Vec<Step>) {
+        visited[at] = true;
+        for ((name, types), &target) in self.vertices[at].edges.iter().zip(&self.targets[at]) {
+            if target.is_some_and(|t| visited[t]) {
+                continue;
+            }
+            if name == to {
+                reversed.push(Self::step(name, types));
+                return;
+            }
+            if let Some(next) = target {
+                self.path_from(next, to, visited, reversed);
+                if !reversed.is_empty() {
+                    reversed.push(Self::step(name, types));
+                    return;
+                }
+            }
+        }
     }
 
     /// `getCycle(initial, current)`: the first cycle from `initial` through its edge to
@@ -500,6 +553,121 @@ mod tests {
         assert_eq!(graph.position("a"), Some(0));
         assert_eq!(graph.position("x"), Some(3));
         assert_eq!(graph.position("missing"), None);
+    }
+
+    #[test]
+    fn reachable_from_marks_what_a_path_reaches() {
+        let graph = IndexedGraph::new(&modules(), "source");
+        let from_a = graph.reachable_from("a");
+        for (to, reached) in [
+            ("b", true),
+            ("c", true),
+            ("x", true),
+            ("y", true),
+            ("self", false),
+        ] {
+            assert_eq!(graph.may_reach(&from_a, to), reached, "a to {to}");
+        }
+        // a reaches itself through c, but a path never returns to its start.
+        assert!(graph.may_reach(&from_a, "a"));
+        assert!(graph.path("a", "a").is_empty());
+        // y reaches nothing; an unknown start reaches nothing; an unknown target is left to path.
+        let from_y = graph.reachable_from("y");
+        assert!(!graph.may_reach(&from_y, "a"));
+        assert!(graph.reachable_from("missing").iter().all(|r| !r));
+        assert!(graph.may_reach(&from_y, "not-a-vertex"));
+    }
+
+    /// Upstream's `getPath` as dependency-cruiser writes it, over names: the reference the
+    /// index-based search must reproduce step for step.
+    fn reference_path(
+        graph: &IndexedGraph,
+        from: &str,
+        to: &str,
+        visited: &mut HashSet<String>,
+    ) -> Vec<Step> {
+        visited.insert(from.to_owned());
+        let Some(&at) = graph.index.get(from) else {
+            return Vec::new();
+        };
+        for (name, types) in &graph.vertices[at].edges {
+            if !visited.contains(name) {
+                if name == to {
+                    return vec![IndexedGraph::step(name, types)];
+                }
+                let rest = reference_path(graph, name, to, visited);
+                if !rest.is_empty() {
+                    let mut out = vec![IndexedGraph::step(name, types)];
+                    out.extend(rest);
+                    return out;
+                }
+            }
+        }
+        Vec::new()
+    }
+
+    proptest::proptest! {
+        /// Every path, between vertices and to a name no module has (m8, m9), is upstream's.
+        #[test]
+        fn path_is_upstreams_depth_first_search(
+            edges in proptest::collection::vec((0u8..8, 0u8..10), 0..30)
+        ) {
+            let names: Vec<String> = (0..10).map(|n| format!("m{n}")).collect();
+            let modules: Vec<Value> = names[..8]
+                .iter()
+                .enumerate()
+                .map(|(at, name)| {
+                    let dependencies: Vec<Value> = edges
+                        .iter()
+                        .filter(|(from, _)| usize::from(*from) == at)
+                        .map(|(_, to)| json!({ "resolved": names[usize::from(*to)], "dependencyTypes": [to] }))
+                        .collect();
+                    json!({ "source": name, "dependencies": dependencies })
+                })
+                .collect();
+            let graph = IndexedGraph::new(&modules, "source");
+            for from in &names {
+                for to in &names {
+                    proptest::prop_assert_eq!(
+                        graph.path(from, to),
+                        reference_path(&graph, from, to, &mut HashSet::new()),
+                        "{} to {}", from, to
+                    );
+                }
+            }
+        }
+
+        /// The shortcut `derive::reachables` takes: for every pair of distinct vertices, a
+        /// path exists exactly when the walk marks the target.
+        #[test]
+        fn may_reach_agrees_with_path(
+            edges in proptest::collection::vec((0u8..8, 0u8..8), 0..24)
+        ) {
+            let names: Vec<String> = (0..8).map(|n| format!("m{n}")).collect();
+            let modules: Vec<Value> = names
+                .iter()
+                .enumerate()
+                .map(|(at, name)| {
+                    let dependencies: Vec<Value> = edges
+                        .iter()
+                        .filter(|(from, _)| usize::from(*from) == at)
+                        .map(|(_, to)| json!({ "resolved": names[usize::from(*to)] }))
+                        .collect();
+                    json!({ "source": name, "dependencies": dependencies })
+                })
+                .collect();
+            let graph = IndexedGraph::new(&modules, "source");
+            for from in &names {
+                let reach = graph.reachable_from(from);
+                for to in names.iter().filter(|to| *to != from) {
+                    proptest::prop_assert_eq!(
+                        graph.may_reach(&reach, to),
+                        !graph.path(from, to).is_empty(),
+                        "{} to {}", from, to
+                    );
+                }
+            }
+        }
     }
 
     #[test]

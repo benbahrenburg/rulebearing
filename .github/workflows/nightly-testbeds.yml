@@ -5,9 +5,10 @@
 # Plan: docs/plans/pending/0000-wave-0-spike.md, Step 7. Requirement: docs/prd.md#nfr-conf-03.
 #
 # A row that fails to clone, build or run is reported as `error` and never fails the run
-# (§ 1.7, Reliability); only a Rulebearing timing regression over 20% fails it, and the greenfield
-# init proof when init's proposal for semantic-kernel or autogen no longer passes (plan 0002,
-# Step 15). The scale rows (aspnetcore, jellyfin, home-assistant) time Rulebearing alone. Rulebearing runs
+# (§ 1.7, Reliability); a Rulebearing timing regression over 20% fails it, and so does a .NET or
+# Python oracle whose imported rules disagree with its incumbent (plan 0002, Step 11), and the
+# greenfield init proof when init's proposal for semantic-kernel or autogen no longer passes
+# (Step 15). The scale rows (aspnetcore, jellyfin, home-assistant) time Rulebearing alone. Rulebearing runs
 # beside dependency-cruiser on its rows (plan 0001, Step 18), timed and diffed with the incumbent. The summary is published to the
 # `testbeds-results` branch, because `main` accepts changes only through reviewed pull requests;
 # README.md carries the table between its testbeds markers, refreshed from that branch.
@@ -228,9 +229,128 @@ jobs:
           path: target/conformance/layer5
           if-no-files-found: ignore
 
+  # The oracle harness (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11 and
+  # § 1.4.5): each .NET and Python oracle's own tests or contracts against the same rules imported
+  # into Rulebearing. TNG/ArchUnitNET and BenMorris/NetArchTest are conformance gate 2's suites,
+  # compared case by case in ci.yml, so they are not oracle rows here.
+  oracle-rows:
+    name: oracle rows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      python: ${{ steps.rows.outputs.python }}
+      dotnet: ${{ steps.rows.outputs.dotnet }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python3 -m pip install --quiet pyyaml
+      - id: rows
+        run: |
+          python3 - >> "$GITHUB_OUTPUT" <<'PY'
+          import json, yaml
+          rows = [r for r in yaml.safe_load(open("testbeds/manifest.yaml"))["rows"] if r["role"] == "oracle"]
+          suites = {"TNG/ArchUnitNET", "BenMorris/NetArchTest"}
+          print("python=" + json.dumps([r["repo"] for r in rows if r["tool"] == "import-linter"]))
+          print("dotnet=" + json.dumps([r["repo"] for r in rows
+                                        if r["tool"] in ("netarchtest", "archunitnet") and r["repo"] not in suites]))
+          PY
+
+  # Exit 1 from a harness script is a disagreement and fails the night; exit 2 is a row that could
+  # not be compared (a clone, build or install failure), which the table reports and which does
+  # not fail it (plan 0000 § 1.7, Reliability).
+  oracle-python:
+    name: oracle ${{ matrix.repo }}
+    needs: [oracle-rows, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        repo: ${{ fromJSON(needs.oracle-rows.outputs.python) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python3 -m pip install --quiet pyyaml
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rulebearing-binary
+          path: target/release
+      - run: chmod +x target/release/rulebearing
+      - id: slug
+        env:
+          REPO: ${{ matrix.repo }}
+        run: echo "slug=${REPO//\//__}" >> "$GITHUB_OUTPUT"
+      - env:
+          REPO: ${{ matrix.repo }}
+        run: |
+          status=0
+          testbeds/oracles/python.sh "$REPO" testbeds/out || status=$?
+          [ "$status" -ne 1 ]
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: oracle-${{ steps.slug.outputs.slug }}
+          path: |
+            testbeds/results/${{ steps.slug.outputs.slug }}.json
+            testbeds/out/${{ steps.slug.outputs.slug }}/*.yaml
+            testbeds/out/${{ steps.slug.outputs.slug }}/*.xml
+            testbeds/out/${{ steps.slug.outputs.slug }}/*.log
+            testbeds/out/${{ steps.slug.outputs.slug }}/*.err
+            testbeds/out/${{ steps.slug.outputs.slug }}/incumbent.json
+          if-no-files-found: warn
+
+  oracle-dotnet:
+    name: oracle ${{ matrix.repo }}
+    needs: [oracle-rows, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        repo: ${{ fromJSON(needs.oracle-rows.outputs.dotnet) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The .NET oracles span these SDKs (plan 0000 § 1.8).
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+      - run: python3 -m pip install --quiet pyyaml
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rulebearing-binary
+          path: target/release
+      - run: chmod +x target/release/rulebearing
+      - id: slug
+        env:
+          REPO: ${{ matrix.repo }}
+        run: echo "slug=${REPO//\//__}" >> "$GITHUB_OUTPUT"
+      - env:
+          REPO: ${{ matrix.repo }}
+        run: |
+          status=0
+          testbeds/oracles/dotnet.sh "$REPO" testbeds/out || status=$?
+          [ "$status" -ne 1 ]
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: oracle-${{ steps.slug.outputs.slug }}
+          path: |
+            testbeds/results/${{ steps.slug.outputs.slug }}.json
+            testbeds/out/${{ steps.slug.outputs.slug }}/*.yaml
+            testbeds/out/${{ steps.slug.outputs.slug }}/*.xml
+            testbeds/out/${{ steps.slug.outputs.slug }}/*.trx
+            testbeds/out/${{ steps.slug.outputs.slug }}/*.log
+          if-no-files-found: warn
+
   summary:
     name: summary and regression check
-    needs: [run, layer-5, greenfield-init, scale]
+    needs: [run, layer-5, greenfield-init, scale, oracle-python, oracle-dotnet]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -255,6 +375,20 @@ jobs:
         with:
           name: layer5
           path: target/conformance/layer5
+      # The oracle harness's result files, over the committed ones, for the agreement table.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        continue-on-error: true
+        with:
+          pattern: oracle-*
+          path: testbeds
+          merge-multiple: true
+      - name: oracle agreement table
+        run: |
+          {
+            echo "### Oracle agreement"
+            echo
+            python3 testbeds/oracles/table.py
+          } >> "$GITHUB_STEP_SUMMARY"
       # The greenfield and scale rows with a job of their own keep the result it wrote.
       - name: record the rows with no incumbent
         run: |
@@ -275,6 +409,8 @@ jobs:
           git checkout --orphan testbeds-results-next
           git rm -rq --cached . && git clean -fdxq
           cp "$GITHUB_WORKSPACE/testbeds/out/summary.md" "$GITHUB_WORKSPACE/testbeds/out/summary.json" .
+          mkdir -p oracles
+          cp "$GITHUB_WORKSPACE"/testbeds/results/*.json oracles/
           for dir in "$GITHUB_WORKSPACE"/testbeds/out/*/; do
             name="$(basename "$dir")"
             mkdir -p "rows/$name"
@@ -290,3 +426,4 @@ jobs:
           path: |
             testbeds/out/summary.md
             testbeds/out/summary.json
+            testbeds/results

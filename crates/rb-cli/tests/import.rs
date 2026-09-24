@@ -238,6 +238,65 @@ fn archunit_fixtures_match_their_expected_yaml() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// Found by the .NET oracle harness on phongnguyend/Practical.CleanArchitecture, whose
+/// repository also holds TypeScript: an imported `resideInAssembly` rule over every language made
+/// the run exit 3. Each imported rule selects .NET objects only, as the test it came from does.
+#[test]
+fn imported_archunit_rules_select_dotnet_in_a_mixed_language_graph() -> Result<(), Box<dyn Error>> {
+    let dir = fixtures().join("archunit/netarchtest");
+    let output = run(
+        &dir,
+        &["import", "archunit", "tests/Shop.ArchitectureTests"],
+    )?;
+    assert_eq!(output.status.code(), Some(0));
+    let imported: Value = serde_yaml::from_slice(&output.stdout)?;
+    let rules = rb_config::elements::parse_elements(&imported["rules"]["elements"])?;
+    assert!(!rules.is_empty());
+    let mut document = serde_json::to_value(rb_model::GraphDocument::default())?;
+    document["modules"] = serde_json::json!([{
+        "source": "web/app.ts", "language": "typescript", "dependencies": [], "valid": true
+    }]);
+    document["code"] = serde_json::json!({ "types": [
+            { "fullName": "Shop.Core.Domain.Order", "name": "Order", "namespace": "Shop.Core.Domain",
+              "kind": "class", "language": "dotnet", "assembly": "Shop.Core" },
+            { "fullName": "web/app.ts#App", "name": "App", "kind": "class", "language": "typescript",
+              "file": "web/app.ts" }
+    ] });
+    let document: rb_model::GraphDocument = serde_json::from_value(document)?;
+    let architecture = rb_rules::elements::Architecture::new(&document);
+    let mut unscoped_refused = 0;
+    for rule in &rules {
+        assert_eq!(
+            rule.select.languages,
+            [rb_model::Language::Dotnet],
+            "{}",
+            rule.name
+        );
+        let verdict = rb_rules::elements::evaluate(&architecture, rule);
+        assert!(
+            !matches!(
+                verdict,
+                Err(rb_rules::elements::ElementError::Unanswerable { .. })
+            ),
+            "{}: {verdict:?}",
+            rule.name
+        );
+        let mut unscoped = rule.clone();
+        unscoped.select.languages.clear();
+        if matches!(
+            rb_rules::elements::evaluate(&architecture, &unscoped),
+            Err(rb_rules::elements::ElementError::Unanswerable { .. })
+        ) {
+            unscoped_refused += 1;
+        }
+    }
+    assert!(
+        unscoped_refused > 0,
+        "the fixture has a rule only .NET can answer"
+    );
+    Ok(())
+}
+
 #[test]
 fn archunit_writes_to_a_file_and_refuses_a_folder_without_csharp() -> Result<(), Box<dyn Error>> {
     let out = temp("archunit-out")?;

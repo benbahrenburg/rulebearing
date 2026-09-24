@@ -25,49 +25,49 @@ rules:
         comment: "import-linter contract: Features are independent"
         severity: error
         from:
-          path: "^pkg/features/cart(/|\\.py$)"
+          path: "^pkg/features/cart(/.*)?\\.py$"
         to:
-          path: "^pkg/features/search(/|\\.py$)"
+          path: "^pkg/features/search(/.*)?\\.py$"
           reachable: true
       - name: features:pkg.features.cart-to-pkg.features.profile
         comment: "import-linter contract: Features are independent"
         severity: error
         from:
-          path: "^pkg/features/cart(/|\\.py$)"
+          path: "^pkg/features/cart(/.*)?\\.py$"
         to:
-          path: "^pkg/features/profile(/|\\.py$)"
+          path: "^pkg/features/profile(/.*)?\\.py$"
           reachable: true
       - name: features:pkg.features.search-to-pkg.features.cart
         comment: "import-linter contract: Features are independent"
         severity: error
         from:
-          path: "^pkg/features/search(/|\\.py$)"
+          path: "^pkg/features/search(/.*)?\\.py$"
         to:
-          path: "^pkg/features/cart(/|\\.py$)"
+          path: "^pkg/features/cart(/.*)?\\.py$"
           reachable: true
       - name: features:pkg.features.search-to-pkg.features.profile
         comment: "import-linter contract: Features are independent"
         severity: error
         from:
-          path: "^pkg/features/search(/|\\.py$)"
+          path: "^pkg/features/search(/.*)?\\.py$"
         to:
-          path: "^pkg/features/profile(/|\\.py$)"
+          path: "^pkg/features/profile(/.*)?\\.py$"
           reachable: true
       - name: features:pkg.features.profile-to-pkg.features.cart
         comment: "import-linter contract: Features are independent"
         severity: error
         from:
-          path: "^pkg/features/profile(/|\\.py$)"
+          path: "^pkg/features/profile(/.*)?\\.py$"
         to:
-          path: "^pkg/features/cart(/|\\.py$)"
+          path: "^pkg/features/cart(/.*)?\\.py$"
           reachable: true
       - name: features:pkg.features.profile-to-pkg.features.search
         comment: "import-linter contract: Features are independent"
         severity: error
         from:
-          path: "^pkg/features/profile(/|\\.py$)"
+          path: "^pkg/features/profile(/.*)?\\.py$"
         to:
-          path: "^pkg/features/search(/|\\.py$)"
+          path: "^pkg/features/search(/.*)?\\.py$"
           reachable: true
   independence:
     # import-linter contract `features-direct` (independence): Every feature, direct imports only
@@ -76,4 +76,4 @@ rules:
     - name: features-direct
       comment: "import-linter contract: Every feature, direct imports only"
       severity: error
-      pattern: "^(pkg/features/[^/]+)(?:/|\\.py$)"
+      pattern: "^(pkg/features/[^/]+)(?:/.*)?\\.py$"

@@ -19,7 +19,7 @@
 //!
 //! | C# | Written as |
 //! | --- | --- |
-//! | `Types()` ... `PropertyMembers()`, `Types(true)` | `select.kind`, `includeReferenced` |
+//! | `Types()` ... `PropertyMembers()`, `Types(true)` | `select.kind`, `includeReferenced`, and `select.language: dotnet` |
 //! | a predicate or condition | its key, the method name in camelCase, checked against `rb-config`'s vocabulary |
 //! | `And()` / `Or()`, `AndShould()` / `OrShould()` | folded left to right into `all` / `any` |
 //! | `...TypesThat()` and what follows | a nested selector |
@@ -27,7 +27,7 @@
 //! | a provider (`Types().That()...`, held in a field) | a nested selector |
 //! | `Because(...)`, `WithoutRequiringPositiveResults()` | `because`, `allowEmpty: true` |
 //! | `Slices().Matching(p)` ... | a slice rule |
-//! | `Types.InAssembly(typeof(X).Assembly)` (NetArchTest) | `resideInAssembly` on X's assembly, then the README table |
+//! | `Types.InAssembly(typeof(X).Assembly)` (NetArchTest) | `resideInAssembly` on X's assembly, then the README table; the assembly also joins `languages.dotnet.assemblies` |
 //! | `new ArchLoader().LoadAssemblies(...)` | `languages.dotnet` |
 //!
 //! A chain is written commented out, with the reason, when it holds a custom predicate (`stays in
@@ -1032,7 +1032,12 @@ impl Program {
         let Some(mut should_expr) = builder.should.expr.take() else {
             return Mapped::Unmapped("the chain has no condition (`Should()...`)".into());
         };
-        let select = Self::select_node(kind, referenced, root_term, builder.where_.expr.take());
+        let select = dotnet_scoped(Self::select_node(
+            kind,
+            referenced,
+            root_term,
+            builder.where_.expr.take(),
+        ));
         for (op, other) in std::mem::take(&mut builder.combined) {
             match self.combine(&select, &other) {
                 Ok(theirs) => {
@@ -1794,6 +1799,26 @@ fn loader_roots<'e>(expr: &'e Expr, as_receiver: bool, out: &mut Vec<&'e Expr>) 
     }
 }
 
+/// A rule's top-level `select` with `language: dotnet` after its `kind`. An ArchUnitNET or
+/// NetArchTest test checks the assemblies it loads and nothing else, so the imported rule selects
+/// .NET objects only; unscoped, a key only .NET can answer (`resideInAssembly`) makes the whole
+/// run exit 3 in a repository that also holds TypeScript or Python
+/// ([ADR-0014](../../../../../docs/adr/0014-no-invented-cross-language-edges.md)). Nested selectors
+/// stay unscoped: they name what a .NET object may depend on, be or be assignable to.
+fn dotnet_scoped(select: Node) -> Node {
+    match select {
+        Node::Map(mut pairs) => {
+            let at = pairs
+                .iter()
+                .position(|(k, _)| k == "kind")
+                .map_or(0, |i| i + 1);
+            pairs.insert(at, ("language".to_owned(), Node::str("dotnet")));
+            Node::Map(pairs)
+        }
+        other => other,
+    }
+}
+
 /// A test method name in kebab case: `DomainShouldNotDependOnInfrastructure` is
 /// `domain-should-not-depend-on-infrastructure`.
 pub fn kebab(name: &str) -> String {
@@ -1986,7 +2011,46 @@ fn dotnet_block(program: &Program) -> (Option<Node>, Vec<String>) {
             loaders.len()
         ));
     }
+    netarchtest_assemblies(program, &mut loaded, &mut comments);
     (loaded.node(), comments)
+}
+
+/// NetArchTest has no loader: `Types.InAssembly(typeof(X).Assembly)` loads X's assembly for the
+/// rule that follows, so each assembly a NetArchTest chain names is loaded too. Without it an
+/// imported NetArchTest rule selects from nothing and is vacuous (found by the .NET oracle
+/// harness on phongnguyend/Practical.CleanArchitecture).
+fn netarchtest_assemblies(program: &Program, loaded: &mut Loaded, comments: &mut Vec<String>) {
+    let mut named = Vec::new();
+    let mut refused = Vec::new();
+    for candidate in program.candidates() {
+        let Ok(Chain {
+            root: Root::NetArchTest { method, args },
+            ..
+        }) = &candidate.chain
+        else {
+            continue;
+        };
+        if !matches!(method.as_str(), "InAssembly" | "InAssemblies") {
+            continue;
+        }
+        match flatten(args).and_then(|vals| {
+            vals.iter()
+                .map(assembly_glob)
+                .collect::<Result<Vec<_>, _>>()
+        }) {
+            Ok(globs) => named.extend(globs),
+            Err(reason) => refused.push(format!("  not loaded: {reason}")),
+        }
+    }
+    if named.is_empty() && refused.is_empty() {
+        return;
+    }
+    comments
+        .push("NetArchTest's Types.InAssembly(...) loads the assemblies its tests name".to_owned());
+    refused.sort();
+    refused.dedup();
+    comments.extend(refused);
+    loaded.assemblies.extend(named);
 }
 
 /// The imported rules, their names made unique.

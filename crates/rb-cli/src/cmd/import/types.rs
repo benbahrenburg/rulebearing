@@ -344,13 +344,14 @@ pub fn project_of(file: &Path, stop: &Path) -> Option<(String, PathBuf)> {
             .unwrap_or_default();
         projects.sort();
         if let Some(project) = projects.first() {
+            let stem = project
+                .file_stem()
+                .map(|s| s.to_string_lossy().into_owned())
+                .unwrap_or_default();
             let text = std::fs::read_to_string(project).unwrap_or_default();
-            let name = assembly_name(&text).unwrap_or_else(|| {
-                project
-                    .file_stem()
-                    .map(|s| s.to_string_lossy().into_owned())
-                    .unwrap_or_default()
-            });
+            let name = assembly_name(&text, &stem)
+                .or_else(|| build_props_assembly_name(dir, &stem))
+                .unwrap_or(stem);
             return Some((name, dir.to_path_buf()));
         }
         if dir == stop {
@@ -360,12 +361,32 @@ pub fn project_of(file: &Path, stop: &Path) -> Option<(String, PathBuf)> {
     None
 }
 
-/// `<AssemblyName>` in a project file, when it is a literal.
-fn assembly_name(project: &str) -> Option<String> {
+/// `<AssemblyName>` in a project or props file, when it is a literal once
+/// `$(MSBuildProjectName)` is the project's name (`Company.$(MSBuildProjectName)` in a
+/// `Directory.Build.props` is common); any other property leaves it unknown.
+fn assembly_name(project: &str, project_name: &str) -> Option<String> {
     let start = project.find("<AssemblyName>")? + "<AssemblyName>".len();
     let end = project[start..].find("</AssemblyName>")? + start;
-    let name = project[start..end].trim();
-    (!name.is_empty() && !name.contains("$(")).then(|| name.to_owned())
+    let name = project[start..end]
+        .trim()
+        .replace("$(MSBuildProjectName)", project_name);
+    (!name.is_empty() && !name.contains("$(")).then_some(name)
+}
+
+/// The `<AssemblyName>` of the `Directory.Build.props` MSBuild imports for a project: the first
+/// one in the project's folder or above it, within the repository.
+fn build_props_assembly_name(project_dir: &Path, project_name: &str) -> Option<String> {
+    for dir in project_dir.ancestors() {
+        let props = dir.join("Directory.Build.props");
+        if props.is_file() {
+            let text = std::fs::read_to_string(&props).unwrap_or_default();
+            return assembly_name(&text, project_name);
+        }
+        if dir.join(".git").exists() {
+            break;
+        }
+    }
+    None
 }
 
 impl Index {
@@ -504,10 +525,53 @@ mod tests {
     #[test]
     fn assembly_names_come_from_the_project() {
         assert_eq!(
-            assembly_name("<Project><PropertyGroup><AssemblyName> My.App </AssemblyName>"),
+            assembly_name(
+                "<Project><PropertyGroup><AssemblyName> My.App </AssemblyName>",
+                "App"
+            ),
             Some("My.App".into())
         );
-        assert_eq!(assembly_name("<AssemblyName>$(Name)</AssemblyName>"), None);
-        assert_eq!(assembly_name("<Project/>"), None);
+        assert_eq!(
+            assembly_name(
+                "<AssemblyName>Evolutionary.$(MSBuildProjectName)</AssemblyName>",
+                "Fitnet"
+            ),
+            Some("Evolutionary.Fitnet".into())
+        );
+        assert_eq!(
+            assembly_name("<AssemblyName>$(Name)</AssemblyName>", "App"),
+            None
+        );
+        assert_eq!(assembly_name("<Project/>", "App"), None);
+    }
+
+    /// Found by the .NET oracle harness on evolutionary-architecture-by-example, whose
+    /// Directory.Build.props names every assembly `EvolutionaryArchitecture.$(MSBuildProjectName)`.
+    #[test]
+    fn a_directory_build_props_names_the_assembly_a_project_does_not() -> std::io::Result<()> {
+        let root = std::env::temp_dir().join(format!("rb-types-props-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let project = root.join("src/Shop");
+        std::fs::create_dir_all(&project)?;
+        std::fs::create_dir_all(root.join(".git"))?;
+        std::fs::write(
+            root.join("src/Directory.Build.props"),
+            "<Project><PropertyGroup><AssemblyName>Acme.$(MSBuildProjectName)</AssemblyName></PropertyGroup></Project>",
+        )?;
+        std::fs::write(
+            project.join("Shop.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk\"/>",
+        )?;
+        std::fs::write(project.join("Order.cs"), "namespace Shop; class Order {}")?;
+        let found = project_of(&project.join("Order.cs"), &root);
+        assert_eq!(found.map(|(name, _)| name), Some("Acme.Shop".to_owned()));
+        // The project's own AssemblyName wins over the props file's.
+        std::fs::write(
+            project.join("Shop.csproj"),
+            "<Project><PropertyGroup><AssemblyName>Shop.Core</AssemblyName></PropertyGroup></Project>",
+        )?;
+        let found = project_of(&project.join("Order.cs"), &root);
+        assert_eq!(found.map(|(name, _)| name), Some("Shop.Core".to_owned()));
+        std::fs::remove_dir_all(&root)
     }
 }

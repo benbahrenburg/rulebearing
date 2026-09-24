@@ -189,8 +189,12 @@ case "$tool" in
       result error "dotnet build failed (see build.log)"
       exit 0
     fi
+    # A row's `filter` selects the architecture tests in a project that holds other tests too.
+    filter="$(field filter)"
+    filter_args=()
+    [ -n "$filter" ] && filter_args=(--filter "$filter")
     timed "$out/timing.json" "$checkout" "$out/incumbent.log" dotnet test "$test_project" -c Release --no-build \
-      --logger "trx;LogFileName=incumbent.trx" --results-directory "$out"
+      ${filter_args[@]+"${filter_args[@]}"} --logger "trx;LogFileName=incumbent.trx" --results-directory "$out"
     status=$?
     if [ -f "$out/incumbent.trx" ]; then
       if [ "$status" -eq 0 ]; then result ok "$tool tests passed"; else result failed "$tool tests failed (exit $status)"; fi
