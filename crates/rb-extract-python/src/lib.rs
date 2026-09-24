@@ -320,10 +320,9 @@ fn target_module(dependency: &Dependency) -> Module {
     module.could_not_resolve = Some(dependency.could_not_resolve);
     module.dependency_types = dependency.dependency_types.first().map(|t| vec![*t]);
     module.license.clone_from(&dependency.license);
-    if dependency.followable {
-        // A namespace package's folder: local, but no file to parse.
-        module.language = Some(Language::Python);
-    }
+    // Every module carries its language (FR-CORE-01): a namespace package's folder, a standard
+    // library module, an installed distribution and an unresolved name alike.
+    module.language = Some(Language::Python);
     module
 }
 

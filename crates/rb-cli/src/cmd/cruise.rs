@@ -174,6 +174,9 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
         Ok(run) => run,
         Err(e) => return failed(&e, &stderr),
     };
+    for warning in &run.warnings {
+        let _ = writeln!(stderr, "warning: {warning}");
+    }
     let ratchets = ratchets::evaluate(ctx, &effective, &run.evaluation.document, options.liveness);
     summarise(&mut run.document.summary, &ratchets, liveness);
     report(

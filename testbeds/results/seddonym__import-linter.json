@@ -1,0 +1,18 @@
+{
+  "repo": "seddonym/import-linter",
+  "sha": "31927f1457e3df673912cb5efb0afa6dbc37585f",
+  "importLinter": {
+    "kept": true
+  },
+  "rulebearing": {
+    "errors": 0,
+    "violations": []
+  },
+  "graph": {
+    "importLinter": 84,
+    "rulebearing": 84,
+    "onlyImportLinter": [],
+    "onlyRulebearing": []
+  },
+  "agrees": true
+}
