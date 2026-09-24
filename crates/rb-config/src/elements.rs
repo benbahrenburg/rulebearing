@@ -831,7 +831,7 @@ fn distance(a: &str, b: &str) -> usize {
 }
 
 /// Every key spelling valid on `side`, for suggestions.
-fn spellings(side: Side) -> Vec<String> {
+pub(crate) fn spellings(side: Side) -> Vec<String> {
     let mut out = Vec::new();
     for (name, _, _, in_where) in VOCABULARY {
         if side == Side::Where && !in_where {
@@ -850,7 +850,7 @@ fn spellings(side: Side) -> Vec<String> {
             "reside",
             "depend",
             "only",
-            "call",
+            "callAny",
             "implement",
             "exist",
             "adhere",
@@ -876,6 +876,17 @@ fn spellings(side: Side) -> Vec<String> {
             }
         }
     }
+    // `ArchUnitNET`'s plural and "no" spellings, which `split_key` folds into the concepts above.
+    let extra: &[&str] = match side {
+        Side::Where => &[
+            "areConstructors",
+            "areNoConstructors",
+            "haveNoGetter",
+            "haveNoSetter",
+        ],
+        Side::Should => &["beNoConstructor", "haveNoGetter", "haveNoSetter"],
+    };
+    out.extend(extra.iter().map(|s| (*s).to_owned()));
     out
 }
 
