@@ -1,0 +1,1111 @@
+{
+  "modules": [
+    {
+      "source": "System.Runtime",
+      "dependencies": [],
+      "valid": true,
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "framework"
+      ],
+      "language": "dotnet"
+    },
+    {
+      "source": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+      "dependencies": [
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "inherits"
+        },
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "body",
+          "member": "System.Object..ctor"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "VisibilityAssembly.dll",
+      "namespaces": [
+        "VisibilityNamespace"
+      ],
+      "attribution": "pdb"
+    }
+  ],
+  "summary": {
+    "violations": [],
+    "error": 0,
+    "warn": 0,
+    "info": 0,
+    "totalCruised": 0,
+    "optionsUsed": {}
+  },
+  "code": {
+    "types": [
+      {
+        "fullName": "VisibilityNamespace.InternalClass",
+        "name": "InternalClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "pdb",
+        "assembly": "VisibilityAssembly",
+        "visibility": "internal",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.InternalClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OtherInternalClass",
+        "name": "OtherInternalClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "pdb",
+        "assembly": "VisibilityAssembly",
+        "visibility": "internal",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OtherInternalClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OtherPublicClass",
+        "name": "OtherPublicClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "pdb",
+        "assembly": "VisibilityAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OtherPublicClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OuterClass",
+        "name": "OuterClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "pdb",
+        "assembly": "VisibilityAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OuterClass+InternalInnerClass",
+        "name": "InternalInnerClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "inferred",
+        "assembly": "VisibilityAssembly",
+        "visibility": "internal",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": true,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "nestedIn": "VisibilityNamespace.OuterClass",
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+InternalInnerClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OuterClass+OtherInternalInnerClass",
+        "name": "OtherInternalInnerClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "inferred",
+        "assembly": "VisibilityAssembly",
+        "visibility": "internal",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": true,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "nestedIn": "VisibilityNamespace.OuterClass",
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherInternalInnerClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OuterClass+OtherPrivateInnerClass",
+        "name": "OtherPrivateInnerClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "inferred",
+        "assembly": "VisibilityAssembly",
+        "visibility": "private",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": true,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "nestedIn": "VisibilityNamespace.OuterClass",
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherPrivateInnerClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OuterClass+OtherPrivateProtectedInnerClass",
+        "name": "OtherPrivateProtectedInnerClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "inferred",
+        "assembly": "VisibilityAssembly",
+        "visibility": "private-protected",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": true,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "nestedIn": "VisibilityNamespace.OuterClass",
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherPrivateProtectedInnerClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OuterClass+OtherProtectedInnerClass",
+        "name": "OtherProtectedInnerClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "inferred",
+        "assembly": "VisibilityAssembly",
+        "visibility": "protected",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": true,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "nestedIn": "VisibilityNamespace.OuterClass",
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherProtectedInnerClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OuterClass+OtherProtectedInternalInnerClass",
+        "name": "OtherProtectedInternalInnerClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "inferred",
+        "assembly": "VisibilityAssembly",
+        "visibility": "protected-internal",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": true,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "nestedIn": "VisibilityNamespace.OuterClass",
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherProtectedInternalInnerClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OuterClass+OtherPublicInnerClass",
+        "name": "OtherPublicInnerClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "inferred",
+        "assembly": "VisibilityAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": true,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "nestedIn": "VisibilityNamespace.OuterClass",
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+OtherPublicInnerClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OuterClass+PrivateInnerClass",
+        "name": "PrivateInnerClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "inferred",
+        "assembly": "VisibilityAssembly",
+        "visibility": "private",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": true,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "nestedIn": "VisibilityNamespace.OuterClass",
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+PrivateInnerClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OuterClass+PrivateProtectedInnerClass",
+        "name": "PrivateProtectedInnerClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "inferred",
+        "assembly": "VisibilityAssembly",
+        "visibility": "private-protected",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": true,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "nestedIn": "VisibilityNamespace.OuterClass",
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+PrivateProtectedInnerClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OuterClass+ProtectedInnerClass",
+        "name": "ProtectedInnerClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "inferred",
+        "assembly": "VisibilityAssembly",
+        "visibility": "protected",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": true,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "nestedIn": "VisibilityNamespace.OuterClass",
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+ProtectedInnerClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OuterClass+ProtectedInternalInnerClass",
+        "name": "ProtectedInternalInnerClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "inferred",
+        "assembly": "VisibilityAssembly",
+        "visibility": "protected-internal",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": true,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "nestedIn": "VisibilityNamespace.OuterClass",
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+ProtectedInternalInnerClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.OuterClass+PublicInnerClass",
+        "name": "PublicInnerClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "inferred",
+        "assembly": "VisibilityAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": true,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "nestedIn": "VisibilityNamespace.OuterClass",
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.OuterClass+PublicInnerClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "VisibilityNamespace.PublicClass",
+        "name": "PublicClass",
+        "namespace": "VisibilityNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "attribution": "pdb",
+        "assembly": "VisibilityAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "VisibilityNamespace.PublicClass, VisibilityAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      }
+    ],
+    "members": [
+      {
+        "declaringType": "VisibilityNamespace.InternalClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.InternalClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OtherInternalClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OtherInternalClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OtherPublicClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OtherPublicClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OuterClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OuterClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OuterClass+InternalInnerClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OuterClass/InternalInnerClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OuterClass+OtherInternalInnerClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OuterClass/OtherInternalInnerClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OuterClass+OtherPrivateInnerClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OuterClass/OtherPrivateInnerClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OuterClass+OtherPrivateProtectedInnerClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OuterClass/OtherPrivateProtectedInnerClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OuterClass+OtherProtectedInnerClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OuterClass/OtherProtectedInnerClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OuterClass+OtherProtectedInternalInnerClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OuterClass/OtherProtectedInternalInnerClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OuterClass+OtherPublicInnerClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OuterClass/OtherPublicInnerClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OuterClass+PrivateInnerClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OuterClass/PrivateInnerClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OuterClass+PrivateProtectedInnerClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OuterClass/PrivateProtectedInnerClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OuterClass+ProtectedInnerClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OuterClass/ProtectedInnerClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OuterClass+ProtectedInternalInnerClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OuterClass/ProtectedInternalInnerClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.OuterClass+PublicInnerClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.OuterClass/PublicInnerClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "VisibilityNamespace.PublicClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void VisibilityNamespace.PublicClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      }
+    ],
+    "attributes": [],
+    "calls": [
+      {
+        "from": "System.Void VisibilityNamespace.InternalClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OtherInternalClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OtherPublicClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OuterClass/InternalInnerClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OuterClass/OtherInternalInnerClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OuterClass/OtherPrivateInnerClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OuterClass/OtherPrivateProtectedInnerClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OuterClass/OtherProtectedInnerClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OuterClass/OtherProtectedInternalInnerClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OuterClass/OtherPublicInnerClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OuterClass/PrivateInnerClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OuterClass/PrivateProtectedInnerClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OuterClass/ProtectedInnerClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OuterClass/ProtectedInternalInnerClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OuterClass/PublicInnerClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.OuterClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      },
+      {
+        "from": "System.Void VisibilityNamespace.PublicClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/VisibilityAssembly/VisibilityClasses.cs"
+      }
+    ]
+  }
+}

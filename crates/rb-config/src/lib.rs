@@ -28,6 +28,7 @@
 
 pub mod convert;
 pub mod defines;
+pub mod elements;
 pub mod extends;
 pub mod js;
 pub mod lint;

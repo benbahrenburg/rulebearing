@@ -54,9 +54,6 @@ pub const NATIVE_TOP_LEVEL: &[&str] = &[
     "required",
 ];
 
-/// The rule families under `rules` that later waves deliver.
-const LATER_FAMILIES: &[(&str, u8)] = &[("elements", 2), ("slices", 2), ("diagrams", 2)];
-
 /// Whether a parsed file is in the native shape (it has a key only the native format has).
 pub fn looks_native(value: &Map<String, Value>) -> bool {
     ["rules", "languages", "defines"]
@@ -147,18 +144,12 @@ pub fn to_canonical(native: &Map<String, Value>) -> Result<Map<String, Value>, C
                         append(&mut out, key, list.clone());
                     }
                 }
-                "ratchets" | "layers" | "independence" => {
+                "ratchets" | "layers" | "independence" | "elements" | "slices" | "diagrams" => {
                     out.insert(family.clone(), value.clone());
                 }
                 other => {
-                    if let Some((_, wave)) = LATER_FAMILIES.iter().find(|(f, _)| *f == other) {
-                        return Err(ConfigError::NotYetSupported {
-                            key: format!("rules.{other}"),
-                            wave: *wave,
-                        });
-                    }
                     return Err(ConfigError::Invalid(format!(
-                        "`rules.{other}` is not a rule family; use dependencies, ratchets, layers or independence"
+                        "`rules.{other}` is not a rule family; use dependencies, ratchets, layers, independence, elements, slices or diagrams"
                     )));
                 }
             }
@@ -274,7 +265,6 @@ mod tests {
     fn unknown_and_later_keys_are_refused() {
         for (value, needle) in [
             (json!({ "bogus": 1 }), "bogus"),
-            (json!({ "rules": { "elements": [] } }), "wave 2"),
             (json!({ "rules": { "nope": [] } }), "nope"),
             (
                 json!({ "rules": { "dependencies": { "denied": [] } } }),

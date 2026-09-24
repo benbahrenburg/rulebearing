@@ -1,0 +1,3066 @@
+{
+  "modules": [
+    {
+      "source": "System.Collections",
+      "dependencies": [],
+      "valid": true,
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "framework"
+      ],
+      "language": "dotnet"
+    },
+    {
+      "source": "System.Runtime",
+      "dependencies": [],
+      "valid": true,
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "framework"
+      ],
+      "language": "dotnet"
+    },
+    {
+      "source": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+      "dependencies": [
+        {
+          "module": "System.Collections.Generic.EqualityComparer`1",
+          "resolved": "System.Collections",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "body",
+          "member": "System.Collections.Generic.EqualityComparer`1.GetHashCode"
+        },
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "inherits"
+        },
+        {
+          "module": "System.IEquatable`1",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 16,
+          "dependencyKind": "implements"
+        },
+        {
+          "module": "System.String",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 22,
+          "dependencyKind": "field"
+        },
+        {
+          "module": "System.Boolean",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 16,
+          "dependencyKind": "signature"
+        },
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "body",
+          "member": "System.Object..ctor"
+        },
+        {
+          "module": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 16,
+          "dependencyKind": "attribute"
+        },
+        {
+          "module": "System.Type",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "generic-argument"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "ClassAssembly.dll",
+      "namespaces": [
+        "ClassNamespace"
+      ],
+      "attribution": "pdb"
+    }
+  ],
+  "summary": {
+    "violations": [],
+    "error": 0,
+    "warn": 0,
+    "info": 0,
+    "totalCruised": 0,
+    "optionsUsed": {}
+  },
+  "code": {
+    "types": [
+      {
+        "fullName": "ClassNamespace.AbstractClass",
+        "name": "AbstractClass",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": true,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.AbstractClass, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "ClassNamespace.ClassWithOnlyStaticMembers",
+        "name": "ClassWithOnlyStaticMembers",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 46,
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.ClassWithOnlyStaticMembers, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.ClassWithOnlyStaticMembers",
+            "kind": "body",
+            "member": "<StaticProperty>k__BackingField",
+            "line": 46
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 46
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 46
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 46
+          }
+        ]
+      },
+      {
+        "fullName": "ClassNamespace.ClassWithoutMembers",
+        "name": "ClassWithoutMembers",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.ClassWithoutMembers, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "ClassNamespace.ImmutableClass",
+        "name": "ImmutableClass",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 22,
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.ImmutableClass, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.ImmutableClass",
+            "kind": "body",
+            "member": "<Property>k__BackingField",
+            "line": 23
+          },
+          {
+            "target": "ClassNamespace.ImmutableClass",
+            "kind": "body",
+            "member": "Field",
+            "line": 22
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 23
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 22
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 23
+          },
+          {
+            "target": "System.String",
+            "kind": "field",
+            "line": 22
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 22
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 23
+          }
+        ]
+      },
+      {
+        "fullName": "ClassNamespace.MutableClass",
+        "name": "MutableClass",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 34,
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.MutableClass, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.MutableClass",
+            "kind": "body",
+            "member": "<Property>k__BackingField",
+            "line": 34
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 34
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 34
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 34
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 34
+          }
+        ]
+      },
+      {
+        "fullName": "ClassNamespace.OtherAbstractClass",
+        "name": "OtherAbstractClass",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": true,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.OtherAbstractClass, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "ClassNamespace.OtherImmutableClass",
+        "name": "OtherImmutableClass",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 28,
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.OtherImmutableClass, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherImmutableClass",
+            "kind": "body",
+            "member": "<OtherProperty>k__BackingField",
+            "line": 29
+          },
+          {
+            "target": "ClassNamespace.OtherImmutableClass",
+            "kind": "body",
+            "member": "OtherField",
+            "line": 28
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 29
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 28
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 29
+          },
+          {
+            "target": "System.String",
+            "kind": "field",
+            "line": 28
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 28
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 29
+          }
+        ]
+      },
+      {
+        "fullName": "ClassNamespace.OtherMutableClass",
+        "name": "OtherMutableClass",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 39,
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.OtherMutableClass, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherMutableClass",
+            "kind": "body",
+            "member": "<OtherProperty>k__BackingField",
+            "line": 39
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 39
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 39
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 39
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 39
+          }
+        ]
+      },
+      {
+        "fullName": "ClassNamespace.OtherRecordClass",
+        "name": "OtherRecordClass",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 18,
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": true,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "interfaces": [
+          "System.IEquatable`1"
+        ],
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.OtherRecordClass, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "body"
+          },
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "body",
+            "member": "Equals"
+          },
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "body",
+            "member": "PrintMembers"
+          },
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "body",
+            "member": "get_EqualityContract"
+          },
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "body",
+            "member": "op_Equality"
+          },
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "generic-argument",
+            "line": 18
+          },
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "signature"
+          },
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "signature",
+            "line": 18
+          },
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "typeof"
+          },
+          {
+            "target": "System.Boolean",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Collections.Generic.EqualityComparer`1",
+            "kind": "body",
+            "member": "GetHashCode"
+          },
+          {
+            "target": "System.Collections.Generic.EqualityComparer`1",
+            "kind": "body",
+            "member": "get_Default"
+          },
+          {
+            "target": "System.IEquatable`1",
+            "kind": "implements",
+            "line": 18
+          },
+          {
+            "target": "System.Int32",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 18
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": "ToString"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 18
+          },
+          {
+            "target": "System.Object",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 18
+          },
+          {
+            "target": "System.String",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "body"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "body",
+            "member": "Append"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Type",
+            "kind": "body",
+            "member": "GetTypeFromHandle"
+          },
+          {
+            "target": "System.Type",
+            "kind": "body",
+            "member": "op_Equality"
+          },
+          {
+            "target": "System.Type",
+            "kind": "generic-argument"
+          },
+          {
+            "target": "System.Type",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Type",
+            "kind": "signature",
+            "line": 18
+          }
+        ]
+      },
+      {
+        "fullName": "ClassNamespace.OtherRegularClass",
+        "name": "OtherRegularClass",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.OtherRegularClass, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "ClassNamespace.OtherSealedClass",
+        "name": "OtherSealedClass",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": true,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.OtherSealedClass, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "ClassNamespace.RecordClass",
+        "name": "RecordClass",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 16,
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": true,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "interfaces": [
+          "System.IEquatable`1"
+        ],
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.RecordClass, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "body"
+          },
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "body",
+            "member": "Equals"
+          },
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "body",
+            "member": "PrintMembers"
+          },
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "body",
+            "member": "get_EqualityContract"
+          },
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "body",
+            "member": "op_Equality"
+          },
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "generic-argument",
+            "line": 16
+          },
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "signature"
+          },
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "signature",
+            "line": 16
+          },
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "typeof"
+          },
+          {
+            "target": "System.Boolean",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Collections.Generic.EqualityComparer`1",
+            "kind": "body",
+            "member": "GetHashCode"
+          },
+          {
+            "target": "System.Collections.Generic.EqualityComparer`1",
+            "kind": "body",
+            "member": "get_Default"
+          },
+          {
+            "target": "System.IEquatable`1",
+            "kind": "implements",
+            "line": 16
+          },
+          {
+            "target": "System.Int32",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 16
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": "ToString"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 16
+          },
+          {
+            "target": "System.Object",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 16
+          },
+          {
+            "target": "System.String",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "body"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "body",
+            "member": "Append"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Type",
+            "kind": "body",
+            "member": "GetTypeFromHandle"
+          },
+          {
+            "target": "System.Type",
+            "kind": "body",
+            "member": "op_Equality"
+          },
+          {
+            "target": "System.Type",
+            "kind": "generic-argument"
+          },
+          {
+            "target": "System.Type",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Type",
+            "kind": "signature",
+            "line": 16
+          }
+        ]
+      },
+      {
+        "fullName": "ClassNamespace.RegularClass",
+        "name": "RegularClass",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.RegularClass, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "ClassNamespace.SealedClass",
+        "name": "SealedClass",
+        "namespace": "ClassNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "attribution": "pdb",
+        "assembly": "ClassAssembly",
+        "visibility": "public",
+        "sealed": true,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "ClassNamespace.SealedClass, ClassAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      }
+    ],
+    "members": [
+      {
+        "declaringType": "ClassNamespace.AbstractClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "protected",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.AbstractClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.ClassWithOnlyStaticMembers",
+        "name": "StaticProperty",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 46,
+        "visibility": "public",
+        "static": true,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.ClassWithOnlyStaticMembers::StaticProperty()",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 46
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.ClassWithOnlyStaticMembers",
+        "name": "get_StaticProperty()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 46,
+        "column": 43,
+        "visibility": "public",
+        "static": true,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.ClassWithOnlyStaticMembers::get_StaticProperty()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.ClassWithOnlyStaticMembers",
+            "kind": "body",
+            "member": "<StaticProperty>k__BackingField",
+            "line": 46
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 46
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 46
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.ClassWithOnlyStaticMembers",
+        "name": ".cctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 46,
+        "column": 57,
+        "visibility": "private",
+        "static": true,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.ClassWithOnlyStaticMembers::.cctor()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.ClassWithOnlyStaticMembers",
+            "kind": "body",
+            "member": "<StaticProperty>k__BackingField",
+            "line": 46
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.ClassWithOnlyStaticMembers",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.ClassWithOnlyStaticMembers::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.ClassWithOnlyStaticMembers",
+        "name": "set_StaticProperty(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 46,
+        "column": 48,
+        "visibility": "public",
+        "static": true,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void ClassNamespace.ClassWithOnlyStaticMembers::set_StaticProperty(System.String)",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.ClassWithOnlyStaticMembers",
+            "kind": "body",
+            "member": "<StaticProperty>k__BackingField",
+            "line": 46
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 46
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 46
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.ClassWithoutMembers",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.ClassWithoutMembers::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.ImmutableClass",
+        "name": "Field",
+        "kind": "field",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 22,
+        "visibility": "public",
+        "static": false,
+        "readonly": true,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.ImmutableClass::Field",
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "field",
+            "line": 22
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.ImmutableClass",
+        "name": "Property",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 22,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": true,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.ImmutableClass::Property()",
+        "getter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 22
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.ImmutableClass",
+        "name": "get_Property()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 23,
+        "column": 30,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.ImmutableClass::get_Property()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.ImmutableClass",
+            "kind": "body",
+            "member": "<Property>k__BackingField",
+            "line": 23
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 23
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 23
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.ImmutableClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 22,
+        "column": 5,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.ImmutableClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.ImmutableClass",
+            "kind": "body",
+            "member": "<Property>k__BackingField",
+            "line": 23
+          },
+          {
+            "target": "ClassNamespace.ImmutableClass",
+            "kind": "body",
+            "member": "Field",
+            "line": 22
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 23
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.MutableClass",
+        "name": "Property",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 34,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.MutableClass::Property()",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 34
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.MutableClass",
+        "name": "get_Property()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 34,
+        "column": 30,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.MutableClass::get_Property()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.MutableClass",
+            "kind": "body",
+            "member": "<Property>k__BackingField",
+            "line": 34
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 34
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 34
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.MutableClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 34,
+        "column": 44,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.MutableClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.MutableClass",
+            "kind": "body",
+            "member": "<Property>k__BackingField",
+            "line": 34
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 34
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.MutableClass",
+        "name": "set_Property(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 34,
+        "column": 35,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void ClassNamespace.MutableClass::set_Property(System.String)",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.MutableClass",
+            "kind": "body",
+            "member": "<Property>k__BackingField",
+            "line": 34
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 34
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 34
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherAbstractClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "protected",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.OtherAbstractClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherImmutableClass",
+        "name": "OtherField",
+        "kind": "field",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 28,
+        "visibility": "public",
+        "static": false,
+        "readonly": true,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.OtherImmutableClass::OtherField",
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "field",
+            "line": 28
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherImmutableClass",
+        "name": "OtherProperty",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 28,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": true,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.OtherImmutableClass::OtherProperty()",
+        "getter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 28
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherImmutableClass",
+        "name": "get_OtherProperty()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 29,
+        "column": 35,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.OtherImmutableClass::get_OtherProperty()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherImmutableClass",
+            "kind": "body",
+            "member": "<OtherProperty>k__BackingField",
+            "line": 29
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 29
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 29
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherImmutableClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 28,
+        "column": 5,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.OtherImmutableClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherImmutableClass",
+            "kind": "body",
+            "member": "<OtherProperty>k__BackingField",
+            "line": 29
+          },
+          {
+            "target": "ClassNamespace.OtherImmutableClass",
+            "kind": "body",
+            "member": "OtherField",
+            "line": 28
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 29
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherMutableClass",
+        "name": "OtherProperty",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 39,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.OtherMutableClass::OtherProperty()",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 39
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherMutableClass",
+        "name": "get_OtherProperty()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 39,
+        "column": 35,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.OtherMutableClass::get_OtherProperty()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherMutableClass",
+            "kind": "body",
+            "member": "<OtherProperty>k__BackingField",
+            "line": 39
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 39
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 39
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherMutableClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 39,
+        "column": 49,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.OtherMutableClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherMutableClass",
+            "kind": "body",
+            "member": "<OtherProperty>k__BackingField",
+            "line": 39
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 39
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherMutableClass",
+        "name": "set_OtherProperty(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 39,
+        "column": 40,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void ClassNamespace.OtherMutableClass::set_OtherProperty(System.String)",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherMutableClass",
+            "kind": "body",
+            "member": "<OtherProperty>k__BackingField",
+            "line": 39
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 39
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 39
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherRecordClass",
+        "name": "Equals(ClassNamespace.OtherRecordClass)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.Boolean",
+        "parameterTypes": [
+          "ClassNamespace.OtherRecordClass"
+        ],
+        "fullName": "System.Boolean ClassNamespace.OtherRecordClass::Equals(ClassNamespace.OtherRecordClass)",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "body",
+            "member": "get_EqualityContract"
+          },
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Boolean",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          },
+          {
+            "target": "System.Type",
+            "kind": "body",
+            "member": "op_Equality"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherRecordClass",
+        "name": "Equals(System.Object)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.Boolean",
+        "parameterTypes": [
+          "System.Object"
+        ],
+        "fullName": "System.Boolean ClassNamespace.OtherRecordClass::Equals(System.Object)",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "body"
+          },
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "body",
+            "member": "Equals"
+          },
+          {
+            "target": "System.Boolean",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Object",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherRecordClass",
+        "name": "PrintMembers(System.Text.StringBuilder)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "protected",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.Boolean",
+        "parameterTypes": [
+          "System.Text.StringBuilder"
+        ],
+        "fullName": "System.Boolean ClassNamespace.OtherRecordClass::PrintMembers(System.Text.StringBuilder)",
+        "dependencies": [
+          {
+            "target": "System.Boolean",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "signature"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherRecordClass",
+        "name": "op_Equality(ClassNamespace.OtherRecordClass,ClassNamespace.OtherRecordClass)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": true,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Boolean",
+        "parameterTypes": [
+          "ClassNamespace.OtherRecordClass",
+          "ClassNamespace.OtherRecordClass"
+        ],
+        "fullName": "System.Boolean ClassNamespace.OtherRecordClass::op_Equality(ClassNamespace.OtherRecordClass,ClassNamespace.OtherRecordClass)",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "body",
+            "member": "Equals"
+          },
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Boolean",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherRecordClass",
+        "name": "op_Inequality(ClassNamespace.OtherRecordClass,ClassNamespace.OtherRecordClass)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": true,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Boolean",
+        "parameterTypes": [
+          "ClassNamespace.OtherRecordClass",
+          "ClassNamespace.OtherRecordClass"
+        ],
+        "fullName": "System.Boolean ClassNamespace.OtherRecordClass::op_Inequality(ClassNamespace.OtherRecordClass,ClassNamespace.OtherRecordClass)",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "body",
+            "member": "op_Equality"
+          },
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Boolean",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherRecordClass",
+        "name": "GetHashCode()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.Int32",
+        "fullName": "System.Int32 ClassNamespace.OtherRecordClass::GetHashCode()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "body",
+            "member": "get_EqualityContract"
+          },
+          {
+            "target": "System.Collections.Generic.EqualityComparer`1",
+            "kind": "body",
+            "member": "GetHashCode"
+          },
+          {
+            "target": "System.Collections.Generic.EqualityComparer`1",
+            "kind": "body",
+            "member": "get_Default"
+          },
+          {
+            "target": "System.Int32",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          },
+          {
+            "target": "System.Type",
+            "kind": "generic-argument"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherRecordClass",
+        "name": "ToString()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.OtherRecordClass::ToString()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "body",
+            "member": "PrintMembers"
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": "ToString"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          },
+          {
+            "target": "System.String",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "body"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "body",
+            "member": "Append"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherRecordClass",
+        "name": "EqualityContract",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 18,
+        "visibility": "protected",
+        "static": false,
+        "virtual": true,
+        "readonly": true,
+        "returnType": "System.Type",
+        "fullName": "System.Type ClassNamespace.OtherRecordClass::EqualityContract()",
+        "getter": {
+          "visibility": "protected"
+        },
+        "dependencies": [
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 18
+          },
+          {
+            "target": "System.Type",
+            "kind": "signature",
+            "line": 18
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherRecordClass",
+        "name": "get_EqualityContract()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "protected",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.Type",
+        "fullName": "System.Type ClassNamespace.OtherRecordClass::get_EqualityContract()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "typeof"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          },
+          {
+            "target": "System.Type",
+            "kind": "body",
+            "member": "GetTypeFromHandle"
+          },
+          {
+            "target": "System.Type",
+            "kind": "signature"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherRecordClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.OtherRecordClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherRecordClass",
+        "name": ".ctor(ClassNamespace.OtherRecordClass)",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 18,
+        "column": 15,
+        "visibility": "protected",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "ClassNamespace.OtherRecordClass"
+        ],
+        "fullName": "System.Void ClassNamespace.OtherRecordClass::.ctor(ClassNamespace.OtherRecordClass)",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.OtherRecordClass",
+            "kind": "signature",
+            "line": 18
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 18
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 18
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherRegularClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.OtherRegularClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.OtherSealedClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.OtherSealedClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.RecordClass",
+        "name": "Equals(ClassNamespace.RecordClass)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.Boolean",
+        "parameterTypes": [
+          "ClassNamespace.RecordClass"
+        ],
+        "fullName": "System.Boolean ClassNamespace.RecordClass::Equals(ClassNamespace.RecordClass)",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "body",
+            "member": "get_EqualityContract"
+          },
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Boolean",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          },
+          {
+            "target": "System.Type",
+            "kind": "body",
+            "member": "op_Equality"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.RecordClass",
+        "name": "Equals(System.Object)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.Boolean",
+        "parameterTypes": [
+          "System.Object"
+        ],
+        "fullName": "System.Boolean ClassNamespace.RecordClass::Equals(System.Object)",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "body"
+          },
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "body",
+            "member": "Equals"
+          },
+          {
+            "target": "System.Boolean",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Object",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.RecordClass",
+        "name": "PrintMembers(System.Text.StringBuilder)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "protected",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.Boolean",
+        "parameterTypes": [
+          "System.Text.StringBuilder"
+        ],
+        "fullName": "System.Boolean ClassNamespace.RecordClass::PrintMembers(System.Text.StringBuilder)",
+        "dependencies": [
+          {
+            "target": "System.Boolean",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "signature"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.RecordClass",
+        "name": "op_Equality(ClassNamespace.RecordClass,ClassNamespace.RecordClass)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": true,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Boolean",
+        "parameterTypes": [
+          "ClassNamespace.RecordClass",
+          "ClassNamespace.RecordClass"
+        ],
+        "fullName": "System.Boolean ClassNamespace.RecordClass::op_Equality(ClassNamespace.RecordClass,ClassNamespace.RecordClass)",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "body",
+            "member": "Equals"
+          },
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Boolean",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.RecordClass",
+        "name": "op_Inequality(ClassNamespace.RecordClass,ClassNamespace.RecordClass)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": true,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Boolean",
+        "parameterTypes": [
+          "ClassNamespace.RecordClass",
+          "ClassNamespace.RecordClass"
+        ],
+        "fullName": "System.Boolean ClassNamespace.RecordClass::op_Inequality(ClassNamespace.RecordClass,ClassNamespace.RecordClass)",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "body",
+            "member": "op_Equality"
+          },
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Boolean",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.RecordClass",
+        "name": "GetHashCode()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.Int32",
+        "fullName": "System.Int32 ClassNamespace.RecordClass::GetHashCode()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "body",
+            "member": "get_EqualityContract"
+          },
+          {
+            "target": "System.Collections.Generic.EqualityComparer`1",
+            "kind": "body",
+            "member": "GetHashCode"
+          },
+          {
+            "target": "System.Collections.Generic.EqualityComparer`1",
+            "kind": "body",
+            "member": "get_Default"
+          },
+          {
+            "target": "System.Int32",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          },
+          {
+            "target": "System.Type",
+            "kind": "generic-argument"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.RecordClass",
+        "name": "ToString()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String ClassNamespace.RecordClass::ToString()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "body",
+            "member": "PrintMembers"
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": "ToString"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          },
+          {
+            "target": "System.String",
+            "kind": "signature"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "body"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Text.StringBuilder",
+            "kind": "body",
+            "member": "Append"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.RecordClass",
+        "name": "EqualityContract",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 16,
+        "visibility": "protected",
+        "static": false,
+        "virtual": true,
+        "readonly": true,
+        "returnType": "System.Type",
+        "fullName": "System.Type ClassNamespace.RecordClass::EqualityContract()",
+        "getter": {
+          "visibility": "protected"
+        },
+        "dependencies": [
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 16
+          },
+          {
+            "target": "System.Type",
+            "kind": "signature",
+            "line": 16
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.RecordClass",
+        "name": "get_EqualityContract()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "protected",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.Type",
+        "fullName": "System.Type ClassNamespace.RecordClass::get_EqualityContract()",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "typeof"
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute"
+          },
+          {
+            "target": "System.Type",
+            "kind": "body",
+            "member": "GetTypeFromHandle"
+          },
+          {
+            "target": "System.Type",
+            "kind": "signature"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.RecordClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.RecordClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.RecordClass",
+        "name": ".ctor(ClassNamespace.RecordClass)",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 16,
+        "column": 15,
+        "visibility": "protected",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "ClassNamespace.RecordClass"
+        ],
+        "fullName": "System.Void ClassNamespace.RecordClass::.ctor(ClassNamespace.RecordClass)",
+        "dependencies": [
+          {
+            "target": "ClassNamespace.RecordClass",
+            "kind": "signature",
+            "line": 16
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 16
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 16
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.RegularClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.RegularClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "ClassNamespace.SealedClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void ClassNamespace.SealedClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      }
+    ],
+    "attributes": [
+      {
+        "target": "System.Boolean ClassNamespace.OtherRecordClass::Equals(ClassNamespace.OtherRecordClass)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Boolean ClassNamespace.OtherRecordClass::Equals(System.Object)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Boolean ClassNamespace.OtherRecordClass::PrintMembers(System.Text.StringBuilder)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Boolean ClassNamespace.OtherRecordClass::op_Equality(ClassNamespace.OtherRecordClass,ClassNamespace.OtherRecordClass)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Boolean ClassNamespace.OtherRecordClass::op_Inequality(ClassNamespace.OtherRecordClass,ClassNamespace.OtherRecordClass)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Boolean ClassNamespace.RecordClass::Equals(ClassNamespace.RecordClass)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Boolean ClassNamespace.RecordClass::Equals(System.Object)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Boolean ClassNamespace.RecordClass::PrintMembers(System.Text.StringBuilder)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Boolean ClassNamespace.RecordClass::op_Equality(ClassNamespace.RecordClass,ClassNamespace.RecordClass)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Boolean ClassNamespace.RecordClass::op_Inequality(ClassNamespace.RecordClass,ClassNamespace.RecordClass)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Int32 ClassNamespace.OtherRecordClass::GetHashCode()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Int32 ClassNamespace.RecordClass::GetHashCode()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.String ClassNamespace.ClassWithOnlyStaticMembers::get_StaticProperty()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 46,
+        "column": 43
+      },
+      {
+        "target": "System.String ClassNamespace.ImmutableClass::get_Property()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 23,
+        "column": 30
+      },
+      {
+        "target": "System.String ClassNamespace.MutableClass::get_Property()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 34,
+        "column": 30
+      },
+      {
+        "target": "System.String ClassNamespace.OtherImmutableClass::get_OtherProperty()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 29,
+        "column": 35
+      },
+      {
+        "target": "System.String ClassNamespace.OtherMutableClass::get_OtherProperty()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 39,
+        "column": 35
+      },
+      {
+        "target": "System.String ClassNamespace.OtherRecordClass::ToString()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.String ClassNamespace.RecordClass::ToString()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Type ClassNamespace.OtherRecordClass::EqualityContract()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 18
+      },
+      {
+        "target": "System.Type ClassNamespace.OtherRecordClass::get_EqualityContract()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Type ClassNamespace.RecordClass::EqualityContract()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 16
+      },
+      {
+        "target": "System.Type ClassNamespace.RecordClass::get_EqualityContract()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "target": "System.Void ClassNamespace.ClassWithOnlyStaticMembers::set_StaticProperty(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 46,
+        "column": 48
+      },
+      {
+        "target": "System.Void ClassNamespace.MutableClass::set_Property(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 34,
+        "column": 35
+      },
+      {
+        "target": "System.Void ClassNamespace.OtherMutableClass::set_OtherProperty(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 39,
+        "column": 40
+      },
+      {
+        "target": "System.Void ClassNamespace.OtherRecordClass::.ctor(ClassNamespace.OtherRecordClass)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 18,
+        "column": 15
+      },
+      {
+        "target": "System.Void ClassNamespace.RecordClass::.ctor(ClassNamespace.RecordClass)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 16,
+        "column": 15
+      }
+    ],
+    "calls": [
+      {
+        "from": "System.Boolean ClassNamespace.OtherRecordClass::Equals(ClassNamespace.OtherRecordClass)",
+        "to": "System.Boolean System.Type::op_Equality(System.Type,System.Type)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Boolean ClassNamespace.OtherRecordClass::Equals(ClassNamespace.OtherRecordClass)",
+        "to": "System.Type ClassNamespace.OtherRecordClass::get_EqualityContract()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Boolean ClassNamespace.OtherRecordClass::Equals(System.Object)",
+        "to": "System.Boolean ClassNamespace.OtherRecordClass::Equals(ClassNamespace.OtherRecordClass)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Boolean ClassNamespace.OtherRecordClass::op_Equality(ClassNamespace.OtherRecordClass,ClassNamespace.OtherRecordClass)",
+        "to": "System.Boolean ClassNamespace.OtherRecordClass::Equals(ClassNamespace.OtherRecordClass)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Boolean ClassNamespace.OtherRecordClass::op_Inequality(ClassNamespace.OtherRecordClass,ClassNamespace.OtherRecordClass)",
+        "to": "System.Boolean ClassNamespace.OtherRecordClass::op_Equality(ClassNamespace.OtherRecordClass,ClassNamespace.OtherRecordClass)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Boolean ClassNamespace.RecordClass::Equals(ClassNamespace.RecordClass)",
+        "to": "System.Boolean System.Type::op_Equality(System.Type,System.Type)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Boolean ClassNamespace.RecordClass::Equals(ClassNamespace.RecordClass)",
+        "to": "System.Type ClassNamespace.RecordClass::get_EqualityContract()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Boolean ClassNamespace.RecordClass::Equals(System.Object)",
+        "to": "System.Boolean ClassNamespace.RecordClass::Equals(ClassNamespace.RecordClass)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Boolean ClassNamespace.RecordClass::op_Equality(ClassNamespace.RecordClass,ClassNamespace.RecordClass)",
+        "to": "System.Boolean ClassNamespace.RecordClass::Equals(ClassNamespace.RecordClass)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Boolean ClassNamespace.RecordClass::op_Inequality(ClassNamespace.RecordClass,ClassNamespace.RecordClass)",
+        "to": "System.Boolean ClassNamespace.RecordClass::op_Equality(ClassNamespace.RecordClass,ClassNamespace.RecordClass)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Int32 ClassNamespace.OtherRecordClass::GetHashCode()",
+        "to": "System.Collections.Generic.EqualityComparer`1<!0> System.Collections.Generic.EqualityComparer`1<System.Type>::get_Default()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Int32 ClassNamespace.OtherRecordClass::GetHashCode()",
+        "to": "System.Int32 System.Collections.Generic.EqualityComparer`1<System.Type>::GetHashCode(!0)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Int32 ClassNamespace.OtherRecordClass::GetHashCode()",
+        "to": "System.Type ClassNamespace.OtherRecordClass::get_EqualityContract()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Int32 ClassNamespace.RecordClass::GetHashCode()",
+        "to": "System.Collections.Generic.EqualityComparer`1<!0> System.Collections.Generic.EqualityComparer`1<System.Type>::get_Default()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Int32 ClassNamespace.RecordClass::GetHashCode()",
+        "to": "System.Int32 System.Collections.Generic.EqualityComparer`1<System.Type>::GetHashCode(!0)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Int32 ClassNamespace.RecordClass::GetHashCode()",
+        "to": "System.Type ClassNamespace.RecordClass::get_EqualityContract()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.String ClassNamespace.OtherRecordClass::ToString()",
+        "to": "System.Boolean ClassNamespace.OtherRecordClass::PrintMembers(System.Text.StringBuilder)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.String ClassNamespace.OtherRecordClass::ToString()",
+        "to": "System.String System.Object::ToString()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.String ClassNamespace.OtherRecordClass::ToString()",
+        "to": "System.Text.StringBuilder System.Text.StringBuilder::Append(System.Char)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.String ClassNamespace.OtherRecordClass::ToString()",
+        "to": "System.Text.StringBuilder System.Text.StringBuilder::Append(System.String)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.String ClassNamespace.OtherRecordClass::ToString()",
+        "to": "System.Void System.Text.StringBuilder::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.String ClassNamespace.RecordClass::ToString()",
+        "to": "System.Boolean ClassNamespace.RecordClass::PrintMembers(System.Text.StringBuilder)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.String ClassNamespace.RecordClass::ToString()",
+        "to": "System.String System.Object::ToString()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.String ClassNamespace.RecordClass::ToString()",
+        "to": "System.Text.StringBuilder System.Text.StringBuilder::Append(System.Char)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.String ClassNamespace.RecordClass::ToString()",
+        "to": "System.Text.StringBuilder System.Text.StringBuilder::Append(System.String)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.String ClassNamespace.RecordClass::ToString()",
+        "to": "System.Void System.Text.StringBuilder::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Type ClassNamespace.OtherRecordClass::get_EqualityContract()",
+        "to": "System.Type System.Type::GetTypeFromHandle(System.RuntimeTypeHandle)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Type ClassNamespace.RecordClass::get_EqualityContract()",
+        "to": "System.Type System.Type::GetTypeFromHandle(System.RuntimeTypeHandle)",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Void ClassNamespace.AbstractClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Void ClassNamespace.ClassWithOnlyStaticMembers::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Void ClassNamespace.ClassWithoutMembers::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Void ClassNamespace.ImmutableClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 23,
+        "column": 39
+      },
+      {
+        "from": "System.Void ClassNamespace.MutableClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 34,
+        "column": 44
+      },
+      {
+        "from": "System.Void ClassNamespace.OtherAbstractClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Void ClassNamespace.OtherImmutableClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 29,
+        "column": 44
+      },
+      {
+        "from": "System.Void ClassNamespace.OtherMutableClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 39,
+        "column": 49
+      },
+      {
+        "from": "System.Void ClassNamespace.OtherRecordClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Void ClassNamespace.OtherRecordClass::.ctor(ClassNamespace.OtherRecordClass)",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 18,
+        "column": 15
+      },
+      {
+        "from": "System.Void ClassNamespace.OtherRegularClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Void ClassNamespace.OtherSealedClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Void ClassNamespace.RecordClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Void ClassNamespace.RecordClass::.ctor(ClassNamespace.RecordClass)",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs",
+        "line": 16,
+        "column": 15
+      },
+      {
+        "from": "System.Void ClassNamespace.RegularClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      },
+      {
+        "from": "System.Void ClassNamespace.SealedClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/ClassAssembly/ClassAssemblyClasses.cs"
+      }
+    ]
+  }
+}

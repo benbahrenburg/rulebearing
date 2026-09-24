@@ -1,0 +1,726 @@
+{
+  "modules": [
+    {
+      "source": "System.Runtime",
+      "dependencies": [],
+      "valid": true,
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "framework"
+      ],
+      "language": "dotnet"
+    },
+    {
+      "source": "TestAssemblies/DuplicateFullNameAssembly/ClassWithAmbiguousReturnType.cs",
+      "dependencies": [
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 7,
+          "dependencyKind": "inherits"
+        },
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "body",
+          "member": "System.Object..ctor"
+        },
+        {
+          "module": "DuplicateClassAcrossAssemblies.DuplicateClass",
+          "resolved": "TestAssemblies/DuplicateFullNameAssembly/DuplicateClassAcrossAssemblies.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 7,
+          "column": 9,
+          "dependencyKind": "signature"
+        },
+        {
+          "module": "DuplicateClassAcrossAssemblies.DuplicateClass",
+          "resolved": "TestAssemblies/DuplicateFullNameAssembly/DuplicateClassAcrossAssemblies.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 7,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "DuplicateClassAcrossAssemblies.DuplicateClass..ctor"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "DuplicateFullNameAssembly.dll",
+      "namespaces": [
+        "DuplicateFullNameAssembly"
+      ],
+      "attribution": "pdb"
+    },
+    {
+      "source": "TestAssemblies/DuplicateFullNameAssembly/DuplicateClassAcrossAssemblies.cs",
+      "dependencies": [
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "inherits"
+        },
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "body",
+          "member": "System.Object..ctor"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "DuplicateFullNameAssembly.dll",
+      "namespaces": [
+        "DuplicateClassAcrossAssemblies"
+      ],
+      "attribution": "pdb"
+    },
+    {
+      "source": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
+      "dependencies": [
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "inherits"
+        },
+        {
+          "module": "System.Boolean",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 7,
+          "column": 77,
+          "dependencyKind": "signature"
+        },
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "body",
+          "member": "System.Object..ctor"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "DuplicateFullNameAssembly.dll",
+      "namespaces": [
+        "DuplicateFullNameAssembly"
+      ],
+      "attribution": "pdb"
+    }
+  ],
+  "summary": {
+    "violations": [],
+    "error": 0,
+    "warn": 0,
+    "info": 0,
+    "totalCruised": 0,
+    "optionsUsed": {}
+  },
+  "code": {
+    "types": [
+      {
+        "fullName": "DuplicateClassAcrossAssemblies.DuplicateClass",
+        "name": "DuplicateClass",
+        "namespace": "DuplicateClassAcrossAssemblies",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateClassAcrossAssemblies.cs",
+        "attribution": "pdb",
+        "assembly": "DuplicateFullNameAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "DuplicateClassAcrossAssemblies.DuplicateClass, DuplicateFullNameAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "DuplicateFullNameAssembly.ClassWithAmbiguousReturnType",
+        "name": "ClassWithAmbiguousReturnType",
+        "namespace": "DuplicateFullNameAssembly",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/ClassWithAmbiguousReturnType.cs",
+        "line": 7,
+        "attribution": "pdb",
+        "assembly": "DuplicateFullNameAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "DuplicateFullNameAssembly.ClassWithAmbiguousReturnType, DuplicateFullNameAssembly",
+        "dependencies": [
+          {
+            "target": "DuplicateClassAcrossAssemblies.DuplicateClass",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 7
+          },
+          {
+            "target": "DuplicateClassAcrossAssemblies.DuplicateClass",
+            "kind": "signature",
+            "line": 7
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 7
+          }
+        ]
+      },
+      {
+        "fullName": "DuplicateFullNameAssembly.ClassWithDuplicateParameters",
+        "name": "ClassWithDuplicateParameters",
+        "namespace": "DuplicateFullNameAssembly",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
+        "line": 7,
+        "attribution": "pdb",
+        "assembly": "DuplicateFullNameAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "DuplicateFullNameAssembly.ClassWithDuplicateParameters, DuplicateFullNameAssembly",
+        "dependencies": [
+          {
+            "target": "DuplicateFullNameAssembly.CustomType",
+            "kind": "signature",
+            "line": 13
+          },
+          {
+            "target": "System.Boolean",
+            "kind": "signature",
+            "line": 11
+          },
+          {
+            "target": "System.Int32",
+            "kind": "signature",
+            "line": 9
+          },
+          {
+            "target": "System.Int32",
+            "kind": "signature",
+            "line": 11
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 7
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 7
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 11
+          }
+        ]
+      },
+      {
+        "fullName": "DuplicateFullNameAssembly.CustomType",
+        "name": "CustomType",
+        "namespace": "DuplicateFullNameAssembly",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
+        "attribution": "pdb",
+        "assembly": "DuplicateFullNameAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "DuplicateFullNameAssembly.CustomType, DuplicateFullNameAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      },
+      {
+        "fullName": "DuplicateFullNameAssembly.DuplicateFullNameAssembly",
+        "name": "DuplicateFullNameAssembly",
+        "namespace": "DuplicateFullNameAssembly",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
+        "attribution": "pdb",
+        "assembly": "DuplicateFullNameAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "DuplicateFullNameAssembly.DuplicateFullNameAssembly, DuplicateFullNameAssembly",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits"
+          }
+        ]
+      }
+    ],
+    "members": [
+      {
+        "declaringType": "DuplicateClassAcrossAssemblies.DuplicateClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateClassAcrossAssemblies.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void DuplicateClassAcrossAssemblies.DuplicateClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "DuplicateFullNameAssembly.ClassWithAmbiguousReturnType",
+        "name": "MethodWithAmbiguousReturnType()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/ClassWithAmbiguousReturnType.cs",
+        "line": 7,
+        "column": 9,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "DuplicateClassAcrossAssemblies.DuplicateClass",
+        "fullName": "DuplicateClassAcrossAssemblies.DuplicateClass DuplicateFullNameAssembly.ClassWithAmbiguousReturnType::MethodWithAmbiguousReturnType()",
+        "dependencies": [
+          {
+            "target": "DuplicateClassAcrossAssemblies.DuplicateClass",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 7
+          },
+          {
+            "target": "DuplicateClassAcrossAssemblies.DuplicateClass",
+            "kind": "signature",
+            "line": 7
+          }
+        ]
+      },
+      {
+        "declaringType": "DuplicateFullNameAssembly.ClassWithAmbiguousReturnType",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/ClassWithAmbiguousReturnType.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void DuplicateFullNameAssembly.ClassWithAmbiguousReturnType::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "DuplicateFullNameAssembly.ClassWithDuplicateParameters",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void DuplicateFullNameAssembly.ClassWithDuplicateParameters::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "DuplicateFullNameAssembly.ClassWithDuplicateParameters",
+        "name": "MethodWithCustomTypeDuplicates(DuplicateFullNameAssembly.CustomType,DuplicateFullNameAssembly.CustomType)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
+        "line": 13,
+        "column": 78,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "DuplicateFullNameAssembly.CustomType",
+          "DuplicateFullNameAssembly.CustomType"
+        ],
+        "fullName": "System.Void DuplicateFullNameAssembly.ClassWithDuplicateParameters::MethodWithCustomTypeDuplicates(DuplicateFullNameAssembly.CustomType,DuplicateFullNameAssembly.CustomType)",
+        "dependencies": [
+          {
+            "target": "DuplicateFullNameAssembly.CustomType",
+            "kind": "signature",
+            "line": 13
+          }
+        ]
+      },
+      {
+        "declaringType": "DuplicateFullNameAssembly.ClassWithDuplicateParameters",
+        "name": "MethodWithMixedParamTypes(System.String,System.Int32,System.String,System.Boolean,System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
+        "line": 11,
+        "column": 93,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String",
+          "System.Int32",
+          "System.String",
+          "System.Boolean",
+          "System.String"
+        ],
+        "fullName": "System.Void DuplicateFullNameAssembly.ClassWithDuplicateParameters::MethodWithMixedParamTypes(System.String,System.Int32,System.String,System.Boolean,System.String)",
+        "dependencies": [
+          {
+            "target": "System.Boolean",
+            "kind": "signature",
+            "line": 11
+          },
+          {
+            "target": "System.Int32",
+            "kind": "signature",
+            "line": 11
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 11
+          }
+        ]
+      },
+      {
+        "declaringType": "DuplicateFullNameAssembly.ClassWithDuplicateParameters",
+        "name": "MethodWithSameParameterType(System.String,System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
+        "line": 7,
+        "column": 77,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String",
+          "System.String"
+        ],
+        "fullName": "System.Void DuplicateFullNameAssembly.ClassWithDuplicateParameters::MethodWithSameParameterType(System.String,System.String)",
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 7
+          }
+        ]
+      },
+      {
+        "declaringType": "DuplicateFullNameAssembly.ClassWithDuplicateParameters",
+        "name": "MethodWithTripleDuplicate(System.Int32,System.Int32,System.Int32)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
+        "line": 9,
+        "column": 66,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.Int32",
+          "System.Int32",
+          "System.Int32"
+        ],
+        "fullName": "System.Void DuplicateFullNameAssembly.ClassWithDuplicateParameters::MethodWithTripleDuplicate(System.Int32,System.Int32,System.Int32)",
+        "dependencies": [
+          {
+            "target": "System.Int32",
+            "kind": "signature",
+            "line": 9
+          }
+        ]
+      },
+      {
+        "declaringType": "DuplicateFullNameAssembly.CustomType",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void DuplicateFullNameAssembly.CustomType::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "DuplicateFullNameAssembly.DuplicateFullNameAssembly",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void DuplicateFullNameAssembly.DuplicateFullNameAssembly::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      }
+    ],
+    "attributes": [],
+    "calls": [
+      {
+        "from": "DuplicateClassAcrossAssemblies.DuplicateClass DuplicateFullNameAssembly.ClassWithAmbiguousReturnType::MethodWithAmbiguousReturnType()",
+        "to": "System.Void DuplicateClassAcrossAssemblies.DuplicateClass::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/ClassWithAmbiguousReturnType.cs",
+        "line": 7,
+        "column": 9
+      },
+      {
+        "from": "System.Void DuplicateClassAcrossAssemblies.DuplicateClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateClassAcrossAssemblies.cs"
+      },
+      {
+        "from": "System.Void DuplicateFullNameAssembly.ClassWithAmbiguousReturnType::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/ClassWithAmbiguousReturnType.cs"
+      },
+      {
+        "from": "System.Void DuplicateFullNameAssembly.ClassWithDuplicateParameters::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs"
+      },
+      {
+        "from": "System.Void DuplicateFullNameAssembly.CustomType::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs"
+      },
+      {
+        "from": "System.Void DuplicateFullNameAssembly.DuplicateFullNameAssembly::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/DuplicateFullNameAssembly/DuplicateFullNameAssembly.cs"
+      }
+    ]
+  }
+}

@@ -277,7 +277,14 @@ pub fn merge(extended: &Map<String, Value>, base: &Map<String, Value>) -> Map<St
         "options".into(),
         Value::Object(spread(base.get("options"), extended.get("options"))),
     );
-    for key in ["ratchets", "layers", "independence"] {
+    for key in [
+        "ratchets",
+        "layers",
+        "independence",
+        "elements",
+        "slices",
+        "diagrams",
+    ] {
         let merged = merge_named(&list(extended, key), &list(base, key));
         if !merged.is_empty() {
             out.insert(key.into(), Value::Array(merged));
