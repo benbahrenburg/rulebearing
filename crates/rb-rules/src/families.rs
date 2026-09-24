@@ -253,6 +253,12 @@ mod tests {
             Some("adr:0004".into())
         );
         assert_eq!(decision(Some("no token")), None);
+        assert_eq!(
+            decision(Some("a bare adr: token")),
+            None,
+            "the prefix alone is no token"
+        );
+        assert_eq!(decision(Some("adr:7")), Some("adr:7".into()));
         assert_eq!(decision(None), None);
         let expr = rb_config::elements::parse_expr(
             &json!({ "all": [{ "beSealed": true }] }),

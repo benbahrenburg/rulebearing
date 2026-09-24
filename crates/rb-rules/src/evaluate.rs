@@ -869,6 +869,39 @@ mod tests {
     }
 
     #[test]
+    fn slice_rules_see_the_module_layer() -> Result<(), EngineError> {
+        let module = |source: &str, deps: &[&str]| Module {
+            language: Some(rb_model::Language::Typescript),
+            dependencies: deps.iter().map(|d| edge(d)).collect(),
+            ..Module::new(source)
+        };
+        let document = GraphDocument {
+            modules: vec![
+                module("src/features/a/x.ts", &["src/features/b/y.ts"]),
+                module("src/features/b/y.ts", &[]),
+            ],
+            ..GraphDocument::default()
+        };
+        let cfg = config(json!({ "slices": [{ "name": "apart",
+            "matching": "src/features/(**)//", "should": "notDependOnEachOther" }] }));
+        let result = evaluate(
+            document,
+            &cfg,
+            &EvalOptions {
+                liveness: false,
+                ..EvalOptions::default()
+            },
+        )?;
+        let found: Vec<(&str, &str)> = result
+            .violations()
+            .iter()
+            .map(|v| (v.rule.name.as_str(), v.from.as_str()))
+            .collect();
+        assert_eq!(found, [("apart", "a")]);
+        Ok(())
+    }
+
+    #[test]
     fn metrics_are_needed_only_for_instability_and_folders() {
         let plain = config(
             json!({ "forbidden": [{ "name": "p", "from": {}, "to": { "circular": true } }] }),
