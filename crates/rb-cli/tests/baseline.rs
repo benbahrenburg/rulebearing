@@ -96,7 +96,7 @@ fn rules_of(value: &Value) -> Vec<String> {
 }
 
 #[test]
-fn full_writes_every_violation_keyed_by_id_and_keeps_each_entrys_lifecycle()
+fn full_writes_every_violation_keyed_by_id_and_keeps_the_lifecycle_of_each_entry()
 -> Result<(), Box<dyn Error>> {
     let dir = tree("full", CONFIG)?;
     let out = run(&dir, &["baseline", "src"])?;

@@ -22,8 +22,21 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | `attest [--verify]` | Write or check a receipt of the configuration, inputs and results | |
 | `init` | A first configuration that passes on its first run, read from the repository rather than asked for | (`depcruise --init`, which asks questions, is a wave 2 row) |
 | `adopt` | A dependency-cruiser repository behind a green gate with a baseline, in one pull request | |
+| `baseline [paths] [--baseline-mode full\|shrink-only\|format] [--expires DATE --owner NAME --reason TEXT]` | Write the current violations to a known-violations file (default `.dependency-cruiser-known-violations.json`, `-f` to change it); [below](#baselines) | `depcruise-baseline`, which has one behaviour: `full` |
 
-`baseline`, `place`, `docs`, `import`, `propose` and `decisions` arrive in wave 2; `diff`, `guard`, `snapshot`, `changelog` and `serve` in wave 3. Each exits 2 now and names its wave.
+`place`, `docs`, `import`, `propose` and `decisions` arrive in wave 2; `diff`, `guard`, `snapshot`, `changelog` and `serve` in wave 3. Each exits 2 now and names its wave.
+
+## Baselines
+
+A known-violations file is a JSON array of `knownViolations` entries, each keyed by the violation's stable `id` ([ADR-0015](adr/0015-stable-violation-id.md)) and carrying `expires`, `owner` and `reason` when given. `cruise --ignore-known [file]` reports the file's findings at severity `ignore` in place of `options.knownViolations`, as dependency-cruiser does; `--no-ignore-known` applies no known violations at all, the configuration's included; the last of the two on a command line wins. `fmt` takes the same two flags over a saved result: `--ignore-known` softens what the file lists, and `--no-ignore-known` puts every softened finding back at its rule's severity from `summary.ruleSetUsed`. The file name is optional, so give the paths first: `rulebearing cruise src --ignore-known`.
+
+| Mode | Reads | Writes | Exits |
+| --- | --- | --- | --- |
+| `full` (default) | the tree | every current violation; an entry already in the file keeps its `expires`, `owner` and `reason` | 0 |
+| `shrink-only` | the tree and the file (or, without one, `options.knownViolations`) | the file less the entries no violation matches any more, each printed; never adds one | the number of entries that no longer occur |
+| `format` | the file only | the same entries, sorted by rule, `from`, `to` and `id` | 0 |
+
+`shrink-only` is import-linter's unmatched-ignore alerting ([design § import-linter contracts](artifacts/design.md#import-linter-contracts-for-the-python-teams-who-know-them)): run it in CI and a fixed finding fails the build until its entry leaves the baseline. `--expires`, `--owner` and `--reason` fill those fields on each entry written that lacks them; an entry past its `expires` date stops applying the day after and fails the run ([ADR-0031](adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)).
 
 ## Flags the query commands share
 
