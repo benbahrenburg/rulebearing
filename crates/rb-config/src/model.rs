@@ -354,6 +354,59 @@ pub struct Rule {
     /// The module restriction of a dependents or required rule.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub module: Option<ModuleRestriction>,
+    /// Rulebearing addition, native configurations only
+    /// ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)). What to take out
+    /// of the graph before this rule is evaluated: its direct edges and every chain it follows
+    /// see the rest. On `forbidden` rules only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub graph: Option<GraphFilter>,
+}
+
+/// `graph` on a rule: the edges and modules taken out of the graph the rule sees
+/// ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GraphFilter {
+    /// Edges removed, each `{ from, to }`: an edge whose importer's path matches `from` and whose
+    /// resolved target matches `to` (a side left out matches every edge). An entry that matches
+    /// no edge of the graph makes the rule vacuous unless the rule has `allowEmpty`:
+    /// import-linter's unmatched-ignore alerting.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ignore: Vec<IgnoredEdges>,
+    /// Every edge carrying any of these dependency types is removed (`[type-only]`: imports under
+    /// `if TYPE_CHECKING:`). Unlike `to.dependencyTypesNot`, this cuts chains too.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dependency_types_not: Option<Vec<DependencyType>>,
+    /// Modules whose path matches lose every edge from or to them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub modules_not: Option<Patterns>,
+    /// On a reachability rule, a chain continues only from a module whose path matches; the
+    /// chain's start and end need not match.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chains_through: Option<Patterns>,
+}
+
+impl GraphFilter {
+    /// Whether nothing is written.
+    pub fn is_empty(&self) -> bool {
+        self.ignore.is_empty()
+            && self.dependency_types_not.is_none()
+            && self.modules_not.is_none()
+            && self.chains_through.is_none()
+    }
+}
+
+/// One `graph.ignore` entry.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct IgnoredEdges {
+    /// Paths the importing module must match.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from: Option<Patterns>,
+    /// Paths (or, for a module outside the repository, names) the edge's resolved target must
+    /// match.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub to: Option<Patterns>,
 }
 
 impl Rule {
@@ -774,6 +827,10 @@ pub struct LayersShorthand {
     /// Opt out of liveness for every expanded rule.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub allow_empty: bool,
+    /// What each expanded rule takes out of its graph, copied to every one
+    /// ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub graph: Option<GraphFilter>,
 }
 
 /// `rules.independence[]`: one `$1` fence
@@ -798,6 +855,10 @@ pub struct IndependenceShorthand {
     /// Opt out of liveness.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub allow_empty: bool,
+    /// What the expanded rule takes out of its graph
+    /// ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub graph: Option<GraphFilter>,
 }
 
 /// `defines.<name>`: a value read from a JSON file

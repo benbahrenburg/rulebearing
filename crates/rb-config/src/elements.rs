@@ -772,6 +772,10 @@ pub struct SliceRule {
     /// below it form one slice: import-linter's `acyclic_siblings`, which `ArchUnitNET`'s
     /// patterns cannot say (a Rulebearing addition).
     pub segments: Option<usize>,
+    /// The module imports taken out before the slices are joined (a Rulebearing addition,
+    /// [ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)); never
+    /// `chainsThrough`, since a slice edge is one import.
+    pub graph: Option<crate::model::GraphFilter>,
     /// An empty slicing is not vacuous.
     pub allow_empty: bool,
 }
@@ -1314,6 +1318,32 @@ pub fn parse_elements(value: &Value) -> Result<Vec<ElementRule>, ConfigError> {
     Ok(rules)
 }
 
+/// A slice rule's `graph`, checked as a dependency rule's is, without `chainsThrough`.
+fn slice_graph(
+    value: &Value,
+    name: &str,
+    context: &str,
+) -> Result<crate::model::GraphFilter, ConfigError> {
+    crate::normalize::check_graph(value, &format!("{context}.graph"))?;
+    let mut graph: crate::model::GraphFilter = serde_json::from_value(value.clone())
+        .map_err(|e| invalid(context, format!("`graph`: {e}")))?;
+    if graph.chains_through.is_some() {
+        return Err(invalid(
+            context,
+            "`graph.chainsThrough` restricts the chains of a reachability rule; a slice edge is one import, so there is no chain to restrict",
+        ));
+    }
+    crate::normalize::normalise_graph(&mut graph);
+    for (at, text) in crate::normalize::graph_patterns(&graph) {
+        crate::pattern::matcher(text).map_err(|source| ConfigError::Pattern {
+            rule: name.to_owned(),
+            at: at.to_owned(),
+            source,
+        })?;
+    }
+    Ok(graph)
+}
+
 /// Parses `rules.slices`.
 ///
 /// # Errors
@@ -1337,12 +1367,17 @@ pub fn parse_slices(value: &Value) -> Result<Vec<SliceRule>, ConfigError> {
                 "ignore",
                 "where",
                 "segments",
+                "graph",
                 "allowEmpty",
                 "expires",
                 "owner",
             ],
             &context,
         )?;
+        let graph = map
+            .get("graph")
+            .map(|value| slice_graph(value, &name, &context))
+            .transpose()?;
         let segments = match map.get("segments") {
             None => None,
             Some(value) => Some(
@@ -1396,6 +1431,7 @@ pub fn parse_slices(value: &Value) -> Result<Vec<SliceRule>, ConfigError> {
             should,
             ignore,
             segments,
+            graph,
         });
     }
     Ok(rules)
@@ -1801,6 +1837,48 @@ mod tests {
             refused.is_empty(),
             "coverage-tab keys that do not parse: {refused:#?}"
         );
+    }
+
+    #[test]
+    fn a_slice_rule_narrows_its_graph() -> Result<(), ConfigError> {
+        let plain = parse_slices(
+            &json!([{ "name": "s", "matching": "app.(*)", "should": "beFreeOfCycles" }]),
+        )?;
+        assert_eq!(plain[0].graph, None);
+        let narrowed = parse_slices(
+            &json!([{ "name": "s", "matching": "app.(*)", "should": "beFreeOfCycles",
+            "graph": { "ignore": [{ "from": ["^a", "^b"], "to": "^c" }], "dependencyTypesNot": ["type-only"] } }]),
+        )?;
+        let graph = narrowed[0].graph.clone().unwrap_or_default();
+        assert_eq!(
+            graph.ignore[0].from,
+            Some(rb_model::options::Patterns::One("^a|^b".into())),
+            "joined as a rule's patterns are"
+        );
+        assert_eq!(
+            graph.dependency_types_not,
+            Some(vec![rb_model::DependencyType::TypeOnly])
+        );
+        for (graph, needle) in [
+            (
+                json!({ "chainsThrough": "^a" }),
+                "a slice edge is one import",
+            ),
+            (json!({}), "slices[s].graph` removes nothing"),
+            (json!({ "ignore": [{}] }), "has neither `from` nor `to`"),
+            (
+                json!({ "dependencyTypesNot": ["type-onl"] }),
+                "`graph`: `type-onl` is not a valid dependency type",
+            ),
+            (json!({ "modulesNot": "(?=x)" }), "graph.modulesNot"),
+        ] {
+            let error = parse_slices(&json!([{ "name": "s", "matching": "app.(*)", "should": "beFreeOfCycles", "graph": graph }]))
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default();
+            assert!(error.contains(needle), "{needle}: {error}");
+        }
+        Ok(())
     }
 
     #[test]
