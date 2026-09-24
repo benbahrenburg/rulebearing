@@ -800,16 +800,18 @@ public class ArchitectureRules
 
 | Sub-wave | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 2C | Element-rule schema and predicate and condition enums | Not started | `rb-config` tests |
-| 2C | Capability table complete for three languages | Not started | completeness test |
-| 2C | Shared predicates and conditions ported | Not started | `unported.json` delta |
-| 2C | Type predicates ported | Not started | `unported.json` delta |
-| 2C | Class, attribute and member predicates ported | Not started | `unported.json` delta |
-| 2C | Combinators and rule operations ported | Not started | `unported.json` delta |
-| 2C | Slices ported | Not started | `unported.json` delta |
-| 2C | PlantUML `adhereTo` ported | Not started | `unported.json` delta |
-| 2C | NetArchTest test project ported | Not started | `unported.json` delta |
-| 2C | TypeScript and Python mappings over fixture packages | Not started | `rb-rules` tests |
+| 2C | Element-rule schema and predicate and condition enums | Done | `rb-config` `every_key_the_coverage_tab_names_parses` reads the coverage tab and parses every element key it names; `every_key_the_conformance_cases_use_is_described` holds `schema/config-v1.json` (element, slice and diagram rules, each key with its per-language answer) to every key the ported cases use |
+| 2C | Capability table complete for three languages | Done | `rb-config` `capability.rs` `every_concept_has_a_row_for_every_language`; exit 3 on an unanswerable key in `crates/rb-rules/tests/mappings.rs` and `crates/rb-cli/tests/multi_language.rs` |
+| 2C | Shared predicates and conditions ported | Done | `cargo test -p rb-rules --test gate2`: 1567 of 1567 ported cases reproduce upstream (`ObjectSyntaxElementsTests`, with `VisibilityTest` and the no-object failure); the fixtures are built Debug, as upstream's CI runs the tests |
+| 2C | Type predicates ported | Done | same run: `TypeSyntaxElementsTests`, closed generic return types included |
+| 2C | Class, attribute and member predicates ported | Done | same run: `Class`, `Attribute`, `Member`, `MethodMember`, `PropertyMember` syntax tests; referenced types for `DependenciesToOtherAssembliesTests` ([ADR-0035](../../adr/0035-referenced-types-in-the-code-layer.md), proposed) |
+| 2C | Combinators and rule operations ported | Done | same run: `LogicalConjunctionTests` (73 cases over the `ArchUnitNETTests` fixture), `RuleEvaluationTests`, `MultipleConditionRulesTests`; `exist` / `notExist` anywhere in a condition as upstream folds them |
+| 2C | `FreezeTests` (`FreezingArchRule`) ported | Not started | the five tests are the known-violations baseline, ported with it in 2E; `unported.json` lists them as `not-yet`, which `gate2-ratchet` refuses once this plan is implemented |
+| 2C | Slices ported | Done | `SlicesTests` (13 cases) in gate 2; TypeScript path and Python dotted slices over the extractors' fixtures in `crates/rb-rules/tests/mappings.rs`; import-linter's `acyclic_siblings` compared on its own repository (`testbeds/oracles/python.sh seddonym/import-linter`: both contracts kept by both tools, 84 edges each; a mutation closing a sibling cycle breaks the contract in both) ([ADR-0034](../../adr/0034-slices-group-types-or-modules-and-segments.md), proposed) |
+| 2C | PlantUML `adhereTo` ported | Done | 146 cases in gate 2 (`PlantUmlParserTest`, `ClassDiagramAssociationTest`, `PlantUmlComponentTest`, `PlantUmlErrorMessagesCheck`, `PlantUmlDependenciesTest`, the two `AdhereToPlantUmlDiagram` tests); the 12 diagram-generation tests are the wave 3 `plantuml` reporter (section 1.2) |
+| 2C | NetArchTest test project ported | Done | `cargo test -p rb-rules --test gate2_netarchtest`: 326 of 326 cases, NetArchTest 1.3.2's own verdicts over its committed fixtures; `conformance/netarchtest/unported.json` gives each of the 80 others a reason |
+| 2C | TypeScript and Python mappings over fixture packages | Done | `crates/rb-rules/tests/mappings.rs` (visibility by `export` and by underscore, decorators, frozen dataclasses, the unanswerable keys, slices) |
+| 2C | `unported.json` lists only `custom-predicate` | Needs maintainer decision | ArchUnitNET: 16 `custom-predicate`, 12 `wave-3` (diagram generation), 5 `api-only` (rule descriptions, `IArchRule` equality, the `ConjunctionFactory` reflection factory), 5 `FreezeTests` (2E). NetArchTest: 2 `custom-predicate`, 16 `api-only`, 38 `constructed-type`, 16 `dependency-definition`, 8 `vocabulary-gap`. Each reason other than `custom-predicate` is argued in the entry; accepting, waiving or closing them is the maintainer's decision under section 3's rules |
 
 ### Wave 2D: cross-language rule additions, presets, Vue, Svelte, Markdown and the remaining wave 2 option rows
 
