@@ -22,5 +22,6 @@
   </Folder>
   <Folder Name="/wrappers/">
     <Project Path="wrappers/nuget/Rulebearing.csproj" />
+    <Project Path="wrappers/nuget/tests/Rulebearing.Tool.Tests/Rulebearing.Tool.Tests.csproj" />
   </Folder>
 </Solution>
