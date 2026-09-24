@@ -315,7 +315,7 @@ pub struct Evaluator<'r, 'a> {
     cache: std::cell::RefCell<BTreeMap<usize, BTreeSet<String>>>,
     /// Diagrams already read, by path.
     pub(crate) diagrams:
-        std::cell::RefCell<BTreeMap<String, std::rc::Rc<crate::plantuml::Diagram>>>,
+        std::cell::RefCell<BTreeMap<String, std::rc::Rc<crate::plantuml::Association>>>,
 }
 
 impl<'r, 'a> Evaluator<'r, 'a> {
@@ -444,6 +444,23 @@ fn existence(expr: &Expr) -> Option<bool> {
     }
 }
 
+/// The diagram paths of every `adhereToPlantUmlDiagram` test in `expr`.
+fn diagram_paths<'x>(expr: &'x Expr, out: &mut Vec<&'x str>) {
+    match expr {
+        Expr::All(items) | Expr::Any(items) => {
+            for item in items {
+                diagram_paths(item, out);
+            }
+        }
+        Expr::Not(inner) => diagram_paths(inner, out),
+        Expr::Test(Test {
+            operand: Operand::Diagram(path),
+            ..
+        }) => out.push(path),
+        Expr::Test(_) => {}
+    }
+}
+
 /// Evaluates one element rule.
 ///
 /// # Errors
@@ -454,6 +471,13 @@ pub fn evaluate(
 ) -> Result<Outcome, ElementError> {
     capability::validate(architecture, rule)?;
     let evaluator = Evaluator::new(architecture, &rule.name);
+    // `AdhereToPlantUmlDiagram` reads and associates its diagram when the rule is built, so a
+    // malformed diagram fails the rule even when nothing is selected.
+    let mut diagrams = Vec::new();
+    diagram_paths(&rule.should, &mut diagrams);
+    for path in diagrams {
+        crate::plantuml::load(&evaluator, path)?;
+    }
     let selected = evaluator.select(&rule.select)?;
     // `Exist()` / `NotExist()` judge the selection as a whole.
     if let Some(should_exist) = existence(&rule.should) {
