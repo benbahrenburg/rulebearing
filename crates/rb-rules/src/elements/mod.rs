@@ -99,6 +99,11 @@ pub enum Object<'a> {
 }
 
 impl<'a> Object<'a> {
+    /// Whether the object is a type the code references but does not define.
+    pub fn is_referenced(&self) -> bool {
+        matches!(self, Self::Type(t) if t.referenced == Some(true))
+    }
+
     /// The object's identity: a type's or member's full name, a module's source.
     pub fn key(&self) -> &'a str {
         match self {
@@ -352,8 +357,20 @@ impl<'r, 'a> Evaluator<'r, 'a> {
     /// # Errors
     /// [`ElementError`] from a test in `where`.
     pub fn select(&self, selector: &Selector) -> Result<Vec<Object<'a>>, ElementError> {
+        self.select_among(selector, selector.include_referenced)
+    }
+
+    /// The objects a selector selects, referenced types among them when `referenced`.
+    fn select_among(
+        &self,
+        selector: &Selector,
+        referenced: bool,
+    ) -> Result<Vec<Object<'a>>, ElementError> {
         let mut selected = Vec::new();
         for object in self.architecture.of_kind(selector.kind) {
+            if !referenced && object.is_referenced() {
+                continue;
+            }
             if !selector.languages.is_empty()
                 && !object
                     .language()
@@ -394,8 +411,10 @@ impl<'r, 'a> Evaluator<'r, 'a> {
                 if let Some(hit) = self.cache.borrow().get(&address) {
                     return Ok(hit.clone());
                 }
+                // A nested selector filters what the object relates to, as `ArchUnitNET`'s
+                // `ComplexCondition` filters dependency targets: referenced types count.
                 let keys: BTreeSet<String> = self
-                    .select(selector)?
+                    .select_among(selector, true)?
                     .iter()
                     .map(|o| o.key().to_owned())
                     .collect();
@@ -515,5 +534,158 @@ pub(crate) fn operand_keys(
         Operand::Objects(objects) => evaluator.resolve(objects),
         Operand::Names(names) => Ok(names.iter().cloned().collect()),
         _ => Ok(BTreeSet::new()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rb_config::elements::parse_elements;
+    use rb_model::{CodeLayer, ElementDependency, Language, Location, TypeElement};
+    use serde_json::json;
+
+    use super::*;
+
+    /// `App.Service` depends on `App.Repository` and on `Lib.Client`, a referenced type.
+    fn document() -> GraphDocument {
+        let at = || Location::in_file(Language::Dotnet, Some("a.cs".to_owned()));
+        let dependency = |target: &str| ElementDependency {
+            target: target.to_owned(),
+            kind: "body".to_owned(),
+            member: None,
+            line: None,
+            form: None,
+        };
+        let mut service = TypeElement::new("App.Service", "Service", "class", at());
+        service.dependencies = vec![dependency("App.Repository"), dependency("Lib.Client")];
+        let repository = TypeElement::new("App.Repository", "Repository", "class", at());
+        let mut client = TypeElement::new(
+            "Lib.Client",
+            "Client",
+            "class",
+            Location::in_file(Language::Dotnet, None),
+        );
+        client.referenced = Some(true);
+        client.namespace = Some("Lib".to_owned());
+        GraphDocument {
+            code: Some(CodeLayer {
+                types: vec![service, repository, client],
+                ..CodeLayer::default()
+            }),
+            ..GraphDocument::default()
+        }
+    }
+
+    fn outcome(rule: serde_json::Value) -> Result<Outcome, Box<dyn std::error::Error>> {
+        let document = document();
+        let architecture = Architecture::new(&document);
+        let mut rule = rule;
+        rule["name"] = json!("r");
+        Ok(evaluate(
+            &architecture,
+            &parse_elements(&json!([rule]))?[0],
+        )?)
+    }
+
+    fn keys(outcome: &Outcome) -> Vec<(&str, bool)> {
+        outcome
+            .results
+            .iter()
+            .map(|r| (r.object.as_str(), r.passed))
+            .collect()
+    }
+
+    #[test]
+    fn referenced_types_are_selected_only_when_asked() -> Result<(), Box<dyn std::error::Error>> {
+        let plain = outcome(json!({ "select": { "kind": "class" }, "should": { "exist": true } }))?;
+        assert_eq!(
+            keys(&plain),
+            [("App.Repository", true), ("App.Service", true)]
+        );
+        let wide = outcome(json!({
+            "select": { "kind": "class", "includeReferenced": true },
+            "should": { "exist": true }
+        }))?;
+        assert_eq!(
+            keys(&wide),
+            [
+                ("App.Repository", true),
+                ("App.Service", true),
+                ("Lib.Client", true)
+            ]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn nested_selectors_see_referenced_types_and_only_depend_on_does_not()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let depends = outcome(json!({
+            "select": { "kind": "class", "where": { "are": ["App.Service"] } },
+            "should": { "dependOnAnyTypesThat": { "kind": "type", "where": { "resideInNamespace": "Lib" } } }
+        }))?;
+        assert_eq!(keys(&depends), [("App.Service", true)]);
+        // Only the dependency on the architecture's own `App.Repository` is judged.
+        let only = outcome(json!({
+            "select": { "kind": "class", "where": { "are": ["App.Service"] } },
+            "should": { "onlyDependOn": ["App.Repository"] }
+        }))?;
+        assert_eq!(keys(&only), [("App.Service", true)]);
+        Ok(())
+    }
+
+    #[test]
+    fn exist_and_not_exist_follow_archunitnet() -> Result<(), Box<dyn std::error::Error>> {
+        let select = json!({ "kind": "class", "where": { "are": ["App.Service"] } });
+        let empty = json!({ "kind": "class", "where": { "haveName": "Nothing" } });
+        let cases = [
+            (select.clone(), json!({ "exist": true }), true),
+            (select.clone(), json!({ "notExist": true }), false),
+            (
+                select.clone(),
+                json!({ "any": [{ "notExist": true }, { "haveName": "Service" }] }),
+                true,
+            ),
+            (
+                select,
+                json!({ "all": [{ "exist": true }, { "notExist": true }] }),
+                false,
+            ),
+            (empty.clone(), json!({ "exist": true }), false),
+            (empty.clone(), json!({ "notExist": true }), true),
+            (
+                empty.clone(),
+                json!({ "any": [{ "exist": true }, { "notExist": true }] }),
+                true,
+            ),
+            (
+                empty.clone(),
+                json!({ "all": [{ "notExist": true }, { "not": { "exist": true } }] }),
+                true,
+            ),
+            (
+                empty.clone(),
+                json!({ "all": [{ "notExist": true }, { "not": { "haveName": "X" } }] }),
+                true,
+            ),
+            (
+                empty,
+                json!({ "all": [{ "exist": true }, { "haveName": "X" }] }),
+                false,
+            ),
+        ];
+        for (select, should, holds) in cases {
+            let result = outcome(json!({ "select": select, "should": should }))?;
+            assert_eq!(result.holds(), holds, "{should}");
+            assert!(
+                !result.vacuous,
+                "{should}: a rule with exist is never vacuous"
+            );
+        }
+        let vacuous = outcome(json!({
+            "select": { "kind": "class", "where": { "haveName": "Nothing" } },
+            "should": { "haveName": "X" }
+        }))?;
+        assert!(vacuous.vacuous && !vacuous.holds());
+        Ok(())
     }
 }

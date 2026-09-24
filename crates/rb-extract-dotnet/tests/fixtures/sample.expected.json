@@ -2509,6 +2509,24 @@
         "visibility": "public"
       },
       {
+        "abstract": false,
+        "assembly": "Sample.Core",
+        "assemblyFullName": "Sample.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "assemblyQualifiedName": "Sample.Core.Clock, Sample.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "fullName": "Sample.Core.Clock",
+        "generic": false,
+        "kind": "class",
+        "language": "dotnet",
+        "name": "Clock",
+        "namespace": "Sample.Core",
+        "nested": false,
+        "record": false,
+        "referenced": true,
+        "sealed": true,
+        "valueType": false,
+        "visibility": "public"
+      },
+      {
         "abstract": true,
         "assembly": "Sample",
         "assemblyFullName": "Sample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
@@ -3415,6 +3433,222 @@
         "static": false,
         "valueType": false,
         "visibility": "public"
+      },
+      {
+        "fullName": "System.Attribute",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Attribute",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.AttributeUsageAttribute",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "AttributeUsageAttribute",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Boolean",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Boolean",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Collections.Generic.EqualityComparer`1",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "EqualityComparer`1",
+        "namespace": "System.Collections.Generic",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Collections.Generic.IEnumerable`1",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "IEnumerable`1",
+        "namespace": "System.Collections.Generic",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Collections.Generic.List`1",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "List`1",
+        "namespace": "System.Collections.Generic",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Collections.Generic.List`1+Enumerator",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Enumerator",
+        "namespace": "System.Collections.Generic",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Decimal",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Decimal",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Enum",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Enum",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Func`2",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Func`2",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.IDisposable",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "IDisposable",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.IEquatable`1",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "IEquatable`1",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Int32",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Int32",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Linq.Enumerable",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Enumerable",
+        "namespace": "System.Linq",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Object",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Object",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.ObsoleteAttribute",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "ObsoleteAttribute",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Runtime.CompilerServices.AsyncStateMachineAttribute",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "AsyncStateMachineAttribute",
+        "namespace": "System.Runtime.CompilerServices",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "AsyncTaskMethodBuilder`1",
+        "namespace": "System.Runtime.CompilerServices",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "CompilerGeneratedAttribute",
+        "namespace": "System.Runtime.CompilerServices",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Runtime.CompilerServices.IteratorStateMachineAttribute",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "IteratorStateMachineAttribute",
+        "namespace": "System.Runtime.CompilerServices",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Runtime.CompilerServices.RuntimeHelpers",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "RuntimeHelpers",
+        "namespace": "System.Runtime.CompilerServices",
+        "referenced": true
+      },
+      {
+        "fullName": "System.String",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "String",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Text.StringBuilder",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "StringBuilder",
+        "namespace": "System.Text",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Threading.Tasks.Task`1",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Task`1",
+        "namespace": "System.Threading.Tasks",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Type",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Type",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.ValueType",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "ValueType",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Void",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Void",
+        "namespace": "System",
+        "referenced": true
       }
     ]
   },

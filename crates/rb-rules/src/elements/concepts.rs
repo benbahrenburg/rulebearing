@@ -314,11 +314,16 @@ pub fn test<'a>(
         }
         Concept::OnlyDependOn => {
             let allowed = operand_keys(e, &test.operand)?;
+            // `ArchUnitNET` judges only dependencies on the architecture's own types.
             let types = &e.architecture().types;
             (
                 dependencies(object)
                     .iter()
-                    .filter(|d| types.contains_key(d.target.as_str()))
+                    .filter(|d| {
+                        types
+                            .get(d.target.as_str())
+                            .is_some_and(|t| t.referenced != Some(true))
+                    })
                     .all(|d| allowed.contains(&d.target)),
                 None,
             )

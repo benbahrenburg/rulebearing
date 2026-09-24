@@ -260,6 +260,82 @@ struct Read {
 }
 
 /// Reads one built assembly: metadata, attribution and sequence points.
+/// The assemblies beside the analysed ones that their references name, transitively, read only
+/// to describe the types the analysed code references: `ArchUnitNET` resolves a reference from
+/// the same folders. One that cannot be read is a warning, and its types stay unavailable.
+fn beside_assemblies(
+    reads: &[Read],
+    seen: &BTreeSet<PathBuf>,
+    warnings: &mut Vec<Warning>,
+) -> Vec<loader::Loaded> {
+    let refs = |loaded: &loader::Loaded| -> Vec<String> {
+        loaded
+            .assembly_refs
+            .iter()
+            .map(|a| a.identity.name.clone())
+            .collect()
+    };
+    let mut visited = seen.clone();
+    let mut queue: Vec<(PathBuf, Vec<String>)> = reads
+        .iter()
+        .map(|r| (r.project.folder().to_path_buf(), refs(&r.loaded)))
+        .collect();
+    let mut found = Vec::new();
+    let mut next = 0;
+    while next < queue.len() {
+        let (folder, names) = queue[next].clone();
+        next += 1;
+        for name in names {
+            let dll = folder.join(format!("{name}.dll"));
+            if !dll.is_file() || !visited.insert(dll.clone()) {
+                continue;
+            }
+            let read = std::fs::read(&dll)
+                .map_err(|e| read_error(&dll, &e))
+                .and_then(|bytes| loader::Loaded::read(&bytes).map_err(|e| read_error(&dll, &e)));
+            match read {
+                Ok(loaded) => {
+                    queue.push((folder.clone(), refs(&loaded)));
+                    found.push(loaded);
+                }
+                Err(e) => warnings.push(Warning::about(
+                    &dll,
+                    format!("not read, so the types it defines are unavailable: {e}"),
+                )),
+            }
+        }
+    }
+    found
+}
+
+/// Whether a dependency target names a generic parameter (`Declarer+<T>`, or `!!0` when the
+/// declarer is unknown) rather than a type.
+fn is_generic_parameter(name: &str) -> bool {
+    name.starts_with('!') || (name.ends_with('>') && name.contains("+<"))
+}
+
+/// Adds a referenced stub for every dependency target the code layer does not define.
+fn add_referenced_types(
+    code: &mut rb_model::CodeLayer,
+    describer: &codelayer::Builder<'_>,
+    first_beside: usize,
+) {
+    let defined: BTreeSet<&str> = code.types.iter().map(|t| t.full_name.as_str()).collect();
+    let targets: BTreeSet<String> = code
+        .types
+        .iter()
+        .flat_map(|t| &t.dependencies)
+        .chain(code.members.iter().flat_map(|m| &m.dependencies))
+        .map(|d| d.target.as_str())
+        .filter(|t| !defined.contains(t) && !is_generic_parameter(t))
+        .map(str::to_owned)
+        .collect();
+    for target in &targets {
+        code.types.push(describer.referenced(first_beside, target));
+    }
+    code.normalise();
+}
+
 fn read_assembly(
     project: &Project,
     dll: &Path,
@@ -403,7 +479,20 @@ impl Extractor for DotnetExtractor {
                 namespaces,
             })
             .collect();
-        let built = codelayer::Builder::new(&universe, &sources).build();
+        let mut built = codelayer::Builder::new(&universe, &sources).build();
+        let beside = beside_assemblies(&reads, &seen, &mut warnings);
+        let wide = names::Universe::new(
+            reads
+                .iter()
+                .map(|r| &r.loaded)
+                .chain(beside.iter())
+                .collect(),
+        );
+        add_referenced_types(
+            &mut built.code,
+            &codelayer::Builder::new(&wide, &sources),
+            reads.len(),
+        );
 
         let display = |path: &Path| {
             under_root(
@@ -491,6 +580,21 @@ impl Extractor for DotnetExtractor {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn generic_parameters_are_not_referenced_types() {
+        for name in ["Method+<T>", "Ns.Outer`1+<TKey>", "!!0", "!1"] {
+            assert!(is_generic_parameter(name), "{name}");
+        }
+        for name in [
+            "System.Object",
+            "Ns.Outer+<>c",
+            "Ns.Outer+<Run>d__0",
+            "Global",
+        ] {
+            assert!(!is_generic_parameter(name), "{name}");
+        }
+    }
 
     #[test]
     fn recognises_portable_pdb_magic() {

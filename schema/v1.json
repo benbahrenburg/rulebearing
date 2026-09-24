@@ -1944,6 +1944,13 @@
             "null"
           ]
         },
+        "referenced": {
+          "description": "A type the analysed code references but does not define, as `ArchUnitNET` holds it among\n`ReferencedTypes`: a selection leaves it out unless it sets `includeReferenced`, while\nnames and the predicates nested in a relation condition see it. Its kind is\n`unavailable` when no assembly beside the analysed ones defines it.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "sealed": {
           "description": "Sealed or final.",
           "type": [

@@ -219,6 +219,70 @@
   "code": {
     "types": [
       {
+        "fullName": "System.Collections.Generic.IReadOnlyCollection`1",
+        "name": "IReadOnlyCollection`1",
+        "namespace": "System.Collections.Generic",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Collections.Generic.List`1",
+        "name": "List`1",
+        "namespace": "System.Collections.Generic",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Func`2",
+        "name": "Func`2",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Linq.Enumerable",
+        "name": "Enumerable",
+        "namespace": "System.Linq",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Linq.IGrouping`2",
+        "name": "IGrouping`2",
+        "namespace": "System.Linq",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Object",
+        "name": "Object",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "name": "CompilerGeneratedAttribute",
+        "namespace": "System.Runtime.CompilerServices",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.String",
+        "name": "String",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
         "fullName": "TypeDependencyNamespace.BaseClass",
         "name": "BaseClass",
         "namespace": "TypeDependencyNamespace",

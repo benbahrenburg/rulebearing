@@ -219,7 +219,11 @@ pub fn evaluate(
     let assignment = parse(&rule.matching).map_err(error)?;
     let mut slices: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let mut slice_of: BTreeMap<&str, String> = BTreeMap::new();
-    for ty in architecture.types.values() {
+    for ty in architecture
+        .types
+        .values()
+        .filter(|t| t.referenced != Some(true))
+    {
         let assigned = assignment
             .slice(ty.namespace.as_deref().unwrap_or_default())
             .map_err(|()| ElementError::Slice {

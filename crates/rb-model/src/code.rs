@@ -128,6 +128,12 @@ pub struct TypeElement {
     /// PublicKeyToken=null` (.NET): what `resideInAssembly` compares.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub assembly_full_name: Option<String>,
+    /// A type the analysed code references but does not define, as `ArchUnitNET` holds it among
+    /// `ReferencedTypes`: a selection leaves it out unless it sets `includeReferenced`, while
+    /// names and the predicates nested in a relation condition see it. Its kind is
+    /// `unavailable` when no assembly beside the analysed ones defines it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub referenced: Option<bool>,
     /// Every other file that declares part of the type (a C# partial type), sorted.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub files: Vec<String>,
@@ -292,6 +298,7 @@ impl TypeElement {
             value_type: None,
             assembly_qualified_name: None,
             assembly_full_name: None,
+            referenced: None,
             files: Vec::new(),
             dependencies: Vec::new(),
         }

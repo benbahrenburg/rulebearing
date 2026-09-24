@@ -423,48 +423,6 @@
       "reason": "not-yet: non-snapshot"
     },
     {
-      "source": "ArchUnitNETTests/Fluent/Syntax/DependenciesToOtherAssembliesTests.cs",
-      "test": "BeAssignableToTypesThatTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/Syntax/DependenciesToOtherAssembliesTests.cs",
-      "test": "DependOnAnyTypesThatTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/Syntax/DependenciesToOtherAssembliesTests.cs",
-      "test": "HaveAnyAttributesThatTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/Syntax/DependenciesToOtherAssembliesTests.cs",
-      "test": "IncludeReferencedTypesTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/Syntax/DependenciesToOtherAssembliesTests.cs",
-      "test": "OnlyDependOnTypesThatTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/Syntax/DependenciesToOtherAssembliesTests.cs",
-      "test": "OnlyHaveAttributesThatTest",
-      "block": null,
-      "query": null,
-      "reason": "not-yet: non-snapshot"
-    },
-    {
       "source": "ArchUnitNETTests/Fluent/Syntax/Elements/CustomSyntaxElementsTests.cs",
       "test": "CustomConditionTest",
       "block": null,
