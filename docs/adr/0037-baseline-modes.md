@@ -1,6 +1,6 @@
 # ADR-0037: `baseline` has three modes of Rulebearing's own; dependency-cruiser has none
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-24, by the maintainer)
 - **Date:** 2026-09-24
 - **Derives from:** [ADR-0015](0015-stable-violation-id.md) (the stable violation id), [ADR-0031](0031-a-saved-result-carries-what-the-exit-code-counts.md) (`summary.expired[]`), [ADR-0009](0009-conformance-suites-as-specification.md)
 - **Constrains:** `crates/rb-cli/src/cmd/baseline.rs`, `crates/rb-rules/src/known.rs`, `crates/rb-report/src/baseline.rs`
