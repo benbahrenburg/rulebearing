@@ -1,0 +1,175 @@
+{
+  "repo": "nolar/kopf",
+  "sha": "e63c29c374cde63b6afa7378ae4486bb92062c0f",
+  "tool": "import-linter",
+  "importLinterVersion": "2.15",
+  "settings": ".importlinter",
+  "config": "imported",
+  "status": "compared",
+  "summary": {
+    "total": 11,
+    "agree": 9,
+    "disagree": 1,
+    "stays": 1,
+    "not-imported": 0,
+    "error": 0
+  },
+  "contracts": [
+    {
+      "id": "root-layers",
+      "name": "The root framework modules must be layered",
+      "type": "layers",
+      "importLinter": "kept",
+      "rules": 6,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "core-layers",
+      "name": "The internal core must be layered",
+      "type": "layers",
+      "importLinter": "kept",
+      "rules": 6,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "cogs-layers",
+      "name": "The internal cogs must be layered",
+      "type": "layers",
+      "importLinter": "kept",
+      "rules": 10,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "progress-storage",
+      "name": "Progress storages must be persistence settings",
+      "type": "layers",
+      "importLinter": "kept",
+      "rules": 3,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "diffbase-storage",
+      "name": "Diffbase storages must be persistence settings",
+      "type": "layers",
+      "importLinter": "kept",
+      "rules": 3,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "independent-storages",
+      "name": "Storage types must be unaware of each other",
+      "type": "independence",
+      "importLinter": "kept",
+      "rules": 2,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "independent-aiokits",
+      "name": "Most asyncio kits must be unaware of each other",
+      "type": "independence",
+      "importLinter": "kept",
+      "rules": 20,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "ban-toolkits",
+      "name": "The internals must be unaware of user-facing toolkits",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "indenpendent-toolkits",
+      "name": "The user-facing toolkits must be unaware of each other",
+      "type": "independence",
+      "importLinter": "kept",
+      "rules": 6,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "allow-3rd-party",
+      "name": "3rd-party clients must be explicitly allowed",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 153,
+      "rulebearing": "broken",
+      "verdict": "disagree",
+      "filtered": {
+        "mechanisms": [
+          "ignore_imports",
+          "imports by modules outside the root packages"
+        ],
+        "violations": 0,
+        "sufficientAlone": [
+          "ignore_imports"
+        ]
+      },
+      "cause": "import-linter's graph has no ignore_imports; with the same imports removed from Rulebearing's graph the contract is kept too. The import writes ignore_imports as knownViolations, which excuse a violation but cut no chain, and has no form for the other filters",
+      "sample": [
+        "allow-3rd-party: kopf/__init__.py -> kubernetes",
+        "allow-3rd-party: kopf/__init__.py -> kubernetes.client",
+        "allow-3rd-party: kopf/__init__.py -> kubernetes.config",
+        "allow-3rd-party: kopf/__init__.py -> pykube",
+        "allow-3rd-party: kopf/__init__.py -> pykube.objects",
+        "allow-3rd-party: kopf/__main__.py -> kubernetes",
+        "allow-3rd-party: kopf/__main__.py -> kubernetes.client",
+        "allow-3rd-party: kopf/__main__.py -> kubernetes.config",
+        "allow-3rd-party: kopf/__main__.py -> pykube",
+        "allow-3rd-party: kopf/__main__.py -> pykube.objects",
+        "allow-3rd-party: kopf/_cogs/clients/api.py -> kubernetes.client",
+        "allow-3rd-party: kopf/_cogs/clients/api.py -> pykube.objects",
+        "allow-3rd-party: kopf/_cogs/clients/creating.py -> kubernetes.client",
+        "allow-3rd-party: kopf/_cogs/clients/creating.py -> pykube.objects",
+        "allow-3rd-party: kopf/_cogs/clients/events.py -> kubernetes.client",
+        "allow-3rd-party: kopf/_cogs/clients/events.py -> pykube.objects",
+        "allow-3rd-party: kopf/_cogs/clients/fetching.py -> kubernetes.client",
+        "allow-3rd-party: kopf/_cogs/clients/fetching.py -> pykube.objects",
+        "allow-3rd-party: kopf/_cogs/clients/patching.py -> kubernetes.client",
+        "allow-3rd-party: kopf/_cogs/clients/patching.py -> pykube.objects"
+      ]
+    },
+    {
+      "id": "secure-3rd-party",
+      "name": "3rd-party clients must be secured by conditional imports",
+      "type": "conditional",
+      "importLinter": "kept",
+      "rules": 0,
+      "violations": 0,
+      "rulebearing": null,
+      "verdict": "stays",
+      "reason": "stays in import-linter: `conditional` is a custom contract type, Python code the importer cannot translate"
+    }
+  ],
+  "graph": {
+    "rootPackages": [
+      "kopf"
+    ],
+    "importLinter": 373,
+    "rulebearing": 373,
+    "equal": true,
+    "unexplained": 0,
+    "onlyRulebearing": {},
+    "onlyImportLinter": {}
+  },
+  "agrees": false
+}

@@ -283,12 +283,33 @@ pub fn reachables(modules: &mut [Value], rules: &DependencyRules) {
             .map(|m| json!({ "source": js::text(m, "source") }))
             .collect();
         let from_modules: Vec<&Value> = snapshot.iter().filter(|m| in_rule_from(rule, m)).collect();
+        // What each selecting module reaches, walked once per rule and only when asked for:
+        // `path` runs only where this says a path exists, so a module that reaches none of the
+        // rule's targets costs one walk rather than one search per target.
+        let mut from_reach: Vec<Option<Vec<bool>>> = vec![None; from_modules.len()];
+        // Without `$1` in `to`, whether a module is a target does not depend on the selecting
+        // module, so the targets are matched once per rule instead of once per pair.
+        let fixed_targets: Option<Vec<bool>> = (!has_capturing_groups(rule)).then(|| {
+            snapshot
+                .iter()
+                .map(|to| in_rule_to(rule, to, None))
+                .collect()
+        });
         for (index, module) in modules.iter_mut().enumerate() {
             if should_add_reaches(rule, module) {
                 let source = js::text(module, "source").into_owned();
-                for to in &snapshot {
+                let mut reach = None;
+                for (at, to) in snapshot.iter().enumerate() {
                     let to_source = js::text(to, "source");
-                    if source != to_source && in_rule_to(rule, to, Some(&snapshot[index])) {
+                    let target = match &fixed_targets {
+                        Some(targets) => targets[at],
+                        None => in_rule_to(rule, to, Some(&snapshot[index])),
+                    };
+                    if source != to_source && target {
+                        let reach = reach.get_or_insert_with(|| graph.reachable_from(&source));
+                        if !graph.may_reach(reach, &to_source) {
+                            continue;
+                        }
                         let path = graph.path(&source, &to_source);
                         if !path.is_empty() {
                             merge_reaches(module, rule, &to_source, &path);
@@ -299,11 +320,19 @@ pub fn reachables(modules: &mut [Value], rules: &DependencyRules) {
             if should_add_reachable(rule, module, &snapshot) {
                 let source = js::text(module, "source").into_owned();
                 let mut found = false;
-                for from in &from_modules {
+                let fixed = fixed_targets
+                    .as_ref()
+                    .map(|_| in_rule_to(rule, module, None));
+                for (at, from) in from_modules.iter().enumerate() {
                     let from_source = js::text(from, "source");
-                    if !found && source != from_source && in_rule_to(rule, module, Some(from)) {
-                        let path = graph.path(&from_source, &source);
-                        found = !path.is_empty();
+                    if !found
+                        && source != from_source
+                        && fixed.unwrap_or_else(|| in_rule_to(rule, module, Some(from)))
+                    {
+                        let reach = from_reach[at]
+                            .get_or_insert_with(|| graph.reachable_from(&from_source));
+                        found = graph.may_reach(reach, &source)
+                            && !graph.path(&from_source, &source).is_empty();
                         merge_reachable(module, rule, found, &from_source);
                     }
                 }
@@ -614,6 +643,29 @@ mod tests {
             !js::has(&m[2], "reachable"),
             "a module is never asked whether it reaches itself"
         );
+    }
+
+    #[test]
+    fn a_capture_group_picks_the_targets_per_selecting_module() {
+        // `$1` makes each module's targets its own feature's: a reaches its own b, which reaches
+        // x's b, but the rule does not ask about x's b from a; x reaches nothing of its own.
+        let mut modules = vec![
+            json!({ "source": "src/a/main.ts", "dependencies": [{ "resolved": "src/a/b.ts" }] }),
+            json!({ "source": "src/a/b.ts", "dependencies": [{ "resolved": "src/x/b.ts" }] }),
+            json!({ "source": "src/x/main.ts", "dependencies": [] }),
+            json!({ "source": "src/x/b.ts", "dependencies": [] }),
+        ];
+        let set = rules(json!({ "forbidden": [
+            { "name": "own-b", "from": { "path": "^src/([^/]+)/main" }, "to": { "path": "^src/$1/b", "reachable": true } }
+        ] }));
+        reachables(&mut modules, &set);
+        assert_eq!(
+            modules[0]["reaches"],
+            json!([{ "asDefinedInRule": "own-b", "modules": [
+                { "source": "src/a/b.ts", "via": [{ "name": "src/a/b.ts", "dependencyTypes": [] }] }
+            ] }])
+        );
+        assert!(!js::has(&modules[2], "reaches"));
     }
 
     #[test]

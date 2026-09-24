@@ -148,7 +148,10 @@ pub fn path_or_glob(text: &str) -> String {
 
 /// An import-linter module expression as a path pattern: each dotted segment one folder, `*` any
 /// one module name, `**` one or more. With `as_packages` (import-linter's default) the module's
-/// descendants are included: its package folder, or its `.py` file.
+/// descendants are included: the `.py` files of its package folder, or its `.py` file. Only
+/// Python files match, as only Python is import-linter's: in a repository that also keeps
+/// TypeScript under the same folders (openedx-platform's `cms/static`), a folder prefix alone
+/// would select it too.
 pub fn module_path(root: &str, expression: &str, as_packages: bool) -> String {
     let body = expression
         .split('.')
@@ -165,7 +168,7 @@ pub fn module_path(root: &str, expression: &str, as_packages: bool) -> String {
         format!("{}/", escape(root.trim_end_matches('/')))
     };
     if as_packages {
-        format!("^{prefix}{body}(/|\\.py$)")
+        format!("^{prefix}{body}(/.*)?\\.py$")
     } else {
         format!("^{prefix}{body}(/__init__\\.py|\\.py)$")
     }
@@ -247,10 +250,12 @@ mod tests {
     #[test]
     fn module_expressions_become_package_or_file_paths() {
         let re = module_path("src", "importlinter.ui", true);
-        assert_eq!(re, "^src/importlinter/ui(/|\\.py$)");
+        assert_eq!(re, "^src/importlinter/ui(/.*)?\\.py$");
         assert!(matches(&re, "src/importlinter/ui/app.py"));
+        assert!(matches(&re, "src/importlinter/ui/deep/app.py"));
         assert!(matches(&re, "src/importlinter/ui.py"));
         assert!(!matches(&re, "src/importlinter/uix.py"));
+        assert!(!matches(&re, "src/importlinter/ui/static/app.js"));
         let star = module_path("", "pkg.*.models", true);
         assert!(matches(&star, "pkg/a/models.py"));
         assert!(!matches(&star, "pkg/a/b/models.py"));

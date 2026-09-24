@@ -218,8 +218,17 @@ fn same_element(ported: &Value, body: &[(String, Node)]) -> Result<bool, Box<dyn
     let mut theirs = ported.clone();
     theirs["name"] = json!("case");
     let theirs = rb_config::elements::parse_elements(&json!([theirs]))?;
+    // Every imported rule is scoped to .NET; the ported cases run over .NET-only graphs, where
+    // the scope changes nothing, so it is asserted here and left out of the comparison.
+    if mine[0].select.languages != [rb_model::Language::Dotnet] {
+        return Ok(false);
+    }
+    let mut mine_select = mine[0].select.clone();
+    mine_select
+        .languages
+        .clone_from(&theirs[0].select.languages);
     Ok(
-        normal_selector(&mine[0].select) == normal_selector(&theirs[0].select)
+        normal_selector(&mine_select) == normal_selector(&theirs[0].select)
             && normal(&mine[0].should) == normal(&theirs[0].should),
     )
 }

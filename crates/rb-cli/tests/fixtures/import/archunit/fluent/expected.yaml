@@ -17,6 +17,7 @@ rules:
       comment: "imported from tests/RiverBooks.ArchitectureTests/ArchitectureTests.cs:26"
       select:
         kind: class
+        language: dotnet
         where:
           resideInNamespaceMatching: RiverBooks.Books
       should:
@@ -33,6 +34,7 @@ rules:
       allowEmpty: true
       select:
         kind: class
+        language: dotnet
         where:
           all:
             - areAssignableTo: [RiverBooks.Books.Entity]
@@ -48,6 +50,7 @@ rules:
       comment: "imported from tests/RiverBooks.ArchitectureTests/ArchitectureTests.cs:45"
       select:
         kind: interface
+        language: dotnet
         where:
           haveNameEndingWith: Repository
       should:
@@ -64,6 +67,7 @@ rules:
       comment: "imported from tests/RiverBooks.ArchitectureTests/ArchitectureTests.cs:51"
       select:
         kind: type
+        language: dotnet
         where:
           any:
             - are: [RiverBooks.Books.Book+Chapter]
@@ -80,6 +84,7 @@ rules:
       comment: "imported from tests/RiverBooks.ArchitectureTests/ArchitectureTests.cs:54"
       select:
         kind: type
+        language: dotnet
         includeReferenced: true
         where:
           are: [RiverBooks.Users.UserService]
@@ -117,6 +122,7 @@ rules:
     #   comment: "imported from tests/RiverBooks.ArchitectureTests/ArchitectureTests.cs:70"
     #   select:
     #     kind: class
+    #     language: dotnet
     #     where:
     #       are: [RiverBooks.Books.Book]
     #   should:

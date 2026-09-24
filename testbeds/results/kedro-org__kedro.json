@@ -1,0 +1,205 @@
+{
+  "repo": "kedro-org/kedro",
+  "sha": "8d9abdf02b1ce93fbe9079cff6f696fb230facc4",
+  "tool": "import-linter",
+  "importLinterVersion": "2.15",
+  "settings": "pyproject.toml",
+  "config": "imported",
+  "status": "compared",
+  "summary": {
+    "total": 4,
+    "agree": 1,
+    "disagree": 3,
+    "stays": 0,
+    "not-imported": 0,
+    "error": 0
+  },
+  "contracts": [
+    {
+      "id": null,
+      "name": "CLI > Context > Library, Runner > Extras > IO & Pipeline",
+      "type": "layers",
+      "importLinter": "kept",
+      "rules": 28,
+      "violations": 216,
+      "rulebearing": "broken",
+      "verdict": "disagree",
+      "filtered": {
+        "mechanisms": [
+          "ignore_imports",
+          "namespace portions below a root package",
+          "imports by modules outside the root packages"
+        ],
+        "violations": 0,
+        "sufficientAlone": [
+          "ignore_imports"
+        ]
+      },
+      "cause": "import-linter's graph has no ignore_imports; with the same imports removed from Rulebearing's graph the contract is kept too. The import writes ignore_imports as knownViolations, which excuse a violation but cut no chain, and has no form for the other filters",
+      "sample": [
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/__init__.py -> kedro/framework/cli/__init__.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/__init__.py -> kedro/framework/cli/cli.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/__init__.py -> kedro/framework/cli/hooks/__init__.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/__init__.py -> kedro/framework/cli/hooks/manager.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/__init__.py -> kedro/framework/cli/hooks/markers.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/__init__.py -> kedro/framework/cli/hooks/specs.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/__init__.py -> kedro/framework/cli/project.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/__init__.py -> kedro/framework/cli/utils.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/catalog_mixins.py -> kedro/framework/cli/__init__.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/catalog_mixins.py -> kedro/framework/cli/cli.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/catalog_mixins.py -> kedro/framework/cli/hooks/__init__.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/catalog_mixins.py -> kedro/framework/cli/hooks/manager.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/catalog_mixins.py -> kedro/framework/cli/hooks/markers.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/catalog_mixins.py -> kedro/framework/cli/hooks/specs.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/catalog_mixins.py -> kedro/framework/cli/project.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/catalog_mixins.py -> kedro/framework/cli/utils.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/context.py -> kedro/framework/cli/__init__.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/context.py -> kedro/framework/cli/cli.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/context.py -> kedro/framework/cli/hooks/__init__.py",
+        "cli-context-library-runner-extras-io-pipeline:framework.context-to-framework.cli: kedro/framework/context/context.py -> kedro/framework/cli/hooks/manager.py"
+      ]
+    },
+    {
+      "id": null,
+      "name": "Pipeline and IO are independent",
+      "type": "independence",
+      "importLinter": "kept",
+      "rules": 2,
+      "violations": 14,
+      "rulebearing": "broken",
+      "verdict": "disagree",
+      "filtered": {
+        "mechanisms": [
+          "ignore_imports",
+          "namespace portions below a root package",
+          "imports by modules outside the root packages"
+        ],
+        "violations": 0,
+        "sufficientAlone": [
+          "ignore_imports"
+        ]
+      },
+      "cause": "import-linter's graph has no ignore_imports; with the same imports removed from Rulebearing's graph the contract is kept too. The import writes ignore_imports as knownViolations, which excuse a violation but cut no chain, and has no form for the other filters",
+      "sample": [
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/__init__.py -> kedro/io/__init__.py",
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/__init__.py -> kedro/io/cached_dataset.py",
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/__init__.py -> kedro/io/catalog_config_resolver.py",
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/__init__.py -> kedro/io/core.py",
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/__init__.py -> kedro/io/data_catalog.py",
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/__init__.py -> kedro/io/memory_dataset.py",
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/__init__.py -> kedro/io/shared_memory_dataset.py",
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/pipeline.py -> kedro/io/__init__.py",
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/pipeline.py -> kedro/io/cached_dataset.py",
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/pipeline.py -> kedro/io/catalog_config_resolver.py",
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/pipeline.py -> kedro/io/core.py",
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/pipeline.py -> kedro/io/data_catalog.py",
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/pipeline.py -> kedro/io/memory_dataset.py",
+        "pipeline-and-io-are-independent:kedro.pipeline-to-kedro.io: kedro/pipeline/pipeline.py -> kedro/io/shared_memory_dataset.py"
+      ]
+    },
+    {
+      "id": null,
+      "name": "Config cannot import Runner et al",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "Runner et al cannot import Config",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 24,
+      "rulebearing": "broken",
+      "verdict": "disagree",
+      "filtered": {
+        "mechanisms": [
+          "ignore_imports",
+          "namespace portions below a root package",
+          "imports by modules outside the root packages"
+        ],
+        "violations": 0,
+        "sufficientAlone": [
+          "ignore_imports"
+        ]
+      },
+      "cause": "import-linter's graph has no ignore_imports; with the same imports removed from Rulebearing's graph the contract is kept too. The import writes ignore_imports as knownViolations, which excuse a violation but cut no chain, and has no form for the other filters",
+      "sample": [
+        "runner-et-al-cannot-import-config: kedro/pipeline/__init__.py -> kedro/config/__init__.py",
+        "runner-et-al-cannot-import-config: kedro/pipeline/__init__.py -> kedro/config/abstract_config.py",
+        "runner-et-al-cannot-import-config: kedro/pipeline/__init__.py -> kedro/config/omegaconf_config.py",
+        "runner-et-al-cannot-import-config: kedro/pipeline/pipeline.py -> kedro/config/__init__.py",
+        "runner-et-al-cannot-import-config: kedro/pipeline/pipeline.py -> kedro/config/abstract_config.py",
+        "runner-et-al-cannot-import-config: kedro/pipeline/pipeline.py -> kedro/config/omegaconf_config.py",
+        "runner-et-al-cannot-import-config: kedro/runner/__init__.py -> kedro/config/__init__.py",
+        "runner-et-al-cannot-import-config: kedro/runner/__init__.py -> kedro/config/abstract_config.py",
+        "runner-et-al-cannot-import-config: kedro/runner/__init__.py -> kedro/config/omegaconf_config.py",
+        "runner-et-al-cannot-import-config: kedro/runner/parallel_runner.py -> kedro/config/__init__.py",
+        "runner-et-al-cannot-import-config: kedro/runner/parallel_runner.py -> kedro/config/abstract_config.py",
+        "runner-et-al-cannot-import-config: kedro/runner/parallel_runner.py -> kedro/config/omegaconf_config.py",
+        "runner-et-al-cannot-import-config: kedro/runner/runner.py -> kedro/config/__init__.py",
+        "runner-et-al-cannot-import-config: kedro/runner/runner.py -> kedro/config/abstract_config.py",
+        "runner-et-al-cannot-import-config: kedro/runner/runner.py -> kedro/config/omegaconf_config.py",
+        "runner-et-al-cannot-import-config: kedro/runner/sequential_runner.py -> kedro/config/__init__.py",
+        "runner-et-al-cannot-import-config: kedro/runner/sequential_runner.py -> kedro/config/abstract_config.py",
+        "runner-et-al-cannot-import-config: kedro/runner/sequential_runner.py -> kedro/config/omegaconf_config.py",
+        "runner-et-al-cannot-import-config: kedro/runner/task.py -> kedro/config/__init__.py",
+        "runner-et-al-cannot-import-config: kedro/runner/task.py -> kedro/config/abstract_config.py"
+      ]
+    }
+  ],
+  "graph": {
+    "rootPackages": [
+      "kedro"
+    ],
+    "importLinter": 222,
+    "rulebearing": 230,
+    "equal": false,
+    "unexplained": 0,
+    "onlyRulebearing": {
+      "notGrimpModule": {
+        "count": 8,
+        "sample": [
+          [
+            "kedro/templates/pipeline/{{ cookiecutter.pipeline_name }}/pipeline.py",
+            "kedro/pipeline/__init__.py"
+          ],
+          [
+            "kedro/templates/project/hooks/post_gen_project.py",
+            "kedro/templates/project/hooks/utils.py"
+          ],
+          [
+            "kedro/templates/project/{{ cookiecutter.repo_name }}/src/{{ cookiecutter.python_package }}/__main__.py",
+            "kedro/framework/cli/utils.py"
+          ],
+          [
+            "kedro/templates/project/{{ cookiecutter.repo_name }}/src/{{ cookiecutter.python_package }}/__main__.py",
+            "kedro/framework/project/__init__.py"
+          ],
+          [
+            "kedro/templates/project/{{ cookiecutter.repo_name }}/src/{{ cookiecutter.python_package }}/pipeline_registry.py",
+            "kedro/framework/project/__init__.py"
+          ],
+          [
+            "kedro/templates/project/{{ cookiecutter.repo_name }}/src/{{ cookiecutter.python_package }}/pipeline_registry.py",
+            "kedro/pipeline/__init__.py"
+          ],
+          [
+            "kedro/templates/project/{{ cookiecutter.repo_name }}/tests/test_run.py",
+            "kedro/framework/session/__init__.py"
+          ],
+          [
+            "kedro/templates/project/{{ cookiecutter.repo_name }}/tests/test_run.py",
+            "kedro/framework/startup.py"
+          ]
+        ]
+      }
+    },
+    "onlyImportLinter": {}
+  },
+  "agrees": false
+}

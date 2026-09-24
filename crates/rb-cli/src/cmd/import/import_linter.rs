@@ -810,11 +810,11 @@ fn independence(
             .map(|m| {
                 let full = layout.pattern(m, true);
                 full.trim_start_matches('^')
-                    .trim_end_matches("(/|\\.py$)")
+                    .trim_end_matches("(/.*)?\\.py$")
                     .to_owned()
             })
             .collect();
-        let pattern = format!("^({})(?:/|\\.py$)", bodies.join("|"));
+        let pattern = format!("^({})(?:/.*)?\\.py$", bodies.join("|"));
         if wildcard && !direct_only {
             comments.push(
                 "a wildcard names the modules, so they cannot be listed pair by pair: the shorthand checks direct imports only, where import-linter also checks chains"
