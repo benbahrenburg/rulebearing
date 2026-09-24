@@ -1,0 +1,1 @@
+// A static asset: a folder without __init__.py is not a package.

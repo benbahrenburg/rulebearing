@@ -22,6 +22,8 @@ Commands:
   init        Write a first configuration from what the repository holds, passing on its first run
   adopt       Put an existing dependency-cruiser configuration behind a green gate, with a baseline
   baseline    Write the current violations to a known-violations file, as depcruise-baseline does
+  import      Translate ArchUnitNET, NetArchTest, import-linter or eslint rules into a
+              rulebearing.yaml
 
 Options:
   -h, --help     Print help
