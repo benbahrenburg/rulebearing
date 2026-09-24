@@ -19,6 +19,12 @@ in `conformance/archunitnet/graphs/`; an assembly's full name (`Version=...`, `P
 is the one the snapshots print. Anything it cannot translate with certainty is written to
 `unported.json` with a reason, never guessed.
 
+Tests without a snapshot (the PlantUML tests, for one) are ported by hand into `ported/*.yaml`
+files whose first line reads `# Ported from ArchUnitNET <pin> <source> by hand: <why>`. The tool
+keeps those files, leaves the tests their cases name (by `id` or `alsoCovers`) out of
+`unported.json`, and counts their cases. A non-snapshot test that stays unported keeps a reason
+written by hand in `unported.json` (anything but `not-yet: ...`) when the tool is rerun.
+
 Usage: `python3 conformance/archunitnet/tools/port.py [--source <ArchUnitNET checkout>]`. Without
 `--source` it clones ArchUnitNET at the tag in `conformance/archunitnet/PIN` into a temporary
 directory. Output is deterministic: rerunning it gives byte-identical files.
@@ -94,9 +100,10 @@ PORTED_COMMENT = (
     " may only rise. Written by conformance/archunitnet/tools/port.py"
     " (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7). `total` counts the"
     " distinct snapshot cases of the element tests (after the tool folds C# overloads with the"
-    " same rule and expectation into one case), each unported snapshot block, and each in-scope"
-    " test with no snapshot as 1; `ported` counts the cases in ported/*.yaml; `customPredicate`"
-    " counts the unported.json entries whose reason is custom-predicate."
+    " same rule and expectation into one case), each unported snapshot block, each in-scope"
+    " test with no snapshot as 1, and the cases of the hand-ported files in place of the tests"
+    " they cover; `ported` counts the cases in ported/*.yaml; `customPredicate` counts the"
+    " unported.json entries whose reason is custom-predicate."
 )
 UNPORTED_COMMENT = (
     "Upstream ArchUnitNET tests with no case in ported/, each with a reason, written by"
@@ -104,8 +111,10 @@ UNPORTED_COMMENT = (
     "element-rules.md, Step 7). `block` is the 1-based snapshot block of `test`, or null for a"
     " whole test that has no snapshot. Reasons: custom-predicate (a C# predicate or condition,"
     " no data-driven case), not-yet: <method or construct> (the element-rule schema or the tool"
-    " cannot express it yet), not-yet: non-snapshot (asserted in C#, ported separately)."
+    " cannot express it yet), not-yet: non-snapshot (asserted in C#, ported separately); a"
+    " non-snapshot test's reason written by hand (wave-3: ..., api-only: ...) is kept."
 )
+HAND = " by hand: "
 
 
 class UnportableError(Exception):
@@ -1763,8 +1772,46 @@ def build_world(tree: Path) -> World:
     return World(graphs, architectures, helpers)
 
 
+def is_hand_ported(path: Path) -> bool:
+    """Whether a ported/*.yaml file was written by hand: its first line says so."""
+    first = path.read_text(encoding="utf-8").split("\n", 1)[0]
+    return first.startswith("# Ported from ArchUnitNET ") and HAND in first
+
+
+def hand_ported() -> tuple[int, set[tuple[str, str]]]:
+    """The number of hand-ported cases, and the (source, test) pairs they cover."""
+    cases = 0
+    covered: set[tuple[str, str]] = set()
+    for path in sorted((GATE / "ported").glob("*.yaml")):
+        if not is_hand_ported(path):
+            continue
+        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+        for case in doc["cases"]:
+            cases += 1
+            for ident in [case["id"], *case.get("alsoCovers", [])]:
+                covered.add((doc["source"], str(ident).split("#", 1)[0]))
+    return cases, covered
+
+
+def kept_reasons() -> dict[tuple[str, str], str]:
+    """The reasons written by hand for whole unported tests in the current unported.json."""
+    path = GATE / "unported.json"
+    if not path.exists():
+        return {}
+    entries = json.loads(path.read_text(encoding="utf-8"))["entries"]
+    return {
+        (e["source"], e["test"]): e["reason"]
+        for e in entries
+        if e["block"] is None
+        and e["reason"] != "custom-predicate"
+        and not e["reason"].startswith("not-yet")
+    }
+
+
 def run(tree: Path) -> Output:
     """Ports every element test class and lists what is not ported."""
+    hand_cases, covered = hand_ported()
+    reasons = kept_reasons()
     world = build_world(tree)
     vocabulary = load_vocabulary(ELEMENTS_RS)
     out = Output()
@@ -1782,14 +1829,17 @@ def run(tree: Path) -> Output:
         if snapshot:
             snapshot_sources.add(source)
             continue
+        if (source, test) in covered:
+            continue
         custom = source.endswith("CustomSyntaxElementsTests.cs")
-        out.unported.append(
-            unported(
-                source, test, None, None, "custom-predicate" if custom else "not-yet: non-snapshot"
-            )
+        reason = (
+            "custom-predicate" if custom else reasons.get((source, test), "not-yet: non-snapshot")
         )
+        out.unported.append(unported(source, test, None, None, reason))
     out.unported.sort(key=lambda e: (str(e["source"]), str(e["test"]), e["block"] or 0))
-    cases = sum(len(d["cases"]) for d in out.ported.values() if isinstance(d["cases"], list))
+    cases = hand_cases + sum(
+        len(d["cases"]) for d in out.ported.values() if isinstance(d["cases"], list)
+    )
     out.counts = {
         "total": cases + len(out.unported),
         "ported": cases,
@@ -1811,9 +1861,13 @@ def write(out: Output, pin: str) -> None:
     """Writes ported/*.yaml, unported.json and ported.json."""
     ported_dir = GATE / "ported"
     ported_dir.mkdir(exist_ok=True)
-    for stale in ported_dir.glob("*.yaml"):
-        if stale.stem not in out.ported:
-            stale.unlink()
+    for existing in ported_dir.glob("*.yaml"):
+        if is_hand_ported(existing):
+            if existing.stem in out.ported:
+                message = f"{existing.name} is hand-ported; the tool would overwrite it"
+                raise SystemExit(message)
+        elif existing.stem not in out.ported:
+            existing.unlink()
     for name, doc in sorted(out.ported.items()):
         header = HEADER.format(pin=pin, source=doc["source"])
         (ported_dir / f"{name}.yaml").write_text(header + dump(doc), encoding="utf-8")
