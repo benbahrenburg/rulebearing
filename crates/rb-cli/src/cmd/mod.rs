@@ -13,6 +13,7 @@ pub mod explain;
 pub mod fmt;
 pub mod hooks;
 pub mod impact;
+pub mod import;
 pub mod init;
 pub mod plain;
 pub mod rules;

@@ -72,6 +72,9 @@ pub enum Command {
     Init(crate::cmd::init::InitArgs),
     /// Put an existing dependency-cruiser configuration behind a green gate, with a baseline
     Adopt(crate::cmd::adopt::AdoptArgs),
+    /// Translate ArchUnitNET, NetArchTest, import-linter or eslint rules into a rulebearing.yaml
+    #[command(subcommand)]
+    Import(crate::cmd::import::ImportCommand),
     /// Conformance gate 1 layer 2's protocol (hidden).
     #[command(hide = true)]
     Validate(ProtocolArgs),

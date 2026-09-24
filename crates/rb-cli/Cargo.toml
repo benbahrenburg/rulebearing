@@ -42,6 +42,9 @@ thiserror = { workspace = true }
 chrono = { workspace = true }
 sha2 = { workspace = true }
 regex = { workspace = true }
+toml = { workspace = true }
+tree-sitter = { workspace = true }
+tree-sitter-c-sharp = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

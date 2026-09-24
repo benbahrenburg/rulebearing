@@ -102,6 +102,12 @@ ruff_python_ast = "=0.0.14"
 ruff_python_parser = "=0.0.14"
 ruff_text_size = "=0.0.14"
 
+# `rulebearing import archunit` reads C# test projects (plan 0002, Step 11; the decision rule "How
+# `import archunit` reads C#" in its section 1.7). The wave 3 `--mode source` reuses them. Pinned to
+# exact versions. Both MIT.
+tree-sitter = "=0.27.0"
+tree-sitter-c-sharp = "=0.23.5"
+
 [workspace.lints.rust]
 unsafe_code = "forbid"
 missing_docs = "warn"

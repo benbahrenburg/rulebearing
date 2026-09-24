@@ -47,7 +47,6 @@ pub const LATER: &[(&str, u8)] = &[
     ("diff", 3),
     ("place", 2),
     ("docs", 2),
-    ("import", 2),
     ("propose", 2),
     ("decisions", 2),
     ("guard", 3),
@@ -154,6 +153,7 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         Command::Attest(a) => cmd::attest::run(ctx, &a),
         Command::Init(a) => cmd::init::run(ctx, &a),
         Command::Adopt(a) => cmd::adopt::run(ctx, &a),
+        Command::Import(c) => cmd::import::run(ctx, &c),
         Command::Validate(_) => match ctx.read_stdin() {
             Ok(text) => protocol::validate(&text),
             Err(e) => Outcome::failed(
