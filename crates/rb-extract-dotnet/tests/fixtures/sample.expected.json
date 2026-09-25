@@ -3667,10 +3667,10 @@
   "modules": [
     {
       "coreModule": false,
-      "couldNotResolve": true,
+      "couldNotResolve": false,
       "dependencies": [],
       "dependencyTypes": [
-        "unresolved"
+        "package"
       ],
       "followable": false,
       "language": "dotnet",
@@ -4046,10 +4046,10 @@
         {
           "circular": false,
           "coreModule": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "dependencyKind": "signature",
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "dynamic": false,
           "exoticallyRequired": false,
@@ -4064,10 +4064,10 @@
           "circular": false,
           "column": 35,
           "coreModule": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "dependencyKind": "body",
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "dynamic": false,
           "exoticallyRequired": false,

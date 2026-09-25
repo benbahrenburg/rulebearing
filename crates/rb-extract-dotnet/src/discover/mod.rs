@@ -16,11 +16,16 @@
 //! defaults to `Debug`, and a project built only in another configuration is found by the search
 //! in [`locate`]. `includeDependencies` and `namespaces` act on the loaded assemblies and are
 //! applied by the extractor, not here.
+//!
+//! A project's package references include those of the projects it references, transitively
+//! (a `PackageReference` flows through a `ProjectReference`, as NuGet restores it); the
+//! project's own reference wins when both name one id.
 
 pub mod locate;
 pub mod project;
 pub mod solution;
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use rb_model::DotnetOptions;
@@ -248,15 +253,19 @@ fn loader_assemblies(root: &Path, options: &DotnetOptions) -> Result<Vec<PathBuf
         let glob = globset::Glob::new(filter)
             .map_err(|e| pattern_error("directories.filter", filter, &e))?
             .compile_matcher();
+        // A directory that does not exist is an error, as `ArchLoader.LoadFilteredDirectory`'s
+        // `Directory.GetFiles` throws, never a silently smaller run.
         let dir = root.join(&directory.dir);
-        if let Ok(entries) = std::fs::read_dir(&dir) {
-            found.extend(
-                entries
-                    .flatten()
-                    .map(|e| e.path())
-                    .filter(|p| p.is_file() && p.file_name().is_some_and(|n| glob.is_match(n))),
-            );
-        }
+        let entries = std::fs::read_dir(&dir).map_err(|source| DiscoverError::Io {
+            path: dir.clone(),
+            source,
+        })?;
+        found.extend(
+            entries
+                .flatten()
+                .map(|e| e.path())
+                .filter(|p| p.is_file() && p.file_name().is_some_and(|n| glob.is_match(n))),
+        );
     }
     found.sort();
     found.dedup();
@@ -334,7 +343,54 @@ pub fn discover(root: &Path, options: &DotnetOptions) -> Result<Workspace, Disco
         });
     }
     workspace.projects.sort_by(|a, b| a.path.cmp(&b.path));
+    close_package_refs(&mut workspace.projects, configuration, root);
     Ok(workspace)
+}
+
+/// Adds to each project the package references of the projects it references, transitively. A
+/// referenced project outside the workspace is read for its references; one that cannot be read
+/// adds none.
+pub fn close_package_refs(projects: &mut [Project], configuration: &str, root: &Path) {
+    let mut declared: BTreeMap<PathBuf, (Vec<PathBuf>, Vec<PackageRef>)> = projects
+        .iter()
+        .map(|p| {
+            (
+                p.path.clone(),
+                (p.project_refs.clone(), p.package_refs.clone()),
+            )
+        })
+        .collect();
+    for project in projects.iter_mut() {
+        let mut seen_ids: BTreeSet<String> = project
+            .package_refs
+            .iter()
+            .map(|r| r.id.to_ascii_lowercase())
+            .collect();
+        let mut visited = BTreeSet::from([project.path.clone()]);
+        let mut stack = project.project_refs.clone();
+        while let Some(path) = stack.pop() {
+            if !visited.insert(path.clone()) {
+                continue;
+            }
+            let (refs, packages) = declared
+                .entry(path.clone())
+                .or_insert_with(|| {
+                    ProjectFile::read(&path, configuration, root)
+                        .map(|f| (f.project_refs, f.package_refs))
+                        .unwrap_or_default()
+                })
+                .clone();
+            for package in packages {
+                if seen_ids.insert(package.id.to_ascii_lowercase()) {
+                    project.package_refs.push(package);
+                }
+            }
+            stack.extend(refs);
+        }
+        project
+            .package_refs
+            .sort_by_key(|r| (r.id.to_ascii_lowercase(), r.id.clone()));
+    }
 }
 
 #[cfg(test)]
@@ -369,7 +425,8 @@ pub(crate) mod tests {
         let dir = scratch("mode-sln");
         write(
             &dir.join("App.slnx"),
-            r#"<Solution><Project Path="src/Web/Web.csproj"/><Project Path="tests/Web.Tests/Web.Tests.csproj"/></Solution>"#,
+            // The second entry is written through `build/..`: `excludeProjects` still sees `tests/`.
+            r#"<Solution><Project Path="src/Web/Web.csproj"/><Project Path="build/../tests/Web.Tests/Web.Tests.csproj"/></Solution>"#,
         );
         write(&dir.join("src/Web/Web.csproj"), "<Project/>");
         write(&dir.join("src/Web/bin/Debug/Web.dll"), "");
@@ -421,6 +478,56 @@ pub(crate) mod tests {
         assert_eq!(
             discover(&dir, &named).ok().map(|w| w.projects.len()),
             Some(2)
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn package_references_flow_through_project_references() {
+        let dir = scratch("transitive");
+        write(
+            &dir.join("App.slnx"),
+            r#"<Solution><Project Path="src/Web/Web.csproj"/><Project Path="src/Core/Core.csproj"/></Solution>"#,
+        );
+        write(
+            &dir.join("src/Web/Web.csproj"),
+            r#"<Project><ItemGroup><ProjectReference Include="..\Core\Core.csproj" /><PackageReference Include="serilog" Version="3.0" /></ItemGroup></Project>"#,
+        );
+        write(
+            &dir.join("src/Core/Core.csproj"),
+            r#"<Project><ItemGroup><ProjectReference Include="../Outside/Outside.csproj" /><ProjectReference Include="../Web/Web.csproj" /><PackageReference Include="Serilog" Version="2.0" /><PackageReference Include="Newtonsoft.Json" Version="13.0.3" /></ItemGroup></Project>"#,
+        );
+        write(
+            &dir.join("src/Outside/Outside.csproj"),
+            r#"<Project><ItemGroup><PackageReference Include="Dapper" Version="2.1" /></ItemGroup></Project>"#,
+        );
+        let workspace = discover(&dir, &DotnetOptions::default()).ok();
+        let packages = |name: &str| -> Vec<(String, Option<String>)> {
+            workspace
+                .iter()
+                .flat_map(|w| &w.projects)
+                .filter(|p| p.assembly_name == name)
+                .flat_map(|p| &p.package_refs)
+                .map(|r| (r.id.clone(), r.version.clone()))
+                .collect()
+        };
+        let pair = |id: &str, v: &str| (id.to_owned(), Some(v.to_owned()));
+        assert_eq!(
+            packages("Web"),
+            vec![
+                pair("Dapper", "2.1"),
+                pair("Newtonsoft.Json", "13.0.3"),
+                pair("serilog", "3.0"),
+            ],
+            "a cycle back to Web ends; Web's own Serilog version wins"
+        );
+        assert_eq!(
+            packages("Core"),
+            vec![
+                pair("Dapper", "2.1"),
+                pair("Newtonsoft.Json", "13.0.3"),
+                pair("Serilog", "2.0"),
+            ]
         );
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -491,6 +598,17 @@ pub(crate) mod tests {
         assert_eq!(
             discover(&dir, &filtered).ok().as_ref().map(names),
             Some(vec!["Other"])
+        );
+        let missing = DotnetOptions {
+            directories: Some(vec![DirectoryFilter {
+                dir: "no-such-dir".to_owned(),
+                filter: None,
+            }]),
+            ..DotnetOptions::default()
+        };
+        assert!(
+            matches!(discover(&dir, &missing), Err(DiscoverError::Io { path, .. }) if path == dir.join("no-such-dir")),
+            "a missing directory names itself"
         );
         let none = DotnetOptions {
             assemblies: Some(vec!["nothing/*.dll".to_owned()]),

@@ -16,7 +16,7 @@
 //! | --- | --- |
 //! | `local` | the target type is defined in the same project |
 //! | `project` | in another loaded project |
-//! | `package` | in an assembly a `PackageReference` of the source project names |
+//! | `package` | in an assembly a `PackageReference` of the source project names, directly or through its `ProjectReference`s; or a non-framework assembly found beside the built output (a package arriving transitively) |
 //! | `framework` | in a `System.*`, `Microsoft.*`, `mscorlib` or `netstandard` assembly the project does not reference as a package |
 //! | `unresolved` | anywhere else outside the loaded set |
 //! | `test-only` | added when the source project is a test project |
@@ -24,7 +24,10 @@
 //!
 //! An external target is the module named by its assembly (`Newtonsoft.Json`), with
 //! `coreModule` for the framework and `couldNotResolve` for `unresolved`, as dependency-cruiser
-//! names an npm package by its name.
+//! names an npm package by its name. Two projects may classify one assembly differently (one
+//! references the package, the other does not); the module takes the most resolved answer
+//! (`package`, then `framework`, then `unresolved`), with a licence over none, so its fields
+//! never depend on which file sorts first.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -79,9 +82,10 @@ pub fn providing_package<'p>(assembly: &str, packages: &'p [PackageRef]) -> Opti
             packages
                 .iter()
                 .filter(|p| {
-                    assembly.len() > p.id.len()
-                        && assembly[..p.id.len()].eq_ignore_ascii_case(&p.id)
-                        && assembly.as_bytes()[p.id.len()] == b'.'
+                    assembly
+                        .get(..p.id.len())
+                        .is_some_and(|head| head.eq_ignore_ascii_case(&p.id))
+                        && assembly.as_bytes().get(p.id.len()) == Some(&b'.')
                 })
                 .max_by_key(|p| p.id.len())
         })
@@ -108,6 +112,35 @@ pub fn package_license(package: &PackageRef, packages_root: Option<&Path>) -> Op
     find("license").or_else(|| find("licenseUrl"))
 }
 
+/// Package licences, each `.nuspec` read once per (id, version) however many edges name it.
+#[derive(Debug)]
+struct Licenses<'a> {
+    root: Option<&'a Path>,
+    cache: BTreeMap<(String, Option<String>), Option<String>>,
+    reads: usize,
+}
+
+impl<'a> Licenses<'a> {
+    fn new(root: Option<&'a Path>) -> Self {
+        Self {
+            root,
+            cache: BTreeMap::new(),
+            reads: 0,
+        }
+    }
+
+    fn get(&mut self, package: &PackageRef) -> Option<String> {
+        let key = (package.id.to_ascii_lowercase(), package.version.clone());
+        if let Some(found) = self.cache.get(&key) {
+            return found.clone();
+        }
+        self.reads += 1;
+        let found = package_license(package, self.root);
+        self.cache.insert(key, found.clone());
+        found
+    }
+}
+
 /// The global packages folder: `$NUGET_PACKAGES`, else `~/.nuget/packages`.
 pub fn packages_root() -> Option<PathBuf> {
     std::env::var_os("NUGET_PACKAGES")
@@ -115,6 +148,15 @@ pub fn packages_root() -> Option<PathBuf> {
         .or_else(|| {
             std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".nuget/packages"))
         })
+}
+
+/// How resolved an external classification is, lower first: the module keeps the lowest.
+fn resolution_rank(kind: DependencyType) -> u8 {
+    match kind {
+        DependencyType::Package => 0,
+        DependencyType::Framework => 1,
+        _ => 2,
+    }
 }
 
 /// The first reference of one grouped edge: line, column, member references, whether any was
@@ -126,13 +168,19 @@ type FirstReference = (Option<u32>, Option<u32>, BTreeSet<String>, bool, String)
     clippy::too_many_lines,
     reason = "group, classify, then attach: one projection kept in one place so the grouping key is visible"
 )]
+///
+/// `beside` holds the simple names (lowercase) of the assemblies found beside the built output:
+/// a target in one of them that no package reference names is a `package` (a package arriving
+/// transitively), never `unresolved`.
 pub fn project(
     universe: &Universe<'_>,
     assemblies: &[AssemblyFiles<'_>],
     dependencies: &[TypeDependency],
     modules: &mut Vec<Module>,
     packages_root: Option<&Path>,
+    beside: &BTreeSet<String>,
 ) {
+    let mut licenses = Licenses::new(packages_root);
     // (from file, landing, kind) -> first reference.
     let mut grouped: BTreeMap<(String, Landing, DependencyKind), FirstReference> = BTreeMap::new();
     let mut from_test: BTreeMap<String, bool> = BTreeMap::new();
@@ -163,11 +211,14 @@ pub fn project(
                     .unwrap_or_else(|| PRIMITIVE_ASSEMBLY.to_owned());
                 match providing_package(&name, &source.project.package_refs) {
                     Some(package) => {
-                        let license = package_license(package, packages_root);
+                        let license = licenses.get(package);
                         Landing::External(name, DependencyType::Package, license)
                     }
                     None if is_framework(&name) => {
                         Landing::External(name, DependencyType::Framework, None)
+                    }
+                    None if beside.contains(&name.to_ascii_lowercase()) => {
+                        Landing::External(name, DependencyType::Package, None)
                     }
                     None => Landing::External(name, DependencyType::Unresolved, None),
                 }
@@ -220,9 +271,17 @@ pub fn project(
                 None,
             ),
             Landing::External(name, kind, license) => {
+                let candidate = (*kind, license.clone());
                 externals
                     .entry(name.clone())
-                    .or_insert_with(|| (*kind, license.clone()));
+                    .and_modify(|current| {
+                        let better = (resolution_rank(candidate.0), candidate.1.is_none())
+                            < (resolution_rank(current.0), current.1.is_none());
+                        if better {
+                            current.clone_from(&candidate);
+                        }
+                    })
+                    .or_insert(candidate);
                 (
                     name.clone(),
                     vec![*kind],
@@ -442,6 +501,7 @@ mod tests {
             &dependencies,
             &mut modules,
             Some(&root),
+            &BTreeSet::new(),
         );
         let _ = std::fs::remove_dir_all(&root);
         let sources: Vec<&str> = modules.iter().map(|m| m.source.as_str()).collect();
@@ -499,12 +559,137 @@ mod tests {
         );
     }
 
+    #[test]
+    fn a_non_ascii_assembly_name_never_splits_a_character() {
+        let packages = [package("Ab", None), package("A", None)];
+        assert_eq!(
+            providing_package("Aé.X", &packages).map(|p| p.id.as_str()),
+            None
+        );
+        assert_eq!(
+            providing_package("A.é", &packages).map(|p| p.id.as_str()),
+            Some("A")
+        );
+        assert_eq!(providing_package("é", &[package("éé", None)]), None);
+    }
+
+    #[test]
+    fn a_nuspec_is_read_once_per_package_version() {
+        let root = std::env::temp_dir().join(format!("rb-licence-cache-{}", std::process::id()));
+        let dir = root.join("p/1.0.0");
+        let _ = std::fs::create_dir_all(&dir);
+        let _ = std::fs::write(
+            dir.join("p.nuspec"),
+            "<package><metadata><license>MIT</license></metadata></package>",
+        );
+        let mut licenses = Licenses::new(Some(&root));
+        for _ in 0..5 {
+            assert_eq!(
+                licenses.get(&package("P", Some("1.0.0"))).as_deref(),
+                Some("MIT")
+            );
+            assert_eq!(
+                licenses.get(&package("p", Some("1.0.0"))).as_deref(),
+                Some("MIT")
+            );
+        }
+        assert_eq!(licenses.get(&package("P", Some("2.0.0"))), None);
+        assert_eq!(licenses.reads, 2);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn an_assembly_beside_the_output_is_a_package_and_modules_take_the_most_resolved_answer() {
+        // Two projects: one references Lib as a package, the other gets it transitively (it is
+        // beside its output); a third assembly, Gone, is neither.
+        let mut direct = crate::discover::Project::loose(Path::new("a/A.dll"));
+        direct.package_refs = vec![package("Lib", Some("1.0.0"))];
+        let transitive = crate::discover::Project::loose(Path::new("b/B.dll"));
+        let assemblies = [
+            AssemblyFiles {
+                project: &transitive,
+                project_path: "b/B.csproj".into(),
+                files: BTreeMap::new(),
+            },
+            AssemblyFiles {
+                project: &direct,
+                project_path: "a/A.csproj".into(),
+                files: BTreeMap::new(),
+            },
+        ];
+        let lib = external("Lib.T", Some("Lib"));
+        let gone = external("Gone.T", Some("Gone"));
+        let dependencies = vec![
+            dep("a.cs", lib.clone(), DependencyKind::Body),
+            TypeDependency {
+                assembly: 1,
+                ..dep("b.cs", lib, DependencyKind::Body)
+            },
+            dep("a.cs", gone, DependencyKind::Body),
+        ];
+        let universe = Universe::new(Vec::new());
+        let classify = |beside: &BTreeSet<String>| {
+            let mut modules = vec![Module::new("a.cs"), Module::new("b.cs")];
+            project(
+                &universe,
+                &assemblies,
+                &dependencies,
+                &mut modules,
+                None,
+                beside,
+            );
+            modules
+        };
+        let modules = classify(&BTreeSet::new());
+        let module = |modules: &[Module], name: &str| {
+            modules
+                .iter()
+                .find(|m| m.source == name)
+                .map(|m| (m.dependency_types.clone(), m.could_not_resolve))
+        };
+        assert_eq!(
+            module(&modules, "Lib"),
+            Some((Some(vec![DependencyType::Package]), Some(false))),
+            "the project that references the package wins over the one that does not"
+        );
+        let edge = |modules: &[Module], from: &str| {
+            modules
+                .iter()
+                .find(|m| m.source == from)
+                .and_then(|m| m.dependencies.iter().find(|d| d.resolved == "Lib"))
+                .map(|d| (d.dependency_types[0], d.could_not_resolve))
+        };
+        assert_eq!(
+            edge(&modules, "a.cs"),
+            Some((DependencyType::Unresolved, true))
+        );
+        let beside = BTreeSet::from(["lib".to_owned()]);
+        let modules = classify(&beside);
+        assert_eq!(
+            edge(&modules, "a.cs"),
+            Some((DependencyType::Package, false))
+        );
+        assert_eq!(
+            module(&modules, "Gone"),
+            Some((Some(vec![DependencyType::Unresolved]), Some(true)))
+        );
+    }
+
     proptest! {
         #[test]
         fn a_prefix_that_is_not_dotted_never_provides(id in "[A-Za-z]{1,8}", rest in "[A-Za-z]{1,8}") {
             let packages = [package(&id, None)];
             let joined = format!("{id}{rest}");
             prop_assert!(providing_package(&joined, &packages).is_none());
+        }
+
+        #[test]
+        fn any_names_are_matched_without_a_panic(id in "\\PC{0,6}", assembly in "\\PC{0,10}") {
+            let packages = [package(&id, None)];
+            let found = providing_package(&assembly, &packages);
+            if found.is_some() {
+                prop_assert!(assembly.to_ascii_lowercase().starts_with(&id.to_ascii_lowercase()));
+            }
         }
     }
 }

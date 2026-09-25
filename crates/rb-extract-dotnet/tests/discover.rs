@@ -292,12 +292,18 @@ fn loader_globs_and_include_dependencies() -> Result<(), Box<dyn std::error::Err
     };
     let alone = DotnetExtractor.extract(std::slice::from_ref(&dir), &only)?;
     assert_eq!(alone.inspected.assemblies, 1);
-    let unresolved = alone
+    let beside = alone
         .modules
         .iter()
         .find(|m| m.source == "Sample.Core")
         .ok_or("Sample.Core is a named module when not loaded")?;
-    assert_eq!(unresolved.could_not_resolve, Some(true));
+    // It sits beside the loaded assembly, so it is resolved on disk: a package-like module,
+    // never couldNotResolve.
+    assert_eq!(beside.could_not_resolve, Some(false));
+    assert_eq!(
+        beside.dependency_types,
+        Some(vec![rb_model::DependencyType::Package])
+    );
     let with = DotnetOptions {
         include_dependencies: Some(true),
         ..only
