@@ -660,6 +660,7 @@ fn setter_is(member: Option<&rb_model::MemberElement>, visibility: &str) -> bool
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::elements::Architecture;
 
     #[test]
     fn name_comparisons_follow_naming_extensions() {
@@ -668,6 +669,9 @@ mod tests {
         assert!(ends_ignore_case("Ns.Order", "ORDER"));
         assert!(contains_ignore_case("Ns.Order", "s.o"));
         assert!(!eq_ignore_case("Order", "Orders"));
+        // Beyond ASCII, case still folds: `NamingExtensions` compares with `ToLower`.
+        assert!(eq_ignore_case("Écrire", "écrire"));
+        assert!(!eq_ignore_case("Écrire", "ecrire"));
         assert_eq!(generic_definition("Ns.Box`1<Ns.A>"), "Ns.Box`1");
         assert_eq!(generic_definition("Ns.A"), "Ns.A");
     }
@@ -707,5 +711,142 @@ mod tests {
         assert!(!getter_is(Some(&property), "public"));
         let method = rb_model::MemberElement::new("T", "m()", "method", location);
         assert!(member_immutable(&method));
+    }
+
+    /// `S.T` declares a field `x`, a method `M` that calls `S.U::Callee()` and has two body
+    /// dependencies on `S.U` (one a call, one a local's type), a constructor `.ctor` and a
+    /// property `P`; `S.U` declares `Callee`.
+    fn members_document() -> rb_model::GraphDocument {
+        let at = || rb_model::Location::in_file(rb_model::Language::Dotnet, None);
+        let member = |ty: &str, name: &str, kind: &str, full: &str| {
+            let mut m = rb_model::MemberElement::new(ty, name, kind, at());
+            m.full_name = Some(full.to_owned());
+            m
+        };
+        let body = |target: &str, form: &str| rb_model::ElementDependency {
+            target: target.to_owned(),
+            kind: "body".to_owned(),
+            member: None,
+            line: None,
+            form: Some(form.to_owned()),
+        };
+        let mut method = member("S.T", "M", "method", "S.T::M()");
+        method.dependencies = vec![body("S.U", "call")];
+        let mut local = member("S.T", "L", "method", "S.T::L()");
+        local.dependencies = vec![body("S.V", "body-type")];
+        rb_model::GraphDocument {
+            code: Some(rb_model::CodeLayer {
+                types: vec![
+                    rb_model::TypeElement::new("S.T", "T", "class", at()),
+                    rb_model::TypeElement::new("S.U", "U", "class", at()),
+                    rb_model::TypeElement::new("S.V", "V", "class", at()),
+                ],
+                members: vec![
+                    member("S.T", "x", "field", "S.T::x"),
+                    method,
+                    local,
+                    member("S.T", ".ctor", "constructor", "S.T::.ctor()"),
+                    member("S.T", "P", "property", "S.T::P"),
+                    member("S.U", "Callee", "method", "S.U::Callee()"),
+                ],
+                calls: vec![rb_model::CallElement {
+                    from: "S.T::M()".to_owned(),
+                    to: "S.U::Callee()".to_owned(),
+                    location: at(),
+                }],
+                ..rb_model::CodeLayer::default()
+            }),
+            ..rb_model::GraphDocument::default()
+        }
+    }
+
+    fn check(
+        e: &Evaluator<'_, '_>,
+        object: &Object<'_>,
+        concept: Concept,
+        operand: Operand,
+    ) -> Result<bool, ElementError> {
+        test(
+            e,
+            object,
+            &Test {
+                key: "k".to_owned(),
+                concept,
+                negated: false,
+                operand,
+            },
+        )
+    }
+
+    fn names(names: &[&str]) -> Operand {
+        Operand::Names(names.iter().map(|n| (*n).to_owned()).collect())
+    }
+
+    fn objects(names: &[&str]) -> Operand {
+        Operand::Objects(rb_config::elements::Objects::Names(
+            names.iter().map(|n| (*n).to_owned()).collect(),
+        ))
+    }
+
+    #[test]
+    fn member_name_concepts_match_only_their_own_kind() -> Result<(), ElementError> {
+        let document = members_document();
+        let architecture = Architecture::new(&document);
+        let e = Evaluator::new(&architecture, "r");
+        let t = Object::Type(architecture.types["S.T"]);
+        let table = [
+            (Concept::HaveMemberWithName, "x", true),
+            (Concept::HaveMemberWithName, "P", true),
+            (Concept::HaveFieldMemberWithName, "x", true),
+            (Concept::HaveFieldMemberWithName, "M", false),
+            (Concept::HaveFieldMemberWithName, "P", false),
+            (Concept::HaveMethodMemberWithName, "M", true),
+            (Concept::HaveMethodMemberWithName, ".ctor", true),
+            (Concept::HaveMethodMemberWithName, "x", false),
+            (Concept::HaveMethodMemberWithName, "P", false),
+            (Concept::HavePropertyMemberWithName, "P", true),
+            (Concept::HavePropertyMemberWithName, "x", false),
+            (Concept::HavePropertyMemberWithName, "M", false),
+        ];
+        for (concept, name, want) in table {
+            assert_eq!(
+                check(&e, &t, concept, names(&[name]))?,
+                want,
+                "{concept:?} {name}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn call_any_on_a_type_counts_its_members_calls() -> Result<(), ElementError> {
+        let document = members_document();
+        let architecture = Architecture::new(&document);
+        let e = Evaluator::new(&architecture, "r");
+        let callee = || objects(&["S.U::Callee()"]);
+        let t = Object::Type(architecture.types["S.T"]);
+        assert!(check(&e, &t, Concept::CallAny, callee())?);
+        let u = Object::Type(architecture.types["S.U"]);
+        assert!(!check(&e, &u, Concept::CallAny, callee())?);
+        let m = Object::Member(architecture.members_of["S.T"][1]);
+        assert!(check(&e, &m, Concept::CallAny, callee())?);
+        Ok(())
+    }
+
+    #[test]
+    fn a_method_body_dependency_counts_only_as_a_body_type() -> Result<(), ElementError> {
+        let document = members_document();
+        let architecture = Architecture::new(&document);
+        let e = Evaluator::new(&architecture, "r");
+        let concept = Concept::HaveDependencyInMethodBodyTo;
+        let calling = Object::Member(architecture.members_of["S.T"][1]);
+        assert!(
+            !check(&e, &calling, concept, objects(&["S.U"]))?,
+            "a call is not a body-type dependency"
+        );
+        let local = Object::Member(architecture.members_of["S.T"][2]);
+        assert!(check(&e, &local, concept, objects(&["S.V"]))?);
+        assert!(!check(&e, &local, concept, objects(&["S.U"]))?);
+        Ok(())
     }
 }
