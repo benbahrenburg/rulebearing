@@ -17,7 +17,7 @@
 //! | --- | --- | --- | --- |
 //! | `full` (default) | the tree and the configuration | every current violation, the `baseline` reporter's output; an entry whose `id` was already in the file keeps its `expires`, `owner` and `reason` | 0 |
 //! | `shrink-only` | the tree, and the baseline file (or, without one, `options.knownViolations`) as the known violations | the file less the entries no violation matches any more; never adds one | the number of entries that no longer occur, each printed; 0 when every entry still occurs |
-//! | `format` | the baseline file only | the same entries, validated, sorted by rule, `from`, `to` and `id`, with sorted keys | 0 |
+//! | `format` | the baseline file only | the same entries, validated, sorted by rule, `from`, `to` and `id`, each entry's keys in the fixed order of a known-violation entry (not sorted) | 0 |
 //!
 //! `--expires`, `--owner` and `--reason` fill those fields on every entry written that lacks them.
 //! A malformed flag, file or configuration exits 3.

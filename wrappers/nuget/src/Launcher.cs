@@ -127,20 +127,53 @@ internal static class Launcher
             start.ArgumentList.Add(arg);
         }
 
-        // Ctrl+C reaches the binary through the shared console; the launcher waits for it to stop.
-        ConsoleCancelEventHandler keepWaiting = static (_, e) => e.Cancel = true;
-        Console.CancelKeyPress += keepWaiting;
+        if (OperatingSystem.IsWindows())
+        {
+            // Ctrl+C reaches the binary through the shared console; the launcher waits for it to stop.
+            ConsoleCancelEventHandler keepWaiting = static (_, e) => e.Cancel = true;
+            Console.CancelKeyPress += keepWaiting;
+            try
+            {
+                return StartAndWait(start, binary, static _ => { });
+            }
+            finally
+            {
+                Console.CancelKeyPress -= keepWaiting;
+            }
+        }
+
+        return StartForwardingSignals(start, binary);
+    }
+
+    /// <summary>
+    /// Starts the binary with SIGINT, SIGTERM and SIGHUP forwarded to it (src/SignalForwarding.cs),
+    /// waits for it to stop and returns its exit code.
+    /// </summary>
+    [UnsupportedOSPlatform("windows")]
+    private static int StartForwardingSignals(ProcessStartInfo start, string binary)
+    {
+        List<PosixSignalRegistration> registrations = [];
         try
         {
-            using Process process = Process.Start(start)
-                ?? throw new InvalidOperationException($"rulebearing: {binary} did not start.");
-            process.WaitForExit();
-            return process.ExitCode;
+            return StartAndWait(start, binary, process => registrations.AddRange(
+                SignalForwarding.Register(name => SignalForwarding.Send(process.Id, name))));
         }
         finally
         {
-            Console.CancelKeyPress -= keepWaiting;
+            foreach (PosixSignalRegistration registration in registrations)
+            {
+                registration.Dispose();
+            }
         }
+    }
+
+    private static int StartAndWait(ProcessStartInfo start, string binary, Action<Process> started)
+    {
+        using Process process = Process.Start(start)
+            ?? throw new InvalidOperationException($"rulebearing: {binary} did not start.");
+        started(process);
+        process.WaitForExit();
+        return process.ExitCode;
     }
 
     /// <summary>The tool's entry point, with its environment passed in.</summary>

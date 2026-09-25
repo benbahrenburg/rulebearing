@@ -22,10 +22,14 @@ echo "== crates.io"
 (cd "$here/crates/rulebearing" && if $dry; then cargo publish --dry-run --allow-dirty --target-dir "$work/cargo"; else cargo publish --target-dir "$work/cargo"; fi)
 
 echo "== npm"
-(cd "$here/npm" && if $dry; then npm publish --dry-run --access public; else npm publish --access public; fi)
+# The 0.0.1 reservation is published. wrappers/npm is now the real `rulebearing` package, staged
+# from the release archives and published by release.yml (docs/release.md); publishing it from here
+# would push the source tree's package, without its platform packages, under the real name. The
+# step refuses rather than run `npm publish` on it.
+echo "npm: reserved at 0.0.1; the real packages are released by .github/workflows/release.yml"
 if ! $dry; then
-  echo "npm: checking the @rulebearing scope from this signed-in session (ADR-0020)"
-  npm org ls rulebearing >/dev/null 2>&1 && echo "npm: @rulebearing exists and is yours" || echo "npm: @rulebearing is not an organisation you hold; create it at https://www.npmjs.com/org/create"
+  echo "npm: refusing to publish wrappers/npm from this script; tag a release instead (docs/release.md)" >&2
+  exit 1
 fi
 
 echo "== PyPI"

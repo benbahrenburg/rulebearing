@@ -39,7 +39,10 @@ public class RuleResult
     private Func<string, Exception> assertion = static message => new RuleFailedException(message);
 
     /// <summary>Creates a rule result from the fields the <c>junit</c> reporter derives.</summary>
-    /// <param name="name">The rule's name, as its violations carry it.</param>
+    /// <param name="name">
+    /// The rule's identity, the test case's name: its name as its violations carry it, with
+    /// <c>#n</c> for the n-th rule of a name already taken (the <c>junit</c> test case name).
+    /// </param>
     /// <param name="family">
     /// <c>forbidden</c>, <c>allowed</c>, <c>required</c>, <c>elements</c>, <c>slices</c>,
     /// <c>diagrams</c>, <c>ratchets</c>, <c>knownViolations</c>, or <c>rules</c> for a rule known
@@ -87,7 +90,7 @@ public class RuleResult
     {
     }
 
-    /// <summary>The rule's name.</summary>
+    /// <summary>The rule's identity: its name, or <c>name#2</c> and so on for a later rule of the same name, as <c>junit</c> names the test case.</summary>
     public string Name => name;
 
     /// <summary>The configuration family the rule belongs to.</summary>

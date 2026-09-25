@@ -10,17 +10,24 @@
 //! - Specification: the OASIS SARIF 2.1.0 schema, vendored in `tests/schemas/`, which
 //!   `tests/sarif_schema.rs` validates every output against
 //!
-//! One run, whose driver lists every rule of the configuration ([`crate::catalog`]):
-//! `shortDescription` the name, `fullDescription` and `help.text` the comment, `help.markdown` the
+//! One run, whose driver lists every rule of the configuration ([`crate::catalog`]): `id` the
+//! catalogue id (the name, `name#2` for a second rule of that name), `shortDescription` the name, `fullDescription` and `help.text` the comment, `help.markdown` the
 //! comment and then the `fix` under **Fix**, `defaultConfiguration.level` from the severity
 //! (`error`, `warning` for `warn`, `note` for `info`, `none` for `ignore`), and `properties` with
 //! the family, the `fix` and the decision token. One result per violation, with the rule's index,
 //! its level, a message naming the edge or object and the `fix`, the location of `from` (with the
 //! line and column when the extractor recorded them) and the fingerprint. A known violation
 //! (severity `ignore`) is reported with an external suppression, so code scanning shows it as
-//! baselined rather than dropping it. A vacuous rule and an expired entry are configuration
-//! notifications on the invocation. Exits 0, as the data reporters do
+//! baselined rather than dropping it. An exceeded ratchet is one `error` result of its rule, placed
+//! on the budget file, so a ratchet that fails the gate never leaves `results` empty. A vacuous
+//! rule, an expired entry and a ratchet whose budget cannot be read are configuration
+//! notifications on the invocation (the last at level `error`, as it makes the run untrustworthy).
+//! Every `artifactLocation.uri` is a relative reference: `\` becomes `/` and each segment is
+//! percent-encoded to RFC 3986 `pchar`s (`:` too, so a first segment never reads as a scheme).
+//! Exits 0, as the data reporters do
 //! ([ADR-0030](../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)).
+
+use std::fmt::Write as _;
 
 use serde_json::{Map, Value, json};
 
@@ -42,9 +49,23 @@ pub fn level(severity: &str) -> &'static str {
     }
 }
 
+/// A path as a URI reference: `\\` as `/`, each segment's bytes outside RFC 3986's unreserved
+/// characters and sub-delimiters (and `@`) percent-encoded.
+pub fn uri(path: &str) -> String {
+    let mut out = String::with_capacity(path.len());
+    for byte in path.replace('\\', "/").bytes() {
+        if byte.is_ascii_alphanumeric() || b"-._~!$&'()*+,;=@/".contains(&byte) {
+            out.push(char::from(byte));
+        } else {
+            let _ = write!(out, "%{byte:02X}");
+        }
+    }
+    out
+}
+
 fn rule_descriptor(rule: &CatalogRule) -> Value {
     let mut descriptor = Map::new();
-    descriptor.insert("id".into(), json!(rule.name));
+    descriptor.insert("id".into(), json!(rule.id));
     descriptor.insert("shortDescription".into(), json!({ "text": rule.name }));
     let help = rule.comment.clone().unwrap_or_else(|| rule.name.clone());
     if let Some(comment) = &rule.comment {
@@ -94,7 +115,7 @@ fn result_of(
 ) -> Value {
     let severity = crate::severity(violation);
     let mut out = Map::new();
-    out.insert("ruleId".into(), json!(rule.name));
+    out.insert("ruleId".into(), json!(rule.id));
     out.insert("ruleIndex".into(), json!(index));
     out.insert("level".into(), json!(level(&severity)));
     out.insert(
@@ -106,7 +127,7 @@ fn result_of(
         let mut physical = Map::new();
         physical.insert(
             "artifactLocation".into(),
-            json!({ "uri": format!("{prefix}{from}") }),
+            json!({ "uri": uri(&format!("{prefix}{from}")) }),
         );
         if let Some((line, column)) = catalog::position(result, violation).filter(|(l, _)| *l > 0) {
             physical.insert(
@@ -137,8 +158,61 @@ fn result_of(
     Value::Object(out)
 }
 
-fn notifications(result: &Value) -> Vec<Value> {
+/// One `error` result per exceeded ratchet, on its budget file.
+fn ratchet_results(result: &Value, rules: &[CatalogRule], prefix: &str) -> Vec<Value> {
+    let indexes = rules
+        .iter()
+        .enumerate()
+        .filter(|(_, r)| r.family == "ratchets")
+        .map(|(i, _)| i);
     let mut out = Vec::new();
+    for (ratchet, index) in catalog::list(result, "ratchets").into_iter().zip(indexes) {
+        if ratchet.get("status").and_then(Value::as_str) != Some("exceeded") {
+            continue;
+        }
+        let budget = text(ratchet, "budget");
+        out.push(json!({
+            "ruleId": rules[index].id,
+            "ruleIndex": index,
+            "level": "error",
+            "message": { "text": format!(
+                "ratchet `{}`: {} edges exceed the ceiling of {} in {budget}",
+                rules[index].name,
+                crate::js_number(ratchet.get("count")),
+                crate::js_number(ratchet.get("ceiling"))
+            ) },
+            "locations": [{ "physicalLocation": {
+                "artifactLocation": { "uri": uri(&format!("{prefix}{budget}")) }
+            } }],
+            "properties": { "type": "ratchet" }
+        }));
+    }
+    out
+}
+
+fn notifications(result: &Value, rules: &[CatalogRule]) -> Vec<Value> {
+    let mut out = Vec::new();
+    let ratchet_ids = rules
+        .iter()
+        .filter(|r| r.family == "ratchets")
+        .map(|r| r.id.clone());
+    for (ratchet, id) in catalog::list(result, "ratchets")
+        .into_iter()
+        .zip(ratchet_ids)
+    {
+        if ratchet.get("status").and_then(Value::as_str) == Some("no-budget") {
+            out.push(json!({
+                "descriptor": { "id": id },
+                "level": "error",
+                "message": { "text": format!(
+                    "ratchet `{}`: the budget {} cannot be read, so the count {} is checked against nothing",
+                    text(ratchet, "name"),
+                    text(ratchet, "budget"),
+                    crate::js_number(ratchet.get("count"))
+                ) }
+            }));
+        }
+    }
     for vacuous in catalog::list(result, "vacuousRules") {
         let name = text(vacuous, "name");
         let warn = vacuous.get("severity").and_then(Value::as_str) == Some("warn");
@@ -170,11 +244,11 @@ pub fn render(result: &Value, prefix: &str) -> Rendered {
     let rules = catalog::rules(result);
     let mut results = Vec::new();
     for violation in catalog::violations(result) {
-        let name = catalog::rule_name(violation);
-        if let Some(index) = rules.iter().position(|r| r.name == name) {
+        if let Some(index) = catalog::rule_index(&rules, violation) {
             results.push(result_of(result, violation, index, &rules[index], prefix));
         }
     }
+    results.extend(ratchet_results(result, &rules, prefix));
     let log = json!({
         "$schema": SCHEMA,
         "version": "2.1.0",
@@ -187,7 +261,7 @@ pub fn render(result: &Value, prefix: &str) -> Rendered {
             } },
             "invocations": [{
                 "executionSuccessful": true,
-                "toolConfigurationNotifications": notifications(result)
+                "toolConfigurationNotifications": notifications(result, &rules)
             }],
             "results": results
         }]
@@ -318,5 +392,81 @@ mod tests {
         assert_eq!(render(&result(), "").output, render(&result(), "").output);
         let empty = render(&json!({}), "");
         assert!(empty.output.contains("\"results\": []"));
+    }
+
+    #[test]
+    fn rules_sharing_a_name_are_separate_rules_and_results_point_at_their_own()
+    -> Result<(), serde_json::Error> {
+        let result = json!({ "summary": {
+            "violations": [
+                { "type": "dependency", "from": "a", "to": "b", "rule": { "name": "unnamed", "severity": "warn" } },
+                { "type": "dependency", "from": "c", "to": "d", "rule": { "name": "unnamed", "severity": "error" } }
+            ],
+            "ruleSetUsed": { "forbidden": [{ "name": "unnamed", "severity": "error" }, { "name": "unnamed", "severity": "warn" }] }
+        } });
+        let log: Value = serde_json::from_str(&render(&result, "").output)?;
+        let run = &log["runs"][0];
+        let rules = &run["tool"]["driver"]["rules"];
+        assert_eq!(rules[0]["id"], "unnamed");
+        assert_eq!(rules[1]["id"], "unnamed#2");
+        assert_eq!(rules[1]["shortDescription"]["text"], "unnamed");
+        let results = &run["results"];
+        assert_eq!(results[0]["ruleId"], "unnamed#2");
+        assert_eq!(results[0]["ruleIndex"], 1);
+        assert_eq!(results[1]["ruleId"], "unnamed");
+        assert_eq!(results[1]["ruleIndex"], 0);
+        Ok(())
+    }
+
+    #[test]
+    fn an_exceeded_ratchet_is_a_result_and_a_lost_budget_an_error_notification()
+    -> Result<(), serde_json::Error> {
+        let result = json!({ "summary": {
+            "ratchets": [
+                { "name": "held", "budget": "h.json", "count": 1, "ceiling": 4, "status": "held" },
+                { "name": "over", "budget": "budgets/o.json", "count": 3, "ceiling": 2, "status": "exceeded" },
+                { "name": "lost", "budget": "l.json", "count": 1, "status": "no-budget" }
+            ]
+        } });
+        let log: Value = serde_json::from_str(&render(&result, "web/").output)?;
+        let run = &log["runs"][0];
+        assert_eq!(
+            run["results"],
+            json!([{
+                "ruleId": "over", "ruleIndex": 1, "level": "error",
+                "message": { "text": "ratchet `over`: 3 edges exceed the ceiling of 2 in budgets/o.json" },
+                "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "web/budgets/o.json" } } }],
+                "properties": { "type": "ratchet" }
+            }])
+        );
+        assert_eq!(
+            run["invocations"][0]["toolConfigurationNotifications"],
+            json!([{
+                "descriptor": { "id": "lost" },
+                "level": "error",
+                "message": { "text": "ratchet `lost`: the budget l.json cannot be read, so the count 1 is checked against nothing" }
+            }])
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn artifact_uris_are_percent_encoded_relative_references() {
+        assert_eq!(
+            uri("app/[slug]/my page#1.tsx"),
+            "app/%5Bslug%5D/my%20page%231.tsx"
+        );
+        assert_eq!(uri("src\\win\\a.cs"), "src/win/a.cs");
+        assert_eq!(uri("c:/x/100%.ts"), "c%3A/x/100%25.ts");
+        assert_eq!(uri("é/a-b_c.~!$&'()*+,;=@"), "%C3%A9/a-b_c.~!$&'()*+,;=@");
+        let result = json!({ "summary": {
+            "violations": [{ "type": "dependency", "from": "app/[slug]/my page#1.tsx", "to": "b", "rule": { "name": "r", "severity": "error" } }],
+            "ruleSetUsed": { "forbidden": [{ "name": "r", "severity": "error" }] }
+        } });
+        assert!(
+            render(&result, "")
+                .output
+                .contains("\"uri\": \"app/%5Bslug%5D/my%20page%231.tsx\"")
+        );
     }
 }

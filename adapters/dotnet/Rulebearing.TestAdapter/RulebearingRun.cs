@@ -92,7 +92,9 @@ public static class RulebearingRun
                 arguments.Add(Path.GetRelativePath(directory, config));
             }
 
-            arguments.AddRange(["--output-type", "json", "--no-progress"]);
+            // --output-to -: a configuration's options.outputTo must neither hide the JSON nor have
+            // a file of the user's overwritten with it.
+            arguments.AddRange(["--output-type", "json", "--output-to", "-", "--no-progress"]);
             if (options.Graph is { } graph)
             {
                 arguments.Add("--graph");

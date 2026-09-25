@@ -6,10 +6,11 @@
 # and whatever else wrappers/nuget/pack.sh packs) (wave 2). The 0.0.1 name reservations were a
 # manual, one-day procedure in docs/release.md (docs/adr/0020).
 #
-# Dry run: a tag ending in `-rc.N` (for example v0.0.1-rc.1), or a manual run with `dry_run` left
-# on, builds every target, packs the npm, PyPI and NuGet packages, runs each registry's install
-# check from those packages, and uploads everything as workflow artefacts without releasing or
-# publishing.
+# Dry run: a tag with any pre-release suffix (`vX.Y.Z-<anything>`, for example v0.2.0-rc.1 or
+# v0.2.0-beta.1), or any manual run, builds every target, packs the npm, PyPI and NuGet packages,
+# runs each registry's install check from those packages alone, and uploads everything as workflow
+# artefacts without releasing or publishing. Only a `vX.Y.Z` tag releases, and only once the
+# version check and all three install checks have passed.
 # Plans: docs/plans/pending/0000-wave-0-spike.md, Step 11 (binaries);
 # docs/plans/pending/0001-wave-1-typescript-parity.md, Step 19 (npm);
 # docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Steps 13 (eslint-plugin-rulebearing)
@@ -21,12 +22,8 @@ name: release
 on:
   push:
     tags: ["v*"]
+  # A manual run is always a dry run: the release and publish jobs run only for a pushed tag.
   workflow_dispatch:
-    inputs:
-      dry_run:
-        description: Build every target without creating a release
-        type: boolean
-        default: true
 
 permissions:
   contents: read
@@ -80,9 +77,11 @@ jobs:
 
   release:
     name: GitHub release
-    needs: binaries
-    # Only a real tag releases: not a manual run, not an -rc tag.
-    if: github.event_name == 'push' && !contains(github.ref_name, '-rc')
+    # The tag carries the workspace version and every registry's packages installed and ran, so a
+    # release never exists for packages that cannot be published.
+    needs: [binaries, version, npm-install-check, pypi-install-check, nuget-install-check]
+    # Only a real tag releases: not a manual run, not a tag with a pre-release suffix.
+    if: github.event_name == 'push' && !contains(github.ref_name, '-')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -119,7 +118,7 @@ jobs:
           version="$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' Cargo.toml)"
           if [ "$REF_TYPE" = tag ]; then
             case "${REF_NAME#v}" in
-              "$version" | "$version"-rc.*) ;;
+              "$version" | "$version"-*) ;;
               *) echo "::error::tag $REF_NAME does not carry the workspace version $version"; exit 1 ;;
             esac
           fi
@@ -224,8 +223,8 @@ jobs:
   npm-publish:
     name: npm publish
     needs: [npm-pack, npm-install-check, release]
-    # Only a real tag publishes: not a manual run, not an -rc tag (the same rule as `release`).
-    if: github.event_name == 'push' && !contains(github.ref_name, '-rc')
+    # Only a real tag publishes: not a manual run, not a pre-release tag (the same rule as `release`).
+    if: github.event_name == 'push' && !contains(github.ref_name, '-')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # `npm publish --provenance` signs with the job's OIDC token, so this job alone may request
@@ -343,9 +342,10 @@ jobs:
           python -m venv "$RUNNER_TEMP/venv"
           scripts="$RUNNER_TEMP/venv/bin"
           if [ "$RUNNER_OS" = "Windows" ]; then scripts="$RUNNER_TEMP/venv/Scripts"; fi
-          # The two packages from the built wheels only; pytest, their one other dependency, from PyPI.
-          "$scripts/python" -m pip install --quiet --no-index --find-links pypi "rulebearing==$VERSION"
-          "$scripts/python" -m pip install --quiet --find-links pypi "pytest-rulebearing==$VERSION"
+          # pytest, their one other dependency, from PyPI first; then the two packages from the built
+          # wheels alone (--no-index), so a rerun after a publish never checks the registry's copy.
+          "$scripts/python" -m pip install --quiet "pytest>=8"
+          "$scripts/python" -m pip install --quiet --no-index --find-links pypi "rulebearing==$VERSION" "pytest-rulebearing==$VERSION"
           out="$("$scripts/rulebearing" --version | tr -d '\r')"
           echo "$out"
           test "$out" = "rulebearing $VERSION"
@@ -363,8 +363,8 @@ jobs:
   pypi-publish:
     name: PyPI publish
     needs: [pypi-build, pypi-install-check, release]
-    # Only a real tag publishes: not a manual run, not an -rc tag (the same rule as `release`).
-    if: github.event_name == 'push' && !contains(github.ref_name, '-rc')
+    # Only a real tag publishes: not a manual run, not a pre-release tag (the same rule as `release`).
+    if: github.event_name == 'push' && !contains(github.ref_name, '-')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # twine with the PYPI_TOKEN repository secret, an API token scoped to the two projects; no
@@ -451,7 +451,16 @@ jobs:
           VERSION: ${{ needs.version.outputs.version }}
         run: |
           tools="$RUNNER_TEMP/tools"
-          dotnet tool install Rulebearing --version "$VERSION" --tool-path "$tools" --add-source "$PWD/nuget"
+          # The built package alone: a nuget.config that clears every other source (nuget.org
+          # included) and an empty package cache, so a rerun after a publish never installs the
+          # registry's copy.
+          config="$RUNNER_TEMP/nuget.config"
+          source="$PWD/nuget"
+          # The file is read by dotnet, not bash: on Windows it needs the native path.
+          if [ "$RUNNER_OS" = "Windows" ]; then source="$(cygpath -w "$source")"; fi
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<configuration>\n  <packageSources>\n    <clear />\n    <add key="built" value="%s" />\n  </packageSources>\n</configuration>\n' "$source" > "$config"
+          export NUGET_PACKAGES="$RUNNER_TEMP/nuget-packages"
+          dotnet tool install Rulebearing --version "$VERSION" --tool-path "$tools" --configfile "$config"
           out="$("$tools/rulebearing" --version | tr -d '\r')"
           echo "$out"
           test "$out" = "rulebearing $VERSION"
@@ -459,8 +468,8 @@ jobs:
   nuget-publish:
     name: NuGet publish
     needs: [nuget-pack, nuget-install-check, release]
-    # Only a real tag publishes: not a manual run, not an -rc tag (the same rule as `release`).
-    if: github.event_name == 'push' && !contains(github.ref_name, '-rc')
+    # Only a real tag publishes: not a manual run, not a pre-release tag (the same rule as `release`).
+    if: github.event_name == 'push' && !contains(github.ref_name, '-')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # dotnet nuget push with the NUGET_API_KEY repository secret, scoped to the Rulebearing package

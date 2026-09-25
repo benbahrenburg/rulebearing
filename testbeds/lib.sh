@@ -98,14 +98,19 @@ json.dump({"wall_seconds": round(float(sys.argv[2]) - float(sys.argv[1]), 2),
 }
 
 # Three timed cruises of the checkout with its rulebearing.yaml and the arguments given; the
-# median is kept as $out/rulebearing-timing.json. Returns the exit code of the last run, whose
-# output is $out/cruise.out.
+# median is kept as $out/rulebearing-timing.json. Every run must succeed: the first that exits
+# non-zero stops the loop and its exit code is returned, with its output in $out/cruise.out, so a
+# failing first or second run is never hidden by a third that passes. Returns 0 when all three do.
 median_cruise() { # cruise arguments...
   : "${out:?}" "${checkout:?}" "${bin:?}"
   local run status=0
   for run in 1 2 3; do
     timed "$out/cruise-timing-$run.json" "$checkout" "$out/cruise.out" "$bin" cruise --no-progress "$@"
     status=$?
+    if [ "$status" -ne 0 ]; then
+      echo "median_cruise: run $run of 3 exited $status" >&2
+      return "$status"
+    fi
   done
   python3 - "$out" <<'PY'
 import json, os, sys

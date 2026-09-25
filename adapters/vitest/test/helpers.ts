@@ -51,11 +51,19 @@ export function copyFixture(): { dir: string; remove: () => void } {
  * `<failure>` then of each `<error>`, joined by newlines, with XML's five entities and character
  * references decoded.
  */
-export function junitMessages(binary: string, dir: string): Map<string, string> {
-  const run = spawnSync(binary, ['cruise', '-T', 'junit', '--no-progress'], {
-    cwd: dir,
-    encoding: 'utf8',
-  });
+export function junitMessages(
+  binary: string,
+  dir: string,
+  extra: readonly string[] = [],
+): Map<string, string> {
+  const run = spawnSync(
+    binary,
+    ['cruise', '-T', 'junit', '--output-to', '-', '--no-progress', ...extra],
+    {
+      cwd: dir,
+      encoding: 'utf8',
+    },
+  );
   const messages = new Map<string, string>();
   const decode = (text: string): string =>
     text

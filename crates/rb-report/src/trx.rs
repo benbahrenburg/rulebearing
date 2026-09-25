@@ -16,8 +16,9 @@
 //! `TestEntries`, `TestLists` and `ResultSummary` with its `Counters`. A failure's `Message` is
 //! the `fix` and the first violations; its `StackTrace` lists every violation, one per object
 //! for an element rule. TRX has no run-level properties, so the receipt is the `ResultSummary`'s
-//! standard output, one `name = value` line each. Every id is a name-based GUID (SHA-256 of the
-//! rule's family and name), so two runs are byte-identical; the times are the run's timestamp.
+//! standard output, one `name = value` line each. A test is named by the rule's catalogue id (the
+//! name, `name#2` for a second rule of that name), and every id is a name-based GUID (SHA-256 of
+//! the rule's family and catalogue id), so no two tests share one and two runs are byte-identical; the times are the run's timestamp.
 //! Exits 0, as the data reporters do.
 
 use std::fmt::Write as _;
@@ -76,7 +77,7 @@ struct Ids {
 }
 
 fn ids(case: &Case) -> Ids {
-    let key = format!("{}/{}", case.rule.family, case.rule.name);
+    let key = format!("{}/{}", case.rule.family, case.rule.id);
     Ids {
         test: guid(&format!("rulebearing/trx/test/{key}")),
         execution: guid(&format!("rulebearing/trx/execution/{key}")),
@@ -89,7 +90,7 @@ fn result_element(out: &mut String, case: &Case, ids: &Ids, time: &str) {
         "    <UnitTestResult executionId=\"{}\" testId=\"{}\" testName=\"{}\" computerName=\"rulebearing\" duration=\"00:00:00\" startTime=\"{time}\" endTime=\"{time}\" testType=\"{UNIT_TEST_TYPE}\" outcome=\"{}\" testListId=\"{RESULTS_NOT_IN_A_LIST}\" relativeResultsDirectory=\"{}\"",
         ids.execution,
         ids.test,
-        xml(&case.rule.name, true),
+        xml(&case.rule.id, true),
         outcome(case),
         ids.execution
     );
@@ -161,7 +162,7 @@ pub fn render(result: &Value, timestamp: &str) -> Rendered {
             ids.test,
             ids.execution,
             xml(&case.rule.family, true),
-            name = xml(&case.rule.name, true),
+            name = xml(&case.rule.id, true),
         );
     }
     out.push_str("  </TestDefinitions>\n  <TestEntries>\n");
@@ -265,5 +266,30 @@ mod tests {
         assert!(clean.output.contains("start=\"1970-01-01T00:00:00.000\""));
         assert!(!clean.output.contains("<Output>\n      <StdOut>"));
         assert_eq!(clean.exit_code, 0);
+    }
+
+    #[test]
+    fn rules_sharing_a_name_are_distinct_tests_with_distinct_guids() {
+        let result = json!({ "summary": {
+            "violations": [
+                { "type": "dependency", "from": "a", "to": "b", "rule": { "name": "unnamed", "severity": "error" } }
+            ],
+            "ruleSetUsed": { "forbidden": [{ "name": "unnamed", "severity": "error" }, { "name": "unnamed", "severity": "error" }] }
+        } });
+        let output = render(&result, "").output;
+        assert!(output.contains("<UnitTest name=\"unnamed\" storage"));
+        assert!(output.contains("<UnitTest name=\"unnamed#2\" storage"));
+        assert_eq!(
+            output.matches("<StackTrace>a -&gt; b</StackTrace>").count(),
+            1
+        );
+        let first = guid("rulebearing/trx/test/forbidden/unnamed");
+        let second = guid("rulebearing/trx/test/forbidden/unnamed#2");
+        assert_ne!(first, second);
+        // Fixed vectors: a TRX consumer tracks a test by these ids across releases.
+        assert_eq!(first, "3de65f45-ac60-54ca-813d-27fd2daf2733");
+        assert_eq!(second, "f5590fe1-a335-5bcf-b2ec-8b304891d768");
+        assert!(output.contains(&format!("testId=\"{first}\"")));
+        assert!(output.contains(&format!("testId=\"{second}\"")));
     }
 }

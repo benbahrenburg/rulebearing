@@ -135,6 +135,39 @@ internal sealed class Scenario : IDisposable
         return scenario;
     }
 
+    /// <summary>
+    /// Three anonymous rules, all named <c>unnamed</c> (the junit cases <c>unnamed</c>,
+    /// <c>unnamed#2</c>, <c>unnamed#3</c>), and an <c>options.outputTo</c> the adapter must neither
+    /// read from nor write, as it always passes <c>--output-to -</c>.
+    /// </summary>
+    public static Scenario Unnamed()
+    {
+        Scenario scenario = Create("unnamed");
+        for (int i = 1; i <= 7; i++)
+        {
+            scenario.Write($"src/a/a{i}.ts", $"import {{ b }} from '../b/b.js';\n\nexport const a{i} = b;\n");
+        }
+
+        scenario.Write("src/b/b.ts", "export const b = 1;\n");
+        scenario.Write("src/main.ts", "import { a1 } from './a/a1.js';\n\nexport const main = a1;\n");
+        scenario.Write("rulebearing.yaml", """
+            options:
+              outputTo: must-not-be-written.txt
+            forbidden:
+              - severity: error
+                fix: "Go through the index."
+                from: { path: "^src/a/" }
+                to: { path: "^src/b/" }
+              - severity: warn
+                from: { path: "^src/main" }
+                to: { path: "^src/a/" }
+              - severity: error
+                from: { path: "^src/b/" }
+                to: { path: "^src/a/" }
+            """);
+        return scenario;
+    }
+
     /// <summary>An empty directory with a configuration.</summary>
     /// <param name="config">The configuration's text.</param>
     public static Scenario WithConfig(string config)

@@ -1,6 +1,6 @@
 // Running the binary: which program starts, with which arguments, and what a run without a
 // result reports. Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
-import { writeFileSync } from 'node:fs';
+import { chmodSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
@@ -52,11 +52,20 @@ describe('resolveCommand', () => {
 
 describe('cruiseArguments', () => {
   it('asks for JSON without progress, then the options', () => {
-    expect(cruiseArguments({})).toEqual(['cruise', '--output-type', 'json', '--no-progress']);
+    expect(cruiseArguments({})).toEqual([
+      'cruise',
+      '--output-type',
+      'json',
+      '--output-to',
+      '-',
+      '--no-progress',
+    ]);
     expect(cruiseArguments({ config: 'c.yaml', graph: 'g.json', args: ['src'] })).toEqual([
       'cruise',
       '--output-type',
       'json',
+      '--output-to',
+      '-',
       '--no-progress',
       '--config',
       'c.yaml',
@@ -91,6 +100,34 @@ describe('cruise', () => {
     const read = cruise({ binary, cwd: fixture.dir, graph: 'graph.json' });
     expect((read as { summary: { violations: unknown } }).summary.violations).toEqual(
       (extracted as { summary: { violations: unknown } }).summary.violations,
+    );
+  });
+
+  it('reads the JSON when the configuration sets outputTo, and leaves that file alone', () => {
+    const fixture = copyFixture();
+    cleanup = fixture.remove;
+    const config = join(fixture.dir, 'rulebearing.yaml');
+    writeFileSync(config, `${readFileSync(config, 'utf8')}options:\n  outputTo: mine.txt\n`);
+    writeFileSync(join(fixture.dir, 'mine.txt'), "the user's own file\n");
+    const result = cruise({ binary: localBinary(), cwd: fixture.dir });
+    expect(result).toHaveProperty('summary.vacuousRules');
+    expect(readFileSync(join(fixture.dir, 'mine.txt'), 'utf8')).toBe("the user's own file\n");
+  });
+
+  it('refuses an exit 2 whose rules all pass', () => {
+    if (process.platform === 'win32') {
+      return;
+    }
+    const fixture = copyFixture();
+    cleanup = fixture.remove;
+    const fake = join(fixture.dir, 'fake-rulebearing');
+    writeFileSync(
+      fake,
+      `#!${process.execPath}\nprocess.stdout.write(JSON.stringify({ summary: { ruleSetUsed: { forbidden: [{ name: 'ok' }] } } }));\nprocess.stderr.write('zero modules');\nprocess.exit(2);\n`,
+    );
+    chmodSync(fake, 0o755);
+    expect(() => cruise({ binary: fake, cwd: fixture.dir })).toThrow(
+      /cannot be trusted \(exit 2\), and no rule says why:\nzero modules/,
     );
   });
 

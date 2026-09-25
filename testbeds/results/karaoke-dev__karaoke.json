@@ -3,8 +3,8 @@
   "sha": "8012c1a854e6d68ba8bdbe1d3fd7101ff61c7e3d",
   "tool": "archunitnet",
   "tests": "osu.Game.Rulesets.Karaoke.Architectures",
-  "status": "compared",
-  "detail": "",
+  "status": "nothing-compared",
+  "detail": "every test stays or is not imported: nothing to compare",
   "summary": {
     "total": 5,
     "agree": 0,
@@ -61,5 +61,5 @@
       "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
     }
   ],
-  "agrees": true
+  "agrees": false
 }

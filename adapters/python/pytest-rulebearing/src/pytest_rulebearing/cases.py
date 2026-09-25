@@ -19,13 +19,13 @@ the shared fixture in ``adapters/fixture``.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-__all__ = ["SHOWN", "Case", "Rule", "cases", "describe", "message", "rules"]
+__all__ = ["SHOWN", "Case", "Rule", "cases", "describe", "message", "rule_index", "rules"]
 
 #: How many violations a failure message lists before it says how many more there are.
 SHOWN = 5
@@ -46,6 +46,9 @@ class Rule:
         severity: The configured severity.
         comment: The rule's comment.
         fix: The rule's ``fix``.
+        id: The rule's identity within the run, the test's name: the name, with ``#n`` for the
+            n-th rule of a name already taken (names repeat: every anonymous rule is
+            ``unnamed``). :func:`rules` sets it.
     """
 
     name: str
@@ -53,6 +56,7 @@ class Rule:
     severity: str
     comment: str | None = None
     fix: str | None = None
+    id: str = ""
 
 
 @dataclass
@@ -216,8 +220,8 @@ def rules(result: object) -> list[Rule]:
 
     ``forbidden``; the ``allowed`` list as the one rule its violations name (``not-in-allowed``,
     at ``allowedSeverity``, ``warn`` by default); ``required``, then the element, slice and
-    diagram rules; a rule known only from its violations, in name order; the ratchets; then any
-    vacuous entry that names none of these.
+    diagram rules; a rule known only from its violations (or whose name only rules of another
+    family carry), in name order; the ratchets; then any vacuous entry that names none of these.
 
     Args:
         result: The parsed JSON of a cruise.
@@ -243,7 +247,8 @@ def rules(result: object) -> list[Rule]:
     unlisted: list[Rule] = []
     for violation in violations(result):
         name = rule_name(violation)
-        if not any(r.name == name for r in [*out, *unlisted]):
+        kind = _string(violation, "type")
+        if not any(r.name == name and _produces(r.family, kind) for r in [*out, *unlisted]):
             unlisted.append(
                 Rule(
                     name=name,
@@ -262,7 +267,59 @@ def rules(result: object) -> list[Rule]:
         name = text(vacuous, "name")
         if not any(r.name == name for r in out):
             out.append(Rule(name=name, family="rules", severity="error"))
+    return _identify(out)
+
+
+def _identify(rules: list[Rule]) -> list[Rule]:
+    """``catalog::identify``: the name at its first occurrence, then ``name#n``, past any taken."""
+    taken = {r.name for r in rules}
+    seen: dict[str, int] = {}
+    out: list[Rule] = []
+    for rule in rules:
+        count = seen.get(rule.name, 0) + 1
+        seen[rule.name] = count
+        if count == 1:
+            out.append(replace(rule, id=rule.name))
+            continue
+        n = count
+        while f"{rule.name}#{n}" in taken:
+            n += 1
+        taken.add(f"{rule.name}#{n}")
+        out.append(replace(rule, id=f"{rule.name}#{n}"))
     return out
+
+
+def _produces(family: str, kind: str | None) -> bool:
+    """``catalog::produces``: whether a rule of ``family`` can produce a violation of ``kind``."""
+    if family == "rules":
+        return True
+    if kind == "element":
+        return family in {"elements", "diagrams"}
+    if kind == "slice":
+        return family == "slices"
+    return family in {"forbidden", "allowed", "required", "rules"}
+
+
+def rule_index(rules: list[Rule], violation: object) -> int | None:
+    """The index of the rule a violation belongs to, as ``catalog::rule_index`` picks it.
+
+    Args:
+        rules: The rules of :func:`rules`.
+        violation: One violation of the result.
+
+    Returns:
+        Among the non-ratchet rules of the violation's name: the first whose family can produce
+        its ``type`` and whose severity is its own, else the first whose family can produce it,
+        else the first; ``None`` when no such rule exists.
+    """
+    name = rule_name(violation)
+    named = [i for i, r in enumerate(rules) if r.name == name and r.family != "ratchets"]
+    kind = _string(violation, "type")
+    fitting = [i for i in named if _produces(rules[i].family, kind)] or named
+    wanted = severity(violation)
+    return next(
+        (i for i in fitting if rules[i].severity == wanted), fitting[0] if fitting else None
+    )
 
 
 def _first(items: list[object], predicate: str, wanted: str) -> object:
@@ -360,9 +417,9 @@ def _ratchet_case(case: Case, ratchet: object) -> None:
         case.output.append(f"{count} edges, within the ceiling of {ceiling} in {budget}")
 
 
-def _violation_case(case: Case, result: object) -> None:
+def _violation_case(case: Case, result: object, catalogue: list[Rule], index: int) -> None:
     name = case.rule.name
-    found = [v for v in violations(result) if rule_name(v) == name]
+    found = [v for v in violations(result) if rule_index(catalogue, v) == index]
     errors = [describe(result, v) for v in found if severity(v) == "error"]
     case.output.extend(
         f"{severity(v)}: {describe(result, v)}" for v in found if severity(v) != "error"
@@ -382,15 +439,20 @@ def _iter_cases(result: object) -> Iterator[Case]:
     vacuous = summary_list(result, "vacuousRules")
     expired = summary_list(result, "expired")
     ratchets = summary_list(result, "ratchets")
-    for rule in rules(result):
+    catalogue = rules(result)
+    ratchet_at = 0
+    for index, rule in enumerate(catalogue):
         case = Case(rule=rule)
+        # Vacuous and expired entries go to the first rule of their name.
+        first = next(i for i, r in enumerate(catalogue) if r.name == rule.name) == index
         if rule.family == "ratchets":
-            ratchet = next((r for r in ratchets if text(r, "name") == rule.name), None)
-            if ratchet is not None:
-                _ratchet_case(case, ratchet)
+            # The ratchet rules are summary.ratchets, in order.
+            if ratchet_at < len(ratchets):
+                _ratchet_case(case, ratchets[ratchet_at])
+            ratchet_at += 1
         else:
-            _violation_case(case, result)
-        for entry in (v for v in vacuous if text(v, "name") == rule.name):
+            _violation_case(case, result, catalogue, index)
+        for entry in (v for v in vacuous if first and text(v, "name") == rule.name):
             if _string(entry, "severity") == "warn":
                 case.output.append(f"warning: {_vacuous_message(entry)}")
             else:
@@ -398,12 +460,17 @@ def _iter_cases(result: object) -> Iterator[Case]:
         case.errors.extend(
             ("expired", _expired_message(entry))
             for entry in expired
-            if text(entry, "kind") == "rule" and text(entry, "name") == rule.name
+            if first and text(entry, "kind") == "rule" and text(entry, "name") == rule.name
         )
         yield case
     for entry in (e for e in expired if text(e, "kind") != "rule"):
         yield Case(
-            rule=Rule(name=text(entry, "name"), family="knownViolations", severity="error"),
+            rule=Rule(
+                name=text(entry, "name"),
+                family="knownViolations",
+                severity="error",
+                id=text(entry, "name"),
+            ),
             errors=[("expired", _expired_message(entry))],
         )
 
