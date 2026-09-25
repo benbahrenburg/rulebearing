@@ -153,62 +153,131 @@ pub struct SliceOutcome {
     pub vacuous: bool,
 }
 
-/// Tarjan's strongly connected components over slice indexes.
+/// Tarjan's strongly connected components over slice indexes, iterative: each frame of the
+/// work stack holds its own edge iterator, as `IndexedGraph::components` does, so a cycle through
+/// every module of a large repository cannot exhaust the call stack. Components come out in the
+/// order the recursive algorithm completes them, each sorted.
 fn components(graph: &BTreeMap<usize, BTreeSet<usize>>, count: usize) -> Vec<Vec<usize>> {
-    struct State<'g> {
-        graph: &'g BTreeMap<usize, BTreeSet<usize>>,
-        index: usize,
-        indexes: Vec<Option<usize>>,
-        low: Vec<usize>,
-        stack: Vec<usize>,
-        on_stack: Vec<bool>,
-        found: Vec<Vec<usize>>,
-    }
-    fn visit(s: &mut State<'_>, v: usize) {
-        s.indexes[v] = Some(s.index);
-        s.low[v] = s.index;
-        s.index += 1;
-        s.stack.push(v);
-        s.on_stack[v] = true;
-        let next: Vec<usize> = s.graph.get(&v).into_iter().flatten().copied().collect();
-        for w in next {
-            match s.indexes[w] {
-                None => {
-                    visit(s, w);
-                    s.low[v] = s.low[v].min(s.low[w]);
+    static NONE: BTreeSet<usize> = BTreeSet::new();
+    let edges_of = |v: usize| graph.get(&v).unwrap_or(&NONE).iter();
+    let mut index: Vec<Option<usize>> = vec![None; count];
+    let mut low = vec![0; count];
+    let mut on_stack = vec![false; count];
+    let mut stack = Vec::new();
+    let mut found = Vec::new();
+    let mut next = 0;
+    for root in 0..count {
+        if index[root].is_some() {
+            continue;
+        }
+        index[root] = Some(next);
+        low[root] = next;
+        next += 1;
+        stack.push(root);
+        on_stack[root] = true;
+        let mut work = vec![(root, edges_of(root))];
+        while let Some((v, edges)) = work.last_mut() {
+            let v = *v;
+            if let Some(&w) = edges.next() {
+                // An edge to an index outside the slices is no edge.
+                match index.get(w).copied() {
+                    Some(None) => {
+                        index[w] = Some(next);
+                        low[w] = next;
+                        next += 1;
+                        stack.push(w);
+                        on_stack[w] = true;
+                        work.push((w, edges_of(w)));
+                    }
+                    Some(Some(at)) if on_stack[w] => low[v] = low[v].min(at),
+                    _ => {}
                 }
-                Some(i) if s.on_stack[w] => s.low[v] = s.low[v].min(i),
-                Some(_) => {}
+                continue;
+            }
+            work.pop();
+            if let Some(&(parent, _)) = work.last() {
+                low[parent] = low[parent].min(low[v]);
+            }
+            if Some(low[v]) == index[v] {
+                let mut component = Vec::new();
+                while let Some(w) = stack.pop() {
+                    on_stack[w] = false;
+                    component.push(w);
+                    if w == v {
+                        break;
+                    }
+                }
+                component.sort_unstable();
+                found.push(component);
             }
         }
-        if Some(s.low[v]) == s.indexes[v] {
-            let mut component = Vec::new();
-            while let Some(w) = s.stack.pop() {
-                s.on_stack[w] = false;
-                component.push(w);
-                if w == v {
-                    break;
+    }
+    found
+}
+
+/// The slice edges with the member edges behind them, by `(from slice, to slice)` index.
+type SliceEdges = BTreeMap<(usize, usize), BTreeSet<(String, String)>>;
+
+/// Each condition's failures over the slice graph: for `notDependOnEachOther` one per slice with
+/// an outgoing edge (its edges read with one range of the ordered map), for `beFreeOfCycles` one
+/// per strongly connected component of two or more slices (the edges grouped by component in
+/// one pass). Sorted by slices, then condition.
+fn failures(names: &[&String], edges: &SliceEdges, should: &[SliceCondition]) -> Vec<SliceFailure> {
+    let mut failures = Vec::new();
+    for condition in should {
+        match condition {
+            SliceCondition::NotDependOnEachOther => {
+                for (i, name) in names.iter().enumerate() {
+                    let behind: BTreeSet<(String, String)> = edges
+                        .range((i, 0)..=(i, usize::MAX))
+                        .flat_map(|(_, e)| e.iter().cloned())
+                        .collect();
+                    if !behind.is_empty() {
+                        failures.push(SliceFailure {
+                            condition: *condition,
+                            slices: vec![(*name).clone()],
+                            edges: behind.into_iter().collect(),
+                        });
+                    }
                 }
             }
-            component.sort_unstable();
-            s.found.push(component);
+            SliceCondition::BeFreeOfCycles => {
+                let mut graph: BTreeMap<usize, BTreeSet<usize>> = BTreeMap::new();
+                for (from, to) in edges.keys() {
+                    graph.entry(*from).or_default().insert(*to);
+                }
+                let cycles: Vec<Vec<usize>> = components(&graph, names.len())
+                    .into_iter()
+                    .filter(|c| c.len() >= 2)
+                    .collect();
+                let mut group = vec![None; names.len()];
+                for (at, component) in cycles.iter().enumerate() {
+                    for &slice in component {
+                        group[slice] = Some(at);
+                    }
+                }
+                let mut behind: Vec<BTreeSet<(String, String)>> =
+                    vec![BTreeSet::new(); cycles.len()];
+                for ((from, to), e) in edges {
+                    let (Some(Some(a)), Some(Some(b))) = (group.get(*from), group.get(*to)) else {
+                        continue;
+                    };
+                    if a == b {
+                        behind[*a].extend(e.iter().cloned());
+                    }
+                }
+                for (component, behind) in cycles.iter().zip(behind) {
+                    failures.push(SliceFailure {
+                        condition: *condition,
+                        slices: component.iter().map(|i| names[*i].clone()).collect(),
+                        edges: behind.into_iter().collect(),
+                    });
+                }
+            }
         }
     }
-    let mut state = State {
-        graph,
-        index: 0,
-        indexes: vec![None; count],
-        low: vec![0; count],
-        stack: Vec::new(),
-        on_stack: vec![false; count],
-        found: Vec::new(),
-    };
-    for v in 0..count {
-        if state.indexes[v].is_none() {
-            visit(&mut state, v);
-        }
-    }
-    state.found
+    failures.sort_by(|a, b| (&a.slices, a.condition as u8).cmp(&(&b.slices, b.condition as u8)));
+    failures
 }
 
 /// One thing a slice can hold: its identity, the text the pattern is matched against, and the
@@ -270,10 +339,6 @@ fn members<'a>(architecture: &Architecture<'a>, separator: char) -> Vec<Member<'
 ///
 /// # Errors
 /// [`ElementError::Pattern`] for a `matching` or `where` pattern `ArchUnitNET` would refuse.
-#[expect(
-    clippy::too_many_lines,
-    reason = "assign, connect, then test each condition: one pass kept together"
-)]
 pub fn evaluate(
     architecture: &Architecture<'_>,
     rule: &SliceRule,
@@ -332,7 +397,7 @@ pub fn evaluate(
         .map(|(i, n)| (n.as_str(), i))
         .collect();
     // Slice edges with the member edges behind them.
-    let mut edges: BTreeMap<(usize, usize), BTreeSet<(String, String)>> = BTreeMap::new();
+    let mut edges: SliceEdges = BTreeMap::new();
     for member in &members {
         let Some(from_slice) = slice_of.get(member.key) else {
             continue;
@@ -348,50 +413,7 @@ pub fn evaluate(
             }
         }
     }
-    let mut failures = Vec::new();
-    for condition in &rule.should {
-        match condition {
-            SliceCondition::NotDependOnEachOther => {
-                for (i, name) in names.iter().enumerate() {
-                    let behind: BTreeSet<(String, String)> = edges
-                        .iter()
-                        .filter(|((from, _), _)| *from == i)
-                        .flat_map(|(_, e)| e.iter().cloned())
-                        .collect();
-                    if !behind.is_empty() {
-                        failures.push(SliceFailure {
-                            condition: *condition,
-                            slices: vec![(*name).clone()],
-                            edges: behind.into_iter().collect(),
-                        });
-                    }
-                }
-            }
-            SliceCondition::BeFreeOfCycles => {
-                let mut graph: BTreeMap<usize, BTreeSet<usize>> = BTreeMap::new();
-                for (from, to) in edges.keys() {
-                    graph.entry(*from).or_default().insert(*to);
-                }
-                for component in components(&graph, names.len()) {
-                    if component.len() < 2 {
-                        continue;
-                    }
-                    let members: BTreeSet<usize> = component.iter().copied().collect();
-                    let behind: BTreeSet<(String, String)> = edges
-                        .iter()
-                        .filter(|((from, to), _)| members.contains(from) && members.contains(to))
-                        .flat_map(|(_, e)| e.iter().cloned())
-                        .collect();
-                    failures.push(SliceFailure {
-                        condition: *condition,
-                        slices: component.iter().map(|i| names[*i].clone()).collect(),
-                        edges: behind.into_iter().collect(),
-                    });
-                }
-            }
-        }
-    }
-    failures.sort_by(|a, b| (&a.slices, a.condition as u8).cmp(&(&b.slices, b.condition as u8)));
+    let failures = failures(&names, &edges, &rule.should);
     Ok(SliceOutcome {
         rule: rule.name.clone(),
         vacuous: slices.is_empty() && !rule.allow_empty,
@@ -458,6 +480,214 @@ mod tests {
             assert!(parse(bad).is_err(), "{bad}");
         }
         Ok(())
+    }
+
+    /// The recursive Tarjan the iterative one replaced: the oracle for its output order.
+    fn components_recursive(
+        graph: &BTreeMap<usize, BTreeSet<usize>>,
+        count: usize,
+    ) -> Vec<Vec<usize>> {
+        struct State<'g> {
+            graph: &'g BTreeMap<usize, BTreeSet<usize>>,
+            index: usize,
+            indexes: Vec<Option<usize>>,
+            low: Vec<usize>,
+            stack: Vec<usize>,
+            on_stack: Vec<bool>,
+            found: Vec<Vec<usize>>,
+        }
+        fn visit(s: &mut State<'_>, v: usize) {
+            s.indexes[v] = Some(s.index);
+            s.low[v] = s.index;
+            s.index += 1;
+            s.stack.push(v);
+            s.on_stack[v] = true;
+            let next: Vec<usize> = s.graph.get(&v).into_iter().flatten().copied().collect();
+            for w in next {
+                match s.indexes[w] {
+                    None => {
+                        visit(s, w);
+                        s.low[v] = s.low[v].min(s.low[w]);
+                    }
+                    Some(i) if s.on_stack[w] => s.low[v] = s.low[v].min(i),
+                    Some(_) => {}
+                }
+            }
+            if Some(s.low[v]) == s.indexes[v] {
+                let mut component = Vec::new();
+                while let Some(w) = s.stack.pop() {
+                    s.on_stack[w] = false;
+                    component.push(w);
+                    if w == v {
+                        break;
+                    }
+                }
+                component.sort_unstable();
+                s.found.push(component);
+            }
+        }
+        let mut state = State {
+            graph,
+            index: 0,
+            indexes: vec![None; count],
+            low: vec![0; count],
+            stack: Vec::new(),
+            on_stack: vec![false; count],
+            found: Vec::new(),
+        };
+        for v in 0..count {
+            if state.indexes[v].is_none() {
+                visit(&mut state, v);
+            }
+        }
+        state.found
+    }
+
+    /// The scans the grouped passes replaced: every edge per slice, every edge per cycle.
+    fn failures_by_scan(
+        names: &[&String],
+        edges: &SliceEdges,
+        should: &[SliceCondition],
+    ) -> Vec<SliceFailure> {
+        let mut failures = Vec::new();
+        for condition in should {
+            match condition {
+                SliceCondition::NotDependOnEachOther => {
+                    for (i, name) in names.iter().enumerate() {
+                        let behind: BTreeSet<(String, String)> = edges
+                            .iter()
+                            .filter(|((from, _), _)| *from == i)
+                            .flat_map(|(_, e)| e.iter().cloned())
+                            .collect();
+                        if !behind.is_empty() {
+                            failures.push(SliceFailure {
+                                condition: *condition,
+                                slices: vec![(*name).clone()],
+                                edges: behind.into_iter().collect(),
+                            });
+                        }
+                    }
+                }
+                SliceCondition::BeFreeOfCycles => {
+                    let mut graph: BTreeMap<usize, BTreeSet<usize>> = BTreeMap::new();
+                    for (from, to) in edges.keys() {
+                        graph.entry(*from).or_default().insert(*to);
+                    }
+                    for component in components_recursive(&graph, names.len()) {
+                        if component.len() < 2 {
+                            continue;
+                        }
+                        let members: BTreeSet<usize> = component.iter().copied().collect();
+                        let behind: BTreeSet<(String, String)> = edges
+                            .iter()
+                            .filter(|((from, to), _)| {
+                                members.contains(from) && members.contains(to)
+                            })
+                            .flat_map(|(_, e)| e.iter().cloned())
+                            .collect();
+                        failures.push(SliceFailure {
+                            condition: *condition,
+                            slices: component.iter().map(|i| names[*i].clone()).collect(),
+                            edges: behind.into_iter().collect(),
+                        });
+                    }
+                }
+            }
+        }
+        failures
+            .sort_by(|a, b| (&a.slices, a.condition as u8).cmp(&(&b.slices, b.condition as u8)));
+        failures
+    }
+
+    proptest::proptest! {
+        #[test]
+        fn iterative_tarjan_and_grouped_edges_agree_with_the_recursive_scans(
+            count in 1usize..9,
+            raw in proptest::collection::vec((0usize..9, 0usize..9, 0u8..3), 0..30),
+        ) {
+            let names: Vec<String> = (0..count).map(|i| format!("s{i}")).collect();
+            let refs: Vec<&String> = names.iter().collect();
+            let mut edges: SliceEdges = BTreeMap::new();
+            let mut graph: BTreeMap<usize, BTreeSet<usize>> = BTreeMap::new();
+            for (from, to, n) in raw {
+                let (from, to) = (from % count, to % count);
+                graph.entry(from).or_default().insert(to);
+                if from != to {
+                    edges
+                        .entry((from, to))
+                        .or_default()
+                        .insert((format!("m{from}.{n}"), format!("m{to}.{n}")));
+                }
+            }
+            proptest::prop_assert_eq!(components(&graph, count), components_recursive(&graph, count));
+            let both = [SliceCondition::NotDependOnEachOther, SliceCondition::BeFreeOfCycles];
+            proptest::prop_assert_eq!(
+                failures(&refs, &edges, &both),
+                failures_by_scan(&refs, &edges, &both)
+            );
+        }
+    }
+
+    /// Runs `f` on a thread with a 2 MiB stack, the size a spawned thread gets by default.
+    fn on_small_stack<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> Option<T> {
+        std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn(f)
+            .ok()?
+            .join()
+            .ok()
+    }
+
+    #[test]
+    fn a_cycle_through_a_hundred_thousand_slices_does_not_exhaust_the_stack() {
+        const N: usize = 100_000;
+        let found = on_small_stack(|| {
+            let graph: BTreeMap<usize, BTreeSet<usize>> =
+                (0..N).map(|i| (i, BTreeSet::from([(i + 1) % N]))).collect();
+            components(&graph, N)
+        });
+        let found = found.unwrap_or_default();
+        assert_eq!(found.len(), 1, "one component");
+        assert_eq!(found[0].len(), N);
+        assert_eq!(found[0].first(), Some(&0));
+        assert_eq!(found[0].last(), Some(&(N - 1)));
+    }
+
+    #[test]
+    fn a_hundred_thousand_module_import_cycle_is_one_failing_cycle() {
+        const N: usize = 100_000;
+        let outcome = on_small_stack(|| {
+            let modules: Vec<rb_model::Module> = (0..N)
+                .map(|i| {
+                    let mut m = rb_model::Module::new(format!("src/m{i}.ts"));
+                    m.language = Some(Language::Typescript);
+                    m.dependencies = vec![rb_model::Dependency::new(
+                        "x",
+                        format!("src/m{}.ts", (i + 1) % N),
+                        rb_model::ModuleSystem::Es6,
+                    )];
+                    m
+                })
+                .collect();
+            let document = rb_model::GraphDocument {
+                modules,
+                ..rb_model::GraphDocument::default()
+            };
+            let architecture = Architecture::new(&document);
+            let rule = rb_config::elements::parse_slices(&serde_json::json!([
+                { "name": "s", "matching": "src/(**)", "should": "beFreeOfCycles" }
+            ]))
+            .ok()?
+            .pop()?;
+            evaluate(&architecture, &rule).ok().map(|o| {
+                (
+                    o.slices.len(),
+                    o.failures.len(),
+                    o.failures.first().map(|f| f.slices.len()),
+                )
+            })
+        });
+        assert_eq!(outcome.flatten(), Some((N, 1, Some(N))));
     }
 
     #[test]

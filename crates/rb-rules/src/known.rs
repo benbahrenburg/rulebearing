@@ -24,8 +24,8 @@
 //!
 //! A baseline can hold an entry per violation (`init` writes one for every violation it finds,
 //! 33,000 on home-assistant/core), so each finding is tested only against the entries an index
-//! names as candidates, by id, by `from` and rule, by type and rule, or through a
-//! [`SameIndex`], instead of against every entry
+//! names as candidates, by id, by `from` and rule, by type, rule and the `from` and `to` an
+//! element or slice entry gives, or through a [`SameIndex`], instead of against every entry
 //! ([NFR-PERF-01](../../../docs/prd.md#nfr-perf-01)). The test itself is unchanged.
 
 use chrono::NaiveDate;
@@ -57,6 +57,12 @@ pub struct KnownSet {
     scan_all: bool,
 }
 
+/// Where an `element` or `slice` entry is filed: its type, its rule name, and its `from` and
+/// `to` when it gives them. An entry covers the violations with its type and rule whose `from`
+/// and `to` equal the ones it gives, so a violation looks up three keys: both ends, `from` only
+/// and `to` only. An entry giving neither covers nothing and is not filed.
+type ObjectKey = (String, String, Option<String>, Option<String>);
+
 /// Where each entry can match: every entry a finding's test could accept is in one of the
 /// lists its keys name.
 #[derive(Debug, Default)]
@@ -65,8 +71,8 @@ struct Index {
     by_id: HashMap<String, Vec<usize>>,
     /// `module` and `reachability` entries with a string `from` and a rule name, by both.
     modules: HashMap<(String, String), Vec<usize>>,
-    /// `element` and `slice` entries with a rule name, by type and rule name.
-    objects: HashMap<(String, String), Vec<usize>>,
+    /// `element` and `slice` entries with a rule name, by what they name: see [`ObjectKey`].
+    objects: HashMap<ObjectKey, Vec<usize>>,
     /// `dependency`, `cycle` and `instability` entries, for `is_same_violation(entry, finding)`.
     edges: SameIndex,
 }
@@ -89,11 +95,18 @@ impl Index {
                             .push(at);
                     }
                 }
-                (Some(kind @ ("element" | "slice")), Some(rule)) => index
-                    .objects
-                    .entry((kind.to_owned(), rule.to_owned()))
-                    .or_default()
-                    .push(at),
+                (Some(kind @ ("element" | "slice")), Some(rule)) => {
+                    let (from, to) = (js::str_of(shape, "from"), js::str_of(shape, "to"));
+                    if from.is_some() || to.is_some() {
+                        let key = (
+                            kind.to_owned(),
+                            rule.to_owned(),
+                            from.map(str::to_owned),
+                            to.map(str::to_owned),
+                        );
+                        index.objects.entry(key).or_default().push(at);
+                    }
+                }
                 (Some("dependency" | "cycle" | "instability"), _) => index.edges.insert(at, shape),
                 _ => {}
             }
@@ -122,12 +135,22 @@ impl Index {
                 out.extend_from_slice(self.modules(from, rule));
             }
             if let Some(kind) = kind_of(violation) {
-                out.extend(
-                    self.objects
-                        .get(&(kind.to_owned(), rule.to_owned()))
-                        .into_iter()
-                        .flatten(),
-                );
+                let (from, to) = (js::str_of(violation, "from"), js::str_of(violation, "to"));
+                let named = |from: Option<&str>, to: Option<&str>| {
+                    (
+                        kind.to_owned(),
+                        rule.to_owned(),
+                        from.map(str::to_owned),
+                        to.map(str::to_owned),
+                    )
+                };
+                let mut keys = vec![named(from, None), named(None, to)];
+                if from.is_some() && to.is_some() {
+                    keys.push(named(from, to));
+                }
+                for key in keys {
+                    out.extend(self.objects.get(&key).into_iter().flatten());
+                }
             }
         }
         out
@@ -654,6 +677,70 @@ mod tests {
                 prop_assert_eq!(run(false), run(true));
             }
         }
+    }
+
+    #[test]
+    fn element_entries_are_candidates_only_for_the_objects_they_name() {
+        // `init` writes one entry per violation; before, every entry of the rule was a candidate
+        // for every violation of it, 20,000 x 20,000 tests.
+        const N: usize = 20_000;
+        let list: Vec<KnownViolation> = (0..N)
+            .map(|i| KnownViolation {
+                from: Some(format!("f{i}.cs")),
+                to: Some(format!("T{i}")),
+                rule: serde_json::from_value(json!({ "name": "sealed" })).ok(),
+                extra: BTreeMap::from([("type".to_owned(), json!("element"))]),
+                ..KnownViolation::default()
+            })
+            .chain([
+                KnownViolation {
+                    to: Some("T7".into()),
+                    rule: serde_json::from_value(json!({ "name": "sealed" })).ok(),
+                    extra: BTreeMap::from([("type".to_owned(), json!("element"))]),
+                    ..KnownViolation::default()
+                },
+                KnownViolation {
+                    from: Some("f7.cs".into()),
+                    rule: serde_json::from_value(json!({ "name": "sealed" })).ok(),
+                    extra: BTreeMap::from([("type".to_owned(), json!("element"))]),
+                    ..KnownViolation::default()
+                },
+            ])
+            .collect();
+        let mut set = KnownSet::new(&list, day(2026, 1, 1), &mut Vec::new());
+        let mut found: Vec<Value> = (0..N)
+            .map(|i| violation("element", "sealed", &format!("f{i}.cs"), &format!("T{i}")))
+            .collect();
+        let compared: usize = found.iter().map(|v| set.index.violation(v).len()).sum();
+        assert_eq!(
+            compared,
+            N + 2,
+            "one candidate each, three for the object both extras name"
+        );
+        assert_eq!(
+            set.index
+                .violation(&violation("element", "sealed", "f7.cs", "T7"))
+                .len(),
+            3
+        );
+        assert!(
+            set.index
+                .violation(&violation("element", "sealed", "f7.cs", "T8"))
+                .contains(&(N + 1)),
+            "a from-only entry is a candidate whatever the to"
+        );
+        let mut no_to = violation("element", "sealed", "f7.cs", "T7");
+        if let Some(v) = no_to.as_object_mut() {
+            v.remove("to");
+        }
+        assert_eq!(
+            set.index.violation(&no_to),
+            [N + 1],
+            "without a to, only the from-only key is looked up, once"
+        );
+        set.soften_violations(&mut found);
+        assert!(severities(&found).iter().all(|s| s == "ignore"));
+        assert!(set.unmatched().is_empty());
     }
 
     #[test]

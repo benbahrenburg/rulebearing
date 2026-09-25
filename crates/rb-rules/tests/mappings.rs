@@ -240,3 +240,95 @@ fn python_sibling_packages_are_one_slice_each_with_segments() -> Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn typescript_modules_reside_in_their_path_and_depend_on_their_imports() -> Result<()> {
+    let ts = typescript()?;
+    let select = json!({ "kind": "module", "language": "typescript",
+        "where": { "resideInNamespaceMatching": "^src/model/" } });
+    let apart = element(
+        &ts,
+        json!({ "select": select, "should": { "notDependOnAny": ["src/ui/store.ts"] } }),
+    )?;
+    let model = [
+        "src/model/base.ts",
+        "src/model/decorators.ts",
+        "src/model/index.ts",
+    ];
+    assert_eq!(verdicts(&apart), (model.to_vec(), model.to_vec()));
+    let decorated = element(
+        &ts,
+        json!({ "select": select, "should": { "dependOnAny": ["src/model/decorators.ts"] } }),
+    )?;
+    assert_eq!(
+        verdicts(&decorated).1,
+        ["src/model/base.ts", "src/model/index.ts"]
+    );
+    // `react` does not resolve, so only the edge to the model is judged.
+    let only = element(
+        &ts,
+        json!({ "select": { "kind": "module", "where": { "haveFullName": "src/ui/widget.tsx" } },
+                "should": { "onlyDependOn": ["src/model/index.ts"] } }),
+    )?;
+    assert_eq!(verdicts(&only).1, ["src/ui/widget.tsx"]);
+    let main = element(
+        &ts,
+        json!({ "select": { "kind": "module", "where": { "haveName": "main.ts" } },
+                "should": { "onlyDependOn": ["src/ui/store.ts"] } }),
+    )?;
+    assert_eq!(verdicts(&main), (vec!["src/main.ts"], vec![]));
+    Ok(())
+}
+
+#[test]
+fn python_modules_reside_in_their_dotted_name() -> Result<()> {
+    let py = python()?;
+    let outcome = element(
+        &py,
+        json!({ "select": { "kind": "module", "language": "python",
+                            "where": { "resideInNamespaceMatching": "^app\\.sub" } },
+                "should": { "notDependOnAny": ["src/app/core.py"] } }),
+    )?;
+    assert_eq!(
+        verdicts(&outcome),
+        (
+            vec![
+                "src/app/sub/__init__.py",
+                "src/app/sub/deep.py",
+                "src/app/sub/sibling.py"
+            ],
+            vec!["src/app/sub/__init__.py", "src/app/sub/sibling.py"]
+        )
+    );
+    let exact = element(
+        &py,
+        json!({ "select": { "kind": "module", "where": { "resideInNamespace": "app.util" } },
+                "should": { "exist": true } }),
+    )?;
+    assert_eq!(verdicts(&exact).0, ["src/app/util.py"]);
+    Ok(())
+}
+
+#[test]
+fn a_module_has_no_visibility_attributes_or_type_shape() -> Result<()> {
+    let ts = typescript()?;
+    for (key, value) in [
+        ("bePublic", json!(true)),
+        (
+            "haveAnyAttributes",
+            json!(["src/model/decorators.ts#Entity"]),
+        ),
+        ("beSealed", json!(true)),
+        ("beVirtual", json!(true)),
+    ] {
+        let refused = element(
+            &ts,
+            json!({ "select": { "kind": "module" }, "should": { key: value } }),
+        );
+        assert!(
+            matches!(&refused, Err(ElementError::Inapplicable { key: k, kind, .. }) if k == key && kind == "module"),
+            "{key}: {refused:?}"
+        );
+    }
+    Ok(())
+}
