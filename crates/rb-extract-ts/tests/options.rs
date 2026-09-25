@@ -1137,3 +1137,121 @@ fn the_extractor_trait_runs_from_the_working_directory() {
     assert_eq!(extraction.inspected.files, 2);
     assert_eq!(extraction.inspected.modules, 2);
 }
+
+/// A dotted name as long as the file (100,001 segments) run through the whole extraction on
+/// rayon's 2 MiB workers: every walker and the code layer read it without recursing per segment,
+/// so the tsc flavour finds the import; the default flavour's import elision is oxc's semantic
+/// analysis, which does recurse, so it refuses the file by name instead of aborting.
+#[test]
+fn a_dotted_name_as_long_as_the_file_is_read_or_refused_by_name()
+-> Result<(), Box<dyn std::error::Error>> {
+    let cwd = Path::new(env!("CARGO_TARGET_TMPDIR")).join("deep-chain");
+    std::fs::create_dir_all(cwd.join("src"))?;
+    std::fs::write(cwd.join("src/a.ts"), "export default {};\n")?;
+    let chain = format!("a{}", ".b".repeat(100_000));
+    std::fs::write(
+        cwd.join("src/deep.ts"),
+        format!(
+            "import a from './a';\nexport class X extends {chain} {{}}\nlet v: {chain};\n{chain}();\n"
+        ),
+    )?;
+    let (mut settings, config) = prepare(
+        &serde_json::from_str(r#"{"tsPreCompilationDeps": true}"#)?,
+        &cwd,
+    )?;
+    settings.code_layer = true;
+    let tsc = extract_with(&[PathBuf::from("src")], &settings, &config)?;
+    let deep = module(&tsc, "src/deep.ts").ok_or("src/deep.ts")?;
+    assert_eq!(
+        deep.dependencies
+            .iter()
+            .map(|d| d.resolved.as_str())
+            .collect::<Vec<_>>(),
+        ["src/a.ts"]
+    );
+    assert!(
+        tsc.code
+            .as_ref()
+            .is_some_and(|code| code.types.iter().any(|t| t.full_name == "src/deep.ts#X"))
+    );
+    let refused = run_in(&cwd, "{}", &["src"]);
+    assert!(
+        matches!(
+            &refused,
+            Err(ExtractError::UnsupportedFile { path, reason })
+                if path.ends_with("src/deep.ts")
+                    && reason.contains("a dotted name of 100001 segments")
+        ),
+        "expected the file refused by name, got {refused:?}"
+    );
+    Ok(())
+}
+
+/// Vue's `generic` attribute holds a `>` inside its quotes; the start tag ends at the `>` after
+/// it, so both imports are found, as `@vue/compiler-sfc` hands them to upstream, under the
+/// default (acorn) flavour and under tsc alike, at the lines they have in the component. Before,
+/// the body began inside the attribute, and an import on the tag's line was lost.
+#[test]
+fn a_generic_script_setup_keeps_its_imports() -> Result<(), Box<dyn std::error::Error>> {
+    let expected = vec![
+        (
+            "./format".to_owned(),
+            "src/format.ts".to_owned(),
+            vec!["local".to_owned(), "import".to_owned()],
+        ),
+        (
+            "./item".to_owned(),
+            "src/item.ts".to_owned(),
+            vec!["local".to_owned(), "import".to_owned()],
+        ),
+    ];
+    for options in ["{}", r#"{"tsPreCompilationDeps": true}"#] {
+        let extraction = run("sfc-generic", options, &["src"])?;
+        assert_eq!(edges(&extraction, "src/Generic.vue"), expected, "{options}");
+        assert_eq!(
+            positions(&extraction, "src/Generic.vue"),
+            [
+                ("./format".to_owned(), Some(2), Some(1)),
+                ("./item".to_owned(), Some(3), Some(1)),
+            ],
+            "{options}"
+        );
+        // The first import on the start tag's own line, which blanking the line would lose.
+        assert_eq!(
+            positions(&extraction, "src/Inline.vue"),
+            [
+                ("./format".to_owned(), Some(1), Some(69)),
+                ("./item".to_owned(), Some(2), Some(1)),
+            ],
+            "{options}"
+        );
+    }
+    Ok(())
+}
+
+/// A `.vue` script with `lang="ts"` is TypeScript to the code layer: the class is abstract and
+/// generic and located as typescript. The module keeps the `language` its extension gives, as
+/// dependency-cruiser's module layer carries no language to follow.
+#[test]
+fn a_typescript_component_script_is_typescript_to_the_code_layer()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (mut settings, config) = prepare(&TypeScriptOptions::default(), &fixture("sfc-generic"))?;
+    settings.code_layer = true;
+    let extraction = extract_with(&[PathBuf::from("src")], &settings, &config)?;
+    let shape = extraction
+        .code
+        .as_ref()
+        .and_then(|code| {
+            code.types
+                .iter()
+                .find(|t| t.full_name == "src/Typed.vue#Shape")
+        })
+        .ok_or("src/Typed.vue#Shape")?;
+    assert_eq!(shape.location.language, rb_model::Language::Typescript);
+    assert_eq!((shape.r#abstract, shape.generic), (Some(true), Some(true)));
+    assert_eq!(
+        module(&extraction, "src/Typed.vue").and_then(|m| m.language),
+        Some(rb_model::Language::Javascript)
+    );
+    Ok(())
+}

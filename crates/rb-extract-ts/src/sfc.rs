@@ -53,7 +53,7 @@ pub fn scripts(source: &str) -> Scripts {
     while let Some(at) = source[from..].find("<script").map(|i| i + from) {
         let after_name = at + "<script".len();
         let boundary = source[after_name..].chars().next();
-        let Some(open_end) = source[after_name..].find('>').map(|i| i + after_name) else {
+        let Some(open_end) = start_tag_end(source, after_name) else {
             break;
         };
         if !matches!(boundary, Some(c) if c == '>' || c.is_whitespace()) {
@@ -82,6 +82,30 @@ pub fn scripts(source: &str) -> Scripts {
         text: String::from_utf8(out).unwrap_or_default(),
         lang,
     }
+}
+
+/// The offset of the `>` that closes a start tag whose attributes begin at `from`: the first one
+/// outside a quoted attribute value, so `generic="T extends Record<string, unknown>"` does not
+/// end the tag. A quote opens a value only straight after `=` (spaces allowed between), as in
+/// HTML; an apostrophe inside an unquoted value or a bare attribute is text.
+fn start_tag_end(source: &str, from: usize) -> Option<usize> {
+    let mut quote = None;
+    let mut after_equals = false;
+    for (offset, byte) in source.as_bytes()[from..].iter().enumerate() {
+        match (quote, *byte) {
+            (Some(open), b) if b == open => quote = None,
+            (Some(_), _) => {}
+            (None, b'>') => return Some(from + offset),
+            (None, b @ (b'"' | b'\'')) if after_equals => {
+                quote = Some(b);
+                after_equals = false;
+            }
+            (None, b'=') => after_equals = true,
+            (None, b) if b.is_ascii_whitespace() => {}
+            (None, _) => after_equals = false,
+        }
+    }
+    None
 }
 
 /// The value of `name="..."` (or `'...'`, or unquoted) in a tag's attribute text, where `name`
@@ -169,6 +193,34 @@ mod tests {
         assert!(unclosed.text.contains("import z from 'z'"));
         let untermianted_tag = scripts("<script lang=\"ts\"");
         assert!(untermianted_tag.text.trim().is_empty());
+    }
+
+    /// A `>` inside a quoted attribute value (Vue's `generic`) does not end the start tag.
+    #[test]
+    fn a_quoted_greater_than_does_not_end_the_start_tag() {
+        let source = "<script setup lang=\"ts\" generic=\"T extends Record<string, unknown>\">\nimport a from './a'\nimport b from './b'\n</script>\n";
+        let split = scripts(source);
+        assert_eq!(split.lang.as_deref(), Some("ts"));
+        let body = &split.text[source.find('\n').unwrap_or_default()..];
+        assert_eq!(body.trim(), "import a from './a'\nimport b from './b'");
+        assert!(!split.text.contains("unknown"));
+        let single =
+            scripts("<script generic='T extends A<B>' lang='ts'>import c from 'c'</script>");
+        assert_eq!(single.text.trim(), "import c from 'c'");
+        assert_eq!(single.lang.as_deref(), Some("ts"));
+    }
+
+    #[test]
+    fn start_tags_end_outside_quoted_values_only() {
+        let end = |tag: &str| start_tag_end(tag, 0);
+        assert_eq!(end(" a=\"x>y\">"), Some(8));
+        assert_eq!(end(" a = 'x>y' >"), Some(11));
+        assert_eq!(end(" a=\"it's\">"), Some(9));
+        // A quote that does not follow `=` is text, not the start of a value.
+        assert_eq!(end(" don't>"), Some(6));
+        assert_eq!(end(" a=b'c>"), Some(6));
+        assert_eq!(end(" a=\"unterminated>"), None);
+        assert_eq!(end(" setup"), None);
     }
 
     #[test]
