@@ -7,8 +7,9 @@
 // Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 13. Requirement: FR-DIST-04.
 //
 // Import forms: `import`, `export * from`, `export { } from`, `import()` and `require()` with a
-// string. The target is resolved off the graph's `modules[]` (src/graph.ts); an import the graph
-// cannot name is left to the gate, which re-extracts. Each file's answers are memoised for the
+// string. The target is resolved off the graph's `modules[]` (src/graph.ts), and a relative import
+// of a file the graph does not have yet off the disk, so a new file is still asked about; a bare
+// import the graph cannot name is left to the gate, which re-extracts. Each file's answers are memoised for the
 // file's lint, so a target imported twice is asked once. Options: `config` (the rules file),
 // `graph` (a graph document instead of the worktree-aware cache) and `severity` (the lowest rule
 // severity reported: `error`, the default, reports what fails the gate; `warn` and `info` add the
@@ -19,7 +20,14 @@ import type { Rule } from 'eslint';
 import type { Answer, Finding, Invocation } from './cli.js';
 import { CliError, canImport, locateBinary, warmCache } from './cli.js';
 import type { Graph } from './graph.js';
-import { GraphError, findCachedGraph, graphPath, loadGraph, resolveSpecifier } from './graph.js';
+import {
+  GraphError,
+  fileIn,
+  findCachedGraph,
+  graphPath,
+  loadGraph,
+  resolveSpecifier,
+} from './graph.js';
 import type { Position } from './message.js';
 import { message } from './message.js';
 
@@ -54,10 +62,10 @@ function graphFor(invocation: Invocation, from: string): Graph {
   if (invocation.graph !== undefined) {
     return loadGraph(resolve(invocation.cwd, invocation.graph));
   }
-  let path = findCachedGraph(invocation.cwd);
+  let path = findCachedGraph(invocation.cwd, invocation.config);
   if (path === undefined) {
     warmCache(invocation, from);
-    path = findCachedGraph(invocation.cwd);
+    path = findCachedGraph(invocation.cwd, invocation.config);
   }
   if (path === undefined) {
     throw new GraphError(
@@ -169,7 +177,7 @@ export const boundaries: Rule.RuleModule = {
         context.report({ node, messageId: 'unanswered', data: { text: ready.error } });
         return;
       }
-      const to = resolveSpecifier(ready.graph, from, specifier);
+      const to = resolveSpecifier(ready.graph, from, specifier, fileIn(cwd));
       if (to === undefined) {
         return;
       }

@@ -95,3 +95,55 @@ fn impact_over_the_test_assembly_graph_sees_the_cycle() -> Result {
     clean(&dir);
     Ok(())
 }
+
+#[test]
+fn impact_normalises_the_path_and_honours_path_not() -> Result {
+    let dir = tree("impact-normalise")?;
+    write(
+        &dir,
+        "rulebearing.yaml",
+        "forbidden:
+  - name: not-from-main
+    severity: error
+    from: { pathNot: \"^src/main\\\\.ts$\" }
+    to: { path: \"^src/nowhere/\" }
+  - name: not-to-web-but-view
+    severity: warn
+    from: {}
+    to: { path: \"^src/web/\", pathNot: \"view\\\\.ts$\" }
+",
+    )?;
+    let plain = json(&run(&dir, &["impact", "src/web/view.ts", "--json"])?)?;
+    for spelled in [
+        "./src/web/view.ts",
+        "src\\web\\view.ts",
+        "././src/web/view.ts",
+    ] {
+        let value = json(&run(&dir, &["impact", spelled, "--json"])?)?;
+        assert_eq!(value, plain, "{spelled}");
+    }
+    assert_eq!(plain["file"], "src/web/view.ts");
+    assert_eq!(plain["known"], true);
+    let names = |v: &serde_json::Value| -> Vec<String> {
+        v["rules"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|r| r["name"].as_str().map(str::to_owned))
+            .collect()
+    };
+    // view.ts is on the `from` side of both (only main is excluded from the first), and not on
+    // the `to` side of the second, whose pathNot leaves it out.
+    assert_eq!(names(&plain), ["not-from-main", "not-to-web-but-view"]);
+    assert_eq!(plain["rules"][1]["side"], "from", "{plain}");
+    let other = json(&run(&dir, &["impact", "src/web/other.ts", "--json"])?)?;
+    assert_eq!(other["rules"][1]["side"], "from and to", "{other}");
+    let main = json(&run(&dir, &["impact", "./src/main.ts", "--json"])?)?;
+    assert_eq!(main["file"], "src/main.ts");
+    assert!(
+        !names(&main).contains(&"not-from-main".to_owned()),
+        "main is excluded by pathNot: {main}"
+    );
+    clean(&dir);
+    Ok(())
+}

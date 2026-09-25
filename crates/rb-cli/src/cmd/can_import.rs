@@ -20,10 +20,21 @@
 //! ([Wave 2, Step 13](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)).
 //!
 //! Both paths are normalised the way the graph writes them (repository-relative, `/`, no `./`).
-//! The edge takes the target's attributes (`dependencyTypes`, `license`, `coreModule`, ...) from
-//! an edge to it already in the graph, so a rule on an npm dependency type answers as the gate
-//! would. A target the graph has never seen is a local file when it exists on disk; anything else
-//! exits 2, because answering `yes` for a module whose kind is unknown would be a silent false.
+//! The edge takes the attributes that describe its target (`license`, `coreModule`, and of the
+//! `dependencyTypes` only those that say what the target is: `npm`, `core`, `local`, the
+//! `aliased` family, ... ([`describes_target`])) from an edge to it already in the graph, so a rule
+//! on an npm dependency type answers as the gate would; how the other edge imports it (`require`,
+//! `dynamic-import`, `type-only`) is not copied. The new edge is a static ES `import`: not dynamic,
+//! not type-only, `import` among its types when the importer is TypeScript or JavaScript. A
+//! target the graph has never seen is a local file when it exists on disk; anything else exits 2,
+//! because answering `yes` for a module whose kind is unknown would be a silent false.
+//!
+//! The configuration's `options.knownViolations` apply as they do in the gate
+//! ([`rb_rules::known::KnownSet`], [Wave 2, Step 10](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)):
+//! a rule an entry matches (by the edge's id, or by its shape, with the cycle the gate would find)
+//! is softened to `ignore`, so the verdict is `yes`, and it is listed among the `warnings` with
+//! severity `ignore` and `"known": true`. An entry past its `expires` date is not honoured, so the
+//! rule still blocks, as it fails the gate.
 //! The cross-language keys read each module's `language`, `namespaces`, `project` and the
 //! assemblies of its code-layer types from the same graph, and the hypothetical edge is an
 //! `import` ([Wave 2, Step 8](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)).
@@ -32,7 +43,10 @@ use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 use std::fmt::Write as _;
 
 use clap::Args;
+use rb_model::DependencyType;
 use rb_model::violation_id::violation_id;
+use rb_rules::graph::indexed::IndexedGraph;
+use rb_rules::known::KnownSet;
 use rb_rules::matchers::{Facts, ModuleFacts};
 use rb_rules::validate::validate_dependency;
 use serde::Deserialize;
@@ -149,7 +163,7 @@ struct LightDependency {
 }
 
 /// A path as the graph writes it: relative to the working folder, `/`-separated, no `./`.
-fn normalise(ctx: &Context<'_>, path: &str) -> String {
+pub fn normalise(ctx: &Context<'_>, path: &str) -> String {
     let as_path = std::path::Path::new(path);
     let relative = if as_path.is_absolute() {
         let cwd = ctx.cwd.canonicalize().unwrap_or_else(|_| ctx.cwd.clone());
@@ -169,9 +183,77 @@ fn normalise(ctx: &Context<'_>, path: &str) -> String {
     text
 }
 
+/// Whether a dependency type says what the target is (a package, a built-in, a local file, how
+/// it was resolved) rather than how one edge imports it (`import`, `require`, `dynamic-import`,
+/// `type-only`, a triple-slash directive, ...). Only these carry over from another edge to the
+/// same target.
+pub fn describes_target(kind: DependencyType) -> bool {
+    use DependencyType as T;
+    matches!(
+        kind,
+        T::AliasedSubpathImport
+            | T::AliasedTsconfigBaseUrl
+            | T::AliasedTsconfigPaths
+            | T::AliasedTsconfig
+            | T::AliasedWebpack
+            | T::AliasedWorkspace
+            | T::Aliased
+            | T::Core
+            | T::Deprecated
+            | T::Local
+            | T::Localmodule
+            | T::NpmBundled
+            | T::NpmDev
+            | T::NpmNoPkg
+            | T::NpmOptional
+            | T::NpmPeer
+            | T::NpmUnknown
+            | T::Npm
+            | T::Undetermined
+            | T::Unknown
+            | T::Project
+            | T::Package
+            | T::Framework
+            | T::Unresolved
+            | T::Stdlib
+            | T::Site
+    )
+}
+
+/// Whether a file of this language (or, when the graph records none, this name) writes an ES
+/// `import` whose edge carries the `import` dependency type.
+pub fn writes_es_import(language: Option<&str>, path: &str) -> bool {
+    if let Some(language) = language {
+        return matches!(language, "typescript" | "javascript");
+    }
+    let extension = path.rsplit_once('.').map_or("", |(_, e)| e);
+    matches!(
+        extension,
+        "ts" | "tsx" | "mts" | "cts" | "js" | "jsx" | "mjs" | "cjs" | "vue" | "svelte"
+    )
+}
+
+/// The target-describing types of `types`, in order, then `import` when the importer writes an
+/// ES import; `local` when no type describes the target.
+fn hypothetical_types(types: Option<&[String]>, es_import: bool) -> Vec<String> {
+    let mut out: Vec<String> = types
+        .unwrap_or_default()
+        .iter()
+        .filter(|t| t.parse::<DependencyType>().is_ok_and(describes_target))
+        .cloned()
+        .collect();
+    if out.is_empty() {
+        out.push(DependencyType::Local.as_str().to_owned());
+    }
+    if es_import {
+        out.push(DependencyType::Import.as_str().to_owned());
+    }
+    out
+}
+
 /// The hypothetical edge's attributes: from an edge to `to` the graph already has, else a local
 /// file when `to` exists on disk, else `None`.
-fn target(ctx: &Context<'_>, graph: &LightGraph, to: &str) -> Option<Value> {
+fn target(ctx: &Context<'_>, graph: &LightGraph, to: &str, es_import: bool) -> Option<Value> {
     let known = graph
         .modules
         .iter()
@@ -179,7 +261,7 @@ fn target(ctx: &Context<'_>, graph: &LightGraph, to: &str) -> Option<Value> {
         .find(|d| d.resolved == to);
     if let Some(d) = known {
         let mut edge = json!({
-            "dependencyTypes": d.dependency_types.clone().unwrap_or_else(|| vec!["local".into()]),
+            "dependencyTypes": hypothetical_types(d.dependency_types.as_deref(), es_import),
             "coreModule": d.core_module.unwrap_or(false),
             "couldNotResolve": d.could_not_resolve.unwrap_or(false),
         });
@@ -193,9 +275,13 @@ fn target(ctx: &Context<'_>, graph: &LightGraph, to: &str) -> Option<Value> {
     }
     let local = graph.modules.iter().any(|m| m.source == to)
         || (!to.starts_with("node_modules/") && ctx.resolve(to).is_file());
-    local.then(
-        || json!({ "dependencyTypes": ["local"], "coreModule": false, "couldNotResolve": false }),
-    )
+    local.then(|| {
+        json!({
+            "dependencyTypes": hypothetical_types(None, es_import),
+            "coreModule": false,
+            "couldNotResolve": false,
+        })
+    })
 }
 
 /// The saved graph, or exit 2 saying how to make one.
@@ -273,7 +359,13 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
         })
         .collect();
     let (from_path, to_path) = (normalise(ctx, &args.from), normalise(ctx, &args.to));
-    let Some(mut dependency) = target(ctx, &graph, &to_path) else {
+    let from_language = graph
+        .modules
+        .iter()
+        .find(|m| m.source == from_path)
+        .and_then(|m| m.language.as_deref());
+    let es_import = writes_es_import(from_language, &from_path);
+    let Some(mut dependency) = target(ctx, &graph, &to_path, es_import) else {
         return Outcome::failed(
             RunExit::Untrustworthy,
             format!(
@@ -287,6 +379,7 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
         ("module", json!(to_path)),
         ("resolved", json!(to_path)),
         ("dynamic", json!(false)),
+        ("typeOnly", json!(false)),
         ("exoticallyRequired", json!(false)),
         ("followable", json!(true)),
         ("circular", json!(circular)),
@@ -317,30 +410,22 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
             || "import".to_owned(),
             |d| d.dependency_kind.clone().unwrap_or_default(),
         );
-    let decisions: Vec<Decision> = rules
-        .iter()
-        .map(|r| {
-            let name = r["name"].as_str().unwrap_or_default().to_owned();
-            let rule = config
-                .rules
-                .all_dependency_rules()
-                .map(|(_, rule)| rule)
-                .find(|x| x.name() == name);
-            Decision {
-                id: violation_id(&name, &from_path, &to_path, &kind),
-                severity: r["severity"].as_str().unwrap_or_default().to_owned(),
-                comment: rule.and_then(|x| x.meta.comment.clone()),
-                fix: rule.and_then(|x| x.meta.fix.clone()),
-                name,
-            }
-        })
-        .collect();
-    let allowed = !decisions.iter().any(Decision::blocks);
-    let code = if allowed {
-        0
-    } else {
-        RunExit::Violations(1).code()
-    };
+    let rules = soften_known(
+        &config.known_violations,
+        ctx.today,
+        &graph,
+        Edge {
+            from: &from_path,
+            to: &to_path,
+            kind: &kind,
+            circular,
+        },
+        rules,
+    );
+    let decisions = decide(&config, &rules, &from_path, &to_path, &kind);
+    let blocking = decisions.iter().filter(|d| d.blocks()).count();
+    // `no` is one finding for the gate to count, whichever number of rules decide it.
+    let code = RunExit::Violations(u64::from(blocking > 0)).code();
     let stdout = if args.json {
         as_json(&from_path, &to_path, &decisions)
     } else {
@@ -353,6 +438,118 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
     }
 }
 
+/// Each matched rule with the id the gate would give the edge, and the rule's comment and fix.
+fn decide(
+    config: &rb_config::Config,
+    rules: &[(Value, bool)],
+    from: &str,
+    to: &str,
+    kind: &str,
+) -> Vec<Decision> {
+    rules
+        .iter()
+        .map(|(r, known)| {
+            let name = r["name"].as_str().unwrap_or_default().to_owned();
+            let rule = config
+                .rules
+                .all_dependency_rules()
+                .map(|(_, rule)| rule)
+                .find(|x| x.name() == name);
+            Decision {
+                id: violation_id(&name, from, to, kind),
+                severity: r["severity"].as_str().unwrap_or_default().to_owned(),
+                comment: rule.and_then(|x| x.meta.comment.clone()),
+                fix: rule.and_then(|x| x.meta.fix.clone()),
+                known: *known,
+                name,
+            }
+        })
+        .collect()
+}
+
+/// The hypothetical edge, as the known violations match it.
+#[derive(Debug, Clone, Copy)]
+struct Edge<'a> {
+    from: &'a str,
+    to: &'a str,
+    kind: &'a str,
+    circular: bool,
+}
+
+/// The cycle the gate would record for the edge once it exists: dependency-cruiser's
+/// `getCycle` over the graph with the edge added.
+fn cycle_with(graph: &LightGraph, edge: Edge<'_>, types: &Value) -> Vec<Value> {
+    let mut modules: Vec<Value> = graph
+        .modules
+        .iter()
+        .map(|m| {
+            let dependencies: Vec<Value> = m
+                .dependencies
+                .iter()
+                .map(|d| json!({ "resolved": d.resolved, "dependencyTypes": d.dependency_types }))
+                .collect();
+            json!({ "source": m.source, "dependencies": dependencies })
+        })
+        .collect();
+    let hypothetical = json!({ "resolved": edge.to, "dependencyTypes": types });
+    match modules.iter_mut().find(|m| m["source"] == edge.from) {
+        Some(m) => {
+            if let Some(Value::Array(list)) = m.get_mut("dependencies")
+                && !list.iter().any(|d| d["resolved"] == edge.to)
+            {
+                list.push(hypothetical);
+            }
+        }
+        None => modules.push(json!({ "source": edge.from, "dependencies": [hypothetical] })),
+    }
+    IndexedGraph::new(&modules, "source").cycle(edge.from, edge.to)
+}
+
+/// The rules the edge matches, each with whether a known violation softened it: the entries
+/// applied through [`KnownSet::soften_modules`], as `cruise` applies them to the same edge.
+fn soften_known(
+    entries: &[rb_config::model::KnownViolation],
+    today: chrono::NaiveDate,
+    graph: &LightGraph,
+    edge: Edge<'_>,
+    rules: Vec<Value>,
+) -> Vec<(Value, bool)> {
+    if entries.is_empty() || rules.is_empty() {
+        return rules.into_iter().map(|r| (r, false)).collect();
+    }
+    let mut dependency = json!({
+        "resolved": edge.to,
+        "valid": false,
+        "rules": rules,
+    });
+    if !edge.kind.is_empty() {
+        dependency["dependencyKind"] = json!(edge.kind);
+    }
+    if edge.circular {
+        let cycle = cycle_with(graph, edge, &json!([]));
+        if !cycle.is_empty() {
+            dependency["cycle"] = Value::Array(cycle);
+        }
+    }
+    let mut modules = vec![json!({
+        "source": edge.from,
+        "valid": true,
+        "dependencies": [dependency],
+    })];
+    KnownSet::new(entries, today, &mut Vec::new()).soften_modules(&mut modules);
+    let softened = modules[0]["dependencies"][0]["rules"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    softened
+        .into_iter()
+        .map(|r| {
+            let known = r["severity"] == "ignore";
+            (r, known)
+        })
+        .collect()
+}
+
 /// One rule the hypothetical edge matches, with what the gate would report for it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Decision {
@@ -361,6 +558,8 @@ struct Decision {
     id: String,
     comment: Option<String>,
     fix: Option<String>,
+    /// Softened to `ignore` by a known violation.
+    known: bool,
 }
 
 impl Decision {
@@ -387,7 +586,11 @@ fn as_text(decisions: &[Decision]) -> String {
     } else {
         out.push_str("yes\n");
         for d in decisions {
-            let _ = writeln!(out, "  (warns: {} {})", d.severity, d.name);
+            if d.known {
+                let _ = writeln!(out, "  (known violation: {} {}, baselined)", d.id, d.name);
+            } else {
+                let _ = writeln!(out, "  (warns: {} {})", d.severity, d.name);
+            }
         }
     }
     out
@@ -402,6 +605,9 @@ fn as_json(from: &str, to: &str, decisions: &[Decision]) -> String {
         }
         if let Some(fix) = &d.fix {
             value["fix"] = json!(fix);
+        }
+        if d.known {
+            value["known"] = json!(true);
         }
         value
     };
@@ -436,6 +642,7 @@ mod tests {
             id: violation_id(name, "a.ts", "b.ts", "import"),
             comment: fix.map(|_| "why".to_owned()),
             fix: fix.map(str::to_owned),
+            known: false,
         }
     }
 
@@ -490,5 +697,119 @@ mod tests {
         let yes: Value = serde_json::from_str(&as_json("a.ts", "b.ts", &[])).unwrap_or_default();
         assert_eq!(yes["verdict"], "yes");
         assert_eq!(yes["violations"], json!([]));
+    }
+
+    #[test]
+    fn only_the_types_that_describe_the_target_carry_over() {
+        let form = [
+            DependencyType::Import,
+            DependencyType::Require,
+            DependencyType::DynamicImport,
+            DependencyType::TypeOnly,
+            DependencyType::TypeImport,
+            DependencyType::Export,
+            DependencyType::ExoticRequire,
+            DependencyType::TripleSlashFileReference,
+            DependencyType::AmdDefine,
+            DependencyType::AmdRequire,
+            DependencyType::AmdExoticRequire,
+            DependencyType::Jsdoc,
+            DependencyType::JsdocBracketImport,
+            DependencyType::TripleSlashAmdDependency,
+            DependencyType::TripleSlashDirective,
+            DependencyType::TripleSlashTypeReference,
+            DependencyType::ProcessGetBuiltinModule,
+            DependencyType::ImportEquals,
+            DependencyType::JsdocImportTag,
+            DependencyType::PreCompilationOnly,
+            DependencyType::SignatureOnly,
+            DependencyType::TestOnly,
+            DependencyType::Dynamic,
+        ];
+        for kind in DependencyType::ALL {
+            assert_eq!(describes_target(*kind), !form.contains(kind), "{kind:?}");
+        }
+        let types = |list: &[&str]| list.iter().map(|s| (*s).to_owned()).collect::<Vec<_>>();
+        assert_eq!(
+            hypothetical_types(Some(&types(&["npm", "require"])), true),
+            ["npm", "import"]
+        );
+        assert_eq!(
+            hypothetical_types(Some(&types(&["local", "type-only", "type-import"])), false),
+            ["local"]
+        );
+        assert_eq!(
+            hypothetical_types(Some(&types(&["dynamic-import", "not-a-type"])), true),
+            ["local", "import"]
+        );
+        assert_eq!(hypothetical_types(None, false), ["local"]);
+    }
+
+    #[test]
+    fn es_imports_are_written_by_typescript_and_javascript() {
+        assert!(writes_es_import(Some("typescript"), "a.py"));
+        assert!(writes_es_import(Some("javascript"), "a"));
+        assert!(!writes_es_import(Some("python"), "a.ts"));
+        assert!(!writes_es_import(Some("dotnet"), "a.cs"));
+        for path in ["a.ts", "b/c.tsx", "d.mjs", "e.vue"] {
+            assert!(writes_es_import(None, path), "{path}");
+        }
+        for path in ["a.py", "b.cs", "Makefile"] {
+            assert!(!writes_es_import(None, path), "{path}");
+        }
+    }
+
+    #[test]
+    fn a_known_entry_softens_the_rule_it_matches_unless_expired() -> Result<(), serde_json::Error> {
+        let graph: LightGraph = serde_json::from_value(json!({
+            "modules": [
+                { "source": "a.ts", "dependencies": [{ "resolved": "b.ts" }] },
+                { "source": "b.ts", "dependencies": [] }
+            ]
+        }))?;
+        let id = violation_id("no-b", "b.ts", "a.ts", "import");
+        let rule = || vec![json!({ "name": "no-b", "severity": "error" })];
+        let edge = Edge {
+            from: "b.ts",
+            to: "a.ts",
+            kind: "import",
+            circular: true,
+        };
+        let today = chrono::NaiveDate::from_ymd_opt(2026, 9, 24).unwrap_or_default();
+        let entries = |value: Value| -> Vec<rb_config::model::KnownViolation> {
+            serde_json::from_value(value).unwrap_or_default()
+        };
+        let known = soften_known(&entries(json!([{ "id": id }])), today, &graph, edge, rule());
+        assert_eq!(known[0].0["severity"], "ignore");
+        assert!(known[0].1);
+        let past = entries(json!([{ "id": id, "expires": "2026-01-01" }]));
+        assert_eq!(
+            soften_known(&past, today, &graph, edge, rule())[0].0["severity"],
+            "error"
+        );
+        // A cycle entry matches on the modules of the cycle the gate would find.
+        let cycle = entries(
+            json!([{ "type": "cycle", "from": "x", "to": "y", "rule": { "name": "no-b" },
+            "cycle": [{ "name": "a.ts" }, { "name": "b.ts" }] }]),
+        );
+        assert!(soften_known(&cycle, today, &graph, edge, rule())[0].1);
+        assert!(!soften_known(&[], today, &graph, edge, rule())[0].1);
+        let steps: Vec<String> = cycle_with(&graph, edge, &json!([]))
+            .iter()
+            .filter_map(|s| s["name"].as_str().map(str::to_owned))
+            .collect();
+        assert_eq!(steps, ["a.ts", "b.ts"]);
+        let fresh = Edge {
+            from: "new.ts",
+            to: "new.ts",
+            kind: "import",
+            circular: true,
+        };
+        assert_eq!(
+            cycle_with(&graph, fresh, &json!([])).len(),
+            1,
+            "a self-import"
+        );
+        Ok(())
     }
 }

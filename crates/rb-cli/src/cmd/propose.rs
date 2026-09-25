@@ -33,6 +33,7 @@ use serde_json::{Value, json};
 
 use crate::cli::ConfigArgs;
 use crate::cmd::decisions::slug;
+use crate::cmd::import::yaml::scalar;
 use crate::cmd::test_rules::parse_example;
 use crate::context::Context;
 use crate::{Outcome, RunExit, cache, configure};
@@ -219,7 +220,8 @@ fn forbidden_draft(
     }
     let _ = writeln!(
         out,
-        "forbidden:\n  - name: {name}\n    severity: error\n    from: {{ path: {} }}\n    to: {{ path: {} }}",
+        "forbidden:\n  - name: {}\n    severity: error\n    from: {{ path: {} }}\n    to: {{ path: {} }}",
+        scalar(name),
         yaml_string(from),
         yaml_string(to)
     );
@@ -369,7 +371,8 @@ fn element_draft(
     out.push('\n');
     let _ = writeln!(
         out,
-        "elements:\n  - name: {name}\n    severity: error\n    select: {select}"
+        "elements:\n  - name: {}\n    severity: error\n    select: {select}",
+        scalar(&name)
     );
     match &condition {
         Some(condition) => {

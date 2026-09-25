@@ -277,6 +277,164 @@ fn can_import_takes_the_targets_kind_from_the_graph() -> Result<(), Box<dyn Erro
     Ok(())
 }
 
+/// The known violations of `options.knownViolations` as `cruise` applies them: a baselined edge
+/// is `yes` with the entry noted, by id or by shape; an expired entry still blocks.
+#[test]
+fn can_import_applies_known_violations_as_the_gate_does() -> Result<(), Box<dyn Error>> {
+    let dir = tree("can-import-known")?;
+    let edge = ["src/domain/model.ts", "src/web/view.ts"];
+    let before = json(&run(&dir, &["can-import", "--json", edge[0], edge[1]])?)?;
+    let id = before["violations"][0]["id"]
+        .as_str()
+        .unwrap_or_default()
+        .to_owned();
+    assert!(id.starts_with("RB-"), "{before}");
+    // The fence alone: the ratchet's budget file is not part of this question.
+    let base = CONFIG.split("rules:\n").next().unwrap_or_default();
+    let with = |entries: &str| format!("{base}options:\n  knownViolations:\n{entries}");
+    let by_id = format!("    - id: {id}\n      expires: 2999-01-01\n      owner: \"@me\"\n");
+    let by_shape = "    - type: dependency\n      from: src/domain/model.ts\n      to: src/web/view.ts\n      rule: { name: domain-not-to-web }\n";
+    let expired = format!("    - id: {id}\n      expires: 2020-01-01\n      owner: \"@me\"\n");
+    for (name, entries, gate_passes) in [
+        ("id", by_id.as_str(), true),
+        ("shape", by_shape, true),
+        ("expired", expired.as_str(), false),
+    ] {
+        std::fs::write(dir.join("known.yaml"), with(entries))?;
+        let gate = run(&dir, &["cruise", "--config", "known.yaml", "src"])?;
+        let asked = run(
+            &dir,
+            &[
+                "can-import",
+                "--config",
+                "known.yaml",
+                "--json",
+                edge[0],
+                edge[1],
+            ],
+        )?;
+        let answer = json(&asked)?;
+        assert_eq!(
+            gate.status.code() == Some(0),
+            gate_passes,
+            "{name}: {}",
+            String::from_utf8_lossy(&gate.stdout)
+        );
+        assert_eq!(
+            asked.status.code(),
+            Some(i32::from(!gate_passes)),
+            "{name}: can-import agrees with cruise: {answer}"
+        );
+        if gate_passes {
+            assert_eq!(answer["verdict"], "yes", "{name}");
+            assert_eq!(answer["violations"], serde_json::json!([]));
+            assert_eq!(answer["warnings"][0]["name"], "domain-not-to-web");
+            assert_eq!(answer["warnings"][0]["severity"], "ignore");
+            assert_eq!(answer["warnings"][0]["known"], true);
+            assert_eq!(answer["warnings"][0]["id"], id.as_str());
+            let text = stdout(&run(
+                &dir,
+                &["can-import", "--config", "known.yaml", edge[0], edge[1]],
+            )?);
+            assert!(
+                text.starts_with("yes\n  (known violation: ") && text.contains("domain-not-to-web"),
+                "{text}"
+            );
+        } else {
+            assert_eq!(answer["verdict"], "no", "{name}");
+            assert_eq!(answer["violations"][0]["severity"], "error");
+        }
+    }
+    // An entry for another edge leaves this one blocked.
+    std::fs::write(
+        dir.join("known.yaml"),
+        with("    - id: RB-00000000\n      expires: 2999-01-01\n"),
+    )?;
+    let other = run(
+        &dir,
+        &["can-import", "--config", "known.yaml", edge[0], edge[1]],
+    )?;
+    assert_eq!(other.status.code(), Some(1));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// The hypothetical edge copies what the target is, never how another edge imports it.
+#[test]
+fn can_import_takes_the_target_not_the_import_form_of_another_edge() -> Result<(), Box<dyn Error>> {
+    let dir = tree("can-import-form")?;
+    let graph = serde_json::json!({
+        "modules": [
+            { "source": "src/legacy/a.ts", "language": "typescript", "dependencies": [
+                { "module": "lodash", "resolved": "node_modules/lodash/index.js",
+                  "dependencyTypes": ["npm", "require"], "coreModule": false, "couldNotResolve": false,
+                  "dynamic": true, "dependencyKind": "import" },
+                { "module": "./types", "resolved": "src/legacy/types.ts",
+                  "dependencyTypes": ["local", "type-only", "type-import"], "coreModule": false, "couldNotResolve": false } ] },
+            { "source": "src/legacy/types.ts", "language": "typescript", "dependencies": [] },
+            { "source": "src/domain/model.ts", "language": "typescript", "dependencies": [] }
+        ],
+        "summary": {}
+    });
+    std::fs::write(dir.join("graph.json"), graph.to_string())?;
+    std::fs::write(
+        dir.join("form.yaml"),
+        "forbidden:
+  - name: no-require
+    severity: error
+    from: {}
+    to: { dependencyTypes: [require] }
+  - name: no-dynamic
+    severity: error
+    from: {}
+    to: { dynamic: true }
+  - name: no-type-only
+    severity: error
+    from: {}
+    to: { dependencyTypes: [type-only, type-import] }
+  - name: no-npm-in-domain
+    severity: warn
+    from: { path: \"^src/domain/\" }
+    to: { dependencyTypes: [npm] }
+  - name: es-imports-seen
+    severity: info
+    from: { path: \"^src/domain/\" }
+    to: { dependencyTypes: [import] }
+",
+    )?;
+    let ask = |to: &str| {
+        run(
+            &dir,
+            &[
+                "can-import",
+                "--graph",
+                "graph.json",
+                "--config",
+                "form.yaml",
+                "--json",
+                "src/domain/model.ts",
+                to,
+            ],
+        )
+    };
+    let npm = ask("node_modules/lodash/index.js")?;
+    let answer = json(&npm)?;
+    assert_eq!(npm.status.code(), Some(0), "{answer}");
+    let warned: Vec<&str> = answer["warnings"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|w| w["name"].as_str())
+        .collect();
+    assert_eq!(warned, ["no-npm-in-domain", "es-imports-seen"], "{answer}");
+    let local = ask("src/legacy/types.ts")?;
+    let answer = json(&local)?;
+    assert_eq!(local.status.code(), Some(0), "{answer}");
+    assert_eq!(answer["warnings"][0]["name"], "es-imports-seen", "{answer}");
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
 #[test]
 fn can_import_reads_the_cross_language_facts() -> Result<(), Box<dyn Error>> {
     // Wave 2, Step 8: the saved graph's `language`, `namespaces`, `project` and code-layer

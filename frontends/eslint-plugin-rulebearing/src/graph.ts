@@ -7,10 +7,20 @@
 // There is no second resolver. A specifier resolves to the `resolved` path of the dependency the
 // graph already records for it; a relative specifier the graph has not seen yet (an import the
 // agent has just written) resolves to the module among `modules[].source` it names, by the file
-// extensions and `index` files those sources carry. What the graph cannot name is not guessed.
+// extensions and `index` files those sources carry, and when no module matches (a file created
+// since the graph was extracted), to the first of the same candidates that is a file on disk, so
+// `can-import` is still asked. A bare specifier the graph cannot name is not guessed.
+//
+// The cache entry read is the one `can-import` would read for the same worktree root, `HEAD`
+// and configuration: `key.json` records them (crates/rb-cli/src/cache/key.rs), the plugin reads
+// `HEAD` from the git files as the binary does and re-hashes the configuration files the entry
+// names, and takes the newest entry that agrees. A Windows root is compared without its verbatim
+// prefix (`//?/`) and with its drive letter in either case.
 
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
-import { join, posix, sep } from 'node:path';
+import { isAbsolute, join, posix, resolve, sep } from 'node:path';
 
 /** The folder of worktree-aware cache entries, as `rb-cli/src/cache/key.rs` names it. */
 export const CACHE_DIR = join('.graph', 'cache');
@@ -147,13 +157,15 @@ export function candidates(base: string): string[] {
 }
 
 /**
- * The path `specifier`, written in `from`, resolves to in `graph`, or `undefined` when the graph
- * cannot name it.
+ * The path `specifier`, written in `from`, resolves to in `graph`; for a relative specifier no
+ * module matches, the first candidate `isFile` accepts (a graph path, relative to the working
+ * folder); `undefined` when neither can name it.
  */
 export function resolveSpecifier(
   graph: Graph,
   from: string,
   specifier: string,
+  isFile: (path: string) => boolean = () => false,
 ): string | undefined {
   const recorded = graph.modules.get(from)?.dependencies.find((d) => d.module === specifier);
   if (recorded !== undefined) {
@@ -161,9 +173,21 @@ export function resolveSpecifier(
   }
   if (isRelative(specifier)) {
     const base = posix.normalize(posix.join(posix.dirname(from), specifier)).replace(/\/$/, '');
-    return candidates(base).find((path) => graph.modules.has(path));
+    const paths = candidates(base);
+    return paths.find((path) => graph.modules.has(path)) ?? paths.find((path) => isFile(path));
   }
   return graph.bare.get(specifier);
+}
+
+/** An `isFile` for [`resolveSpecifier`]: whether `path`, relative to `cwd`, is a file. */
+export function fileIn(cwd: string): (path: string) => boolean {
+  return (path) => {
+    try {
+      return statSync(join(cwd, ...path.split('/'))).isFile();
+    } catch {
+      return false;
+    }
+  };
 }
 
 /** A path as the graph writes it: relative to `cwd`, `/`-separated. */
@@ -181,15 +205,187 @@ function real(path: string): string {
 }
 
 /**
- * The newest cache entry under `cwd` whose worktree root holds `cwd`: the graph `can-import`
- * reads, or the one it read before the last commit. `undefined` when there is none yet.
+ * A path in the one form roots are compared in: `/`-separated, without a trailing `/`, without
+ * the Windows verbatim prefix (`//?/C:/x` is `C:/x`, `//?/UNC/host/share` is `//host/share`), the
+ * drive letter upper-case.
  */
-export function findCachedGraph(cwd: string): string | undefined {
+export function comparable(path: string): string {
+  let out = path.replace(/\\/g, '/');
+  if (out.startsWith('//?/UNC/')) {
+    out = `//${out.slice('//?/UNC/'.length)}`;
+  } else if (out.startsWith('//?/')) {
+    out = out.slice('//?/'.length);
+  }
+  out = out.replace(/^([a-zA-Z]):/, (_, drive: string) => `${drive.toUpperCase()}:`);
+  return out.length > 1 ? out.replace(/\/+$/, '') : out;
+}
+
+/** Whether `root` is `here` or a folder above it, both as [`comparable`] gives them. */
+export function holds(root: string, here: string): boolean {
+  const [r, h] = [comparable(root), comparable(here)];
+  return h === r || h.startsWith(r.endsWith('/') ? r : `${r}/`);
+}
+
+function isObjectName(text: string): boolean {
+  return /^([0-9a-fA-F]{40}|[0-9a-fA-F]{64})$/.test(text);
+}
+
+function readText(path: string): string | undefined {
+  try {
+    return readFileSync(path, 'utf8');
+  } catch {
+    return undefined;
+  }
+}
+
+/** The git directory of the worktree at `root`: `.git`, or the folder a `.git` file names. */
+function gitDir(root: string): string | undefined {
+  const dotGit = join(root, '.git');
+  try {
+    if (statSync(dotGit).isDirectory()) {
+      return dotGit;
+    }
+  } catch {
+    return undefined;
+  }
+  const named = readText(dotGit)
+    ?.split('\n')
+    .find((l) => l.startsWith('gitdir:'))
+    ?.slice('gitdir:'.length)
+    .trim();
+  if (named === undefined || named === '') {
+    return undefined;
+  }
+  return isAbsolute(named) ? named : resolve(root, named);
+}
+
+/**
+ * The commit `HEAD` names in the worktree at `root`, from the files as `rb-cli` reads them (a
+ * symbolic `HEAD` through loose refs, the common directory, then `packed-refs`; at most five
+ * hops), else `undefined`.
+ */
+export function headFromFiles(root: string): string | undefined {
+  const git = gitDir(root);
+  if (git === undefined) {
+    return undefined;
+  }
+  const commonText = readText(join(git, 'commondir'))?.trim();
+  const common =
+    commonText === undefined || commonText === ''
+      ? git
+      : isAbsolute(commonText)
+        ? commonText
+        : resolve(git, commonText);
+  let content = readText(join(git, 'HEAD'));
+  for (let hop = 0; hop < 5 && content !== undefined; hop += 1) {
+    const text = content.trim();
+    if (isObjectName(text)) {
+      return text;
+    }
+    if (!text.startsWith('ref:')) {
+      return undefined;
+    }
+    const name = text.slice('ref:'.length).trim();
+    const loose = readText(join(git, name)) ?? readText(join(common, name));
+    if (loose === undefined) {
+      const packed = readText(join(common, 'packed-refs'))
+        ?.split('\n')
+        .filter((l) => !l.startsWith('#') && !l.startsWith('^'))
+        .map((l) => l.split(' '))
+        .find(([object, reference]) => reference?.trim() === name && isObjectName(object ?? ''));
+      return packed?.[0];
+    }
+    content = loose;
+  }
+  return undefined;
+}
+
+/** `HEAD` as the binary resolves it: from the files, else `git rev-parse HEAD`, else empty. */
+export function head(root: string): string {
+  const fromFiles = headFromFiles(root);
+  if (fromFiles !== undefined) {
+    return fromFiles;
+  }
+  const result = spawnSync('git', ['rev-parse', 'HEAD'], {
+    cwd: root,
+    encoding: 'utf8',
+    windowsHide: true,
+  });
+  return result.status === 0 ? result.stdout.trim() : '';
+}
+
+/**
+ * SHA-256 over `(name, bytes)` pairs in name order, each field length-prefixed with a 64-bit
+ * big-endian count: `hash_files` in crates/rb-cli/src/cmd/attest.rs.
+ */
+export function hashFiles(files: readonly (readonly [string, Buffer])[]): string {
+  const hash = createHash('sha256');
+  const sorted = [...files].sort(([a], [b]) => Buffer.compare(Buffer.from(a), Buffer.from(b)));
+  for (const [name, bytes] of sorted) {
+    for (const field of [Buffer.from(name, 'utf8'), bytes]) {
+      const length = Buffer.alloc(8);
+      length.writeBigUInt64BE(BigInt(field.length));
+      hash.update(length);
+      hash.update(field);
+    }
+  }
+  return hash.digest('hex');
+}
+
+/** A configuration file an entry names, as a path: relative names are under the root. */
+function configPath(root: string, name: string): string {
+  return /^([a-zA-Z]:)?\//.test(name) || name.startsWith('//') ? name : posix.join(root, name);
+}
+
+function readBytes(path: string): Buffer {
+  try {
+    return readFileSync(path);
+  } catch {
+    return Buffer.alloc(0);
+  }
+}
+
+/**
+ * Whether an entry's configuration is the one on disk: its files, re-read and hashed, give its
+ * `configHash`, and `config` (the rule's option, resolved) is among them when given. An entry
+ * whose configuration came from standard input names no files and never agrees.
+ */
+export function configAgrees(
+  key: Record<string, unknown>,
+  root: string,
+  config: string | undefined,
+): boolean {
+  const files = key.configFiles;
+  if (
+    typeof key.configHash !== 'string' ||
+    !Array.isArray(files) ||
+    files.length === 0 ||
+    !files.every((f): f is string => typeof f === 'string')
+  ) {
+    return false;
+  }
+  const paths = files.map((f) => configPath(root, f));
+  if (config !== undefined && !paths.some((p) => comparable(p) === comparable(real(config)))) {
+    return false;
+  }
+  const hash = hashFiles(files.map((f, i) => [f, readBytes(paths[i] ?? f)] as const));
+  return hash === key.configHash;
+}
+
+/**
+ * The newest cache entry under `cwd` that `can-import` would read now: its worktree root holds
+ * `cwd`, its `head` is the worktree's `HEAD` and its configuration is the one on disk (`config`,
+ * the rule's option, resolved against `cwd`, when given). `undefined` when there is none yet, so
+ * the caller asks the binary to write it.
+ */
+export function findCachedGraph(cwd: string, config?: string): string | undefined {
   const folder = join(cwd, CACHE_DIR);
   if (!existsSync(folder)) {
     return undefined;
   }
-  const here = real(cwd).split(sep).join('/');
+  const here = real(cwd);
+  const configFile = config === undefined ? undefined : resolve(cwd, config);
+  const heads = new Map<string, string>();
   let newest: { path: string; mtime: number } | undefined;
   for (const entry of readdirSync(folder).sort()) {
     const graph = join(folder, entry, GRAPH_FILE);
@@ -203,11 +399,19 @@ export function findCachedGraph(cwd: string): string | undefined {
     } catch {
       continue;
     }
-    if (!isRecord(key) || typeof key.root !== 'string') {
+    if (!isRecord(key) || typeof key.root !== 'string' || typeof key.head !== 'string') {
       continue;
     }
-    const root = key.root.replace(/\/$/, '');
-    if (here !== root && !here.startsWith(`${root}/`)) {
+    const root = key.root;
+    if (!holds(root, here)) {
+      continue;
+    }
+    let current = heads.get(root);
+    if (current === undefined) {
+      current = head(root);
+      heads.set(root, current);
+    }
+    if (key.head !== current || !configAgrees(key, root, configFile)) {
       continue;
     }
     const mtime = statSync(graph).mtimeMs;

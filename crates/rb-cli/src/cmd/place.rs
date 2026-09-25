@@ -13,23 +13,30 @@
 //! The candidates are every folder holding a module of the language, and every folder above one,
 //! in the graph. At each, a module named `--name` (default `new-module` with the language's
 //! extension) is added with an edge to every `--imports` target and an edge from every
-//! `--imported-by` module; each edge takes the attributes of an edge to the same target already in
-//! the graph, as `can-import` does. The whole rule set is evaluated, so cycles, `required`,
-//! orphan and element rules count as they do in the gate, and a folder is legal when no
-//! error-severity violation names the new module. Exit 0 with the legal folders, 1 when there is
-//! none, 2 when a target is unknown.
+//! `--imported-by` module. Each edge is a static import in the new module's language (for
+//! TypeScript and JavaScript an ES `import`, not dynamic, not type-only) and takes from an edge to
+//! the same target already in the graph only what describes the target, as `can-import` does
+//! ([`can_import::describes_target`]). The whole rule set is evaluated, so cycles, `required`,
+//! reachability, orphan and element rules count as they do in the gate. The graph as it is is
+//! evaluated once too, and a folder is legal when the trial adds no error-severity violation, by
+//! id ([ADR-0015](../../../../docs/adr/0015-stable-violation-id.md)), to that base run: a
+//! violation of an edge between two existing modules that only the new module's edges make
+//! reachable rules the folder out as surely as one that names it. Exit 0 with the legal folders,
+//! 1 when there is none, 2 when a target is unknown.
 
 use std::collections::BTreeSet;
 use std::fmt::Write as _;
 
 use clap::Args;
 use rb_model::{
-    Dependency, DependencyType, GraphDocument, Language, Module, ModuleSystem, Severity,
+    Dependency, DependencyKind, DependencyType, GraphDocument, Language, Module, ModuleSystem,
+    Severity,
 };
 use rb_rules::{EvalOptions, evaluate};
 use serde_json::json;
 
 use crate::cli::ConfigArgs;
+use crate::cmd::can_import;
 use crate::context::Context;
 use crate::{Outcome, RunExit, cache, configure};
 
@@ -111,29 +118,101 @@ fn normalise(path: &str) -> String {
     text
 }
 
-/// The edge a new module would have to `target`: a copy of one already in the graph, else a
-/// local edge when the target is a module or a file here.
-fn edge_to(ctx: &Context<'_>, document: &GraphDocument, target: &str) -> Option<Dependency> {
+/// The module system a static import in `language` is written in.
+fn module_system(language: Language) -> ModuleSystem {
+    match language {
+        Language::Typescript | Language::Javascript => ModuleSystem::Es6,
+        Language::Dotnet => ModuleSystem::Clr,
+        Language::Python => ModuleSystem::Py,
+    }
+}
+
+/// A new static import from a module in `language` to `target`: `target_types` (what the target
+/// is), then `import` for TypeScript and JavaScript; not dynamic, not type-only, kind `import`.
+fn new_edge(language: Language, target: &str, target_types: Vec<DependencyType>) -> Dependency {
+    let mut dependency_types = if target_types.is_empty() {
+        vec![DependencyType::Local]
+    } else {
+        target_types
+    };
+    if matches!(language, Language::Typescript | Language::Javascript) {
+        dependency_types.push(DependencyType::Import);
+    }
+    Dependency {
+        dependency_types,
+        followable: true,
+        dependency_kind: Some(DependencyKind::Import),
+        type_only: None,
+        ..Dependency::new(
+            target.to_owned(),
+            target.to_owned(),
+            module_system(language),
+        )
+    }
+}
+
+/// The edge a new module in `language` would have to `target`: what describes the target copied
+/// from an edge to it already in the graph, else a local edge when the target is a module or a
+/// file here. How that other edge imports the target (dynamic, type-only, `require`, its kind,
+/// line and specifier) is not copied.
+fn edge_to(
+    ctx: &Context<'_>,
+    document: &GraphDocument,
+    language: Language,
+    target: &str,
+) -> Option<Dependency> {
     let known = document
         .modules
         .iter()
         .flat_map(|m| &m.dependencies)
         .find(|d| d.resolved == target);
     if let Some(d) = known {
+        let types = d
+            .dependency_types
+            .iter()
+            .copied()
+            .filter(|t| can_import::describes_target(*t))
+            .collect();
         return Some(Dependency {
-            circular: false,
-            cycle: None,
-            valid: true,
-            rules: None,
-            ..d.clone()
+            core_module: d.core_module,
+            license: d.license.clone(),
+            could_not_resolve: d.could_not_resolve,
+            followable: d.followable,
+            matches_do_not_follow: d.matches_do_not_follow,
+            protocol: d.protocol,
+            mime_type: d.mime_type.clone(),
+            instability: d.instability,
+            ..new_edge(language, target, types)
         });
     }
     let local = document.modules.iter().any(|m| m.source == target)
         || (!target.starts_with("node_modules/") && ctx.resolve(target).is_file());
-    local.then(|| Dependency {
-        dependency_types: vec![DependencyType::Local],
-        followable: true,
-        ..Dependency::new(target.to_owned(), target.to_owned(), ModuleSystem::Es6)
+    local.then(|| new_edge(language, target, Vec::new()))
+}
+
+/// The ids of the error-severity violations of a run.
+fn error_ids(evaluation: &rb_rules::Evaluation) -> BTreeSet<String> {
+    evaluation
+        .violations()
+        .iter()
+        .filter(|v| v.rule.severity == Severity::Error)
+        .map(violation_key)
+        .collect()
+}
+
+/// A violation's id, else (a violation without one) its rule, type, ends and path, so two
+/// different findings never share a key.
+fn violation_key(v: &rb_model::Violation) -> String {
+    v.id.clone().unwrap_or_else(|| {
+        serde_json::to_string(&json!([
+            v.rule.name,
+            v.violation_type,
+            v.from,
+            v.to,
+            v.cycle,
+            v.via
+        ]))
+        .unwrap_or_default()
     })
 }
 
@@ -186,7 +265,7 @@ pub fn run(ctx: &mut Context<'_>, args: &PlaceArgs) -> Outcome {
         .map(|t| normalise(t))
         .filter(|t| !t.is_empty())
     {
-        let Some(edge) = edge_to(ctx, &document, &target) else {
+        let Some(edge) = edge_to(ctx, &document, lang, &target) else {
             return Outcome::failed(
                 RunExit::Untrustworthy,
                 format!(
@@ -222,6 +301,12 @@ pub fn run(ctx: &mut Context<'_>, args: &PlaceArgs) -> Outcome {
         today: ctx.today,
         ..EvalOptions::default()
     };
+    let base = match evaluate(document.clone(), &config, &options) {
+        Ok(e) => error_ids(&e),
+        Err(e) => {
+            return Outcome::failed(RunExit::Untrustworthy, format!("rulebearing place: {e}\n"));
+        }
+    };
     let mut verdicts = Vec::new();
     for folder in candidates(&document, lang) {
         let source = if folder.is_empty() {
@@ -239,11 +324,8 @@ pub fn run(ctx: &mut Context<'_>, args: &PlaceArgs) -> Outcome {
         trial.modules.push(module);
         for importer in &importers {
             if let Some(m) = trial.modules.iter_mut().find(|m| m.source == *importer) {
-                m.dependencies.push(Dependency {
-                    dependency_types: vec![DependencyType::Local],
-                    followable: true,
-                    ..Dependency::new(source.clone(), source.clone(), ModuleSystem::Es6)
-                });
+                let language = m.language.unwrap_or(lang);
+                m.dependencies.push(new_edge(language, &source, Vec::new()));
             }
         }
         let evaluation = match evaluate(trial, &config, &options) {
@@ -258,7 +340,7 @@ pub fn run(ctx: &mut Context<'_>, args: &PlaceArgs) -> Outcome {
         let mut rules: Vec<String> = evaluation
             .violations()
             .iter()
-            .filter(|v| v.rule.severity == Severity::Error && (v.from == source || v.to == source))
+            .filter(|v| v.rule.severity == Severity::Error && !base.contains(&violation_key(v)))
             .map(|v| v.rule.name.clone())
             .collect();
         rules.sort();
