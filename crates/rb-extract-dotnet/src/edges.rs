@@ -15,8 +15,8 @@
 //! | `dependencyTypes` | When |
 //! | --- | --- |
 //! | `local` | the target type is defined in the same project |
-//! | `project` | in another loaded project |
-//! | `package` | in an assembly a `PackageReference` of the source project names, directly or through its `ProjectReference`s; or a non-framework assembly found beside the built output (a package arriving transitively) |
+//! | `project` | in another loaded project; or in an assembly beside the built output that a `ProjectReference` of the source project produces, directly or transitively (matched by the referenced project's `AssemblyName`) |
+//! | `package` | in an assembly a `PackageReference` of the source project names, directly or through its `ProjectReference`s; or a non-framework assembly found beside the built output that no `ProjectReference` accounts for (a package arriving transitively, a copied or `HintPath` DLL) |
 //! | `framework` | in a `System.*`, `Microsoft.*`, `mscorlib` or `netstandard` assembly the project does not reference as a package |
 //! | `unresolved` | anywhere else outside the loaded set |
 //! | `test-only` | added when the source project is a test project |
@@ -26,7 +26,7 @@
 //! `coreModule` for the framework and `couldNotResolve` for `unresolved`, as dependency-cruiser
 //! names an npm package by its name. Two projects may classify one assembly differently (one
 //! references the package, the other does not); the module takes the most resolved answer
-//! (`package`, then `framework`, then `unresolved`), with a licence over none, so its fields
+//! (`project`, `package`, `framework`, then `unresolved`), with a licence over none, so its fields
 //! never depend on which file sorts first.
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -153,9 +153,10 @@ pub fn packages_root() -> Option<PathBuf> {
 /// How resolved an external classification is, lower first: the module keeps the lowest.
 fn resolution_rank(kind: DependencyType) -> u8 {
     match kind {
-        DependencyType::Package => 0,
-        DependencyType::Framework => 1,
-        _ => 2,
+        DependencyType::Project => 0,
+        DependencyType::Package => 1,
+        DependencyType::Framework => 2,
+        _ => 3,
     }
 }
 
@@ -170,8 +171,9 @@ type FirstReference = (Option<u32>, Option<u32>, BTreeSet<String>, bool, String)
 )]
 ///
 /// `beside` holds the simple names (lowercase) of the assemblies found beside the built output:
-/// a target in one of them that no package reference names is a `package` (a package arriving
-/// transitively), never `unresolved`.
+/// a target in one of them that no package reference names is a `project` when a
+/// `ProjectReference` of the source project produces it, else a `package` (a package arriving
+/// transitively, a copied DLL), never `unresolved`.
 pub fn project(
     universe: &Universe<'_>,
     assemblies: &[AssemblyFiles<'_>],
@@ -218,7 +220,17 @@ pub fn project(
                         Landing::External(name, DependencyType::Framework, None)
                     }
                     None if beside.contains(&name.to_ascii_lowercase()) => {
-                        Landing::External(name, DependencyType::Package, None)
+                        let from_project = source
+                            .project
+                            .referenced_assemblies
+                            .iter()
+                            .any(|a| a.eq_ignore_ascii_case(&name));
+                        let kind = if from_project {
+                            DependencyType::Project
+                        } else {
+                            DependencyType::Package
+                        };
+                        Landing::External(name, kind, None)
                     }
                     None => Landing::External(name, DependencyType::Unresolved, None),
                 }
@@ -672,6 +684,94 @@ mod tests {
         assert_eq!(
             module(&modules, "Gone"),
             Some((Some(vec![DependencyType::Unresolved]), Some(true)))
+        );
+    }
+
+    #[test]
+    fn a_referenced_projects_assembly_beside_the_output_is_project_a_copied_dll_package() {
+        // Web references Core (a ProjectReference, AssemblyName Core); Copied.dll is also beside
+        // the output but no ProjectReference produces it. Tool, a second project, gets Core only
+        // as a copied DLL.
+        let mut web = crate::discover::Project::loose(Path::new("web/Web.dll"));
+        web.referenced_assemblies = vec!["Core".into()];
+        let tool = crate::discover::Project::loose(Path::new("tool/Tool.dll"));
+        let assemblies = [
+            AssemblyFiles {
+                project: &web,
+                project_path: "web/Web.csproj".into(),
+                files: BTreeMap::new(),
+            },
+            AssemblyFiles {
+                project: &tool,
+                project_path: "tool/Tool.csproj".into(),
+                files: BTreeMap::new(),
+            },
+        ];
+        let dependencies = vec![
+            dep(
+                "web.cs",
+                external("Core.T", Some("core")),
+                DependencyKind::Body,
+            ),
+            dep(
+                "web.cs",
+                external("Copied.T", Some("Copied")),
+                DependencyKind::Body,
+            ),
+            TypeDependency {
+                assembly: 1,
+                ..dep(
+                    "a-tool.cs",
+                    external("Core.T", Some("core")),
+                    DependencyKind::Body,
+                )
+            },
+        ];
+        let universe = Universe::new(Vec::new());
+        let beside = BTreeSet::from(["core".to_owned(), "copied".to_owned()]);
+        let mut modules = vec![Module::new("a-tool.cs"), Module::new("web.cs")];
+        project(
+            &universe,
+            &assemblies,
+            &dependencies,
+            &mut modules,
+            None,
+            &beside,
+        );
+        let edge = |from: &str, to: &str| {
+            modules
+                .iter()
+                .find(|m| m.source == from)
+                .and_then(|m| m.dependencies.iter().find(|d| d.resolved == to))
+                .map(|d| (d.dependency_types[0], d.could_not_resolve))
+        };
+        assert_eq!(
+            edge("web.cs", "core"),
+            Some((DependencyType::Project, false))
+        );
+        assert_eq!(
+            edge("web.cs", "Copied"),
+            Some((DependencyType::Package, false))
+        );
+        assert_eq!(
+            edge("a-tool.cs", "core"),
+            Some((DependencyType::Package, false)),
+            "no ProjectReference of Tool produces Core"
+        );
+        let module = |name: &str| {
+            modules
+                .iter()
+                .find(|m| m.source == name)
+                .map(|m| (m.dependency_types.clone(), m.could_not_resolve))
+        };
+        assert_eq!(
+            module("core"),
+            Some((Some(vec![DependencyType::Project]), Some(false))),
+            "the module takes project over package, whichever file sorts first"
+        );
+        assert_eq!(
+            module("Copied"),
+            Some((Some(vec![DependencyType::Package]), Some(false)))
         );
     }
 

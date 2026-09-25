@@ -19,7 +19,9 @@
 //!
 //! A project's package references include those of the projects it references, transitively
 //! (a `PackageReference` flows through a `ProjectReference`, as NuGet restores it); the
-//! project's own reference wins when both name one id.
+//! project's own reference wins when both name one id. The same walk records the assembly name
+//! of every project a project references, so the extractor can tell a referenced project's
+//! assembly beside the build output from a copied DLL.
 
 pub mod locate;
 pub mod project;
@@ -103,6 +105,9 @@ pub struct Project {
     pub project_refs: Vec<PathBuf>,
     /// Referenced packages.
     pub package_refs: Vec<PackageRef>,
+    /// The `AssemblyName` of every project it references, directly or transitively, sorted;
+    /// filled by [`close_package_refs`].
+    pub referenced_assemblies: Vec<String>,
 }
 
 impl Project {
@@ -132,6 +137,7 @@ impl Project {
             assembly,
             project_refs: file.project_refs,
             package_refs: file.package_refs,
+            referenced_assemblies: Vec::new(),
         })
     }
 
@@ -150,6 +156,7 @@ impl Project {
             assembly: Some(dll.to_path_buf()),
             project_refs: Vec::new(),
             package_refs: Vec::new(),
+            referenced_assemblies: Vec::new(),
         }
     }
 }
@@ -347,16 +354,22 @@ pub fn discover(root: &Path, options: &DotnetOptions) -> Result<Workspace, Disco
     Ok(workspace)
 }
 
-/// Adds to each project the package references of the projects it references, transitively. A
-/// referenced project outside the workspace is read for its references; one that cannot be read
-/// adds none.
+/// Adds to each project the package references of the projects it references, transitively,
+/// and records those projects' assembly names in [`Project::referenced_assemblies`]. A
+/// referenced project outside the workspace is read for its references and assembly name; one
+/// that cannot be read adds its file stem (MSBuild's default `AssemblyName`) and nothing else.
 pub fn close_package_refs(projects: &mut [Project], configuration: &str, root: &Path) {
-    let mut declared: BTreeMap<PathBuf, (Vec<PathBuf>, Vec<PackageRef>)> = projects
+    type Declared = (Vec<PathBuf>, Vec<PackageRef>, String);
+    let mut declared: BTreeMap<PathBuf, Declared> = projects
         .iter()
         .map(|p| {
             (
                 p.path.clone(),
-                (p.project_refs.clone(), p.package_refs.clone()),
+                (
+                    p.project_refs.clone(),
+                    p.package_refs.clone(),
+                    p.assembly_name.clone(),
+                ),
             )
         })
         .collect();
@@ -367,19 +380,30 @@ pub fn close_package_refs(projects: &mut [Project], configuration: &str, root: &
             .map(|r| r.id.to_ascii_lowercase())
             .collect();
         let mut visited = BTreeSet::from([project.path.clone()]);
+        let mut assemblies = BTreeSet::new();
         let mut stack = project.project_refs.clone();
         while let Some(path) = stack.pop() {
             if !visited.insert(path.clone()) {
                 continue;
             }
-            let (refs, packages) = declared
+            let (refs, packages, assembly) = declared
                 .entry(path.clone())
                 .or_insert_with(|| {
-                    ProjectFile::read(&path, configuration, root)
-                        .map(|f| (f.project_refs, f.package_refs))
-                        .unwrap_or_default()
+                    ProjectFile::read(&path, configuration, root).map_or_else(
+                        |_| {
+                            let stem = path
+                                .file_stem()
+                                .map(|s| s.to_string_lossy().into_owned())
+                                .unwrap_or_default();
+                            (Vec::new(), Vec::new(), stem)
+                        },
+                        |f| (f.project_refs, f.package_refs, f.assembly_name),
+                    )
                 })
                 .clone();
+            if !assembly.is_empty() {
+                assemblies.insert(assembly);
+            }
             for package in packages {
                 if seen_ids.insert(package.id.to_ascii_lowercase()) {
                     project.package_refs.push(package);
@@ -390,6 +414,7 @@ pub fn close_package_refs(projects: &mut [Project], configuration: &str, root: &
         project
             .package_refs
             .sort_by_key(|r| (r.id.to_ascii_lowercase(), r.id.clone()));
+        project.referenced_assemblies = assemblies.into_iter().collect();
     }
 }
 
@@ -529,6 +554,20 @@ pub(crate) mod tests {
                 pair("Serilog", "2.0"),
             ]
         );
+        let referenced = |name: &str| -> Vec<String> {
+            workspace
+                .iter()
+                .flat_map(|w| &w.projects)
+                .filter(|p| p.assembly_name == name)
+                .flat_map(|p| p.referenced_assemblies.clone())
+                .collect()
+        };
+        assert_eq!(
+            referenced("Web"),
+            ["Core", "Outside"],
+            "direct and transitive, by AssemblyName (the stem by default); itself excluded"
+        );
+        assert_eq!(referenced("Core"), ["Outside", "Web"]);
         let _ = std::fs::remove_dir_all(&dir);
     }
 

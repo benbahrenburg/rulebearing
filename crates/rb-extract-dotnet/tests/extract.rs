@@ -473,7 +473,32 @@ fn solution_mode_finds_referenced_assemblies_beside_the_built_output()
             ..DotnetOptions::default()
         },
     );
+    let kind = |extraction: &Extraction| {
+        extraction
+            .modules
+            .iter()
+            .find(|m| m.source == "Sample.Core")
+            .map(|m| (m.dependency_types.clone(), m.could_not_resolve))
+    };
+    let copied = kind(described.as_ref().map_err(ToString::to_string)?);
+    // The same output, now with the ProjectReference that produced Sample.Core.dll (the
+    // referenced project file is not there, so its stem is its AssemblyName).
+    std::fs::write(
+        dir.join("src/Web/Sample.csproj"),
+        r#"<Project><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><ProjectReference Include="..\Core\Sample.Core.csproj" /></ItemGroup></Project>"#,
+    )?;
+    let referenced = extract(&dir, &DotnetOptions::default());
     let _ = std::fs::remove_dir_all(&dir);
+    assert_eq!(
+        copied,
+        Some((Some(vec![DependencyType::Package]), Some(false))),
+        "a DLL beside the output that no ProjectReference accounts for is a package"
+    );
+    assert_eq!(
+        kind(&referenced?),
+        Some((Some(vec![DependencyType::Project]), Some(false))),
+        "the assembly a ProjectReference produces is a project"
+    );
     assert_eq!(
         clock(&described?),
         Some(("class".to_owned(), Some(true))),
