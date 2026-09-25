@@ -95,7 +95,10 @@ pub fn merge_counts_into_rule(rule: &Value, counts: &Map<String, Value>) -> Valu
 }
 
 /// `aggregateViolations(violations, ruleSetUsed)`: every rule with its counts, the most violated
-/// first, then the most ignored, then by name.
+/// first, then the most ignored, then by name. Upstream lists `forbidden`, `required` and the
+/// `allowed` pseudo rule; the native element, slice and diagram rules follow them, so every
+/// violation's rule link has its row. A dependency-cruiser rule set has none of those, so its page
+/// is upstream's.
 pub fn aggregate_violations(violations: &[Value], rule_set: Option<&Value>) -> Vec<Value> {
     let counts = counts_per_rule(violations);
     let list = |key: &str| {
@@ -112,6 +115,9 @@ pub fn aggregate_violations(violations: &[Value], rule_set: Option<&Value>) -> V
         .into_iter()
         .chain(list("required"))
         .chain(formatted_allowed_rule(rule_set))
+        .chain(list("elements"))
+        .chain(list("slices"))
+        .chain(list("diagrams"))
         .map(|rule| merge_counts_into_rule(&rule, &counts))
         .collect();
     let figure = |rule: &Value, key: &str| rule.get(key).and_then(Value::as_u64).unwrap_or(0);
@@ -501,6 +507,18 @@ mod tests {
             determine_to(&json!({ "type": "module", "to": "x" }), &Map::new()),
             ""
         );
+    }
+
+    #[test]
+    fn element_slice_and_diagram_rules_have_rows_too() {
+        let violations =
+            vec![json!({ "type": "element", "rule": { "name": "sealed", "severity": "error" } })];
+        let rule_set = json!({ "forbidden": [{ "name": "a" }], "elements": [{ "name": "sealed" }],
+                               "slices": [{ "name": "apart" }], "diagrams": [{ "name": "drawn" }] });
+        let rules = aggregate_violations(&violations, Some(&rule_set));
+        let order: Vec<String> = rules.iter().map(|r| js::field(r, "name")).collect();
+        assert_eq!(order, vec!["sealed", "a", "apart", "drawn"]);
+        assert_eq!(rules[0]["count"], json!(1));
     }
 
     #[test]
