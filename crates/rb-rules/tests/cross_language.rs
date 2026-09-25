@@ -364,3 +364,30 @@ fn license_on_the_python_graph() -> Result<()> {
     assert!(of(&all, "no-gpl").is_empty());
     Ok(())
 }
+
+#[test]
+fn an_assembly_over_python_modules_is_refused_not_silently_false() -> Result<()> {
+    let python = || graph("crates/rb-extract-python/tests/fixtures/pkg.expected.json");
+    let refused = run(
+        python()?,
+        json!([{ "name": "no-assembly", "from": {}, "to": { "assemblyNot": "x" } }]),
+    );
+    let message = refused.err().map(|e| e.to_string()).unwrap_or_default();
+    assert!(
+        message.contains("rule `no-assembly`: `to.assemblyNot`")
+            && message.contains("python")
+            && message.contains("add `to.language`"),
+        "{message}"
+    );
+    // The same rule scoped away from Python, and a key Python records, run.
+    let scoped = run(
+        python()?,
+        json!([
+            { "name": "scoped", "from": {}, "to": { "language": "dotnet", "assemblyNot": "x" } },
+            { "name": "recorded", "from": { "namespace": "^app\\.cli$" }, "to": { "project": "app" } }
+        ]),
+    )?;
+    assert!(of(&found(&scoped), "scoped").is_empty());
+    assert!(!of(&found(&scoped), "recorded").is_empty());
+    Ok(())
+}
