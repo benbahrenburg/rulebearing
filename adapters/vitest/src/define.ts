@@ -122,7 +122,7 @@ export function defineArchitectureTests(
   }
   registrar.describe(options.suite ?? 'rulebearing', () => {
     for (const item of found) {
-      registrar.test(item.rule.name, { meta: { rulebearing: ruleMeta(item) } }, ruleBody(item));
+      registrar.test(item.rule.id, { meta: { rulebearing: ruleMeta(item) } }, ruleBody(item));
     }
   });
   return found;

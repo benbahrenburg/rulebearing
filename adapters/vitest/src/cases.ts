@@ -18,6 +18,11 @@ export const SHOWN = 5;
 
 /** One rule of the run. */
 export interface Rule {
+  /**
+   * The rule's identity within the run, the test's name: the name, with `#n` for the n-th rule of
+   * a name already taken (names repeat: every anonymous rule is `unnamed`). `rules` sets it.
+   */
+  readonly id: string;
   /** The name violations carry. */
   readonly name: string;
   /**
@@ -132,6 +137,7 @@ export function severity(violation: Json): string {
 
 function entry(family: string, rule: Json): Rule {
   return {
+    id: '',
     name: string(rule, 'name') ?? '',
     family,
     severity: string(rule, 'severity') ?? 'warn',
@@ -151,8 +157,9 @@ function byteOrder(a: string, b: string): number {
 /**
  * Every rule of the run, in the order `catalog::rules` gives: `forbidden`; the `allowed` list as
  * the one rule its violations name (`not-in-allowed`, at `allowedSeverity`, `warn` by default);
- * `required`, then the element, slice and diagram rules; a rule known only from its violations,
- * in name order; the ratchets; then any vacuous entry that names none of these.
+ * `required`, then the element, slice and diagram rules; a rule known only from its violations
+ * (or whose name only rules of another family carry), in name order; the ratchets; then any
+ * vacuous entry that names none of these.
  */
 export function rules(result: Json): Rule[] {
   const ruleSet = field(summary(result), 'ruleSetUsed').value;
@@ -160,6 +167,7 @@ export function rules(result: Json): Rule[] {
   const allowed = list(ruleSet, 'allowed');
   if (allowed.length > 0) {
     out.push({
+      id: '',
       name: 'not-in-allowed',
       family: 'allowed',
       severity: string(ruleSet, 'allowedSeverity') ?? 'warn',
@@ -173,8 +181,11 @@ export function rules(result: Json): Rule[] {
   const unlisted: Rule[] = [];
   for (const violation of violations(result)) {
     const name = ruleName(violation);
-    if (!out.some((r) => r.name === name) && !unlisted.some((r) => r.name === name)) {
+    const kind = string(violation, 'type');
+    const known = (r: Rule): boolean => r.name === name && produces(r.family, kind);
+    if (!out.some(known) && !unlisted.some(known)) {
       unlisted.push({
+        id: '',
         name,
         family: 'rules',
         severity: severity(violation),
@@ -185,15 +196,64 @@ export function rules(result: Json): Rule[] {
   }
   out.push(...unlisted.sort((a, b) => byteOrder(a.name, b.name)));
   for (const ratchet of summaryList(result, 'ratchets')) {
-    out.push({ name: text(ratchet, 'name'), family: 'ratchets', severity: 'error' });
+    out.push({ id: '', name: text(ratchet, 'name'), family: 'ratchets', severity: 'error' });
   }
   for (const vacuous of summaryList(result, 'vacuousRules')) {
     const name = text(vacuous, 'name');
     if (!out.some((r) => r.name === name)) {
-      out.push({ name, family: 'rules', severity: 'error' });
+      out.push({ id: '', name, family: 'rules', severity: 'error' });
     }
   }
-  return out;
+  return identify(out);
+}
+
+/** `catalog::identify`: the name at its first occurrence, then `name#n`, past any id taken. */
+function identify(found: Rule[]): Rule[] {
+  const taken = new Set(found.map((r) => r.name));
+  const seen = new Map<string, number>();
+  return found.map((rule) => {
+    const count = (seen.get(rule.name) ?? 0) + 1;
+    seen.set(rule.name, count);
+    if (count === 1) {
+      return { ...rule, id: rule.name };
+    }
+    let n = count;
+    while (taken.has(`${rule.name}#${String(n)}`)) {
+      n += 1;
+    }
+    const id = `${rule.name}#${String(n)}`;
+    taken.add(id);
+    return { ...rule, id };
+  });
+}
+
+/** `catalog::produces`: whether a rule of `family` can produce a violation of `kind`. */
+function produces(family: string, kind: string | undefined): boolean {
+  if (family === 'rules') {
+    return true;
+  }
+  if (kind === 'element') {
+    return family === 'elements' || family === 'diagrams';
+  }
+  if (kind === 'slice') {
+    return family === 'slices';
+  }
+  return ['forbidden', 'allowed', 'required', 'rules'].includes(family);
+}
+
+/**
+ * The index of the rule a violation belongs to, as `catalog::rule_index` picks it: among the
+ * non-ratchet rules of its name, the first whose family can produce its `type` and whose severity
+ * is its own, else the first whose family can produce it, else the first; `undefined` when none.
+ */
+export function ruleIndex(found: readonly Rule[], violation: Json): number | undefined {
+  const name = ruleName(violation);
+  const named = found.flatMap((r, i) => (r.name === name && r.family !== 'ratchets' ? [i] : []));
+  const kind = string(violation, 'type');
+  const producing = named.filter((i) => produces(found[i]?.family ?? '', kind));
+  const fitting = producing.length > 0 ? producing : named;
+  const wanted = severity(violation);
+  return fitting.find((i) => found[i]?.severity === wanted) ?? fitting[0];
 }
 
 function first(items: Json[], key: string, wanted: string): Json {
@@ -261,9 +321,9 @@ function ratchetCase(found: Case, ratchet: Json): void {
   }
 }
 
-function violationCase(found: Case, result: Json): void {
+function violationCase(found: Case, result: Json, catalogue: readonly Rule[], index: number): void {
   const name = found.rule.name;
-  const matching = violations(result).filter((v) => ruleName(v) === name);
+  const matching = violations(result).filter((v) => ruleIndex(catalogue, v) === index);
   const errors = matching.filter((v) => severity(v) === 'error').map((v) => describe(result, v));
   for (const v of matching.filter((item) => severity(item) !== 'error')) {
     found.output.push(`${severity(v)}: ${describe(result, v)}`);
@@ -286,17 +346,23 @@ export function cases(result: Json): Case[] {
   const expired = summaryList(result, 'expired');
   const ratchets = summaryList(result, 'ratchets');
   const out: Case[] = [];
-  for (const rule of rules(result)) {
+  const catalogue = rules(result);
+  let ratchetAt = 0;
+  catalogue.forEach((rule, index) => {
     const found: Case = { rule, failure: undefined, errors: [], output: [] };
+    // Vacuous and expired entries go to the first rule of their name.
+    const first = catalogue.findIndex((r) => r.name === rule.name) === index;
     if (rule.family === 'ratchets') {
-      const ratchet = ratchets.find((r) => text(r, 'name') === rule.name);
+      // The ratchet rules are summary.ratchets, in order.
+      const ratchet = ratchets[ratchetAt];
       if (ratchet !== undefined) {
         ratchetCase(found, ratchet);
       }
+      ratchetAt += 1;
     } else {
-      violationCase(found, result);
+      violationCase(found, result, catalogue, index);
     }
-    for (const item of vacuous.filter((v) => text(v, 'name') === rule.name)) {
+    for (const item of vacuous.filter((v) => first && text(v, 'name') === rule.name)) {
       if (string(item, 'severity') === 'warn') {
         found.output.push(`warning: ${vacuousMessage(item)}`);
       } else {
@@ -304,15 +370,20 @@ export function cases(result: Json): Case[] {
       }
     }
     for (const item of expired) {
-      if (text(item, 'kind') === 'rule' && text(item, 'name') === rule.name) {
+      if (first && text(item, 'kind') === 'rule' && text(item, 'name') === rule.name) {
         found.errors.push(['expired', expiredMessage(item)]);
       }
     }
     out.push(found);
-  }
+  });
   for (const item of expired.filter((e) => text(e, 'kind') !== 'rule')) {
     out.push({
-      rule: { name: text(item, 'name'), family: 'knownViolations', severity: 'error' },
+      rule: {
+        id: text(item, 'name'),
+        name: text(item, 'name'),
+        family: 'knownViolations',
+        severity: 'error',
+      },
       failure: undefined,
       errors: [['expired', expiredMessage(item)]],
       output: [],

@@ -13,8 +13,9 @@
 //!   which `tests/xml_schemas.rs` validates every output against
 //!
 //! `<testsuites>` holds one `<testsuite name="rulebearing">`, whose `<properties>` are the receipt
-//! (`summary.inspected`, flattened, and the counts). Each rule of the run is a `<testcase>` whose
-//! `classname` is `rulebearing.<family>` ([`crate::catalog`]). An error-severity violation fails
+//! (`summary.inspected`, flattened, and the counts). Each rule of the run is a `<testcase>` named
+//! by its catalogue id (the name, `name#2` for a second rule of that name) whose `classname` is
+//! `rulebearing.<family>` ([`crate::catalog`]). An error-severity violation fails
 //! it: `<failure type="error">` with the message the test adapters print (the `fix`, then the
 //! first five violations) and every violation in the body, one per object for an element rule. A
 //! vacuous rule, an expired rule and a ratchet without a budget are `<error>`s, because the rule
@@ -63,7 +64,7 @@ pub fn render(result: &Value, timestamp: &str) -> Rendered {
         let _ = write!(
             out,
             "    <testcase name=\"{}\" classname=\"rulebearing.{}\" time=\"0\"",
-            xml(&case.rule.name, true),
+            xml(&case.rule.id, true),
             xml(&case.rule.family, true)
         );
         if case.failure.is_none() && case.errors.is_empty() && case.output.is_empty() {
@@ -173,5 +174,24 @@ mod tests {
         );
         assert!(!output.contains("timestamp"));
         assert!(output.contains("tests=\"1\" failures=\"0\" errors=\"0\""));
+    }
+
+    #[test]
+    fn rules_sharing_a_name_are_separate_cases_and_report_a_violation_once() {
+        let result = json!({ "summary": {
+            "violations": [
+                { "type": "dependency", "from": "a", "to": "b", "rule": { "name": "unnamed", "severity": "error" } }
+            ],
+            "ruleSetUsed": { "forbidden": [{ "name": "unnamed", "severity": "error" }, { "name": "unnamed", "severity": "error" }] }
+        } });
+        let output = render(&result, "").output;
+        assert!(output.contains(
+            "<testcase name=\"unnamed\" classname=\"rulebearing.forbidden\" time=\"0\">"
+        ));
+        assert!(output.contains(
+            "<testcase name=\"unnamed#2\" classname=\"rulebearing.forbidden\" time=\"0\"/>"
+        ));
+        assert_eq!(output.matches("<failure").count(), 1);
+        assert!(output.contains("tests=\"2\" failures=\"1\""));
     }
 }

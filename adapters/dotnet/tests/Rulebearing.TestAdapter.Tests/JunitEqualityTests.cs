@@ -14,10 +14,10 @@ namespace Rulebearing.TestAdapter.Tests;
 /// <summary>The adapter's messages are the <c>junit</c> reporter's, byte for byte.</summary>
 public sealed class JunitEqualityTests
 {
-    private static readonly string[] JunitArguments = ["cruise", "--config", "rulebearing.yaml", "--output-type", "junit", "--no-progress"];
+    private static readonly string[] JunitArguments = ["cruise", "--config", "rulebearing.yaml", "--output-type", "junit", "--output-to", "-", "--no-progress"];
 
     /// <summary>The scenarios the proof runs over.</summary>
-    public static TheoryData<string> Scenarios => new() { "fixture", "kitchen-sink", "elements" };
+    public static TheoryData<string> Scenarios => new() { "fixture", "kitchen-sink", "elements", "unnamed" };
 
     /// <summary>Every rule's result equals the junit test case for the same rule.</summary>
     /// <param name="name">The scenario.</param>
@@ -29,6 +29,7 @@ public sealed class JunitEqualityTests
         {
             "kitchen-sink" => Scenario.KitchenSink(),
             "elements" => Scenario.ElementsOverGraph(),
+            "unnamed" => Scenario.Unnamed(),
             _ => null,
         };
         try
@@ -72,7 +73,17 @@ public sealed class JunitEqualityTests
                 Assert.Equal(expected, result.Message);
             }
 
-            if (name == "fixture")
+            if (name == "unnamed")
+            {
+                Assert.Equal(["unnamed", "unnamed#2", "unnamed#3"], results.Select(static r => r.Name));
+                Assert.Equal(RuleOutcome.Failed, results[0].Outcome);
+                Assert.EndsWith("\n... and 2 more", results[0].FailureMessage, StringComparison.Ordinal);
+                Assert.Equal(RuleOutcome.Passed, results[1].Outcome);
+                Assert.Single(results[1].Output);
+                Assert.Equal(RuleOutcome.Passed, results[2].Outcome);
+                Assert.False(File.Exists(Path.Combine(directory, "must-not-be-written.txt")));
+            }
+            else if (name == "fixture")
             {
                 Assert.Equal(FixtureRules.Names, results.Select(static r => r.Name));
                 Assert.Equal(FixtureRules.FailingMessage, results[0].Message);

@@ -2,6 +2,8 @@
 // rule, on the shared fixture (adapters/fixture), with the locally built binary.
 // Contract: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 1.5; Step 14 (2H);
 // docs/adr/0007-vacuous-rules-fail-by-default.md for the vacuous rule.
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { TestOptions } from 'vitest';
 import { ArchitectureRuleError, defineArchitectureTests } from '../src/define.js';
@@ -80,6 +82,24 @@ describe('rule tests against rulebearing cruise -T junit', () => {
     expect(byName.get('api-not-to-util')?.options.meta?.rulebearing?.output).toEqual([
       expect.stringMatching(/^warn: RB-[0-9a-f]{8} py\/api\/view\.py -> py\/app\/util\.py/),
     ]);
+  });
+
+  it('keep anonymous rules apart and never follow options.outputTo (unnamed.yaml)', () => {
+    const binary = localBinary();
+    const fixture = copyFixture();
+    cleanup = fixture.remove;
+    const expected = junitMessages(binary, fixture.dir, ['--config', 'unnamed.yaml']);
+    expect([...expected.keys()]).toEqual(['unnamed', 'unnamed#2', 'unnamed#3', 'unnamed#4']);
+    const { tests } = register({ binary, cwd: fixture.dir, config: 'unnamed.yaml' });
+    expect(tests.map((t) => t.name)).toEqual([...expected.keys()]);
+    for (const test of tests) {
+      const text = expected.get(test.name) ?? '';
+      expect(outcome(test.body), test.name).toBe(text === '' ? undefined : text);
+    }
+    expect(expected.get('unnamed')).toMatch(/\n\.\.\. and 2 more$/);
+    expect(expected.get('unnamed#2')).toBe('');
+    expect(expected.get('unnamed#4')).toMatch(/^Rename the class in PascalCase\./);
+    expect(existsSync(join(fixture.dir, 'must-not-be-written.txt'))).toBe(false);
   });
 
   it('are the same on two runs over the same inputs', () => {

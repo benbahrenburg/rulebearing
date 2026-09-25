@@ -31,6 +31,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # Tests assert, use fixtures and need no docstring on every function.
 "**/tests/**" = ["S101", "D100", "D103", "PLR2004", "INP001"]
+"**/test_*.py" = ["S101", "D100", "D103", "PLR2004", "INP001"]
 "**/conftest.py" = ["INP001"]
 # Conformance tools are standalone scripts run by path (python3 conformance/<gate>/tools/x.py),
 # not an importable package.
@@ -74,12 +75,13 @@ ignore_missing_imports = true
 # directory as the source, so one package cannot carry another over the floor.
 #   pytest wrappers/pip --cov=wrappers/pip
 #   pytest adapters/python --cov=adapters/python
+#   pytest testbeds/oracles   (the oracle harness; not a published package, so no floor)
 # The sources are imported from the tree (pythonpath), so coverage measures them where they are,
 # and the plugin is loaded by the tests themselves, inside the measured window.
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib -p pytester --cov-report=term-missing --cov-fail-under=70"
-testpaths = ["wrappers/pip", "adapters/python"]
-pythonpath = ["wrappers/pip/src", "adapters/python/pytest-rulebearing/src"]
+testpaths = ["wrappers/pip", "adapters/python", "testbeds/oracles"]
+pythonpath = ["wrappers/pip/src", "adapters/python/pytest-rulebearing/src", "testbeds/oracles"]
 
 [tool.coverage.run]
 branch = false

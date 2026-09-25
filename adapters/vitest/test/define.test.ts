@@ -35,7 +35,7 @@ function recorder(): {
 }
 
 const FAILING: Case = {
-  rule: { name: 'no-b', family: 'forbidden', severity: 'error' },
+  rule: { id: 'no-b', name: 'no-b', family: 'forbidden', severity: 'error' },
   failure: 'Move it.\nRB-1 a -> b',
   errors: [],
   output: ['warn: RB-2 c -> b'],

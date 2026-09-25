@@ -3,8 +3,8 @@
   "sha": "7f29bdf5f24368dccad27b8e3ec52a807e813504",
   "tool": "netarchtest",
   "tests": "tests/NetArchTest.Rules.UnitTests",
-  "status": "compared",
-  "detail": "",
+  "status": "nothing-compared",
+  "detail": "every test stays or is not imported: nothing to compare",
   "summary": {
     "total": 355,
     "agree": 0,
@@ -3104,5 +3104,5 @@
       "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
     }
   ],
-  "agrees": true
+  "agrees": false
 }

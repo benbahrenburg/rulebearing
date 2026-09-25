@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from pytest_rulebearing.cases import Case, cases, message
-from pytest_rulebearing.run import CruiseError, Options, cruise
+from pytest_rulebearing.run import CruiseError, Options, cruise, locate
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -90,6 +90,17 @@ def _path(config: pytest.Config, option: str, ini: str) -> str | None:
     return None
 
 
+def _binary(config: pytest.Config) -> str | None:
+    """The binary option: a bare name looked up on ``PATH``, a relative path where it was given."""
+    given = config.getoption("rulebearing_binary")
+    if isinstance(given, str) and given:
+        return locate(given, config.invocation_params.dir)
+    configured = config.getini("rulebearing_binary")
+    if isinstance(configured, str) and configured:
+        return locate(configured, _ini_base(config))
+    return None
+
+
 def options(config: pytest.Config) -> Options:
     """How to run the binary, from the options and the ini keys.
 
@@ -102,7 +113,7 @@ def options(config: pytest.Config) -> Options:
     ini_args = config.getini("rulebearing_args")
     cli_args = config.getoption("rulebearing_arg")
     return Options(
-        binary=_path(config, "rulebearing_binary", "rulebearing_binary"),
+        binary=_binary(config),
         config=_path(config, "rulebearing_config", "rulebearing_config"),
         graph=_path(config, "rulebearing_graph", "rulebearing_graph"),
         args=(*[str(a) for a in ini_args], *[str(a) for a in cli_args]),
@@ -146,7 +157,7 @@ class RuleItem(_ReportedItem):
 
     def reportinfo(self) -> tuple[Path, int | None, str]:
         """Where the item comes from: the run's directory and the rule's family and name."""
-        return self.path, None, f"rulebearing.{self.case.rule.family}: {self.case.rule.name}"
+        return self.path, None, f"rulebearing.{self.case.rule.family}: {self.case.rule.id}"
 
 
 class CruiseItem(_ReportedItem):
@@ -173,12 +184,12 @@ class RulebearingCollector(pytest.Collector):
     def collect(self) -> Iterator[pytest.Item]:
         """One :class:`RuleItem` per case, or one :class:`CruiseItem` when the run failed."""
         try:
-            result = cruise(options(self.config))
+            result = cruise(options(self.config), base=self.config.invocation_params.dir)
         except CruiseError as error:
             yield CruiseItem.from_parent(self, name="cruise", error=str(error))
             return
         for case in cases(result):
-            yield RuleItem.from_parent(self, name=case.rule.name, case=case)
+            yield RuleItem.from_parent(self, name=case.rule.id, case=case)
 
 
 @pytest.hookimpl(tryfirst=True)

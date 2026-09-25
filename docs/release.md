@@ -9,13 +9,13 @@ Four placeholder packages hold the name `rulebearing` (`Rulebearing` on NuGet). 
 | Order | Registry | Package source | Credential in the session |
 | --- | --- | --- | --- |
 | 1 | crates.io | [`wrappers/crates/rulebearing/`](../wrappers/crates/rulebearing/README.md) (outside the workspace; every workspace crate is `rb-*`) | `cargo login` |
-| 2 | npm | [`wrappers/npm/`](../wrappers/npm/README.md) | `npm login` |
+| 2 | npm | [`wrappers/npm/`](../wrappers/npm/README.md) (now the real package; the script refuses to publish it) | `npm login` |
 | 3 | PyPI | [`wrappers/pip/`](../wrappers/pip/README.md) (now the real package; the script no longer builds it) | `TWINE_USERNAME=__token__`, `TWINE_PASSWORD` |
 | 4 | NuGet | [`wrappers/nuget/`](../wrappers/nuget/README.md) | `NUGET_API_KEY` |
 
 ```sh
-wrappers/publish-placeholders.sh --dry-run   # packages all four and runs each registry's dry run; needs no credentials
-wrappers/publish-placeholders.sh             # publishes, in the order above; checks the @rulebearing npm scope
+wrappers/publish-placeholders.sh --dry-run   # the crates.io dry run; reports the npm, PyPI and NuGet reservations as done
+wrappers/publish-placeholders.sh             # refuses at the npm step: the reservations are published, and wrappers/npm is the real package
 ```
 
 Then, the same day:
@@ -33,11 +33,11 @@ Registry tokens stay in the maintainer's keychain in wave 0. None is stored in G
 
 | Trigger | What happens |
 | --- | --- |
-| Manual run with `dry_run` on | builds every target, uploads the archives as a workflow artefact, releases nothing |
-| Tag `vX.Y.Z-rc.N` | the same dry run, from a tag |
-| Tag `vX.Y.Z` | builds every target and attaches the archives and `SHA256SUMS` to a GitHub release |
+| Manual run | always a dry run: builds every target, packs and install-checks every registry's packages, uploads them as workflow artefacts, releases and publishes nothing |
+| Tag with any pre-release suffix, `vX.Y.Z-<suffix>` (`-rc.1`, `-beta.1`, ...) | the same dry run, from a tag |
+| Tag `vX.Y.Z` | builds every target and, once the version check and all three registries' install checks have passed, attaches the archives and `SHA256SUMS` to a GitHub release |
 
-The workspace version in `Cargo.toml` is the release version; tag the commit that carries it.
+The workspace version in `Cargo.toml` is the release version; tag the commit that carries it. A tag that does not carry it (`vX.Y.Z` or `vX.Y.Z-<suffix>` for the workspace's `X.Y.Z`) fails the `version` job, and with it the release.
 
 ## Wrappers (from waves 1 and 2)
 
@@ -49,7 +49,7 @@ The npm wrapper (wave 1) and the NuGet and PyPI wrappers (wave 2) replace the pl
 | PyPI | six `rulebearing` wheels, `pytest-rulebearing` | `pypi-build` | `pypi-install-check` | `pypi-publish`, with twine | `PYPI_TOKEN`; `contents: read` |
 | NuGet | `Rulebearing` (dotnet tool), and what `wrappers/nuget/pack.sh` packs | `nuget-pack` | `nuget-install-check` | `nuget-publish`, with `dotnet nuget push` | `NUGET_API_KEY`; `contents: read` |
 
-Each publish job needs its install check and the GitHub `release` job, so nothing is published that did not install and run, and nothing is published before the release exists. A dry run packs and install-checks all three registries and publishes nothing. Each publish step skips a version already on the registry (`npm view`, `twine --skip-existing`, `--skip-duplicate`), so rerunning a partly published release finishes it.
+The GitHub `release` job needs the `version` job and all three install checks, and each publish job needs its install check and the `release` job, so no release exists and nothing is published unless every registry's packages installed and ran, and nothing is published before the release exists. Each install check installs from the packages the run built alone (`npm install` of the tarballs, `pip install --no-index --find-links`, and `dotnet tool install` with a `nuget.config` that clears every other source), so a rerun after a publish still checks what it built, not the registry's copy. A dry run packs and install-checks all three registries and publishes nothing. Each publish step skips a version already on the registry (`npm view`, `twine --skip-existing`, `--skip-duplicate`), so rerunning a partly published release finishes it.
 
 ## The npm wrapper (from wave 1)
 
@@ -63,7 +63,7 @@ Each publish job needs its install check and the GitHub `release` job, so nothin
 | `npm-install-check` | every trigger | on macOS arm64, Linux x64 and Windows x64, installs `rulebearing` and the host's platform package from those tarballs into an empty project and asserts that `npx rulebearing --version` prints `rulebearing <version>` |
 | `npm-publish` | a `vX.Y.Z` tag only, after `release` and the install check | `npm publish --provenance --access public` for the six platform packages, then `rulebearing`, then `eslint-plugin-rulebearing`, from the same tarballs |
 
-A dry run (a manual run or an `-rc` tag) therefore packs and install-checks exactly what a release would publish, and publishes nothing. `npm-publish` alone holds `id-token: write`, which provenance needs; every other job keeps `contents: read` ([ADR-0025](adr/0025-ci-and-supply-chain-hardening.md)). It reads the `NPM_TOKEN` repository secret, an npm automation token with publish rights on the eight package names; the platform names and `eslint-plugin-rulebearing` are created by their first publish.
+A dry run (a manual run, or a tag with a pre-release suffix) therefore packs and install-checks exactly what a release would publish, and publishes nothing. `npm-publish` alone holds `id-token: write`, which provenance needs; every other job keeps `contents: read` ([ADR-0025](adr/0025-ci-and-supply-chain-hardening.md)). It reads the `NPM_TOKEN` repository secret, an npm automation token with publish rights on the eight package names; the platform names and `eslint-plugin-rulebearing` are created by their first publish.
 
 To stage and install the packages by hand on one machine, without publishing:
 

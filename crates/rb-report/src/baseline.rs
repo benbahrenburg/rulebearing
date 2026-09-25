@@ -14,8 +14,9 @@
 //! and a newline, and exits 0; so does this one, byte for byte, when no lifecycle field is given.
 //! Each violation of a Rulebearing result already carries its `id`. An entry already in the
 //! previous baseline (same `id`) keeps its `expires`, `owner` and `reason`, and the command
-//! line's values fill the ones an entry lacks. Keys are written in sorted order, as every JSON
-//! output of this crate is, so two runs are byte-identical.
+//! line's values fill the ones an entry lacks. Keys are not sorted: as upstream's `JSON.stringify`,
+//! each entry keeps the order its violation carries them (the document's fixed field order), with
+//! the lifecycle fields after, so two runs over the same (sorted) violations are byte-identical.
 
 use serde_json::Value;
 

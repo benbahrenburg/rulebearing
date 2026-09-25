@@ -236,20 +236,20 @@ For the .NET and Python oracles the question is sharper than whether the tools a
 <!-- oracles:start -->
 | Repository | Incumbent | Compared | Agree | Disagree | Stays | Not imported | Errors | Graph (grimp vs Rulebearing) | Result |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| [ardalis/RiverBooks](testbeds/results/ardalis__RiverBooks.json) | archunitnet | 2 | 0 | 0 | 0 | 2 | 0 |  | nothing compared: every test stays or is not imported |
+| [ardalis/RiverBooks](testbeds/results/ardalis__RiverBooks.json) | archunitnet | 2 | 0 | 0 | 0 | 2 | 0 |  | nothing compared: every row stays or is not imported |
 | [bridgecrewio/checkov](testbeds/results/bridgecrewio__checkov.json) | import-linter | 6 | 5 | 1 | 0 | 0 | 0 | 5499 = 5499 | 1 disagree, 1 explained: import-linter's graph has no ignore_imports + TYPE_CHECKING imports (exclude_type_checking_imports) + imports by modules outside the root packages |
 | [dennisdoomen/packageguard](testbeds/results/dennisdoomen__packageguard.json) | netarchtest | 0 | 0 | 0 | 0 | 0 | 0 |  | error: no test dotnet test ran is in a file under Src/PackageGuard.Specs that uses ArchUnitNET or NetArchTest: nothing to compare |
 | [DrJohnMelville/Pdf](testbeds/results/DrJohnMelville__Pdf.json) | netarchtest |  |  |  |  |  |  |  | error: dotnet build Src/Melville.Pdf.DataModelTests/Melville.Pdf.DataModelTests.csproj failed (see build.log) |
 | [evolutionary-architecture/evolutionary-architecture-by-example](testbeds/results/evolutionary-architecture__evolutionary-architecture-by-example.json) | netarchtest | 16 | 2 | 0 | 0 | 14 | 0 |  | agrees |
 | [google/langextract](testbeds/results/google__langextract.json) | import-linter | 3 | 3 | 0 | 0 | 0 | 0 | 127 vs 154, 0 unexplained | agrees |
 | [HKUDS/DeepTutor](testbeds/results/HKUDS__DeepTutor.json) | import-linter | 3 | 3 | 0 | 0 | 0 | 0 | 3485 vs 3613, 0 unexplained | agrees |
-| [karaoke-dev/karaoke](testbeds/results/karaoke-dev__karaoke.json) | archunitnet | 5 | 0 | 0 | 0 | 5 | 0 |  | nothing compared: every test stays or is not imported |
+| [karaoke-dev/karaoke](testbeds/results/karaoke-dev__karaoke.json) | archunitnet | 5 | 0 | 0 | 0 | 5 | 0 |  | nothing compared: every row stays or is not imported |
 | [kedro-org/kedro](testbeds/results/kedro-org__kedro.json) | import-linter | 4 | 1 | 3 | 0 | 0 | 0 | 222 vs 230, 0 unexplained | 3 disagree, 3 explained: import-linter's graph has no ignore_imports |
 | [langgenius/dify](testbeds/results/langgenius__dify.json) | import-linter | 37 | 36 | 1 | 0 | 0 | 0 | 6429 vs 8581, 0 unexplained | 1 disagree, 1 explained: import-linter's graph has no ignore_imports + namespace portions below a root package + imports by modules outside the root packages |
 | [microsoft/promptflow](testbeds/results/microsoft__promptflow.json) | import-linter | 1 | 1 | 0 | 0 | 0 | 0 | 557 vs 574, 0 unexplained | agrees |
 | [nager/Nager.Date](testbeds/results/nager__Nager.Date.json) | archunitnet | 0 | 0 | 0 | 0 | 0 | 0 |  | error: dotnet test ran no tests (see incumbent.log) |
 | [napari/napari](testbeds/results/napari__napari.json) | import-linter | 4 | 2 | 2 | 0 | 0 | 0 | 2423 vs 2764, 0 unexplained | 2 disagree, 2 explained: import-linter's graph has no ignore_imports |
-| [NeVeSpl/NetArchTest.eNhancedEdition](testbeds/results/NeVeSpl__NetArchTest.eNhancedEdition.json) | netarchtest | 355 | 0 | 0 | 0 | 355 | 0 |  | nothing compared: every test stays or is not imported |
+| [NeVeSpl/NetArchTest.eNhancedEdition](testbeds/results/NeVeSpl__NetArchTest.eNhancedEdition.json) | netarchtest | 355 | 0 | 0 | 0 | 355 | 0 |  | nothing compared: every row stays or is not imported |
 | [nolar/kopf](testbeds/results/nolar__kopf.json) | import-linter | 11 | 9 | 1 | 1 | 0 | 0 | 373 = 373 | 1 disagree, 1 explained: import-linter's graph has no ignore_imports |
 | [onebeyond/monaco](testbeds/results/onebeyond__monaco.json) | archunitnet | 11 | 6 | 0 | 3 | 2 | 0 |  | agrees |
 | [online-ml/river](testbeds/results/online-ml__river.json) | import-linter | 1 | 0 | 1 | 0 | 0 | 0 | 1237 = 1237 | 1 disagree, 1 explained: import-linter's graph has no ignore_imports |
