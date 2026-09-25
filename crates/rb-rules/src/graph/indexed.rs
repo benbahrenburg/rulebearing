@@ -263,8 +263,8 @@ impl IndexedGraph {
     /// Upstream's depth-first search, by vertex index: the edges in order, a visited vertex
     /// skipped, the first edge that names `to` ending the search. An edge to a name no module has
     /// is only compared with `to`, since searching from it finds nothing. The search is
-    /// iterative, one frame per step of the path being tried (the vertex and the position of
-    /// the edge it is following), so a chain through every module of a large repository cannot
+    /// iterative, one frame per step of the path being tried (the edges its vertex has left to
+    /// try and the one it is following), so a chain through every module of a large repository cannot
     /// exhaust the call stack; when `to` is found, the edges the frames are following are the
     /// path.
     pub fn path(&self, from: &str, to: &str) -> Vec<Step> {
@@ -273,29 +273,28 @@ impl IndexedGraph {
         };
         let mut visited = vec![false; self.vertices.len()];
         visited[start] = true;
-        // `(vertex, index of the next edge to try)`; the edge being followed is the one before.
-        let mut frames: Vec<(usize, usize)> = vec![(start, 0)];
-        while let Some((at, next)) = frames.last_mut() {
-            let at = *at;
-            let Some((name, _)) = self.vertices[at].edges.get(*next) else {
+        // Per frame: the edges still to try, each with its target, and the edge being followed.
+        let edges_of = |at: usize| self.vertices[at].edges.iter().zip(&self.targets[at]);
+        let mut frames = vec![(edges_of(start), None)];
+        while let Some((edges, following)) = frames.last_mut() {
+            let Some((edge, &target)) = edges.next() else {
                 frames.pop();
                 continue;
             };
-            let target = self.targets[at][*next];
-            *next += 1;
             if target.is_some_and(|t| visited[t]) {
                 continue;
             }
-            if name == to {
+            *following = Some(edge);
+            if edge.0 == to {
                 return frames
                     .iter()
-                    .filter_map(|&(v, n)| self.vertices[v].edges.get(n.checked_sub(1)?))
+                    .filter_map(|(_, following)| *following)
                     .map(|(name, types)| Self::step(name, types))
                     .collect();
             }
             if let Some(t) = target {
                 visited[t] = true;
-                frames.push((t, 0));
+                frames.push((edges_of(t), None));
             }
         }
         Vec::new()

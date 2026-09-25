@@ -621,14 +621,14 @@ pub fn evaluate(
     })
 }
 
-/// The operand keys of a test, resolved; `Names` operands are returned as written.
+/// The operand keys of a test: its objects, resolved.
 pub(crate) fn operand_keys(
     evaluator: &Evaluator<'_, '_>,
     operand: &Operand,
 ) -> Result<Keys, ElementError> {
     match operand {
         Operand::Objects(objects) => evaluator.resolve(objects),
-        Operand::Names(names) => Ok(std::rc::Rc::new(names.iter().cloned().collect())),
+        // Every concept that asks for operand keys takes objects; no other operand has any.
         _ => Ok(Keys::default()),
     }
 }

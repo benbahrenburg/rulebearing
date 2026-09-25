@@ -729,6 +729,15 @@ mod tests {
                 .contains(&(N + 1)),
             "a from-only entry is a candidate whatever the to"
         );
+        let mut no_to = violation("element", "sealed", "f7.cs", "T7");
+        if let Some(v) = no_to.as_object_mut() {
+            v.remove("to");
+        }
+        assert_eq!(
+            set.index.violation(&no_to),
+            [N + 1],
+            "without a to, only the from-only key is looked up, once"
+        );
         set.soften_violations(&mut found);
         assert!(severities(&found).iter().all(|s| s == "ignore"));
         assert!(set.unmatched().is_empty());
