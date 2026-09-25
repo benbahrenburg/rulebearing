@@ -350,8 +350,10 @@ pub fn reachables(modules: &mut [Value], rules: &DependencyRules) {
                     {
                         let reach = from_reach[at]
                             .get_or_insert_with(|| graph.reachable_from(&from_source));
-                        found = graph.may_reach(reach, &source)
-                            && !graph.path(&from_source, &source).is_empty();
+                        // `source` is a module, so a vertex of the graph: for a vertex `may_reach`
+                        // is exact, and a depth-first `path` would only repeat its answer
+                        // (`may_reach_agrees_with_path` in graph/indexed.rs).
+                        found = graph.may_reach(reach, &source);
                         merge_reachable(module, rule, found, &from_source);
                     }
                 }
