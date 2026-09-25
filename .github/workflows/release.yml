@@ -419,6 +419,29 @@ jobs:
             echo "::warning::pytest-rulebearing is not on PyPI (HTTP $code): a token scoped to projects cannot cover it yet, so the first release needs an account-wide token or the name reserved first (docs/release.md)"
           fi
 
+  # A manual run proves NUGET_API_KEY without publishing anything: it pushes the `Rulebearing`
+  # 0.0.1 package already on nuget.org with --skip-duplicate. nuget.org checks the key and its
+  # package scope before it reports the duplicate, so a missing, expired or wrongly scoped key
+  # fails this job, and the duplicate means nothing new is published. The seven
+  # `Rulebearing.TestAdapter*` packages are not on nuget.org yet; the key's glob must cover them
+  # with "push new packages", which no push can prove without creating one (docs/release.md § NuGet).
+  nuget-credentials:
+    name: NuGet credentials
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+      - name: push the published Rulebearing 0.0.1 package again
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          test -n "$NUGET_API_KEY" || { echo "::error::the NUGET_API_KEY secret is not set"; exit 1; }
+          curl -fsSL -o rulebearing.0.0.1.nupkg https://api.nuget.org/v3-flatcontainer/rulebearing/0.0.1/rulebearing.0.0.1.nupkg
+          dotnet nuget push rulebearing.0.0.1.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+
   # NuGet (plan 0002, Step 14): wrappers/nuget/pack.sh turns the six release archives into the
   # `Rulebearing` dotnet tool (the binaries under runtimes/<rid>/native/ and the launcher) and any
   # other package it owns, at the release version. Its contract is in docs/release.md.
