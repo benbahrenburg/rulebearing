@@ -32,6 +32,19 @@ namespace Shop.ArchitectureTests
             result.IsSuccessful.Should().BeTrue();
         }
 
+        // NetArchTest 1.3.2 Or_MultipleInstances_TreatedAsSeparateGroups: each Or() starts a new
+        // group of And()-joined terms, on both sides of Should().
+        [Fact]
+        public void Or_Starts_A_New_Group()
+        {
+            var result = Types.InAssembly(CoreAssembly)
+                .That().ResideInNamespace("Shop.Core.Domain").And().HaveNameStartingWith("Order").Or().ResideInNamespace("Shop.Core.Billing").And().HaveNameStartingWith("Invoice")
+                .Should().HaveNameStartingWith("OrderA").And().HaveNameEndingWith("3").Or().HaveNameStartingWith("InvoiceB").And().HaveNameEndingWith("2")
+                .GetResult();
+
+            Assert.True(result.IsSuccessful);
+        }
+
         [Fact]
         public void Repositories_Are_Interfaces()
         {

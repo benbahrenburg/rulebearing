@@ -1,6 +1,6 @@
 # Imported from tests/Shop.ArchitectureTests by `rulebearing import archunit`.
 # Each rule is preceded by the C# chain it came from; a chain that cannot be translated is kept, commented out, with the reason.
-# 11 rule chains read: 5 imported, 6 commented out.
+# 12 rule chains read: 6 imported, 6 commented out.
 $schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
 # NetArchTest's Types.InAssembly(...) loads the assemblies its tests name
 languages:
@@ -46,11 +46,37 @@ rules:
         any:
           - beSealed: true
           - beAbstract: true
+    # Types.InAssembly(CoreAssembly).That().ResideInNamespace("Shop.Core.Domain").And().HaveNameStartingWith("Order").Or().ResideInNamespace("Shop.Core.Billing").And().HaveNameStartingWith("Invoice")
+    #   .Should().HaveNameStartingWith("OrderA").And().HaveNameEndingWith("3").Or().HaveNameStartingWith("InvoiceB").And().HaveNameEndingWith("2")
+    #   .GetResult()   [DomainTests.cs:40]
+    - name: or-starts-a-new-group
+      comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:40"
+      select:
+        kind: type
+        language: dotnet
+        where:
+          all:
+            - resideInAssembly: Shop.Core
+            - any:
+                - all:
+                    - haveFullNameStartingWith: Shop.Core.Domain
+                    - haveNameMatching: "^[Oo][Rr][Dd][Ee][Rr]"
+                - all:
+                    - haveFullNameStartingWith: Shop.Core.Billing
+                    - haveNameMatching: "^[Ii][Nn][Vv][Oo][Ii][Cc][Ee]"
+      should:
+        any:
+          - all:
+              - haveNameMatching: "^[Oo][Rr][Dd][Ee][Rr][Aa]"
+              - haveNameMatching: "3$"
+          - all:
+              - haveNameMatching: "^[Ii][Nn][Vv][Oo][Ii][Cc][Ee][Bb]"
+              - haveNameMatching: "2$"
     # Types.InCurrentDomain().That().HaveNameMatching("Repository$").And().DoNotResideInNamespaceContaining("Tests")
     #   .Should().BeInterfaces()
-    #   .GetResult()   [DomainTests.cs:38]
+    #   .GetResult()   [DomainTests.cs:51]
     - name: repositories-are-interfaces
-      comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:38"
+      comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:51"
       select:
         kind: type
         language: dotnet
@@ -76,22 +102,22 @@ rules:
           kind: interface
     # Types.InNamespace("Shop.Core")
     #   .Should().MeetCustomRule(new IsDocumented())
-    #   .GetResult()   [DomainTests.cs:47]
+    #   .GetResult()   [DomainTests.cs:60]
     # stays in NetArchTest: custom predicate (MeetCustomRule)
     # - name: not-imported
-    #   comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:47"
+    #   comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:60"
     # Types.InNamespace("Shop.Core")
     #   .Should().BeImmutable()
-    #   .GetResult()   [DomainTests.cs:50]
+    #   .GetResult()   [DomainTests.cs:63]
     # not imported: `BeImmutable` is NetArchTest's immutability (no public setter, every field non-public, readonly or const), which is not ArchUnitNET's `BeImmutable`
     # - name: not-imported-2
-    #   comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:50"
+    #   comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:63"
     # Types.InAssembly(CoreAssembly)
     #   .Should().HaveNameStartingWith("I")
-    #   .GetResult()   [DomainTests.cs:53]
+    #   .GetResult()   [DomainTests.cs:66]
     # not imported: the test expects this rule to be broken (Assert.False, Assert.Throws, AssertOnlyViolations), so it is not a rule to enforce
     # - name: not-imported-3
-    #   comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:53"
+    #   comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:66"
     #   select:
     #     kind: type
     #     language: dotnet
@@ -101,10 +127,10 @@ rules:
     #     haveNameMatching: "^[Ii]"
     # Types.FromFile("Shop.Core.dll")
     #   .Should().BePublic()
-    #   .GetResult()   [DomainTests.cs:56]
+    #   .GetResult()   [DomainTests.cs:69]
     # not imported: `Types.FromFile` reads assemblies from files the rules cannot name
     # - name: not-imported-4
-    #   comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:56"
+    #   comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:69"
     # Types.InAssembly(Core).That().ResideInNamespace(module)
     #   .Should().NotHaveDependencyOn(forbidden)
     #   .ShouldSucceed()   [ModuleTests.cs:12]
