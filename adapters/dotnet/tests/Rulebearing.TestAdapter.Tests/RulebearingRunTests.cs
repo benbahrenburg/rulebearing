@@ -172,4 +172,28 @@ public sealed class BinaryLookupTests
             Environment.SetEnvironmentVariable("PATH", savedPath);
         }
     }
+
+    /// <summary>On Windows the PATHEXT extensions come before the bare name, so npm's .cmd shim wins over its extensionless script.</summary>
+    [Fact]
+    public void WindowsPrefersPathextOverTheExtensionlessShim()
+    {
+        Assert.Equal([string.Empty], PathSearch.Extensions("rulebearing", null));
+        Assert.Equal([".EXE", ".CMD", string.Empty], PathSearch.Extensions("rulebearing", ".EXE; .CMD;"));
+        Assert.Equal([string.Empty, ".EXE"], PathSearch.Extensions("rulebearing.exe", ".EXE"));
+
+        string directory = Path.Combine(Path.GetTempPath(), $"rb-pathext-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "rulebearing"), "#!/bin/sh\n");
+            File.WriteAllText(Path.Combine(directory, "rulebearing.cmd"), "@echo off\n");
+            Assert.Equal(Path.Combine(directory, "rulebearing.cmd"), PathSearch.OnPath("rulebearing", directory, ".exe;.cmd"));
+            Assert.Equal(Path.Combine(directory, "rulebearing"), PathSearch.OnPath("rulebearing", directory, null));
+            Assert.Null(PathSearch.OnPath("absent", directory, ".EXE;.CMD"));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
 }
