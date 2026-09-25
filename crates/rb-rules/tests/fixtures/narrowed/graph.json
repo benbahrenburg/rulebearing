@@ -19,9 +19,7 @@
           "module": "pkg/mid/b.py",
           "moduleSystem": "py",
           "resolved": "pkg/mid/b.py",
-          "dependencyTypes": [
-            "local"
-          ],
+          "dependencyTypes": ["local"],
           "coreModule": false,
           "couldNotResolve": false,
           "followable": true,
@@ -41,10 +39,7 @@
           "module": "pkg/high/c.py",
           "moduleSystem": "py",
           "resolved": "pkg/high/c.py",
-          "dependencyTypes": [
-            "local",
-            "type-only"
-          ],
+          "dependencyTypes": ["local", "type-only"],
           "coreModule": false,
           "couldNotResolve": false,
           "followable": true,
@@ -64,9 +59,7 @@
           "module": "scripts/tool.py",
           "moduleSystem": "py",
           "resolved": "scripts/tool.py",
-          "dependencyTypes": [
-            "local"
-          ],
+          "dependencyTypes": ["local"],
           "coreModule": false,
           "couldNotResolve": false,
           "followable": true,
@@ -86,9 +79,7 @@
           "module": "pkg/ns/g.py",
           "moduleSystem": "py",
           "resolved": "pkg/ns/g.py",
-          "dependencyTypes": [
-            "local"
-          ],
+          "dependencyTypes": ["local"],
           "coreModule": false,
           "couldNotResolve": false,
           "followable": true,
@@ -108,9 +99,7 @@
           "module": "pkg/high/c.py",
           "moduleSystem": "py",
           "resolved": "pkg/high/c.py",
-          "dependencyTypes": [
-            "local"
-          ],
+          "dependencyTypes": ["local"],
           "coreModule": false,
           "couldNotResolve": false,
           "followable": true,
@@ -130,9 +119,7 @@
           "module": "pkg/high/c.py",
           "moduleSystem": "py",
           "resolved": "pkg/high/c.py",
-          "dependencyTypes": [
-            "local"
-          ],
+          "dependencyTypes": ["local"],
           "coreModule": false,
           "couldNotResolve": false,
           "followable": true,
@@ -152,9 +139,7 @@
           "module": "pkg/high/c.py",
           "moduleSystem": "py",
           "resolved": "pkg/high/c.py",
-          "dependencyTypes": [
-            "local"
-          ],
+          "dependencyTypes": ["local"],
           "coreModule": false,
           "couldNotResolve": false,
           "followable": true,
@@ -174,9 +159,7 @@
           "module": "pkg/high/c.py",
           "moduleSystem": "py",
           "resolved": "pkg/high/c.py",
-          "dependencyTypes": [
-            "local"
-          ],
+          "dependencyTypes": ["local"],
           "coreModule": false,
           "couldNotResolve": false,
           "followable": true,
