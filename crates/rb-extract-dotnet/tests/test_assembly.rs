@@ -122,11 +122,21 @@ fn fuzz_regressions_are_errors_or_results_never_panics() -> Result<(), Box<dyn s
             let universe = rb_extract_dotnet::names::Universe::new(vec![&loaded]);
             for ty in &loaded.types {
                 if let Some(base) = ty.extends {
-                    let _ = universe.token_name(0, base, Default::default(), true);
+                    let _ = universe.token_name(
+                        0,
+                        base,
+                        rb_extract_dotnet::names::Generics::default(),
+                        true,
+                    );
                 }
             }
             for spec in &loaded.type_specs {
-                let _ = universe.sig_name(0, spec, Default::default(), false);
+                let _ = universe.sig_name(
+                    0,
+                    spec,
+                    rb_extract_dotnet::names::Generics::default(),
+                    false,
+                );
             }
         }
         if let Ok(pdb) = PortablePdb::parse(&bytes) {
