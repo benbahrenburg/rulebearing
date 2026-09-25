@@ -18,9 +18,19 @@
 //!
 //! Imports inside functions and classes count, as they do for import-linter. Positions are
 //! 1-based lines and 1-based character columns of the imported name.
+//!
+//! A file whose syntax tree nests deeper than [`MAX_DEPTH`] is not analysed: it is a named
+//! warning ([`ParseError::TooDeep`]), and its tree is taken apart with bounded recursion, so no
+//! input can overflow a worker's stack and abort the run.
 
-use ruff_python_ast::visitor::{Visitor, walk_expr, walk_stmt};
-use ruff_python_ast::{Expr, ExprCall, ModModule, Stmt};
+use std::cell::Cell;
+
+use ruff_python_ast::visitor::transformer::{self, Transformer};
+use ruff_python_ast::visitor::{
+    Visitor, walk_expr, walk_interpolated_string_element, walk_pattern, walk_stmt,
+};
+use ruff_python_ast::{Expr, ExprCall, InterpolatedStringElement, Mod, ModModule, Pattern, Stmt};
+use ruff_text_size::TextRange;
 
 /// Where an [`ImportSpec`] came from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -128,17 +138,228 @@ fn to_u32(value: usize) -> u32 {
     u32::try_from(value).unwrap_or(u32::MAX)
 }
 
-/// Parses a module, returning the parser's message on a syntax error.
+/// How deep statements, expressions, patterns and f-string parts may nest before a file is
+/// not analysed. The walks over a syntax tree recurse, so an unbounded depth (a generated
+/// `1 + 1 + ...` of 40,000 terms) would overflow a thread's stack and abort the process.
+/// Real code stays far below it: Python's own tokenizer stops at 200 nested brackets.
+pub const MAX_DEPTH: usize = 1_000;
+
+/// How deep the tree a file that nests past [`MAX_DEPTH`] is taken apart at a time.
+const DETACH_DEPTH: usize = 64;
+
+/// Why a file could not be analysed.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum ParseError {
+    /// The parser reported a syntax error.
+    #[error("syntax error at {line}:{column}: {message}")]
+    Syntax {
+        /// 1-based line.
+        line: u32,
+        /// 1-based column.
+        column: u32,
+        /// The parser's message.
+        message: String,
+    },
+    /// The file nests deeper than [`MAX_DEPTH`].
+    #[error("could not be analysed: statements or expressions nest deeper than {MAX_DEPTH} levels")]
+    TooDeep,
+}
+
+impl ParseError {
+    /// What the user can do about it.
+    pub fn fix(&self) -> &'static str {
+        match self {
+            Self::Syntax { .. } => "Fix the syntax, or exclude the file",
+            Self::TooDeep => "Split the nested expression, or exclude the file",
+        }
+    }
+}
+
+/// Parses a module.
 ///
 /// # Errors
-/// The first syntax error, with its 1-based position.
-pub fn parse(source: &str) -> Result<ModModule, String> {
-    ruff_python_parser::parse_module(source)
-        .map(ruff_python_parser::Parsed::into_syntax)
-        .map_err(|error| {
-            let (line, column) = Lines::new(source).locate(error.location.start().into());
-            format!("syntax error at {line}:{column}: {}", error.error)
-        })
+/// The first syntax error, with its 1-based position, or [`ParseError::TooDeep`] for a tree
+/// deeper than [`MAX_DEPTH`]. Either way the tree is taken apart with bounded recursion, so
+/// no input overflows the stack while it is dropped.
+pub fn parse(source: &str) -> Result<ModModule, ParseError> {
+    let parsed = ruff_python_parser::parse_unchecked(
+        source,
+        ruff_python_parser::ParseOptions::from(ruff_python_parser::Mode::Module),
+    );
+    let error = parsed.errors().first().map(|error| {
+        let (line, column) = Lines::new(source).locate(error.location.start().into());
+        ParseError::Syntax {
+            line,
+            column,
+            message: error.error.to_string(),
+        }
+    });
+    let body = match parsed.into_syntax() {
+        Mod::Module(module) => module,
+        Mod::Expression(expression) => {
+            dismantle(Vec::new(), vec![*expression.body]);
+            return Err(error.unwrap_or(ParseError::TooDeep));
+        }
+    };
+    let error = error.or_else(|| too_deep(&body).then_some(ParseError::TooDeep));
+    match error {
+        Some(error) => {
+            dismantle(body.body.into_iter().collect(), Vec::new());
+            Err(error)
+        }
+        None => Ok(body),
+    }
+}
+
+/// Whether a module nests deeper than [`MAX_DEPTH`]; the walk stops descending there.
+fn too_deep(module: &ModModule) -> bool {
+    let mut depth = Depth::default();
+    for stmt in &module.body {
+        depth.visit_stmt(stmt);
+    }
+    depth.exceeded
+}
+
+#[derive(Default)]
+struct Depth {
+    depth: usize,
+    exceeded: bool,
+}
+
+impl Depth {
+    fn enter(&mut self, walk: impl FnOnce(&mut Self)) {
+        if self.exceeded {
+            return;
+        }
+        if self.depth >= MAX_DEPTH {
+            self.exceeded = true;
+            return;
+        }
+        self.depth += 1;
+        walk(self);
+        self.depth -= 1;
+    }
+}
+
+impl<'a> Visitor<'a> for Depth {
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        self.enter(|v| walk_stmt(v, stmt));
+    }
+
+    fn visit_expr(&mut self, expr: &'a Expr) {
+        self.enter(|v| walk_expr(v, expr));
+    }
+
+    fn visit_pattern(&mut self, pattern: &'a Pattern) {
+        self.enter(|v| walk_pattern(v, pattern));
+    }
+
+    fn visit_interpolated_string_element(&mut self, element: &'a InterpolatedStringElement) {
+        self.enter(|v| walk_interpolated_string_element(v, element));
+    }
+}
+
+/// Takes the subtrees below [`DETACH_DEPTH`] out of a tree, leaving placeholders, so the rest
+/// can be dropped with bounded recursion.
+#[derive(Default)]
+struct Detach {
+    depth: Cell<usize>,
+    stmts: Cell<Vec<Stmt>>,
+    exprs: Cell<Vec<Expr>>,
+    patterns: Cell<Vec<Pattern>>,
+    elements: Cell<Vec<InterpolatedStringElement>>,
+}
+
+fn push<T>(list: &Cell<Vec<T>>, item: T) {
+    let mut items = list.take();
+    items.push(item);
+    list.set(items);
+}
+
+fn pop<T>(list: &Cell<Vec<T>>) -> Option<T> {
+    let mut items = list.take();
+    let item = items.pop();
+    list.set(items);
+    item
+}
+
+impl Detach {
+    /// Walks one level deeper, or returns `false` at [`DETACH_DEPTH`].
+    fn deeper(&self, walk: impl FnOnce()) -> bool {
+        let depth = self.depth.get();
+        if depth >= DETACH_DEPTH {
+            return false;
+        }
+        self.depth.set(depth + 1);
+        walk();
+        self.depth.set(depth);
+        true
+    }
+}
+
+impl Transformer for Detach {
+    fn visit_stmt(&self, stmt: &mut Stmt) {
+        if !self.deeper(|| transformer::walk_stmt(self, stmt)) {
+            let placeholder = Stmt::Pass(ruff_python_ast::StmtPass {
+                node_index: ruff_python_ast::AtomicNodeIndex::default(),
+                range: TextRange::default(),
+            });
+            push(&self.stmts, std::mem::replace(stmt, placeholder));
+        }
+    }
+
+    fn visit_expr(&self, expr: &mut Expr) {
+        if !self.deeper(|| transformer::walk_expr(self, expr)) {
+            let placeholder = Expr::NoneLiteral(ruff_python_ast::ExprNoneLiteral::default());
+            push(&self.exprs, std::mem::replace(expr, placeholder));
+        }
+    }
+
+    fn visit_pattern(&self, pattern: &mut Pattern) {
+        if !self.deeper(|| transformer::walk_pattern(self, pattern)) {
+            let placeholder = Pattern::MatchAs(ruff_python_ast::PatternMatchAs {
+                node_index: ruff_python_ast::AtomicNodeIndex::default(),
+                range: TextRange::default(),
+                pattern: None,
+                name: None,
+            });
+            push(&self.patterns, std::mem::replace(pattern, placeholder));
+        }
+    }
+
+    fn visit_interpolated_string_element(&self, element: &mut InterpolatedStringElement) {
+        if !self.deeper(|| transformer::walk_interpolated_string_element(self, element)) {
+            let placeholder = InterpolatedStringElement::Literal(
+                ruff_python_ast::InterpolatedStringLiteralElement {
+                    range: TextRange::default(),
+                    node_index: ruff_python_ast::AtomicNodeIndex::default(),
+                    value: Box::default(),
+                },
+            );
+            push(&self.elements, std::mem::replace(element, placeholder));
+        }
+    }
+}
+
+/// Drops statements and expressions of any depth: each piece is walked at most
+/// [`DETACH_DEPTH`] deep, its deeper subtrees moved to a work list, and then dropped.
+fn dismantle(stmts: Vec<Stmt>, exprs: Vec<Expr>) {
+    let detach = Detach::default();
+    detach.stmts.set(stmts);
+    detach.exprs.set(exprs);
+    loop {
+        if let Some(mut stmt) = pop(&detach.stmts) {
+            detach.visit_stmt(&mut stmt);
+        } else if let Some(mut expr) = pop(&detach.exprs) {
+            detach.visit_expr(&mut expr);
+        } else if let Some(mut pattern) = pop(&detach.patterns) {
+            detach.visit_pattern(&mut pattern);
+        } else if let Some(mut element) = pop(&detach.elements) {
+            detach.visit_interpolated_string_element(&mut element);
+        } else {
+            break;
+        }
+    }
 }
 
 /// Every import in `module`, in source order. `package_init` is true for an `__init__.py`,
@@ -555,9 +776,101 @@ __all__.extend(['w'])
 
     #[test]
     fn syntax_errors_are_messages_with_a_position() {
-        let error = parse("def f(:\n  pass\n").err().unwrap_or_default();
+        let error = parse("def f(:\n  pass\n")
+            .err()
+            .map(|e| e.to_string())
+            .unwrap_or_default();
         assert!(error.starts_with("syntax error at 1:"), "{error}");
         assert!(parse("x = 1\n").is_ok());
+    }
+
+    /// Runs `f` on a thread with rayon's default 2 MiB stack, as the extractor's workers are.
+    fn on_small_stack<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> Option<T> {
+        std::thread::Builder::new()
+            .stack_size(2 << 20)
+            .spawn(f)
+            .ok()?
+            .join()
+            .ok()
+    }
+
+    fn analyse(source: &str) -> Result<usize, ParseError> {
+        let module = parse(source)?;
+        let lines = Lines::new(source);
+        let specs = imports(&module, &lines, true);
+        let code = crate::codelayer::elements(
+            &module,
+            &lines,
+            crate::codelayer::Context {
+                module: "m",
+                package: "",
+                file: "m.py",
+                project: "m",
+            },
+        );
+        Ok(specs.len() + code.types.len())
+    }
+
+    #[test]
+    fn a_deeply_nested_file_is_a_named_error_not_a_stack_overflow() {
+        let cases: Vec<(&str, String)> = vec![
+            (
+                "operator chain",
+                format!("x = 1{}\n", " + 1".repeat(200_000)),
+            ),
+            (
+                "attribute chain",
+                format!("@a{}\ndef f(): ...\n", ".b".repeat(200_000)),
+            ),
+            (
+                "nested lists",
+                format!("x = {}{}\n", "[".repeat(50_000), "]".repeat(50_000)),
+            ),
+            (
+                "nested patterns",
+                format!(
+                    "match x:\n    case {}1{}:\n        pass\n",
+                    "[".repeat(20_000),
+                    "]".repeat(20_000)
+                ),
+            ),
+            (
+                "nested statements",
+                (0..1_500)
+                    .map(|depth| format!("{}if x:\n", " ".repeat(depth)))
+                    .chain(std::iter::once(format!("{}pass\n", " ".repeat(1_500))))
+                    .collect(),
+            ),
+        ];
+        for (name, source) in cases {
+            let outcome = on_small_stack(move || analyse(&source).err());
+            assert_eq!(outcome, Some(Some(ParseError::TooDeep)), "{name}");
+        }
+        let broken = format!("x = 1{} +\n", " + 1".repeat(200_000));
+        let outcome = on_small_stack(move || analyse(&broken).err());
+        assert!(
+            matches!(outcome, Some(Some(ParseError::Syntax { .. }))),
+            "{outcome:?}"
+        );
+        assert!(
+            ParseError::TooDeep
+                .to_string()
+                .contains("could not be analysed")
+        );
+        assert!(ParseError::TooDeep.fix().contains("exclude the file"));
+    }
+
+    #[test]
+    fn a_file_just_inside_the_limit_is_analysed_on_a_small_stack() {
+        let depth = MAX_DEPTH - 10;
+        let source = format!(
+            "import os\n@a{}\nclass C(b{}):\n    x = 1{}\n",
+            ".b".repeat(depth),
+            ".c".repeat(depth),
+            " + 1".repeat(depth)
+        );
+        let outcome = on_small_stack(move || analyse(&source).ok());
+        assert_eq!(outcome, Some(Some(2)));
     }
 
     #[test]

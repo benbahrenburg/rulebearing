@@ -11,8 +11,12 @@
 //!
 //! The environment is `$VIRTUAL_ENV` when set, else the first of `.venv/`, `venv/` and `env/`
 //! beside a root or the working directory that holds a `site-packages` folder. Each
-//! `*.dist-info` folder contributes the names in `top_level.txt` and the top-level entries of
-//! `RECORD`; its licence is `METADATA`'s `License-Expression`, else its one-line `License`.
+//! `*.dist-info` folder contributes the names in `top_level.txt` and every dotted package and
+//! module prefix of the paths in `RECORD`; its licence is `METADATA`'s `License-Expression`,
+//! else its one-line `License`. A module is attributed through the longest prefix that names a
+//! single distribution; a namespace several distributions share (`google`, which `google-auth`
+//! and `protobuf` both install into) with nothing deeper to tell them apart is reported as
+//! shared, with no distribution or licence, never as the first one found.
 //! An absent licence stays absent, never guessed. When no environment is found, the receipt
 //! says `site: none` and every non-local, non-stdlib import is `unresolved`.
 
@@ -37,15 +41,57 @@ pub struct Distribution {
 pub struct SiteIndex {
     /// The `site-packages` folder, as the receipt shows it.
     pub path: String,
-    /// Top-level importable name to the distribution that provides it.
-    pub top_level: BTreeMap<String, Distribution>,
+    /// Dotted names `top_level.txt` declares, to the distributions declaring them.
+    pub declared: BTreeMap<String, Vec<Distribution>>,
+    /// Every dotted package and module prefix a `RECORD` installs (`google/protobuf/x.py`
+    /// gives `google`, `google.protobuf` and `google.protobuf.x`), to the distributions whose
+    /// `RECORD` lists it.
+    pub recorded: BTreeMap<String, Vec<Distribution>>,
+}
+
+/// Who provides a dotted module.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Provider<'a> {
+    /// One distribution.
+    One(&'a Distribution),
+    /// Several distributions share the longest matching name (a namespace such as `google`
+    /// that `google-auth` and `protobuf` both install into) and nothing deeper tells them
+    /// apart; their names, sorted.
+    Shared(Vec<&'a str>),
 }
 
 impl SiteIndex {
-    /// The distribution that provides a dotted module, judged by its top-level name.
-    pub fn lookup(&self, dotted: &str) -> Option<&Distribution> {
-        let top = dotted.split('.').next().unwrap_or_default();
-        self.top_level.get(top)
+    /// The distribution that provides a dotted module: the longest dotted prefix of it that a
+    /// distribution declares or records, a `top_level.txt` declaration beating a `RECORD` entry
+    /// for the same name. A name several distributions share is [`Provider::Shared`], never
+    /// the first of them.
+    pub fn lookup(&self, dotted: &str) -> Option<Provider<'_>> {
+        let parts: Vec<&str> = dotted.split('.').collect();
+        (1..=parts.len()).rev().find_map(|n| {
+            let prefix = parts[..n].join(".");
+            let owners = self
+                .declared
+                .get(&prefix)
+                .filter(|d| !d.is_empty())
+                .or_else(|| self.recorded.get(&prefix))?;
+            match owners.as_slice() {
+                [] => None,
+                [one] => Some(Provider::One(one)),
+                many => {
+                    let mut names: Vec<&str> = many.iter().map(|d| d.name.as_str()).collect();
+                    names.sort_unstable();
+                    names.dedup();
+                    Some(Provider::Shared(names))
+                }
+            }
+        })
+    }
+
+    fn add(map: &mut BTreeMap<String, Vec<Distribution>>, name: String, dist: &Distribution) {
+        let owners = map.entry(name).or_default();
+        if !owners.iter().any(|d| d.name == dist.name) {
+            owners.push(dist.clone());
+        }
     }
 }
 
@@ -122,8 +168,10 @@ pub fn index(site_packages: &Path, shown: impl Into<String>) -> io::Result<SiteI
         .filter(|p| p.is_dir() && p.extension().and_then(|e| e.to_str()) == Some("dist-info"))
         .collect();
     dist_infos.sort();
-    let mut declared = Vec::new();
-    let mut recorded = Vec::new();
+    let mut site = SiteIndex {
+        path: shown.into(),
+        ..SiteIndex::default()
+    };
     for info in dist_infos {
         let folder = info
             .file_stem()
@@ -140,31 +188,58 @@ pub fn index(site_packages: &Path, shown: impl Into<String>) -> io::Result<SiteI
             license: license(&headers),
         };
         if let Ok(text) = std::fs::read_to_string(info.join("top_level.txt")) {
-            declared.extend(
-                text.lines()
-                    .map(str::trim)
-                    .filter(|l| !l.is_empty())
-                    .map(|l| (l.replace('/', "."), distribution.clone())),
-            );
+            for line in text.lines().map(str::trim).filter(|l| !l.is_empty()) {
+                SiteIndex::add(&mut site.declared, line.replace('/', "."), &distribution);
+            }
         }
         if let Ok(text) = std::fs::read_to_string(info.join("RECORD")) {
-            recorded.extend(
-                text.lines()
-                    .filter_map(record_top_level)
-                    .map(|top| (top, distribution.clone())),
-            );
+            for prefix in text.lines().flat_map(record_prefixes) {
+                SiteIndex::add(&mut site.recorded, prefix, &distribution);
+            }
         }
     }
-    // A name `top_level.txt` declares beats one only a `RECORD` lists; among equals, the first
-    // distribution in sorted folder order keeps it.
-    let mut top_level = BTreeMap::new();
-    for (top, distribution) in declared.into_iter().chain(recorded) {
-        top_level.entry(top).or_insert(distribution);
+    Ok(site)
+}
+
+/// Every dotted prefix a `RECORD` line installs, shortest first: `google/protobuf/x.py` gives
+/// `google`, `google.protobuf`, `google.protobuf.x`; `pkg/__init__.py` gives `pkg`; a data file
+/// gives its folders. The walk stops at the first path component that is not an identifier.
+pub fn record_prefixes(line: &str) -> Vec<String> {
+    let Some(top) = record_top_level(line) else {
+        return Vec::new();
+    };
+    let path = line
+        .split(',')
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .trim_matches('"');
+    let parts: Vec<&str> = path.split('/').collect();
+    let mut prefixes = vec![top.clone()];
+    let mut current = top;
+    let Some((last, folders)) = parts.split_last() else {
+        return prefixes;
+    };
+    for folder in folders.iter().skip(1) {
+        if *folder == "__pycache__" || !crate::discover::is_identifier(folder) {
+            return prefixes;
+        }
+        current = format!("{current}.{folder}");
+        prefixes.push(current.clone());
     }
-    Ok(SiteIndex {
-        path: shown.into(),
-        top_level,
-    })
+    if folders.is_empty() {
+        return prefixes;
+    }
+    let extension = Path::new(last).extension().and_then(|e| e.to_str());
+    let stem = match extension {
+        Some("py" | "pyi") => last.rsplit_once('.').map(|(s, _)| s),
+        Some("so" | "pyd") => last.split('.').next(),
+        _ => None,
+    };
+    if let Some(stem) = stem.filter(|s| *s != "__init__" && crate::discover::is_identifier(s)) {
+        prefixes.push(format!("{current}.{stem}"));
+    }
+    prefixes
 }
 
 /// The top-level importable name a `RECORD` line installs, if any: `pkg/x.py` gives `pkg`,
@@ -321,16 +396,88 @@ mod tests {
         );
         let index = index(&dir.join(site), site)?;
         assert_eq!(index.path, site);
-        let names: Vec<&str> = index.top_level.keys().map(String::as_str).collect();
-        assert_eq!(names, ["bare", "fancy", "fancy_extra"]);
-        let fancy = index.lookup("fancy.sub");
-        assert_eq!(fancy.map(|d| d.name.as_str()), Some("Fancy"));
-        assert_eq!(fancy.and_then(|d| d.license.as_deref()), Some("Apache-2.0"));
-        let bare = index.lookup("bare");
-        assert_eq!(bare.map(|d| d.name.as_str()), Some("bare"));
-        assert_eq!(bare.and_then(|d| d.license.clone()), None);
+        let names: Vec<&str> = index.recorded.keys().map(String::as_str).collect();
+        assert_eq!(names, ["bare", "fancy", "fancy.x", "fancy_extra"]);
+        let one = |dotted: &str| match index.lookup(dotted) {
+            Some(Provider::One(d)) => Some((d.name.clone(), d.license.clone())),
+            _ => None,
+        };
+        let apache = Some("Apache-2.0".to_owned());
+        assert_eq!(one("fancy.sub"), Some(("Fancy".to_owned(), apache)));
+        // `top_level.txt` beats a `RECORD` for the same name; a deeper `RECORD` path is exact.
+        assert_eq!(one("fancy.x"), Some(("bare".to_owned(), None)));
+        assert_eq!(one("bare"), Some(("bare".to_owned(), None)));
         assert!(index.lookup("missing").is_none());
         assert!(super::index(&dir.join("nowhere"), "x").is_err());
+        let _ = std::fs::remove_dir_all(&dir);
+        Ok(())
+    }
+
+    #[test]
+    fn record_prefixes_name_every_package_and_module() {
+        let table: &[(&str, &[&str])] = &[
+            (
+                "google/protobuf/internal/x.py,,",
+                &[
+                    "google",
+                    "google.protobuf",
+                    "google.protobuf.internal",
+                    "google.protobuf.internal.x",
+                ],
+            ),
+            ("pkg/__init__.py,,", &["pkg"]),
+            ("pkg/_c.cpython-312-darwin.so,,", &["pkg", "pkg._c"]),
+            ("pkg/py.typed,,", &["pkg"]),
+            ("pkg/bad-dir/x.py,,", &["pkg"]),
+            ("pkg/__pycache__/x.cpython-312.pyc,,", &["pkg"]),
+            ("six.py,,", &["six"]),
+            ("x-1.0.dist-info/RECORD,,", &[]),
+            ("", &[]),
+        ];
+        for &(line, expected) in table {
+            assert_eq!(record_prefixes(line), expected, "{line}");
+        }
+    }
+
+    #[test]
+    fn a_shared_namespace_is_attributed_by_its_longest_prefix() -> io::Result<()> {
+        let dir = scratch("shared");
+        let dist = |folder: &str, top: &str, record: &str, metadata: &str| {
+            write(&dir, &format!("{folder}.dist-info/top_level.txt"), top);
+            if !record.is_empty() {
+                write(&dir, &format!("{folder}.dist-info/RECORD"), record);
+            }
+            write(&dir, &format!("{folder}.dist-info/METADATA"), metadata);
+        };
+        dist(
+            "google_auth-2.0",
+            "google\n",
+            "",
+            "Name: google-auth\nLicense: Apache-2.0\n",
+        );
+        dist(
+            "protobuf-4.0",
+            "google\n",
+            "google/protobuf/__init__.py,,\n",
+            "Name: protobuf\nLicense: BSD-3-Clause\n",
+        );
+        let index = index(&dir, "site")?;
+        let protobuf = Distribution {
+            name: "protobuf".into(),
+            license: Some("BSD-3-Clause".into()),
+        };
+        assert_eq!(
+            index.lookup("google.protobuf.message"),
+            Some(Provider::One(&protobuf))
+        );
+        assert_eq!(
+            index.lookup("google.auth"),
+            Some(Provider::Shared(vec!["google-auth", "protobuf"]))
+        );
+        assert_eq!(
+            index.lookup("google"),
+            Some(Provider::Shared(vec!["google-auth", "protobuf"]))
+        );
         let _ = std::fs::remove_dir_all(&dir);
         Ok(())
     }

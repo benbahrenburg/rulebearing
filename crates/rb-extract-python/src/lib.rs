@@ -229,7 +229,7 @@ struct Parsed {
     warning: Option<Warning>,
 }
 
-fn fallback_identity(file: &str) -> Identity {
+fn fallback_identity(file: &str, unrooted: bool) -> Identity {
     let stem = file
         .strip_suffix(".pyi")
         .or_else(|| file.strip_suffix(".py"))
@@ -243,13 +243,14 @@ fn fallback_identity(file: &str) -> Identity {
         dotted,
         package,
         init: false,
+        unrooted,
     }
 }
 
 fn read_and_parse(settings: &Settings, index: &ModuleIndex, file: &str) -> Parsed {
     let identity = index
         .identity(file)
-        .unwrap_or_else(|| fallback_identity(file));
+        .unwrap_or_else(|| fallback_identity(file, index.is_unrooted(file)));
     let failed = |message: String| Parsed {
         identity: identity.clone(),
         specs: Vec::new(),
@@ -266,9 +267,10 @@ fn read_and_parse(settings: &Settings, index: &ModuleIndex, file: &str) -> Parse
     };
     let module = match parse::parse(&source) {
         Ok(module) => module,
-        Err(message) => {
+        Err(error) => {
             return failed(format!(
-                "{message}; the module has no dependencies in this run. Fix the syntax, or exclude the file"
+                "{error}; the module has no dependencies in this run. {}",
+                error.fix()
             ));
         }
     };
@@ -354,6 +356,22 @@ fn close_base_chains(layer: &mut CodeLayer) {
     }
 }
 
+/// For each file, whether it is a stub whose module also has a `.py` file. Such a stub adds no
+/// code-layer elements: the `.py` stands for the module, as it does for the resolver.
+fn shadowed_stubs(files: &[String], parsed: &[Parsed]) -> Vec<bool> {
+    let implemented: BTreeSet<&str> = files
+        .iter()
+        .zip(parsed)
+        .filter(|(file, _)| !resolve::is_stub(file))
+        .map(|(_, p)| p.identity.dotted.as_str())
+        .collect();
+    files
+        .iter()
+        .zip(parsed)
+        .map(|(file, p)| resolve::is_stub(file) && implemented.contains(p.identity.dotted.as_str()))
+        .collect()
+}
+
 /// Extracts every Python module under `inputs` (relative to `settings.base`) with
 /// `settings` from [`prepare`].
 ///
@@ -361,7 +379,8 @@ fn close_base_chains(layer: &mut CodeLayer) {
 /// An input that does not exist or a folder that cannot be listed, or no module at all. A file
 /// that cannot be read or parsed is a warning naming it, and the run continues.
 pub fn extract_with(inputs: &[PathBuf], settings: &Settings) -> Result<Extraction, ExtractError> {
-    let files = discover::walk(&settings.base, inputs, settings.stubs)?;
+    let walked = discover::walk(&settings.base, inputs, settings.stubs)?;
+    let files = walked.files;
     if files.is_empty() {
         return Err(ExtractError::NoModulesFound);
     }
@@ -371,13 +390,17 @@ pub fn extract_with(inputs: &[PathBuf], settings: &Settings) -> Result<Extractio
         .map(|file| read_and_parse(settings, &index, file))
         .collect();
     let known: BTreeSet<&str> = files.iter().map(String::as_str).collect();
+    let shadowed = shadowed_stubs(&files, &parsed);
     let mut warnings = settings.warnings.clone();
+    warnings.extend(walked.warnings);
     let mut modules = Vec::with_capacity(files.len());
     let mut targets: BTreeMap<String, Module> = BTreeMap::new();
     let mut code = CodeLayer::default();
-    for (file, result) in files.iter().zip(parsed) {
+    for ((file, result), shadowed) in files.iter().zip(parsed).zip(shadowed) {
         warnings.extend(result.warning);
-        code.merge(result.code);
+        if !shadowed {
+            code.merge(result.code);
+        }
         let mut seen = BTreeSet::new();
         let mut dependencies: Vec<Dependency> = Vec::new();
         for spec in &result.specs {
@@ -398,6 +421,9 @@ pub fn extract_with(inputs: &[PathBuf], settings: &Settings) -> Result<Extractio
             );
             if !seen.insert(key) {
                 continue;
+            }
+            if let Some(note) = &resolved.note {
+                warnings.push(Warning::about(file, note.clone()));
             }
             let dependency = to_dependency(spec, resolved);
             if !known.contains(dependency.resolved.as_str()) {
@@ -544,10 +570,10 @@ mod tests {
 
     #[test]
     fn identities_fall_back_to_the_path() {
-        let identity = fallback_identity("my-scripts/run.py");
+        let identity = fallback_identity("my-scripts/run.py", true);
         assert_eq!(identity.dotted, "my-scripts.run");
         assert_eq!(identity.package, "my-scripts");
-        assert_eq!(fallback_identity("x.pyi").package, "");
+        assert_eq!(fallback_identity("x.pyi", false).package, "");
     }
 
     #[test]

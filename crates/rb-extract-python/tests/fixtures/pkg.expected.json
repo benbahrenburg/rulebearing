@@ -451,7 +451,7 @@
       ],
       "followable": false,
       "language": "python",
-      "source": "....",
+      "source": "....nothing",
       "valid": true
     },
     {
@@ -1319,9 +1319,9 @@
           "exoticallyRequired": false,
           "followable": false,
           "line": 6,
-          "module": "....",
+          "module": "....nothing",
           "moduleSystem": "py",
-          "resolved": "....",
+          "resolved": "....nothing",
           "valid": true
         },
         {
