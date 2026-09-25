@@ -1449,6 +1449,7 @@ impl<'s> Collector<'s> {
                         let (body_dependencies, _) =
                             self.walk_body(Some(&from), Some(&full), &fields, |walker| {
                                 walker.enter_parameters(&function.params);
+                                walker.parameter_defaults(&function.params);
                                 walker.visit_function_body(body);
                             });
                         member_dependencies.extend(body_dependencies);
@@ -1831,6 +1832,21 @@ impl BodyWalker<'_, '_> {
         }
         if let Some(rest) = &parameters.rest {
             self.declare(&rest.rest.argument, None);
+        }
+    }
+
+    /// The default values in a parameter list (`r = new Repo()`, `{ r = new Repo() } = {}`),
+    /// walked as a function's own parameters are by [`walk::walk_function`]; decorators and
+    /// type annotations are the signature's, not the body's.
+    fn parameter_defaults(&mut self, parameters: &FormalParameters<'_>) {
+        for parameter in &parameters.items {
+            self.visit_binding_pattern(&parameter.pattern);
+            if let Some(initializer) = &parameter.initializer {
+                self.visit_expression(initializer);
+            }
+        }
+        if let Some(rest) = &parameters.rest {
+            self.visit_binding_pattern(&rest.rest.argument);
         }
     }
 
@@ -2320,6 +2336,45 @@ mod tests {
             Some(Language::Javascript)
         );
         assert_eq!(base.and_then(|t| t.r#abstract), None);
+    }
+
+    /// A method's parameter defaults are part of its body, as a function's are: `new Repo()` in
+    /// `m(r = new Repo())`, in a destructured default and in a rest pattern's default forms a body
+    /// dependency either way.
+    #[test]
+    fn method_parameter_defaults_are_walked_like_a_function_s() {
+        let layer = layer(
+            &[(
+                "p.ts",
+                "export class Repo { static make() { return new Repo(); } static spare() { return new Repo(); } }\n\
+                 export function f(r = new Repo()) {}\n\
+                 export class Service {\n\
+                 \x20 m(r = new Repo(), { q = Repo.make() }: { q?: Repo } = {}, ...[z = Repo.spare()]: Repo[]) {}\n\
+                 }\n",
+            )],
+            &[],
+        );
+        let body = |full_name: &str| {
+            ty(&layer, full_name).map(|t| {
+                t.dependencies
+                    .iter()
+                    .filter(|d| d.kind == "body")
+                    .map(|d| format!("{} {}", d.target, d.member.clone().unwrap_or_default()))
+                    .collect::<Vec<_>>()
+            })
+        };
+        assert_eq!(
+            body("p.ts#f"),
+            Some(vec!["p.ts#Repo constructor".to_owned()])
+        );
+        assert_eq!(
+            body("p.ts#Service"),
+            Some(vec![
+                "p.ts#Repo constructor".to_owned(),
+                "p.ts#Repo make".to_owned(),
+                "p.ts#Repo spare".to_owned(),
+            ])
+        );
     }
 
     #[test]
