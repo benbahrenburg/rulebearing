@@ -75,6 +75,24 @@ impl<'a> Metadata<'a> {
     /// # Errors
     /// When the root, a stream header or the table stream is malformed.
     pub fn parse(data: &'a [u8], external_rows: Option<&[u32; 64]>) -> Read<Self> {
+        Self::parse_root(data, external_rows, true)
+    }
+
+    /// Parses an assembly's metadata root. A `#Pdb` stream inside an assembly is ignored: only a
+    /// portable PDB's row counts may stand for tables stored elsewhere, so an assembly cannot
+    /// claim rows its table stream does not hold.
+    ///
+    /// # Errors
+    /// When the root, a stream header or the table stream is malformed.
+    pub fn parse_assembly(data: &'a [u8]) -> Read<Self> {
+        Self::parse_root(data, None, false)
+    }
+
+    fn parse_root(
+        data: &'a [u8],
+        external_rows: Option<&[u32; 64]>,
+        honour_pdb: bool,
+    ) -> Read<Self> {
         let mut r = Reader::new(data, 0, "metadata root");
         if r.bytes(4)? != b"BSJB" {
             return malformed("metadata root signature", 0);
@@ -109,7 +127,7 @@ impl<'a> Metadata<'a> {
         let Some(table_stream) = find("#~").or_else(|| find("#-")) else {
             return malformed("metadata (no table stream)", 0);
         };
-        let pdb_stream = find("#Pdb");
+        let pdb_stream = find("#Pdb").filter(|_| honour_pdb);
         let own_external;
         let external = match (external_rows, pdb_stream) {
             (Some(rows), _) => Some(rows),
@@ -262,6 +280,28 @@ pub(crate) mod tests {
         for length in 0..data.len() {
             let _ = Metadata::parse(&data[..length], None);
         }
+    }
+
+    #[test]
+    fn an_assemblys_pdb_stream_cannot_inflate_its_row_counts() {
+        // A #Pdb stream claiming u32::MAX TypeDef rows, next to an empty table stream.
+        let mut pdb = vec![0u8; 20];
+        pdb.extend(0u32.to_le_bytes());
+        pdb.extend((1u64 << tables::id::TYPE_DEF).to_le_bytes());
+        pdb.extend(u32::MAX.to_le_bytes());
+        let data = root(&[("#Pdb", pdb), ("#~", tables::tests::table_stream(&[], 0))]);
+        let as_pdb = Metadata::parse(&data, None);
+        assert_eq!(
+            as_pdb.as_ref().map(|m| m.rows(tables::id::TYPE_DEF)),
+            Ok(u32::MAX),
+            "a portable PDB's references are sized by its #Pdb stream"
+        );
+        let as_assembly = Metadata::parse_assembly(&data);
+        assert_eq!(
+            as_assembly.as_ref().map(|m| m.rows(tables::id::TYPE_DEF)),
+            Ok(0)
+        );
+        assert!(as_assembly.is_ok_and(|m| m.pdb_stream.is_none()));
     }
 
     #[test]

@@ -893,6 +893,7 @@ impl<'s> Collector<'s> {
                     attribute_type: attribute.written.clone(),
                     arguments,
                     named_arguments: Vec::new(),
+                    arguments_unknown: false,
                     location: self.location(expression.span().start),
                 },
                 attribute: attribute.clone(),

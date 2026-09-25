@@ -55,6 +55,21 @@ pub enum ElementError {
         /// Why.
         why: String,
     },
+    /// An attribute's arguments are unknown (`argumentsUnknown`: the extractor could not decode
+    /// its value), so a test on them has no answer: neither true nor false would be honest.
+    #[error(
+        "rule `{rule}`: the arguments of attribute `{attribute}` on `{target}` could not be decoded (a malformed value, or an enum from an assembly that is not part of the run), so `{key}` cannot be answered; add the assembly that defines the enum to the run, or scope the rule away from it"
+    )]
+    UndecodableArguments {
+        /// The rule.
+        rule: String,
+        /// The key as written.
+        key: String,
+        /// The attribute type.
+        attribute: String,
+        /// What it is applied to.
+        target: String,
+    },
     /// A regular expression does not compile.
     #[error("rule `{rule}`: `{pattern}` is not a valid pattern")]
     Pattern {

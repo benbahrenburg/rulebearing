@@ -259,7 +259,17 @@ struct Read {
     documents: Vec<String>,
 }
 
-/// Reads one built assembly: metadata, attribution and sequence points.
+/// The folder a project's assembly was built into, where the assemblies it references are copied
+/// (the project's folder for one with no located assembly).
+fn output_folder(project: &Project) -> PathBuf {
+    project
+        .assembly
+        .as_deref()
+        .and_then(Path::parent)
+        .unwrap_or_else(|| project.folder())
+        .to_path_buf()
+}
+
 /// The assemblies beside the analysed ones that their references name, transitively, read only
 /// to describe the types the analysed code references: `ArchUnitNET` resolves a reference from
 /// the same folders. One that cannot be read is a warning, and its types stay unavailable.
@@ -278,7 +288,7 @@ fn beside_assemblies(
     let mut visited = seen.clone();
     let mut queue: Vec<(PathBuf, Vec<String>)> = reads
         .iter()
-        .map(|r| (r.project.folder().to_path_buf(), refs(&r.loaded)))
+        .map(|r| (output_folder(&r.project), refs(&r.loaded)))
         .collect();
     let mut found = Vec::new();
     let mut next = 0;
@@ -336,6 +346,7 @@ fn add_referenced_types(
     code.normalise();
 }
 
+/// Reads one built assembly: metadata, attribution and sequence points.
 fn read_assembly(
     project: &Project,
     dll: &Path,
@@ -437,7 +448,7 @@ impl Extractor for DotnetExtractor {
         if options.include_dependencies == Some(true) {
             let mut index = 0;
             while index < reads.len() {
-                let folder = reads[index].project.folder().to_path_buf();
+                let folder = output_folder(&reads[index].project);
                 let names: Vec<String> = reads[index]
                     .loaded
                     .assembly_refs
@@ -481,6 +492,10 @@ impl Extractor for DotnetExtractor {
             .collect();
         let mut built = codelayer::Builder::new(&universe, &sources).build();
         let beside = beside_assemblies(&reads, &seen, &mut warnings);
+        let beside_names: BTreeSet<String> = beside
+            .iter()
+            .map(|l| l.identity.name.to_ascii_lowercase())
+            .collect();
         let wide = names::Universe::new(
             reads
                 .iter()
@@ -561,6 +576,7 @@ impl Extractor for DotnetExtractor {
             &built.dependencies,
             &mut modules,
             edges::packages_root().as_deref(),
+            &beside_names,
         );
         let module_count = modules.len() as u64;
         Ok(Extraction {

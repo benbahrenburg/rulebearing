@@ -432,3 +432,82 @@ fn a_corrupt_assembly_is_a_named_error() -> Result<(), Box<dyn std::error::Error
     );
     Ok(())
 }
+
+#[test]
+fn solution_mode_finds_referenced_assemblies_beside_the_built_output()
+-> Result<(), Box<dyn std::error::Error>> {
+    // src/Web/Sample.csproj built to src/Web/bin/Debug/net10.0/, with Sample.Core.dll copied
+    // beside it: the references are in the output folder, not the project's.
+    let dir = std::env::temp_dir().join(format!("rb-beside-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("src/Web"))?;
+    std::fs::write(
+        dir.join("App.slnx"),
+        r#"<Solution><Project Path="src/Web/Sample.csproj"/></Solution>"#,
+    )?;
+    std::fs::write(
+        dir.join("src/Web/Sample.csproj"),
+        "<Project><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>",
+    )?;
+    let out = dir.join("src/Web/bin/Debug/net10.0");
+    for file in [
+        "Sample.dll",
+        "Sample.pdb",
+        "Sample.Core.dll",
+        "Sample.Core.pdb",
+    ] {
+        copy(&sample().join("built").join(file), &out.join(file))?;
+    }
+    let clock = |extraction: &Extraction| {
+        extraction
+            .code
+            .as_ref()
+            .and_then(|c| c.types.iter().find(|t| t.full_name == "Sample.Core.Clock"))
+            .map(|t| (t.kind.clone(), t.referenced))
+    };
+    let described = extract(&dir, &DotnetOptions::default());
+    let included = extract(
+        &dir,
+        &DotnetOptions {
+            include_dependencies: Some(true),
+            ..DotnetOptions::default()
+        },
+    );
+    let kind = |extraction: &Extraction| {
+        extraction
+            .modules
+            .iter()
+            .find(|m| m.source == "Sample.Core")
+            .map(|m| (m.dependency_types.clone(), m.could_not_resolve))
+    };
+    let copied = kind(described.as_ref().map_err(ToString::to_string)?);
+    // The same output, now with the ProjectReference that produced Sample.Core.dll (the
+    // referenced project file is not there, so its stem is its AssemblyName).
+    std::fs::write(
+        dir.join("src/Web/Sample.csproj"),
+        r#"<Project><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><ProjectReference Include="..\Core\Sample.Core.csproj" /></ItemGroup></Project>"#,
+    )?;
+    let referenced = extract(&dir, &DotnetOptions::default());
+    let _ = std::fs::remove_dir_all(&dir);
+    assert_eq!(
+        copied,
+        Some((Some(vec![DependencyType::Package]), Some(false))),
+        "a DLL beside the output that no ProjectReference accounts for is a package"
+    );
+    assert_eq!(
+        kind(&referenced?),
+        Some((Some(vec![DependencyType::Project]), Some(false))),
+        "the assembly a ProjectReference produces is a project"
+    );
+    assert_eq!(
+        clock(&described?),
+        Some(("class".to_owned(), Some(true))),
+        "a referenced type is described from the assembly beside the output, not unavailable"
+    );
+    assert_eq!(
+        clock(&included?),
+        Some(("class".to_owned(), None)),
+        "includeDependencies loads the referenced assembly as analysed code"
+    );
+    Ok(())
+}
