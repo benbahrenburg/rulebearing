@@ -177,6 +177,20 @@ describe('rulebearing/boundaries against the gate', () => {
     expect(result?.messages.map((m) => m.message)).toEqual(gate);
   });
 
+  it('asks about a file created after the graph was cached, as the gate will', async () => {
+    await lint();
+    // A new file in the data layer the cached graph has never seen, and a UI file importing it.
+    writeFileSync(join(dir, 'src', 'db', 'fresh.ts'), 'export const fresh = 1;\n');
+    const importer = join(dir, 'src', 'ui', 'uses-fresh.ts');
+    const code = "import { fresh } from '../db/fresh';\nexport const f = fresh;\n";
+    writeFileSync(importer, code);
+    const eslint = new ESLint({ cwd: dir, overrideConfigFile: true, overrideConfig: config() });
+    const [result] = await eslint.lintText(code, { filePath: importer });
+    const gate = expectedFromJunit(junit(dir)).filter((m) => m.includes('src/ui/uses-fresh.ts'));
+    expect(gate).toHaveLength(1);
+    expect(result?.messages.map((m) => m.message)).toEqual(gate);
+  });
+
   it('leaves alone what the graph cannot name and what is allowed', async () => {
     const eslint = new ESLint({ cwd: dir, overrideConfigFile: true, overrideConfig: config() });
     const code = [

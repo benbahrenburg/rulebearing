@@ -141,3 +141,121 @@ fn place_over_the_test_assembly_graph() -> Result {
     clean(&dir);
     Ok(())
 }
+
+/// The reviewer's case: a reachability rule whose violation runs from the importer to the far
+/// target, naming neither end the new module. The new module in any folder would let the UI
+/// reach the database, so no folder is legal; without the importer every folder but the UI's is.
+#[test]
+fn place_counts_a_reachability_violation_the_new_module_creates() -> Result {
+    let dir = scratch("place-reach")?;
+    write(
+        &dir,
+        "rulebearing.yaml",
+        "forbidden:
+  - name: ui-never-reaches-db
+    severity: error
+    comment: The UI reaches data through services only.
+    from: { path: \"^src/ui/\" }
+    to: { path: \"^src/db/\", reachable: true }
+",
+    )?;
+    write(&dir, "src/ui/view.ts", "export const v = 1;\n")?;
+    write(&dir, "src/db/query.ts", "export const q = 1;\n")?;
+    write(&dir, "src/svc/api.ts", "export const a = 1;\n")?;
+    let args = [
+        "place",
+        "--imports",
+        "src/db/query.ts",
+        "--imported-by",
+        "src/ui/view.ts",
+        "--language",
+        "ts",
+        "--json",
+    ];
+    let output = run(&dir, &args)?;
+    let value = json(&output)?;
+    assert_eq!(code(&output), Some(1), "{value}");
+    assert_eq!(value["legal"], serde_json::json!([]));
+    let illegal = value["illegal"].as_array().cloned().unwrap_or_default();
+    assert!(!illegal.is_empty());
+    for folder in &illegal {
+        assert_eq!(
+            folder["rules"],
+            serde_json::json!(["ui-never-reaches-db"]),
+            "{folder}"
+        );
+    }
+    let alone = run(
+        &dir,
+        &["place", "--imports", "src/db/query.ts", "--language", "ts"],
+    )?;
+    assert_eq!(code(&alone), Some(0), "{}", stderr(&alone));
+    // Under src/ui/ the new module itself is UI importing the database.
+    assert_eq!(stdout(&alone), "./\nsrc/\nsrc/db/\nsrc/svc/\n");
+    clean(&dir);
+    Ok(())
+}
+
+/// A violation the graph already has is not the new module's doing: a folder stays legal.
+#[test]
+fn place_leaves_out_what_the_graph_already_breaks() -> Result {
+    let dir = tree("place-base")?;
+    // The fixture's one violation (domain -> web) is there before any new module.
+    let output = run(
+        &dir,
+        &["place", "--imports", "src/main.ts", "--language", "ts"],
+    )?;
+    assert_eq!(code(&output), Some(0), "{}", stderr(&output));
+    assert!(
+        stdout(&output).contains("src/domain/"),
+        "{}",
+        stdout(&output)
+    );
+    clean(&dir);
+    Ok(())
+}
+
+/// The new module's edge is a static ES import: a rule on `require`, `dynamic` or `type-only`
+/// that another edge to the same target matches does not rule a folder out.
+#[test]
+fn place_does_not_copy_how_another_edge_imports_the_target() -> Result {
+    let dir = scratch("place-form")?;
+    write(
+        &dir,
+        "rulebearing.yaml",
+        "forbidden:
+  - name: no-dynamic
+    severity: error
+    from: {}
+    to: { dynamic: true }
+  - name: no-type-only
+    severity: error
+    from: {}
+    to: { dependencyTypes: [type-only] }
+",
+    )?;
+    write(
+        &dir,
+        "src/a.ts",
+        "export const lazy = import(\"./b\");\nimport type { T } from \"./c\";\nexport type U = T;\n",
+    )?;
+    write(&dir, "src/b.ts", "export const b = 1;\n")?;
+    write(&dir, "src/c.ts", "export type T = number;\n")?;
+    // The graph itself breaks both rules, through src/a.ts.
+    let output = run(
+        &dir,
+        &[
+            "place",
+            "--imports",
+            "src/b.ts,src/c.ts",
+            "--language",
+            "ts",
+            "--json",
+        ],
+    )?;
+    let value = json(&output)?;
+    assert_eq!(code(&output), Some(0), "{value}");
+    assert_eq!(value["illegal"], serde_json::json!([]), "{value}");
+    clean(&dir);
+    Ok(())
+}

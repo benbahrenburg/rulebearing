@@ -190,6 +190,15 @@ fn two_worktrees_at_different_heads_keep_separate_graphs() -> Result {
     assert_eq!(can_import(&main)?.status.code(), Some(1));
     assert_eq!(entries(&main)?.len(), 2, "the same HEAD, the same entry");
 
+    // An uncommitted edit is a new key too: the stale graph of the same HEAD is not read.
+    write(&main, "src/web/view.ts", "export const w = 1;\n")?;
+    assert_eq!(
+        can_import(&main)?.status.code(),
+        Some(0),
+        "the edit removed the edge the committed graph still has"
+    );
+    assert_eq!(entries(&main)?.len(), 3);
+
     let _ = git(
         &main,
         &["worktree", "remove", "--force", &linked.to_string_lossy()],
@@ -197,5 +206,74 @@ fn two_worktrees_at_different_heads_keep_separate_graphs() -> Result {
     if let Some(base) = main.parent() {
         let _ = std::fs::remove_dir_all(base);
     }
+    Ok(())
+}
+
+/// The reviewer's case: `a` imports `b` in the commit; `b` imports `c` only in the working tree.
+/// Asked before and after the edit, `can-import c a` must follow the files, not the commit.
+#[test]
+fn an_uncommitted_edit_is_never_answered_from_the_committed_graph() -> Result {
+    let dir = std::env::temp_dir().join(format!("rb-cli-stale-edit-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir)?;
+    git(&dir, &["init", "--quiet"])?;
+    write(&dir, ".gitignore", ".graph/\n")?;
+    write(&dir, "rulebearing.yaml", CONFIG)?;
+    write(
+        &dir,
+        "src/a.ts",
+        "import { b } from \"./b\";\nexport const a = b;\n",
+    )?;
+    write(&dir, "src/b.ts", "export const b = 1;\n")?;
+    write(&dir, "src/c.ts", "export const c = 1;\n")?;
+    git(&dir, &["add", "."])?;
+    git(&dir, &["commit", "--quiet", "-m", "a imports b"])?;
+    let ask = || -> Result<Output> {
+        Ok(Command::new(BIN)
+            .args(["can-import", "src/c.ts", "src/a.ts"])
+            .current_dir(&dir)
+            .output()?)
+    };
+    assert_eq!(ask()?.status.code(), Some(0), "no cycle at the commit");
+    write(
+        &dir,
+        "src/b.ts",
+        "import { c } from \"./c\";\nexport const b = c;\n",
+    )?;
+    let after = ask()?;
+    assert_eq!(
+        after.status.code(),
+        Some(1),
+        "c -> a -> b -> c closes a cycle once b imports c: {}",
+        String::from_utf8_lossy(&after.stdout)
+    );
+    assert!(String::from_utf8_lossy(&after.stdout).contains("rule: no-cycles"));
+    // An untracked file counts as well: a new d imported by c.
+    write(&dir, "src/d.ts", "export const d = 1;\n")?;
+    assert_eq!(ask()?.status.code(), Some(1));
+    let names = entries(&dir)?;
+    assert_eq!(
+        names.len(),
+        3,
+        "one entry per state of the files: {names:?}"
+    );
+    let key: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(
+        dir.join(".graph/cache").join(&names[0]).join("key.json"),
+    )?)?;
+    for field in [
+        "root",
+        "head",
+        "configHash",
+        "configFiles",
+        "version",
+        "inputs",
+    ] {
+        assert!(key.get(field).is_some(), "key.json has {field}: {key}");
+    }
+    assert_eq!(key["version"], env!("CARGO_PKG_VERSION"));
+    // Asked again without a change, the entry is read, not written again.
+    assert_eq!(ask()?.status.code(), Some(1));
+    assert_eq!(entries(&dir)?.len(), 3);
+    let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }

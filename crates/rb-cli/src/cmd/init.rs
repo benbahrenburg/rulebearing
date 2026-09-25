@@ -799,8 +799,27 @@ pub fn converge(
     }
 }
 
+/// Whether `init` can write its YAML to `output`: only a `.yaml` or `.yml` name, since the
+/// configuration loader picks the format by extension and would read YAML under any other name
+/// (`.dependency-cruiser.cjs`, `.json`) as that format and refuse it.
+pub fn writes_yaml(output: &str) -> bool {
+    std::path::Path::new(output)
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("yaml") || e.eq_ignore_ascii_case("yml"))
+}
+
 /// Runs `init`.
 pub fn run(ctx: &mut Context<'_>, args: &InitArgs) -> Outcome {
+    if !writes_yaml(&args.output) {
+        return Outcome::failed(
+            RunExit::InvalidConfig,
+            format!(
+                "rulebearing init: {} is not a .yaml or .yml file; init writes YAML, so name the output rulebearing.yaml (or another .yaml or .yml file)\n",
+                args.output
+            ),
+        );
+    }
     let mut found = discover(&ctx.cwd);
     if !args.preset.is_empty() {
         let mut named = args.preset.clone();
@@ -857,7 +876,7 @@ pub fn run(ctx: &mut Context<'_>, args: &InitArgs) -> Outcome {
         return Outcome {
             stdout: text,
             stderr: report,
-            code: 0,
+            code: RunExit::Violations(0).code(),
         };
     }
     if let Err(e) = std::fs::write(&target, &text) {

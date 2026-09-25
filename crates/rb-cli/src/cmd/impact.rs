@@ -21,13 +21,14 @@ use std::collections::{BTreeSet, VecDeque};
 
 use clap::Args;
 use rb_config::Rule;
+use rb_model::options::Patterns;
 use rb_rules::matchers::pattern;
 use serde_json::{Value, json};
 
 use std::fmt::Write as _;
 
 use crate::cli::ConfigArgs;
-use crate::cmd::summary;
+use crate::cmd::{can_import, summary};
 use crate::context::Context;
 use crate::pipeline::{self, RunOptions};
 use crate::progress::Progress;
@@ -63,7 +64,19 @@ fn matches(p: Option<String>, text: &str) -> bool {
     p.is_some_and(|p| rb_rules::patterns::test(&p, text))
 }
 
-/// The rules that mention the file on either side.
+/// Whether a side with `path` and `path_not` takes `file`: `path` matches, or is absent when
+/// `open` (a side with no `path` covers every file), and `path_not` does not match.
+fn side(path: Option<&Patterns>, path_not: Option<&Patterns>, file: &str, open: bool) -> bool {
+    let included = match pattern(path) {
+        Some(p) => rb_rules::patterns::test(&p, file),
+        None => open,
+    };
+    included && !matches(pattern(path_not), file)
+}
+
+/// The rules that mention the file on either side. A `from` (or `module`) with no `path` covers
+/// every file its `pathNot` leaves; a `to` mentions the file only through a `path` it matches,
+/// and never when its `pathNot` excludes it.
 pub fn rules_mentioning<'a>(
     config: &'a rb_config::Config,
     file: &str,
@@ -72,13 +85,21 @@ pub fn rules_mentioning<'a>(
         .rules
         .all_dependency_rules()
         .filter_map(|(_, rule)| {
-            let from = matches(pattern(rule.from.path.as_ref()), file)
-                || rule
-                    .module
-                    .as_ref()
-                    .is_some_and(|m| matches(pattern(m.path.as_ref()), file))
-                || (rule.from.path.is_none() && rule.module.is_none());
-            let to = matches(pattern(rule.to.path.as_ref()), file);
+            let from = match &rule.module {
+                Some(m) => side(m.path.as_ref(), m.path_not.as_ref(), file, true),
+                None => side(
+                    rule.from.path.as_ref(),
+                    rule.from.path_not.as_ref(),
+                    file,
+                    true,
+                ),
+            };
+            let to = side(
+                rule.to.path.as_ref(),
+                rule.to.path_not.as_ref(),
+                file,
+                false,
+            );
             match (from, to) {
                 (true, true) => Some((rule, "from and to")),
                 (true, false) => Some((rule, "from")),
@@ -103,7 +124,7 @@ fn hook_file(ctx: &mut Context<'_>) -> Result<String, String> {
         .strip_prefix(&cwd)
         .or_else(|_| path.strip_prefix(&ctx.cwd))
         .unwrap_or(path);
-    Ok(relative.to_string_lossy().replace('\\', "/"))
+    Ok(can_import::normalise(ctx, &relative.to_string_lossy()))
 }
 
 /// Runs `impact`.
@@ -111,7 +132,7 @@ pub fn run(ctx: &mut Context<'_>, args: &ImpactArgs) -> Outcome {
     if args.from_hook {
         return from_hook(ctx, args);
     }
-    let file = args.file.clone().unwrap_or_default();
+    let file = can_import::normalise(ctx, args.file.as_deref().unwrap_or_default());
     match report(ctx, args, &file) {
         Ok(report) if args.json => {
             let mut text = serde_json::to_string_pretty(&report).unwrap_or_default();
@@ -218,7 +239,8 @@ fn from_hook(ctx: &mut Context<'_>, args: &ImpactArgs) -> Outcome {
         Err(outcome) => Outcome {
             stdout: String::new(),
             stderr: outcome.stderr,
-            code: 0,
+            // A hook that exits non-zero blocks the edit; the report is advice, never a gate.
+            code: RunExit::Violations(0).code(),
         },
     }
 }
