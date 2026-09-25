@@ -468,6 +468,99 @@ pub fn evaluate(
 mod tests {
     use super::*;
 
+    /// A .NET type in `S.A` and one referenced in `S.B`, a TypeScript type (which slices by its
+    /// module, never by itself), and modules under `src/`: two local TypeScript ones, and one
+    /// each that is core, unresolvable, not followable, .NET, or of no language.
+    fn slicing_document() -> rb_model::GraphDocument {
+        use rb_model::{GraphDocument, Language, Location, Module, TypeElement};
+        let dotnet = || Location::in_file(Language::Dotnet, Some("a.cs".to_owned()));
+        let mut own = TypeElement::new("S.A.X", "X", "class", dotnet());
+        own.namespace = Some("S.A".to_owned());
+        let mut referenced = TypeElement::new("S.B.Y", "Y", "class", dotnet());
+        referenced.namespace = Some("S.B".to_owned());
+        referenced.referenced = Some(true);
+        let mut script = TypeElement::new(
+            "src/a/x.ts#W",
+            "W",
+            "class",
+            Location::in_file(Language::Typescript, Some("src/a/x.ts".to_owned())),
+        );
+        script.namespace = Some("S.A".to_owned());
+        let module = |source: &str, language: Option<Language>| Module {
+            language,
+            ..Module::new(source)
+        };
+        let ts = Some(Language::Typescript);
+        GraphDocument {
+            modules: vec![
+                module("src/a/x.ts", ts),
+                module("src/b/y.ts", ts),
+                Module {
+                    core_module: Some(true),
+                    ..module("src/core/fs.ts", ts)
+                },
+                Module {
+                    could_not_resolve: Some(true),
+                    ..module("src/gone/z.ts", ts)
+                },
+                Module {
+                    followable: Some(false),
+                    ..module("src/stop/z.ts", ts)
+                },
+                module("src/net/z.cs", Some(Language::Dotnet)),
+                module("src/none/z.txt", None),
+            ],
+            code: Some(rb_model::CodeLayer {
+                types: vec![own, referenced, script],
+                ..rb_model::CodeLayer::default()
+            }),
+            ..GraphDocument::default()
+        }
+    }
+
+    #[test]
+    fn slices_hold_analysed_types_and_local_modules_only() {
+        let document = slicing_document();
+        let architecture = Architecture::new(&document);
+        let mut keys: Vec<&str> = members(&architecture, '/', None)
+            .iter()
+            .map(|m| m.key)
+            .collect();
+        keys.sort_unstable();
+        assert_eq!(keys, ["S.A.X", "src/a/x.ts", "src/b/y.ts"]);
+    }
+
+    fn slice_outcome(rule: &serde_json::Value) -> Result<SliceOutcome, Box<dyn std::error::Error>> {
+        let document = slicing_document();
+        let architecture = Architecture::new(&document);
+        let rules = rb_config::elements::parse_slices(&serde_json::json!([rule]))?;
+        Ok(evaluate(&architecture, &rules[0])?)
+    }
+
+    #[test]
+    fn where_keeps_only_the_slices_it_matches() -> Result<(), Box<dyn std::error::Error>> {
+        let outcome = slice_outcome(&serde_json::json!({ "name": "s", "matching": "src/(*)/",
+            "where": "^a/", "should": "beFreeOfCycles" }))?;
+        assert_eq!(outcome.slices.keys().collect::<Vec<_>>(), ["a/x.ts"]);
+        Ok(())
+    }
+
+    #[test]
+    fn an_empty_selection_is_vacuous_unless_allowed() -> Result<(), Box<dyn std::error::Error>> {
+        let rule = |allow: bool| {
+            serde_json::json!({ "name": "s", "matching": "lib/(*)/", "allowEmpty": allow,
+                "should": "beFreeOfCycles" })
+        };
+        let empty = slice_outcome(&rule(false))?;
+        assert!(empty.slices.is_empty() && empty.vacuous);
+        let allowed = slice_outcome(&rule(true))?;
+        assert!(allowed.slices.is_empty() && !allowed.vacuous);
+        let filled = slice_outcome(&serde_json::json!({ "name": "s", "matching": "src/(*)/",
+            "should": "beFreeOfCycles" }))?;
+        assert!(!filled.slices.is_empty() && !filled.vacuous);
+        Ok(())
+    }
+
     #[test]
     fn single_and_double_asterisks_name_slices_as_archunitnet_does() -> Result<(), String> {
         let slice =
