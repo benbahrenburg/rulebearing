@@ -107,19 +107,34 @@ fn truncated_assemblies_are_errors_never_panics() -> Result<(), Box<dyn std::err
 
 #[test]
 fn fuzz_regressions_are_errors_or_results_never_panics() -> Result<(), Box<dyn std::error::Error>> {
-    // Every input the fuzz target found a crash with is kept here and must stay harmless
-    // (fuzz/README.md). nested-class-row-zero.bin: a NestedClass row naming the nil row 0.
+    // Every input a fuzz target or a review found a crash with is kept here and must stay
+    // harmless (fuzz/README.md). nested-class-row-zero.bin: a NestedClass row naming the nil
+    // row 0. nested-class-cycle.bin, type-ref-scope-cycle.bin: two rows nesting in each other
+    // (quadratic walks). type-spec-names-itself.bin: TypeSpec 1 = CLASS TypeSpec 1 (a stack
+    // overflow when named). pdb-stream-in-assembly.bin: a #Pdb stream claiming u32::MAX rows
+    // (an overflow in the list ranges).
     let folder = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fuzz-regressions");
     let mut inputs = 0;
     for entry in std::fs::read_dir(folder)? {
         let bytes = std::fs::read(entry?.path())?;
         let _ = Assembly::read(&bytes);
+        if let Ok(loaded) = rb_extract_dotnet::loader::Loaded::read(&bytes) {
+            let universe = rb_extract_dotnet::names::Universe::new(vec![&loaded]);
+            for ty in &loaded.types {
+                if let Some(base) = ty.extends {
+                    let _ = universe.token_name(0, base, Default::default(), true);
+                }
+            }
+            for spec in &loaded.type_specs {
+                let _ = universe.sig_name(0, spec, Default::default(), false);
+            }
+        }
         if let Ok(pdb) = PortablePdb::parse(&bytes) {
             let _ = pdb.documents();
             let _ = pdb.type_definition_documents();
         }
         inputs += 1;
     }
-    assert!(inputs >= 1);
+    assert!(inputs >= 5);
     Ok(())
 }

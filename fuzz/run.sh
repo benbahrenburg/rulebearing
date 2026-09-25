@@ -12,7 +12,7 @@ case "$target" in
   metadata_reader)
     cp ../conformance/archunitnet/fixtures/TestAssembly.dll ../conformance/archunitnet/fixtures/TestAssembly.pdb "corpus/$target/" ;;
   ecma335)
-    cp ../conformance/archunitnet/fixtures/TestAssembly.dll ../crates/rb-extract-dotnet/tests/fixtures/sample/built/Sample.dll "corpus/$target/" ;;
+    cp ../conformance/archunitnet/fixtures/TestAssembly.dll ../crates/rb-extract-dotnet/tests/fixtures/sample/built/Sample.dll ../crates/rb-extract-dotnet/tests/fuzz-regressions/*.bin "corpus/$target/" ;;
   pdb)
     cp ../conformance/archunitnet/fixtures/TestAssembly.pdb ../crates/rb-extract-dotnet/tests/fixtures/sample/built/Sample.pdb "corpus/$target/" ;;
   config_js)
