@@ -186,3 +186,52 @@ fn from_example_generalises_one_edge_to_the_narrowest_rule() -> Result {
     clean(&dir);
     Ok(())
 }
+
+/// A `--name` YAML would read as something else (a colon, a `#`, a reserved word) is quoted, so
+/// the draft loads with the name as given.
+#[test]
+fn a_name_that_needs_quoting_is_quoted() -> Result {
+    let dir = tree("propose-name")?;
+    for name in ["domain: web # no", "yes", "plain-name"] {
+        let output = run(
+            &dir,
+            &[
+                "propose",
+                "--from",
+                "src/domain/**",
+                "--to",
+                "src/web/**",
+                "--name",
+                name,
+            ],
+        )?;
+        assert_eq!(code(&output), Some(0), "{}", stderr(&output));
+        let text = stdout(&output);
+        write(&dir, "draft.yaml", &text)?;
+        let rules = run(&dir, &["rules", "--config", "draft.yaml", "--json"])?;
+        assert_eq!(code(&rules), Some(0), "{name}: {}{text}", stderr(&rules));
+        assert!(
+            stdout(&rules).contains(&serde_json::to_string(name)?),
+            "{name}: {}",
+            stdout(&rules)
+        );
+    }
+    let plain = stdout(&run(
+        &dir,
+        &[
+            "propose",
+            "--from",
+            "src/domain/**",
+            "--to",
+            "src/web/**",
+            "--name",
+            "plain-name",
+        ],
+    )?);
+    assert!(
+        plain.contains("  - name: plain-name\n"),
+        "a plain name stays plain"
+    );
+    clean(&dir);
+    Ok(())
+}
