@@ -1037,8 +1037,8 @@ fn protected(contract: &Contract, layout: &Layout, type_only: bool, out: &mut Ou
         out.allowed.push(Item::plain(allowed(
             format!("{}:ignore-imports-{}", contract.id, index + 1),
             contract,
-            Node::map(vec![("path", Node::str(from))]),
-            Node::map(vec![("path", Node::str(to))]),
+            Node::map(vec![("path", path_value(&from))]),
+            Node::map(vec![("path", path_value(&to))]),
         )));
     }
     // grimp's graph has no import by a module outside the root packages or in a folder it does
@@ -1137,20 +1137,40 @@ fn acyclic_siblings(contract: &Contract, layout: &Layout, narrowing: &Narrowing,
     out.slices.extend(items);
 }
 
-/// A module expression of an `ignore_imports` line as a path pattern: the exact module under the
+/// A module expression of an `ignore_imports` line as path patterns: the exact module under the
 /// root packages, or, for any other module, its name and submodules, as grimp squashes an
-/// external package.
-fn ignored_side(layout: &Layout, expression: &str) -> String {
+/// external package. An expression that starts with a wildcard (`**.tests.** -> **`) can name
+/// either, so it is written both ways, once under each root package's folder.
+fn ignored_side(layout: &Layout, expression: &str) -> Vec<String> {
+    if expression
+        .split('.')
+        .next()
+        .is_some_and(|top| top.contains('*'))
+    {
+        let mut homes: Vec<&String> = layout.homes.values().collect();
+        homes.sort();
+        homes.dedup();
+        let mut out: Vec<String> = homes
+            .into_iter()
+            .map(|home| pattern::module_path(home, expression, false))
+            .collect();
+        out.push(pattern::external_module(expression));
+        return out;
+    }
     if layout.is_local(expression) {
-        layout.pattern(expression, false)
+        vec![layout.pattern(expression, false)]
     } else {
-        pattern::external_module(expression)
+        vec![pattern::external_module(expression)]
     }
 }
 
 /// `ignore_imports` as `(importer, imported)` pattern pairs; a line that is not
 /// `importer -> imported` gets a note instead.
-fn ignore_pairs(contract: &Contract, layout: &Layout, out: &mut Output) -> Vec<(String, String)> {
+fn ignore_pairs(
+    contract: &Contract,
+    layout: &Layout,
+    out: &mut Output,
+) -> Vec<(Vec<String>, Vec<String>)> {
     let mut pairs = Vec::new();
     for line in contract.list("ignore_imports") {
         let Some((source, target)) = line.split_once("->") else {
@@ -1172,7 +1192,7 @@ fn ignore_pairs(contract: &Contract, layout: &Layout, out: &mut Output) -> Vec<(
 fn ignore_entries(contract: &Contract, layout: &Layout, out: &mut Output) -> Vec<Node> {
     ignore_pairs(contract, layout, out)
         .into_iter()
-        .map(|(from, to)| Node::map(vec![("from", Node::str(from)), ("to", Node::str(to))]))
+        .map(|(from, to)| Node::map(vec![("from", path_value(&from)), ("to", path_value(&to))]))
         .collect()
 }
 
@@ -1441,9 +1461,16 @@ mod tests {
         };
         assert_eq!(
             ignored_side(&layout, "app.a"),
-            "^app/a(/__init__\\.py|\\.py)$"
+            ["^app/a(/__init__\\.py|\\.py)$"]
         );
-        assert_eq!(ignored_side(&layout, "requests"), "^requests(\\.|$)");
+        assert_eq!(ignored_side(&layout, "requests"), ["^requests(\\.|$)"]);
+        assert_eq!(
+            ignored_side(&layout, "**.tests.**"),
+            [
+                "^[^/]+(?:/[^/]+)*/tests/[^/]+(?:/[^/]+)*(/__init__\\.py|\\.py)$",
+                "^[^.]+(?:\\.[^.]+)*\\.tests\\.[^.]+(?:\\.[^.]+)*(\\.|$)"
+            ]
+        );
         let contract = |options: &[(&str, &str)]| Contract {
             id: "c".into(),
             name: "C".into(),
