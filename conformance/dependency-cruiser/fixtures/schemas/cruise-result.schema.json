@@ -1,0 +1,1685 @@
+{
+  "title": "dependency-cruiser output format",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dependency-cruiser.js.org/schema/cruise-result.schema.json",
+  "type": "object",
+  "required": ["summary", "modules"],
+  "additionalProperties": false,
+  "properties": {
+    "modules": { "$ref": "#/definitions/ModulesType" },
+    "folders": { "$ref": "#/definitions/FoldersType" },
+    "summary": { "$ref": "#/definitions/SummaryType" },
+    "revisionData": { "$ref": "#/definitions/RevisionDataType" }
+  },
+  "definitions": {
+    "ModulesType": {
+      "type": "array",
+      "description": "A list of modules, with for each module the modules it depends upon",
+      "items": { "$ref": "#/definitions/ModuleType" }
+    },
+    "ModuleType": {
+      "type": "object",
+      "required": ["source", "dependencies", "valid"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "The (resolved) file name of the module, e.g. 'src/main/index.js'"
+        },
+        "valid": {
+          "type": "boolean",
+          "description": "'true' if this module violated a rule; 'false' in all other cases. The violated rule will be in the 'rule' object at the same level."
+        },
+        "dependencies": { "$ref": "#/definitions/DependenciesType" },
+        "dependents": {
+          "type": "array",
+          "description": "list of modules depending on this module",
+          "items": {
+            "type": "string",
+            "description": "the (resolved) name of the dependent"
+          }
+        },
+        "followable": {
+          "type": "boolean",
+          "description": "Whether or not this is a dependency that can be followed any further. This will be 'false' for for core modules, json, modules that could not be resolved to a file and modules that weren't followed because it matches the doNotFollow expression."
+        },
+        "matchesDoNotFollow": {
+          "type": "boolean",
+          "description": "'true' if the file name of this module matches the doNotFollow filter regular expression"
+        },
+        "matchesFocus": {
+          "type": "boolean",
+          "description": "'true' if the file name of this module matches the focus filter regular expression"
+        },
+        "matchesReaches": {
+          "type": "boolean",
+          "description": "'true' if the file name of this module matches the 'reaches' filter regular expression"
+        },
+        "matchesHighlight": {
+          "type": "boolean",
+          "description": "'true' if the file name of this module matches the 'highlight' regular expression"
+        },
+        "coreModule": {
+          "type": "boolean",
+          "description": "Whether or not this is a node.js core module"
+        },
+        "couldNotResolve": {
+          "type": "boolean",
+          "description": "'true' if dependency-cruiser could not resolve the module name in the source code to a file name or core module. 'false' in all other cases."
+        },
+        "dependencyTypes": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/DependencyTypeType" },
+          "description": "the type of inclusion - local, core, unknown (= we honestly don't know), undetermined (= we didn't bother determining it) or one of the npm dependencies defined in a package.json ('npm' for 'dependencies', 'npm-dev', 'npm-optional', 'npm-peer', 'npm-no-pkg' for development, optional, peer dependencies and dependencies in node_modules but not in package.json respectively)"
+        },
+        "license": {
+          "type": "string",
+          "description": "the license, if known (usually known for modules pulled from npm, not for local ones)"
+        },
+        "orphan": {
+          "type": "boolean",
+          "description": "'true' if this module does not have dependencies, and no module has it as a dependency"
+        },
+        "reachable": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ReachableType" },
+          "description": "An array of objects that tell whether this module is 'reachable', and according to rule in which this reachability was defined"
+        },
+        "reaches": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ReachesType" },
+          "description": "An array of objects that tell which other modules it reaches, and that falls within the definition of the passed rule."
+        },
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/RuleSummaryType" },
+          "description": "an array of rules violated by this module - left out if the module is valid"
+        },
+        "consolidated": {
+          "type": "boolean",
+          "description": "true if the module was 'consolidated'. Consolidating implies the entity a Module represents might be several modules at the same time. This attribute is set by tools that consolidate modules for reporting purposes - it will not be present after a regular cruise."
+        },
+        "instability": {
+          "type": "number",
+          "description": "number of dependents/ (number of dependents + number of dependencies)A measure for how stable the module is; ranging between 0 (completely stable module) to 1 (completely instable module). Derived from Uncle Bob's instability metric - but applied to a single module instead of to a group of them. This attribute is only present when dependency-cruiser was asked to calculate metrics."
+        },
+        "experimentalStats": { "$ref": "#/definitions/ExperimentalStatsType" },
+        "checksum": {
+          "type": "string",
+          "description": "checksum of the contents of the module. This attribute is currently only available when the cruise was executed with caching and the cache strategy is 'content'."
+        }
+      }
+    },
+    "ReachableType": {
+      "type": "object",
+      "required": ["value", "asDefinedInRule", "matchedFrom"],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "boolean",
+          "description": "'true' if this module is reachable from any of the modules matched by the from part of a reachability-rule in 'asDefinedInRule', 'false' if not."
+        },
+        "asDefinedInRule": {
+          "type": "string",
+          "description": "The name of the rule where the reachability was defined"
+        },
+        "matchedFrom": {
+          "type": "string",
+          "description": "The matchedFrom attribute shows what the 'from' module that causes the 'reachable' information to be what it is. Sometimes the 'asDefinedInRule' is not specific enough - e.g. when the from part can be many modules and/ or contains capturing groups used in the to part of the rule."
+        }
+      }
+    },
+    "ReachesType": {
+      "type": "object",
+      "required": ["modules", "asDefinedInRule"],
+      "additionalProperties": false,
+      "properties": {
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "via"],
+            "additionalProperties": false,
+            "properties": {
+              "source": { "type": "string" },
+              "via": {
+                "type": "array",
+                "description": "The path along which the 'to' module is reachable from this one.",
+                "items": { "$ref": "#/definitions/MiniDependency" }
+              }
+            }
+          },
+          "description": "An array of modules that is (transitively) reachable from this module."
+        },
+        "asDefinedInRule": {
+          "type": "string",
+          "description": "The name of the rule within which the reachability is restricted"
+        }
+      }
+    },
+    "DependenciesType": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/DependencyType" }
+    },
+    "DependencyType": {
+      "type": "object",
+      "required": [
+        "circular",
+        "coreModule",
+        "couldNotResolve",
+        "dependencyTypes",
+        "exoticallyRequired",
+        "dynamic",
+        "followable",
+        "module",
+        "moduleSystem",
+        "resolved",
+        "valid"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "module": {
+          "type": "string",
+          "description": "The name of the module as it appeared in the source code, e.g. './main'"
+        },
+        "protocol": {
+          "type": "string",
+          "enum": ["data:", "file:", "node:", "bun:"],
+          "description": "If the module specification is an URI with a protocol in it (e.g. `import * as fs from 'node:fs'` or `import stuff from 'data:application/json,some-thing'`) - this attribute holds the protocol part (e.g. 'node:', 'data:', 'file:', 'bun:'). Also see https://nodejs.org/api/esm.html#esm_urls"
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "If the module specification is an URI and contains a mime type, this attribute holds the mime type (e.g. in `import stuff from 'data:application/json,some-thing'` this would be data:application/json). Also see https://nodejs.org/api/esm.html#esm_urls"
+        },
+        "resolved": {
+          "type": "string",
+          "description": "The (resolved) file name of the module, e.g. 'src/main/index.js'"
+        },
+        "coreModule": {
+          "type": "boolean",
+          "description": "Whether or not this is a node.js core module - deprecated in favor of dependencyType === core"
+        },
+        "dependencyTypes": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/DependencyTypeType" },
+          "description": "the type of inclusion - local, core, unknown (= we honestly don't know), undetermined (= we didn't bother determining it) or one of the npm dependencies defined in a package.json ('npm' for 'dependencies', 'npm-dev', 'npm-optional', 'npm-peer', 'npm-no-pkg' for development, optional, peer dependencies and dependencies in node_modules but not in package.json respectively)"
+        },
+        "license": {
+          "type": "string",
+          "description": "the license, if known (usually known for modules pulled from npm, not for local ones)"
+        },
+        "followable": {
+          "type": "boolean",
+          "description": "Whether or not this is a dependency that can be followed any further. This will be 'false' for for core modules, json, modules that could not be resolved to a file and modules that weren't followed because it matches the doNotFollow expression."
+        },
+        "dynamic": {
+          "type": "boolean",
+          "description": "true if this dependency is dynamic, false in all other cases"
+        },
+        "exoticallyRequired": {
+          "type": "boolean",
+          "description": "true if the dependency was defined by a require function not named'require' - false in all other cases"
+        },
+        "exoticRequire": {
+          "type": "string",
+          "description": "If this dependency was defined by a require not named 'require' (as defined in the exoticRequireStrings option): the string that was used"
+        },
+        "matchesDoNotFollow": {
+          "type": "boolean",
+          "description": "'true' if the file name of this module matches the doNotFollow regular expression"
+        },
+        "couldNotResolve": {
+          "type": "boolean",
+          "description": "'true' if dependency-cruiser could not resolve the module name in the source code to a file name or core module. 'false' in all other cases."
+        },
+        "preCompilationOnly": {
+          "type": "boolean",
+          "description": "'true' if the dependency between this dependency and its parent only exists before compilation takes place. 'false in all other cases. Dependency-cruiser will only specify this attribute for TypeScript and then only when the option 'tsPreCompilationDeps' has the value 'specify'."
+        },
+        "typeOnly": {
+          "type": "boolean",
+          "description": "'true' when the module included the module explicitly as type only with the 'type' keyword e.g. import type { IThingus } from 'thing' Dependency-cruiser will only specify this attribute for TypeScript and when the 'tsPreCompilationDeps' option has either the value true or 'specify'."
+        },
+        "circular": {
+          "type": "boolean",
+          "description": "'true' if following this dependency will ultimately return to the source, false in all other cases"
+        },
+        "cycle": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/MiniDependency" },
+          "description": "If following this dependency will ultimately return to the source (circular === true), this attribute will contain an (ordered) array of module names that shows (one of) the circular path(s)"
+        },
+        "moduleSystem": { "$ref": "#/definitions/ModuleSystemType" },
+        "valid": {
+          "type": "boolean",
+          "description": "'true' if this dependency violated a rule; 'false' in all other cases. The violated rule will be in the 'rules' object at the same level."
+        },
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/RuleSummaryType" },
+          "description": "an array of rules violated by this dependency - left out if the dependency is valid"
+        },
+        "instability": {
+          "type": "number",
+          "description": "the (de-normalized) instability of the dependency - also available in the module on the 'to' side of this dependency"
+        }
+      }
+    },
+    "DependencyTypeType": {
+      "type": "string",
+      "enum": [
+        "aliased-subpath-import",
+        "aliased-tsconfig-base-url",
+        "aliased-tsconfig-paths",
+        "aliased-tsconfig",
+        "aliased-webpack",
+        "aliased-workspace",
+        "aliased",
+        "amd-define",
+        "amd-require",
+        "amd-exotic-require",
+        "core",
+        "deprecated",
+        "dynamic-import",
+        "exotic-require",
+        "export",
+        "import-equals",
+        "import",
+        "jsdoc",
+        "jsdoc-bracket-import",
+        "jsdoc-import-tag",
+        "local",
+        "localmodule",
+        "npm-bundled",
+        "npm-dev",
+        "npm-no-pkg",
+        "npm-optional",
+        "npm-peer",
+        "npm-unknown",
+        "npm",
+        "pre-compilation-only",
+        "process-get-builtin-module",
+        "require",
+        "triple-slash-amd-dependency",
+        "triple-slash-directive",
+        "triple-slash-file-reference",
+        "triple-slash-type-reference",
+        "type-import",
+        "type-only",
+        "undetermined",
+        "unknown"
+      ]
+    },
+    "ModuleSystemType": {
+      "type": "string",
+      "enum": ["cjs", "es6", "amd", "tsd"]
+    },
+    "RuleSummaryType": {
+      "type": "object",
+      "description": "If there was a rule violation (valid === false), this object contains the name of the rule and severity of violating it.",
+      "required": ["name", "severity"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The (short, eslint style) name of the violated rule. Typically something like 'no-core-punycode' or 'no-outside-deps'."
+        },
+        "severity": { "$ref": "#/definitions/SeverityType" }
+      }
+    },
+    "SeverityType": {
+      "type": "string",
+      "description": "How severe a violation of a rule is. The 'error' severity will make some reporters return a non-zero exit code, so if you want e.g. a build to stop when there's a rule violated: use that.",
+      "enum": ["error", "warn", "info", "ignore"]
+    },
+    "MiniDependency": {
+      "type": "object",
+      "description": "A small dependency object with the uniquely identifying name of the module +the dependency types it has relative to the _previous_ module in the chain  it is part of (e.g. a cycle).",
+      "required": ["name", "dependencyTypes"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "description": "The name of the module" },
+        "dependencyTypes": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/DependencyTypeType" },
+          "description": "The dependency types of the module relative to the previous module in the chain it is a part of (e.g. a cycle)"
+        }
+      }
+    },
+    "ExperimentalStatsType": {
+      "type": "object",
+      "required": ["size", "topLevelStatementCount"],
+      "additionalProperties": false,
+      "properties": {
+        "topLevelStatementCount": {
+          "type": "number",
+          "description": "the number of top level statements in the module. Attribute only available when the cruise was executed with the 'experimentalStats' option set to 'true'."
+        },
+        "size": {
+          "type": "number",
+          "description": "the size of the module in bytes. Attribute only available when the cruise was executed with the 'experimentalStats' option set to 'true'."
+        }
+      }
+    },
+    "FoldersType": {
+      "type": "array",
+      "description": "A list of folders, as derived from the detected modules, with for each folder a bunch of metrics (adapted from 'Agile software development: principles, patterns, and practices' by Robert C Martin (ISBN 0-13-597444-5). Note: these metrics substitute 'components' and 'classes' from that book with 'folders' and 'modules'; the closest relatives that work for the most programming styles in JavaScript (and its derivative languages).",
+      "items": { "$ref": "#/definitions/FolderType" }
+    },
+    "FolderType": {
+      "type": "object",
+      "required": ["name", "moduleCount"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the folder. Folder names are normalized to posix (so separated by forward slashes e.g.: src/things/morethings)"
+        },
+        "dependents": {
+          "type": "array",
+          "description": "list of folders depending on this folder",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "the (resolved) name of the dependent"
+              }
+            }
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "description": "list of folders this module depends upon",
+          "items": {
+            "type": "object",
+            "required": ["name", "valid", "circular"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "the (resolved) name of the dependency"
+              },
+              "instability": {
+                "type": "number",
+                "description": "the instability of the dependency (de-normalized - this is a duplicate of the one found in the instability of the folder with the same name)"
+              },
+              "valid": {
+                "type": "boolean",
+                "description": "'true' if this folder dependency violated a rule; 'false' in all other cases. The violated rule will be in the 'rules' object at the same level."
+              },
+              "circular": {
+                "type": "boolean",
+                "description": "'true' if following this dependency will ultimately return to the source, false in all other cases"
+              },
+              "cycle": {
+                "type": "array",
+                "items": { "$ref": "#/definitions/MiniDependency" },
+                "description": "If following this dependency will ultimately return to the source (circular === true), this attribute will contain an (ordered) array of module names that shows (one of) the circular path(s)"
+              },
+              "rules": {
+                "type": "array",
+                "items": { "$ref": "#/definitions/RuleSummaryType" },
+                "description": "an array of rules violated by this dependency - left out if the dependency is valid"
+              }
+            }
+          }
+        },
+        "moduleCount": {
+          "type": "number",
+          "description": "The total number of modules detected in this folder and its sub-folders"
+        },
+        "afferentCouplings": {
+          "type": "number",
+          "description": "The number of modules outside this folder that depend on modules within this folder. Only present when dependency-cruiser was asked to calculate it."
+        },
+        "efferentCouplings": {
+          "type": "number",
+          "description": "The number of modules inside this folder that depend on modules outside this folder. Only present when dependency-cruiser was asked to calculate it."
+        },
+        "instability": {
+          "type": "number",
+          "description": "efferentCouplings/ (afferentCouplings + efferentCouplings) A measure for how stable the folder is; ranging between 0 (completely stable folder) to 1 (completely instable folder) Note that while 'instability' has a negative connotation it's also unavoidable in any meaningful system. It's the basis of Martin's variable component stability principle: 'the instability of a folder should be larger than the folders it depends on'. Only present when dependency-cruiser was asked to calculate it."
+        },
+        "experimentalStats": { "$ref": "#/definitions/ExperimentalStatsType" }
+      }
+    },
+    "SummaryType": {
+      "type": "object",
+      "required": [
+        "violations",
+        "error",
+        "warn",
+        "info",
+        "totalCruised",
+        "optionsUsed"
+      ],
+      "additionalProperties": false,
+      "description": "Data summarizing the found dependencies",
+      "properties": {
+        "violations": { "$ref": "#/definitions/ViolationsType" },
+        "error": {
+          "type": "number",
+          "description": "the number of errors in the dependencies"
+        },
+        "warn": {
+          "type": "number",
+          "description": "the number of warnings in the dependencies"
+        },
+        "info": {
+          "type": "number",
+          "description": "the number of informational level notices in the dependencies"
+        },
+        "ignore": {
+          "type": "number",
+          "description": "the number of ignored notices in the dependencies"
+        },
+        "totalCruised": {
+          "type": "number",
+          "description": "the number of modules cruised"
+        },
+        "totalDependenciesCruised": {
+          "type": "number",
+          "description": "the number of dependencies cruised"
+        },
+        "environment": {
+          "type": "object",
+          "description": "information on the environment the cruise ran on",
+          "required": [
+            "version",
+            "nodeVersionSupported",
+            "nodeVersionFound",
+            "osVersionFound",
+            "transpilersFound",
+            "extensionsFound"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "version": { "type": "string" },
+            "nodeVersionSupported": { "type": "string" },
+            "nodeVersionFound": { "type": "string" },
+            "osVersionFound": { "type": "string" },
+            "transpilersFound": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "version", "available", "currentVersion"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string" },
+                  "version": { "type": "string" },
+                  "available": { "type": "boolean" },
+                  "currentVersion": { "type": "string" }
+                }
+              }
+            },
+            "extensionsFound": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["extension", "available"],
+                "additionalProperties": false,
+                "properties": {
+                  "extension": { "type": "string" },
+                  "available": { "type": "boolean" }
+                }
+              }
+            },
+            "issues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["severity", "name", "description"],
+                "additionalProperties": false,
+                "description": "Issues detected in the environment that might have influenced the cruise e.g. a missing (supported) typescript transpiler, while there's a tsconfig",
+                "properties": {
+                  "severity": { "$ref": "#/definitions/SeverityType" },
+                  "name": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "ruleSetUsed": { "$ref": "#/definitions/RuleSetType" },
+        "optionsUsed": { "$ref": "#/definitions/OptionsUsedType" }
+      }
+    },
+    "ViolationsType": {
+      "type": "array",
+      "description": "A list of violations found in the dependencies. The dependencies themselves also contain this information, this summary is here for convenience.",
+      "items": { "$ref": "#/definitions/ViolationType" }
+    },
+    "ViolationType": {
+      "type": "object",
+      "required": ["from", "to", "rule"],
+      "additionalProperties": false,
+      "properties": {
+        "from": { "type": "string" },
+        "to": {
+          "type": "string",
+          "description": "The (resolved) 'to' part of the dependency this violation is about"
+        },
+        "unresolvedTo": {
+          "type": "string",
+          "description": "The (unresolved) 'to' part of the dependency this violation is about"
+        },
+        "dependencyTypes": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/DependencyTypeType" }
+        },
+        "type": { "$ref": "#/definitions/ViolationTypeType" },
+        "rule": { "$ref": "#/definitions/RuleSummaryType" },
+        "cycle": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/MiniDependency" },
+          "description": "The circular path if the violation is about circularity"
+        },
+        "via": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/MiniDependency" },
+          "description": "The path from the from to the to if the violation is transitive"
+        },
+        "metrics": {
+          "type": "object",
+          "required": ["from", "to"],
+          "additionalProperties": false,
+          "properties": {
+            "from": {
+              "type": "object",
+              "required": ["instability"],
+              "additionalProperties": false,
+              "properties": { "instability": { "type": "number" } }
+            },
+            "to": {
+              "type": "object",
+              "required": ["instability"],
+              "additionalProperties": false,
+              "properties": { "instability": { "type": "number" } }
+            }
+          }
+        },
+        "comment": {
+          "type": "string",
+          "description": "Free format text you can e.g. use to explain why this violation can be ignored or is quarantined (only used in _known-violations_) "
+        }
+      }
+    },
+    "ViolationTypeType": {
+      "type": "string",
+      "enum": [
+        "dependency",
+        "module",
+        "reachability",
+        "cycle",
+        "instability",
+        "folder"
+      ]
+    },
+    "RuleSetType": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "forbidden": {
+          "type": "array",
+          "description": "A list of rules that describe dependencies that are not allowed. dependency-cruiser will emit a separate error (warning/ informational) messages for each violated rule.",
+          "items": { "$ref": "#/definitions/ForbiddenRuleType" }
+        },
+        "allowed": {
+          "type": "array",
+          "description": "A list of rules that describe dependencies that are allowed. dependency-cruiser will emit the warning message 'not-in-allowed' for each dependency that does not at least meet one of them.",
+          "items": { "$ref": "#/definitions/AllowedRuleType" }
+        },
+        "allowedSeverity": {
+          "$ref": "#/definitions/SeverityType",
+          "description": "Severity to use when a dependency is not in the 'allowed' set of rules. Defaults to 'warn'"
+        },
+        "required": {
+          "type": "array",
+          "description": "A list of rules that describe what dependencies modules _must_ have. E.g. - every controller needs to (directly) depend on a base controller. - each source file should be the dependency of a spec file with the same    base name",
+          "items": { "$ref": "#/definitions/RequiredRuleType" }
+        }
+      }
+    },
+    "AllowedRuleType": {
+      "oneOf": [
+        { "$ref": "#/definitions/RegularAllowedRuleType" },
+        { "$ref": "#/definitions/ReachabilityAllowedRuleType" }
+      ]
+    },
+    "RegularAllowedRuleType": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "comment": { "type": "string" },
+        "scope": {
+          "type": "string",
+          "description": "What to apply the rule to - modules (the default) or folders. Currently ignored for 'allowed' rules, defaulting to 'module'",
+          "enum": ["module", "folder"]
+        },
+        "from": { "$ref": "#/definitions/FromRestrictionType" },
+        "to": { "$ref": "#/definitions/ToRestrictionType" }
+      }
+    },
+    "ReachabilityAllowedRuleType": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "comment": { "type": "string" },
+        "scope": {
+          "type": "string",
+          "description": "What to apply the rule to - modules (the default) or folders. Currently ignored for 'allowed' rules, defaulting to 'module'",
+          "enum": ["module", "folder"]
+        },
+        "from": { "$ref": "#/definitions/ReachabilityFromRestrictionType" },
+        "to": { "$ref": "#/definitions/ReachabilityToRestrictionType" }
+      }
+    },
+    "ForbiddenRuleType": {
+      "oneOf": [
+        { "$ref": "#/definitions/RegularForbiddenRuleType" },
+        { "$ref": "#/definitions/ReachabilityForbiddenRuleType" },
+        { "$ref": "#/definitions/DependentsForbiddenRuleType" }
+      ]
+    },
+    "RegularForbiddenRuleType": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "A short name for the rule - will appear in reporters to enable customers to quickly identify a violated rule. Try to keep them short, eslint style. E.g. 'not-to-core' for a rule forbidding dependencies on core modules, or 'not-to-unresolvable' for one that prevents dependencies on modules that probably don't exist."
+        },
+        "severity": { "$ref": "#/definitions/SeverityType" },
+        "scope": {
+          "type": "string",
+          "description": "What to apply the rule to - modules (the default) or folders. Switching the scope to 'folder' can be useful in rules where this makes a difference like those regarding circular dependencies or instability. Only the to.moreUnstable, to.circular, and path (both from and to) attributes work at the moment. Other attributes will follow suit in later releases (depending on demand).",
+          "enum": ["module", "folder"]
+        },
+        "comment": {
+          "type": "string",
+          "description": "You can use this field to document why the rule is there."
+        },
+        "from": { "$ref": "#/definitions/FromRestrictionType" },
+        "to": { "$ref": "#/definitions/ToRestrictionType" }
+      }
+    },
+    "DependentsForbiddenRuleType": {
+      "type": "object",
+      "required": ["module", "from"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "severity": { "$ref": "#/definitions/SeverityType" },
+        "scope": {
+          "type": "string",
+          "description": "What to apply the rule to - modules (the default) or folders. Currently ignored for DependentsForbiddenRules, defaulting to 'module'",
+          "enum": ["module", "folder"]
+        },
+        "comment": { "type": "string" },
+        "module": { "$ref": "#/definitions/DependentsModuleRestrictionType" },
+        "from": { "$ref": "#/definitions/DependentsFromRestrictionType" }
+      }
+    },
+    "ReachabilityForbiddenRuleType": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "severity": { "$ref": "#/definitions/SeverityType" },
+        "scope": {
+          "type": "string",
+          "description": "What to apply the rule to - modules (the default) or folders. Currently ignored for ReachabilityForbiddenRules, defaulting to 'module'",
+          "enum": ["module", "folder"]
+        },
+        "comment": { "type": "string" },
+        "from": { "$ref": "#/definitions/ReachabilityFromRestrictionType" },
+        "to": { "$ref": "#/definitions/ReachabilityToRestrictionType" }
+      }
+    },
+    "RequiredRuleType": {
+      "type": "object",
+      "required": ["module", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "severity": { "$ref": "#/definitions/SeverityType" },
+        "scope": {
+          "type": "string",
+          "description": "What to apply the rule to - modules (the default) or folders. Currently ignored for RequiredRules, defaulting to 'module'",
+          "enum": ["module", "folder"]
+        },
+        "comment": { "type": "string" },
+        "module": { "$ref": "#/definitions/RequiredModuleRestrictionType" },
+        "to": { "$ref": "#/definitions/RequiredToRestrictionType" }
+      }
+    },
+    "MiniDependencyRestrictionType": {
+      "oneOf": [
+        { "$ref": "#/definitions/REAsStringsType" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "description": "A regular expression or an array of regular expressions the  'via' module should match to be caught by this rule.",
+              "$ref": "#/definitions/REAsStringsType"
+            },
+            "pathNot": {
+              "description": "A regular expression or an array of regular expressions an the  'via' module should _not_ match to be caught by this rule.",
+              "$ref": "#/definitions/REAsStringsType"
+            },
+            "dependencyTypes": {
+              "type": "array",
+              "description": "Which dependency types the dependency between this via and the previous one in the 'via chain' should have to be caught by this rule.",
+              "items": { "$ref": "#/definitions/DependencyTypeType" }
+            },
+            "dependencyTypesNot": {
+              "type": "array",
+              "description": "Which dependency types the dependency between this via and the previous one in the 'via chain' should _not_ have to be caught by this rule.",
+              "items": { "$ref": "#/definitions/DependencyTypeType" }
+            }
+          }
+        }
+      ]
+    },
+    "FromRestrictionType": {
+      "type": "object",
+      "description": "Criteria an end of a dependency should match to be caught by this rule. Leave it empty if you want any module to be matched.",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "pathNot": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should NOT match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "orphan": {
+          "type": "boolean",
+          "description": "Whether or not to match when the module is an orphan (= has no incoming or outgoing dependencies). When this property it is part of a rule, dependency-cruiser will ignore the 'to' part."
+        }
+      }
+    },
+    "ReachabilityFromRestrictionType": {
+      "type": "object",
+      "description": "Criteria an end of a dependency should match to be caught by this rule. Leave it empty if you want any module to be matched.",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "pathNot": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should NOT match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        }
+      }
+    },
+    "ToRestrictionType": {
+      "type": "object",
+      "description": "Criteria the 'to' end of a dependency should match to be caught by this rule. Leave it empty if you want any module to be matched.",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "pathNot": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should NOT match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "couldNotResolve": {
+          "type": "boolean",
+          "description": "Whether or not to match modules dependency-cruiser could not resolve (and probably aren't on disk). For this one too: leave out if you don't care either way."
+        },
+        "circular": {
+          "type": "boolean",
+          "description": "Whether or not to match when following to the to will ultimately end up in the from."
+        },
+        "dynamic": {
+          "type": "boolean",
+          "description": "Whether or not to match when the dependency is a dynamic one."
+        },
+        "exoticallyRequired": {
+          "type": "boolean",
+          "description": "Whether or not to match when the dependency is exotically required."
+        },
+        "exoticRequire": {
+          "description": "A regular expression to match against any 'exotic' require strings",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "exoticRequireNot": {
+          "description": "A regular expression to match against any 'exotic' require strings - when it should NOT be caught by the rule",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "preCompilationOnly": {
+          "type": "boolean",
+          "description": "true if this dependency only exists before compilation (like type only imports), false in all other cases. Only returned when the tsPreCompilationDeps is set to 'specify'."
+        },
+        "dependencyTypes": {
+          "type": "array",
+          "description": "Whether or not to match modules of any of these types (leaving out matches any of them)",
+          "items": { "$ref": "#/definitions/DependencyTypeType" }
+        },
+        "dependencyTypesNot": {
+          "type": "array",
+          "description": "Whether or not to match modules NOT of any of these types (leaving out matches none of them)",
+          "items": { "$ref": "#/definitions/DependencyTypeType" }
+        },
+        "moreThanOneDependencyType": {
+          "type": "boolean",
+          "description": "If true matches dependencies with more than one dependency type (e.g. defined in _both_ npm and npm-dev)"
+        },
+        "license": {
+          "description": "Whether or not to match modules that were released under one of the mentioned licenses. E.g. to flag GPL-1.0, GPL-2.0 licensed modules (e.g. because your app is not compatible with the GPL) use \"GPL\"",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "licenseNot": {
+          "description": "Whether or not to match modules that were NOT released under one of the mentioned licenses. E.g. to flag everything non MIT use \"MIT\" here",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "via": {
+          "description": "For circular dependencies - whether or not to match cycles that include some modules with these conditions. If you want to match cycles that _exclusively_ include modules satisfying them use the viaOnly restriction.E.g. to allow all cycles, except when they go through one specific module. Typically to temporarily disallow some cycles with a lower severity - setting up a rule with a via that ignores them in an 'allowed' section.",
+          "$ref": "#/definitions/MiniDependencyRestrictionType"
+        },
+        "viaOnly": {
+          "description": "For circular dependencies - whether or not to match cycles that include exclusively modules with these conditions. This is different from the regular via that already matches when only _some_ of the modules in the cycle satisfy the condition.",
+          "$ref": "#/definitions/MiniDependencyRestrictionType"
+        },
+        "viaNot": {
+          "description": "This attribute is deprecated. Use 'viaOnly' with a 'pathNot' attribute instead.",
+          "deprecated": true,
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "viaSomeNot": {
+          "description": "This attribute is deprecated. Use 'via' with a 'pathNot' attribute instead.",
+          "deprecated": true,
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "moreUnstable": {
+          "type": "boolean",
+          "description": "When set to true moreUnstable matches for any dependency that has a higher Instability than the module that depends on it. When set to false it matches when the opposite is true; the dependency has an equal or lower Instability. This attribute is useful when you want to check against Robert C. Martin's stable dependency principle. See online documentation for examples and details. Leave this out when you don't care either way."
+        },
+        "ancestor": {
+          "type": "boolean",
+          "description": "When set to true, matches when the dependency is in a folder above the folder of the module."
+        }
+      }
+    },
+    "DependentsModuleRestrictionType": {
+      "description": "Criteria to select the module(s) this restriction should apply to",
+      "required": [],
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "pathNot": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should NOT match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "numberOfDependentsLessThan": {
+          "type": "integer",
+          "description": "Matches when the number of times the 'to' module is used falls below (<) this number. Caveat: only works in concert with path and pathNot restrictions in the from and to parts of the rule; other conditions will be ignored. E.g. to flag modules that are used only once or not at all, use 2 here.",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "numberOfDependentsMoreThan": {
+          "type": "integer",
+          "description": "Matches when the number of times the 'to' module is used raises above (>) this number. Caveat: only works in concert with path and pathNot restrictions in the from and to parts of the rule; other conditions will be ignored. E.g. to flag modules that are used more than 10 times, use 10 here.",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "DependentsFromRestrictionType": {
+      "description": "Criteria the dependents of the module should adhere to be caught by this rule rule. Leave it empty if you want any dependent to be matched.",
+      "required": [],
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "pathNot": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should NOT match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        }
+      }
+    },
+    "ReachabilityToRestrictionType": {
+      "description": "Criteria the 'to' end of a dependency should match to be caught by this rule. Leave it empty if you want any module to be matched.",
+      "required": ["reachable"],
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "pathNot": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should NOT match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "reachable": {
+          "type": "boolean",
+          "description": "Whether or not to match modules that aren't reachable from the from part of the rule."
+        }
+      }
+    },
+    "RequiredModuleRestrictionType": {
+      "description": "Criteria to select the module(s) this restriction should apply to",
+      "required": [],
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "pathNot": {
+          "description": "A regular expression or an array of regular expressions an end of a dependency should NOT match to be caught by this rule.",
+          "$ref": "#/definitions/REAsStringsType"
+        }
+      }
+    },
+    "RequiredToRestrictionType": {
+      "description": "Criteria for modules the associated module must depend on.",
+      "required": [],
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "Criteria at least one dependency of each matching module must adhere to.",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "reachable": {
+          "type": "boolean",
+          "description": "Whether or not to match transitive ('indirect') dependencies as well as direct ones."
+        }
+      }
+    },
+    "REAsStringsType": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ]
+    },
+    "OptionsUsedType": {
+      "type": "object",
+      "description": "the (command line) options used to generate the dependency-tree",
+      "additionalProperties": false,
+      "properties": {
+        "doNotFollow": { "$ref": "#/definitions/CompoundDoNotFollowType" },
+        "exclude": { "$ref": "#/definitions/CompoundExcludeType" },
+        "includeOnly": {
+          "description": "a regular expression for modules to cruise; anything outside it will be skipped",
+          "oneOf": [
+            { "$ref": "#/definitions/REAsStringsType" },
+            { "$ref": "#/definitions/CompoundIncludeOnlyType" }
+          ]
+        },
+        "focus": { "$ref": "#/definitions/CompoundFocusType" },
+        "reaches": { "$ref": "#/definitions/CompoundReachesType" },
+        "affected": {
+          "description": "dependency-cruiser will mark modules that have changed since the specified revision (or 'main', when not specified) in its output, as well as _any_ module that reaches them - either directly or via via. NOTE: this is currently a command line _only_ option, so if you pass this to the API or in a configuration file it will be ignored.",
+          "oneOf": [{ "type": "string" }, { "type": "boolean" }]
+        },
+        "highlight": { "$ref": "#/definitions/CompoundHighlightType" },
+        "knownViolations": {
+          "description": "baseline of known validations. Typically you'd specify these in a file called .dependency-cruiser-known-violations.json (which you'd generate with the --outputType 'baseline') - and which is easy to keep up to date. In a pinch you can specify them here as well. The known violations in .dependency-cruiser-known-violations.json always take precedence.",
+          "$ref": "#/definitions/ViolationsType"
+        },
+        "collapse": { "type": "string" },
+        "maxDepth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 99,
+          "description": "The maximum cruise depth specified. 0 means no maximum specified. While it might look attractive to regulate the size of the output, this is not the best option to do so. Filters (exclude, includeOnly, focus), the dot and archi reporter's collapsePattern and the collapse options offer better, more reliable and more understandable results."
+        },
+        "moduleSystems": { "$ref": "#/definitions/ModuleSystemsType" },
+        "detectJSDocImports": {
+          "type": "boolean",
+          "description": "When true, dependency-cruiser will detect dependencies in JSDoc-style import statements. Implies `\"parser\": \"tsc\"`. Defaults to false."
+        },
+        "detectProcessBuiltinModuleCalls": {
+          "type": "boolean",
+          "description": "When true, dependency-cruiser will detect calls to `process.getBuiltinModule`/ `globalThis.process.getBuiltinModule` imports. Defaults to false."
+        },
+        "prefix": { "type": "string" },
+        "suffix": { "type": "string" },
+        "preserveSymlinks": {
+          "type": "boolean",
+          "description": "if true leave symlinks untouched, otherwise use the realpath. Defaults to `false` (which is also nodejs's default behavior since version 6)"
+        },
+        "combinedDependencies": {
+          "type": "boolean",
+          "description": "if true combines the package.jsons found from the module up to the base folder the cruise is initiated from. Useful for how (some) mono-repos manage dependencies & dependency definitions. Defaults to `false`."
+        },
+        "tsConfig": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "TypeScript project file ('tsconfig.json') to use for (1) compilation and (2) resolution (e.g. with the paths property)",
+          "properties": {
+            "fileName": {
+              "description": "The TypeScript project file to use. The fileName is relative to dependency-cruiser's current working directory. When not provided defaults to './tsconfig.json'.",
+              "type": "string"
+            }
+          }
+        },
+        "tsPreCompilationDeps": {
+          "description": "if true detect dependencies that only exist before typescript-to-javascript compilation.",
+          "oneOf": [
+            { "type": "boolean" },
+            { "type": "string", "enum": ["specify"] }
+          ]
+        },
+        "extraExtensionsToScan": {
+          "type": "array",
+          "description": "List of extensions to scan _in addition_ to the extensions already covered by any available parser. Dependency-cruiser will consider files ending in these extensions but it will _not_ examine its content or derive any of their dependencies Sample value: [\".jpg\", \".png\", \".json\"]",
+          "items": { "type": "string" }
+        },
+        "externalModuleResolutionStrategy": {
+          "type": "string",
+          "description": "What external module resolution strategy to use. Defaults to 'node_modules' (not used anymore - module resolution strategy determination is automatic now)",
+          "enum": ["node_modules", "yarn-pnp"]
+        },
+        "builtInModules": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Options to tweak what dependency-cruiser considers 'built-in' modules. If you're targeting nodejs, or don't use any built-in modules you can probably leave this alone.",
+          "properties": {
+            "override": {
+              "type": "array",
+              "description": "List of module names that are to be considered as 'built-in'. By default dependency-cruiser uses the list of built-ins from nodejs. If you code for another environment (e.g. the browser) and you use shims for nodejs builtins like 'path' from node_modules, you could pass an empty array here. If you want to just add a couple of extra built-ins to the default list, use the 'add' attribute instead.",
+              "items": { "type": "string" }
+            },
+            "add": {
+              "type": "array",
+              "description": "List of module names that are to be considered as 'built-in' in addition to the default list of the environment you're currently in. Use this e.g. if you're writing electron code and want to add 'electron' as built-in.",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "forceDeriveDependents": {
+          "type": "boolean",
+          "deprecated": true,
+          "description": "Hasn't had any effect on dependency-cruiser's behaviour since a few major versions ago. If there's a need to manipulate this use the `skipAnalysisNotInRules` option instead. Previously documented behaviour: When true includes de-normalized dependents in the cruise-result, even though there's no rule in the rule set that requires them. Defaults to false."
+        },
+        "webpackConfig": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Webpack configuration file to use to get resolve options from",
+          "properties": {
+            "fileName": {
+              "type": "string",
+              "description": "The webpack conf file to use (typically something like 'webpack.conf.js'). The fileName is relative to dependency-cruiser's current working directory. When not provided defaults to './webpack.conf.js'."
+            },
+            "env": {
+              "description": "Environment to pass if your config file returns a function",
+              "oneOf": [{ "type": "object" }, { "type": "string" }]
+            },
+            "arguments": {
+              "type": "object",
+              "description": "Arguments to pass if your config file returns a function. E.g. {mode: 'production'} if you want to use webpack 4's 'mode' feature"
+            }
+          }
+        },
+        "enhancedResolveOptions": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Options used in module resolution that for dependency-cruiser's use cannot go in a webpack config. For details please refer to the documentation of enhanced-resolve itself.",
+          "properties": {
+            "exportsFields": {
+              "type": "array",
+              "description": "List of strings to consider as 'exports' fields in package.json. Use ['exports'] when you use packages that use such a field and your environment supports it (e.g. node ^12.19 || >=14.7 or recent versions of webpack).",
+              "items": { "type": "string" }
+            },
+            "conditionNames": {
+              "type": "array",
+              "description": "List of conditions to check for in the exports field. e.g. use `['imports']` if you're only interested in exposed es6 modules, ['require'] for commonjs, or all conditions at once (['import', 'require', 'node', 'default']) if anything goes for you. Only works when the 'exportsFields' array is non-empty",
+              "items": { "type": "string" }
+            },
+            "extensions": {
+              "type": "array",
+              "description": "List of extensions to scan for when resolving. Typically you want to leave this alone as dependency-cruiser figures out what extensions to scan based on 1. what is available in your environment 2. in the order your environment (nodejs, typescript) applies the resolution itself. However, if you want it to scan less you can specify so with the extensions attribute. E.g. when you're 100% sure you _only_ have typescript & json and nothing else you can pass ['.ts', '.json'] - which can lead to performance gains on systems with slow i/o (like ms-windows), especially when your tsconfig contains paths/ aliases.",
+              "items": { "type": "string" }
+            },
+            "mainFields": {
+              "type": "array",
+              "description": "A list of main fields in manifests (package.json s). Typically you'd want to keep leave this this on its default (['main']) , but if you e.g. use external packages that only expose types, and you still want references to these types to be resolved you could expand this to ['main', 'types', 'typings']",
+              "items": { "type": "string" }
+            },
+            "mainFiles": {
+              "type": "array",
+              "description": "A list of files to consider 'main' files, defaults to ['index']. Only set this when you have really special needs that warrant it."
+            },
+            "aliasFields": {
+              "type": "array",
+              "description": "A list of alias fields in manifests (package.jsons). Specify a field, such as browser, to be parsed according to [this specification](https://github.com/defunctzombie/package-browser-field-spec). Also see [resolve.alias](https://webpack.js.org/configuration/resolve/#resolvealiasfields) in the webpack docs. Defaults to an empty array (don't use any alias fields).",
+              "items": { "type": "string" }
+            },
+            "cachedInputFileSystem": {
+              "type": "object",
+              "description": "Options to pass to the resolver (webpack's 'enhanced resolve') regarding caching.",
+              "additionalProperties": false,
+              "properties": {
+                "cacheDuration": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1800000,
+                  "description": "The number of milliseconds [enhanced-resolve](webpack/enhanced-resolve)'s cached file system should use for cache duration. Typically you won't have to touch this - the default works well for repos up to 5000 modules/ 20000 dependencies, and likely for numbers above as well. If you experience memory problems on a (humongous) repository you can use the cacheDuration attribute to tame enhanced-resolve's memory usage by lowering the cache duration trading off against some (for values over 1000ms) or significant (for values below 500ms) performance. Dependency-cruiser currently uses 4000ms, and in the past has used 1000ms - both with good results."
+                }
+              }
+            }
+          }
+        },
+        "babelConfig": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Babel configuration (e.g. '.babelrc.json') to use.",
+          "properties": {
+            "fileName": {
+              "description": "The Babel configuration file to use. The fileName is relative to dependency-cruiser's current working directory. When not provided defaults to './.babelrc.json'. Dependency-cruiser currently supports only the json variant. Support for (js|cjs|mjs) variants and configuration in package.json might follow in future releases.",
+              "type": "string"
+            }
+          }
+        },
+        "parser": {
+          "type": "string",
+          "description": "overrides the parser dependency-cruiser will use - EXPERIMENTAL. The use of 'swc' as a parser here is deprecated.",
+          "enum": ["acorn", "tsc", "swc"]
+        },
+        "exoticRequireStrings": {
+          "type": "array",
+          "description": "List of strings you have in use in addition to cjs/ es6 requires & imports to declare module dependencies. Use this e.g. if you've re-declared require (`const want = require`), use a require-wrapper (like semver-try-require) or use window.require as a hack to workaround something",
+          "items": { "type": "string" }
+        },
+        "reporterOptions": { "$ref": "#/definitions/ReporterOptionsType" },
+        "progress": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "How dependency-cruiser shows progress. Defaults to 'none'.",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["cli-feedback", "performance-log", "ndjson", "none"]
+            },
+            "maximumLevel": {
+              "description": "The maximum log level to emit messages at. Ranges from OFF (-1, don't show any messages), via SUMMARY (40), INFO (50), DEBUG (60) all the way to show ALL messages (99).",
+              "type": "number",
+              "enum": [-1, 40, 50, 60, 70, 80, 99]
+            }
+          }
+        },
+        "metrics": {
+          "type": "boolean",
+          "description": "When this flag is set to true, dependency-cruiser will calculate (stability) metrics for all modules and folders. Defaults to false."
+        },
+        "experimentalStats": { "type": "boolean" },
+        "skipAnalysisNotInRules": { "type": "boolean" },
+        "baseDir": {
+          "type": "string",
+          "description": "The directory dependency-cruiser should run its cruise from. Defaults to the current working directory."
+        },
+        "cache": {
+          "oneOf": [
+            { "type": "boolean", "enum": [false] },
+            { "$ref": "#/definitions/CacheOptionsType" }
+          ]
+        },
+        "args": {
+          "type": "string",
+          "description": "arguments passed on the command line"
+        },
+        "rulesFile": {
+          "type": "string",
+          "description": "The rules file used to validate the dependencies (if any)"
+        },
+        "outputTo": {
+          "type": "string",
+          "description": "File the output was written to ('-' for stdout)"
+        },
+        "outputType": { "$ref": "#/definitions/OutputType" }
+      }
+    },
+    "ModuleSystemsType": {
+      "type": "array",
+      "description": "List of module systems to cruise. Defaults to [amd, cjs, es6]",
+      "items": { "$ref": "#/definitions/ModuleSystemType" }
+    },
+    "OutputType": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "json",
+            "html",
+            "dot",
+            "ddot",
+            "cdot",
+            "archi",
+            "fdot",
+            "flat",
+            "csv",
+            "err",
+            "err-long",
+            "err-html",
+            "teamcity",
+            "anon",
+            "text",
+            "metrics",
+            "markdown",
+            "mermaid",
+            "d2",
+            "null"
+          ]
+        },
+        { "type": "string", "pattern": "^plugin:[^:]+$" }
+      ]
+    },
+    "CompoundExcludeType": {
+      "type": "object",
+      "description": "Criteria for dependencies to exclude",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "a regular expression for modules to exclude from being cruised",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "dynamic": {
+          "type": "boolean",
+          "description": "a boolean indicating whether or not to exclude dynamic dependencies"
+        }
+      }
+    },
+    "CompoundDoNotFollowType": {
+      "type": "object",
+      "description": "Criteria for modules to include, but not to follow further",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "a regular expression for modules to include, but not follow further",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "dependencyTypes": {
+          "type": "array",
+          "description": "an array of dependency types to include, but not follow further",
+          "items": { "$ref": "#/definitions/DependencyTypeType" }
+        }
+      }
+    },
+    "CompoundIncludeOnlyType": {
+      "type": "object",
+      "description": "Criteria for modules to only include",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "dependency-cruiser will include modules matching this regular expression in its output, as well as their neighbours (direct dependencies and dependents)",
+          "$ref": "#/definitions/REAsStringsType"
+        }
+      }
+    },
+    "CompoundFocusType": {
+      "type": "object",
+      "description": "Criteria for modules to 'focus' on",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "dependency-cruiser will include modules matching this regular expression in its output, as well as their neighbours (direct dependencies and dependents)",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "depth": {
+          "description": "by default 'focus' only inlcudes the direct neighbours of the focus'ed module(s). This property makes dependency-cruiser will also include neighbors of neighbors, up to the specified depth.",
+          "type": "number",
+          "minimum": 1,
+          "maximum": 4
+        }
+      }
+    },
+    "CompoundReachesType": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "dependency-cruiser will include modules matching this regular expression in its output, as well as _any_ module that reaches them - either directly or via via",
+          "$ref": "#/definitions/REAsStringsType"
+        }
+      }
+    },
+    "CompoundHighlightType": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "dependency-cruiser will mark modules matching this regular expression as 'highlighted' in its output",
+          "$ref": "#/definitions/REAsStringsType"
+        }
+      }
+    },
+    "ReporterOptionsType": {
+      "type": "object",
+      "description": "Options to tweak the output of reporters",
+      "additionalProperties": false,
+      "properties": {
+        "anon": { "$ref": "#/definitions/AnonReporterOptionsType" },
+        "archi": { "$ref": "#/definitions/DotReporterOptionsType" },
+        "dot": { "$ref": "#/definitions/DotReporterOptionsType" },
+        "ddot": { "$ref": "#/definitions/DotReporterOptionsType" },
+        "flat": { "$ref": "#/definitions/DotReporterOptionsType" },
+        "markdown": { "$ref": "#/definitions/MarkdownReporterOptionsType" },
+        "metrics": { "$ref": "#/definitions/MetricsReporterOptionsType" },
+        "mermaid": { "$ref": "#/definitions/MermaidReporterOptionsType" },
+        "text": { "$ref": "#/definitions/TextReporterOptionsType" },
+        "err": { "$ref": "#/definitions/ErrorReporterOptionsType" },
+        "err-long": { "$ref": "#/definitions/ErrorReporterOptionsType" },
+        "err-html": { "$ref": "#/definitions/ErrorReporterOptionsType" }
+      }
+    },
+    "AnonReporterOptionsType": {
+      "type": "object",
+      "description": "Options to tweak the output of the anonymous reporter",
+      "additionalProperties": false,
+      "properties": {
+        "wordlist": {
+          "type": "array",
+          "description": "List of words to use to replace path elements of file names in the output with so the output isn't directly traceable to its intended purpose. When the list is exhausted, the anon reporter will use random strings patterned after the original file name instead. The list is empty by default. Read more in https://github.com/sverweij/dependency-cruiser/blob/main/doc/cli.md#anon---obfuscated-json",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "MetricsReporterOptionsType": {
+      "type": "object",
+      "description": "Options to tweak the output of the metrics reporter",
+      "additionalProperties": false,
+      "properties": {
+        "orderBy": {
+          "type": "string",
+          "enum": [
+            "instability",
+            "moduleCount",
+            "afferentCouplings",
+            "efferentCouplings",
+            "name",
+            "size",
+            "topLevelStatementCount"
+          ],
+          "description": "By what attribute (in addition to the names of the folders/ modules) to order the metrics by. Defaults to 'instability'."
+        },
+        "hideModules": {
+          "type": "boolean",
+          "description": "When true hides module metrics from the report. Defaults to false"
+        },
+        "hideFolders": {
+          "type": "boolean",
+          "description": "When true hides folder metrics from the report. Defaults to false"
+        }
+      }
+    },
+    "MarkdownReporterOptionsType": {
+      "type": "object",
+      "description": "Options to show and hide sections of the markdown reporter and to provide alternate boilerplate text",
+      "additionalProperties": false,
+      "properties": {
+        "showTitle": {
+          "type": "boolean",
+          "description": "Whether or not to show a title in the report. Defaults to true."
+        },
+        "title": {
+          "type": "string",
+          "description": "The text to show as a title of the report. E.g. '## dependency-cruiser forbidden dependency check - results'. When left out shows a default value."
+        },
+        "showSummary": {
+          "type": "boolean",
+          "description": "Whether or not to show a summary in the report. Defaults to true."
+        },
+        "showSummaryHeader": {
+          "type": "boolean",
+          "description": "Whether or not to give the summary a header. Defaults to true."
+        },
+        "summaryHeader": {
+          "type": "string",
+          "description": "The text to show as a header on top of the summary. E.g. '### Summary'. When left out shows a default value."
+        },
+        "showStatsSummary": {
+          "type": "boolean",
+          "description": "Whether or not to show high level stats in the summary. Defaults to true."
+        },
+        "showRulesSummary": {
+          "type": "boolean",
+          "description": "Whether or not to show a list of violated rules in the summary. Defaults to true."
+        },
+        "includeIgnoredInSummary": {
+          "type": "boolean",
+          "description": "Whether or not to show rules in the list of rules for which all violations are ignored. Defaults to true."
+        },
+        "showDetails": {
+          "type": "boolean",
+          "description": "Whether or not to show a detailed list of violations. Defaults to true."
+        },
+        "includeIgnoredInDetails": {
+          "type": "boolean",
+          "description": "Whether or not to show ignored violations in the detailed list. Defaults to true."
+        },
+        "showDetailsHeader": {
+          "type": "boolean",
+          "description": "Whether or not to give the detailed list of violations a header. Defaults to true."
+        },
+        "detailsHeader": {
+          "type": "string",
+          "description": "The text to show as a header on top of the detailed list of violations. E.g. '### All violations'. When left out shows a default value."
+        },
+        "collapseDetails": {
+          "type": "boolean",
+          "description": "Whether or not to collapse the list of violations in a <details> block. Defaults to true."
+        },
+        "collapsedMessage": {
+          "type": "string",
+          "description": "The text to in the <summary> section of the <details> block. E.g. 'click to see all violations'. When left out shows a default value."
+        },
+        "showExternalModulesUnresolved": {
+          "type": "boolean",
+          "description": "For external modules (typically those in node_modules) show the unresolved module name instead of the resolved one in the error overview. E.g 'snodash' instead of 'node_modules/snodash/dist/esm/bundle.mjs'.",
+          "default": false
+        },
+        "showAliasedModulesUnresolved": {
+          "type": "boolean",
+          "description": "For aliased modules (either subpath imports in package.json or via legacy tsconfig/ jsconfig/ webpack/ babel constructs) show the unresolved module name instead of the resolved one in the error overview. E.g. '#utils' instead of 'libs/shared/utils/lib/src/main.cjs'.",
+          "default": false
+        },
+        "noViolationsMessage": {
+          "type": "string",
+          "description": "The text to show when no violations were found. E.g. 'No violations found'. When left out shows a default value."
+        },
+        "showFooter": {
+          "type": "boolean",
+          "description": "Whether or not to show a footer (with version & run date) at the bottom of the report. Defaults to true"
+        }
+      }
+    },
+    "MermaidReporterOptionsType": {
+      "type": "object",
+      "description": "Options to tweak the output of the mermaid reporters",
+      "additionalProperties": false,
+      "properties": {
+        "minify": {
+          "type": "boolean",
+          "description": "Whether or not to compresses the output text. Defaults to true."
+        }
+      }
+    },
+    "TextReporterOptionsType": {
+      "type": "object",
+      "description": "Options that influence rendition of the text reporter",
+      "additionalProperties": false,
+      "properties": {
+        "highlightFocused": {
+          "type": "boolean",
+          "description": "Whether or not to highlight modules that are focused with the --focus command line option (/ general option). Defaults to false"
+        }
+      }
+    },
+    "ErrorReporterOptionsType": {
+      "type": "object",
+      "description": "Options that influence rendition of the err style reporters (like err, err-html, markdown)",
+      "additionalProperties": false,
+      "properties": {
+        "showExternalModulesUnresolved": {
+          "type": "boolean",
+          "description": "For external modules (typically those in node_modules) show the unresolved module name instead of the resolved one in the error overview. E.g 'snodash' instead of 'node_modules/snodash/dist/esm/bundle.mjs'.",
+          "default": false
+        },
+        "showAliasedModulesUnresolved": {
+          "type": "boolean",
+          "description": "For aliased modules (either subpath imports in package.json or via legacy tsconfig/ jsconfig/ webpack/ babel constructs) show the unresolved module name instead of the resolved one in the error overview. E.g. '#utils' instead of 'libs/shared/utils/lib/src/main.cjs",
+          "default": false
+        }
+      }
+    },
+    "DotReporterOptionsType": {
+      "type": "object",
+      "description": "Options to tweak the output of the dot reporters",
+      "additionalProperties": false,
+      "properties": {
+        "collapsePattern": {
+          "description": "Regular expressions to collapse to. For the \"dot\" reporter defaults to null, but \"node_modules/[^/]+\" is recommended for most use cases.",
+          "$ref": "#/definitions/REAsStringsType"
+        },
+        "filters": { "$ref": "#/definitions/ReporterFiltersType" },
+        "showMetrics": {
+          "description": "When passed the value 'true', shows instability metrics in the output if dependency-cruiser calculated them. Doesn't show them in all other cases. Defaults to false",
+          "type": "boolean"
+        },
+        "theme": { "$ref": "#/definitions/DotThemeType" }
+      }
+    },
+    "DotThemeType": {
+      "type": "object",
+      "description": "A bunch of criteria to conditionally theme the dot output",
+      "additionalProperties": false,
+      "properties": {
+        "replace": {
+          "type": "boolean",
+          "description": "If passed with the value 'true', the passed theme replaces the default one. In all other cases it extends the default theme."
+        },
+        "graph": {
+          "description": "Name- value pairs of GraphViz dot (global) attributes.",
+          "type": "object"
+        },
+        "node": {
+          "description": "Name- value pairs of GraphViz dot node attributes.",
+          "type": "object"
+        },
+        "edge": {
+          "description": "Name- value pairs of GraphViz dot edge attributes.",
+          "type": "object"
+        },
+        "modules": {
+          "description": "List of criteria and attributes to apply for modules when the criteria are met. Conditions can use any module attribute. Attributes can be any that are valid in GraphViz dot nodes.",
+          "$ref": "#/definitions/DotThemeArrayType"
+        },
+        "dependencies": {
+          "description": "List of criteria and attributes to apply for dependencies when the criteria are met. Conditions can use any dependency attribute. Attributes can be any that are valid in GraphViz dot edges.",
+          "$ref": "#/definitions/DotThemeArrayType"
+        }
+      }
+    },
+    "DotThemeArrayType": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/DotThemeEntryType" }
+    },
+    "DotThemeEntryType": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "criteria": { "type": "object" },
+        "attributes": { "type": "object" }
+      }
+    },
+    "ReporterFiltersType": {
+      "type": "object",
+      "description": "filters to apply to the reporter before rendering it (e.g. to leave out details from the graphical output that are not relevant for the goal of the report)",
+      "additionalProperties": false,
+      "properties": {
+        "exclude": { "$ref": "#/definitions/CompoundExcludeType" },
+        "includeOnly": { "$ref": "#/definitions/CompoundIncludeOnlyType" },
+        "focus": { "$ref": "#/definitions/CompoundFocusType" },
+        "reaches": { "$ref": "#/definitions/CompoundReachesType" }
+      }
+    },
+    "CacheOptionsType": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "folder": {
+          "type": "string",
+          "description": "The folder to store the cache in. Defaults to node_modules/.cache/dependency-cruiser"
+        },
+        "strategy": { "$ref": "#/definitions/CacheStrategyType" },
+        "compress": {
+          "type": "boolean",
+          "description": "Whether to compress the cache or not\nSetting this to true will adds a few ms to the execution time, but\ntypically reduces the cache size by 80-90%.\n\nDefaults to false.",
+          "default": false
+        }
+      }
+    },
+    "CacheStrategyType": {
+      "type": "string",
+      "description": "The strategy to use for caching.\n- 'metadata': use git metadata to detect changes;\n- 'content': use (a checksum of) the contents of files to detect changes.\n\n'content' is useful if you're not using git or work on partial clones (which is typical on CI's). Trade-of: the 'content' strategy is typically slower.\n\nDefaults to 'metadata'.",
+      "enum": ["metadata", "content"]
+    },
+    "RevisionDataType": {
+      "type": "object",
+      "required": ["SHA1", "changes"],
+      "properties": {
+        "cacheFormatVersion": {
+          "type": "number",
+          "description": "The version of the cache format. If the version number found in the cache is < the version number in the code, the cache is considered stale and won't be used (and overwritten on next run)."
+        },
+        "SHA1": { "type": "string" },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "added",
+                  "copied",
+                  "deleted",
+                  "modified",
+                  "renamed",
+                  "type changed",
+                  "unmerged",
+                  "pairing broken",
+                  "unknown",
+                  "unmodified",
+                  "untracked",
+                  "ignored"
+                ]
+              },
+              "oldName": { "type": "string" },
+              "checksum": { "type": "string" },
+              "args": { "type": "array", "items": { "type": "string" } },
+              "rulesFile": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

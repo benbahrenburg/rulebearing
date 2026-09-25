@@ -1,0 +1,3108 @@
+{
+  "repo": "NeVeSpl/NetArchTest.eNhancedEdition",
+  "sha": "7f29bdf5f24368dccad27b8e3ec52a807e813504",
+  "tool": "netarchtest",
+  "tests": "tests/NetArchTest.Rules.UnitTests",
+  "status": "nothing-compared",
+  "detail": "every test stays or is not imported: nothing to compare",
+  "summary": {
+    "total": 355,
+    "agree": 0,
+    "disagree": 0,
+    "stays": 0,
+    "not-imported": 355,
+    "error": 0
+  },
+  "rules": {
+    "imported": 0,
+    "commentedOut": 99,
+    "withoutTest": []
+  },
+  "outOfScope": 0,
+  "results": [
+    {
+      "test": "An Or() statement will signal the start of a separate group of Conditions",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "An ShouldNot() statement will inverse the subsequent conditions",
+      "dotnet": "passed",
+      "rules": [
+        "should-not-following-conditions-inversed",
+        "should-not-following-conditions-inversed-2",
+        "should-not-following-conditions-inversed-3",
+        "should-not-following-conditions-inversed-4"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "Conditions can be chained together using 'and' logic.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Conditions can be grouped together using 'or' logic.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "If a condition fails then a list of failing types should be returned.",
+      "dotnet": "passed",
+      "rules": [
+        "get-result-failed-return-failed-types"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "If a condition fails using ShouldNot logic then a list of failing types should be returned.",
+      "dotnet": "passed",
+      "rules": [
+        "get-result-failed-should-not-return-failed-types"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "If a condition succeeds then a list of failing types should be empty.",
+      "dotnet": "passed",
+      "rules": [
+        "get-result-success-return-empty-failed-types"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveCustomAttribute",
+      "dotnet": "passed",
+      "rules": [
+        "have-custom-attribute"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveCustomAttributeOrInherit",
+      "dotnet": "passed",
+      "rules": [
+        "have-custom-attribute-or-inherit"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "ImplementInterface",
+      "dotnet": "passed",
+      "rules": [
+        "implement-interface"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "Inherit",
+      "dotnet": "passed",
+      "rules": [
+        "inherit"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "MeetCustomRule",
+      "dotnet": "passed",
+      "rules": [
+        "meet-custom-rule"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "NotHaveCustomAttribute",
+      "dotnet": "passed",
+      "rules": [
+        "not-have-custom-attribute"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "NotHaveCustomAttributeOrInherit",
+      "dotnet": "passed",
+      "rules": [
+        "not-have-custom-attribute-or-inherit"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "NotImplementInterface",
+      "dotnet": "passed",
+      "rules": [
+        "not-implement-interface"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "NotInherit",
+      "dotnet": "passed",
+      "rules": [
+        "not-inherit"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "BeInternal",
+      "dotnet": "passed",
+      "rules": [
+        "be-internal"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BeNested",
+      "dotnet": "passed",
+      "rules": [
+        "be-nested"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BePrivate",
+      "dotnet": "passed",
+      "rules": [
+        "be-private"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BePrivateProtected",
+      "dotnet": "passed",
+      "rules": [
+        "be-private-protected"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BeProtected",
+      "dotnet": "passed",
+      "rules": [
+        "be-protected"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BeProtectedInternal",
+      "dotnet": "passed",
+      "rules": [
+        "be-protected-internal"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BePublic",
+      "dotnet": "passed",
+      "rules": [
+        "be-public"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeInternal",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-internal"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeNested",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-nested"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBePrivate",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-private"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBePrivateProtected",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-private-protected"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeProtected",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-protected"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeProtectedInternal",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-protected-internal"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBePublic",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-public"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BeUsedByAny",
+      "dotnet": "passed",
+      "rules": [
+        "be-used-by-any"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "NotBeUsedByAny",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-used-by-any"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "Types can be selected if they do not have a dependency on all the items in a list.",
+      "dotnet": "passed",
+      "rules": [
+        "not-have-dependency-on-all"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "Types can be selected if they do not have a dependency on another type.",
+      "dotnet": "passed",
+      "rules": [
+        "not-have-dependency-on-any"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "Types can be selected if they do not have a dependency on any item in a list.",
+      "dotnet": "passed",
+      "rules": [
+        "not-have-dependency-on-any-many"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "Types can be selected if they have a dependency on a specific item.",
+      "dotnet": "passed",
+      "rules": [
+        "have-dependency-on-any"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "Types can be selected if they have a dependency on all the items in a list.",
+      "dotnet": "passed",
+      "rules": [
+        "have-dependency-on-all"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "Types can be selected if they have a dependency on any item in a list.",
+      "dotnet": "passed",
+      "rules": [
+        "have-dependency-on-any-many"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "Types can be selected if they have a dependency that is not on the a list.",
+      "dotnet": "passed",
+      "rules": [
+        "have-dependency-other-than"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "Types can be selected if they only have a dependency on any item in a list.",
+      "dotnet": "passed",
+      "rules": [
+        "have-name-starting-with"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "HaveNumberOfLinesOfCodeGreaterThan",
+      "dotnet": "passed",
+      "rules": [
+        "have-number-of-lines-of-code-greater-than"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveNumberOfLinesOfCodeLowerThan",
+      "dotnet": "passed",
+      "rules": [
+        "have-number-of-lines-of-code-lower-than"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "BeOfType",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "HaveName",
+      "dotnet": "passed",
+      "rules": [
+        "have-name"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "HaveNameEndingWith",
+      "dotnet": "passed",
+      "rules": [
+        "have-name-ending-with"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "HaveNameMatching",
+      "dotnet": "passed",
+      "rules": [
+        "have-name-matching"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "HaveNameStartingWith",
+      "dotnet": "passed",
+      "rules": [
+        "have-name-starting-with-2"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "HaveNameStartingWith_StringComparison",
+      "dotnet": "passed",
+      "rules": [
+        "have-name-starting-with-string-comparison"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeOfType",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "NotHaveName",
+      "dotnet": "passed",
+      "rules": [
+        "not-have-name"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotHaveNameEndingWith",
+      "dotnet": "passed",
+      "rules": [
+        "not-have-name-ending-with"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotHaveNameMatching",
+      "dotnet": "passed",
+      "rules": [
+        "not-have-name-matching"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotHaveNameStartingWith",
+      "dotnet": "passed",
+      "rules": [
+        "not-have-name-starting-with"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotHaveNameStartingWith_StringComparison",
+      "dotnet": "passed",
+      "rules": [
+        "not-have-name-starting-with-string-comparison"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotResideInNamespace",
+      "dotnet": "passed",
+      "rules": [
+        "not-reside-in-namespace-matches-found-class-selected"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotResideInNamespaceContaining",
+      "dotnet": "passed",
+      "rules": [
+        "not-reside-in-namespace-containing"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotResideInNamespaceEndingWith",
+      "dotnet": "passed",
+      "rules": [
+        "not-reside-in-namespace-ending-with"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotResideInNamespaceMatching",
+      "dotnet": "passed",
+      "rules": [
+        "not-reside-in-namespace-matching"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotResideInNamespaceStartingWith",
+      "dotnet": "passed",
+      "rules": [
+        "not-reside-in-namespace-starting-with"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "ResideInNamespace",
+      "dotnet": "passed",
+      "rules": [
+        "reside-in-namespace"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "ResideInNamespaceContaining",
+      "dotnet": "passed",
+      "rules": [
+        "reside-in-namespace-containing"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "ResideInNamespaceEndingWith",
+      "dotnet": "passed",
+      "rules": [
+        "reside-in-namespace-ending-with"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "ResideInNamespaceMatching",
+      "dotnet": "passed",
+      "rules": [
+        "reside-in-namespace-matching"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "ResideInNamespaceStartingWith",
+      "dotnet": "passed",
+      "rules": [
+        "reside-in-namespace-starting-with"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BeImmutable",
+      "dotnet": "passed",
+      "rules": [
+        "be-immutable"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "BeImmutableExternally",
+      "dotnet": "passed",
+      "rules": [
+        "be-immutable-externally"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "BeMutable",
+      "dotnet": "passed",
+      "rules": [
+        "be-mutable"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "BeStateless",
+      "dotnet": "passed",
+      "rules": [
+        "be-stateless"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "DoNotHavePublicConstructor",
+      "dotnet": "passed",
+      "rules": [
+        "not-have-public-constructor"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveFileNameMatchingTypeName_Should",
+      "dotnet": "passed",
+      "rules": [
+        "have-file-name-matching-type-name-should"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveFileNameMatchingTypeName_ShouldNot",
+      "dotnet": "passed",
+      "rules": [
+        "have-file-name-matching-type-name-should-not"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveMatchingTypeWithName_Should",
+      "dotnet": "passed",
+      "rules": [
+        "have-matching-type-with-name-should"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveMatchingTypeWithName_ShouldNot",
+      "dotnet": "passed",
+      "rules": [
+        "have-matching-type-with-name-should-not"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveParameterlessConstructor",
+      "dotnet": "passed",
+      "rules": [
+        "have-parameterless-constructor"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HavePublicConstructor",
+      "dotnet": "passed",
+      "rules": [
+        "have-public-constructor"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveSomeNonNullableMembers",
+      "dotnet": "passed",
+      "rules": [
+        "have-some-non-nullable-members"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveSourceFilePathMatchingTypeNamespace_Should",
+      "dotnet": "passed",
+      "rules": [
+        "have-source-file-path-matching-type-namespace-should"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveSourceFilePathMatchingTypeNamespace_ShouldNot",
+      "dotnet": "passed",
+      "rules": [
+        "have-source-file-path-matching-type-namespace-should-not"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "NotHaveParameterlessConstructor",
+      "dotnet": "passed",
+      "rules": [
+        "not-have-parameterless-constructor"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "OnlyHaveNonNullableMembers",
+      "dotnet": "passed",
+      "rules": [
+        "only-have-non-nullable-members"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "OnlyHaveNullableMembers",
+      "dotnet": "passed",
+      "rules": [
+        "only-have-nullable-members"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "BeAbstract",
+      "dotnet": "passed",
+      "rules": [
+        "be-abstract"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BeGeneric",
+      "dotnet": "passed",
+      "rules": [
+        "be-generic"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BeSealed",
+      "dotnet": "passed",
+      "rules": [
+        "be-sealed"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BeStatic",
+      "dotnet": "passed",
+      "rules": [
+        "be-static"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeAbstract",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-abstract"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeGeneric",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-generic"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeSealed",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-sealed"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeStatic",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-static"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BeClasses",
+      "dotnet": "passed",
+      "rules": [
+        "be-classes"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BeDelegates",
+      "dotnet": "passed",
+      "rules": [
+        "be-delegates"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BeEnums",
+      "dotnet": "passed",
+      "rules": [
+        "be-enums"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BeInterfaces",
+      "dotnet": "passed",
+      "rules": [
+        "be-interfaces"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "BeStructures",
+      "dotnet": "passed",
+      "rules": [
+        "be-structures"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeClasses",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-classes"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeDelegates",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-delegates"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeEnums",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-enums"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeInterfaces",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-interfaces"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "NotBeStructures",
+      "dotnet": "passed",
+      "rules": [
+        "not-be-struc"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "Finds a dependency in a P/Invoke.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a captured variable by lambda closure.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a catch block.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a catch statement.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a default interface method body.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a delegate declaration.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a finally block.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a generic class constraint.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a generic method constraint.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a generic type argument.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericMethodTypeArgument))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a generic type argument.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.GenericMethodTypeArgumentOneOpenOneClosedTypeArgument<>))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a method's argument.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a method's parameter.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a method's return type.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a private constructor.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a private field.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a private method's body.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a private property.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a property getter.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a property setter.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a public constructor.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a public event's add accessor.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a public event's remove accessor.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a public event.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a public field.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a public indexer.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a public property.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a static local function body.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a switch pattern matching.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in a yield return statement.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an async method.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an attribute.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnClass))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an attribute.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnEvent))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an attribute.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnField))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an attribute.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnMethod))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an attribute.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnParameter))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an attribute.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnProperty))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an attribute.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.AttributeOnReturnValue))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an exception filter.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an implemented interface.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an inherited base class.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an instruction invocation (throw).",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an instruction invocation.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionCtor))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an instruction invocation.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionStaticClassTypeArgument))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in an instruction invocation.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyLocation.InstructionStaticMethodTypeArgument))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency in using statement.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a Dependency ExampleDependency[] in GenericClass<ExampleDependency>[].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency<double>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency<int>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a NestedDependencyTree.NestedLevel1.NestedLevel2<double>.NestedDependency",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a NestedDependencyTree.NestedLevel1.NestedLevel2<double>.NestedDependency<int>",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a NestedDependencyTree.NestedLevel1.NestedLevel2<int>.NestedDependency.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a NestedDependencyTree.NestedLevel1.NestedLevel2<int>.NestedDependency<double>",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a NestedDependencyTree.NestedLevel1.NestedLevel2<int>.NestedDependency<int>",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency ArrayJagged in ConstStringFieldValue.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency ExampleDependency in ExampleDependency<>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency ExampleDependency in ExampleDependency<int>[].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency ExampleDependency&.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency ExampleDependency<>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency ExampleDependency<string>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency ExampleDependency<string>[].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency ExampleDependency[,,,].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency ExampleDependency[].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency ExampleDependency[][].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency List<ExampleDependency> in GenericClass<ExampleDependency>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency StructDependency* in StructDependency.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency Tuple<int, double> in Tuple<int, ExampleDependency>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find dependency ExampleDependency<string> in ExampleDependency<int>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency in NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency<int> in NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency<int>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a NestedDependencyTree.NestedLevel1.NestedLevel2<int>.NestedDependency in NestedDependencyTree.NestedLevel1.NestedLevel2<int>.NestedDependency.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a NestedDependencyTree.NestedLevel1.NestedLevel2<int>.NestedDependency<int> in NestedDependencyTree.NestedLevel1.NestedLevel2<int>.NestedDependency<int>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency Array in ConstStringFieldValue.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency in ExampleDependency&.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency in ExampleDependency.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency in ExampleDependency[,,,].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency in ExampleDependency[].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency in ExampleDependency[][].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency in GenericClass<ExampleDependency>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency in GenericClass<ExampleDependency>[].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency in GenericClass<GenericClass<ExampleDependency>>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency in Tuple<int, ExampleDependency>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency in method's parameter passed by reference.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency in method's parameter passed by reference.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency in method's parameter passed by reference.(input: typeof(NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef))",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency& in ExampleDependency&.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency<> in ExampleDependency<int>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency<> in ExampleDependency<int>[].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency<int> in ExampleDependency<int>, specified as string (GenericDependency<int>)",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency<int> in ExampleDependency<int>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency<int> in ExampleDependency<int>[].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency<int>[] in ExampleDependency<int>[].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency[,,,] in ExampleDependency[,,,]. ",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency[] in ExampleDependency[].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency[] in ExampleDependency[][].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency ExampleDependency[][] in ExampleDependency[][].",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency GenericClass<ExampleDependency> in GenericClass<ExampleDependency>[]&.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency GenericClass<ExampleDependency>& in GenericClass<ExampleDependency>&.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency GenericClass<ExampleDependency>[] in GenericClass<ExampleDependency>[]&.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency GenericClass<ExampleDependency>[]& in GenericClass<ExampleDependency>[]&.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency GenericClass<GenericClass<ExampleDependency>> in GenericClass<GenericClass<ExampleDependency>>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency StaticGenericDependency<> in StaticGenericDependency<int>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency StaticType in BaseCtorCall.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency StructDependency in StructDependency*.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency StructDependency* in StructDependency*.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Finds a dependency Tuple<int, ExampleDependency> in Tuple<int, ExampleDependency>.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Time to search all dependencies ~ O(n+m), n - total number of members in all input types; m - number of dependencies to search",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Time to search any dependency ~ O(n+m), n - total number of members in all input types; m - number of dependencies to search",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ALL dependencies returns types that have a dependency on all the items in the list, but cannot have a dependency that is not in the list.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ALL dependencies returns types that have a dependency on all the items in the list.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ALL dependencies returns types that have a dependency on all the items in the list.(dependecies: [\"NetArchTest.TestStructure.Dependencies.Examples.Ex\"···, \"NetArchTest.TestStructure.Dependencies.Examples.An\"···, \"NetArchTest.TestStructure.Dependencies\", \"NetArchTest.TestStructure.Dependencies.Examples\"], comment: \"List contains overlapping namespaces.\")",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ALL dependencies returns types that have a dependency on all the items in the list.(dependecies: [\"NetArchTest.TestStructure.Dependencies.Examples.Ex\"···, \"NetArchTest.TestStructure.Dependencies.Examples.An\"···, \"NetArchTest.TestStructure.Dependencies\"], comment: \"List contains overlapping dependencies.\")",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ALL dependencies returns types that have a dependency on all the items in the list.(dependecies: [\"NetArchTest.TestStructure.Dependencies.Examples.Ex\"···, \"NetArchTest.TestStructure.Dependencies.Examples.An\"···, \"NetArchTest.TestStructure.Dependencies.Examples.An\"···], comment: \"List contains duplicated dependencies.\")",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ALL dependencies returns types that have a dependency on all the items in the list.(dependecies: [\"NetArchTest.TestStructure.Dependencies.Examples.Ex\"···, \"NetArchTest.TestStructure.Dependencies.Examples.An\"···], comment: \"List contains two distinct dependencies.\")",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ANY dependencies returns types that have a dependency on at least one item in the list, but cannot have a dependency that is not in the list.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ANY dependencies returns types that have a dependency on at least one item in the list.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ANY dependencies returns types that have a dependency on at least one item in the list.(dependecies: [\"NetArchTest.TestStructure.Dependencies\", \"NetArchTest.TestStructure.Dependencies\"], comment: \"List contains duplicated ancestor namespace.\")",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ANY dependencies returns types that have a dependency on at least one item in the list.(dependecies: [\"NetArchTest.TestStructure.Dependencies\", \"NetArchTest.TestStructure.Dependencies.Examples\"], comment: \"List contains overlapping namespaces.\")",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ANY dependencies returns types that have a dependency on at least one item in the list.(dependecies: [\"NetArchTest.TestStructure.Dependencies\"], comment: \"List contains only ancestor namespace.\")",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ANY dependencies returns types that have a dependency on at least one item in the list.(dependecies: [\"NetArchTest.TestStructure.Dependencies.Examples.Ex\"···, \"NetArchTest.TestStructure.Dependencies.Examples.An\"···, \"NetArchTest.TestStructure.Dependencies\"], comment: \"List contains overlapping dependencies.\")",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ANY dependencies returns types that have a dependency on at least one item in the list.(dependecies: [\"NetArchTest.TestStructure.Dependencies.Examples.Ex\"···, \"NetArchTest.TestStructure.Dependencies.Examples.An\"···], comment: \"List contains two distinct dependencies.\")",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A search for types with ANY or NONE dependencies returns types that may have a dependency on an item in the list, but cannot have a dependency that is not in the list.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "FindTypesThatAreUsedByAny",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A dependency search will not return false positives for pattern matched classes.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A dependency search will not return false positives for pattern matched namespaces.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency from the namespace matching partially to the namespace of actually referenced type.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency in an indirect reference.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency that differs only in case from actually referenced type.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find a dependency that only partially matches actually referenced type.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Does not find things that are not dependency at all",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A policy can be evaluated more than once",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A policy's name and description are associated with the result set",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A rule name and description will be associated with each result",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A rule that is added to a policy will be executed when the policy is evaluated",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "An empty policy will return an empty result set when evaluated",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Rule names and descriptions are optional",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Rules can be aggregated together into a single policy",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "An Or() statement will signal the start of a separate group of predicates",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Predicates can be chained together using 'and' logic.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Predicates can be grouped together using 'or' logic.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreInheritedByAnyType",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotInheritedByAnyType",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotHaveCustomAttribute",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotHaveCustomAttributeOrInherit",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotImplementInterface",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotInherit",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "HaveCustomAttribute",
+      "dotnet": "passed",
+      "rules": [
+        "have-custom-attribute"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveCustomAttributeOrInheri_FromDifferentAssemblyt",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "HaveCustomAttributeOrInherit",
+      "dotnet": "passed",
+      "rules": [
+        "have-custom-attribute-or-inherit"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveCustomAttribute_FromDifferentAssembly",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "HaveCustomAttribute_Generic_Closed",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "HaveCustomAttribute_Generic_Unbound",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "HaveCustomAttribute_Nested",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "ImplementInterface",
+      "dotnet": "passed",
+      "rules": [
+        "implement-interface"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "ImplementInterface_OpenGeneric",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Inherit - Types can be selected if they inherit from a type from a different assembly",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Inherit - Types can be selected if they inherit from a type.",
+      "dotnet": "passed",
+      "rules": [
+        "inherit"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "MeetCustomRule",
+      "dotnet": "passed",
+      "rules": [
+        "meet-custom-rule"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "MeetCustomRule2",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreInternal",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNested",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotInternal",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotNested",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotPrivate",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotPrivateProtected",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotProtected",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotProtectedInternal",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotPublic",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "ArePrivate",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "ArePrivateProtected",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreProtected",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreProtectedInternal",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "ArePublic",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotUsedByAny",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreUsedByAny",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "HaveDependencyOnAny",
+      "dotnet": "passed",
+      "rules": [
+        "have-dependency-on-any"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "Types can be selected if they do not have a dependency on all the items in a list.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Types can be selected if they do not have a dependency on another type.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Types can be selected if they do not have a dependency on any item in a list.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Types can be selected if they do not have a dependency on any item in a list.",
+      "dotnet": "passed",
+      "rules": [
+        "have-dependency-other-than"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "Types can be selected if they have a dependency on all the items in a list.",
+      "dotnet": "passed",
+      "rules": [
+        "have-dependency-on-all"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "Types can be selected if they have a dependency on any item in a list.",
+      "dotnet": "passed",
+      "rules": [
+        "have-dependency-on-any-many"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "Types can be selected if they only have a dependency on any item in a list.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "HaveNumberOfLinesOfCodeGreaterThan",
+      "dotnet": "passed",
+      "rules": [
+        "have-number-of-lines-of-code-greater-than"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveNumberOfLinesOfCodeLowerThan",
+      "dotnet": "passed",
+      "rules": [
+        "have-number-of-lines-of-code-lower-than"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "AreNotOfType",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreOfType",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotHaveName",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotHaveNameEndingWith",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotHaveNameMatching",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotHaveNameStartingWith",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotHaveNameStartingWith_StringComparison",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotHaveName_Many",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotResideInNamespace",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotResideInNamespaceContaining",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotResideInNamespaceEndingWith",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotResideInNamespaceMatching",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "HaveName",
+      "dotnet": "passed",
+      "rules": [
+        "have-name"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "HaveNameEndingWith",
+      "dotnet": "passed",
+      "rules": [
+        "have-name-ending-with"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "HaveNameEndingWith_StringComparison",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "HaveNameMatching",
+      "dotnet": "passed",
+      "rules": [
+        "have-name-matching"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "HaveNameStartingWith",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "HaveNameStartingWith_Many",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "HaveNameStartingWith_StringComparison",
+      "dotnet": "passed",
+      "rules": [
+        "have-name-starting-with-string-comparison"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "HaveName_Many",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "ResideInNamespace",
+      "dotnet": "passed",
+      "rules": [
+        "reside-in-namespace"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "ResideInNamespaceContaining",
+      "dotnet": "passed",
+      "rules": [
+        "reside-in-namespace-containing"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "ResideInNamespaceEndingWith",
+      "dotnet": "passed",
+      "rules": [
+        "reside-in-namespace-ending-with"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "ResideInNamespaceMatching",
+      "dotnet": "passed",
+      "rules": [
+        "reside-in-namespace-matching"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `GetTypesThat()` calls the helper method `GetTypesThat`, whose result the importer does not evaluate"
+    },
+    {
+      "test": "AreImmutable",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreImmutableExternally",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreMutable",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreStateless",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreStaticless",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotHaveParameterlessConstructor",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "DoNotHavePublicConstructor",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "HaveParameterlessConstructor",
+      "dotnet": "passed",
+      "rules": [
+        "have-parameterless-constructor"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HavePublicConstructor",
+      "dotnet": "passed",
+      "rules": [
+        "have-public-constructor"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "HaveSomeNonNullableMembers",
+      "dotnet": "passed",
+      "rules": [
+        "have-some-non-nullable-members"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "OnlyHaveNonNullableMembers",
+      "dotnet": "passed",
+      "rules": [
+        "only-have-non-nullable-members"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "OnlyHaveNullableMembers",
+      "dotnet": "passed",
+      "rules": [
+        "only-have-nullable-members"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "AreAbstract",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreGeneric",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotAbstract",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotGeneric",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotRecords",
+      "dotnet": "notexecuted",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "dotnet test: notexecuted"
+    },
+    {
+      "test": "AreNotSealed",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotStatic",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreRecords",
+      "dotnet": "notexecuted",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "dotnet test: notexecuted"
+    },
+    {
+      "test": "AreSealed",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreStatic",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreClasses",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreDelegates",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreEnums",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreInterfaces",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotClasses",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotDelegates",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotEnums",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotInterfaces",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreNotStructures",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "AreStructures",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Invalid tree has dependencies between slices",
+      "dotnet": "passed",
+      "rules": [
+        "invalid-tree-has-dependencies-between-slices"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "Types are divided correctly into slices for a valid tree",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Valid tree does not have dependencies between slices",
+      "dotnet": "passed",
+      "rules": [
+        "valid-tree-does-not-have-dependencies-between-slices"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `fixture` is not a local, field or property the importer can read"
+    },
+    {
+      "test": "<Module> types should be excluded from the current domain.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A types collection can be created from a filename.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "A types collection can be created from a path.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "InAssembly can load types from referenced assemblies",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "InAssembly can not load types from referenced assemblies",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Nested private types should be included in the current domain.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Nested public types should be included in the current domain.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "System types should be excluded from the current domain.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Types that reside in namespace that has \"Module\" prefix but is not <Module> namespace should be included in the current domain. ",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "Types that reside in namespace that has \"System\" prefix but is not system namespace should be included in the current domain. ",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "When loading a type a BadImageFormatException will be caught and an empty list will be returned.",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    }
+  ],
+  "agrees": false
+}

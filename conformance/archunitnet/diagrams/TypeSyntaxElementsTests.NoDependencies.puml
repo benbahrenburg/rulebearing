@@ -1,0 +1,4 @@
+@startuml
+[A] <<TestAssembly.Diagram.NoDependencies.Independent.*>>
+[B] <<TestAssembly.Diagram.NoDependencies.SomeNamespace.*>>
+@enduml

@@ -1,0 +1,30 @@
+# testbeds/init: `rulebearing init --dry-run` on infinitered/ignite at e829d2f922c5568a59a77bfb6232aeb500be3f13
+# (a cruise of src with this configuration exits 0 (30 findings baselined)). Regenerate with testbeds/init/run.sh.
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: TypeScript, jest.
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: [rulebearing:typescript, rulebearing:recommended]
+languages:
+  typescript:
+    tsConfig: { fileName: tsconfig.json }
+    tsPreCompilationDeps: true
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+            - "\\.(spec|test)\\.[cm]?[jt]sx?$"
+            - "(^|/)__tests__/"
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    # not-to-unresolvable: 30 (entries elided)

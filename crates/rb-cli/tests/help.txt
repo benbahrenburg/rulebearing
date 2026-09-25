@@ -1,0 +1,39 @@
+rulebearing: one architecture rule set for TypeScript, .NET and Python
+
+Usage: rulebearing <COMMAND>
+
+Commands:
+  cruise      Extract, evaluate and report: dependency-cruiser's `depcruise`
+  fmt         Re-report a saved result without extracting: dependency-cruiser's `depcruise-fmt`
+  rules       Every rule, its family, severity and statistics
+  explain     One rule: its sentence, its violations and the edges it matched
+  test        Run each rule's examples against a synthetic graph
+  can-import  Would this import be allowed? Answers from the graph, before the import is written
+  count       The edges a ratchet counts, against its budget
+  config      Convert, expand or lint a configuration
+  hooks       Install agent hooks
+  summary     A brief for an agent starting a session
+  impact      What a file is subject to, before an edit
+  place       Where a new module with these imports would be legal
+  propose     Draft a rule from globs, a selector or one forbidden edge, with what it matches today
+  docs        Render the rules as AGENTS.md, a contributing table or a Claude Code skill
+  decisions   The decision records the rules cite, checked; `decisions new` scaffolds one
+  attest      Write or verify a receipt of the configuration, inputs and results
+  init        Write a first configuration from what the repository holds, passing on its first run
+  adopt       Put an existing dependency-cruiser configuration behind a green gate, with a baseline
+  baseline    Write the current violations to a known-violations file, as depcruise-baseline does
+  import      Translate ArchUnitNET, NetArchTest, import-linter or eslint rules into a
+              rulebearing.yaml
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+
+Exit codes:
+  0       no error-severity violation
+  1-255   the number of error-severity violations, capped at 255, from a reporter that gates:
+          err, err-long, null, teamcity, azure-devops, github-annotations, agent
+          (json, csv and text exit 0, as in dependency-cruiser)
+  2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule
+  3       the configuration is invalid
+A run with exactly 2 or 3 error violations also exits 2 or 3; the report says which it was.

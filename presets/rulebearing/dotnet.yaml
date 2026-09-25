@@ -1,0 +1,28 @@
+# rulebearing:dotnet. Original to Rulebearing. The .NET defaults of
+# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 3, and nothing else: build
+# output and generated sources are not modules (the obj/ and bin/ exclusion is scoped to C#
+# sources, the only .NET modules, so a TypeScript bin/ folder beside them is kept), and the files
+# the runtime or the tooling enters by convention rather than by reference are not orphans.
+# Composed by rulebearing:recommended; a .NET-only repository writes
+# `extends: [rulebearing:dotnet, rulebearing:recommended]`, and these settings win. Source:
+# docs/artifacts/design.md#one-engine-three-languages-one-monorepo. Requirement: FR-CFG-06.
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        comment: "A module nothing imports and that imports nothing is usually dead code."
+        fix: "Delete the module, import it from where it belongs, or add its path to this rule's from.pathNot if it is an entry point or a configuration file."
+        severity: warn
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)(Program|Startup|AssemblyInfo)\\.cs$"
+            - "(^|/)Migrations/"
+        to: {}
+options:
+  exclude:
+    path:
+      - "(^|/)(obj|bin)/.+\\.cs$"
+      - "\\.g\\.cs$"
+      - "\\.Designer\\.cs$"
+      - "(^|/)GlobalUsings\\.g\\.cs$"

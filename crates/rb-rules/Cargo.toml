@@ -1,0 +1,27 @@
+[package]
+name = "rb-rules"
+description = "Rulebearing rule engine: matchers, cycles, reachability, element predicates, slices, diagrams"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+rb-model = { workspace = true }
+rb-config = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+regex = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+# Conformance gate 2 reads the ported cases (tests/gate2.rs).
+serde_yaml = { workspace = true }
+
+[lints]
+workspace = true

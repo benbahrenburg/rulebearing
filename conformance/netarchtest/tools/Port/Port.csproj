@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Ports NetArchTest's own unit tests to conformance gate 2: each upstream chain is run by
+       NetArchTest 1.3.2 itself over the committed fixtures, and its verdict is written beside the
+       element rule that maps it (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md,
+       Step 7; docs/adr/0009-conformance-suites-as-specification.md). ../../README.md says how to
+       run it. The assembly takes the upstream test project's name, so the InternalsVisibleTo that
+       NetArchTest.Rules and NetArchTest.TestStructure grant their tests reaches the same internal
+       types and the dependency search the upstream tests call. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>NetArchTest.Rules.UnitTests</AssemblyName>
+    <RootNamespace>Rulebearing.Conformance.NetArchTest</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NetArchTest.Rules" Version="[1.3.2]" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="NetArchTest.TestStructure">
+      <HintPath>../../fixtures/NetArchTest.TestStructure.dll</HintPath>
+    </Reference>
+    <Reference Include="NetArchTest.CrossAssemblyTest.A">
+      <HintPath>../../fixtures/NetArchTest.CrossAssemblyTest.A.dll</HintPath>
+    </Reference>
+    <Reference Include="NetArchTest.CrossAssemblyTest.B">
+      <HintPath>../../fixtures/NetArchTest.CrossAssemblyTest.B.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

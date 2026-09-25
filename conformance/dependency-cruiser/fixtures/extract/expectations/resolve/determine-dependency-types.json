@@ -1,0 +1,759 @@
+[
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#1",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes sorts local dependencies into 'local'",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "src/bla/localthing"
+      },
+      "moduleName": "./localthing",
+      "manifest": null,
+      "fileDir": null,
+      "resolveOptions": null,
+      "baseDir": null
+    },
+    "expected": [
+      "local"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#2",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes sorts core modules into 'core'",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "fs",
+        "coreModule": true
+      },
+      "moduleName": "fs",
+      "manifest": null,
+      "fileDir": null,
+      "resolveOptions": null,
+      "baseDir": null
+    },
+    "expected": [
+      "core"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#3",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes sorts unresolvable modules into 'unknown'",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": true,
+        "resolved": "unresolvable-thing"
+      },
+      "moduleName": "unresolvable-thing",
+      "manifest": null,
+      "fileDir": null,
+      "resolveOptions": null,
+      "baseDir": null
+    },
+    "expected": [
+      "unknown"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#4",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes sorts node_modules into 'npm-unknown' when no package dependencies were supplied",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "node_modules/cool-module/main/index/js"
+      },
+      "moduleName": "cool-module",
+      "manifest": null,
+      "fileDir": null,
+      "resolveOptions": null,
+      "baseDir": null
+    },
+    "expected": [
+      "npm-unknown"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#5",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes sorts node_modules into 'npm-no-pkg' when they're not in the supplied package dependencies",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "module": "cool-module",
+        "couldNotResolve": false,
+        "resolved": "node_modules/cool-module/main/index.js"
+      },
+      "moduleName": "cool-module",
+      "manifest": {},
+      "fileDir": null,
+      "resolveOptions": null,
+      "baseDir": null
+    },
+    "expected": [
+      "npm-no-pkg"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#6",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes sorts node_modules into 'npm' when they're in the supplied package dependencies",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "module": "cool-module",
+        "couldNotResolve": false,
+        "resolved": "node_modules/cool-module/main/index.js"
+      },
+      "moduleName": "cool-module",
+      "manifest": {
+        "dependencies": {
+          "cool-module": "1.2.3"
+        }
+      },
+      "fileDir": null,
+      "resolveOptions": null,
+      "baseDir": null
+    },
+    "expected": [
+      "npm"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#7",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes sorts node_modules into 'npm-dev' when they're in the supplied package devDependencies",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "node_modules/cool-module/main/index.js"
+      },
+      "moduleName": "cool-module",
+      "manifest": {
+        "devDependencies": {
+          "cool-module": "1.2.3"
+        }
+      },
+      "fileDir": null,
+      "resolveOptions": null,
+      "baseDir": null
+    },
+    "expected": [
+      "npm-dev"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#8",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes sorts node_modules into 'npm-dev' when they're in the supplied package devDependencies with an @types scope",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "node_modules/@types/my-totally-weird-types/index.d.ts"
+      },
+      "moduleName": "my-totally-weird-types",
+      "manifest": {
+        "devDependencies": {
+          "@types/my-totally-weird-types": "1.2.3"
+        }
+      },
+      "fileDir": null,
+      "resolveOptions": null,
+      "baseDir": null
+    },
+    "expected": [
+      "npm-dev"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#9",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes Only picks the 'npm' dependency-type when it's in the manifest as a regular dependency and a devDependencies @types dependency ",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "node_modules/snodash/index.js"
+      },
+      "moduleName": "snodash",
+      "manifest": {
+        "dependencies": {
+          "snodash": "1.2.3"
+        },
+        "devDependencies": {
+          "@types/snodash": "1.2.3"
+        }
+      },
+      "fileDir": null,
+      "resolveOptions": null,
+      "baseDir": null
+    },
+    "expected": [
+      "npm"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#10",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes sorts node_modules into 'npm-no-pkg' when they're in the supplied package devDependencies with an @types scope, but the resolve modules don't include 'node_modules/@types'",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "node_modules/@types/my-totally-weird-types/index.d.ts"
+      },
+      "moduleName": "my-totally-weird-types",
+      "manifest": {
+        "devDependencies": {
+          "@types/my-totally-weird-types": "1.2.3"
+        }
+      },
+      "fileDir": "whatever",
+      "resolveOptions": {
+        "resolve": {
+          "modules": [
+            "node_modules"
+          ]
+        },
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "baseDir": null
+    },
+    "expected": [
+      "npm-no-pkg"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#11",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes sorts node_modules into 'npm' and 'npm-dev' when they're both the deps and the devDeps",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "node_modules/cool-module/main/index.js"
+      },
+      "moduleName": "cool-module",
+      "manifest": {
+        "dependencies": {
+          "cool-module": "1.2.3"
+        },
+        "devDependencies": {
+          "cool-module": "1.2.3"
+        }
+      },
+      "fileDir": null,
+      "resolveOptions": null,
+      "baseDir": null
+    },
+    "expected": [
+      "npm",
+      "npm-dev"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#12",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes only sorts up to the first / ",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "node_modules/cool-module/wappie.js"
+      },
+      "moduleName": "cool-module/wappie",
+      "manifest": {
+        "dependencies": {
+          "cool-module": "1.2.3"
+        },
+        "devDependencies": {
+          "cool-module/wappie": "1.2.3"
+        }
+      },
+      "fileDir": null,
+      "resolveOptions": null,
+      "baseDir": null
+    },
+    "expected": [
+      "npm"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#13",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes sorts node_modules into 'npm-no-pkg' when they're in a weird *Dependencies in the package.json",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "node_modules/cool-module/main/index.js"
+      },
+      "moduleName": "cool-module",
+      "manifest": {
+        "vagueDependencies": {
+          "cool-module": "1.2.3"
+        }
+      },
+      "fileDir": null,
+      "resolveOptions": null,
+      "baseDir": null
+    },
+    "expected": [
+      "npm-no-pkg"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#14",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes classifies fixed subpath imports as aliased & aliased-subpath-import",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "src/i-was-aliased.js"
+      },
+      "moduleName": "#the-alias",
+      "manifest": {
+        "imports": {
+          "#the-alias": "./src/i-was-aliased.js"
+        }
+      },
+      "fileDir": ".",
+      "resolveOptions": {
+        "resolve": {
+          "modules": [
+            "node_modules"
+          ]
+        },
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "baseDir": null
+    },
+    "expected": [
+      "aliased",
+      "aliased-subpath-import",
+      "local"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#15",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes classifies wildcard subpath imports as aliased & aliased-subpath-import",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "src/folder/source.mjs"
+      },
+      "moduleName": "#some/folder/source.mjs",
+      "manifest": {
+        "imports": {
+          "#*": "./src/*"
+        }
+      },
+      "fileDir": ".",
+      "resolveOptions": {
+        "resolve": {
+          "modules": [
+            "node_modules"
+          ]
+        },
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "baseDir": null
+    },
+    "expected": [
+      "aliased",
+      "aliased-subpath-import",
+      "local"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#16",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes classifies subpath imports that resolve to an external modules both as external module and as aliased",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "node_modules/cool-module/main/index.js"
+      },
+      "moduleName": "#the-alias",
+      "manifest": {
+        "imports": {
+          "#the-alias": "cool-module"
+        }
+      },
+      "fileDir": ".",
+      "resolveOptions": {
+        "resolve": {
+          "modules": [
+            "node_modules"
+          ]
+        },
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "baseDir": null
+    },
+    "expected": [
+      "aliased",
+      "aliased-subpath-import",
+      "npm-no-pkg"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#17",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes classifies subpath imports that resolve to an builtin module both as core module and as aliased",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "test",
+        "coreModule": true
+      },
+      "moduleName": "#the-alias",
+      "manifest": {
+        "imports": {
+          "#the-alias": "test"
+        }
+      },
+      "fileDir": ".",
+      "resolveOptions": {
+        "resolve": {
+          "modules": [
+            "node_modules"
+          ]
+        },
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "baseDir": null
+    },
+    "expected": [
+      "aliased",
+      "aliased-subpath-import",
+      "core"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#18",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes does not classify modules starting with # that aren't subpath imports as aliased (but as 'undetermined')",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "src/i-was-not-aliased.js"
+      },
+      "moduleName": "#not-the-alias",
+      "manifest": {
+        "imports": {
+          "#the-alias": "src/i-was-aliased.js"
+        }
+      },
+      "fileDir": ".",
+      "resolveOptions": {
+        "resolve": {
+          "modules": [
+            "node_modules"
+          ]
+        },
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "baseDir": null
+    },
+    "expected": [
+      "undetermined"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#19",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes classifies webpack aliased modules as aliased & aliased-webpack",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "src/wappie.js"
+      },
+      "moduleName": "@wappie",
+      "manifest": {},
+      "fileDir": ".",
+      "resolveOptions": {
+        "resolve": {
+          "alias": {
+            "@": "src"
+          }
+        },
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "baseDir": null
+    },
+    "expected": [
+      "aliased",
+      "aliased-webpack",
+      "local"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#20",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes classifies likely TS aliased modules as aliased & aliased-tsconfig",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": {
+        "tsConfig": {
+          "options": {
+            "paths": {
+              "@wappie": [
+                "src"
+              ]
+            }
+          }
+        }
+      },
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "src/wappie.js"
+      },
+      "moduleName": "@wappie",
+      "manifest": {},
+      "fileDir": ".",
+      "resolveOptions": {
+        "resolve": {
+          "tsConfig": "tsconfig.json"
+        },
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "baseDir": null
+    },
+    "expected": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#21",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes has a fallback for weirdistan situations",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "wappie.js"
+      },
+      "moduleName": "cool-module",
+      "manifest": {
+        "cerebralDependencies": {
+          "cool-module": "1.2.3"
+        }
+      },
+      "fileDir": null,
+      "resolveOptions": null,
+      "baseDir": null
+    },
+    "expected": [
+      "undetermined"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#22",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes classifies local, non-node_modules modules as localmodule",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "src/bla/somethinglocal.ts"
+      },
+      "moduleName": "bla/somethinglocal",
+      "manifest": {},
+      "fileDir": "whatever",
+      "resolveOptions": {
+        "resolve": {
+          "modules": [
+            "node_modules",
+            "src"
+          ]
+        },
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "baseDir": null
+    },
+    "expected": [
+      "localmodule"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#23",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes classifies local, non-node_modules modules with an absolute path as localmodule (posix & win32 paths)",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "src/bla/somethinglocal.ts"
+      },
+      "moduleName": "bla/somethinglocal",
+      "manifest": {},
+      "fileDir": "test/extract/resolve/socrates/hemlock/src/bla",
+      "resolveOptions": {
+        "resolve": {
+          "modules": [
+            "node_modules",
+            "<root>/test/extract/resolve/socrates/hemlock/src"
+          ]
+        },
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "baseDir": "test/extract/resolve/socrates/hemlock/src/bla"
+    },
+    "expected": [
+      "localmodule"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#24",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes classifies local, non-node_modules non-modules as undetermined",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "couldNotResolve": false,
+        "resolved": "test/bla/localthing.spec.js"
+      },
+      "moduleName": "test/bla/localthing.spec",
+      "manifest": {},
+      "fileDir": "whatever",
+      "resolveOptions": {
+        "resolve": {
+          "modules": [
+            "node_modules",
+            "src"
+          ]
+        },
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "baseDir": null
+    },
+    "expected": [
+      "undetermined"
+    ]
+  },
+  {
+    "id": "test/extract/resolve/determine-dependency-types.spec.mjs#25",
+    "title": "[U] extract/resolve/determineDependencyTypes - determine dependencyTypes classifies a type only import as a type-only dependency",
+    "call": 1,
+    "surface": "determine-dependency-types",
+    "cwd": ".",
+    "input": {
+      "transpileOptions": null,
+      "dependency": {
+        "dependencyTypes": [
+          "type-only"
+        ],
+        "couldNotResolve": false,
+        "resolved": "src/bla/something-local"
+      },
+      "moduleName": "./something-local",
+      "manifest": {},
+      "fileDir": "whatever",
+      "resolveOptions": {
+        "resolve": {
+          "modules": [
+            "node_modules",
+            "src"
+          ]
+        },
+        "cruise": null,
+        "tsConfig": null,
+        "untagged": true
+      },
+      "baseDir": null
+    },
+    "expected": [
+      "local",
+      "type-only"
+    ]
+  }
+]

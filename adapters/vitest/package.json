@@ -1,0 +1,13 @@
+{
+  "name": "rulebearing-vitest-adapter",
+  "private": true,
+  "description": "Development package for rulebearing/vitest. It is published inside the rulebearing npm package (wrappers/npm), not on its own; see README.md.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run --coverage"
+  }
+}

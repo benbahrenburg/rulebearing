@@ -1,0 +1,39 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{md,yml,yaml,json,toml,ts,js,py}]
+indent_size = 2
+
+[*.cs]
+indent_size = 4
+
+# C# analyzer and style severities, enforced in the build by Directory.Build.props
+# (EnforceCodeStyleInBuild) and checked by `dotnet format --verify-no-changes`.
+# Conventions: CLAUDE.md, C# conventions.
+[*.cs]
+csharp_indent_case_contents = true
+csharp_new_line_before_open_brace = all
+csharp_prefer_braces = true:warning
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_var_elsewhere = false:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_require_accessibility_modifiers = always:warning
+dotnet_style_readonly_field = true:warning
+dotnet_diagnostic.IDE0005.severity = warning    # unnecessary using
+dotnet_diagnostic.IDE0055.severity = warning    # formatting
+dotnet_diagnostic.CA1062.severity = warning     # validate public arguments
+dotnet_diagnostic.CA2007.severity = none        # ConfigureAwait: not a library concern here
+dotnet_diagnostic.CS1591.severity = warning     # missing XML doc on a public member
+
+[*.{csproj,props,targets}]
+indent_size = 2

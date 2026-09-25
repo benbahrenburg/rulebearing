@@ -1,0 +1,132 @@
+[
+  {
+    "id": "test/extract/index.exclude.spec.mjs#1",
+    "title": "[I] extract/index - exclude exclude - exclude.path",
+    "call": 1,
+    "surface": "extract",
+    "cwd": ".",
+    "input": {
+      "files": [
+        "test/extract/__mocks__/exclude/path/es/src"
+      ],
+      "cruiseOptions": {
+        "exclude": {
+          "path": "dynamic-to-circular"
+        }
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "exclude": {
+            "path": "dynamic-to-circular"
+          }
+        },
+        "tsConfig": null
+      },
+      "tsConfig": null
+    },
+    "expected": [
+      {
+        "source": "test/extract/__mocks__/exclude/path/es/src/circular.js",
+        "dependencies": [
+          {
+            "module": "./index",
+            "moduleSystem": "es6",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "import"
+            ],
+            "resolved": "test/extract/__mocks__/exclude/path/es/src/index.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          }
+        ]
+      },
+      {
+        "source": "test/extract/__mocks__/exclude/path/es/src/index.js",
+        "dependencies": []
+      }
+    ]
+  },
+  {
+    "id": "test/extract/index.exclude.spec.mjs#2",
+    "title": "[I] extract/index - exclude exclude - exclude.dynamic",
+    "call": 1,
+    "surface": "extract",
+    "cwd": ".",
+    "input": {
+      "files": [
+        "test/extract/__mocks__/exclude/dynamic/es/src"
+      ],
+      "cruiseOptions": {
+        "exclude": {
+          "dynamic": true
+        }
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "exclude": {
+            "dynamic": true
+          }
+        },
+        "tsConfig": null
+      },
+      "tsConfig": null
+    },
+    "expected": [
+      {
+        "source": "test/extract/__mocks__/exclude/dynamic/es/src/circular.js",
+        "dependencies": [
+          {
+            "module": "./index",
+            "moduleSystem": "es6",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "import"
+            ],
+            "resolved": "test/extract/__mocks__/exclude/dynamic/es/src/index.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          }
+        ]
+      },
+      {
+        "source": "test/extract/__mocks__/exclude/dynamic/es/src/index.js",
+        "dependencies": [
+          {
+            "module": "./dynamic-to-circular",
+            "moduleSystem": "es6",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "import"
+            ],
+            "resolved": "test/extract/__mocks__/exclude/dynamic/es/src/dynamic-to-circular.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          }
+        ]
+      },
+      {
+        "source": "test/extract/__mocks__/exclude/dynamic/es/src/dynamic-to-circular.js",
+        "dependencies": []
+      }
+    ]
+  }
+]

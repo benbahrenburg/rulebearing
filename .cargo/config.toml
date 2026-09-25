@@ -1,0 +1,8 @@
+# Repository commands. `cargo xtask lint` is the one lint entry point for all four languages and
+# includes the documentation link check; see docs/adr/0023-documentation-link-and-lint-gates.md.
+[alias]
+xtask = "run --quiet --package xtask --"
+lint = "run --quiet --package xtask -- lint"
+lint-fix = "run --quiet --package xtask -- lint --fix"
+check-links = "run --quiet --package xtask -- check-links"
+ci = "run --quiet --package xtask -- ci"

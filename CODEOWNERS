@@ -1,0 +1,10 @@
+# Review ownership. One maintainer today; the design's goal is a second by the end of wave 2
+# (docs/artifacts/design.md#open-questions).
+*                       @benbahrenburg
+
+# The documents that govern the rest of the repository.
+/docs/adr/              @benbahrenburg
+/docs/artifacts/        @benbahrenburg
+/docs/plans/            @benbahrenburg
+/CLAUDE.md              @benbahrenburg
+/.github/workflows/     @benbahrenburg

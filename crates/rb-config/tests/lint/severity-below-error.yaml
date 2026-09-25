@@ -1,0 +1,1 @@
+rules: { dependencies: { forbidden: [ { name: quiet, comment: "adr:0001", fix: "Move it.", severity: warn, from: { path: "^src/" }, to: { path: "^lib/" } } ] } }

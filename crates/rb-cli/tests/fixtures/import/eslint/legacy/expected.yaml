@@ -1,0 +1,24 @@
+# Imported from .eslintrc.json by `rulebearing import eslint`.
+# Each rule is preceded by the ESLint setting it came from. Package imports in the configuration were not run, so rules from shareable configurations are not here.
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+rules:
+  dependencies:
+    forbidden:
+      # import/no-restricted-paths (config), zones[0]: {"target":"lib/core","from":"lib/plugins"}
+      - name: no-restricted-paths:1
+        comment: "imported from .eslintrc.json: import/no-restricted-paths zones[0]"
+        severity: warn
+        from:
+          path: "^lib/core(/|$)"
+        to:
+          path: "^lib/plugins(/|$)"
+      # import-x/no-restricted-paths (overrides[0]), zones[0]: {"target":"lib/ui","from":"lib/{db,server}/**","except":["lib/db/types/**"]}
+      # ESLint applied this rule to files matching lib/ui/**; the target above is what the rule checks
+      - name: no-restricted-paths:2
+        comment: "imported from .eslintrc.json: import-x/no-restricted-paths zones[0]"
+        severity: error
+        from:
+          path: "^lib/ui(/|$)"
+        to:
+          path: "^lib/(?:db|server)/.*$"
+          pathNot: "^lib/db/types/.*$"

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Runs the lint entry point and the test suite before a push.
+# Install once: git config core.hooksPath .githooks
+# Skip deliberately: git push --no-verify
+# The hook is a convenience, not the gate; CI is the gate (docs/adr/0025-ci-and-supply-chain-hardening.md).
+set -euo pipefail
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+echo "pre-push: cargo lint"
+cargo lint
+echo "pre-push: cargo test --workspace --all-features"
+cargo test --workspace --all-features --quiet

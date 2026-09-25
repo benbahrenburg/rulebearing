@@ -1,0 +1,13 @@
+<!-- xUnit v3: [Theory, RulebearingRules("rulebearing.yaml")] yields one test per rule.
+     Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H). -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>Rulebearing.TestAdapter.xUnitV3</PackageId>
+    <Description>xUnit v3 data source for Rulebearing: [Theory, RulebearingRules("rulebearing.yaml")] runs one test per architecture rule, failing with the rule's fix text and first violations.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Rulebearing.TestAdapter/Rulebearing.TestAdapter.csproj" />
+    <PackageReference Include="xunit.v3.extensibility.core" Version="$(XunitV3Version)" />
+    <PackageReference Include="xunit.v3.assert" Version="$(XunitV3Version)" />
+  </ItemGroup>
+</Project>

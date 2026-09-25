@@ -1,0 +1,541 @@
+{
+  "modules": [
+    {
+      "source": "System.Runtime",
+      "dependencies": [],
+      "valid": true,
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "framework"
+      ],
+      "language": "dotnet"
+    },
+    {
+      "source": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+      "dependencies": [
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 6,
+          "dependencyKind": "inherits"
+        },
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "dependencyKind": "body",
+          "member": "System.Object..ctor"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "MethodDependencyAssembly.dll",
+      "namespaces": [
+        "MethodDependencyNamespace"
+      ],
+      "attribution": "pdb"
+    }
+  ],
+  "summary": {
+    "violations": [],
+    "error": 0,
+    "warn": 0,
+    "info": 0,
+    "totalCruised": 0,
+    "optionsUsed": {}
+  },
+  "code": {
+    "types": [
+      {
+        "fullName": "MethodDependencyNamespace.MethodDependencyClass",
+        "name": "MethodDependencyClass",
+        "namespace": "MethodDependencyNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 6,
+        "attribution": "pdb",
+        "assembly": "MethodDependencyAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "MethodDependencyNamespace.MethodDependencyClass, MethodDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": "CalledMethod",
+            "line": 7
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": "CalledMethod1",
+            "line": 14
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": "CalledMethod2",
+            "line": 15
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": "CalledMethod3",
+            "line": 16
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 6
+          }
+        ]
+      },
+      {
+        "fullName": "MethodDependencyNamespace.OtherCallingClass",
+        "name": "OtherCallingClass",
+        "namespace": "MethodDependencyNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 31,
+        "attribution": "pdb",
+        "assembly": "MethodDependencyAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "MethodDependencyNamespace.OtherCallingClass, MethodDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "MethodDependencyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "line": 31,
+            "form": "body-type"
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "line": 37,
+            "form": "body-type"
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 32
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 38
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": "CalledMethod",
+            "line": 33
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": "CalledMethod1",
+            "line": 39
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 31
+          }
+        ]
+      },
+      {
+        "fullName": "System.Object",
+        "name": "Object",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      }
+    ],
+    "members": [
+      {
+        "declaringType": "MethodDependencyNamespace.MethodDependencyClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void MethodDependencyNamespace.MethodDependencyClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "MethodDependencyNamespace.MethodDependencyClass",
+        "name": "CalledMethod()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 10,
+        "column": 32,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void MethodDependencyNamespace.MethodDependencyClass::CalledMethod()"
+      },
+      {
+        "declaringType": "MethodDependencyNamespace.MethodDependencyClass",
+        "name": "CalledMethod1()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 19,
+        "column": 33,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void MethodDependencyNamespace.MethodDependencyClass::CalledMethod1()"
+      },
+      {
+        "declaringType": "MethodDependencyNamespace.MethodDependencyClass",
+        "name": "CalledMethod2()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 21,
+        "column": 33,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void MethodDependencyNamespace.MethodDependencyClass::CalledMethod2()"
+      },
+      {
+        "declaringType": "MethodDependencyNamespace.MethodDependencyClass",
+        "name": "CalledMethod3()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 23,
+        "column": 33,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void MethodDependencyNamespace.MethodDependencyClass::CalledMethod3()"
+      },
+      {
+        "declaringType": "MethodDependencyNamespace.MethodDependencyClass",
+        "name": "MethodWithMultipleDependencies()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 13,
+        "column": 5,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void MethodDependencyNamespace.MethodDependencyClass::MethodWithMultipleDependencies()",
+        "dependencies": [
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": "CalledMethod1",
+            "line": 14
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": "CalledMethod2",
+            "line": 15
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": "CalledMethod3",
+            "line": 16
+          }
+        ]
+      },
+      {
+        "declaringType": "MethodDependencyNamespace.MethodDependencyClass",
+        "name": "MethodWithSingleDependency()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 6,
+        "column": 5,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void MethodDependencyNamespace.MethodDependencyClass::MethodWithSingleDependency()",
+        "dependencies": [
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": "CalledMethod",
+            "line": 7
+          }
+        ]
+      },
+      {
+        "declaringType": "MethodDependencyNamespace.MethodDependencyClass",
+        "name": "MethodWithoutDependencies()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 25,
+        "column": 45,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void MethodDependencyNamespace.MethodDependencyClass::MethodWithoutDependencies()"
+      },
+      {
+        "declaringType": "MethodDependencyNamespace.OtherCallingClass",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void MethodDependencyNamespace.OtherCallingClass::.ctor()",
+        "dependencies": [
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor"
+          }
+        ]
+      },
+      {
+        "declaringType": "MethodDependencyNamespace.OtherCallingClass",
+        "name": "AnotherMethodCallingCalledMethod()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 37,
+        "column": 5,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void MethodDependencyNamespace.OtherCallingClass::AnotherMethodCallingCalledMethod()",
+        "dependencies": [
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "line": 37,
+            "form": "body-type"
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 38
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": "CalledMethod1",
+            "line": 39
+          }
+        ]
+      },
+      {
+        "declaringType": "MethodDependencyNamespace.OtherCallingClass",
+        "name": "MethodCallingCalledMethod()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 31,
+        "column": 5,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void MethodDependencyNamespace.OtherCallingClass::MethodCallingCalledMethod()",
+        "dependencies": [
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "line": 31,
+            "form": "body-type"
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 32
+          },
+          {
+            "target": "MethodDependencyNamespace.MethodDependencyClass",
+            "kind": "body",
+            "member": "CalledMethod",
+            "line": 33
+          }
+        ]
+      }
+    ],
+    "attributes": [],
+    "calls": [
+      {
+        "from": "System.Void MethodDependencyNamespace.MethodDependencyClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs"
+      },
+      {
+        "from": "System.Void MethodDependencyNamespace.MethodDependencyClass::MethodWithMultipleDependencies()",
+        "to": "System.Void MethodDependencyNamespace.MethodDependencyClass::CalledMethod1()",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 14,
+        "column": 9
+      },
+      {
+        "from": "System.Void MethodDependencyNamespace.MethodDependencyClass::MethodWithMultipleDependencies()",
+        "to": "System.Void MethodDependencyNamespace.MethodDependencyClass::CalledMethod2()",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 15,
+        "column": 9
+      },
+      {
+        "from": "System.Void MethodDependencyNamespace.MethodDependencyClass::MethodWithMultipleDependencies()",
+        "to": "System.Void MethodDependencyNamespace.MethodDependencyClass::CalledMethod3()",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 16,
+        "column": 9
+      },
+      {
+        "from": "System.Void MethodDependencyNamespace.MethodDependencyClass::MethodWithSingleDependency()",
+        "to": "System.Void MethodDependencyNamespace.MethodDependencyClass::CalledMethod()",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 7,
+        "column": 9
+      },
+      {
+        "from": "System.Void MethodDependencyNamespace.OtherCallingClass::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs"
+      },
+      {
+        "from": "System.Void MethodDependencyNamespace.OtherCallingClass::AnotherMethodCallingCalledMethod()",
+        "to": "System.Void MethodDependencyNamespace.MethodDependencyClass::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 38,
+        "column": 9
+      },
+      {
+        "from": "System.Void MethodDependencyNamespace.OtherCallingClass::AnotherMethodCallingCalledMethod()",
+        "to": "System.Void MethodDependencyNamespace.MethodDependencyClass::CalledMethod1()",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 39,
+        "column": 9
+      },
+      {
+        "from": "System.Void MethodDependencyNamespace.OtherCallingClass::MethodCallingCalledMethod()",
+        "to": "System.Void MethodDependencyNamespace.MethodDependencyClass::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 32,
+        "column": 9
+      },
+      {
+        "from": "System.Void MethodDependencyNamespace.OtherCallingClass::MethodCallingCalledMethod()",
+        "to": "System.Void MethodDependencyNamespace.MethodDependencyClass::CalledMethod()",
+        "language": "dotnet",
+        "file": "TestAssemblies/MethodDependencyAssembly/MethodDependency.cs",
+        "line": 33,
+        "column": 9
+      }
+    ]
+  }
+}

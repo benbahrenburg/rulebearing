@@ -1,0 +1,75 @@
+# Open-source test beds, from docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against,
+# plus the maintainer's own repositories (role own, docs/prd.md#nfr-adopt-02).
+# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 7 and § 1.5. Runner: testbeds/run.sh.
+#
+# Fields: repo, sha (pinned by testbeds/pin.sh), role (oracle | greenfield | scale | own), languages,
+# tool (the incumbent: dependency-cruiser | netarchtest | archunitnet | import-linter | none), and per
+# tool: config (dependency-cruiser config, repository-relative), solution and test (.NET: the solution
+# Spike B builds and the architecture-test project the incumbent runs), dir (import-linter: the package
+# folder holding the contracts, default the root). For the oracle harness (testbeds/oracles/, plan
+# 0002 Step 11): tests (.NET: the folder of architecture tests `import archunit` reads, default the
+# test project's folder), filter (.NET: a `dotnet test --filter` selecting those tests), pip
+# (import-linter: packages import-linter needs beside the repository's own source, a root package
+# that is installed rather than in the repository or a custom contract type's dependency),
+# translation (import-linter: a hand translation under testbeds/oracles/configs/ used instead of
+# the import). A row whose tool is none has
+# nothing to run until the Rulebearing column exists (wave 1), so the runner records it without cloning.
+# build: the command, run at the checkout root, that builds a greenfield or scale row before
+# Rulebearing reads it (testbeds/greenfield.sh, testbeds/scale.sh; plan 0002, Step 15). NuGet audit
+# and warnings-as-errors are off there: an advisory published after the pinned SHA, or a newer SDK's
+# analyzer, turns a warning into a failed build of code nobody changed.
+# Every repository is a read-only test bed; nothing from it is committed.
+version: 2
+rows:
+  - { repo: sverweij/dependency-cruiser, sha: 7c22858071cc4491321c735ff11894d90648ee6e, role: oracle, languages: [typescript, javascript], tool: dependency-cruiser, config: ".dependency-cruiser.mjs", note: "TypeScript oracle and the conformance suite itself" }
+  - { repo: langfuse/langfuse, sha: 17c3e9d97ca93603fe448436083e20c44ac1822a, role: oracle, languages: [typescript, javascript], tool: dependency-cruiser, config: web/.dependency-cruiser.js }
+  - { repo: microsoft/FluidFramework, sha: 235654550d165d0da3a40c1b6fb1c6ec2bea676b, role: oracle, languages: [typescript, javascript], tool: dependency-cruiser, config: packages/dds/tree/.dependency-cruiser.cjs }
+  - { repo: ag-grid/ag-grid, sha: 1a7979c4106fba6c9149f3b8cc13e5c7f4543323, role: oracle, languages: [typescript, javascript], tool: dependency-cruiser, config: packages/ag-grid-community/.dependency-cruiser.js }
+  - { repo: tsparticles/tsparticles, sha: d92ba4b96524f57921cdfbd3d4a60d31c897a149, role: oracle, languages: [typescript, javascript], tool: dependency-cruiser, config: cli/commands/build-circular-deps/.dependency-cruiser.cjs }
+  - { repo: liveblocks/liveblocks, sha: 1e3a117a1a2020806b90c16cd4cd5171c00c232c, role: oracle, languages: [typescript, javascript], tool: dependency-cruiser, config: packages/liveblocks-core/.dependency-cruiser.js }
+  - { repo: remult/remult, sha: f3ff339959ac19bdedb64161be8722d9a3ef8213, role: oracle, languages: [typescript, javascript], tool: dependency-cruiser, config: misc/.dependency-cruiser.js }
+  - { repo: invertase/react-native-firebase, sha: fa3f29d815bdb6e4ee31aacf154a91c749b7c9a1, role: oracle, languages: [typescript, javascript], tool: dependency-cruiser, config: ".dependency-cruiser.cjs" }
+  - { repo: infinitered/ignite, sha: e829d2f922c5568a59a77bfb6232aeb500be3f13, role: oracle, languages: [typescript, javascript], tool: dependency-cruiser, config: ".dependency-cruiser.js" }
+  - { repo: aws/aws-toolkit-vscode, sha: 36ad9035f4b921e12a9135f07a5f5134b71f704b, role: oracle, languages: [typescript, javascript], tool: dependency-cruiser, config: ".dependency-cruiser.js" }
+  - { repo: evolutionary-architecture/evolutionary-architecture-by-example, sha: 441a7cd94d3acfbac7d210a95ea8e78429fc9f47, role: oracle, languages: [csharp], tool: netarchtest, solution: Chapter-1-initial-architecture/Src/Fitnet.slnx, test: Chapter-1-initial-architecture/Src/Fitnet.ArchitectureTests/Fitnet.ArchitectureTests.csproj }
+  - { repo: phongnguyend/Practical.CleanArchitecture, sha: 033acecd44b6981d7d418d0fdab356c053e1b1d3, role: oracle, languages: [csharp], tool: netarchtest, solution: src/Monolith/ClassifiedAds.Monolith.slnx, test: src/Monolith/ClassifiedAds.ArchTests/ClassifiedAds.ArchTests.csproj }
+  - { repo: ardalis/RiverBooks, sha: 0938f187f3963e225fa25e31bc10a5213932ddf4, role: oracle, languages: [csharp], tool: archunitnet, solution: src/RiverBooks.slnx, test: src/RiverBooks.OrderProcessingTests/RiverBooks.OrderProcessingTests.csproj }
+  - { repo: nager/Nager.Date, sha: 124effb012b829840a05898363701b699b1d1369, role: oracle, languages: [csharp], tool: archunitnet, solution: src/Nager.Date.slnx, test: src/Nager.Date.ArchitectureTest/Nager.Date.ArchitectureTest.csproj }
+  - { repo: karaoke-dev/karaoke, sha: 8012c1a854e6d68ba8bdbe1d3fd7101ff61c7e3d, role: oracle, languages: [csharp], tool: archunitnet, solution: osu.Game.Rulesets.Karaoke.sln, test: osu.Game.Rulesets.Karaoke.Architectures/osu.Game.Rulesets.Karaoke.Architectures.csproj }
+  - { repo: onebeyond/monaco, sha: 5700abab4d735e7accdcd0d1fde823845e8c99c3, role: oracle, languages: [csharp], tool: archunitnet, solution: src/Content/Backend/Solution/Monaco.Template.Backend.slnx, test: src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/Monaco.Template.Backend.ArchitectureTests.csproj }
+  - { repo: dennisdoomen/packageguard, sha: f1fdbca94ccdbd0d18c99cb49f4a2a427aea903f, role: oracle, languages: [csharp], tool: netarchtest, solution: PackageGuard.sln, test: Src/PackageGuard.Specs/PackageGuard.Specs.csproj }
+  - { repo: NeVeSpl/NetArchTest.eNhancedEdition, sha: 7f29bdf5f24368dccad27b8e3ec52a807e813504, role: oracle, languages: [csharp], tool: netarchtest, solution: NetArchTest.eNhancedEdition.sln, test: tests/NetArchTest.Rules.UnitTests/NetArchTest.UnitTests.csproj }
+  - { repo: DrJohnMelville/Pdf, sha: 2e9eef3d4af15391809d9a79253e6fff0058d668, role: oracle, languages: [csharp], tool: netarchtest, solution: Src/Src.sln, test: Src/Melville.Pdf.DataModelTests/Melville.Pdf.DataModelTests.csproj, tests: Src/Melville.Pdf.DataModelTests/Architecture, filter: "FullyQualifiedName~Melville.Pdf.DataModelTests.Architecture", note: "the NetArchTest tests are the Architecture folder of the data-model test project" }
+  - { repo: TNG/ArchUnitNET, sha: 28b62ec0d98f9babb4ccdb6d8a1c3673a0497bcb, role: oracle, languages: [csharp], tool: archunitnet, solution: ArchUnit.sln, test: ArchUnitNETTests/ArchUnitNETTests.csproj, note: "the .NET conformance suite" }
+  - { repo: BenMorris/NetArchTest, sha: a761f63b694a6facd4be01fbc8fe2ae26579572e, role: oracle, languages: [csharp], tool: netarchtest, solution: "NetArchTest - all projects.sln", test: test/NetArchTest.Rules.UnitTests/NetArchTest.Rules.UnitTests.csproj, note: "the .NET conformance suite" }
+  - { repo: seddonym/import-linter, sha: 31927f1457e3df673912cb5efb0afa6dbc37585f, role: oracle, languages: [python], tool: import-linter, note: "Python oracle and the contract-kind mapping" }
+  - { repo: kedro-org/kedro, sha: 8d9abdf02b1ce93fbe9079cff6f696fb230facc4, role: oracle, languages: [python], tool: import-linter }
+  - { repo: sqlfluff/sqlfluff, sha: 0532c99e27811edb644f0afea13ade46182b72b2, role: oracle, languages: [python], tool: import-linter }
+  - { repo: bridgecrewio/checkov, sha: 92ca0101e39e7f575c8182b5b1fd7c89b04e136b, role: oracle, languages: [python], tool: import-linter }
+  - { repo: openedx/openedx-platform, sha: 23f45c133cf8e5074a723e6f6685137c87c01780, role: oracle, languages: [python], tool: import-linter, pip: ["openedx-core==1.4.0"] }
+  - { repo: napari/napari, sha: 5ef58e212af1af11737bc005048cfd0fb7a1aefd, role: oracle, languages: [python], tool: import-linter }
+  - { repo: nolar/kopf, sha: e63c29c374cde63b6afa7378ae4486bb92062c0f, role: oracle, languages: [python], tool: import-linter, pip: [astpath, lxml] }
+  - { repo: online-ml/river, sha: d7085cde5bf90898b338d1ad522c71b9b9aa26f8, role: oracle, languages: [python], tool: import-linter }
+  - { repo: wemake-services/wemake-python-styleguide, sha: b4d0171879edc9a6a71a1506a2ee5554f634e0ea, role: oracle, languages: [python], tool: import-linter }
+  - { repo: google/langextract, sha: 62b933a2c757fd2bbb100498571b8d1692db4344, role: oracle, languages: [python], tool: import-linter }
+  - { repo: microsoft/promptflow, sha: 3928a727b406e66d64ff42621534bb58e0ca18ce, role: oracle, languages: [python], tool: import-linter, dir: src/promptflow-core }
+  - { repo: HKUDS/DeepTutor, sha: 11f9c15f6d2727ce07ff8d66e511b1e7ae2f8463, role: oracle, languages: [python], tool: import-linter }
+  - { repo: langgenius/dify, sha: 3a017e8cccb316f23f601af65d2e8ce92e68f788, role: oracle, languages: [typescript, python], tool: import-linter, dir: api, note: "mixed-language oracle; the contracts are on the Python half" }
+  - { repo: open-metadata/OpenMetadata, sha: 325c3ee7af5176f615f48b89747f027018d6d61a, role: oracle, languages: [typescript, python], tool: import-linter, dir: ingestion, note: "mixed-language oracle; the contracts are on the Python half" }
+  - { repo: microsoft/semantic-kernel, sha: ca40aa7226531d28a721d0ca0e451d0aaf86dafc, role: greenfield, languages: [dotnet, python, typescript], tool: none, build: "dotnet build dotnet/SK-dotnet.slnx -p:DebugType=portable -p:EnableWindowsTargeting=true -p:NuGetAudit=false -p:TreatWarningsAsErrors=false" }
+  - { repo: microsoft/autogen, sha: 027ecf0a379bcc1d09956d46d12d44a3ad9cee14, role: greenfield, languages: [python, dotnet, typescript], tool: none, build: "dotnet build dotnet/AutoGen.sln -p:DebugType=portable -p:EnableWindowsTargeting=true -p:NuGetAudit=false -p:TreatWarningsAsErrors=false" }
+  - { repo: jasontaylordev/CleanArchitecture, sha: 1d71eefc5ccf9a5e9b2db86e4cf08070148c7bb4, role: greenfield, languages: [dotnet, typescript], tool: none }
+  - { repo: abpframework/abp, sha: e402e7e305002ebdd3a5befef743c65bd9ac9c92, role: greenfield, languages: [dotnet, typescript], tool: none }
+  - { repo: umbraco/Umbraco-CMS, sha: e81538b0400677a2fc319e6b1600b51645be3497, role: greenfield, languages: [dotnet, typescript], tool: none }
+  - { repo: apache/superset, sha: 4c229cb66a7b6401113ca81f49ee617ad8426e64, role: greenfield, languages: [python, typescript], tool: none }
+  - { repo: getsentry/sentry, sha: 813bab919d13177e71d444b187473ee3cd881ae4, role: greenfield, languages: [python, typescript], tool: none }
+  - { repo: zulip/zulip, sha: 370f7b66fca175e66f9545330f4534290cc9f9db, role: greenfield, languages: [python, typescript], tool: none }
+  - { repo: PostHog/posthog, sha: 3ad9f699e53d824e424514f521a9432b27faa347, role: greenfield, languages: [python, typescript], tool: none }
+  - { repo: n8n-io/n8n, sha: f89687fd8751970cdf8b9cb76761a1258728ca62, role: scale, languages: [typescript], tool: none, note: "Vue single-file components" }
+  - { repo: grafana/grafana, sha: 423f85091b0a63a21fb571122a933133da1652cd, role: scale, languages: [typescript], tool: none }
+  - { repo: elastic/kibana, sha: b502e688526bca862855361abf0081d84e65c547, role: scale, languages: [typescript], tool: none }
+  - { repo: dotnet/aspnetcore, sha: b4be275a3b4fd83c304e7377403561a73eb4249e, role: scale, languages: [dotnet], tool: none, build: "./restore.sh && ./eng/build.sh --build-managed --no-build-nodejs --no-build-java --no-build-installers", note: "hundreds of projects, source-link PDB paths" }
+  - { repo: jellyfin/jellyfin, sha: fd75964da853765d63101b4889f23a4161e2758b, role: scale, languages: [dotnet], tool: none, build: "dotnet build Jellyfin.sln -p:DebugType=portable -p:NuGetAudit=false -p:TreatWarningsAsErrors=false" }
+  - { repo: home-assistant/core, sha: f50d777440e878554ef6872062341d24c6da0289, role: scale, languages: [python], tool: none, note: "namespace packages, dynamic imports" }
+  - { repo: benbahrenburg/ai-sdk-otel-logger, sha: b3072ce0cb125ccd3b184c05cda6bbf9de1cdca6, role: own, languages: [typescript], tool: none, note: "the maintainer's TypeScript library, the first user" }
+  - { repo: benbahrenburg/rulebearing, sha: 06768cbcbf80b2efc25585a21cea56b2abcc6fbb, role: own, languages: [rust, typescript, python, csharp], tool: none, note: "this repository; the nightly reads its own checkout" }
