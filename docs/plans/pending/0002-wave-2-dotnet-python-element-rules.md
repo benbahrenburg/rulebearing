@@ -1,6 +1,6 @@
 # Plan 0002: Wave 2: .NET, Python, element rules, migration
 
-- **Status:** In progress: 2A and 2B done except the nightly links; 2C in progress
+- **Status:** In progress: every sub-wave, 2A to 2I, is built and its local evidence recorded; the open rows wait on the nightly runs after merge (the 2A fuzz link, the 2F oracle tables, the 2I `init` and scale rows) and on a release run (2G, 2H); the four upstream offers are deferred by the maintainer (2I)
 - **Owner:** Ben Bahrenburg (@benbahrenburg)
 - **Created:** 2026-09-20
 - **Calendar estimate:** 10 weeks at ~10 h/week (from [design § Waves](../../artifacts/design.md#waves), row 2)
