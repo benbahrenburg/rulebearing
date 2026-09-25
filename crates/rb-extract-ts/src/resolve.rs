@@ -107,10 +107,15 @@ fn alias_targets(value: &serde_json::Value) -> Vec<AliasTarget> {
 /// match as a folder; the same drive path written with `/` it does. Elsewhere a backslash is a
 /// file-name character, so the target is kept as written.
 fn alias_path(path: String, windows: bool) -> String {
-    let bytes = path.as_bytes();
+    if !windows {
+        return path;
+    }
+    // A canonical path (`\\?\D:\a`) is the same drive path behind the verbatim prefix.
+    let plain = path.strip_prefix(r"\\?\").unwrap_or(&path);
+    let bytes = plain.as_bytes();
     let drive = bytes.len() > 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':';
-    if windows && drive {
-        path.replace('\\', "/")
+    if drive {
+        plain.replace('\\', "/")
     } else {
         path
     }
@@ -1004,6 +1009,8 @@ mod tests {
         assert_eq!(alias_path(r"lib\x".into(), true), r"lib\x");
         assert_eq!(alias_path("/a/src".into(), true), "/a/src");
         assert_eq!(alias_path("C:".into(), true), "C:");
+        assert_eq!(alias_path(r"\\?\D:\a\src".into(), true), "D:/a/src");
+        assert_eq!(alias_path(r"\\?\D:\a\src".into(), false), r"\\?\D:\a\src");
     }
 
     #[cfg(unix)]
