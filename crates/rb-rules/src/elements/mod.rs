@@ -133,6 +133,17 @@ pub enum ElementError {
         /// The pattern as `ArchUnitNET` rewrites it.
         pattern: String,
     },
+    /// A slice rule with `graph` slices .NET types, whose dependencies are not the module
+    /// imports `graph` names ([ADR-0038](../../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).
+    #[error(
+        "rule `{rule}`: `graph` narrows module imports, but the rule slices .NET types (\"{object}\"), which are joined by type dependencies; remove `graph`, or match only TypeScript, JavaScript or Python modules"
+    )]
+    SliceGraph {
+        /// The rule.
+        rule: String,
+        /// The first type the rule slices.
+        object: String,
+    },
 }
 
 /// One object an element rule can select.

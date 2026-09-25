@@ -236,6 +236,12 @@ pub fn evaluate(
         if outcome.vacuous {
             empty.push(VacuousRule::new(rule.name.clone(), "select"));
         }
+        for at in &outcome.unmatched_ignores {
+            empty.push(VacuousRule::new(
+                rule.name.clone(),
+                format!("graph.ignore[{at}]"),
+            ));
+        }
         for (from, to, key, edges) in slice_findings(&outcome) {
             let mut v = violation(
                 &rule.name,

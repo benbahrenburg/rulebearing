@@ -3710,6 +3710,81 @@
       },
       "type": "object"
     },
+    "GraphFilter": {
+      "additionalProperties": false,
+      "description": "`graph` on a rule: the edges and modules taken out of the graph the rule sees\n([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).",
+      "properties": {
+        "chainsThrough": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "On a reachability rule, a chain continues only from a module whose path matches; the\nchain's start and end need not match."
+        },
+        "dependencyTypesNot": {
+          "description": "Every edge carrying any of these dependency types is removed (`[type-only]`: imports under\n`if TYPE_CHECKING:`). Unlike `to.dependencyTypesNot`, this cuts chains too.",
+          "items": {
+            "$ref": "#/$defs/DependencyType"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "ignore": {
+          "description": "Edges removed, each `{ from, to }`: an edge whose importer's path matches `from` and whose\nresolved target matches `to` (a side left out matches every edge). An entry that matches\nno edge of the graph makes the rule vacuous unless the rule has `allowEmpty`:\nimport-linter's unmatched-ignore alerting.",
+          "items": {
+            "$ref": "#/$defs/IgnoredEdges"
+          },
+          "type": "array"
+        },
+        "modulesNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Modules whose path matches lose every edge from or to them."
+        }
+      },
+      "type": "object"
+    },
+    "IgnoredEdges": {
+      "additionalProperties": false,
+      "description": "One `graph.ignore` entry.",
+      "properties": {
+        "from": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Paths the importing module must match."
+        },
+        "to": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Paths (or, for a module outside the repository, names) the edge's resolved target must\nmatch."
+        }
+      },
+      "type": "object"
+    },
     "IndependenceShorthand": {
       "additionalProperties": false,
       "description": "`rules.independence[]`: one `$1` fence\n([design § Shorthands](../../../docs/artifacts/design.md#shorthands)).",
@@ -3731,6 +3806,17 @@
             "string",
             "null"
           ]
+        },
+        "graph": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GraphFilter"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What the expanded rule takes out of its graph\n([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md))."
         },
         "name": {
           "description": "The rule name.",
@@ -3887,6 +3973,17 @@
             "string",
             "null"
           ]
+        },
+        "graph": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GraphFilter"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What each expanded rule takes out of its graph, copied to every one\n([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md))."
         },
         "layers": {
           "description": "Path patterns from the highest layer to the lowest; a lower layer may not depend on a\nhigher one.",
@@ -4205,6 +4302,10 @@
               "fix": {
                 "description": "What to do about a violation; every reporter prints it.",
                 "type": "string"
+              },
+              "graph": {
+                "$ref": "#/$defs/GraphFilter",
+                "description": "The module imports taken out before the slices are joined; `chainsThrough` is refused, since a slice edge is one import. A Rulebearing addition (ADR-0038)."
               },
               "ignore": {
                 "anyOf": [
@@ -4785,6 +4886,17 @@
           "$ref": "#/$defs/FromRestriction",
           "default": {},
           "description": "The selecting side of a dependency rule."
+        },
+        "graph": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GraphFilter"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only\n([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)). What to take out\nof the graph before this rule is evaluated: its direct edges and every chain it follows\nsee the rest. On `forbidden` rules only."
         },
         "module": {
           "anyOf": [

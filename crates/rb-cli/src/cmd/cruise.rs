@@ -310,6 +310,13 @@ fn summarise(summary: &mut rb_model::Summary, ratchets: &Ratchets, liveness: Liv
 /// The line for a rule that matches nothing: an error under strict liveness, else a warning that
 /// says how to make it one.
 pub fn vacuous_message(name: &str, side: &str, strict: bool) -> String {
+    // A `graph.ignore` entry that removes no edge excuses nothing any more (ADR-0038).
+    if side.starts_with("graph.ignore[") {
+        let level = if strict { "error" } else { "warning" };
+        return format!(
+            "{level}: rule `{name}`: its {side} entry matches no import, so it removes nothing. Fix or delete the entry, or excuse it with allowEmpty (ADR-0038)"
+        );
+    }
     if strict {
         format!(
             "error: rule `{name}` is vacuous: its {side} side matched no module, so it checks nothing. Fix the pattern, delete the rule, or excuse it with allowEmpty (ADR-0007, ADR-0032)"
@@ -347,5 +354,24 @@ fn stop_hook(code: RunExit, report: &str, stderr: String) -> Outcome {
         stdout: text,
         stderr,
         code: 0,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::vacuous_message;
+
+    #[test]
+    fn a_stale_ignore_entry_is_named_as_one() {
+        assert_eq!(
+            vacuous_message("r", "graph.ignore[2]", true),
+            "error: rule `r`: its graph.ignore[2] entry matches no import, so it removes nothing. Fix or delete the entry, or excuse it with allowEmpty (ADR-0038)"
+        );
+        assert!(
+            vacuous_message("r", "graph.ignore[0]", false)
+                .starts_with("warning: rule `r`: its graph.ignore[0] entry")
+        );
+        assert!(vacuous_message("r", "from", true).contains("its from side matched no module"));
+        assert!(vacuous_message("r", "from", false).starts_with("warning: rule `r` is vacuous"));
     }
 }

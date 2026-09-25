@@ -1,5 +1,6 @@
 # Imported from .importlinter by `rulebearing import import-linter`.
 # Each rule's comment names its import-linter contract; the contract's options are written above its first rule.
+# ignore_imports: each rule's `graph.ignore` removes those imports from the graph the rule sees, chains included; an entry that matches no import makes the rule vacuous, which is import-linter's unmatched-ignore alerting.
 $schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
 languages:
   python:
@@ -9,7 +10,7 @@ rules:
     # import-linter contract `siblings` (acyclic_siblings): Siblings are acyclic
     #   ancestors = core
     #   ignore_imports = core.a -> core.b
-    # ignore_imports: a slice rule has no knownViolations entry, so these imports still count toward a cycle
+    # ignore_imports: each slice rule allows an empty slicing, so an entry that matches no import is not reported as import-linter's unmatched-ignore alerting would
     - name: siblings:core
       comment: "import-linter contract: Siblings are acyclic"
       severity: error
@@ -17,6 +18,10 @@ rules:
       segments: 1
       should: beFreeOfCycles
       allowEmpty: true
+      graph:
+        ignore:
+          - from: "^src/core/a(/__init__\\.py|\\.py)$"
+            to: "^src/core/b(/__init__\\.py|\\.py)$"
     - name: siblings:core.a
       comment: "import-linter contract: Siblings are acyclic"
       severity: error
@@ -24,6 +29,10 @@ rules:
       segments: 1
       should: beFreeOfCycles
       allowEmpty: true
+      graph:
+        ignore:
+          - from: "^src/core/a(/__init__\\.py|\\.py)$"
+            to: "^src/core/b(/__init__\\.py|\\.py)$"
     - name: siblings:core.a.deep
       comment: "import-linter contract: Siblings are acyclic"
       severity: error
@@ -31,6 +40,10 @@ rules:
       segments: 1
       should: beFreeOfCycles
       allowEmpty: true
+      graph:
+        ignore:
+          - from: "^src/core/a(/__init__\\.py|\\.py)$"
+            to: "^src/core/b(/__init__\\.py|\\.py)$"
     - name: siblings:core.b
       comment: "import-linter contract: Siblings are acyclic"
       severity: error
@@ -38,6 +51,10 @@ rules:
       segments: 1
       should: beFreeOfCycles
       allowEmpty: true
+      graph:
+        ignore:
+          - from: "^src/core/a(/__init__\\.py|\\.py)$"
+            to: "^src/core/b(/__init__\\.py|\\.py)$"
     # import-linter contract `top` (acyclic_siblings): Only the top is sliced
     #   ancestors = core, core.missing
     #   skip_descendants = true

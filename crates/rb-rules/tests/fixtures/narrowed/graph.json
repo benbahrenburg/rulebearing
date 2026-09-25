@@ -1,0 +1,193 @@
+{
+  "modules": [
+    {
+      "source": "pkg/__init__.py",
+      "dependencies": [],
+      "valid": true,
+      "language": "python"
+    },
+    {
+      "source": "pkg/high/c.py",
+      "dependencies": [],
+      "valid": true,
+      "language": "python"
+    },
+    {
+      "source": "pkg/low/a.py",
+      "dependencies": [
+        {
+          "module": "pkg/mid/b.py",
+          "moduleSystem": "py",
+          "resolved": "pkg/mid/b.py",
+          "dependencyTypes": [
+            "local"
+          ],
+          "coreModule": false,
+          "couldNotResolve": false,
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "valid": true,
+      "language": "python"
+    },
+    {
+      "source": "pkg/low/d.py",
+      "dependencies": [
+        {
+          "module": "pkg/high/c.py",
+          "moduleSystem": "py",
+          "resolved": "pkg/high/c.py",
+          "dependencyTypes": [
+            "local",
+            "type-only"
+          ],
+          "coreModule": false,
+          "couldNotResolve": false,
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "valid": true,
+      "language": "python"
+    },
+    {
+      "source": "pkg/low/e.py",
+      "dependencies": [
+        {
+          "module": "scripts/tool.py",
+          "moduleSystem": "py",
+          "resolved": "scripts/tool.py",
+          "dependencyTypes": [
+            "local"
+          ],
+          "coreModule": false,
+          "couldNotResolve": false,
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "valid": true,
+      "language": "python"
+    },
+    {
+      "source": "pkg/low/f.py",
+      "dependencies": [
+        {
+          "module": "pkg/ns/g.py",
+          "moduleSystem": "py",
+          "resolved": "pkg/ns/g.py",
+          "dependencyTypes": [
+            "local"
+          ],
+          "coreModule": false,
+          "couldNotResolve": false,
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "valid": true,
+      "language": "python"
+    },
+    {
+      "source": "pkg/low/h.py",
+      "dependencies": [
+        {
+          "module": "pkg/high/c.py",
+          "moduleSystem": "py",
+          "resolved": "pkg/high/c.py",
+          "dependencyTypes": [
+            "local"
+          ],
+          "coreModule": false,
+          "couldNotResolve": false,
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "valid": true,
+      "language": "python"
+    },
+    {
+      "source": "pkg/mid/b.py",
+      "dependencies": [
+        {
+          "module": "pkg/high/c.py",
+          "moduleSystem": "py",
+          "resolved": "pkg/high/c.py",
+          "dependencyTypes": [
+            "local"
+          ],
+          "coreModule": false,
+          "couldNotResolve": false,
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "valid": true,
+      "language": "python"
+    },
+    {
+      "source": "pkg/ns/g.py",
+      "dependencies": [
+        {
+          "module": "pkg/high/c.py",
+          "moduleSystem": "py",
+          "resolved": "pkg/high/c.py",
+          "dependencyTypes": [
+            "local"
+          ],
+          "coreModule": false,
+          "couldNotResolve": false,
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "valid": true,
+      "language": "python"
+    },
+    {
+      "source": "scripts/tool.py",
+      "dependencies": [
+        {
+          "module": "pkg/high/c.py",
+          "moduleSystem": "py",
+          "resolved": "pkg/high/c.py",
+          "dependencyTypes": [
+            "local"
+          ],
+          "coreModule": false,
+          "couldNotResolve": false,
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "valid": true,
+      "language": "python"
+    }
+  ]
+}

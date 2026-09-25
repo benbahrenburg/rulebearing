@@ -20,7 +20,8 @@ use crate::capability::{Capability, capability};
 use crate::elements::{Concept, Side, VOCABULARY, ValueKind, spellings, split_key};
 
 use crate::model::{
-    Define, FilterOption, IndependenceShorthand, KnownViolation, LayersShorthand, Ratchet, Rule,
+    Define, FilterOption, GraphFilter, IndependenceShorthand, KnownViolation, LayersShorthand,
+    Ratchet, Rule,
 };
 
 /// A native configuration file: `rulebearing.yaml`, `.json`, `.jsonc` or `.toml`.
@@ -444,7 +445,7 @@ fn element_rules(generator: &mut SchemaGenerator) -> Schema {
 }
 
 /// `rules.slices`.
-fn slice_rules(_: &mut SchemaGenerator) -> Schema {
+fn slice_rules(generator: &mut SchemaGenerator) -> Schema {
     let condition = json!({ "enum": ["notDependOnEachOther", "beFreeOfCycles"] });
     let mut properties = rule_metadata();
     properties.insert(
@@ -464,6 +465,15 @@ fn slice_rules(_: &mut SchemaGenerator) -> Schema {
         "segments".into(),
         json!({ "type": "integer", "minimum": 1, "description": "Keep the first this many segments of each slice name, so a package and everything below it are one slice (import-linter's `acyclic_siblings`). A Rulebearing addition." }),
     );
+    let mut graph = serde_json::to_value(generator.subschema_for::<GraphFilter>())
+        .unwrap_or_else(|_| json!({}));
+    if let Value::Object(map) = &mut graph {
+        map.insert(
+            "description".into(),
+            json!("The module imports taken out before the slices are joined; `chainsThrough` is refused, since a slice edge is one import. A Rulebearing addition (ADR-0038)."),
+        );
+    }
+    properties.insert("graph".into(), graph);
     properties.insert(
         "allowEmpty".into(),
         json!({ "type": "boolean", "description": "An empty slicing is not vacuous." }),

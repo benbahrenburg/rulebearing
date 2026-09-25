@@ -1,21 +1,10 @@
 # Imported from .importlinter by `rulebearing import import-linter`.
 # Each rule's comment names its import-linter contract; the contract's options are written above its first rule.
+# ignore_imports: each rule's `graph.ignore` removes those imports from the graph the rule sees, chains included; an entry that matches no import makes the rule vacuous, which is import-linter's unmatched-ignore alerting.
 $schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
 languages:
   python:
     roots: [src]
-# ignore_imports: `rulebearing baseline --baseline-mode shrink-only` fails when an entry no longer occurs, which is import-linter's unmatched-ignore alerting.
-# An entry excuses the import from its importer to its imported module. For a rule that follows chains (reachable), dependency-cruiser keys a violation by importer and rule, so the entry excuses that importer's chains to the rule's modules; a chain through the ignored import from another module is still reported.
-# `no-payments`: `shop.orders.* -> shop.nowhere` names no module file under the repository, so it has no entry
-options:
-  knownViolations:
-    - type: reachability
-      from: src/shop/orders/checkout.py
-      to: src/shop/payments/gateway.py
-      rule:
-        name: no-payments
-        severity: error
-      reason: ignore_imports
 rules:
   dependencies:
     forbidden:
@@ -23,6 +12,7 @@ rules:
       #   forbidden_modules = shop.payments, requests
       #   ignore_imports = shop.orders.checkout -> shop.payments.gateway, shop.orders.* -> shop.nowhere
       #   source_modules = shop.orders
+      #   unmatched_ignore_imports_alerting = none
       - name: no-payments
         comment: "import-linter contract: Orders do not reach payments"
         severity: error
@@ -31,6 +21,14 @@ rules:
         to:
           path: ["^src/shop/payments(/.*)?\\.py$", "^requests(\\.|$)"]
           reachable: true
+        allowEmpty: true
+        graph:
+          ignore:
+            - from: "^src/shop/orders/checkout(/__init__\\.py|\\.py)$"
+              to: "^src/shop/payments/gateway(/__init__\\.py|\\.py)$"
+            - from: "^src/shop/orders/[^/]+(/__init__\\.py|\\.py)$"
+              to: "^src/shop/nowhere(/__init__\\.py|\\.py)$"
+          chainsThrough: "^src/shop(/.*)?\\.py$"
       # import-linter contract `models-direct` (forbidden): No module imports another package's models directly
       #   allow_indirect_imports = true
       #   as_packages = False

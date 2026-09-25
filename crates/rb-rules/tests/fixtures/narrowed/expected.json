@@ -1,0 +1,18 @@
+{
+  "violations": [
+    ["low-not-to-mid-or-high-directly", "pkg/low/a.py", "pkg/mid/b.py", []],
+    ["low-to-high-narrowed", "pkg/low/h.py", "pkg/high/c.py", ["pkg/high/c.py"]],
+    ["low-to-high-whole", "pkg/low/a.py", "pkg/high/c.py", ["pkg/mid/b.py", "pkg/high/c.py"]],
+    ["low-to-high-whole", "pkg/low/d.py", "pkg/high/c.py", ["pkg/high/c.py"]],
+    ["low-to-high-whole", "pkg/low/e.py", "pkg/high/c.py", ["scripts/tool.py", "pkg/high/c.py"]],
+    ["low-to-high-whole", "pkg/low/f.py", "pkg/high/c.py", ["pkg/ns/g.py", "pkg/high/c.py"]],
+    ["low-to-high-whole", "pkg/low/h.py", "pkg/high/c.py", ["pkg/high/c.py"]],
+    ["stale-ignore", "pkg/low/a.py", "pkg/high/c.py", ["pkg/mid/b.py", "pkg/high/c.py"]],
+    ["stale-ignore", "pkg/low/d.py", "pkg/high/c.py", ["pkg/high/c.py"]],
+    ["stale-ignore", "pkg/low/e.py", "pkg/high/c.py", ["scripts/tool.py", "pkg/high/c.py"]],
+    ["stale-ignore", "pkg/low/f.py", "pkg/high/c.py", ["pkg/ns/g.py", "pkg/high/c.py"]],
+    ["types-not-is-upstreams-on-a-chain", "pkg/low/d.py", "pkg/high/c.py", ["pkg/high/c.py"]],
+    ["stale-ignore-allowed", "pkg/low/a.py", "pkg/high/c.py", ["pkg/mid/b.py", "pkg/high/c.py"]]
+  ],
+  "vacuous": [["stale-ignore", "graph.ignore[1]"]]
+}

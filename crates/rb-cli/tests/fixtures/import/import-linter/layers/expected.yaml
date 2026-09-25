@@ -25,6 +25,8 @@ rules:
         to:
           path: "^app/billing/api(/.*)?\\.py$"
           reachable: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: layered:app.billing:api-to-web
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
@@ -33,6 +35,8 @@ rules:
         to:
           path: "^app/billing/web(/.*)?\\.py$"
           reachable: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: layered:app.billing:infra-to-web
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
@@ -42,6 +46,8 @@ rules:
           path: "^app/billing/web(/.*)?\\.py$"
           reachable: true
         allowEmpty: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: layered:app.billing:infra-to-api
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
@@ -51,6 +57,8 @@ rules:
           path: "^app/billing/api(/.*)?\\.py$"
           reachable: true
         allowEmpty: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: layered:app.billing:domain-to-web
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
@@ -59,6 +67,8 @@ rules:
         to:
           path: "^app/billing/web(/.*)?\\.py$"
           reachable: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: layered:app.billing:domain-to-api
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
@@ -67,6 +77,8 @@ rules:
         to:
           path: "^app/billing/api(/.*)?\\.py$"
           reachable: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: layered:app.billing:domain-to-infra
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
@@ -76,6 +88,8 @@ rules:
           path: "^app/billing/infra(/.*)?\\.py$"
           reachable: true
         allowEmpty: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: layered:app.shipping:web-to-api
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
@@ -84,6 +98,8 @@ rules:
         to:
           path: "^app/shipping/api(/.*)?\\.py$"
           reachable: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: layered:app.shipping:api-to-web
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
@@ -92,6 +108,8 @@ rules:
         to:
           path: "^app/shipping/web(/.*)?\\.py$"
           reachable: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: layered:app.shipping:infra-to-web
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
@@ -101,6 +119,8 @@ rules:
           path: "^app/shipping/web(/.*)?\\.py$"
           reachable: true
         allowEmpty: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: layered:app.shipping:infra-to-api
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
@@ -110,6 +130,8 @@ rules:
           path: "^app/shipping/api(/.*)?\\.py$"
           reachable: true
         allowEmpty: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: layered:app.shipping:domain-to-web
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
@@ -118,6 +140,8 @@ rules:
         to:
           path: "^app/shipping/web(/.*)?\\.py$"
           reachable: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: layered:app.shipping:domain-to-api
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
@@ -126,6 +150,8 @@ rules:
         to:
           path: "^app/shipping/api(/.*)?\\.py$"
           reachable: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: layered:app.shipping:domain-to-infra
         comment: "import-linter contract: Each bounded context is layered"
         severity: error
@@ -135,6 +161,8 @@ rules:
           path: "^app/shipping/infra(/.*)?\\.py$"
           reachable: true
         allowEmpty: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       # import-linter contract `top-level` (layers): Top level
       #   layers = app.billing : app.shipping, app.core
       - name: top-level:app.core-to-app.billing
@@ -145,6 +173,8 @@ rules:
         to:
           path: "^app/billing(/.*)?\\.py$"
           reachable: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"
       - name: top-level:app.core-to-app.shipping
         comment: "import-linter contract: Top level"
         severity: error
@@ -153,3 +183,5 @@ rules:
         to:
           path: "^app/shipping(/.*)?\\.py$"
           reachable: true
+        graph:
+          chainsThrough: "^app(/.*)?\\.py$"

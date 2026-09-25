@@ -8,8 +8,8 @@
   "status": "compared",
   "summary": {
     "total": 4,
-    "agree": 2,
-    "disagree": 2,
+    "agree": 4,
+    "disagree": 0,
     "stays": 0,
     "not-imported": 0,
     "error": 0
@@ -31,43 +31,9 @@
       "type": "layers",
       "importLinter": "kept",
       "rules": 1,
-      "violations": 200,
-      "rulebearing": "broken",
-      "verdict": "disagree",
-      "filtered": {
-        "mechanisms": [
-          "ignore_imports",
-          "namespace portions below a root package",
-          "imports by modules outside the root packages"
-        ],
-        "violations": 0,
-        "sufficientAlone": [
-          "ignore_imports"
-        ]
-      },
-      "cause": "import-linter's graph has no ignore_imports; with the same imports removed from Rulebearing's graph the contract is kept too. The import writes ignore_imports as knownViolations, which excuse a violation but cut no chain, and has no form for the other filters",
-      "sample": [
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/__init__.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/__init__.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_layer_actions.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_layer_actions.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_scalar_field/__init__.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_scalar_field/__init__.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_scalar_field/_slice.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_scalar_field/_slice.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_scalar_field/_tests/test_scalar_field.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_scalar_field/_tests/test_scalar_field.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_scalar_field/scalar_field.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_scalar_field/scalar_field.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_source.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_source.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_tests/test_dask_layers.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_tests/test_dask_layers.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_tests/test_data_protocol.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_tests/test_data_protocol.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_tests/test_layer_actions.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-layers:napari.layers-to-napari.qt: src/napari/layers/_tests/test_layer_actions.py -> src/napari/qt/threading.py"
-      ]
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
     },
     {
       "id": null,
@@ -75,43 +41,9 @@
       "type": "layers",
       "importLinter": "kept",
       "rules": 1,
-      "violations": 68,
-      "rulebearing": "broken",
-      "verdict": "disagree",
-      "filtered": {
-        "mechanisms": [
-          "ignore_imports",
-          "namespace portions below a root package",
-          "imports by modules outside the root packages"
-        ],
-        "violations": 0,
-        "sufficientAlone": [
-          "ignore_imports"
-        ]
-      },
-      "cause": "import-linter's graph has no ignore_imports; with the same imports removed from Rulebearing's graph the contract is kept too. The import writes ignore_imports as knownViolations, which excuse a violation but cut no chain, and has no form for the other filters",
-      "sample": [
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/__init__.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/__init__.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_layer_slicer.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_layer_slicer.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_add_layers.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_add_layers.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_camera.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_camera.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_dims.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_dims.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_grid.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_grid.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_histogram.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_histogram.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_interaction_box.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_interaction_box.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_layer_slicer.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_layer_slicer.py -> src/napari/qt/threading.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_layers_base.py -> src/napari/qt/__init__.py",
-        "block-import-from-qt-module-in-napari-components:napari.components-to-napari.qt: src/napari/components/_tests/test_layers_base.py -> src/napari/qt/threading.py"
-      ]
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
     },
     {
       "id": null,
@@ -243,5 +175,5 @@
       }
     }
   },
-  "agrees": false
+  "agrees": true
 }
