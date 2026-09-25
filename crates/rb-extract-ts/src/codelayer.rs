@@ -239,7 +239,8 @@ pub fn member_visibility(
     }
 }
 
-/// The language a file's elements carry, by extension, as the module's `language` is chosen.
+/// A module's `language`, by extension. The code layer's elements take theirs from the parse
+/// instead ([`collect`]), since a component's script is TypeScript when its `lang` says so.
 pub fn language_of(file: &str) -> Language {
     let typescript = std::path::Path::new(file)
         .extension()
@@ -252,19 +253,25 @@ pub fn language_of(file: &str) -> Language {
 }
 
 /// The code-layer elements `program` declares, with names unresolved; `source` is the text its
-/// offsets index and `file` the module's `source`.
+/// offsets index and `file` the module's `source`. The elements are TypeScript when the program
+/// was parsed as TypeScript: a `.ts` file, and equally a `.vue` or `.svelte` script with
+/// `lang="ts"`, whose abstract, generic and readonly facts are read like any other.
 pub fn collect(program: &Program<'_>, source: &str, file: &str) -> FileCode {
     let mut index = Index::default();
     index.imports(&program.body);
     index.scan(&program.body, None);
     index.settle();
-    let language = language_of(file);
+    let typescript = program.source_type.is_typescript();
     let mut collector = Collector {
         index,
         lines: Lines::new(source),
         source,
-        typescript: language == Language::Typescript,
-        language,
+        typescript,
+        language: if typescript {
+            Language::Typescript
+        } else {
+            Language::Javascript
+        },
         out: FileCode {
             file: file.to_owned(),
             ..FileCode::default()
@@ -288,29 +295,47 @@ pub fn collect(program: &Program<'_>, source: &str, file: &str) -> FileCode {
     out
 }
 
-/// The identifier chain an expression is (`a`, `a.b.c`), if it is one.
+/// The identifier chain an expression is (`a`, `a.b.c`), if it is one. Walked iteratively, as
+/// an untrusted file can nest a chain as deep as it is long.
 fn expression_segments(expression: &Expression<'_>) -> Option<Vec<String>> {
-    match expression.get_inner_expression() {
-        Expression::Identifier(identifier) => Some(vec![identifier.name.to_string()]),
-        Expression::StaticMemberExpression(member) => {
-            let mut segments = expression_segments(&member.object)?;
-            segments.push(member.property.name.to_string());
-            Some(segments)
+    let mut segments = Vec::new();
+    let mut current = expression;
+    loop {
+        match current.get_inner_expression() {
+            Expression::Identifier(identifier) => {
+                segments.push(identifier.name.to_string());
+                break;
+            }
+            Expression::StaticMemberExpression(member) => {
+                segments.push(member.property.name.to_string());
+                current = &member.object;
+            }
+            _ => return None,
         }
-        _ => None,
     }
+    segments.reverse();
+    Some(segments)
 }
 
+/// The identifier chain a type name is (`A`, `ns.A`), if it is one; iterative, as above.
 fn type_name_segments(name: &TSTypeName<'_>) -> Option<Vec<String>> {
-    match name {
-        TSTypeName::IdentifierReference(identifier) => Some(vec![identifier.name.to_string()]),
-        TSTypeName::QualifiedName(qualified) => {
-            let mut segments = type_name_segments(&qualified.left)?;
-            segments.push(qualified.right.name.to_string());
-            Some(segments)
+    let mut segments = Vec::new();
+    let mut current = name;
+    loop {
+        match current {
+            TSTypeName::IdentifierReference(identifier) => {
+                segments.push(identifier.name.to_string());
+                break;
+            }
+            TSTypeName::QualifiedName(qualified) => {
+                segments.push(qualified.right.name.to_string());
+                current = &qualified.left;
+            }
+            TSTypeName::ThisExpression(_) => return None,
         }
-        TSTypeName::ThisExpression(_) => None,
     }
+    segments.reverse();
+    Some(segments)
 }
 
 /// A class member's name as written: `#name` for a private name; `None` for a computed key.
@@ -1425,6 +1450,7 @@ impl<'s> Collector<'s> {
                         let (body_dependencies, _) =
                             self.walk_body(Some(&from), Some(&full), &fields, |walker| {
                                 walker.enter_parameters(&function.params);
+                                walker.parameter_defaults(&function.params);
                                 walker.visit_function_body(body);
                             });
                         member_dependencies.extend(body_dependencies);
@@ -1746,6 +1772,8 @@ struct TypeNames {
 }
 
 impl<'a> Visit<'a> for TypeNames {
+    crate::walk::iterative_chains!();
+
     fn visit_ts_type_reference(&mut self, it: &oxc_ast::ast::TSTypeReference<'a>) {
         if let Some(segments) = type_name_segments(&it.type_name) {
             self.found.push((segments, it.span.start));
@@ -1808,6 +1836,21 @@ impl BodyWalker<'_, '_> {
         }
     }
 
+    /// The default values in a parameter list (`r = new Repo()`, `{ r = new Repo() } = {}`),
+    /// walked as a function's own parameters are by [`walk::walk_function`]; decorators and
+    /// type annotations are the signature's, not the body's.
+    fn parameter_defaults(&mut self, parameters: &FormalParameters<'_>) {
+        for parameter in &parameters.items {
+            self.visit_binding_pattern(&parameter.pattern);
+            if let Some(initializer) = &parameter.initializer {
+                self.visit_expression(initializer);
+            }
+        }
+        if let Some(rest) = &parameters.rest {
+            self.visit_binding_pattern(&rest.rest.argument);
+        }
+    }
+
     fn scoped(&mut self, visit: impl FnOnce(&mut Self)) {
         self.scopes.push(Vec::new());
         visit(self);
@@ -1839,6 +1882,8 @@ impl BodyWalker<'_, '_> {
 }
 
 impl<'a> Visit<'a> for BodyWalker<'_, '_> {
+    crate::walk::iterative_chains!();
+
     fn visit_function(&mut self, it: &Function<'a>, flags: ScopeFlags) {
         self.function_depth += 1;
         self.scoped(|this| {
@@ -2263,6 +2308,74 @@ mod tests {
         assert_eq!(language_of("a.d.mts"), Language::Typescript);
         assert_eq!(language_of("a.jsx"), Language::Javascript);
         assert_eq!(language_of("a.vue"), Language::Javascript);
+    }
+
+    /// A component's `lang="ts"` script is TypeScript to the code layer whatever the file's
+    /// extension: abstract, generic and readonly are read and the location says typescript.
+    #[test]
+    fn a_component_typescript_script_is_typescript() {
+        let parsed = |script: &str, source_type: SourceType| {
+            let allocator = Allocator::default();
+            let program = Parser::new(&allocator, script, source_type).parse().program;
+            link(vec![collect(&program, script, "C.vue")])
+        };
+        let ts = parsed(
+            "export abstract class Base<T> { readonly id = 1; abstract make(): T; }\n",
+            SourceType::ts(),
+        );
+        let base = ty(&ts, "C.vue#Base");
+        assert_eq!(
+            base.map(|t| t.location.language),
+            Some(Language::Typescript)
+        );
+        assert_eq!(base.and_then(|t| t.r#abstract), Some(true));
+        assert_eq!(base.and_then(|t| t.generic), Some(true));
+        let js = parsed("export class Base {}\n", SourceType::mjs());
+        let base = ty(&js, "C.vue#Base");
+        assert_eq!(
+            base.map(|t| t.location.language),
+            Some(Language::Javascript)
+        );
+        assert_eq!(base.and_then(|t| t.r#abstract), None);
+    }
+
+    /// A method's parameter defaults are part of its body, as a function's are: `new Repo()` in
+    /// `m(r = new Repo())`, in a destructured default and in a rest pattern's default forms a body
+    /// dependency either way.
+    #[test]
+    fn method_parameter_defaults_are_walked_like_a_function_s() {
+        let layer = layer(
+            &[(
+                "p.ts",
+                "export class Repo { static make() { return new Repo(); } static spare() { return new Repo(); } }\n\
+                 export function f(r = new Repo()) {}\n\
+                 export class Service {\n\
+                 \x20 m(r = new Repo(), { q = Repo.make() }: { q?: Repo } = {}, ...[z = Repo.spare()]: Repo[]) {}\n\
+                 }\n",
+            )],
+            &[],
+        );
+        let body = |full_name: &str| {
+            ty(&layer, full_name).map(|t| {
+                t.dependencies
+                    .iter()
+                    .filter(|d| d.kind == "body")
+                    .map(|d| format!("{} {}", d.target, d.member.clone().unwrap_or_default()))
+                    .collect::<Vec<_>>()
+            })
+        };
+        assert_eq!(
+            body("p.ts#f"),
+            Some(vec!["p.ts#Repo constructor".to_owned()])
+        );
+        assert_eq!(
+            body("p.ts#Service"),
+            Some(vec![
+                "p.ts#Repo constructor".to_owned(),
+                "p.ts#Repo make".to_owned(),
+                "p.ts#Repo spare".to_owned(),
+            ])
+        );
     }
 
     #[test]
@@ -2737,5 +2850,36 @@ mod tests {
         assert_eq!(names, ["z.ts#A", "z.ts#Z"]);
         let counts = collected("z.ts", "export class Z { m() { this.m(); } }\n").counts();
         assert_eq!(counts, (1, 1, 0, 1));
+    }
+
+    #[test]
+    fn a_dotted_chain_as_long_as_the_file_does_not_overflow_a_worker_stack() {
+        use crate::walk::{Flavour, WalkOptions, walk_source_then};
+        // 100,000 segments each in an `extends`, type references, a `new` and calls, analysed by
+        // every walker and the code layer on a thread with a rayon worker's 2 MiB stack.
+        let chain = format!("a{}", ".b".repeat(100_000));
+        let source = format!(
+            "export class X extends {chain} {{\n  m(p: {chain}) {{ new {chain}(); return this.n({chain}()); }}\n  n(q: unknown) {{}}\n}}\nlet v: {chain};\n{chain}();\n"
+        );
+        let analysed = std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn(move || {
+                let options = WalkOptions::default();
+                [Flavour::Acorn, Flavour::Swc, Flavour::Tsc]
+                    .into_iter()
+                    .map(|flavour| {
+                        walk_source_then(&source, SourceType::ts(), flavour, &options, |program| {
+                            collect(program, &source, "x.ts").counts()
+                        })
+                        .map(|(_, counts)| counts)
+                        .ok()
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .map(std::thread::JoinHandle::join);
+        assert!(
+            matches!(&analysed, Ok(Ok(counts)) if *counts == vec![Some((1, 2, 0, 2)); 3]),
+            "{analysed:?}"
+        );
     }
 }
