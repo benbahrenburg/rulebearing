@@ -387,7 +387,12 @@ fn restricted_paths(
         .cloned()
         .unwrap_or_default();
     for (index, zone) in zones.iter().enumerate() {
-        let relative = |p: &str| pattern::join(&base, &under(context.dir, p));
+        let relative = |p: &str| {
+            pattern::join(
+                context.prefix,
+                &pattern::join(&base, &under(context.dir, p)),
+            )
+        };
         let targets: Vec<String> = strings(zone.get("target"))
             .iter()
             .map(|t| pattern::path_or_glob(&relative(t)))
@@ -468,7 +473,9 @@ fn glob_body(glob: &str) -> String {
         .to_owned()
 }
 
-fn element(value: &Value) -> Option<Element> {
+/// `prefix` is the configuration's folder relative to the working directory: an element lies
+/// under it, since `ESLint` checks only the files below its configuration.
+fn element(value: &Value, prefix: &str) -> Option<Element> {
     let object = value.as_object()?;
     let kind = object.get("type")?.as_str()?.to_owned();
     let patterns = strings(object.get("pattern"));
@@ -486,10 +493,16 @@ fn element(value: &Value) -> Option<Element> {
             .map(|p| glob_body(&pattern::relative(p)))
             .collect::<Vec<_>>()
             .join("|");
+        let (anywhere, root) = if prefix.is_empty() {
+            ("(?:^|/)".to_owned(), "^".to_owned())
+        } else {
+            let under = format!("^{}/", pattern::escape(prefix));
+            (format!("{under}(?:.*/)?"), under)
+        };
         match mode {
-            "folder" => Ok(format!("(?:^|/)((?:{bodies}))/")),
-            "file" => Ok(format!("(?:^|/)((?:{bodies}))$")),
-            "full" => Ok(format!("^((?:{bodies}))$")),
+            "folder" => Ok(format!("{anywhere}((?:{bodies}))/")),
+            "file" => Ok(format!("{anywhere}((?:{bodies}))$")),
+            "full" => Ok(format!("{root}((?:{bodies}))$")),
             other => Err(format!("mode `{other}` is not folder, file or full")),
         }
     };
@@ -555,7 +568,9 @@ fn disallowed(
         }
         k
     });
-    let default_allow = options.get("default").and_then(Value::as_str) != Some("disallow");
+    // eslint-plugin-boundaries 4.2.2 (`src/helpers/rules.js`): only `default: "allow"` allows;
+    // a missing default disallows.
+    let default_allow = options.get("default").and_then(Value::as_str) == Some("allow");
     let rules = options
         .get("rules")
         .and_then(Value::as_array)
@@ -614,7 +629,7 @@ fn boundaries(
         .as_array()
         .into_iter()
         .flatten()
-        .filter_map(element)
+        .filter_map(|e| element(e, context.prefix))
         .collect();
     let rule_options = options
         .first()
@@ -771,6 +786,9 @@ fn kind_rules(
 struct Context<'a> {
     display: &'a str,
     dir: &'a str,
+    /// The configuration's folder relative to the working directory, where the rules are used:
+    /// every path the configuration names is put under it.
+    prefix: &'a str,
     zones: std::cell::Cell<usize>,
 }
 
@@ -782,14 +800,72 @@ impl Context<'_> {
     }
 }
 
+/// The header notes for the entries that turn a read rule off, split by where each lies relative
+/// to the entries that turn the same rule on: `ESLint` lets a later entry override an earlier one.
+fn off_notes(off: &[(usize, &str, String)], on: &[(usize, &str)]) -> Vec<String> {
+    let (mut later, mut earlier, mut never) = (Vec::new(), Vec::new(), Vec::new());
+    for (position, name, text) in off {
+        let turned_on: Vec<usize> = on
+            .iter()
+            .filter(|(_, n)| n == name)
+            .map(|(p, _)| *p)
+            .collect();
+        if turned_on.is_empty() {
+            never.push(text.as_str());
+        } else if turned_on.iter().any(|p| p < position) {
+            later.push(text.as_str());
+        } else {
+            earlier.push(text.as_str());
+        }
+    }
+    let mut notes = Vec::new();
+    if !later.is_empty() {
+        notes.push(format!(
+            "ESLint turns a rule off later in the file: {}; the rules below still check those files.",
+            later.join("; ")
+        ));
+    }
+    if !earlier.is_empty() {
+        notes.push(format!(
+            "ESLint turns a rule off earlier in the file than the entry that turns it on, which overrides it where both apply: {}.",
+            earlier.join("; ")
+        ));
+    }
+    if !never.is_empty() {
+        notes.push(format!(
+            "ESLint turns a rule off that no entry turns on: {}.",
+            never.join("; ")
+        ));
+    }
+    notes
+}
+
+/// The configuration's folder `dir` (canonical, `/`-separated) relative to `cwd`, or `None` when
+/// it is not under `cwd`.
+fn prefix(dir: &str, cwd: &Path) -> Option<String> {
+    let cwd = cwd
+        .canonicalize()
+        .unwrap_or_else(|_| cwd.to_path_buf())
+        .to_string_lossy()
+        .replace('\\', "/");
+    let cwd = cwd.trim_end_matches('/');
+    if dir == cwd {
+        return Some(String::new());
+    }
+    dir.strip_prefix(cwd)
+        .and_then(|rest| rest.strip_prefix('/'))
+        .map(str::to_owned)
+}
+
 /// `ESLint` rule names the importer reads.
 const RESTRICTED: &[&str] = &["import/no-restricted-paths", "import-x/no-restricted-paths"];
 
-/// Imports the `ESLint` configuration in `file`, displayed as `display`.
+/// Imports the `ESLint` configuration in `file`, displayed as `display`, for rules used from
+/// `cwd`: the paths it names, relative to its own folder, are written relative to `cwd`.
 ///
 /// # Errors
-/// [`ImportError`] when the file cannot be read or evaluated.
-pub fn import(file: &Path, display: &str) -> Result<Document, ImportError> {
+/// [`ImportError`] when the file cannot be read or evaluated, or lies outside `cwd`.
+pub fn import(file: &Path, display: &str, cwd: &Path) -> Result<Document, ImportError> {
     // One spelling of the path, so `import.meta.dirname` and the folder rules are relative to
     // agree when the path runs through a symbolic link.
     let file = &file.canonicalize().unwrap_or_else(|_| file.to_path_buf());
@@ -804,28 +880,46 @@ pub fn import(file: &Path, display: &str) -> Result<Document, ImportError> {
         .and_then(|d| d.canonicalize().ok())
         .map(|d| d.to_string_lossy().replace('\\', "/"))
         .unwrap_or_default();
+    let prefix = prefix(&dir, cwd).ok_or_else(|| {
+        ImportError::Invalid(format!(
+            "{display} is outside the working directory {}, so its paths cannot be written relative to where the rules are used; run the import from a folder that holds it",
+            cwd.display()
+        ))
+    })?;
     let context = Context {
         display,
         dir: &dir,
+        prefix: &prefix,
         zones: std::cell::Cell::new(0),
     };
     let all = entries(&config);
     let mut items = Vec::new();
     let mut skipped = Vec::new();
-    let mut off = Vec::new();
-    for entry in &all {
+    // Each entry that turns a read rule off: its position, the rule, and how it is described.
+    let mut off: Vec<(usize, &str, String)> = Vec::new();
+    // Each entry that turns a read rule on: its position and the rule.
+    let mut on: Vec<(usize, &str)> = Vec::new();
+    for (position, entry) in all.iter().enumerate() {
         for (name, value) in &entry.rules {
+            let read = RESTRICTED.contains(&name.as_str()) || name == "boundaries/element-types";
             let Some((severity, options)) = severity_and_options(value) else {
-                if RESTRICTED.contains(&name.as_str()) || name == "boundaries/element-types" {
+                if read {
                     let files = if entry.files.is_empty() {
                         String::new()
                     } else {
                         format!(" for files matching {}", entry.files.join(", "))
                     };
-                    off.push(format!("{name} is off{files} ({})", entry.origin));
+                    off.push((
+                        position,
+                        name,
+                        format!("{name} is off{files} ({})", entry.origin),
+                    ));
                 }
                 continue;
             };
+            if read {
+                on.push((position, name));
+            }
             if RESTRICTED.contains(&name.as_str()) {
                 restricted_paths(entry, name, severity, &options, &context, &mut items);
             } else if name == "boundaries/element-types" {
@@ -845,15 +939,14 @@ pub fn import(file: &Path, display: &str) -> Result<Document, ImportError> {
             skipped.join(", ")
         ));
     }
-    if !off.is_empty() {
-        header.push(format!(
-            "ESLint turns a rule off later in the file: {}; the rules below still check those files.",
-            off.join("; ")
-        ));
-    }
-    if items.is_empty() {
+    header.extend(off_notes(&off, &on));
+    if on.is_empty() {
         header.push(
             "No import/no-restricted-paths zone or boundaries/element-types rule was found.".into(),
+        );
+    } else if items.is_empty() {
+        header.push(
+            "The rules found allow every import between the paths they name, so there is nothing to forbid.".into(),
         );
     }
     let mut body = vec![("$schema".to_owned(), Node::str(super::SCHEMA))];
@@ -932,7 +1025,10 @@ mod tests {
 
     #[test]
     fn elements_by_mode() {
-        let folder = element(&serde_json::json!({"type": "c", "pattern": "components/*"}));
+        let folder = element(
+            &serde_json::json!({"type": "c", "pattern": "components/*"}),
+            "",
+        );
         let pattern = folder.and_then(|e| e.pattern.ok()).unwrap_or_default();
         assert_eq!(pattern, "(?:^|/)((?:components/[^/]*))/");
         let re = Regex::new(&pattern).ok();
@@ -940,21 +1036,123 @@ mod tests {
             re.as_ref()
                 .is_some_and(|r| r.is_match("src/components/a/b.ts"))
         );
-        let file =
-            element(&serde_json::json!({"type": "h", "pattern": "helpers/*.js", "mode": "file"}));
+        let file = element(
+            &serde_json::json!({"type": "h", "pattern": "helpers/*.js", "mode": "file"}),
+            "",
+        );
         assert!(file.is_some_and(|e| e.pattern.is_ok_and(|p| p.ends_with("))$"))));
-        let base = element(&serde_json::json!({"type": "h", "pattern": "x", "basePattern": "y"}));
+        let base = element(
+            &serde_json::json!({"type": "h", "pattern": "x", "basePattern": "y"}),
+            "",
+        );
         assert!(base.is_some_and(|e| e.pattern.is_err()));
-        let odd = element(&serde_json::json!({"type": "h", "pattern": "x", "mode": "odd"}));
+        let odd = element(
+            &serde_json::json!({"type": "h", "pattern": "x", "mode": "odd"}),
+            "",
+        );
         assert!(odd.is_some_and(|e| e.pattern.is_err()));
-        assert!(element(&serde_json::json!({"pattern": "x"})).is_none());
+        assert!(element(&serde_json::json!({"pattern": "x"}), "").is_none());
+    }
+
+    #[test]
+    fn elements_lie_under_the_configuration_folder() {
+        let pattern = |value: serde_json::Value| {
+            element(&value, "packages/app")
+                .and_then(|e| e.pattern.ok())
+                .unwrap_or_default()
+        };
+        let folder = pattern(serde_json::json!({"type": "c", "pattern": "components/*"}));
+        assert_eq!(folder, "^packages/app/(?:.*/)?((?:components/[^/]*))/");
+        let re = Regex::new(&folder).ok();
+        assert!(
+            re.as_ref()
+                .is_some_and(|r| r.is_match("packages/app/src/components/a/b.ts"))
+        );
+        assert!(
+            re.as_ref()
+                .is_some_and(|r| !r.is_match("packages/other/components/a/b.ts"))
+        );
+        let full = pattern(serde_json::json!({"type": "c", "pattern": "src/*", "mode": "full"}));
+        assert_eq!(full, "^packages/app/((?:src/[^/]*))$");
+    }
+
+    #[test]
+    fn the_folder_is_relative_to_the_working_directory() {
+        let cwd = std::env::temp_dir();
+        let canonical = cwd
+            .canonicalize()
+            .unwrap_or_else(|_| cwd.clone())
+            .to_string_lossy()
+            .replace('\\', "/");
+        assert_eq!(prefix(&canonical, &cwd), Some(String::new()));
+        assert_eq!(
+            prefix(&format!("{canonical}/packages/app"), &cwd),
+            Some("packages/app".to_owned())
+        );
+        assert_eq!(prefix(&format!("{canonical}x/app"), &cwd), None);
+        assert_eq!(prefix("/elsewhere", &cwd), None);
+    }
+
+    #[test]
+    fn off_notes_say_where_the_off_entry_lies() {
+        let rule = "import/no-restricted-paths";
+        let later = off_notes(&[(1, rule, "a".into())], &[(0, rule)]);
+        assert_eq!(
+            later,
+            [
+                "ESLint turns a rule off later in the file: a; the rules below still check those files."
+            ]
+        );
+        let earlier = off_notes(&[(0, rule, "b".into())], &[(1, rule)]);
+        assert!(earlier[0].contains("earlier in the file"), "{earlier:?}");
+        let never = off_notes(&[(0, rule, "c".into())], &[(1, "boundaries/element-types")]);
+        assert!(never[0].contains("no entry turns on"), "{never:?}");
+        assert!(off_notes(&[], &[(0, rule)]).is_empty());
+    }
+
+    #[test]
+    fn a_missing_default_disallows() {
+        let elements: Vec<Element> = ["ui", "domain"]
+            .iter()
+            .filter_map(|k| {
+                element(
+                    &serde_json::json!({"type": k, "pattern": format!("src/{k}")}),
+                    "",
+                )
+            })
+            .collect();
+        let options = serde_json::json!({"rules": [{"from": "ui", "allow": ["domain"]}]});
+        let table =
+            disallowed(options.as_object().unwrap_or(&Map::new()), &elements).unwrap_or_default();
+        assert_eq!(
+            table,
+            [
+                ("ui".to_owned(), vec!["ui".to_owned()]),
+                (
+                    "domain".to_owned(),
+                    vec!["ui".to_owned(), "domain".to_owned()]
+                ),
+            ]
+        );
+        let allow = serde_json::json!({"default": "allow", "rules": []});
+        let table =
+            disallowed(allow.as_object().unwrap_or(&Map::new()), &elements).unwrap_or_default();
+        assert!(
+            table.iter().all(|(_, denied)| denied.is_empty()),
+            "{table:?}"
+        );
     }
 
     #[test]
     fn element_type_rules_override_in_order() {
         let elements: Vec<Element> = ["a", "b", "c"]
             .iter()
-            .filter_map(|k| element(&serde_json::json!({"type": k, "pattern": format!("{k}/*")})))
+            .filter_map(|k| {
+                element(
+                    &serde_json::json!({"type": k, "pattern": format!("{k}/*")}),
+                    "",
+                )
+            })
             .collect();
         let options = serde_json::json!({
             "default": "disallow",
