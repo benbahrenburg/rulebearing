@@ -565,15 +565,28 @@ pub(crate) fn load(e: &Evaluator<'_, '_>, path: &str) -> Result<Rc<Association>,
 ///
 /// # Errors
 /// [`ElementError::Diagram`] when the diagram cannot be read, or the object has a dependency
-/// into the diagram and lies in two components or in none.
+/// into the diagram and lies in two components or in none; [`ElementError::Inapplicable`] for an
+/// object that is not a type.
 pub fn adheres(
     e: &Evaluator<'_, '_>,
     object: &Object<'_>,
     path: &str,
 ) -> Result<bool, ElementError> {
     let association = load(e, path)?;
+    // Validation refuses a diagram over any other kind first (the applicability table); an
+    // object that is no type is refused here too rather than passed.
     let Object::Type(ty) = object else {
-        return Ok(true);
+        return Err(ElementError::Inapplicable {
+            rule: e.rule().to_owned(),
+            key: "adhereToPlantUmlDiagram".to_owned(),
+            kind: if matches!(object, Object::Module(_)) {
+                "module"
+            } else {
+                "member"
+            }
+            .to_owned(),
+            why: "a diagram's components hold types".to_owned(),
+        });
     };
     let error = |error: DiagramError| ElementError::Diagram {
         rule: e.rule().to_owned(),
@@ -891,6 +904,37 @@ mod tests {
                 .is_err_and(|e| e.contains("PlantUmlParseException: Could not parse diagram from")),
             "{outcome:?}"
         );
+    }
+
+    #[test]
+    fn a_member_or_a_module_never_adheres_silently() -> Result<(), Box<dyn std::error::Error>> {
+        let folder = std::env::temp_dir().join(format!("rb-plantuml-{}", std::process::id()));
+        std::fs::create_dir_all(&folder)?;
+        std::fs::write(folder.join("d.puml"), DIAGRAM)?;
+        let location = rb_model::Location::in_file(rb_model::Language::Dotnet, None);
+        let member = rb_model::MemberElement::new("Shop.Orders.O", "m", "method", location);
+        let module = rb_model::Module::new("src/a.cs");
+        let document = rb_model::GraphDocument::default();
+        let mut architecture = Architecture::new(&document);
+        architecture.base.clone_from(&folder);
+        let evaluator = Evaluator::new(&architecture, "d");
+        let kinds: Vec<Option<String>> = [Object::Member(&member), Object::Module(&module)]
+            .iter()
+            .map(|object| match adheres(&evaluator, object, "d.puml") {
+                Err(ElementError::Inapplicable { kind, key, .. })
+                    if key == "adhereToPlantUmlDiagram" =>
+                {
+                    Some(kind)
+                }
+                _ => None,
+            })
+            .collect();
+        std::fs::remove_dir_all(&folder)?;
+        assert_eq!(
+            kinds,
+            [Some("member".to_owned()), Some("module".to_owned())]
+        );
+        Ok(())
     }
 
     #[test]

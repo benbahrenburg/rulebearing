@@ -23,6 +23,14 @@
 //! [`matches_dependency_kind`] answers `dependencyKind(Not)` over the edge. Every comparison is
 //! a string the document carries; no language is special here
 //! ([ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md)).
+//!
+//! Which language records which property is data, the `records` table in
+//! [`rb_config::capability`]. [`refuse_unrecorded`] refuses, before any evaluation, a rule whose
+//! `from` or `to` narrows by a property a language that side can select does not record (a
+//! `namespace` over TypeScript modules), unless the side's `language` key leaves that language
+//! out ([ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md)): the key would
+//! be false for every such module. `to` can select the targets of the edges from the modules
+//! `from` can select, since no edge crosses languages.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -396,6 +404,109 @@ pub fn matches_dependency_kind(to: &ToRestriction, kind: Option<&str>) -> bool {
     }) && to.dependency_kind_not.as_ref().is_none_or(|unwanted| {
         kind.is_some_and(|k| !unwanted.as_slice().iter().any(|w| w.as_str() == k))
     })
+}
+
+/// The languages a side can select: those of `present` its `language` key allows.
+fn side_languages(
+    keys: &CrossLanguageKeys,
+    present: &BTreeSet<rb_model::Language>,
+) -> BTreeSet<rb_model::Language> {
+    present
+        .iter()
+        .copied()
+        .filter(|l| {
+            keys.language
+                .as_ref()
+                .is_none_or(|w| w.as_slice().contains(l))
+        })
+        .collect()
+}
+
+/// The first key of `keys` whose property a language of `languages` does not record.
+fn unrecorded_key(
+    keys: &[&'static str],
+    languages: &BTreeSet<rb_model::Language>,
+) -> Option<(&'static str, rb_model::Language, &'static str)> {
+    keys.iter().find_map(|key| {
+        let property = rb_config::capability::ModuleProperty::of_key(key)?;
+        languages.iter().find_map(|language| {
+            match rb_config::capability::records(*language, property) {
+                rb_config::capability::Recorded::No(why) => Some((*key, *language, why)),
+                rb_config::capability::Recorded::Yes(_) => None,
+            }
+        })
+    })
+}
+
+/// Refuses a dependency rule that narrows `from` or `to` by a module property a language that
+/// side can select does not record, unless the side's `language` key leaves the language out
+/// ([ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md); the `records` table
+/// of [`rb_config::capability`]). `from` can select the modules of every language present in
+/// the document; `to` the targets of the edges from those modules; `to.dependencyKind` reads the
+/// edges, which the extractor of `from`'s language writes. Modules without a language (core and
+/// external modules no extractor analysed) take no part.
+///
+/// # Errors
+/// [`crate::elements::ElementError::Unrecorded`] naming the rule, the side, the key and the
+/// language.
+pub fn refuse_unrecorded(
+    rules: &rb_config::model::DependencyRules,
+    modules: &[Module],
+) -> Result<(), crate::elements::ElementError> {
+    let present: BTreeSet<rb_model::Language> = modules.iter().filter_map(|m| m.language).collect();
+    let language_of: BTreeMap<&str, rb_model::Language> = modules
+        .iter()
+        .filter_map(|m| m.language.map(|l| (m.source.as_str(), l)))
+        .collect();
+    let lists: [(&str, &[Rule]); 3] = [
+        ("forbidden", &rules.forbidden),
+        ("allowed", &rules.allowed),
+        ("required", &rules.required),
+    ];
+    for (list, rules) in lists {
+        for (index, rule) in rules.iter().enumerate() {
+            let from_keys = rule.from.cross.written();
+            let to_keys = rule.to.additions();
+            if from_keys.is_empty() && to_keys.is_empty() {
+                continue;
+            }
+            let name = if list == "allowed" {
+                format!("allowed[{index}]")
+            } else {
+                rule.name().to_owned()
+            };
+            let from = side_languages(&rule.from.cross, &present);
+            let reached: BTreeSet<rb_model::Language> = modules
+                .iter()
+                .filter(|m| m.language.is_some_and(|l| from.contains(&l)))
+                .flat_map(|m| &m.dependencies)
+                .filter_map(|d| language_of.get(d.resolved.as_str()).copied())
+                .collect();
+            let to = side_languages(&rule.to.cross, &reached);
+            let (edge_keys, target_keys): (Vec<&'static str>, Vec<&'static str>) = to_keys
+                .into_iter()
+                .partition(|k| k.starts_with("dependencyKind"));
+            let found = [
+                ("from", &from_keys, &from),
+                ("to", &target_keys, &to),
+                ("to", &edge_keys, &from),
+            ]
+            .into_iter()
+            .find_map(|(side, keys, languages)| {
+                unrecorded_key(keys, languages).map(|hit| (side, hit))
+            });
+            if let Some((side, (key, language, why))) = found {
+                return Err(crate::elements::ElementError::Unrecorded {
+                    rule: name,
+                    side: side.to_owned(),
+                    key: key.to_owned(),
+                    language: language.as_str().to_owned(),
+                    why: why.to_owned(),
+                });
+            }
+        }
+    }
+    Ok(())
 }
 
 /// The cross-language keys of `from` against the module.
@@ -959,5 +1070,189 @@ mod tests {
         ));
         let captured = rule(json!({ "to": { "via": "^$1" } }));
         assert!(matches_to_via(&captured, &cycle, &["x".into(), "b".into()]));
+    }
+
+    /// A .NET file, a Python module importing a core module, a TypeScript module importing
+    /// another, and a core module with no language.
+    fn mixed() -> Vec<Module> {
+        let module = |source: &str, language: Option<rb_model::Language>, to: &[&str]| {
+            let mut m = Module::new(source);
+            m.language = language;
+            m.dependencies = to
+                .iter()
+                .map(|t| rb_model::Dependency::new("x", *t, rb_model::ModuleSystem::Es6))
+                .collect();
+            m
+        };
+        vec![
+            module("src/A.cs", Some(rb_model::Language::Dotnet), &[]),
+            module("app/core.py", Some(rb_model::Language::Python), &["os"]),
+            module("os", Some(rb_model::Language::Python), &[]),
+            module(
+                "src/a.ts",
+                Some(rb_model::Language::Typescript),
+                &["src/b.ts", "fs"],
+            ),
+            module("src/b.ts", Some(rb_model::Language::Typescript), &[]),
+            module("fs", None, &[]),
+        ]
+    }
+
+    fn refusal(rules: Value, modules: &[Module]) -> Option<(String, String, String, String)> {
+        let map = match rules {
+            Value::Object(map) => map,
+            _ => serde_json::Map::new(),
+        };
+        let rules = rb_config::load::from_canonical(map, rb_config::CompatMode::Native)
+            .unwrap_or_default()
+            .rules
+            .dependencies;
+        match refuse_unrecorded(&rules, modules) {
+            Err(crate::elements::ElementError::Unrecorded {
+                rule,
+                side,
+                key,
+                language,
+                why,
+            }) => {
+                assert!(!why.is_empty());
+                Some((rule, side, key, language))
+            }
+            Err(other) => Some((
+                other.to_string(),
+                String::new(),
+                String::new(),
+                String::new(),
+            )),
+            Ok(()) => None,
+        }
+    }
+
+    fn named(
+        rule: &str,
+        side: &str,
+        key: &str,
+        language: &str,
+    ) -> (String, String, String, String) {
+        (rule.into(), side.into(), key.into(), language.into())
+    }
+
+    #[test]
+    fn a_key_a_language_does_not_record_is_refused_unless_the_side_leaves_it_out() {
+        let modules = mixed();
+        let forbid = |from: Value, to: Value| json!({ "forbidden": [{ "name": "r", "from": from, "to": to }] });
+        assert_eq!(
+            refusal(forbid(json!({ "namespace": "^App" }), json!({})), &modules),
+            Some(named("r", "from", "namespace", "typescript"))
+        );
+        assert_eq!(
+            refusal(
+                forbid(
+                    json!({ "language": ["dotnet", "python"], "namespace": "^App" }),
+                    json!({})
+                ),
+                &modules
+            ),
+            None
+        );
+        assert_eq!(
+            refusal(
+                forbid(
+                    json!({ "language": "python", "assemblyNot": "X" }),
+                    json!({})
+                ),
+                &modules
+            ),
+            Some(named("r", "from", "assemblyNot", "python"))
+        );
+        assert_eq!(
+            refusal(
+                forbid(json!({ "language": "dotnet", "assembly": "X" }), json!({})),
+                &modules
+            ),
+            None
+        );
+        assert_eq!(
+            refusal(
+                forbid(json!({ "language": "python" }), json!({ "project": "app" })),
+                &modules
+            ),
+            None,
+            "a Python module's targets are Python modules"
+        );
+        assert_eq!(
+            refusal(
+                forbid(
+                    json!({ "language": "typescript" }),
+                    json!({ "projectNot": "app" })
+                ),
+                &modules
+            ),
+            Some(named("r", "to", "projectNot", "typescript")),
+            "a TypeScript module's targets are TypeScript modules, or core modules without a language"
+        );
+        assert_eq!(
+            refusal(
+                forbid(json!({}), json!({ "language": "dotnet", "namespace": "X" })),
+                &modules
+            ),
+            None
+        );
+        assert_eq!(
+            refusal(
+                forbid(json!({}), json!({ "dependencyKind": "import" })),
+                &modules
+            ),
+            None,
+            "every extractor records the edge kind"
+        );
+        assert_eq!(
+            refusal(
+                forbid(json!({ "language": "typescript" }), json!({})),
+                &modules
+            ),
+            None,
+            "language is recorded everywhere"
+        );
+    }
+
+    #[test]
+    fn allowed_rules_later_rules_and_absent_languages_are_judged_too() {
+        let modules = mixed();
+        let forbid = |from: Value, to: Value| json!({ "forbidden": [{ "name": "r", "from": from, "to": to }] });
+        let allowed = json!({ "allowed": [{ "from": { "project": "x" }, "to": {} }] });
+        assert_eq!(
+            refusal(allowed, &modules),
+            Some(named("allowed[0]", "from", "project", "typescript"))
+        );
+        let second = json!({ "forbidden": [
+            { "name": "fine", "from": { "language": "dotnet", "namespace": "x" }, "to": {} },
+            { "name": "q", "from": {}, "to": { "namespaceNot": "x" } }
+        ] });
+        assert_eq!(
+            refusal(second, &modules),
+            Some(named("q", "to", "namespaceNot", "typescript"))
+        );
+        // Without TypeScript in the run, nothing is refused.
+        let dotnet_and_python: Vec<Module> = modules
+            .iter()
+            .filter(|m| m.language != Some(rb_model::Language::Typescript))
+            .cloned()
+            .collect();
+        assert_eq!(
+            refusal(
+                forbid(
+                    json!({ "namespace": "^App" }),
+                    json!({ "namespaceNot": "x" })
+                ),
+                &dotnet_and_python
+            ),
+            None
+        );
+        assert_eq!(
+            refusal(forbid(json!({ "project": "^App" }), json!({})), &[]),
+            None,
+            "an empty document can select nothing"
+        );
     }
 }
