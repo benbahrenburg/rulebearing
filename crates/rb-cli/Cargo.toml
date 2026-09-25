@@ -1,0 +1,56 @@
+[package]
+name = "rb-cli"
+description = "The rulebearing command-line tool"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[lib]
+name = "rb_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rulebearing"
+path = "src/main.rs"
+
+[features]
+# Each extractor is a feature so a narrower build never links the others
+# (docs/adr/0010-crate-layout-and-extractor-boundary.md).
+default = ["extract-ts", "extract-dotnet", "extract-python"]
+extract-ts = ["dep:rb-extract-ts"]
+extract-dotnet = ["dep:rb-extract-dotnet"]
+extract-python = ["dep:rb-extract-python"]
+
+[dependencies]
+rb-model = { workspace = true }
+rb-config = { workspace = true }
+rb-rules = { workspace = true }
+rb-ingest = { workspace = true }
+rb-report = { workspace = true }
+rb-extract-ts = { workspace = true, optional = true }
+rb-extract-dotnet = { workspace = true, optional = true }
+rb-extract-python = { workspace = true, optional = true }
+# `preserve_order`: package.json and every JSON the CLI rewrites keep their key order in every
+# feature set, not only when oxc_resolver (extract-ts) happens to enable it.
+serde_json = { workspace = true, features = ["preserve_order"] }
+serde_yaml = { workspace = true }
+serde = { workspace = true }
+clap = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+sha2 = { workspace = true }
+regex = { workspace = true }
+toml = { workspace = true }
+tree-sitter = { workspace = true }
+tree-sitter-c-sharp = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+jsonschema = { workspace = true }
+
+[lints]
+workspace = true

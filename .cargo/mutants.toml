@@ -1,0 +1,29 @@
+# Mutation testing scope and policy: docs/adr/0024-test-quality-gates.md.
+# Run locally: `cargo mutants --package rb-model --package rb-rules --package xtask`.
+# A surviving mutant means a line runs under test without any test asserting on its behaviour.
+
+# Build scripts and the binary's argument dispatch are exercised through the process, not the
+# unit tests, so mutating them reports noise rather than missing assertions.
+exclude_globs = [
+    "crates/rb-model/build.rs",
+    "xtask/src/main.rs",
+]
+
+# Skip mutants whose only effect is on a message a human reads.
+#
+# The index arithmetic in the link scanner is excluded, and here is exactly what that covers.
+# Two of the three mutants are equivalent mutants: `cursor = close + 1` mutated to `close` or
+# `close - 1` cannot change the result, because `line[close]` is always `)` and a `](` match
+# needs `]` followed by `(`, so the next scan finds the same links either way. No input
+# distinguishes them, so no test can. The third, on `cursor + found + 2`, makes the loop spin
+# forever: it is detected, but as a 30-second timeout rather than a failing assertion, which
+# would make this job slow and flaky. Excluded with the reasoning rather than chased with a
+# contrived test (docs/adr/0024-test-quality-gates.md).
+exclude_re = [
+    "impl Display",
+    "fn usage",
+    "replace \\+ with [-*] in links",
+]
+
+timeout_multiplier = 3.0
+minimum_test_timeout = 30

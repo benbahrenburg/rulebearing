@@ -1,0 +1,180 @@
+Extract, evaluate and report: dependency-cruiser's `depcruise`
+
+Usage: rulebearing cruise [OPTIONS] [FILES-OR-DIRECTORIES]...
+
+Arguments:
+  [FILES-OR-DIRECTORIES]...
+          Files, directories and globs to cruise
+
+Options:
+  -c, --config [<FILE>]
+          Read rules and options from FILE (`-` for stdin); without a value, look for
+          rulebearing.{yaml,yml,json,jsonc,toml} or .dependency-cruiser.{js,cjs,mjs,json,yaml,yml}
+
+      --no-config
+          Run without a configuration, even when one is present
+
+      --config-format <FORMAT>
+          The configuration format when it cannot be told from the name: native or
+          dependency-cruiser
+
+      --config-via-node
+          Evaluate a JavaScript configuration with the local Node instead of the sandbox
+
+      --strict-compat
+          Refuse what dependency-cruiser would refuse (nested quantifiers, Rulebearing additions)
+
+      --require-comment-token
+          Require a decision token (`adr:NNNN` or `plan:<slug>`) in every rule's comment
+
+      --graph <FILE>
+          Evaluate the rules over this graph document instead of extracting (a cruise result, or a
+          graph built by another tool, such as scripts/cargo-graph.sh for this repository)
+
+  -T, --output-type <TYPE>
+          Output type: err, err-long, err-html, json, text, csv, teamcity, azure-devops,
+          github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat,
+          fdot, mermaid, d2, metrics, null
+
+  -f, --output-to <FILE>
+          File to write output to; - for stdout
+
+  -m, --metrics
+          Calculate stability metrics (instability, folders)
+
+  -I, --include-only <REGEX>
+          Only include modules matching the regex
+
+  -F, --focus <REGEX>
+          Only include modules matching the regex and their neighbours
+
+      --focus-depth <NUMBER>
+          The depth to focus on: 1 direct neighbours, 2 their neighbours, 0 everything
+
+  -R, --reaches <REGEX>
+          Only include modules matching the regex and every module that reaches them
+
+  -H, --highlight <REGEX>
+          Mark modules matching the regex as highlighted
+
+  -x, --exclude <REGEX>
+          Exclude all modules matching the regex
+
+  -S, --collapse <REGEX-OR-DEPTH>
+          Collapse modules to a folder depth (a single digit) or to the first match of a regex
+
+  -X, --do-not-follow <REGEX>
+          Include modules matching the regex but do not follow their dependencies
+
+      --ignore-known [<FILE>]
+          Ignore the known violations saved in FILE, in place of options.knownViolations (default:
+          .dependency-cruiser-known-violations.json)
+
+      --no-ignore-known
+          Apply no known violations, options.knownViolations included: every finding at its rule's
+          severity
+
+      --max-depth <NUMBER>
+          How deep to follow dependencies from the roots; 0 for no limit
+
+      --module-systems <LIST>
+          Module systems to extract, comma separated: cjs, es6, amd, tsd
+
+  -P, --prefix <PREFIX>
+          Prefix for links in the reports
+
+      --suffix <SUFFIX>
+          Suffix for links in the reports
+
+      --ts-pre-compilation-deps [<VALUE>]
+          Keep TypeScript edges that vanish in compilation: true, false or specify
+
+      --ts-config [<FILE>]
+          The tsconfig to resolve paths and baseUrl from
+
+      --preserve-symlinks
+          Keep symlinked paths rather than their targets
+
+      --webpack-config [<FILE>]
+          Resolve as the webpack configuration FILE does (default webpack.config.js), evaluated in
+          the sandbox
+
+      --webpack-config-json <FILE>
+          A webpack configuration, or its `resolve` block, already evaluated to JSON; wins over
+          --webpack-config and webpackConfig
+
+  -p, --progress [<TYPE>]
+          Show progress on stderr
+
+          Possible values:
+          - cli-feedback:    Stage names on stderr as they start
+          - performance-log: Stage timings and memory on stderr
+          - ndjson:          One JSON object per stage on stderr
+          - none:            Nothing
+
+      --no-progress
+          Show no progress
+
+  -i, --info
+          Show the languages, extensions and parsers this build supports
+
+      --init [<ONESHOT>]
+          Write a first configuration instead of cruising, as `init` does, never asking: `yes` (the
+          default), or `x-scripts` to also add run scripts to package.json
+
+      --preset <LANGUAGE>
+          With --init: the languages whose presets to use instead of the ones found: typescript,
+          dotnet, python
+
+          Possible values:
+          - typescript: TypeScript and JavaScript: `rulebearing:typescript`
+          - dotnet:     .NET: `rulebearing:dotnet`
+          - python:     Python: `rulebearing:python`
+
+      --no-liveness
+          Do not check whether rules match anything; the same as --liveness off
+
+      --liveness <MODE>
+          Rules that match nothing: strict fails the run (exit 2), warn reports them, off skips the
+          check. Default: strict for a rulebearing.* configuration, warn for a dependency-cruiser
+          one (ADR-0032)
+
+          Possible values:
+          - strict: Fails the run with exit 2 (the default for a native configuration)
+          - warn:   Reported in `summary.vacuousRules` and on stderr, without changing the exit code
+            (the default for a dependency-cruiser configuration, which dependency-cruiser does not
+            check)
+          - off:    Not checked
+
+      --strict-schema
+          json: strip every Rulebearing addition so the output validates against cruise-result
+          18.2.0
+
+      --max-findings <N>
+          agent: the most violations shown per rule
+
+      --color <COLOR>
+          Colour terminal output
+
+          Possible values:
+          - auto:   When stdout is a terminal and `NO_COLOR` is not set
+          - always: Always
+          - never:  Never
+          
+          [default: auto]
+
+      --from-hook
+          Answer as a Claude Code Stop hook: the agent report as the reason to keep going when there
+          are errors, exit 0 always
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Exit codes:
+  0       no error-severity violation
+  1-255   the number of error-severity violations, capped at 255, from a reporter that gates:
+          err, err-long, null, teamcity, azure-devops, github-annotations, agent
+          (json, csv and text exit 0, as in dependency-cruiser)
+  2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule
+  3       the configuration is invalid
+A run with exactly 2 or 3 error violations also exits 2 or 3; the report says which it was.

@@ -1,0 +1,62 @@
+[
+  {
+    "rule": "m01-forbidden",
+    "from": "src/mutation/01-forbidden/uses-cli.mjs",
+    "to": "src/cli/format-meta-info.mjs"
+  },
+  {
+    "rule": "m02-path-not",
+    "from": "src/mutation/02-path-not/uses-graph-utl.mjs",
+    "to": "src/graph-utl/compare.mjs"
+  },
+  {
+    "rule": "m03-fence",
+    "from": "src/mutation/03-fence/alpha/a.mjs",
+    "to": "src/mutation/03-fence/beta/b.mjs"
+  },
+  {
+    "rule": "m04-circular",
+    "from": "src/mutation/04-circular/a.mjs",
+    "to": "src/mutation/04-circular/b.mjs"
+  },
+  {
+    "rule": "m05-orphan",
+    "from": "src/mutation/05-orphan/lonely.mjs",
+    "to": "src/mutation/05-orphan/lonely.mjs"
+  },
+  {
+    "rule": "m06-dependency-types-not",
+    "from": "src/mutation/06-dependency-types-not/uses-core.mjs",
+    "to": "path"
+  },
+  {
+    "rule": "m07-reachable",
+    "from": "src/mutation/07-reachable/entry.mjs",
+    "to": "src/mutation/07-reachable/forbidden.mjs"
+  },
+  {
+    "rule": "m08-required",
+    "from": "src/mutation/08-required/skips-the-bus.mjs",
+    "to": "src/mutation/08-required/skips-the-bus.mjs"
+  },
+  {
+    "rule": "m09-dependents",
+    "from": "src/mutation/09-dependents/shared.mjs",
+    "to": "src/mutation/09-dependents/shared.mjs"
+  },
+  {
+    "rule": "m11-via",
+    "from": "src/mutation/11-via/a.mjs",
+    "to": "src/mutation/11-via/hub.mjs"
+  },
+  {
+    "rule": "m12-could-not-resolve",
+    "from": "src/mutation/12-could-not-resolve/imports-nothing.mjs",
+    "to": "./does-not-exist.mjs"
+  },
+  {
+    "rule": "not-in-allowed",
+    "from": "src/mutation/10-allowed/a.mjs",
+    "to": "src/utl/bus.mjs"
+  }
+]

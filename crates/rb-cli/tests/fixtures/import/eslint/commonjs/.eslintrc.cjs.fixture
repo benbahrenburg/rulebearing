@@ -1,0 +1,19 @@
+// A legacy configuration in CommonJS, with a captured-value selector the importer refuses.
+const { rules } = require('eslint-plugin-boundaries');
+const layers = ['domain', 'application'];
+
+module.exports = {
+    plugins: ['boundaries'],
+    settings: {
+        'boundaries/elements': layers.map((type) => ({ type, pattern: `src/${type}`, capture: ['name'] })),
+    },
+    rules: {
+        'boundaries/element-types': [
+            'error',
+            {
+                default: 'allow',
+                rules: [{ from: 'domain', disallow: [['application', { name: 'x' }]] }],
+            },
+        ],
+    },
+};

@@ -1,0 +1,47 @@
+# Prettier formats code and data files, not prose or configuration written for people to read.
+# Markdown style is editorial (CLAUDE.md, documentation conventions) and the mechanical gate on
+# documentation is the link check (docs/adr/0023-documentation-link-and-lint-gates.md); YAML here
+# is example configuration whose line breaks are deliberate.
+**/*.md
+**/*.yml
+**/*.yaml
+
+# Generated, vendored or verbatim. See docs/artifacts/README.md and conformance/README.md.
+target/
+node_modules/
+dist/
+coverage/
+docs/artifacts/
+conformance/**/fixtures/
+conformance/**/upstream/
+presets/dependency-cruiser/
+testbeds/checkouts/
+schema/*.json
+conformance/archunitnet/attribution/
+Cargo.lock
+# The err-html template, verbatim from dependency-cruiser 18.2.0 so the page is upstream's byte for byte
+# (plan 0002, 2E).
+crates/rb-report/src/err_html.html
+# Extractor option fixtures: mini-repositories kept byte for byte, since line and column are asserted.
+crates/rb-extract-ts/tests/options/
+# The code-layer fixture tree and its expectation, compared byte for byte (plan 0002, 2C).
+crates/rb-extract-ts/tests/fixtures/
+# Snapshots written by the code and compared byte for byte (plan 0002, 2D): the resolved presets
+# and the `config expand` fixture.
+crates/rb-config/tests/presets/
+crates/rb-cli/tests/config-expand/
+# Graphs and expectations the extractors write and their tests compare byte for byte (plan 0002,
+# 2A to 2C): regenerated with RB_UPDATE_SNAPSHOTS=1, never edited by hand.
+conformance/**/graphs/
+crates/rb-extract-dotnet/tests/fixtures/*.expected.json
+crates/rb-extract-python/tests/fixtures/*.expected.json
+# Written by the oracle harness (testbeds/oracles/).
+testbeds/results/
+# Vendored verbatim with its NOTICE (the OASIS SARIF 2.1.0 schema).
+crates/rb-report/tests/schemas/
+
+# Local only: fuzzing corpora and the worktrees of parallel agent sessions.
+fuzz/corpus/
+.claude/worktrees/
+# grimp's import cache, written when import-linter runs in this tree.
+.grimp_cache/

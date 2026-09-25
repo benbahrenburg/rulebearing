@@ -1,0 +1,10 @@
+[project]
+name = "fixture-app"
+version = "1.0"
+requires-python = ">=3.12"
+
+[project.scripts]
+fixture-cli = "app.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

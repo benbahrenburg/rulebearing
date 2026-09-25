@@ -1,0 +1,54 @@
+# rulebearing:recommended. Original to Rulebearing (not copied from dependency-cruiser's presets,
+# which live beside this file under presets/dependency-cruiser/). It composes the three
+# per-language presets and adds the rules every language shares. Every rule has a `fix`, and every
+# rule selects every module on its `from` side, so none is vacuous on a repository that has files.
+#
+# dependency-cruiser's merge replaces a rule's `from` and an option's value whole rather than
+# joining them, so the `no-orphans` exclusions and the `exclude` pattern below are the union of the
+# three presets', in the order extends lists them; crates/rb-config/tests/presets.rs fails when
+# they drift. A single-language repository puts its own preset first
+# (`extends: [rulebearing:python, rulebearing:recommended]`), which then wins, and carries no other
+# language's exclusions. Source: docs/artifacts/design.md#what-stays-honest-across-the-boundary.
+# Plans: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 3;
+# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 9. Requirement: FR-CFG-06.
+extends: [rulebearing:typescript, rulebearing:dotnet, rulebearing:python]
+rules:
+  dependencies:
+    forbidden:
+      - name: no-circular
+        comment: "A module that is part of a cycle cannot be changed, tested or moved on its own."
+        fix: "Break the cycle: move the shared code into a module both sides import, or invert one edge behind an interface. Type-only imports do not count."
+        severity: error
+        from: {}
+        to: { circular: true, dependencyTypesNot: [type-only] }
+      - name: not-to-unresolvable
+        comment: "An import that resolves to nothing fails at run time or hides a missing package."
+        fix: "Fix the specifier, or add the package to package.json; for a path alias, check tsConfig and enhancedResolveOptions."
+        severity: error
+        from: {}
+        to: { couldNotResolve: true }
+      - name: no-orphans
+        comment: "A module nothing imports and that imports nothing is usually dead code."
+        fix: "Delete the module, import it from where it belongs, or add its path to this rule's from.pathNot if it is an entry point or a configuration file."
+        severity: warn
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "(^|/)(Program|Startup|AssemblyInfo)\\.cs$"
+            - "(^|/)Migrations/"
+            - "(^|/)__main__\\.py$"
+            - "(^|/)conftest\\.py$"
+        to: {}
+options:
+  exclude:
+    path:
+      - "(^|/)(dist|build|coverage|\\.next|out)/"
+      - "(^|/)(obj|bin)/.+\\.cs$"
+      - "\\.g\\.cs$"
+      - "\\.Designer\\.cs$"
+      - "(^|/)GlobalUsings\\.g\\.cs$"
+      - "(^|/)(\\.venv|venv|site-packages|__pycache__)/"

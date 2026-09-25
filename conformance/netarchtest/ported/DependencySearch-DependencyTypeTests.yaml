@@ -1,0 +1,1885 @@
+# Ported from NetArchTest 1.3.2 test/NetArchTest.Rules.UnitTests/DependencySearch/DependencyTypeTests.cs by conformance/netarchtest/tools/Port. Do not edit; rerun the tool.
+source: test/NetArchTest.Rules.UnitTests/DependencySearch/DependencyTypeTests.cs
+architecture: [NetArchTest.TestStructure]
+cases:
+- id: DependencySearch_Array_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(Array), typeof(ExampleDependency[]), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: Array
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array]
+    fail: []
+- id: DependencySearch_Array_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(Array), typeof(ArrayJagged)]), typeof(ExampleDependency[]), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: Array
+          - doNotHaveName: ArrayJagged
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_ArrayNested_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(Array), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: Array
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array]
+    fail: []
+- id: DependencySearch_ArrayNested_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(Array), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: Array
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array]
+    fail: []
+- id: DependencySearch_ArrayJagged_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(ArrayJagged), typeof(ExampleDependency[][]), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayJagged
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged]
+    fail: []
+- id: DependencySearch_ArrayJagged_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(ArrayJagged)]), typeof(ExampleDependency[][]), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: ArrayJagged
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_ArrayJaggedArray_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(ArrayJagged), typeof(ExampleDependency[]), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayJagged
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged]
+    fail: []
+- id: DependencySearch_ArrayJaggedNested_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(ArrayJagged), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayJagged
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged]
+    fail: []
+- id: DependencySearch_ArrayJaggedNested_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(ArrayJagged), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayJagged
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged]
+    fail: []
+- id: DependencySearch_ArrayMultidimensional_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(ArrayMultidimensional), typeof(ExampleDependency[,,,]), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayMultidimensional
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional]
+    fail: []
+- id: DependencySearch_ArrayMultidimensional_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(ArrayMultidimensional)]), typeof(ExampleDependency[,]), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: ArrayMultidimensional
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_ArrayMultidimensionalNested_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(ArrayMultidimensional), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayMultidimensional
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional]
+    fail: []
+- id: DependencySearch_ArrayMultidimensionalNested_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(ArrayMultidimensional), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayMultidimensional
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional]
+    fail: []
+- id: DependencySearch_ArrayGeneric_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(ArrayOfGenerics), typeof(ExampleDependency<int>[]), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayOfGenerics
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics]
+    fail: []
+- id: DependencySearch_ArrayGeneric_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(StaticGenericClass)]), typeof(ExampleDependency<string>[]), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: StaticGenericClass
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_ArrayGenericNested_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(ArrayOfGenerics), typeof(ExampleDependency<int>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayOfGenerics
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics]
+    fail: []
+- id: DependencySearch_ArrayGenericNested_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(StaticGenericClass)]), typeof(ExampleDependency<string>), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: StaticGenericClass
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_ArrayGenericNestedOpen_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(ArrayOfGenerics), typeof(ExampleDependency<>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency`1\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayOfGenerics
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency`1)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics]
+    fail: []
+- id: DependencySearch_ArrayGenericNestedOpen_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(ArrayOfGenerics), typeof(ExampleDependency<>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayOfGenerics
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics]
+    fail: []
+- id: DependencySearch_ArrayGenericNot_NotFound#1
+  csharp: "Utils.RunDependencyTest(typeof(ArrayOfGenerics), typeof(ExampleDependency), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayOfGenerics
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: []
+    fail: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics]
+- id: DependencySearch_ArrayGenericNot_NotFound#2
+  csharp: "Utils.RunDependencyTest(typeof(ArrayOfGenerics), typeof(ExampleDependency), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayOfGenerics
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics]
+    fail: []
+- id: DependencySearch_ArrayOfGenericsTypeArgument_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(ArrayOfGenericsTypeArgument), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayOfGenericsTypeArgument
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument]
+    fail: []
+- id: DependencySearch_ArrayOfGenericsTypeArgument_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(ArrayOfGenericsTypeArgument), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayOfGenericsTypeArgument
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument]
+    fail: []
+- id: DependencySearch_ArrayOfGenericsTypeArgument_NotFound#2
+  csharp: "Utils.RunDependencyTest(typeof(ArrayOfGenericsTypeArgument), typeof(ExampleDependency[]), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ArrayOfGenericsTypeArgument
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument]
+    fail: []
+- id: "DependencySearch_MethodParameter_NotFound[MethodParameterIn]#1"
+  csharp: "Utils.RunDependencyTest(typeof(MethodParameterIn), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: MethodParameterIn
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn]
+    fail: []
+- id: "DependencySearch_MethodParameter_NotFound[MethodParameterIn]#2"
+  csharp: "Utils.RunDependencyTest(typeof(MethodParameterIn), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: MethodParameterIn
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn]
+    fail: []
+- id: "DependencySearch_MethodParameter_NotFound[MethodParameterOut]#1"
+  csharp: "Utils.RunDependencyTest(typeof(MethodParameterOut), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: MethodParameterOut
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut]
+    fail: []
+- id: "DependencySearch_MethodParameter_NotFound[MethodParameterOut]#2"
+  csharp: "Utils.RunDependencyTest(typeof(MethodParameterOut), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: MethodParameterOut
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut]
+    fail: []
+- id: "DependencySearch_MethodParameter_NotFound[MethodParameterRef]#1"
+  csharp: "Utils.RunDependencyTest(typeof(MethodParameterRef), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: MethodParameterRef
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef]
+    fail: []
+- id: "DependencySearch_MethodParameter_NotFound[MethodParameterRef]#2"
+  csharp: "Utils.RunDependencyTest(typeof(MethodParameterRef), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: MethodParameterRef
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef]
+    fail: []
+- id: DependencySearch_NestedDependencyClass_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(NestedDependencyClass), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.NestedDependencyTree+NestedLevel1+NestedLevel2+NestedDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: NestedDependencyClass
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.NestedDependencyTree\\+NestedLevel1\\+NestedLevel2\\+NestedDependency)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass]
+    fail: []
+- id: DependencySearch_NestedDependencyClass_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(NestedDependencyClass), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: NestedDependencyClass
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass]
+    fail: []
+- id: DependencySearch_NestedDependency_NotFound#1
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(NestedDependencyClass)]), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.NestedDependencyTree+NestedLevel1+NestedLevel2+NestedDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: NestedDependencyClass
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.NestedDependencyTree\\+NestedLevel1\\+NestedLevel2\\+NestedDependency)(?:$|[.+])"
+  expect:
+    pass: []
+    fail:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+- id: DependencySearch_NestedDependency_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(NestedDependencyClass)]), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: NestedDependencyClass
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_NestedDependencyClassGeneric_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(NestedDependencyClassGeneric), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency<int>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: NestedDependencyClassGeneric
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric]
+    fail: []
+- id: DependencySearch_NestedDependencyClassGeneric1_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(NestedDependencyClassGeneric)]), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency<int>), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: NestedDependencyClassGeneric
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_NestedDependencyClassGeneric2_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(StaticGenericClass)]), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2.NestedDependency<double>), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: StaticGenericClass
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_NestedDependencyClassGenericLevel2Generic_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(NestedDependencyClassGenericLevel2Generic), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2<int>.NestedDependency<int>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: NestedDependencyClassGenericLevel2Generic
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+    fail: []
+- id: DependencySearch_NestedDependencyClassGenericLevel2Generic1_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(NestedDependencyClassGenericLevel2Generic)]), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2<int>.NestedDependency<int>), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: NestedDependencyClassGenericLevel2Generic
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_NestedDependencyClassGenericLevel2Generic2_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(StaticGenericClass)]), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2<int>.NestedDependency<double>), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: StaticGenericClass
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_NestedDependencyClassGenericLevel2Generic3_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(StaticGenericClass)]), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2<double>.NestedDependency<int>), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: StaticGenericClass
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_NestedDependencyClassLevel2Generic_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(NestedDependencyClassLevel2Generic), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2<int>.NestedDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: NestedDependencyClassLevel2Generic
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+    fail: []
+- id: DependencySearch_NestedDependencyClassLevel2Generic1_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(NestedDependencyClassLevel2Generic)]), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2<int>.NestedDependency), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: NestedDependencyClassLevel2Generic
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_NestedDependencyClassLevel2Generic2_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(StaticGenericClass)]), typeof(NestedDependencyTree.NestedLevel1.NestedLevel2<double>.NestedDependency), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: StaticGenericClass
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_Pointer_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(Pointer), typeof(StructDependency).MakePointerType(), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: Pointer
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer]
+    fail: []
+- id: DependencySearch_Pointer_NotFound#2
+  csharp: "Utils.RunDependencyTest(typeof(PointerNot), typeof(StructDependency).MakePointerType(), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: PointerNot
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot]
+    fail: []
+- id: DependencySearch_PointerNested_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(Pointer), typeof(StructDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.StructDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: Pointer
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.StructDependency)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer]
+    fail: []
+- id: DependencySearch_PointerNested_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(Pointer), typeof(StructDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: Pointer
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer]
+    fail: []
+- id: DependencySearch_StaticGenericClass_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(StaticGenericClass), typeof(StaticGenericDependency<>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.StaticGenericDependency`1\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: StaticGenericClass
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.StaticGenericDependency`1)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass]
+    fail: []
+- id: DependencySearch_StaticGenericClass_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(StaticGenericClass), typeof(StaticGenericDependency<>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: StaticGenericClass
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass]
+    fail: []
+- id: DependencySearch_Variable_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(Variable), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: Variable
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable]
+    fail: []
+- id: DependencySearch_Variable_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(Variable), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: Variable
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable]
+    fail: []
+- id: DependencySearch_VariableGeneric_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(VariableGeneric), typeof(ExampleDependency<>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency`1\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableGeneric
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency`1)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric]
+    fail: []
+- id: DependencySearch_VariableGeneric_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableGeneric), typeof(ExampleDependency<>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableGeneric
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric]
+    fail: []
+- id: DependencySearch_VariableGenericSimple_NotFound#1
+  csharp: "Utils.RunDependencyTest(typeof(VariableGeneric), typeof(ExampleDependency), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableGeneric
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: []
+    fail: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric]
+- id: DependencySearch_VariableGenericSimple_NotFound#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableGeneric), typeof(ExampleDependency), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableGeneric
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric]
+    fail: []
+- id: DependencySearch_VariableGeneric_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(ArrayOfGenerics), typeof(VariableGeneric)]), typeof(ExampleDependency<>).MakeByRefType(), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: ArrayOfGenerics
+          - doNotHaveName: VariableGeneric
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterIn
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterOut
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.MethodParameterRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_VariableGenericClosed_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableGeneric), typeof(ExampleDependency<int>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableGeneric
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric]
+    fail: []
+- id: DependencySearch_VariableGenericClosed_NotFound#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableGeneric), typeof(ExampleDependency<string>), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableGeneric
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric]
+    fail: []
+- id: DependencySearch_VariableGenericTypeArgument_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(VariableGenericTypeArgument), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableGenericTypeArgument
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument]
+    fail: []
+- id: DependencySearch_VariableGenericTypeArgument_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableGenericTypeArgument), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableGenericTypeArgument
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument]
+    fail: []
+- id: DependencySearch_VariableGenericTypeArgument_NotFound#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableGenericTypeArgument), typeof(List<ExampleDependency>), false, false)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"System.Collections.Generic\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableGenericTypeArgument
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:System\\.Collections\\.Generic)(?:$|[.+])"
+  expect:
+    pass: []
+    fail: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument]
+- id: DependencySearch_VariableGenericTypeArgumentNested_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableGenericTypeArgumentNested), typeof(GenericClass<GenericClass<ExampleDependency>>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableGenericTypeArgumentNested
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+    fail: []
+- id: DependencySearch_VariableGenericTypeArgumentNestedNested_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(VariableGenericTypeArgumentNested), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableGenericTypeArgumentNested
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+    fail: []
+- id: DependencySearch_VariableGenericTypeArgumentNestedNested_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableGenericTypeArgumentNested), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableGenericTypeArgumentNested
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+    fail: []
+- id: DependencySearch_VariableRef_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableRef), typeof(ExampleDependency).MakeByRefType(), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableRef
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef]
+    fail: []
+- id: DependencySearch_VariableRefNested_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(VariableRef), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableRef
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef]
+    fail: []
+- id: DependencySearch_VariableRefNested_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableRef), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableRef
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRef]
+    fail: []
+- id: DependencySearch_VariableRef_NotFound#2
+  csharp: "Utils.RunDependencyTest(Utils.GetTypesThatResideInTheSameNamespaceButWithoutGivenType([typeof(VariableRef), typeof(VariableRefGenericTypeArgument), typeof(MethodParameterIn), typeof(MethodParameterOut), typeof(MethodParameterRef)]), typeof(ExampleDependency).MakeByRefType(), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        all:
+          - any:
+              - all:
+                  - areNotNested: true
+                  - resideInNamespaceMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+              - all:
+                  - areNested: true
+                  - any:
+                      - arePublic: true
+                      - arePrivate: true
+                  - areNestedIn:
+                      kind: type
+                      where:
+                        haveFullNameMatching: "^[Nn][Ee][Tt][Aa][Rr][Cc][Hh][Tt][Ee][Ss][Tt].[Tt][Ee][Ss][Tt][Ss][Tt][Rr][Uu][Cc][Tt][Uu][Rr][Ee].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Ii][Ee][Ss].[Ss][Ee][Aa][Rr][Cc][Hh].[Dd][Ee][Pp][Ee][Nn][Dd][Ee][Nn][Cc][Yy][Tt][Yy][Pp][Ee]"
+          - doNotHaveName: VariableRef
+          - doNotHaveName: VariableRefGenericTypeArgument
+          - doNotHaveName: MethodParameterIn
+          - doNotHaveName: MethodParameterOut
+          - doNotHaveName: MethodParameterRef
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Array
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayMultidimensional
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenerics
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassGenericLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.NestedDependencyClassLevel2Generic
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Pointer
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.PointerNot
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.StaticGenericClass
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.Variable
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGeneric
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableGenericTypeArgumentNested
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple
+    fail: []
+- id: DependencySearch_VariableRefGeneric_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableRefGenericTypeArgument), typeof(GenericClass<ExampleDependency>).MakeByRefType(), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableRefGenericTypeArgument
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefGenericTypeArgument
+    fail: []
+- id: DependencySearch_VariableRefArrayOfGenericsTypeArgumentByRef_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableRefArrayOfGenericsTypeArgument), typeof(GenericClass<ExampleDependency>[]).MakeByRefType(), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableRefArrayOfGenericsTypeArgument
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+    fail: []
+- id: DependencySearch_VariableRefArrayOfGenericsTypeArgument_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableRefArrayOfGenericsTypeArgument), typeof(GenericClass<ExampleDependency>[]), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableRefArrayOfGenericsTypeArgument
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+    fail: []
+- id: DependencySearch_VariableRefArrayOfGenericsTypeArgumentNested_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableRefArrayOfGenericsTypeArgument), typeof(GenericClass<ExampleDependency>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableRefArrayOfGenericsTypeArgument
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass:
+      - NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableRefArrayOfGenericsTypeArgument
+    fail: []
+- id: DependencySearch_VariableTuple_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableTuple), typeof(Tuple<int, ExampleDependency>), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"System\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableTuple
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:System)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple]
+    fail: []
+- id: DependencySearch_VariableTupleNested_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(VariableTuple), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableTuple
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.ExampleDependency)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple]
+    fail: []
+- id: DependencySearch_VariableTupleNested_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableTuple), typeof(ExampleDependency), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableTuple
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple]
+    fail: []
+- id: DependencySearch_VariableTuple_NotFound#2
+  csharp: "Utils.RunDependencyTest(typeof(VariableTuple), typeof(Tuple<int, double>), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"System\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: VariableTuple
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:System)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.VariableTuple]
+    fail: []
+- id: DependencySearch_ConstFieldString_NotFound#1
+  csharp: "Utils.RunDependencyTest(typeof(ConstStringFieldValue), typeof(ArrayJagged), false, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Search.DependencyType.ArrayJagged\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: ConstStringFieldValue
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Search\\.DependencyType\\.ArrayJagged)(?:$|[.+])"
+  expect:
+    pass: []
+    fail: [NetArchTest.TestStructure.Dependencies.Search.DependencyType.ConstStringFieldValue]
+- id: DependencySearch_BaseCtorCall_Found#1
+  csharp: "Utils.RunDependencyTest(typeof(BaseCtorCall), typeof(StaticType), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples.StaticType\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: BaseCtorCall
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples\\.StaticType)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Examples.BaseCtorCall]
+    fail: []
+- id: DependencySearch_BaseCtorCall_Found#2
+  csharp: "Utils.RunDependencyTest(typeof(BaseCtorCall), typeof(StaticType), true, true)"
+  search: "FindTypesThatHaveDependencyOnAny(subjects, [\"NetArchTest.TestStructure.Dependencies.Examples\"])"
+  rule:
+    select:
+      kind: type
+      where:
+        haveName: BaseCtorCall
+    should:
+      dependOnAny:
+        kind: type
+        where:
+          haveFullNameMatching: "^(?:NetArchTest\\.TestStructure\\.Dependencies\\.Examples)(?:$|[.+])"
+  expect:
+    pass: [NetArchTest.TestStructure.Dependencies.Examples.BaseCtorCall]
+    fail: []

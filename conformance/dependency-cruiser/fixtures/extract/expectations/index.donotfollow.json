@@ -1,0 +1,375 @@
+[
+  {
+    "id": "test/extract/index.donotfollow.spec.mjs#1",
+    "title": "[I] extract/index - do not follow do not follow - doNotFollow.path",
+    "call": 1,
+    "surface": "extract",
+    "cwd": ".",
+    "input": {
+      "files": [
+        "test/extract/__mocks__/donotfollow/index.js"
+      ],
+      "cruiseOptions": {
+        "doNotFollow": {
+          "path": "donotfollowonceinthisfolder"
+        }
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "doNotFollow": {
+            "path": "donotfollowonceinthisfolder"
+          }
+        },
+        "tsConfig": null
+      },
+      "tsConfig": null
+    },
+    "expected": [
+      {
+        "source": "test/extract/__mocks__/donotfollow/index.js",
+        "dependencies": [
+          {
+            "module": "./dofollowstuffinhere",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow/dofollowstuffinhere/index.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          },
+          {
+            "module": "./donotfollowonceinthisfolder",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow/donotfollowonceinthisfolder/index.js",
+            "coreModule": false,
+            "followable": false,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": true
+          },
+          {
+            "module": "./donotfollowonceinthisfolder/meta",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow/donotfollowonceinthisfolder/meta.js",
+            "coreModule": false,
+            "followable": false,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": true
+          }
+        ]
+      },
+      {
+        "source": "test/extract/__mocks__/donotfollow/donotfollowonceinthisfolder/index.js",
+        "followable": false,
+        "coreModule": false,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": true,
+        "dependencyTypes": [
+          "local",
+          "require"
+        ],
+        "dependencies": []
+      },
+      {
+        "source": "test/extract/__mocks__/donotfollow/donotfollowonceinthisfolder/meta.js",
+        "followable": false,
+        "coreModule": false,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": true,
+        "dependencyTypes": [
+          "local",
+          "require"
+        ],
+        "dependencies": []
+      },
+      {
+        "source": "test/extract/__mocks__/donotfollow/dofollowstuffinhere/index.js",
+        "dependencies": [
+          {
+            "module": "../donotfollowonceinthisfolder/meta",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow/donotfollowonceinthisfolder/meta.js",
+            "coreModule": false,
+            "followable": false,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": true
+          },
+          {
+            "module": "./callfromlocal",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow/dofollowstuffinhere/callfromlocal.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          }
+        ]
+      },
+      {
+        "source": "test/extract/__mocks__/donotfollow/dofollowstuffinhere/callfromlocal.js",
+        "dependencies": []
+      }
+    ]
+  },
+  {
+    "id": "test/extract/index.donotfollow.spec.mjs#2",
+    "title": "[I] extract/index - do not follow do not follow - doNotFollow.dependencyTypes",
+    "call": 1,
+    "surface": "extract",
+    "cwd": ".",
+    "input": {
+      "files": [
+        "test/extract/__mocks__/donotfollow-dependency-types/index.js"
+      ],
+      "cruiseOptions": {
+        "doNotFollow": {
+          "dependencyTypes": [
+            "npm-no-pkg"
+          ]
+        }
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "doNotFollow": {
+            "dependencyTypes": [
+              "npm-no-pkg"
+            ]
+          }
+        },
+        "tsConfig": null
+      },
+      "tsConfig": null
+    },
+    "expected": [
+      {
+        "source": "test/extract/__mocks__/donotfollow-dependency-types/index.js",
+        "dependencies": [
+          {
+            "module": "./dofollowstuffinhere",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow-dependency-types/dofollowstuffinhere/index.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          },
+          {
+            "module": "./donotfollowonceinthisfolder",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow-dependency-types/donotfollowonceinthisfolder/index.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          },
+          {
+            "module": "./donotfollowonceinthisfolder/meta",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow-dependency-types/donotfollowonceinthisfolder/meta.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          },
+          {
+            "module": "in-package-json",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "npm",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow-dependency-types/node_modules/in-package-json/index.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          },
+          {
+            "module": "not-in-package-json",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "npm-no-pkg",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow-dependency-types/node_modules/not-in-package-json/index.js",
+            "coreModule": false,
+            "followable": false,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": true
+          }
+        ]
+      },
+      {
+        "source": "test/extract/__mocks__/donotfollow-dependency-types/node_modules/not-in-package-json/index.js",
+        "followable": false,
+        "coreModule": false,
+        "couldNotResolve": false,
+        "matchesDoNotFollow": true,
+        "dependencyTypes": [
+          "npm-no-pkg",
+          "require"
+        ],
+        "dependencies": []
+      },
+      {
+        "source": "test/extract/__mocks__/donotfollow-dependency-types/dofollowstuffinhere/index.js",
+        "dependencies": [
+          {
+            "module": "../donotfollowonceinthisfolder/meta",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow-dependency-types/donotfollowonceinthisfolder/meta.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          },
+          {
+            "module": "./callfromlocal",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow-dependency-types/dofollowstuffinhere/callfromlocal.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          }
+        ]
+      },
+      {
+        "source": "test/extract/__mocks__/donotfollow-dependency-types/donotfollowonceinthisfolder/meta.js",
+        "dependencies": [
+          {
+            "module": "./notcalledfromoutside",
+            "moduleSystem": "es6",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "import"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow-dependency-types/donotfollowonceinthisfolder/notcalledfromoutside.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          }
+        ]
+      },
+      {
+        "source": "test/extract/__mocks__/donotfollow-dependency-types/donotfollowonceinthisfolder/notcalledfromoutside.js",
+        "dependencies": []
+      },
+      {
+        "source": "test/extract/__mocks__/donotfollow-dependency-types/dofollowstuffinhere/callfromlocal.js",
+        "dependencies": []
+      },
+      {
+        "source": "test/extract/__mocks__/donotfollow-dependency-types/donotfollowonceinthisfolder/index.js",
+        "dependencies": [
+          {
+            "module": "../dofollowstuffinhere",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow-dependency-types/dofollowstuffinhere/index.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          },
+          {
+            "module": "./notcalledfromoutside",
+            "moduleSystem": "cjs",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "require"
+            ],
+            "resolved": "test/extract/__mocks__/donotfollow-dependency-types/donotfollowonceinthisfolder/notcalledfromoutside.js",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          }
+        ]
+      },
+      {
+        "source": "test/extract/__mocks__/donotfollow-dependency-types/node_modules/in-package-json/index.js",
+        "dependencies": []
+      }
+    ]
+  }
+]

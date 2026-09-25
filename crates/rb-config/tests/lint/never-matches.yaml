@@ -1,0 +1,1 @@
+rules: { dependencies: { forbidden: [ { name: dead-fence, comment: "adr:0001", fix: "Move it.", severity: error, from: { path: "^nowhere/" }, to: {} } ] } }

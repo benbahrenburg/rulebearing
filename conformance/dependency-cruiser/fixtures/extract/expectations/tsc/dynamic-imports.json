@@ -1,0 +1,102 @@
+[
+  {
+    "id": "test/extract/tsc/dynamic-imports.spec.mjs#1",
+    "title": "[U] ast-extractors/extract-typescript - dynamic imports correctly detects a dynamic import statement",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "import('judeljo').then(judeljo => { judeljo.hochik() })",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": true,
+        "module": "judeljo",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "dynamic-import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/dynamic-imports.spec.mjs#2",
+    "title": "[U] ast-extractors/extract-typescript - dynamic imports correctly detects a dynamic import statement with a template that has no placeholders",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "import(`judeljo`).then(judeljo => { judeljo.hochik() })",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": true,
+        "module": "judeljo",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "dynamic-import"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/dynamic-imports.spec.mjs#3",
+    "title": "[U] ast-extractors/extract-typescript - dynamic imports ignores dynamic import statements with a template that has placeholders",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "import(`judeljo/${vlap}`).then(judeljo => { judeljo.hochik() })",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/tsc/dynamic-imports.spec.mjs#4",
+    "title": "[U] ast-extractors/extract-typescript - dynamic imports ignores dynamic import statements with a non-string parameter",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "import(elaborateFunctionCall()).then(judeljo => { judeljo.hochik() })",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/tsc/dynamic-imports.spec.mjs#5",
+    "title": "[U] ast-extractors/extract-typescript - dynamic imports ignores dynamic import statements without a parameter",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "import(/* nothing */).then(judeljo => { judeljo.hochik() })",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": []
+  }
+]

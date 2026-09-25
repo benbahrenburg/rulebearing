@@ -1,0 +1,889 @@
+//! `rulebearing adopt`: a brownfield repository to a green gate in one pull request.
+//!
+//! - Source: [design § The developer relations hat](../../../../docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo)
+//!   ("writes the baseline, the CI step, the hook, and a `docs/architecture/rulebearing.md`, in
+//!   one pull request that is green on day one")
+//! - Plan: [Wave 1, Step 17](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-17-adopt-1f)
+//! - Requirement: [FR-CLI-03](../../../../docs/prd.md#fr-cli-03)
+//!
+//! The repository's dependency-cruiser configuration is kept as it is: `adopt` writes a
+//! `rulebearing.yaml` that `extends` it and adds `options.knownViolations`, one entry per current
+//! finding keyed by its stable id, each with `expires` (90 days unless `--expires`) and `owner`
+//! (the git user unless `--owner`). It cruises again with that file and stops unless the exit code
+//! is 0, and only then writes the CI step, the pre-commit hook and the architecture page. Last, it
+//! commits the files on a branch and opens a pull request with `gh`, or prints the branch when
+//! `gh` or a remote is missing (`--no-pr` stops before the branch).
+
+use std::fmt::Write as _;
+use std::path::Path;
+use std::process::Command;
+
+use chrono::{Days, NaiveDate};
+use clap::{Args, ValueEnum};
+use rb_config::load::{self, LoadOptions};
+use rb_config::read::Syntax;
+use rb_config::{Config, ConfigFormat};
+use rb_model::{Severity, Violation};
+use serde_json::{Value, json};
+
+use crate::cli::ConfigArgs;
+use crate::cmd::{init, plain, rules};
+use crate::configure::{self, Source};
+use crate::context::Context;
+use crate::pipeline::{self, RunOptions};
+use crate::progress::Progress;
+use crate::{Outcome, RunExit};
+
+/// How baseline entries are written.
+#[derive(Debug, Clone, Default, Args)]
+pub struct BaselineArgs {
+    /// When baseline entries expire: a date (YYYY-MM-DD) or a number of days
+    #[arg(long, value_name = "DATE|DAYS")]
+    pub expires: Option<String>,
+    /// Who answers for baseline entries (default: the git user)
+    #[arg(long)]
+    pub owner: Option<String>,
+}
+
+/// The CI system the step is written for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, ValueEnum)]
+pub enum Ci {
+    /// A GitHub Actions workflow using the Rulebearing Action.
+    #[default]
+    Github,
+    /// An Azure Pipelines file with `--output-type azure-devops`.
+    Azure,
+}
+
+/// `adopt`.
+#[derive(Debug, Clone, Default, Args)]
+pub struct AdoptArgs {
+    /// Files and folders to cruise (default: apps, packages and libs, else src, else .)
+    #[arg(value_name = "FILES-OR-DIRECTORIES")]
+    pub paths: Vec<String>,
+    /// Baseline entries
+    #[command(flatten)]
+    pub baseline: BaselineArgs,
+    /// The CI system to write a step for
+    #[arg(long, value_enum, default_value_t = Ci::Github)]
+    pub ci: Ci,
+    /// Write the files but do not create a branch or open a pull request
+    #[arg(long)]
+    pub no_pr: bool,
+    /// Configuration
+    #[command(flatten)]
+    pub config: ConfigArgs,
+}
+
+/// The default life of a baseline entry.
+pub const DEFAULT_DAYS: u64 = 90;
+/// The branch `adopt` commits to.
+pub const BRANCH: &str = "rulebearing/adopt";
+
+fn git(ctx: &Context<'_>, args: &[&str]) -> Option<String> {
+    Command::new("git")
+        .args(args)
+        .current_dir(&ctx.cwd)
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned())
+}
+
+/// The expiry date for `--expires`.
+///
+/// # Errors
+/// A message when the value is neither a date nor a number of days.
+pub fn expiry(today: NaiveDate, expires: Option<&str>) -> Result<NaiveDate, String> {
+    match expires {
+        None => today
+            .checked_add_days(Days::new(DEFAULT_DAYS))
+            .ok_or_else(|| "the date overflows".into()),
+        Some(text) => text
+            .parse::<NaiveDate>()
+            .or_else(|_| {
+                text.parse::<u64>()
+                    .map_err(|_| ())
+                    .and_then(|d| today.checked_add_days(Days::new(d)).ok_or(()))
+            })
+            .map_err(|()| {
+                format!("--expires `{text}`: give a date (YYYY-MM-DD) or a number of days")
+            }),
+    }
+}
+
+/// One `knownViolations` entry per finding that is not already ignored.
+///
+/// # Errors
+/// An [`Outcome`] (exit 3) when `--expires` is malformed.
+pub fn baseline(
+    ctx: &Context<'_>,
+    violations: &[Violation],
+    args: &BaselineArgs,
+) -> Result<Vec<Value>, Outcome> {
+    let expires = expiry(ctx.today, args.expires.as_deref())
+        .map_err(|m| Outcome::failed(RunExit::InvalidConfig, format!("rulebearing: {m}\n")))?;
+    let owner = args
+        .owner
+        .clone()
+        .or_else(|| git(ctx, &["config", "user.name"]))
+        .unwrap_or_else(|| "unowned".into());
+    Ok(violations
+        .iter()
+        .filter(|v| v.rule.severity != Severity::Ignore)
+        .map(|v| {
+            // The id matches the edge; `type` with `cycle` or `via` matches the violation as
+            // dependency-cruiser's own baseline does, so a cycle stays known whichever of its
+            // edges reports it.
+            let mut entry = json!({
+                "id": v.id,
+                "type": v.violation_type,
+                "from": v.from,
+                "to": v.to,
+                "rule": { "name": v.rule.name, "severity": v.rule.severity },
+            });
+            if let Some(cycle) = &v.cycle {
+                entry["cycle"] = json!(cycle);
+            }
+            if let Some(via) = &v.via {
+                entry["via"] = json!(via);
+            }
+            entry["expires"] = json!(expires.to_string());
+            entry["owner"] = json!(owner);
+            entry
+        })
+        .collect())
+}
+
+/// The `rulebearing.yaml` that extends the repository's configuration and holds the baseline.
+pub fn adopted_config(extends: &str, entries: &[Value], empty: &[String], today: &str) -> String {
+    let mut out = String::new();
+    let _ = writeln!(
+        out,
+        "# rulebearing.yaml, written by `rulebearing adopt` on {today}."
+    );
+    let _ = writeln!(
+        out,
+        "# The rules are {extends}'s, unchanged; this file adds the findings present today"
+    );
+    let _ = writeln!(
+        out,
+        "# as known violations, each with an owner and an expiry. Fix them before they expire."
+    );
+    let _ = writeln!(
+        out,
+        "extends: {}",
+        serde_json::to_string(extends).unwrap_or_default()
+    );
+    if !empty.is_empty() {
+        out.push_str(
+            "# These rules match no module today, so they check nothing. They are named here so the\n# gate can pass; fix their paths or delete them, then remove them from this list (ADR-0032).\n",
+        );
+        let _ = writeln!(
+            out,
+            "allowEmpty: {}",
+            serde_json::to_string(empty).unwrap_or_default()
+        );
+    }
+    if !entries.is_empty() {
+        out.push_str("options:\n  knownViolations:\n");
+        for entry in entries {
+            let _ = writeln!(
+                out,
+                "    - {}",
+                serde_json::to_string(entry).unwrap_or_default()
+            );
+        }
+    }
+    out
+}
+
+/// How the configuration's folder installs its dependencies, read from its lockfile. The CI step
+/// installs them before the cruise when there is one, because a `tsconfig.json` that `extends` a
+/// workspace or npm package only resolves once `node_modules` exists. Scripts are skipped: the
+/// cruise needs the files, not a build.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Install {
+    /// `pnpm-lock.yaml`.
+    Pnpm,
+    /// `package-lock.json`.
+    Npm,
+    /// `yarn.lock` with `.yarnrc.yml` (Yarn 2 and later).
+    YarnBerry,
+    /// `yarn.lock` alone (Yarn 1).
+    YarnClassic,
+}
+
+impl Install {
+    /// The lockfile in `dir`, if any.
+    pub fn detect(dir: &Path) -> Option<Self> {
+        if dir.join("pnpm-lock.yaml").is_file() {
+            Some(Self::Pnpm)
+        } else if dir.join("package-lock.json").is_file() {
+            Some(Self::Npm)
+        } else if dir.join("yarn.lock").is_file() {
+            Some(if dir.join(".yarnrc.yml").is_file() {
+                Self::YarnBerry
+            } else {
+                Self::YarnClassic
+            })
+        } else {
+            None
+        }
+    }
+
+    /// The install command.
+    pub fn command(self) -> &'static str {
+        match self {
+            Self::Pnpm => "corepack enable && pnpm install --frozen-lockfile --ignore-scripts",
+            Self::Npm => "npm ci --ignore-scripts",
+            Self::YarnBerry => "corepack enable && yarn install --immutable --mode=skip-build",
+            Self::YarnClassic => "yarn install --frozen-lockfile --ignore-scripts",
+        }
+    }
+}
+
+/// Where the configuration sits in the repository: its folder relative to the git root (`web`,
+/// or empty at the root), and the way back up from it (`../`). The CI step and the pre-commit hook
+/// belong at the root, where GitHub, Azure Pipelines and Git look for them; `rulebearing.yaml`
+/// and the page stay beside the configuration.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Placement {
+    /// The configuration's folder relative to the git root, without a trailing `/`.
+    pub dir: String,
+    /// `../` once per level of `dir`.
+    pub up: String,
+}
+
+impl Placement {
+    /// From `git rev-parse --show-prefix` (`web/`, or empty at the root).
+    pub fn from_prefix(prefix: &str) -> Self {
+        let dir = prefix.trim().trim_end_matches('/').to_owned();
+        let up = dir
+            .split('/')
+            .filter(|s| !s.is_empty())
+            .map(|_| "../")
+            .collect();
+        Self { dir, up }
+    }
+
+    fn of(ctx: &Context<'_>) -> Self {
+        Self::from_prefix(&ctx.repository_prefix())
+    }
+}
+
+/// The CI step's file name, relative to the configuration's folder, and its text.
+pub fn ci_step(
+    ci: Ci,
+    paths: &[String],
+    at: &Placement,
+    install: Option<Install>,
+) -> (String, String) {
+    let paths = paths.join(" ");
+    let version = env!("CARGO_PKG_VERSION");
+    match ci {
+        Ci::Github => {
+            let directory = if at.dir.is_empty() {
+                String::new()
+            } else {
+                format!("          working-directory: {}\n", at.dir)
+            };
+            let run_directory = if at.dir.is_empty() {
+                String::new()
+            } else {
+                format!("        working-directory: {}\n", at.dir)
+            };
+            let dependencies = install.map_or_else(String::new, |i| {
+                format!(
+                    "      - uses: actions/setup-node@v4\n        with:\n          node-version: 22\n      - run: {}\n{run_directory}",
+                    i.command()
+                )
+            });
+            (
+                format!("{}.github/workflows/rulebearing.yml", at.up),
+                format!(
+                    "# The architecture gate, written by `rulebearing adopt`.\nname: rulebearing\n\non:\n  pull_request:\n  push:\n    branches: [main]\n\npermissions:\n  contents: read\n\njobs:\n  rulebearing:\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@v4\n{dependencies}      - uses: benbahrenburg/rulebearing@v{version}\n        with:\n{directory}          args: --config rulebearing.yaml {paths}\n"
+                ),
+            )
+        }
+        Ci::Azure => {
+            let directory = if at.dir.is_empty() {
+                String::new()
+            } else {
+                format!("    workingDirectory: {}\n", at.dir)
+            };
+            let dependencies = install.map_or_else(String::new, |i| {
+                format!(
+                    "  - task: NodeTool@0\n    inputs:\n      versionSpec: '22.x'\n  - script: {}\n    displayName: dependencies\n{directory}",
+                    i.command()
+                )
+            });
+            (
+                format!("{}azure-pipelines.rulebearing.yml", at.up),
+                format!(
+                    "# The architecture gate, written by `rulebearing adopt`.\ntrigger:\n  branches:\n    include: [main]\npr:\n  branches:\n    include: ['*']\n\npool:\n  vmImage: ubuntu-latest\n\nsteps:\n  - checkout: self\n{dependencies}  - script: npx --yes rulebearing@{version} cruise --config rulebearing.yaml --output-type azure-devops {paths}\n    displayName: rulebearing\n{directory}"
+                ),
+            )
+        }
+    }
+}
+
+/// A git-hook manager the repository already uses, which owns its hooks: `adopt` then writes no
+/// hook of its own (one in `.githooks/` would need `core.hooksPath`, which switches the manager's
+/// hooks off) and says what to add to it instead. Husky is not listed: `adopt` extends its
+/// `.husky/pre-commit` directly.
+pub fn hook_manager(root: &Path, cwd: &Path) -> Option<&'static str> {
+    let files = [
+        ("lefthook.yml", "lefthook"),
+        (".lefthook.yml", "lefthook"),
+        ("lefthook.yaml", "lefthook"),
+        (".lefthook.yaml", "lefthook"),
+        (".pre-commit-config.yaml", "pre-commit"),
+    ];
+    if let Some((_, name)) = files.iter().find(|(f, _)| root.join(f).is_file()) {
+        return Some(name);
+    }
+    let simple = |dir: &Path| {
+        std::fs::read_to_string(dir.join("package.json"))
+            .ok()
+            .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+            .is_some_and(|p| p.get("simple-git-hooks").is_some())
+    };
+    (simple(root) || simple(cwd)).then_some("simple-git-hooks")
+}
+
+/// The command a pre-commit hook runs, from the repository root.
+pub fn hook_command(paths: &[String], at: &Placement) -> String {
+    let command = format!(
+        "npx --no-install rulebearing cruise --config rulebearing.yaml --output-type err {}",
+        paths.join(" ")
+    );
+    if at.dir.is_empty() {
+        command
+    } else {
+        format!("(cd {} && {command})", at.dir)
+    }
+}
+
+/// The pre-commit hook, at the git root: Husky's folder when the repository uses Husky, else
+/// `.githooks/`. From a configuration below the root, the command changes into its folder first.
+/// An existing hook keeps every line it has and gains the gate as its last line; one that already
+/// runs the gate is left as it is.
+pub fn hook(cwd: &Path, paths: &[String], at: &Placement) -> (String, String) {
+    let line = format!("{}\n", hook_command(paths, at));
+    let root = cwd.join(&at.up);
+    let (path, relative) = if root.join(".husky").is_dir() {
+        (format!("{}.husky/pre-commit", at.up), ".husky/pre-commit")
+    } else {
+        (
+            format!("{}.githooks/pre-commit", at.up),
+            ".githooks/pre-commit",
+        )
+    };
+    match std::fs::read_to_string(root.join(relative)) {
+        Ok(existing) if existing.contains("rulebearing cruise") => (path, existing),
+        Ok(existing) if !existing.is_empty() => {
+            let separator = if existing.ends_with('\n') { "" } else { "\n" };
+            (path, format!("{existing}{separator}{line}"))
+        }
+        _ if relative == ".husky/pre-commit" => (path, line),
+        _ => (
+            path,
+            format!(
+                "#!/bin/sh\n# The architecture gate before each commit, written by `rulebearing adopt`.\n# Enable it once per clone: git config core.hooksPath .githooks\n{line}"
+            ),
+        ),
+    }
+}
+
+/// `docs/architecture/rulebearing.md`: every rule in a sentence, with its reason, its fix and
+/// its baseline.
+pub fn architecture_page(config: &Config, entries: &[Value], extends: &str) -> String {
+    let mut out = String::from("# Architecture rules\n\n");
+    let _ = writeln!(
+        out,
+        "These rules are checked on every pull request by `rulebearing cruise --config rulebearing.yaml`. They come from `{extends}`; this page is generated by `rulebearing adopt` from `rulebearing explain --plain`.\n"
+    );
+    out.push_str(
+        "| Rule | What it says | Why | What to do | Baselined |\n| --- | --- | --- | --- | --- |\n",
+    );
+    let cell = |t: &str| t.replace('|', "\\|").replace('\n', " ");
+    for (family, rule) in rules::listed(config) {
+        let count = entries
+            .iter()
+            .filter(|e| e["rule"]["name"] == rule.name())
+            .count();
+        let _ = writeln!(
+            out,
+            "| `{}` | {} | {} | {} | {count} |",
+            rule.name(),
+            cell(&plain::sentence(family, rule)),
+            cell(rule.meta.comment.as_deref().unwrap_or("")),
+            cell(rule.meta.fix.as_deref().unwrap_or("")),
+        );
+    }
+    if !entries.is_empty() {
+        let expires = entries
+            .first()
+            .and_then(|e| e["expires"].as_str())
+            .unwrap_or_default();
+        let _ = writeln!(
+            out,
+            "\n{} findings were present when the gate was adopted. They are listed under `options.knownViolations` in `rulebearing.yaml` and expire on {expires}; the gate fails for each one still present after that day.",
+            entries.len()
+        );
+    }
+    out
+}
+
+/// The pull request's body.
+pub fn pr_body(
+    extends: &str,
+    (entries, empty, notes): (&[Value], &[String], &[String]),
+    files: &[String],
+    version: &str,
+) -> String {
+    let mut by_rule: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+    for e in entries {
+        *by_rule
+            .entry(e["rule"]["name"].as_str().unwrap_or_default().to_owned())
+            .or_default() += 1;
+    }
+    let mut out = format!(
+        "This adds an architecture gate that runs the rules in `{extends}` with Rulebearing {version}. The rules are unchanged, and the gate is green today.\n\n"
+    );
+    if entries.is_empty() {
+        out.push_str("The repository has no findings, so there is no baseline.\n\n");
+    } else {
+        let _ = writeln!(
+            out,
+            "{} current findings are baselined in `rulebearing.yaml` (`options.knownViolations`). Each entry names an owner and expires; the gate fails for any still present after that.\n",
+            entries.len()
+        );
+        out.push_str("| Rule | Baselined |\n| --- | --- |\n");
+        for (rule, count) in &by_rule {
+            let _ = writeln!(out, "| `{rule}` | {count} |");
+        }
+        out.push('\n');
+    }
+    if !empty.is_empty() {
+        let names: Vec<String> = empty.iter().map(|n| format!("`{n}`")).collect();
+        let _ = writeln!(
+            out,
+            "These rules match no module today, so they check nothing: {}. They are listed under `allowEmpty` in `rulebearing.yaml` so the gate can pass; fix their paths or delete them, then take them off the list.\n",
+            names.join(", ")
+        );
+    }
+    for note in notes {
+        let _ = writeln!(out, "{note}\n");
+    }
+    out.push_str("Files:\n\n");
+    for f in files {
+        let _ = writeln!(out, "- `{f}`");
+    }
+    out.push_str(
+        "\nTo see why a rule exists and what to do when it fires: `rulebearing explain <rule>`.\n",
+    );
+    out
+}
+
+fn write(ctx: &Context<'_>, file: &str, text: &str) -> Result<(), Outcome> {
+    let mut ignored = String::new();
+    crate::write_output(ctx, file, text, &mut ignored)
+        .map_err(|m| Outcome::failed(RunExit::Untrustworthy, format!("rulebearing adopt: {m}\n")))
+}
+
+/// Marks the hook executable; Git runs it only then. Windows has no mode bit to set.
+fn executable(path: &Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755));
+    }
+    #[cfg(not(unix))]
+    let _ = path;
+}
+
+fn cruise(ctx: &Context<'_>, config: &Config, paths: &[String]) -> Result<pipeline::Run, Outcome> {
+    let options = RunOptions {
+        liveness: true,
+        options_used: serde_json::Map::new(),
+        paths: paths.to_vec(),
+    };
+    pipeline::run(ctx, config, &options, &mut Progress::new(None))
+        .map_err(|e| Outcome::failed(RunExit::Untrustworthy, format!("rulebearing adopt: {e}\n")))
+}
+
+/// Commits `files` on [`BRANCH`] and opens the pull request, or says what to do instead.
+fn open_pull_request(ctx: &Context<'_>, files: &[String], body: &str) -> String {
+    if git(ctx, &["rev-parse", "--is-inside-work-tree"]).as_deref() != Some("true") {
+        return "not a git repository: commit the files above yourself\n".into();
+    }
+    // `-b`, not `-B`: an adopt branch from an earlier run is never reset.
+    if git(ctx, &["checkout", "-b", BRANCH]).is_none() {
+        return format!(
+            "could not create the branch {BRANCH} (does it exist already?); commit the files above yourself\n"
+        );
+    }
+    let mut add = vec!["add", "--"];
+    add.extend(files.iter().map(String::as_str));
+    // Only the files adopt wrote: anything the user had staged stays staged, out of this commit.
+    let mut commit = vec![
+        "commit",
+        "-m",
+        "Adopt the rulebearing architecture gate",
+        "--",
+    ];
+    commit.extend(files.iter().map(String::as_str));
+    if git(ctx, &add).is_none() || git(ctx, &commit).is_none() {
+        return format!("could not commit on {BRANCH}; commit the files above yourself\n");
+    }
+    let has_remote = git(ctx, &["remote"]).is_some_and(|r| !r.is_empty());
+    let has_gh = Command::new("gh")
+        .arg("--version")
+        .output()
+        .is_ok_and(|o| o.status.success());
+    if !has_remote || !has_gh {
+        return format!(
+            "committed on {BRANCH}; push it and open a pull request (no {} found)\n",
+            if has_remote { "gh" } else { "remote" }
+        );
+    }
+    if git(ctx, &["push", "-u", "origin", BRANCH]).is_none() {
+        return format!(
+            "committed on {BRANCH}, but the push failed; push it and open a pull request\n"
+        );
+    }
+    match Command::new("gh")
+        .args([
+            "pr",
+            "create",
+            "--head",
+            BRANCH,
+            "--title",
+            "Adopt the rulebearing architecture gate",
+            "--body",
+            body,
+        ])
+        .current_dir(&ctx.cwd)
+        .output()
+    {
+        Ok(o) if o.status.success() => format!("opened {}", String::from_utf8_lossy(&o.stdout)),
+        _ => format!("pushed {BRANCH}; open the pull request by hand (gh pr create failed)\n"),
+    }
+}
+
+/// The dependency-cruiser configuration `adopt` wraps, as `extends` names it.
+fn wrapped(ctx: &Context<'_>, args: &AdoptArgs) -> Result<String, Outcome> {
+    let Source::File(existing) = configure::source(ctx, &args.config) else {
+        return Err(Outcome::failed(
+            RunExit::InvalidConfig,
+            "rulebearing adopt: no configuration found. adopt keeps an existing dependency-cruiser configuration; for a repository with none, run `rulebearing init`\n",
+        ));
+    };
+    let name = existing
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    if ConfigFormat::detect(&name) == Some(ConfigFormat::Native) {
+        return Err(Outcome::failed(
+            RunExit::InvalidConfig,
+            format!(
+                "rulebearing adopt: {name} is already a Rulebearing configuration. adopt writes rulebearing.yaml around a dependency-cruiser one; add `options.knownViolations` to {name} instead\n"
+            ),
+        ));
+    }
+    let relative = existing.strip_prefix(&ctx.cwd).unwrap_or(&existing);
+    Ok(format!(
+        "./{}",
+        relative.to_string_lossy().replace('\\', "/")
+    ))
+}
+
+/// Cruises with the repository's configuration, baselines what it finds, and cruises again with
+/// the written configuration: the text, the loaded configuration and the entries, or why not.
+fn baselined(
+    ctx: &mut Context<'_>,
+    args: &AdoptArgs,
+    extends: &str,
+    paths: &[String],
+) -> Result<(String, Config, Vec<Value>), Outcome> {
+    let original = configure::required(ctx, &args.config)?;
+    let first = cruise(ctx, &original, paths)?;
+    // A rule that matches nothing is named in `allowEmpty`, so the gate goes green while the
+    // written file says, rule by rule, which fences are not standing (ADR-0032).
+    let empty: Vec<String> = first
+        .evaluation
+        .vacuous
+        .iter()
+        .map(|v| v.name.clone())
+        .collect();
+    let entries = baseline(
+        ctx,
+        &first.evaluation.document.summary.violations,
+        &args.baseline,
+    )?;
+    let text = adopted_config(extends, &entries, &empty, &ctx.today.to_string());
+    let options = LoadOptions {
+        via_node: args.config.config_via_node,
+        ..LoadOptions::default()
+    };
+    let adopted = load::load_text(&text, Syntax::Yaml, &ctx.cwd, &options).map_err(|e| {
+        Outcome::failed(
+            RunExit::InvalidConfig,
+            format!("rulebearing adopt: the written configuration does not load: {e}\n"),
+        )
+    })?;
+    let second = cruise(ctx, &adopted, paths)?;
+    let remaining = second.evaluation.error_count();
+    if remaining != 0 || !second.evaluation.vacuous.is_empty() {
+        return Err(Outcome::failed(
+            RunExit::Untrustworthy,
+            format!(
+                "rulebearing adopt: with the baseline the gate still has {remaining} errors; nothing was written. Please report this with the output of `rulebearing cruise -T json`\n"
+            ),
+        ));
+    }
+    Ok((text, adopted, entries))
+}
+
+/// Runs `adopt`.
+pub fn run(ctx: &mut Context<'_>, args: &AdoptArgs) -> Outcome {
+    let extends = match wrapped(ctx, args) {
+        Ok(e) => e,
+        Err(o) => return o,
+    };
+    let paths = if args.paths.is_empty() {
+        init::discover(&ctx.cwd).roots
+    } else {
+        args.paths.clone()
+    };
+    let (text, adopted, entries) = match baselined(ctx, args, &extends, &paths) {
+        Ok(v) => v,
+        Err(o) => return o,
+    };
+    let at = Placement::of(ctx);
+    let (ci_file, ci_text) = ci_step(args.ci, &paths, &at, Install::detect(&ctx.cwd));
+    let (hook_file, hook_text) = hook(&ctx.cwd, &paths, &at);
+    let hook_path = ctx.resolve(&hook_file);
+    let manager = hook_manager(&ctx.cwd.join(&at.up), &ctx.cwd);
+    let mut files = vec![("rulebearing.yaml".to_owned(), text)];
+    let mut notes = Vec::new();
+    match manager {
+        Some(manager) => notes.push(format!(
+            "The repository runs its git hooks with {manager}, so no hook was added. To run the gate before each commit, add this to its pre-commit hook: `{}`",
+            hook_command(&paths, &at)
+        )),
+        None => files.push((hook_file, hook_text)),
+    }
+    if !ctx.resolve(&ci_file).exists() {
+        files.push((ci_file, ci_text));
+    }
+    files.push((
+        "docs/architecture/rulebearing.md".into(),
+        architecture_page(&adopted, &entries, &extends),
+    ));
+    for (file, text) in &files {
+        if let Err(o) = write(ctx, file, text) {
+            return o;
+        }
+    }
+    if manager.is_none() {
+        executable(&hook_path);
+    }
+    let names: Vec<String> = files.into_iter().map(|(f, _)| f).collect();
+    let mut report = format!(
+        "baselined {} findings; a cruise with rulebearing.yaml exits 0\n",
+        entries.len()
+    );
+    if !adopted.allow_empty.is_empty() {
+        let _ = writeln!(
+            report,
+            "these rules match no module, so they check nothing, and are listed under allowEmpty: {}",
+            adopted.allow_empty.join(", ")
+        );
+    }
+    for note in &notes {
+        let _ = writeln!(report, "{note}");
+    }
+    report.push_str("wrote:\n");
+    for n in &names {
+        let _ = writeln!(report, "  {n}");
+    }
+    if !args.no_pr {
+        let body = pr_body(
+            &extends,
+            (&entries, &adopted.allow_empty, &notes),
+            &names,
+            env!("CARGO_PKG_VERSION"),
+        );
+        report.push_str(&open_pull_request(ctx, &names, &body));
+    }
+    Outcome::printed(report)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn expiry_takes_a_date_or_days() {
+        let today = NaiveDate::from_ymd_opt(2026, 9, 23).unwrap_or_default();
+        assert_eq!(
+            expiry(today, None).map(|d| d.to_string()),
+            Ok("2026-12-22".into())
+        );
+        assert_eq!(
+            expiry(today, Some("10")).map(|d| d.to_string()),
+            Ok("2026-10-03".into())
+        );
+        assert_eq!(
+            expiry(today, Some("2027-01-31")).map(|d| d.to_string()),
+            Ok("2027-01-31".into())
+        );
+        assert!(expiry(today, Some("soon")).is_err());
+    }
+
+    #[test]
+    fn ci_steps_and_hooks() {
+        let paths = vec!["src".to_owned()];
+        let root = Placement::default();
+        let (file, text) = ci_step(Ci::Github, &paths, &root, None);
+        assert_eq!(file, ".github/workflows/rulebearing.yml");
+        assert!(
+            text.contains("args: --config rulebearing.yaml src") && text.contains("contents: read")
+        );
+        let (file, text) = ci_step(Ci::Azure, &paths, &root, None);
+        assert_eq!(file, "azure-pipelines.rulebearing.yml");
+        assert!(text.contains("--output-type azure-devops src"));
+        let dir = std::env::temp_dir().join(format!("rb-adopt-hook-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let _ = std::fs::create_dir_all(dir.join(".husky"));
+        let (file, text) = hook(&dir, &paths, &root);
+        assert_eq!(file, ".husky/pre-commit");
+        assert!(text.starts_with("npx --no-install rulebearing cruise"));
+        let _ = std::fs::write(dir.join(".husky/pre-commit"), &text);
+        assert_eq!(
+            hook(&dir, &paths, &root).1,
+            text,
+            "a second run adds nothing"
+        );
+        // An existing Husky hook without a final newline keeps its last command whole.
+        let _ = std::fs::write(dir.join(".husky/pre-commit"), "npm test");
+        assert_eq!(
+            hook(&dir, &paths, &root).1,
+            format!("npm test\n{text}"),
+            "appended on a line of its own"
+        );
+        let _ = std::fs::remove_dir_all(dir.join(".husky"));
+        assert_eq!(hook(&dir, &paths, &root).0, ".githooks/pre-commit");
+        assert!(hook(&dir, &paths, &root).1.starts_with("#!/bin/sh\n"));
+        // An existing .githooks/pre-commit is extended, never replaced.
+        let _ = std::fs::create_dir_all(dir.join(".githooks"));
+        let _ = std::fs::write(
+            dir.join(".githooks/pre-commit"),
+            "#!/bin/sh\ncargo fmt --check\n",
+        );
+        let (_, merged) = hook(&dir, &paths, &root);
+        assert!(merged.starts_with("#!/bin/sh\ncargo fmt --check\nnpx --no-install rulebearing"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_configuration_below_the_git_root() {
+        assert_eq!(Placement::from_prefix(""), Placement::default());
+        let web = Placement::from_prefix("web/\n");
+        assert_eq!((web.dir.as_str(), web.up.as_str()), ("web", "../"));
+        let deep = Placement::from_prefix("packages/dds/tree/");
+        assert_eq!(
+            (deep.dir.as_str(), deep.up.as_str()),
+            ("packages/dds/tree", "../../../")
+        );
+        let paths = vec!["apps".to_owned()];
+        let (file, text) = ci_step(Ci::Github, &paths, &web, None);
+        assert_eq!(file, "../.github/workflows/rulebearing.yml");
+        assert!(
+            text.contains(
+                "          working-directory: web\n          args: --config rulebearing.yaml apps\n"
+            ),
+            "{text}"
+        );
+        let (file, text) = ci_step(Ci::Azure, &paths, &web, None);
+        assert_eq!(file, "../azure-pipelines.rulebearing.yml");
+        assert!(text.ends_with("    workingDirectory: web\n"), "{text}");
+        let repo = std::env::temp_dir().join(format!("rb-adopt-sub-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&repo);
+        let _ = std::fs::create_dir_all(repo.join("web"));
+        let (file, text) = hook(&repo.join("web"), &paths, &web);
+        assert_eq!(file, "../.githooks/pre-commit");
+        assert!(text.ends_with("(cd web && npx --no-install rulebearing cruise --config rulebearing.yaml --output-type err apps)\n"), "{text}");
+        let _ = std::fs::create_dir_all(repo.join(".husky"));
+        assert_eq!(
+            hook(&repo.join("web"), &paths, &web).0,
+            "../.husky/pre-commit"
+        );
+        let _ = std::fs::remove_dir_all(&repo);
+    }
+
+    #[test]
+    fn a_hook_manager_owns_the_hooks() {
+        let dir = std::env::temp_dir().join(format!("rb-adopt-mgr-{}", std::process::id()));
+        let web = dir.join("web");
+        let _ = std::fs::remove_dir_all(&dir);
+        let _ = std::fs::create_dir_all(&web);
+        assert_eq!(hook_manager(&dir, &web), None);
+        let _ = std::fs::write(web.join("package.json"), r#"{ "simple-git-hooks": {} }"#);
+        assert_eq!(hook_manager(&dir, &web), Some("simple-git-hooks"));
+        let _ = std::fs::write(dir.join(".pre-commit-config.yaml"), "repos: []\n");
+        assert_eq!(hook_manager(&dir, &web), Some("pre-commit"));
+        let _ = std::fs::write(dir.join("lefthook.yml"), "pre-commit: {}\n");
+        assert_eq!(hook_manager(&dir, &web), Some("lefthook"));
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(
+            hook_command(&["apps".to_owned()], &Placement::from_prefix("web/")),
+            "(cd web && npx --no-install rulebearing cruise --config rulebearing.yaml --output-type err apps)"
+        );
+    }
+
+    #[test]
+    fn dependencies_install_from_the_lockfile_before_the_cruise() {
+        let dir = std::env::temp_dir().join(format!("rb-adopt-lock-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let _ = std::fs::create_dir_all(&dir);
+        assert_eq!(Install::detect(&dir), None);
+        for (files, expected) in [
+            (&["yarn.lock"][..], Install::YarnClassic),
+            (&["yarn.lock", ".yarnrc.yml"][..], Install::YarnBerry),
+            (&["package-lock.json", "yarn.lock"][..], Install::Npm),
+            (&["pnpm-lock.yaml", "package-lock.json"][..], Install::Pnpm),
+        ] {
+            for f in files {
+                let _ = std::fs::write(dir.join(f), "");
+            }
+            assert_eq!(Install::detect(&dir), Some(expected), "{files:?}");
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+        for install in [
+            Install::Pnpm,
+            Install::Npm,
+            Install::YarnBerry,
+            Install::YarnClassic,
+        ] {
+            assert!(
+                install.command().contains("--ignore-scripts")
+                    || install.command().contains("--mode=skip-build"),
+                "{install:?} builds nothing"
+            );
+        }
+        let web = Placement::from_prefix("web/");
+        let paths = vec!["apps".to_owned()];
+        let (_, text) = ci_step(Ci::Github, &paths, &web, Some(Install::Pnpm));
+        let install = "      - uses: actions/setup-node@v4\n        with:\n          node-version: 22\n      - run: corepack enable && pnpm install --frozen-lockfile --ignore-scripts\n        working-directory: web\n      - uses: benbahrenburg/rulebearing@";
+        assert!(text.contains(install), "{text}");
+        let (_, text) = ci_step(Ci::Azure, &paths, &web, Some(Install::Npm));
+        assert!(
+            text.contains("  - script: npm ci --ignore-scripts\n    displayName: dependencies\n    workingDirectory: web\n  - script: npx"),
+            "{text}"
+        );
+    }
+}

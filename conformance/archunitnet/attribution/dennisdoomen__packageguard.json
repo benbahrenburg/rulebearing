@@ -1,0 +1,88 @@
+{
+  "repo": "dennisdoomen/packageguard",
+  "sha": "f1fdbca94ccdbd0d18c99cb49f4a2a427aea903f",
+  "buildExitCode": 0,
+  "solution": "PackageGuard.sln",
+  "configuration": "Release",
+  "assemblies": [
+    {
+      "assembly": "PackageGuard",
+      "path": "Src/PackageGuard/bin/Release/net9.0/PackageGuard.dll",
+      "targetFramework": ".NETCoreApp,Version=v9.0",
+      "pdb": "portable",
+      "typesTotal": 69,
+      "typesExcluded": 32,
+      "pdbAttributed": 35,
+      "inferred": 0,
+      "none": 2,
+      "unattributed": [
+        "<>y__InlineArray2`1",
+        "<>z__ReadOnlySingleElementList`1+Enumerator"
+      ]
+    },
+    {
+      "assembly": "PackageGuard.ApiVerificationTests",
+      "path": "Src/PackageGuard.ApiVerificationTests/bin/Release/net9.0/PackageGuard.ApiVerificationTests.dll",
+      "targetFramework": ".NETCoreApp,Version=v9.0",
+      "pdb": "portable",
+      "typesTotal": 11,
+      "typesExcluded": 3,
+      "pdbAttributed": 7,
+      "inferred": 0,
+      "none": 1,
+      "unattributed": [
+        "<>y__InlineArray2`1"
+      ]
+    },
+    {
+      "assembly": "PackageGuard.Core",
+      "path": "Src/PackageGuard.Core/bin/Release/net9.0/PackageGuard.Core.dll",
+      "targetFramework": ".NETCoreApp,Version=v9.0",
+      "pdb": "portable",
+      "typesTotal": 309,
+      "typesExcluded": 153,
+      "pdbAttributed": 152,
+      "inferred": 0,
+      "none": 4,
+      "unattributed": [
+        "<>y__InlineArray13`1",
+        "<>y__InlineArray2`1",
+        "<PrivateImplementationDetails>+__StaticArrayInitTypeSize=10",
+        "<>z__ReadOnlySingleElementList`1+Enumerator"
+      ]
+    },
+    {
+      "assembly": "PackageGuard.Specs",
+      "path": "Src/PackageGuard.Specs/bin/Release/net9.0/PackageGuard.Specs.dll",
+      "targetFramework": ".NETCoreApp,Version=v9.0",
+      "pdb": "portable",
+      "typesTotal": 307,
+      "typesExcluded": 240,
+      "pdbAttributed": 57,
+      "inferred": 7,
+      "none": 3,
+      "unattributed": [
+        "<>y__InlineArray2`1",
+        "<>y__InlineArray5`1",
+        "<>z__ReadOnlySingleElementList`1+Enumerator"
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "project": "build/_build.csproj",
+      "reason": "no built _build.dll for Release"
+    }
+  ],
+  "pooled": {
+    "typesTotal": 696,
+    "typesExcluded": 428,
+    "pdbAttributed": 251,
+    "inferred": 7,
+    "none": 10
+  },
+  "raw": 0.3706896551724138,
+  "adjusted": 0.9626865671641791,
+  "net4xProjects": 0,
+  "nonPortablePdbTypes": 0
+}

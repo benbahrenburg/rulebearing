@@ -1,0 +1,233 @@
+# import-linter's own .importlinter contracts, translated by hand before `rulebearing import
+# import-linter` existed (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11),
+# and kept as the reference crates/rb-cli/tests/import.rs holds the importer's output to. `layers` (containers: importlinter, exhaustive): each lower layer may not reach a higher
+# one, directly or through other modules, as import-linter checks chains. `acyclic_siblings`
+# (ancestors: importlinter): under each package, its children, each with everything below it, may
+# not import one another in a cycle; one slice rule per package, `segments: 1` making each child
+# one slice. Each `layers` rule's chains pass only through the root package's modules
+# (`graph.chainsThrough`, ADR-0038), as grimp's graph holds the root package alone.
+# The nightly oracle row runs the importer's own output (testbeds/oracles/python.sh).
+languages:
+  python:
+    roots: [src]
+rules:
+  dependencies:
+    forbidden:
+      - name: "layers:ui-to-cli"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/ui(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:api-to-cli"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/api(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:api-to-ui"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/api(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/ui(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:contracts-to-cli"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/contracts(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:contracts-to-ui"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/contracts(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/ui(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:contracts-to-api"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/contracts(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/api(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:configuration-to-cli"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/configuration(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:configuration-to-ui"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/configuration(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/ui(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:configuration-to-api"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/configuration(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/api(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:configuration-to-contracts"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/configuration(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/contracts(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:adapters-to-cli"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/adapters(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:adapters-to-ui"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/adapters(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/ui(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:adapters-to-api"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/adapters(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/api(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:adapters-to-contracts"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/adapters(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/contracts(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:adapters-to-configuration"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/adapters(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/configuration(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:application-to-cli"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/application(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:application-to-ui"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/application(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/ui(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:application-to-api"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/application(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/api(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:application-to-contracts"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/application(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/contracts(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:application-to-configuration"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/application(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/configuration(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:application-to-adapters"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/application(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/adapters(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:domain-to-cli"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/cli(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:domain-to-ui"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/ui(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:domain-to-api"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/api(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:domain-to-contracts"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/contracts(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:domain-to-configuration"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/configuration(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:domain-to-adapters"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/adapters(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+      - name: "layers:domain-to-application"
+        comment: "import-linter contract: Layered architecture"
+        severity: error
+        from: { path: "^src/importlinter/domain(/.*)?\\.py$" }
+        to: { path: "^src/importlinter/application(/.*)?\\.py$", reachable: true }
+        graph: { chainsThrough: "^src/importlinter(/.*)?\\.py$" }
+  slices:
+    - name: "acyclic:importlinter"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: "acyclic:importlinter.adapters"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.adapters.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: "acyclic:importlinter.application"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.application.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: "acyclic:importlinter.application.ports"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.application.ports.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: "acyclic:importlinter.contracts"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.contracts.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: "acyclic:importlinter.domain"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.domain.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: "acyclic:importlinter.ui"
+      comment: "import-linter contract: All packages are acyclic"
+      severity: error
+      matching: "importlinter.ui.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true

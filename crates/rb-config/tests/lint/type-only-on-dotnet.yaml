@@ -1,0 +1,9 @@
+rules:
+  dependencies:
+    forbidden:
+      - name: no-type-imports-into-domain
+        comment: "adr:0001"
+        fix: "Reference the interface from the Domain project instead."
+        severity: error
+        from: { language: dotnet, namespace: "^App\\.Web\\." }
+        to: { namespace: "^App\\.Domain\\.", dependencyTypes: [type-only] }

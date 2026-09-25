@@ -1,0 +1,33 @@
+[package]
+name = "rb-model"
+description = "Rulebearing graph document: the cruise-result module layer plus the code layer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+build = "build.rs"
+
+[build-dependencies]
+# The documentation link check runs on every compile (docs/adr/0023-documentation-link-and-lint-gates.md).
+# rb-model is the crate every other crate depends on, so building anything runs it once.
+xtask = { workspace = true }
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+schemars = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+# The binary is built with serde_json's insertion-ordered maps (oxc_resolver enables them), so the
+# tests run that way too; otherwise explicit key sorting would be untestable here.
+serde_json = { workspace = true, features = ["preserve_order"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,1 @@
+rules: { dependencies: { allowed: [ { fix: "Narrow this entry to the edges you mean.", from: {}, to: {} } ] } }
