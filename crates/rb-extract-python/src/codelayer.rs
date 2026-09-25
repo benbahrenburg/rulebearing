@@ -19,13 +19,17 @@
 //! | `@property` | member `property` with a getter, a setter when `@x.setter` exists, `readonly` without one |
 //! | `@dataclass(frozen=True)` | `immutable: true`; any other class `immutable: false` |
 //! | an `ABC` base, `metaclass=ABCMeta`, or any `@abstractmethod` | `abstract: true` |
-//! | a decorator | an attribute on its target, and a dependency `attribute` when its name is dotted |
+//! | a decorator | an attribute on its target, and a dependency `attribute` when its name is dotted and its root name is bound |
 //! | a leading underscore | visibility `private`; a dunder such as `__init__` is `public` |
 //!
 //! Full names are the dotted module plus the qualified name. A name is resolved through the
 //! module's imports and its own classes and functions: `from pkg.base import Base` makes `Base`
 //! `pkg.base.Base`, `import abc` makes `abc.ABC` itself. A name bound nowhere in the module (a
-//! builtin such as `Exception`) is kept as written and forms no dependency.
+//! builtin such as `Exception`) is kept as written and forms no dependency, and so is a dotted
+//! chain whose root is not bound by an import, a class or a function: `@app.route` after
+//! `app = Flask(...)` is an attribute with the text `app.route`, not a dependency on a module
+//! `app`, which would be invented. A relative import that climbs above the top-level package
+//! binds nothing.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -202,6 +206,18 @@ impl Builder<'_, '_, '_> {
         }
     }
 
+    /// Whether the root name of a dotted chain (`a` in `a.b.c(...)`) is bound by an import, a
+    /// class or a function, so the chain's full name is a real one rather than local text.
+    fn is_bound(&self, expr: &Expr) -> bool {
+        match expr {
+            Expr::Name(name) => self.bindings.contains_key(name.id.as_str()),
+            Expr::Attribute(attribute) => self.is_bound(&attribute.value),
+            Expr::Call(call) => self.is_bound(&call.func),
+            Expr::Subscript(subscript) => self.is_bound(&subscript.value),
+            _ => false,
+        }
+    }
+
     fn location(&self, offset: u32) -> Location {
         let (line, column) = self.lines.locate(offset);
         Location {
@@ -319,7 +335,7 @@ impl Builder<'_, '_, '_> {
                 _ => (Vec::new(), Vec::new()),
             };
             let location = self.location(expression.range().start().into());
-            if name.contains('.') {
+            if name.contains('.') && self.is_bound(expression) {
                 dependencies.push(ElementDependency {
                     target: name.clone(),
                     kind: "attribute".to_owned(),
@@ -386,7 +402,7 @@ impl Builder<'_, '_, '_> {
                     continue;
                 };
                 abstract_ |= matches!(base_name.as_str(), "abc.ABC" | "ABC");
-                if base_name.contains('.') {
+                if base_name.contains('.') && self.is_bound(base) {
                     let (line, _) = self.lines.locate(base.range().start().into());
                     dependencies.push(ElementDependency {
                         target: base_name.clone(),
@@ -721,14 +737,77 @@ class Account:
     }
 
     #[test]
+    fn chains_on_unbound_local_names_form_no_dependency() {
+        let layer = layer(
+            "\
+from flask import Flask
+import sqlalchemy as sa
+app = Flask(__name__)
+db = make_db()
+
+@app.route('/')
+def index(): ...
+
+class Model(db.Model, sa.orm.DeclarativeBase):
+    pass
+
+@Flask.cli
+def command(): ...
+",
+        );
+        let deps = |name: &str| -> Vec<(String, String)> {
+            find(&layer, name)
+                .map(|t| {
+                    t.dependencies
+                        .iter()
+                        .map(|d| (d.target.clone(), d.kind.clone()))
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        assert!(deps("pkg.shapes.index").is_empty());
+        assert_eq!(
+            layer
+                .attributes
+                .iter()
+                .find(|a| a.target == "pkg.shapes.index")
+                .map(|a| a.attribute_type.as_str()),
+            Some("app.route")
+        );
+        let model = find(&layer, "pkg.shapes.Model");
+        assert_eq!(
+            model.map(|t| t.base_types.clone()),
+            Some(vec![
+                "db.Model".to_owned(),
+                "sqlalchemy.orm.DeclarativeBase".to_owned()
+            ])
+        );
+        assert_eq!(
+            deps("pkg.shapes.Model"),
+            [(
+                "sqlalchemy.orm.DeclarativeBase".to_owned(),
+                "inherits".to_owned()
+            )]
+        );
+        assert_eq!(
+            deps("pkg.shapes.command"),
+            [("flask.Flask.cli".to_owned(), "attribute".to_owned())]
+        );
+    }
+
+    #[test]
     fn functions_decorators_and_guarded_definitions() {
         let layer = layer(
             "\
 import functools
-from ..registry import register
+from .registry import register
+from ..above import climbed
 
 @register('name', 3, key=CONST, other=functools.partial)
 def handler(): ...
+
+@climbed.wrap
+def unbound(): ...
 
 async def _task(): ...
 
@@ -749,7 +828,16 @@ if True:
                 .iter()
                 .map(|d| d.target.clone())
                 .collect::<Vec<_>>()),
-            Some(vec!["registry.register".to_owned()])
+            Some(vec!["pkg.registry.register".to_owned()])
+        );
+        // `..above` climbs above the top-level package `pkg`, so `climbed` is bound to nothing.
+        let unbound = find(&layer, "pkg.shapes.unbound");
+        assert_eq!(unbound.map(|t| t.dependencies.len()), Some(0));
+        assert!(
+            layer
+                .attributes
+                .iter()
+                .any(|a| a.target == "pkg.shapes.unbound" && a.attribute_type == "climbed.wrap")
         );
         let attribute = layer
             .attributes
