@@ -124,25 +124,15 @@ impl View {
     /// The `graph.ignore` entries, by index, that match none of `edges` (`(from, resolved)`
     /// pairs): each an exception that no longer excuses anything, which liveness reports.
     pub fn unmatched<'e>(&self, edges: impl IntoIterator<Item = (&'e str, &'e str)>) -> Vec<usize> {
-        let mut matched = vec![false; self.ignore.len()];
-        let mut left = self.ignore.len();
+        // The entries not matched yet; the scan stops once every one has matched.
+        let mut open: Vec<usize> = (0..self.ignore.len()).collect();
         for (from, to) in edges {
-            if left == 0 {
+            if open.is_empty() {
                 break;
             }
-            for (at, entry) in self.ignore.iter().enumerate() {
-                if !matched[at] && entry.matches(from, to) {
-                    matched[at] = true;
-                    left -= 1;
-                }
-            }
+            open.retain(|at| !self.ignore[*at].matches(from, to));
         }
-        matched
-            .iter()
-            .enumerate()
-            .filter(|(_, m)| !**m)
-            .map(|(at, _)| at)
-            .collect()
+        open
     }
 }
 
