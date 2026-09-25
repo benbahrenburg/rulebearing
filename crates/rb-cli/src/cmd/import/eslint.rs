@@ -840,14 +840,20 @@ fn off_notes(off: &[(usize, &str, String)], on: &[(usize, &str)]) -> Vec<String>
     notes
 }
 
+/// The canonical form of `path` without Windows' verbatim prefix (`\\?\C:\x` is `C:\x`), or
+/// `path` itself when it does not exist. The prefix would reach the sandbox as `//?/C:/`, whose
+/// `?` no folder comparison matches and the glob conversion reads as a wildcard.
+fn canonical(path: &Path) -> std::path::PathBuf {
+    path.canonicalize().map_or_else(
+        |_| path.to_path_buf(),
+        |c| std::path::PathBuf::from(crate::cache::key::strip_verbatim(&c.to_string_lossy())),
+    )
+}
+
 /// The configuration's folder `dir` (canonical, `/`-separated) relative to `cwd`, or `None` when
 /// it is not under `cwd`.
 fn prefix(dir: &str, cwd: &Path) -> Option<String> {
-    let cwd = cwd
-        .canonicalize()
-        .unwrap_or_else(|_| cwd.to_path_buf())
-        .to_string_lossy()
-        .replace('\\', "/");
+    let cwd = canonical(cwd).to_string_lossy().replace('\\', "/");
     let cwd = cwd.trim_end_matches('/');
     if dir == cwd {
         return Some(String::new());
@@ -868,7 +874,7 @@ const RESTRICTED: &[&str] = &["import/no-restricted-paths", "import-x/no-restric
 pub fn import(file: &Path, display: &str, cwd: &Path) -> Result<Document, ImportError> {
     // One spelling of the path, so `import.meta.dirname` and the folder rules are relative to
     // agree when the path runs through a symbolic link.
-    let file = &file.canonicalize().unwrap_or_else(|_| file.to_path_buf());
+    let file = &canonical(file);
     let config = read_config(file, display)?;
     if config.is_null() {
         return Err(ImportError::Invalid(format!(
@@ -877,8 +883,7 @@ pub fn import(file: &Path, display: &str, cwd: &Path) -> Result<Document, Import
     }
     let dir = file
         .parent()
-        .and_then(|d| d.canonicalize().ok())
-        .map(|d| d.to_string_lossy().replace('\\', "/"))
+        .map(|d| canonical(d).to_string_lossy().replace('\\', "/"))
         .unwrap_or_default();
     let prefix = prefix(&dir, cwd).ok_or_else(|| {
         ImportError::Invalid(format!(
@@ -1077,13 +1082,16 @@ mod tests {
     }
 
     #[test]
+    fn a_path_that_does_not_exist_is_its_own_canonical_form() {
+        let gone = std::path::Path::new("no/such/rb-eslint-folder");
+        assert_eq!(canonical(gone), gone.to_path_buf());
+    }
+
+    #[test]
     fn the_folder_is_relative_to_the_working_directory() {
         let cwd = std::env::temp_dir();
-        let canonical = cwd
-            .canonicalize()
-            .unwrap_or_else(|_| cwd.clone())
-            .to_string_lossy()
-            .replace('\\', "/");
+        let canonical = canonical(&cwd).to_string_lossy().replace('\\', "/");
+        assert!(!canonical.starts_with("//?/"), "{canonical}");
         assert_eq!(prefix(&canonical, &cwd), Some(String::new()));
         assert_eq!(
             prefix(&format!("{canonical}/packages/app"), &cwd),

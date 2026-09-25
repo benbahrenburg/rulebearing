@@ -97,8 +97,22 @@ fn alias_targets(value: &serde_json::Value) -> Vec<AliasTarget> {
         other => strings(other)
             .unwrap_or_default()
             .into_iter()
-            .map(AliasTarget::Path)
+            .map(|path| AliasTarget::Path(alias_path(path, cfg!(windows))))
             .collect(),
+    }
+}
+
+/// An alias target as the resolver reads it. On Windows a webpack configuration evaluated by
+/// Node writes `path.resolve(__dirname, "src")` as `D:\a\src`, which the resolver does not
+/// match as a folder; the same drive path written with `/` it does. Elsewhere a backslash is a
+/// file-name character, so the target is kept as written.
+fn alias_path(path: String, windows: bool) -> String {
+    let bytes = path.as_bytes();
+    let drive = bytes.len() > 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':';
+    if windows && drive {
+        path.replace('\\', "/")
+    } else {
+        path
     }
 }
 
@@ -981,6 +995,15 @@ mod tests {
         assert_eq!(relative(Path::new("/a/b"), Path::new("/a/x.js")), "../x.js");
         assert_eq!(relative(Path::new("/a/b"), Path::new("/a/b")), "");
         assert_eq!(relative(Path::new("/a/./b/../b"), Path::new("/a/b/y")), "y");
+    }
+
+    #[test]
+    fn a_windows_drive_alias_is_written_with_forward_slashes() {
+        assert_eq!(alias_path(r"D:\a\src".into(), true), "D:/a/src");
+        assert_eq!(alias_path(r"D:\a\src".into(), false), r"D:\a\src");
+        assert_eq!(alias_path(r"lib\x".into(), true), r"lib\x");
+        assert_eq!(alias_path("/a/src".into(), true), "/a/src");
+        assert_eq!(alias_path("C:".into(), true), "C:");
     }
 
     #[cfg(unix)]
