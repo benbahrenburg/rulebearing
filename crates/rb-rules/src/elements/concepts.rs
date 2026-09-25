@@ -669,6 +669,9 @@ mod tests {
         assert!(ends_ignore_case("Ns.Order", "ORDER"));
         assert!(contains_ignore_case("Ns.Order", "s.o"));
         assert!(!eq_ignore_case("Order", "Orders"));
+        assert!(!starts_ignore_case("Ns.Order", "order"));
+        assert!(!ends_ignore_case("Ns.Order", "ns."));
+        assert!(!contains_ignore_case("Ns.Order", "customer"));
         // Beyond ASCII, case still folds: `NamingExtensions` compares with `ToLower`.
         assert!(eq_ignore_case("Écrire", "écrire"));
         assert!(!eq_ignore_case("Écrire", "ecrire"));

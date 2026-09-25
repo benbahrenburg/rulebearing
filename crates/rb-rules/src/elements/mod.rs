@@ -880,8 +880,20 @@ mod tests {
                 true,
             ),
             (
-                empty,
+                empty.clone(),
                 json!({ "all": [{ "exist": true }, { "haveName": "X" }] }),
+                false,
+            ),
+            // Any other condition's empty verdict is true, so it carries an `any` with `exist`.
+            (
+                empty.clone(),
+                json!({ "any": [{ "exist": true }, { "haveName": "X" }] }),
+                true,
+            ),
+            // A negation of a group mentioning existence inverts the group's empty verdict.
+            (
+                empty,
+                json!({ "not": { "all": [{ "notExist": true }, { "haveName": "X" }] } }),
                 false,
             ),
         ];
@@ -899,5 +911,27 @@ mod tests {
         }))?;
         assert!(vacuous.vacuous && !vacuous.holds());
         Ok(())
+    }
+
+    #[test]
+    fn the_function_kind_selects_functions_only() {
+        let at = || Location::in_file(Language::Typescript, Some("a.ts".to_owned()));
+        let document = GraphDocument {
+            code: Some(CodeLayer {
+                types: vec![
+                    TypeElement::new("a.ts#run", "run", "function", at()),
+                    TypeElement::new("a.ts#Widget", "Widget", "class", at()),
+                ],
+                ..CodeLayer::default()
+            }),
+            ..GraphDocument::default()
+        };
+        let architecture = Architecture::new(&document);
+        let of = |kind: Kind| -> Vec<&str> {
+            architecture.of_kind(kind).iter().map(Object::key).collect()
+        };
+        assert_eq!(of(Kind::Function), ["a.ts#run"]);
+        assert_eq!(of(Kind::Type), ["a.ts#Widget"]);
+        assert_eq!(of(Kind::Class), ["a.ts#Widget"]);
     }
 }
