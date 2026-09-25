@@ -18,7 +18,7 @@ use std::path::Path;
 
 use serde_json::{Map, Value};
 
-use crate::normalize::{CROSS_LANGUAGE_KEYS, EDGE_KEYS, NATIVE_RULE_KEYS};
+use crate::normalize::{CROSS_LANGUAGE_KEYS, EDGE_KEYS, GRAPH_KEY, NATIVE_RULE_KEYS};
 use crate::{ConfigError, defines, native, shorthands};
 
 /// Something native-to-dependency-cruiser conversion left out.
@@ -153,6 +153,10 @@ fn drop_cross_language_rules(rules: &mut Vec<Value>, list: &str, dropped: &mut V
                 })
             })
             .collect();
+        let mut keys = keys;
+        if rule.get(GRAPH_KEY).is_some() {
+            keys.push(GRAPH_KEY.to_owned());
+        }
         if keys.is_empty() {
             return true;
         }
@@ -315,6 +319,41 @@ mod tests {
         );
         assert_eq!(described[1].0, "allowed[unnamed]");
         assert!(described[1].1.contains("to.assemblyNot"));
+        Ok(())
+    }
+
+    #[test]
+    fn a_rule_with_graph_is_dropped_whole() -> Result<(), ConfigError> {
+        let native_file = object(json!({ "rules": { "dependencies": { "forbidden": [
+            { "name": "narrowed", "from": { "path": "^a" }, "to": { "path": "^b", "reachable": true }, "graph": { "chainsThrough": "^a" } },
+            { "name": "both", "from": { "language": "python" }, "to": {}, "graph": { "modulesNot": "^n" } },
+            { "name": "kept", "from": { "path": "^a" }, "to": { "path": "^b" } }
+        ] } } }));
+        let (dc, dropped) = to_dependency_cruiser(&native_file, Path::new("."))?;
+        assert_eq!(
+            dc["forbidden"],
+            json!([{ "name": "kept", "from": { "path": "^a" }, "to": { "path": "^b" } }])
+        );
+        let described: Vec<(&str, &str)> = dropped
+            .iter()
+            .map(|d| (d.at.as_str(), d.reason.as_str()))
+            .collect();
+        assert_eq!(described.len(), 2);
+        assert_eq!(described[0].0, "forbidden[narrowed]");
+        assert!(
+            described[0]
+                .1
+                .starts_with("narrowed by graph, a Rulebearing addition"),
+            "{}",
+            described[0].1
+        );
+        assert!(
+            described[1]
+                .1
+                .starts_with("narrowed by from.language, graph,"),
+            "{}",
+            described[1].1
+        );
         Ok(())
     }
 
