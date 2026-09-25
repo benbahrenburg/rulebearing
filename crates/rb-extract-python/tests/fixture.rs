@@ -208,3 +208,120 @@ fn the_extractor_trait_reads_the_working_directory() -> Result<(), Box<dyn Error
     );
     Ok(())
 }
+
+fn write(dir: &Path, file: &str, text: &str) -> std::io::Result<()> {
+    let path = dir.join(file);
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(path, text)
+}
+
+#[test]
+fn a_stub_beside_its_module_adds_no_code_layer() -> Result<(), Box<dyn Error>> {
+    let dir = scratch("stub-beside");
+    write(&dir, "pkg/__init__.py", "")?;
+    write(&dir, "pkg/a.py", "class Foo: ...\n")?;
+    write(&dir, "pkg/a.pyi", "class Foo: ...\n")?;
+    write(&dir, "pkg/only.pyi", "class Bar: ...\n")?;
+    let options = PythonOptions {
+        stubs: Some(true),
+        ..PythonOptions::default()
+    };
+    let extraction = run(&dir, &options)?;
+    let code = extraction.code.unwrap_or_default();
+    let foos: Vec<Option<&str>> = code
+        .types
+        .iter()
+        .filter(|t| t.full_name == "pkg.a.Foo")
+        .map(|t| t.location.file.as_deref())
+        .collect();
+    assert_eq!(foos, [Some("pkg/a.py")]);
+    assert!(code.types.iter().any(|t| t.full_name == "pkg.only.Bar"));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn a_deeply_nested_file_is_a_warning_and_the_run_goes_on() -> Result<(), Box<dyn Error>> {
+    let dir = scratch("deep");
+    write(
+        &dir,
+        "deep.py",
+        &format!("x = 1{}\n", " + 1".repeat(200_000)),
+    )?;
+    write(&dir, "fine.py", "import os\n")?;
+    let extraction = run(&dir, &PythonOptions::default())?;
+    let warned: Vec<(Option<String>, bool)> = extraction
+        .warnings
+        .iter()
+        .map(|w| {
+            (
+                w.path.as_ref().map(|p| p.to_string_lossy().into_owned()),
+                w.message.contains("could not be analysed"),
+            )
+        })
+        .collect();
+    assert_eq!(warned, [(Some("deep.py".to_owned()), true)]);
+    let fine = extraction.modules.iter().find(|m| m.source == "fine.py");
+    assert!(fine.is_some_and(|m| m.dependencies.len() == 1));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn a_namespace_two_distributions_share_names_neither() -> Result<(), Box<dyn Error>> {
+    let dir = scratch("shared-namespace");
+    let site = "venv/lib/python3.13/site-packages";
+    write(
+        &dir,
+        &format!("{site}/google_auth-2.0.dist-info/top_level.txt"),
+        "google\n",
+    )?;
+    write(
+        &dir,
+        &format!("{site}/google_auth-2.0.dist-info/METADATA"),
+        "Name: google-auth\nLicense: Apache-2.0\n",
+    )?;
+    write(
+        &dir,
+        &format!("{site}/protobuf-4.0.dist-info/top_level.txt"),
+        "google\n",
+    )?;
+    write(
+        &dir,
+        &format!("{site}/protobuf-4.0.dist-info/RECORD"),
+        "google/protobuf/__init__.py,,\n",
+    )?;
+    write(
+        &dir,
+        &format!("{site}/protobuf-4.0.dist-info/METADATA"),
+        "Name: protobuf\nLicense: BSD-3-Clause\n",
+    )?;
+    write(&dir, "a.py", "import google.protobuf\nimport google.auth\n")?;
+    let extraction = extract_at(
+        &dir,
+        &[],
+        &PythonOptions::default(),
+        Some(&dir.join("venv")),
+    )?;
+    let a = extraction.modules.iter().find(|m| m.source == "a.py");
+    let licence = |module: &str| {
+        a.and_then(|m| m.dependencies.iter().find(|d| d.module == module))
+            .map(|d| d.license.clone())
+    };
+    assert_eq!(
+        licence("google.protobuf"),
+        Some(Some("BSD-3-Clause".to_owned()))
+    );
+    assert_eq!(licence("google.auth"), Some(None));
+    assert!(
+        extraction
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("google.auth")
+                && w.message.contains("google-auth, protobuf"))
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
