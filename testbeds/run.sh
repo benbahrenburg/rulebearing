@@ -3,7 +3,8 @@
 # with the repository's own configuration, and records the output, the wall-clock time and the
 # peak memory. For a dependency-cruiser row it then times `rulebearing cruise` with the same
 # configuration and roots (the median of three runs); the binary is $RULEBEARING_BIN, else
-# target/release/rulebearing, and without one the Rulebearing column stays empty. The zero diff is
+# target/release/rulebearing, and without one the Rulebearing column stays empty. With
+# $RULEBEARING_BASELINE_BIN it times that build beside it, for check-regression.sh. The zero diff is
 # not taken here: these clones have no dependencies installed, so the incumbent runs without
 # TypeScript. Layer 5 installs them and diffs the three named oracles, and the summary takes their
 # zero diff from it (conformance/dependency-cruiser/scripts/run-layer-5.sh).
@@ -60,9 +61,12 @@ def optional(name):
     p = os.path.join(os.path.dirname(path), name)
     return json.load(open(p)) if os.path.exists(p) else None
 rulebearing = optional("rulebearing-timing.json")
-json.dump({"repo": repo, "sha": sha, "role": role, "tool": tool, "status": status,
-           "detail": detail, "incumbent": timing, "rulebearing": rulebearing},
-          open(path, "w"), indent=2)
+row = {"repo": repo, "sha": sha, "role": role, "tool": tool, "status": status,
+       "detail": detail, "incumbent": timing, "rulebearing": rulebearing}
+regression = optional("regression.json")
+if regression:
+    row["regression"] = regression
+json.dump(row, open(path, "w"), indent=2)
 open(path, "a").write("\n")
 print(f"run: {repo}: {status} {detail}".rstrip())
 PY
@@ -118,10 +122,17 @@ json.dump({"wall_seconds": round(float(sys.argv[2]) - float(sys.argv[1]), 2),
 # The Rulebearing time for a dependency-cruiser row: three timed runs with the incumbent's
 # configuration and roots, the median kept. A run that cannot complete (exit 2 or 3, say an extended
 # tsconfig from an uninstalled package) records no time and says why in rulebearing.err.
+#
+# With $RULEBEARING_BASELINE_BIN (the build behind the previous committed summary, its commit in
+# $RULEBEARING_BASELINE_SHA), each run is followed by one of the baseline, so the pair that
+# check-regression.sh compares comes from one runner. A baseline that cannot complete leaves no
+# pair and says why in baseline.err; it never costs the row its Rulebearing time.
 rulebearing_column() { # dir, config
-  local dir="$1" config="$2" bin run
+  local dir="$1" config="$2" bin baseline run
   bin="${RULEBEARING_BIN:-$here/../target/release/rulebearing}"
+  baseline="${RULEBEARING_BASELINE_BIN:-}"
   [ -x "$bin" ] || return 0
+  [ -n "$baseline" ] && [ ! -x "$baseline" ] && baseline=""
   for run in 1 2 3; do
     # json does not gate (docs/adr/0030-the-reporter-decides-the-error-count-exit.md): 0 is a
     # completed run whatever it found.
@@ -130,13 +141,29 @@ rulebearing_column() { # dir, config
       cp "$out/rulebearing.json.time" "$out/rulebearing.err"
       return 0
     fi
+    if [ -n "$baseline" ] &&
+       ! timed "$out/baseline-timing-$run.json" "$dir" "$out/baseline.json" \
+         "$baseline" cruise --config "$config" --output-type json --no-progress --no-liveness .; then
+      cp "$out/baseline.json.time" "$out/baseline.err"
+      rm -f "$out"/baseline-timing-*.json
+      baseline=""
+    fi
   done
-  python3 - "$out" <<'PY'
+  python3 - "$out" "${RULEBEARING_BASELINE_SHA:-}" <<'PY'
 import json, os, sys
-out = sys.argv[1]
-runs = [json.load(open(os.path.join(out, f"rulebearing-timing-{n}.json"))) for n in (1, 2, 3)]
-runs.sort(key=lambda r: r["wall_seconds"])
-json.dump(runs[1], open(os.path.join(out, "rulebearing-timing.json"), "w"), indent=2)
+out, baseline_sha = sys.argv[1], sys.argv[2]
+def median(prefix):
+    paths = [os.path.join(out, f"{prefix}-timing-{n}.json") for n in (1, 2, 3)]
+    if not all(os.path.exists(p) for p in paths):
+        return None
+    runs = sorted((json.load(open(p)) for p in paths), key=lambda r: r["wall_seconds"])
+    return runs[1]
+current, baseline = median("rulebearing"), median("baseline")
+json.dump(current, open(os.path.join(out, "rulebearing-timing.json"), "w"), indent=2)
+if baseline:
+    json.dump({"current": current["wall_seconds"], "baseline": baseline["wall_seconds"],
+               "baseline_sha": baseline_sha},
+              open(os.path.join(out, "regression.json"), "w"), indent=2)
 PY
 }
 

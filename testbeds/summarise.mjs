@@ -7,6 +7,9 @@
 // the zero diff and Rulebearing's time, taken where both tools ran with the repository's
 // dependencies installed (docs/plans/pending/0001-wave-1-typescript-parity.md, Step 18).
 //
+// A row's `regression` pair (this build and the baseline, timed on one runner by run.sh) passes
+// through unchanged; the layer 5 time replaces only `rulebearing`.
+//
 // Writes <out-dir>/summary.json (machine-readable, what check-regression.sh compares) and
 // <out-dir>/summary.md (the table). With --readme it also replaces the text between the
 // `<!-- testbeds:start -->` and `<!-- testbeds:end -->` markers in that file.

@@ -1,38 +1,33 @@
 #!/usr/bin/env bash
 # Fails when Rulebearing's wall-clock time on any test bed regressed by more than the threshold
-# against the previous nightly summary (design § Test beds, item 3).
+# against the build behind the previous committed summary (design § Test beds, item 3).
 #
 # Plan: docs/plans/pending/0000-wave-0-spike.md, Step 7 item 3. Requirement: docs/prd.md#nfr-conf-03.
-# Usage: testbeds/check-regression.sh <previous summary.json> <current summary.json> [threshold-percent]
+# Usage: testbeds/check-regression.sh <summary.json> [threshold-percent]
 #
-# Only rows with a Rulebearing timing in both summaries are compared, so until wave 1 records one
-# the check reports that there is nothing to compare and passes. A missing previous summary (the
-# first night) passes the same way. Each timing is the median of three runs, and a change under
-# 0.1 s is not counted: most rows take well under a second, where runner noise alone exceeds 20%.
+# Each row's `regression` pair was timed in one job, on one runner: this build and the baseline
+# (the commit the previous committed summary names), interleaved, each the median of three runs
+# (testbeds/run.sh). Two nights' times from two runners are not compared, because hosted runners
+# differ by more than the threshold on the same binary. A row without a pair (the first night, a
+# baseline that did not build or run) is not compared, and with none the check passes saying so. A
+# change under 0.1 s is not counted: most rows take well under a second, where noise exceeds 20%.
 set -euo pipefail
-previous="${1:?usage: check-regression.sh <previous summary.json> <current summary.json> [threshold]}"
-current="${2:?usage: check-regression.sh <previous summary.json> <current summary.json> [threshold]}"
-threshold="${3:-20}"
-if [ ! -f "$previous" ]; then
-  echo "regression: no previous summary; nothing to compare"
-  exit 0
-fi
-python3 - "$previous" "$current" "$threshold" <<'PY'
+summary="${1:?usage: check-regression.sh <summary.json> [threshold]}"
+threshold="${2:-20}"
+python3 - "$summary" "$threshold" <<'PY'
 import json, sys
-previous, current, threshold = sys.argv[1], sys.argv[2], float(sys.argv[3])
-def timings(path):
-    rows = json.load(open(path))
-    return {r["repo"]: r["rulebearing"]["wall_seconds"] for r in rows
-            if (r.get("rulebearing") or {}).get("wall_seconds")}
-before, after = timings(previous), timings(current)
-common = sorted(set(before) & set(after))
-if not common:
-    print("regression: no row has a Rulebearing timing in both summaries; nothing to compare")
+summary, threshold = sys.argv[1], float(sys.argv[2])
+pairs = [(r["repo"], r["regression"]) for r in json.load(open(summary))
+         if (r.get("regression") or {}).get("current") and r["regression"].get("baseline")]
+if not pairs:
+    print("regression: no row has a baseline timed beside this build; nothing to compare")
     sys.exit(0)
-worse = [(repo, before[repo], after[repo]) for repo in common
-         if after[repo] > before[repo] * (1 + threshold / 100) and after[repo] - before[repo] >= 0.1]
-for repo, was, now in worse:
-    print(f"::error::{repo}: Rulebearing took {now} s, was {was} s (over {threshold:g}% slower)")
-print(f"regression: compared {len(common)} rows, {len(worse)} regressed")
+worse = [(repo, p) for repo, p in pairs
+         if p["current"] > p["baseline"] * (1 + threshold / 100) and p["current"] - p["baseline"] >= 0.1]
+for repo, p in worse:
+    print(f"::error::{repo}: Rulebearing took {p['current']} s, the baseline "
+          f"{p.get('baseline_sha', '')[:12]} took {p['baseline']} s on the same runner "
+          f"(over {threshold:g}% slower)")
+print(f"regression: compared {len(pairs)} rows, {len(worse)} regressed")
 sys.exit(1 if worse else 0)
 PY
