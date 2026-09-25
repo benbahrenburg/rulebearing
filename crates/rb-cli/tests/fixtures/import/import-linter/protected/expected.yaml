@@ -17,6 +17,13 @@ rules:
         to:
           path: "^lib/db(/.*)?\\.py$"
         allowEmpty: true
+      - name: db:outside-the-root-packages
+        comment: "import-linter contract: Only the API and the jobs reach the database"
+        from:
+          pathNot: "^lib(/.*)?\\.py$"
+        to:
+          path: "^lib/db(/.*)?\\.py$"
+        allowEmpty: true
       # import-linter contract `empty` (protected): Nothing named
       # protected_modules is empty: nothing to protect
       # - name: empty

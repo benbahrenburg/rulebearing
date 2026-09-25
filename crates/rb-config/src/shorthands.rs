@@ -38,6 +38,9 @@ pub fn expand_layers(layers: &LayersShorthand) -> Vec<Value> {
             if layers.allow_empty {
                 rule.insert("allowEmpty".into(), json!(true));
             }
+            if let Some(graph) = &layers.graph {
+                rule.insert("graph".into(), json!(graph));
+            }
             rules.push(Value::Object(rule));
         }
     }
@@ -114,6 +117,9 @@ pub fn expand_independence(entry: &IndependenceShorthand) -> Result<Value, Confi
     if entry.allow_empty {
         rule.insert("allowEmpty".into(), json!(true));
     }
+    if let Some(graph) = &entry.graph {
+        rule.insert("graph".into(), json!(graph));
+    }
     Ok(Value::Object(rule))
 }
 
@@ -176,6 +182,7 @@ mod tests {
             severity: None,
             layers: names.iter().map(|s| (*s).to_owned()).collect(),
             allow_empty: true,
+            graph: None,
         }
     }
 
@@ -215,7 +222,36 @@ mod tests {
         assert_eq!(rules[0]["severity"], "error");
         assert_eq!(rules[0]["fix"], "invert it");
         assert_eq!(rules[0]["allowEmpty"], true);
+        assert!(rules[0].get("graph").is_none());
         assert!(expand_layers(&layers(&["^a/"])).is_empty());
+    }
+
+    #[test]
+    fn shorthands_copy_graph_to_every_rule() -> Result<(), ConfigError> {
+        let graph = crate::model::GraphFilter {
+            modules_not: Some(rb_model::options::Patterns::One("^ns/".into())),
+            ..crate::model::GraphFilter::default()
+        };
+        let layered = LayersShorthand {
+            graph: Some(graph.clone()),
+            ..layers(&["^a/", "^b/", "^c/"])
+        };
+        let rules = expand_layers(&layered);
+        assert_eq!(rules.len(), 3);
+        for rule in &rules {
+            assert_eq!(rule["graph"], json!({ "modulesNot": "^ns/" }));
+        }
+        let entry = IndependenceShorthand {
+            name: "i".into(),
+            pattern: "^f/([^/]+)/".into(),
+            graph: Some(graph),
+            ..IndependenceShorthand::default()
+        };
+        assert_eq!(
+            expand_independence(&entry)?["graph"],
+            json!({ "modulesNot": "^ns/" })
+        );
+        Ok(())
     }
 
     #[test]
@@ -227,11 +263,13 @@ mod tests {
             severity: None,
             pattern: "^apps/web/src/features/([^/]+)/".into(),
             allow_empty: false,
+            graph: None,
         };
         let rule = expand_independence(&entry)?;
         assert_eq!(rule["from"]["path"], "^apps/web/src/features/([^/]+)/");
         assert_eq!(rule["to"]["pathNot"], "^apps/web/src/features/$1/");
         assert!(rule.get("comment").is_none());
+        assert!(rule.get("graph").is_none());
         Ok(())
     }
 

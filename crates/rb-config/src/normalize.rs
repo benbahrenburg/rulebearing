@@ -23,6 +23,12 @@
 //! folder-scoped rule they are an error, since those rules select through derivations the keys
 //! do not reach.
 //!
+//! **`graph`** ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)) takes
+//! edges and modules out of the graph one rule sees. It is native-only (an error in a
+//! `.dependency-cruiser.*` file), legal on `forbidden` rules only (not on an orphan, dependents or
+//! folder-scoped one), `chainsThrough` needs `to.reachable`, and an empty `graph` or an `ignore`
+//! entry with neither `from` nor `to` is an error, since it would remove nothing or everything.
+//!
 //! **Normalisation** is `normalizeRuleSet` from dependency-cruiser 18.2.0: `severity` defaults to
 //! `warn`, `name` to `unnamed`, `scope` to `module`; arrays of patterns are joined with `|`;
 //! `viaNot` becomes `viaOnly.pathNot` and `viaSomeNot` becomes `via.pathNot`; `allowed` rules are
@@ -36,8 +42,8 @@ use rb_model::options::Patterns;
 
 use crate::ConfigError;
 use crate::model::{
-    CompatMode, ConfigWarning, CrossLanguageKeys, DependencyRules, Rule, Scope, ToRestriction,
-    ViaRestriction,
+    CompatMode, ConfigWarning, CrossLanguageKeys, DependencyRules, GraphFilter, Rule, Scope,
+    ToRestriction, ViaRestriction,
 };
 use crate::pattern::{self, Safety};
 
@@ -47,6 +53,18 @@ const RULE_KEYS: &[&str] = &[
 ];
 /// The native metadata keys.
 pub const NATIVE_RULE_KEYS: &[&str] = &["fix", "examples", "owner", "expires", "allowEmpty"];
+/// The rule key that narrows the graph a rule sees, native configurations only
+/// ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).
+pub const GRAPH_KEY: &str = "graph";
+/// The keys of `graph`.
+const GRAPH_KEYS: &[&str] = &[
+    "ignore",
+    "dependencyTypesNot",
+    "modulesNot",
+    "chainsThrough",
+];
+/// The keys of one `graph.ignore` entry.
+const IGNORE_KEYS: &[&str] = &["from", "to"];
 const FROM_KEYS: &[&str] = &["path", "pathNot", "orphan"];
 /// The cross-language keys of `from` and `to`, native configurations only.
 pub const CROSS_LANGUAGE_KEYS: &[&str] = &[
@@ -225,9 +243,17 @@ fn check_rule(
                 }
                 out.warnings.push(ConfigWarning::about(name, message));
             }
+        } else if key == GRAPH_KEY {
+            if compat == CompatMode::DependencyCruiser {
+                return Err(ConfigError::Invalid(format!(
+                    "`{at}.graph` is a Rulebearing addition for native configurations; a dependency-cruiser configuration never sees it. Move the rule into rulebearing.yaml (`rulebearing config convert` writes one) or remove the key"
+                )));
+            }
+            check_graph(&map[GRAPH_KEY], &format!("{at}.graph"))?;
         } else if !RULE_KEYS.contains(&key.as_str()) {
             let mut all = RULE_KEYS.to_vec();
             all.extend_from_slice(NATIVE_RULE_KEYS);
+            all.push(GRAPH_KEY);
             return Err(unknown(at, key, &all));
         }
     }
@@ -258,6 +284,38 @@ fn check_rule(
         }
     }
     Ok(())
+}
+
+/// Checks the keys of a rule's `graph`: an object of [`GRAPH_KEYS`] that writes at least one,
+/// each `ignore` entry an object of `from` and `to` with at least one of them.
+///
+/// # Errors
+/// [`ConfigError::Invalid`] naming the key.
+pub fn check_graph(graph: &Value, at: &str) -> Result<(), ConfigError> {
+    check_object(graph, at, GRAPH_KEYS)?;
+    if graph.as_object().is_none_or(Map::is_empty) {
+        return Err(ConfigError::Invalid(format!(
+            "`{at}` removes nothing; write `ignore`, `dependencyTypesNot`, `modulesNot` or `chainsThrough`, or remove it"
+        )));
+    }
+    match graph.get("ignore") {
+        None => Ok(()),
+        Some(Value::Array(entries)) => {
+            for (index, entry) in entries.iter().enumerate() {
+                let here = format!("{at}.ignore[{index}]");
+                check_object(entry, &here, IGNORE_KEYS)?;
+                if entry.as_object().is_none_or(Map::is_empty) {
+                    return Err(ConfigError::Invalid(format!(
+                        "`{here}` has neither `from` nor `to`, so it would remove every edge; name the importer, the imported module or both"
+                    )));
+                }
+            }
+            Ok(())
+        }
+        Some(_) => Err(ConfigError::Invalid(format!(
+            "`{at}.ignore` must be a list of `{{ from, to }}` entries"
+        ))),
+    }
 }
 
 /// The cross-language keys written in one side of a rule.
@@ -319,6 +377,50 @@ fn check_cross_language_placement(rule: &Rule, family: &str) -> Result<(), Confi
         ))),
         None => Ok(()),
     }
+}
+
+/// Refuses `graph` on a rule it cannot narrow: an `allowed` or `required` rule, a folder-scoped
+/// rule, an orphan or dependents rule; and `chainsThrough` on a rule that follows no chain.
+fn check_graph_placement(rule: &Rule, family: &str) -> Result<(), ConfigError> {
+    let Some(graph) = &rule.graph else {
+        return Ok(());
+    };
+    let why = if family == "allowed" {
+        Some(
+            "an allowed rule is an allow-list; to allow an edge, add an allowed rule that matches it",
+        )
+    } else if family == "required" {
+        Some(
+            "a required rule asks what a module depends on, which removing edges would answer falsely",
+        )
+    } else if rule.is_folder_scope() {
+        Some("a folder-scoped rule compares folders, whose edges are built from every module edge")
+    } else if rule.from.orphan.is_some() || rule.module.is_some() {
+        Some("an orphan or dependents rule reads a derivation of the whole graph")
+    } else if graph.chains_through.is_some() && rule.to.reachable.is_none() {
+        Some(
+            "`chainsThrough` restricts the chains of a reachability rule, and this rule follows none; add `to.reachable` or remove it",
+        )
+    } else {
+        None
+    };
+    match why {
+        Some(why) => Err(ConfigError::Invalid(format!(
+            "rule `{}`: `graph` cannot apply here: {why}",
+            rule.name()
+        ))),
+        None => Ok(()),
+    }
+}
+
+/// Joins the pattern lists of a `graph`, as `path` lists are joined.
+pub fn normalise_graph(graph: &mut GraphFilter) {
+    for entry in &mut graph.ignore {
+        joined(&mut entry.from);
+        joined(&mut entry.to);
+    }
+    joined(&mut graph.modules_not);
+    joined(&mut graph.chains_through);
 }
 
 /// The warning for a rule whose `from` or `to` can only match .NET modules and that names
@@ -472,6 +574,9 @@ fn normalise_rule(rule: &mut Rule) {
         joined(&mut module.path);
         joined(&mut module.path_not);
     }
+    if let Some(graph) = &mut rule.graph {
+        normalise_graph(graph);
+    }
 }
 
 fn rules_of(canonical: &Map<String, Value>, key: &str) -> Result<Vec<Rule>, ConfigError> {
@@ -531,6 +636,7 @@ pub fn rule_set(canonical: &Map<String, Value>) -> Result<DependencyRules, Confi
     ] {
         for rule in list {
             check_cross_language_placement(rule, family)?;
+            check_graph_placement(rule, family)?;
         }
     }
     forbidden.retain(|r| r.severity() != Severity::Ignore);
@@ -613,6 +719,30 @@ pub fn rule_patterns(rule: &Rule) -> Vec<(&'static str, &str)> {
         add(&mut out, "module.path", module.path.as_ref());
         add(&mut out, "module.pathNot", module.path_not.as_ref());
     }
+    if let Some(graph) = &rule.graph {
+        out.extend(graph_patterns(graph));
+    }
+    out
+}
+
+/// Every pattern of a `graph` with where it sits.
+pub fn graph_patterns(graph: &GraphFilter) -> Vec<(&'static str, &str)> {
+    fn add<'a>(out: &mut Vec<(&'static str, &'a str)>, at: &'static str, p: Option<&'a Patterns>) {
+        for one in p.map(Patterns::as_slice).unwrap_or_default() {
+            out.push((at, one.as_str()));
+        }
+    }
+    let mut out = Vec::new();
+    for entry in &graph.ignore {
+        add(&mut out, "graph.ignore.from", entry.from.as_ref());
+        add(&mut out, "graph.ignore.to", entry.to.as_ref());
+    }
+    add(&mut out, "graph.modulesNot", graph.modules_not.as_ref());
+    add(
+        &mut out,
+        "graph.chainsThrough",
+        graph.chains_through.as_ref(),
+    );
     out
 }
 
@@ -1039,6 +1169,189 @@ mod tests {
             orphans.is_ok(),
             "an orphan rule narrows by the module's keys"
         );
+    }
+
+    #[test]
+    fn graph_is_native_only_and_checked() -> Result<(), ConfigError> {
+        let with = |graph: Value| {
+            object(json!({ "forbidden": [{ "name": "r", "from": {}, "to": {}, "graph": graph }] }))
+        };
+        let good = with(json!({ "ignore": [{ "from": "^a" }], "modulesNot": "^n/" }));
+        assert!(
+            check_keys(&good, CompatMode::Native, false)?
+                .warnings
+                .is_empty()
+        );
+        let error = check_keys(&good, CompatMode::DependencyCruiser, false)
+            .err()
+            .map(|e| e.to_string())
+            .unwrap_or_default();
+        assert!(
+            error.contains(
+                "`forbidden[0].graph` is a Rulebearing addition for native configurations"
+            ),
+            "{error}"
+        );
+        for (graph, needle) in [
+            (json!({}), "`forbidden[0].graph` removes nothing"),
+            (json!(null), "`forbidden[0].graph` removes nothing"),
+            (
+                json!({ "ignores": [] }),
+                "`forbidden[0].graph.ignores` is not a key",
+            ),
+            (
+                json!({ "ignore": {} }),
+                "`forbidden[0].graph.ignore` must be a list",
+            ),
+            (
+                json!({ "ignore": [{}] }),
+                "`forbidden[0].graph.ignore[0]` has neither `from` nor `to`",
+            ),
+            (
+                json!({ "ignore": [{ "to": "x" }, { "form": "x" }] }),
+                "`forbidden[0].graph.ignore[1].form` is not a key",
+            ),
+            (
+                json!({ "ignore": [{ "to": "x" }, 3] }),
+                "`forbidden[0].graph.ignore[1]` must be an object",
+            ),
+            (json!([]), "`forbidden[0].graph` must be an object"),
+        ] {
+            let error = check_keys(&with(graph.clone()), CompatMode::Native, false)
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default();
+            assert!(error.contains(needle), "{graph}: {error}");
+        }
+        let unknown = check_keys(
+            &object(json!({ "forbidden": [{ "grph": {} }] })),
+            CompatMode::Native,
+            false,
+        )
+        .err()
+        .map(|e| e.to_string())
+        .unwrap_or_default();
+        assert!(
+            unknown.ends_with("module, fix, examples, owner, expires, allowEmpty, graph"),
+            "{unknown}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn graph_applies_to_forbidden_rules_only() -> Result<(), ConfigError> {
+        for (rule, needle) in [
+            (
+                json!({ "allowed": [{ "from": {}, "to": {}, "graph": { "modulesNot": "x" } }] }),
+                "an allowed rule is an allow-list",
+            ),
+            (
+                json!({ "required": [{ "name": "q", "module": { "path": "x" }, "to": { "path": "y" }, "graph": { "modulesNot": "x" } }] }),
+                "a required rule asks",
+            ),
+            (
+                json!({ "forbidden": [{ "name": "f", "scope": "folder", "from": {}, "to": { "circular": true }, "graph": { "modulesNot": "x" } }] }),
+                "a folder-scoped rule",
+            ),
+            (
+                json!({ "forbidden": [{ "name": "o", "from": { "orphan": true }, "to": {}, "graph": { "modulesNot": "x" } }] }),
+                "an orphan or dependents rule",
+            ),
+            (
+                json!({ "forbidden": [{ "name": "d", "from": {}, "module": { "path": "x", "numberOfDependentsLessThan": 2 }, "to": {}, "graph": { "modulesNot": "x" } }] }),
+                "an orphan or dependents rule",
+            ),
+            (
+                json!({ "forbidden": [{ "name": "c", "from": {}, "to": { "path": "y" }, "graph": { "chainsThrough": "^src/" } }] }),
+                "`chainsThrough` restricts the chains of a reachability rule",
+            ),
+        ] {
+            let error = rule_set(&object(rule.clone()))
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default();
+            assert!(
+                error.contains("`graph` cannot apply here: ") && error.contains(needle),
+                "{rule}: {error}"
+            );
+        }
+        let rules = rule_set(&object(json!({ "forbidden": [
+            { "name": "direct", "from": {}, "to": { "path": "y" }, "graph": {
+                "ignore": [{ "from": ["^a", "^b"], "to": ["^c", "^d"] }, { "to": "^e" }],
+                "dependencyTypesNot": ["type-only"],
+                "modulesNot": ["^m", "^n"]
+            } },
+            { "name": "chains", "from": {}, "to": { "path": "y", "reachable": true }, "graph": { "chainsThrough": ["^src/", "^lib/"] } },
+            { "name": "unreached", "from": {}, "to": { "path": "y", "reachable": false }, "graph": { "chainsThrough": "^src/" } }
+        ] })))?;
+        let graph = rules.forbidden[0].graph.clone().unwrap_or_default();
+        assert_eq!(graph.ignore[0].from, Some(Patterns::One("^a|^b".into())));
+        assert_eq!(graph.ignore[0].to, Some(Patterns::One("^c|^d".into())));
+        assert_eq!(graph.ignore[1].from, None);
+        assert_eq!(graph.modules_not, Some(Patterns::One("^m|^n".into())));
+        assert_eq!(
+            graph.dependency_types_not,
+            Some(vec![rb_model::DependencyType::TypeOnly])
+        );
+        assert_eq!(
+            rules.forbidden[1]
+                .graph
+                .as_ref()
+                .and_then(|g| g.chains_through.clone()),
+            Some(Patterns::One("^src/|^lib/".into()))
+        );
+        assert_eq!(
+            rule_patterns(&rules.forbidden[0]),
+            [
+                ("to.path", "y"),
+                ("graph.ignore.from", "^a|^b"),
+                ("graph.ignore.to", "^c|^d"),
+                ("graph.ignore.to", "^e"),
+                ("graph.modulesNot", "^m|^n"),
+            ]
+        );
+        assert_eq!(
+            rule_patterns(&rules.forbidden[1])[1],
+            ("graph.chainsThrough", "^src/|^lib/")
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn graph_patterns_compile_and_emptiness_is_per_key() -> Result<(), ConfigError> {
+        let broken = rule_set(&object(
+            json!({ "forbidden": [{ "name": "bad", "from": {}, "to": {}, "graph": { "modulesNot": "(?=x)" } }] }),
+        ))?;
+        let error = check_patterns(&broken, false)
+            .err()
+            .map(|e| e.to_string())
+            .unwrap_or_default();
+        assert!(
+            error.contains("bad") && error.contains("graph.modulesNot"),
+            "{error}"
+        );
+        assert!(GraphFilter::default().is_empty());
+        for one in [
+            GraphFilter {
+                dependency_types_not: Some(Vec::new()),
+                ..GraphFilter::default()
+            },
+            GraphFilter {
+                modules_not: Some(Patterns::One("x".into())),
+                ..GraphFilter::default()
+            },
+            GraphFilter {
+                chains_through: Some(Patterns::One("x".into())),
+                ..GraphFilter::default()
+            },
+            GraphFilter {
+                ignore: vec![crate::model::IgnoredEdges::default()],
+                ..GraphFilter::default()
+            },
+        ] {
+            assert!(!one.is_empty(), "{one:?}");
+        }
+        Ok(())
     }
 
     #[test]

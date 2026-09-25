@@ -1,0 +1,50 @@
+# The narrowed-graph fixture (ADR-0038): one module graph in the shape the Python extractor
+# writes, and rules that see it whole or narrowed. pkg/ is the root package; pkg/ns/ is a folder
+# without __init__.py; scripts/ lies outside the root; pkg/low/d.py imports pkg/high/c.py under
+# `if TYPE_CHECKING:`; pkg/mid/b.py -> pkg/high/c.py is the import the contract ignores.
+# tests/narrowed_graph.rs holds the violations to expected.json.
+rules:
+  dependencies:
+    forbidden:
+      - name: low-to-high-whole
+        severity: error
+        from: { path: '^pkg/low/' }
+        to: { path: '^pkg/high/', reachable: true }
+      - name: low-to-high-narrowed
+        severity: error
+        from: { path: '^pkg/low/' }
+        to: { path: '^pkg/high/', reachable: true }
+        graph:
+          ignore:
+            - { from: '^pkg/mid/b\.py$', to: '^pkg/high/c\.py$' }
+          dependencyTypesNot: [type-only]
+          modulesNot: '^pkg/ns(/|$)'
+          chainsThrough: '^pkg/'
+      - name: low-not-to-mid-or-high-directly
+        severity: error
+        from: { path: '^pkg/low/' }
+        to: { path: '^pkg/(mid|high)/' }
+        graph:
+          ignore:
+            - { from: '^pkg/low/h\.py$' }
+          dependencyTypesNot: [type-only]
+      - name: types-not-is-upstreams-on-a-chain
+        severity: warn
+        from: { path: '^pkg/low/d\.py$' }
+        to: { path: '^pkg/high/', reachable: true, dependencyTypesNot: [type-only] }
+      - name: stale-ignore
+        severity: error
+        from: { path: '^pkg/low/' }
+        to: { path: '^pkg/high/', reachable: true }
+        graph:
+          ignore:
+            - { from: '^pkg/low/h\.py$' }
+            - { from: '^pkg/gone\.py$' }
+      - name: stale-ignore-allowed
+        severity: info
+        allowEmpty: true
+        from: { path: '^pkg/low/a\.py$' }
+        to: { path: '^pkg/high/', reachable: true }
+        graph:
+          ignore:
+            - { to: '^pkg/gone\.py$' }

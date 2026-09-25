@@ -12,6 +12,7 @@ forbidden_modules =
 ignore_imports =
     shop.orders.checkout -> shop.payments.gateway
     shop.orders.* -> shop.nowhere
+unmatched_ignore_imports_alerting = none
 
 [importlinter:contract:models-direct]
 name = No module imports another package's models directly
