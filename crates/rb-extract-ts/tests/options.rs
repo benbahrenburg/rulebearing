@@ -1228,3 +1228,30 @@ fn a_generic_script_setup_keeps_its_imports() -> Result<(), Box<dyn std::error::
     }
     Ok(())
 }
+
+/// A `.vue` script with `lang="ts"` is TypeScript to the code layer: the class is abstract and
+/// generic and located as typescript. The module keeps the `language` its extension gives, as
+/// dependency-cruiser's module layer carries no language to follow.
+#[test]
+fn a_typescript_component_script_is_typescript_to_the_code_layer()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (mut settings, config) = prepare(&TypeScriptOptions::default(), &fixture("sfc-generic"))?;
+    settings.code_layer = true;
+    let extraction = extract_with(&[PathBuf::from("src")], &settings, &config)?;
+    let shape = extraction
+        .code
+        .as_ref()
+        .and_then(|code| {
+            code.types
+                .iter()
+                .find(|t| t.full_name == "src/Typed.vue#Shape")
+        })
+        .ok_or("src/Typed.vue#Shape")?;
+    assert_eq!(shape.location.language, rb_model::Language::Typescript);
+    assert_eq!((shape.r#abstract, shape.generic), (Some(true), Some(true)));
+    assert_eq!(
+        module(&extraction, "src/Typed.vue").and_then(|m| m.language),
+        Some(rb_model::Language::Javascript)
+    );
+    Ok(())
+}

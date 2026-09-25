@@ -239,7 +239,8 @@ pub fn member_visibility(
     }
 }
 
-/// The language a file's elements carry, by extension, as the module's `language` is chosen.
+/// A module's `language`, by extension. The code layer's elements take theirs from the parse
+/// instead ([`collect`]), since a component's script is TypeScript when its `lang` says so.
 pub fn language_of(file: &str) -> Language {
     let typescript = std::path::Path::new(file)
         .extension()
@@ -252,19 +253,25 @@ pub fn language_of(file: &str) -> Language {
 }
 
 /// The code-layer elements `program` declares, with names unresolved; `source` is the text its
-/// offsets index and `file` the module's `source`.
+/// offsets index and `file` the module's `source`. The elements are TypeScript when the program
+/// was parsed as TypeScript: a `.ts` file, and equally a `.vue` or `.svelte` script with
+/// `lang="ts"`, whose abstract, generic and readonly facts are read like any other.
 pub fn collect(program: &Program<'_>, source: &str, file: &str) -> FileCode {
     let mut index = Index::default();
     index.imports(&program.body);
     index.scan(&program.body, None);
     index.settle();
-    let language = language_of(file);
+    let typescript = program.source_type.is_typescript();
     let mut collector = Collector {
         index,
         lines: Lines::new(source),
         source,
-        typescript: language == Language::Typescript,
-        language,
+        typescript,
+        language: if typescript {
+            Language::Typescript
+        } else {
+            Language::Javascript
+        },
         out: FileCode {
             file: file.to_owned(),
             ..FileCode::default()
@@ -2284,6 +2291,35 @@ mod tests {
         assert_eq!(language_of("a.d.mts"), Language::Typescript);
         assert_eq!(language_of("a.jsx"), Language::Javascript);
         assert_eq!(language_of("a.vue"), Language::Javascript);
+    }
+
+    /// A component's `lang="ts"` script is TypeScript to the code layer whatever the file's
+    /// extension: abstract, generic and readonly are read and the location says typescript.
+    #[test]
+    fn a_component_typescript_script_is_typescript() {
+        let parsed = |script: &str, source_type: SourceType| {
+            let allocator = Allocator::default();
+            let program = Parser::new(&allocator, script, source_type).parse().program;
+            link(vec![collect(&program, script, "C.vue")])
+        };
+        let ts = parsed(
+            "export abstract class Base<T> { readonly id = 1; abstract make(): T; }\n",
+            SourceType::ts(),
+        );
+        let base = ty(&ts, "C.vue#Base");
+        assert_eq!(
+            base.map(|t| t.location.language),
+            Some(Language::Typescript)
+        );
+        assert_eq!(base.and_then(|t| t.r#abstract), Some(true));
+        assert_eq!(base.and_then(|t| t.generic), Some(true));
+        let js = parsed("export class Base {}\n", SourceType::mjs());
+        let base = ty(&js, "C.vue#Base");
+        assert_eq!(
+            base.map(|t| t.location.language),
+            Some(Language::Javascript)
+        );
+        assert_eq!(base.and_then(|t| t.r#abstract), None);
     }
 
     #[test]
