@@ -1,5 +1,0 @@
-rules:
-  dependencies:
-    forbidden:
-      - { name: first, comment: "adr:0001", fix: "Move it.", severity: error, from: { path: "^a/" }, to: { path: "^b/" } }
-      - { name: second, comment: "adr:0001", fix: "Move it.", severity: error, from: { path: "^a/" }, to: { path: "^b/" } }

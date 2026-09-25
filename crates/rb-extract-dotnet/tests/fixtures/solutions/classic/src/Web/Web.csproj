@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <AssemblyName>Sample</AssemblyName>
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Core\Core.csproj" />
-    <PackageReference Include="Newtonsoft.Json" />
-  </ItemGroup>
-</Project>

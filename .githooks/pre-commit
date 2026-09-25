@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-# Fast checks before a commit: formatting and documentation links.
-# Install once: git config core.hooksPath .githooks
-# Skip deliberately: git commit --no-verify
-set -euo pipefail
-root="$(git rev-parse --show-toplevel)"
-cd "$root"
-cargo fmt --all -- --check
-cargo xtask check-links

@@ -1,1 +1,0 @@
-const pad = process.getBuiltinModule('node:path');

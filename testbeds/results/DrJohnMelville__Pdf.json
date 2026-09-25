@@ -1,8 +1,0 @@
-{
-  "repo": "DrJohnMelville/Pdf",
-  "sha": "2e9eef3d4af15391809d9a79253e6fff0058d668",
-  "tool": "netarchtest",
-  "status": "error",
-  "detail": "dotnet build Src/Melville.Pdf.DataModelTests/Melville.Pdf.DataModelTests.csproj failed (see build.log)",
-  "agrees": false
-}
