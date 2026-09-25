@@ -11,7 +11,9 @@
 //! `forbidden`, the `allowed` list as the one rule its violations name (`not-in-allowed`, at
 //! `allowedSeverity`, dependency-cruiser's default `warn`), `required`, then the element, slice
 //! and diagram rules. A violation of a rule the rule set does not list (a result without
-//! `ruleSetUsed`) adds that rule, in name order, so no violation goes unreported. The ratchets
+//! `ruleSetUsed`, or an element rule, which `ruleSetUsed` does not carry) adds that rule, in name
+//! order, so no violation goes unreported; so does one whose name only rules of another family
+//! carry (an element rule and an anonymous dependency rule both named `unnamed`). The ratchets
 //! of `summary.ratchets` follow, then any vacuous entry that names none of these.
 //!
 //! Names are not unique (every rule without one is `unnamed`), so each rule also has an
@@ -128,7 +130,12 @@ pub fn rules(result: &Value) -> Vec<CatalogRule> {
     let mut unlisted: Vec<CatalogRule> = Vec::new();
     for violation in violations(result) {
         let name = rule_name(violation);
-        if !out.iter().chain(&unlisted).any(|r| r.name == name) {
+        let kind = violation.get("type").and_then(Value::as_str);
+        if !out
+            .iter()
+            .chain(&unlisted)
+            .any(|r| r.name == name && produces(&r.family, kind))
+        {
             unlisted.push(CatalogRule {
                 id: String::new(),
                 name,
@@ -192,8 +199,12 @@ fn identify(rules: &mut [CatalogRule]) {
     }
 }
 
-/// Whether a rule of `family` can produce a violation of `kind` (`summary.violations[].type`).
+/// Whether a rule of `family` can produce a violation of `kind` (`summary.violations[].type`). A
+/// rule known only from its violations (`rules`) can produce any.
 fn produces(family: &str, kind: Option<&str>) -> bool {
+    if family == "rules" {
+        return true;
+    }
     match kind {
         Some("element") => matches!(family, "elements" | "diagrams"),
         Some("slice") => family == "slices",
@@ -639,6 +650,26 @@ mod tests {
             "the vacuous entry goes to the first rule"
         );
         assert!(cases[1..].iter().all(|c| c.errors.is_empty()));
+        // ruleSetUsed does not carry element rules: an element violation whose name only a
+        // dependency rule has is a rule of its own, not that rule's.
+        let unlisted = json!({ "summary": {
+            "violations": [
+                { "type": "dependency", "from": "a", "to": "b", "rule": { "name": "unnamed", "severity": "error" } },
+                { "type": "element", "from": "e.cs", "to": "E", "rule": { "name": "unnamed", "severity": "error" } }
+            ],
+            "ruleSetUsed": { "forbidden": [{ "name": "unnamed", "severity": "error" }] }
+        } });
+        let catalog = rules(&unlisted);
+        let ids: Vec<(&str, &str)> = catalog
+            .iter()
+            .map(|r| (r.id.as_str(), r.family.as_str()))
+            .collect();
+        assert_eq!(ids, [("unnamed", "forbidden"), ("unnamed#2", "rules")]);
+        let owners: Vec<Option<usize>> = violations(&unlisted)
+            .iter()
+            .map(|v| rule_index(&catalog, v))
+            .collect();
+        assert_eq!(owners, [Some(0), Some(1)]);
     }
 
     #[test]

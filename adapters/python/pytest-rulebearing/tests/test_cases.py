@@ -16,6 +16,7 @@ from pytest_rulebearing.cases import (
     describe,
     js_number,
     message,
+    rule_index,
     rule_name,
     rules,
     severity,
@@ -158,7 +159,7 @@ def test_the_allowed_list_is_one_rule_at_its_severity() -> None:
         },
     }
     (rule,) = rules(result)
-    assert rule == Rule("not-in-allowed", "allowed", "error", "c", "stay inside")
+    assert rule == Rule("not-in-allowed", "allowed", "error", "c", "stay inside", "not-in-allowed")
     assert cases(result)[0].failure == "stay inside\nRB-1 src/m1.ts -> src/b.ts"
     no_severity: dict[str, object] = {"summary": {"ruleSetUsed": {"allowed": [{}]}}}
     assert rules(no_severity)[0].severity == "warn"
@@ -332,3 +333,85 @@ def test_js_number_prints_values_as_template_literals_do(
 def test_output_is_deterministic() -> None:
     assert cases(JUNIT_VECTOR) == cases(JUNIT_VECTOR)
     assert [message(c) for c in cases(JUNIT_VECTOR)] == [message(c) for c in cases(JUNIT_VECTOR)]
+
+
+def test_rules_sharing_a_name_keep_distinct_identities_and_their_own_violations() -> None:
+    """The fixed vector of catalog.rs, rules_sharing_a_name_keep_distinct_identities_and_...."""
+
+    def violation(kind: str, source: str, target: str, level: str) -> dict[str, object]:
+        rule = {"name": "unnamed", "severity": level}
+        return {"type": kind, "from": source, "to": target, "rule": rule}
+
+    result: dict[str, object] = {
+        "summary": {
+            "violations": [
+                violation("dependency", "a", "b", "error"),
+                violation("dependency", "c", "d", "warn"),
+                violation("element", "e.cs", "E", "error"),
+                violation("dependency", "f", "g", "ignore"),
+            ],
+            "ruleSetUsed": {
+                "forbidden": [
+                    {"name": "unnamed", "severity": "error"},
+                    {"name": "unnamed#2"},
+                    {"severity": "warn", "name": "unnamed"},
+                ],
+                "elements": [{"name": "unnamed", "severity": "error"}],
+            },
+            "vacuousRules": [{"name": "unnamed", "side": "from"}],
+        },
+    }
+    catalogue = rules(result)
+    assert [(r.id, r.family) for r in catalogue] == [
+        ("unnamed", "forbidden"),
+        ("unnamed#2", "forbidden"),
+        ("unnamed#3", "forbidden"),
+        ("unnamed#4", "elements"),
+    ]
+    summary = result["summary"]
+    assert isinstance(summary, dict)
+    owners = [rule_index(catalogue, v) for v in summary["violations"]]
+    assert owners == [0, 2, 3, 0]
+    assert rule_index(catalogue, {"rule": {"name": "none"}}) is None
+    found = cases(result)
+    assert [c.failure for c in found] == [
+        "1 violation(s) of `unnamed`\na -> b",
+        None,
+        None,
+        "1 violation(s) of `unnamed`\ne.cs -> E",
+    ]
+    assert found[0].output == ["ignore: f -> g [known]"]
+    assert found[2].output == ["warn: c -> d"]
+    assert len(found[0].errors) == 1
+    assert all(not c.errors for c in found[1:])
+
+
+def test_an_element_violation_named_like_a_dependency_rule_is_a_rule_of_its_own() -> None:
+    """The rule set used carries no element rules (catalog.rs, the same vector)."""
+    result: dict[str, object] = {
+        "summary": {
+            "violations": [
+                {
+                    "type": "dependency",
+                    "from": "a",
+                    "to": "b",
+                    "rule": {"name": "unnamed", "severity": "error"},
+                },
+                {
+                    "type": "element",
+                    "from": "e.cs",
+                    "to": "E",
+                    "rule": {"name": "unnamed", "severity": "error"},
+                },
+            ],
+            "ruleSetUsed": {"forbidden": [{"name": "unnamed", "severity": "error"}]},
+        },
+    }
+    catalogue = rules(result)
+    assert [(r.id, r.family) for r in catalogue] == [
+        ("unnamed", "forbidden"),
+        ("unnamed#2", "rules"),
+    ]
+    summary = result["summary"]
+    assert isinstance(summary, dict)
+    assert [rule_index(catalogue, v) for v in summary["violations"]] == [0, 1]
