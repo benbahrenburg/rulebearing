@@ -8,8 +8,8 @@
   "status": "compared",
   "summary": {
     "total": 37,
-    "agree": 36,
-    "disagree": 1,
+    "agree": 37,
+    "disagree": 0,
     "stays": 0,
     "not-imported": 0,
     "error": 0
@@ -21,41 +21,17 @@
       "type": "layers",
       "importLinter": "kept",
       "rules": 6,
-      "violations": 156373,
-      "rulebearing": "broken",
-      "verdict": "disagree",
-      "filtered": {
-        "mechanisms": [
-          "ignore_imports",
-          "namespace portions below a root package",
-          "imports by modules outside the root packages"
-        ],
-        "violations": 0,
-        "sufficientAlone": []
-      },
-      "cause": "import-linter's graph has no ignore_imports, namespace portions below a root package, imports by modules outside the root packages, together; with the same imports removed from Rulebearing's graph the contract is kept too. The import writes ignore_imports as knownViolations, which excuse a violation but cut no chain, and has no form for the other filters",
-      "sample": [
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/agent_access.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/app_access.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/audio_response.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/controller_schemas.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/errors.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/fields.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/helpers.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/human_input.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/rbac/__init__.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/rbac/checks.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/rbac/locators.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/schema.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/session.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/common/wraps.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/console/__init__.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/console/admin.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/console/agent/__init__.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/console/agent/app_helpers.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/console/agent/composer.py",
-        "backend-layers:core-to-controllers: core/agent/base_agent_runner.py -> controllers/console/agent/roster.py"
-      ]
+      "violations": 0,
+      "rulebearing": "kept",
+      "vacuousRules": [
+        "backend-layers:core-to-controllers",
+        "backend-layers:core-to-services",
+        "backend-layers:libs-to-controllers",
+        "backend-layers:libs-to-core",
+        "backend-layers:libs-to-services",
+        "backend-layers:services-to-controllers"
+      ],
+      "verdict": "agree"
     },
     {
       "id": "no-direct-rsa-imports",
@@ -646,5 +622,5 @@
       }
     }
   },
-  "agrees": false
+  "agrees": true
 }

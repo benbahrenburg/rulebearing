@@ -8,8 +8,8 @@
   "status": "compared",
   "summary": {
     "total": 11,
-    "agree": 9,
-    "disagree": 1,
+    "agree": 10,
+    "disagree": 0,
     "stays": 1,
     "not-imported": 0,
     "error": 0
@@ -111,42 +111,9 @@
       "type": "forbidden",
       "importLinter": "kept",
       "rules": 1,
-      "violations": 153,
-      "rulebearing": "broken",
-      "verdict": "disagree",
-      "filtered": {
-        "mechanisms": [
-          "ignore_imports",
-          "imports by modules outside the root packages"
-        ],
-        "violations": 0,
-        "sufficientAlone": [
-          "ignore_imports"
-        ]
-      },
-      "cause": "import-linter's graph has no ignore_imports; with the same imports removed from Rulebearing's graph the contract is kept too. The import writes ignore_imports as knownViolations, which excuse a violation but cut no chain, and has no form for the other filters",
-      "sample": [
-        "allow-3rd-party: kopf/__init__.py -> kubernetes",
-        "allow-3rd-party: kopf/__init__.py -> kubernetes.client",
-        "allow-3rd-party: kopf/__init__.py -> kubernetes.config",
-        "allow-3rd-party: kopf/__init__.py -> pykube",
-        "allow-3rd-party: kopf/__init__.py -> pykube.objects",
-        "allow-3rd-party: kopf/__main__.py -> kubernetes",
-        "allow-3rd-party: kopf/__main__.py -> kubernetes.client",
-        "allow-3rd-party: kopf/__main__.py -> kubernetes.config",
-        "allow-3rd-party: kopf/__main__.py -> pykube",
-        "allow-3rd-party: kopf/__main__.py -> pykube.objects",
-        "allow-3rd-party: kopf/_cogs/clients/api.py -> kubernetes.client",
-        "allow-3rd-party: kopf/_cogs/clients/api.py -> pykube.objects",
-        "allow-3rd-party: kopf/_cogs/clients/creating.py -> kubernetes.client",
-        "allow-3rd-party: kopf/_cogs/clients/creating.py -> pykube.objects",
-        "allow-3rd-party: kopf/_cogs/clients/events.py -> kubernetes.client",
-        "allow-3rd-party: kopf/_cogs/clients/events.py -> pykube.objects",
-        "allow-3rd-party: kopf/_cogs/clients/fetching.py -> kubernetes.client",
-        "allow-3rd-party: kopf/_cogs/clients/fetching.py -> pykube.objects",
-        "allow-3rd-party: kopf/_cogs/clients/patching.py -> kubernetes.client",
-        "allow-3rd-party: kopf/_cogs/clients/patching.py -> pykube.objects"
-      ]
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
     },
     {
       "id": "secure-3rd-party",
@@ -171,5 +138,5 @@
     "onlyRulebearing": {},
     "onlyImportLinter": {}
   },
-  "agrees": false
+  "agrees": true
 }
