@@ -136,6 +136,76 @@ fn links_are_relative_to_the_output_file() -> Result {
     Ok(())
 }
 
+/// `--out ../AGENTS.md` from a subfolder: the links run from the folder the file lands in.
+#[test]
+fn links_from_a_parent_folder_output_are_normalised() -> Result {
+    let dir = tree("docs-parent")?;
+    let sub = dir.join("sub");
+    std::fs::create_dir_all(&sub)?;
+    for file in ["rulebearing.yaml", "docs/adr/0010-domain-independent.md"] {
+        write(&sub, file, &read(&dir, file)?)?;
+    }
+    let output = run(
+        &sub,
+        &["docs", "--format", "agents-md", "--out", "../AGENTS.md"],
+    )?;
+    assert_eq!(code(&output), Some(0), "{}", stderr(&output));
+    let text = read(&dir, "AGENTS.md")?;
+    assert!(
+        text.contains("[adr:0010](sub/docs/adr/0010-domain-independent.md)"),
+        "{text}"
+    );
+    clean(&dir);
+    Ok(())
+}
+
+/// `--out -` is standard output, as for every other command; `--verify` needs a real file.
+#[test]
+fn out_dash_prints_the_rendered_text() -> Result {
+    let dir = tree("docs-dash")?;
+    let printed = run(&dir, &["docs", "--format", "agents-md", "--out", "-"])?;
+    assert_eq!(code(&printed), Some(0), "{}", stderr(&printed));
+    let plain = run(&dir, &["docs", "--format", "agents-md"])?;
+    assert_eq!(printed.stdout, plain.stdout);
+    assert!(stdout(&printed).contains(AGENTS_LINE));
+    assert!(!dir.join("-").exists());
+    let verify = run(
+        &dir,
+        &["docs", "--format", "agents-md", "--out", "-", "--verify"],
+    )?;
+    assert_eq!(code(&verify), Some(3));
+    assert!(
+        stderr(&verify).contains("name the file to verify"),
+        "{}",
+        stderr(&verify)
+    );
+    clean(&dir);
+    Ok(())
+}
+
+/// A begin marker with no end marker is refused, naming the file, and the file is left alone.
+#[test]
+fn an_unmatched_marker_is_refused() -> Result {
+    let dir = tree("docs-unmatched")?;
+    let hand =
+        "# Mine\n\n<!-- rulebearing:agents-md:begin -->\nold\n\n## Hand-written\n\nKeep me.\n";
+    write(&dir, "CLAUDE.md", hand)?;
+    for extra in [&[][..], &["--verify"][..]] {
+        let mut args = vec!["docs", "--format", "agents-md", "--out", "CLAUDE.md"];
+        args.extend_from_slice(extra);
+        let output = run(&dir, &args)?;
+        assert_eq!(code(&output), Some(2), "{args:?}");
+        let err = stderr(&output);
+        assert!(
+            err.contains("CLAUDE.md has `<!-- rulebearing:agents-md:begin -->` but no `<!-- rulebearing:agents-md:end -->`"),
+            "{err}"
+        );
+    }
+    assert_eq!(read(&dir, "CLAUDE.md")?, hand);
+    clean(&dir);
+    Ok(())
+}
+
 #[test]
 fn contributing_is_a_table_of_rule_sentence_fix_and_decision() -> Result {
     let dir = tree("docs-contributing")?;

@@ -126,7 +126,7 @@ pub fn run(ctx: &Context<'_>, command: &ImportCommand) -> Outcome {
             located(ctx, a.from.as_deref(), eslint::DEFAULT_FILES, |p| {
                 eslint::holds_config(p)
             })
-            .and_then(|(path, shown)| eslint::import(&path, &shown)),
+            .and_then(|(path, shown)| eslint::import(&path, &shown, &ctx.cwd)),
             a.out.as_deref(),
         ),
     };

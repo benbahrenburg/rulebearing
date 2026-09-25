@@ -18,7 +18,10 @@
 //! their `<!-- rulebearing:<format>:begin -->` and `end` markers and keep the rest of the file,
 //! or are appended when the file has no markers, so a hand-written `CLAUDE.md` keeps its prose.
 //! `skill` is a whole file. `--verify` renders the same bytes and exits 1 when the file on disk
-//! differs, which is how CI fails a stale copy. Decision links are relative to the output file.
+//! differs, which is how CI fails a stale copy. Decision links are relative to the output file,
+//! whose path is normalised first (`--out ../AGENTS.md`). `--out -` prints, as no `--out` does. A
+//! file holding one marker without the other is refused with exit 2, naming the file, since
+//! appending would leave a second section and a later run would replace the prose between them.
 //! Nothing time- or machine-dependent is written, so two runs agree byte for byte.
 
 use std::fmt::Write as _;
@@ -82,15 +85,36 @@ pub struct DocsArgs {
     pub config: ConfigArgs,
 }
 
-/// `to` relative to the folder `from`, `/`-separated; both absolute or both relative.
+/// A path's components with `.` dropped and each `..` taking out the folder before it, lexically:
+/// `/r/sub/../A.md` is `/r/A.md`. A `..` above a root is dropped; one leading a relative path is
+/// kept.
+fn normal(path: &Path) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    let mut anchored = 0;
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                if out.len() > anchored && out.last().is_some_and(|l| l != "..") {
+                    out.pop();
+                } else if anchored == 0 {
+                    out.push("..".to_owned());
+                }
+            }
+            Component::Prefix(_) | Component::RootDir => {
+                out.push(component.as_os_str().to_string_lossy().into_owned());
+                anchored += 1;
+            }
+            Component::Normal(name) => out.push(name.to_string_lossy().into_owned()),
+        }
+    }
+    out
+}
+
+/// `to` relative to the folder `from`, `/`-separated; both absolute or both relative. Both are
+/// normalised first, so `--out ../A.md` links from the folder the file lands in.
 pub fn relative(from: &Path, to: &Path) -> String {
-    let parts = |p: &Path| -> Vec<String> {
-        p.components()
-            .filter(|c| !matches!(c, Component::CurDir))
-            .map(|c| c.as_os_str().to_string_lossy().into_owned())
-            .collect()
-    };
-    let (from, to) = (parts(from), parts(to));
+    let (from, to) = (normal(from), normal(to));
     let common = from.iter().zip(&to).take_while(|(a, b)| a == b).count();
     let mut out: Vec<String> = vec!["..".to_owned(); from.len() - common];
     out.extend(to[common..].iter().cloned());
@@ -315,22 +339,34 @@ fn skill(place: &Place<'_>, entries: &[Entry]) -> String {
 
 /// The file's new content: the section put between its markers, appended when the file has none,
 /// or the whole text for a format that is not a section.
-pub fn merge(format: DocsFormat, existing: Option<&str>, rendered: &str) -> String {
+///
+/// # Errors
+/// What is wrong with the markers, when the file has one without the other: appending would
+/// leave two sections, and a later run would replace the hand-written text between them.
+pub fn merge(format: DocsFormat, existing: Option<&str>, rendered: &str) -> Result<String, String> {
     if matches!(format, DocsFormat::Skill | DocsFormat::Reference) {
-        return rendered.to_owned();
+        return Ok(rendered.to_owned());
     }
     let Some(existing) = existing.filter(|e| !e.trim().is_empty()) else {
-        return rendered.to_owned();
+        return Ok(rendered.to_owned());
     };
     let (open, close) = (begin(format), end(format));
-    if let Some(start) = existing.find(&open)
-        && let Some(stop) = existing[start..].find(&close).map(|i| start + i)
-    {
+    if let Some(start) = existing.find(&open) {
+        let Some(stop) = existing[start..].find(&close).map(|i| start + i) else {
+            return Err(format!(
+                "has `{open}` but no `{close}` after it; add the end marker where the generated section stops, or delete the begin marker"
+            ));
+        };
         let mut rest = &existing[stop + close.len()..];
         rest = rest.strip_prefix('\n').unwrap_or(rest);
-        return format!("{}{rendered}{rest}", &existing[..start]);
+        return Ok(format!("{}{rendered}{rest}", &existing[..start]));
     }
-    format!("{}\n\n{rendered}", existing.trim_end())
+    if existing.contains(&close) {
+        return Err(format!(
+            "has `{close}` but no `{open}` before it; add the begin marker where the generated section starts, or delete the end marker"
+        ));
+    }
+    Ok(format!("{}\n\n{rendered}", existing.trim_end()))
 }
 
 /// What each language says about `concept`, for one table cell.
@@ -416,7 +452,7 @@ pub fn run(ctx: &mut Context<'_>, args: &DocsArgs) -> Outcome {
         Ok(c) => c,
         Err(o) => return o,
     };
-    let out_path = args.out.as_deref().map(|o| ctx.resolve(o));
+    let out_path = out_file(args).map(|o| ctx.resolve(o));
     let folder = out_path
         .as_deref()
         .and_then(Path::parent)
@@ -444,14 +480,33 @@ pub fn run(ctx: &mut Context<'_>, args: &DocsArgs) -> Outcome {
     deliver(ctx, args, &rendered)
 }
 
+/// `--out`, unless it is `-`, which is standard output as it is for every other command.
+fn out_file(args: &DocsArgs) -> Option<&str> {
+    args.out.as_deref().filter(|o| *o != "-")
+}
+
 /// Prints `rendered`, or writes or verifies it against `--out`.
 fn deliver(ctx: &Context<'_>, args: &DocsArgs, rendered: &str) -> Outcome {
-    let out_path = args.out.as_deref().map(|o| ctx.resolve(o));
-    let (Some(path), Some(name)) = (out_path, args.out.as_deref()) else {
+    let Some(name) = out_file(args) else {
+        if args.verify {
+            return Outcome::failed(
+                RunExit::InvalidConfig,
+                "rulebearing docs: --verify compares a file with what would be written, and `--out -` is standard output; name the file to verify\n",
+            );
+        }
         return Outcome::printed(rendered.to_owned());
     };
+    let path = ctx.resolve(name);
     let existing = std::fs::read_to_string(&path).ok();
-    let content = merge(args.format, existing.as_deref(), rendered);
+    let content = match merge(args.format, existing.as_deref(), rendered) {
+        Ok(content) => content,
+        Err(reason) => {
+            return Outcome::failed(
+                RunExit::Untrustworthy,
+                format!("rulebearing docs: {name} {reason}\n"),
+            );
+        }
+    };
     if args.verify {
         return if existing.as_deref() == Some(content.as_str()) {
             Outcome::printed(format!("{name} is up to date\n"))
@@ -529,6 +584,17 @@ mod tests {
             "../../../docs/adr/1.md"
         );
         assert_eq!(relative(Path::new("./a"), Path::new("a/b.md")), "b.md");
+        assert_eq!(
+            relative(Path::new("/r/sub/.."), Path::new("/r/sub/docs/adr/1.md")),
+            "sub/docs/adr/1.md",
+            "`--out ../A.md` from /r/sub"
+        );
+        assert_eq!(
+            relative(Path::new("/r/a/./b/../c"), Path::new("/r/a/c/x.md")),
+            "x.md"
+        );
+        assert_eq!(relative(Path::new("/.."), Path::new("/x.md")), "x.md");
+        assert_eq!(normal(Path::new("../a/../../b")), ["..", "..", "b"]);
     }
 
     #[test]
@@ -536,6 +602,9 @@ mod tests {
         let section =
             "<!-- rulebearing:agents-md:begin -->\nNEW\n<!-- rulebearing:agents-md:end -->\n";
         let f = DocsFormat::AgentsMd;
+        let merge = |f: DocsFormat, existing: Option<&str>, rendered: &str| {
+            merge(f, existing, rendered).unwrap_or_default()
+        };
         assert_eq!(merge(f, None, section), section);
         assert_eq!(merge(f, Some("  \n"), section), section);
         let hand = "# Mine\n\nprose\n";
@@ -553,6 +622,30 @@ mod tests {
         assert_eq!(merge(DocsFormat::Skill, Some(hand), "S"), "S");
         let other = merge(DocsFormat::Contributing, Some(&appended), "C\n");
         assert!(other.ends_with("C\n") && other.contains("NEW"));
+    }
+
+    #[test]
+    fn a_marker_without_its_pair_is_refused() {
+        let f = DocsFormat::AgentsMd;
+        let section =
+            "<!-- rulebearing:agents-md:begin -->\nNEW\n<!-- rulebearing:agents-md:end -->\n";
+        let open_only = "# Mine\n\n<!-- rulebearing:agents-md:begin -->\nOLD\n\n## Hand-written\n";
+        let err = merge(f, Some(open_only), section).err().unwrap_or_default();
+        assert!(
+            err.contains("no `<!-- rulebearing:agents-md:end -->` after it"),
+            "{err}"
+        );
+        let close_only = "# Mine\n\n<!-- rulebearing:agents-md:end -->\n";
+        let err = merge(f, Some(close_only), section)
+            .err()
+            .unwrap_or_default();
+        assert!(
+            err.contains("no `<!-- rulebearing:agents-md:begin -->` before it"),
+            "{err}"
+        );
+        let reversed = "<!-- rulebearing:agents-md:end -->\n<!-- rulebearing:agents-md:begin -->\n";
+        assert!(merge(f, Some(reversed), section).is_err());
+        assert!(merge(DocsFormat::Skill, Some(open_only), "S").is_ok());
     }
 
     #[test]
