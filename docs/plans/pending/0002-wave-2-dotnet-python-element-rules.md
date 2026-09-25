@@ -46,7 +46,7 @@ The wave also carries the second half of the agent surface listed for it in [ADR
 | Presets | `rulebearing:dotnet`, `rulebearing:python`, composed by `rulebearing:recommended`; `--init` presets per language | [design § What stays honest](../../artifacts/design.md#what-stays-honest-across-the-boundary), [dc coverage § Command line](../../artifacts/dependency-cruiser-18.2.0-coverage.md#command-line) |
 | TypeScript extraction rows marked wave 2 | Vue and Svelte `<script>` splitting; Markdown code fences via `extraExtensionsToScan`; `webpackConfig` evaluation; `experimentalStats`; `collapse`; `highlight` | [dc coverage § Extraction and resolution](../../artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution), [§ Options](../../artifacts/dependency-cruiser-18.2.0-coverage.md#options) |
 | Conformance gate 2 to completion | `TestAssembly` and NetArchTest fixtures, ported tests, oracle agreement with `dotnet test`, Python oracle contract reproduction | [design § Conformance gate 2](../../artifacts/design.md#conformance-gate-2-archunitnets-test-assemblies-validate-the-element-rules) |
-| Adoption | offers to evolutionary-architecture-by-example, RiverBooks, kedro and sqlfluff, each through an issue first; the second-maintainer goal | [design § Adoption order](../../artifacts/design.md#adoption-order), [§ Open questions](../../artifacts/design.md#open-questions) |
+| Adoption | offers to evolutionary-architecture-by-example, RiverBooks, kedro and sqlfluff, each through an issue first (deferred by the maintainer, 2026-09-24: no outreach to other projects yet; the decision is carried to [plan 0004, Step 14](0004-wave-4-reach.md#25-steps-for-sub-wave-4e-usage-counts-and-the-adoption-review)); the second-maintainer goal | [design § Adoption order](../../artifacts/design.md#adoption-order), [§ Open questions](../../artifacts/design.md#open-questions) |
 
 **Out of scope**, with the wave that owns each:
 
@@ -95,7 +95,7 @@ The wave also carries the second half of the agent surface listed for it in [ADR
 | [NFR-QUAL-01](../../prd.md#nfr-qual-01) | 70% floor on the two new crates and on every adapter, wrapper and front-end | CI coverage checks per toolchain |
 | [NFR-SEC-01](../../prd.md#nfr-sec-01) | Defensive metadata and PDB parsing; fuzz targets for the .NET reader | `fuzz/` targets in the nightly; a malformed-assembly test exits 2 |
 | [NFR-DOC-01](../../prd.md#nfr-doc-01) | Every new crate, adapter and front-end carries linked references | Review checklist |
-| [NFR-ADOPT-02](../../prd.md#nfr-adopt-02) | Offers to two .NET and two Python oracles, via issues | Issue links in the status table |
+| [NFR-ADOPT-02](../../prd.md#nfr-adopt-02) | Offers to two .NET and two Python oracles, via issues | Deferred (see the 2I status table): the oracle agreement results under `testbeds/results/` are what an offer would attach |
 
 ### 1.4 Architecture of what this wave builds
 
@@ -250,7 +250,7 @@ Each is left open by the design; the decision rule is fixed here so it is not ma
 | **How `import archunit` reads C#** | The design names the command and its output, not the parser | Use `tree-sitter-c-sharp`, already the wave 3 choice for `--mode source` ([architecture § Technology choices](../../architecture.md#technology-choices)), so no second C# parser enters the dependency set; the importer walks fluent chains rooted at `Types()`, `Classes()`, `Interfaces()`, `Attributes()`, `Members()`, `FieldMembers()`, `MethodMembers()`, `PropertyMembers()`, `Slices()` and NetArchTest's `Types.InAssembly` / `InNamespace` / `InCurrentDomain`. A chain that cannot be mapped is emitted commented out with the reason; the importer never guesses. |
 | **Installed distributions for Python** | Resolution step four is "installed distributions"; [ADR-0013](../../adr/0013-ruff-parser-for-python.md) forbids shelling out to an interpreter | Read `site-packages` found under `.venv/` beside a root, or under `$VIRTUAL_ENV` when set, and index `*.dist-info/top_level.txt` and `RECORD`; no interpreter is executed. When neither exists, every non-local, non-stdlib import is `unresolved` and the receipt says `site: none`, so the classification is visible rather than silently wrong. |
 | **`to.license` for .NET and Python** | The coverage row names the sources: NuGet `.nuspec` licence and installed `METADATA` | Read `~/.nuget/packages/<id>/<version>/<id>.nuspec` `license` or `licenseUrl` and `dist-info/METADATA` `License` / `License-Expression`; absent means no `license` field, never a guess. |
-| **Second maintainer** | "a second maintainer is the goal by the end of wave 2" ([design § Open questions](../../artifacts/design.md#open-questions)) | The offer is made in the same issues as the upstream offers; the criterion is one external contributor with merge rights who has landed a pull request that passed both gates. Not meeting it does not block moving the plan, but it is recorded in the status table and carried to wave 3. |
+| **Second maintainer** | "a second maintainer is the goal by the end of wave 2" ([design § Open questions](../../artifacts/design.md#open-questions)) | The offer was to be made in the same issues as the upstream offers, which are deferred (2I), so no invitation is made in wave 2; the criterion is one external contributor with merge rights who has landed a pull request that passed both gates. Not meeting it does not block moving the plan, but it is recorded in the status table and carried to wave 3. |
 
 ### 1.8 Quality attributes
 
@@ -713,10 +713,10 @@ public class ArchitectureRules
 
 - Extend `init` (wave 1) with the .NET and Python detectors: a `.sln` / `.slnx` or `.csproj` selects `rulebearing:dotnet` and proposes rules from layered namespaces (`Domain`, `Application`, `Infrastructure`, `Web` when present); a `pyproject.toml` selects `rulebearing:python` and proposes rules from the top-level packages. `init` on semantic-kernel and autogen must produce a config that passes (every rule live, zero error violations, or baselined by `adopt`); the output is committed under `testbeds/init/<repo>/rulebearing.yaml` as the fixture the design calls for, so a regression in discovery is visible in review.
 - Add the .NET and Python oracle rows and the aspnetcore, jellyfin and home-assistant scale rows to the nightly workflow and the README tables.
-- Open one issue per repo, in this order, each attaching the zero-diff or agreement result and offering a pull request that adds Rulebearing beside the incumbent, never replacing it: evolutionary-architecture-by-example, RiverBooks (through `import archunit`), kedro, sqlfluff (through `import import-linter`). Withdraw without argument if declined. Record the issue links in the status table.
-- Second maintainer: state the criterion from section 1.7 in `CONTRIBUTING.md`, name the two crates whose conformance suites make them safest for a newcomer (`rb-extract-python` for a Python engineer, the adapters for a C# engineer), and invite in the same issues.
+- (Deferred by the maintainer, 2026-09-24: no outreach to other projects yet; see the 2I status table.) Open one issue per repo, in this order, each attaching the zero-diff or agreement result and offering a pull request that adds Rulebearing beside the incumbent, never replacing it: evolutionary-architecture-by-example, RiverBooks (through `import archunit`), kedro, sqlfluff (through `import import-linter`). Withdraw without argument if declined. Record the issue links in the status table.
+- Second maintainer: state the criterion from section 1.7 in `CONTRIBUTING.md`, name the two crates whose conformance suites make them safest for a newcomer (`rb-extract-python` for a Python engineer, the adapters for a C# engineer), and invite in the same issues (deferred with them).
 
-**Done when** the two `init` fixtures are committed and pass in the nightly run, the tables are live, the four issues are open, and the maintainer criterion is published.
+**Done when** the two `init` fixtures are committed and pass in the nightly run, the tables are live, and the maintainer criterion is published. The four issues are deferred (2I status table).
 
 ### 2.16 Documentation to update
 
@@ -740,7 +740,7 @@ public class ArchitectureRules
 5. Every coverage-tab row marked wave 2 reads Parity, Parity+ or Addition with a link to the proving test.
 6. Coverage checks are green for `rb-extract-dotnet`, `rb-extract-python`, the six .NET adapter packages, `pytest-rulebearing`, the pip wrapper, `rulebearing/vitest`, `eslint-plugin-rulebearing`.
 7. NuGet and PyPI carry the release version, not the placeholder.
-8. The four upstream issues are linked; the second-maintainer outcome is recorded either way.
+8. The second-maintainer outcome is recorded either way. The four upstream issues are deferred by the maintainer (2026-09-24) and carried to [plan 0004, Step 14](0004-wave-4-reach.md#25-steps-for-sub-wave-4e-usage-counts-and-the-adoption-review).
 9. The pull request that moves the file changes only the status line ([ADR-0001](../../adr/0001-record-architecture-decisions.md)).
 
 ## 3. Wave-based delivery plan
@@ -914,8 +914,8 @@ public class ArchitectureRules
 - **Goal:** the exit criterion's last clause and the adoption-order actions for wave 2.
 - **Deliverables:** step 15; `testbeds/init/semantic-kernel/` and `testbeds/init/autogen/`; nightly rows for the .NET and Python oracles and the three scale beds; four upstream issues; the maintainer criterion in `CONTRIBUTING.md`.
 - **Size:** S. **LOE:** 5 h, 0.5 calendar week. **Roles:** maintainer.
-- **Entry criteria:** 2A, 2B, 2C and 2F gating metrics met; 2H pre-release available so an offer can point at an installable package.
-- **Exit criteria:** `init` passes on both greenfield repos in the nightly; the tables are live for three consecutive nights; the four issues are open; the criterion is published.
+- **Entry criteria:** 2A, 2B, 2C and 2F gating metrics met.
+- **Exit criteria:** `init` passes on both greenfield repos in the nightly; the tables are live for three consecutive nights; the criterion is published. ("The four issues are open" is deferred by the maintainer, 2026-09-24; see the status table.)
 - **Gating metric for moving the plan:** section 2.17 checklist complete.
 
 | Sub-wave | Item | Status | Evidence |
@@ -924,11 +924,11 @@ public class ArchitectureRules
 | 2I | semantic-kernel `init` fixture passes | In progress | `testbeds/init/microsoft__semantic-kernel/rulebearing.yaml`; locally at the pinned SHA with the solution built: the proposed configuration cruises with exit 0, 0 errors, 3045 findings baselined, .NET 2426 and Python 1678 modules. The nightly `greenfield-init` job has not run yet |
 | 2I | autogen `init` fixture passes | In progress | `testbeds/init/microsoft__autogen/rulebearing.yaml`; locally `testbeds/greenfield.sh microsoft/autogen` returns ok (fixture unchanged, exit 0, 1437 baselined). The nightly `greenfield-init` job has not run yet |
 | 2I | Nightly oracle and scale rows (aspnetcore, jellyfin, home-assistant) | In progress | the `scale` nightly job over the three (`testbeds/scale.sh`, a regression over 20% fails); jellyfin verified locally (2299 .NET modules, 8.7 s median); home-assistant blocked by cycle-detection time and aspnetcore by its `artifacts/bin` build layout, both being fixed; the oracle rows come with the 2F harness |
-| 2I | Issue: evolutionary-architecture-by-example | Not started | issue link |
-| 2I | Issue: RiverBooks | Not started | issue link |
-| 2I | Issue: kedro | Not started | issue link |
-| 2I | Issue: sqlfluff | Not started | issue link |
-| 2I | Second-maintainer criterion published; outcome recorded | In progress | the criterion and the two newcomer-safe areas (`rb-extract-python`, `adapters/dotnet`) in `CONTRIBUTING.md` § A second maintainer; the outcome waits on the upstream issues |
+| 2I | Issue: evolutionary-architecture-by-example | Deferred | deferred by the maintainer, 2026-09-24: no outreach to other projects yet. The offer is not made in wave 2; whether and when to make it is decided in [plan 0004, Step 14](0004-wave-4-reach.md#25-steps-for-sub-wave-4e-usage-counts-and-the-adoption-review) |
+| 2I | Issue: RiverBooks | Deferred | deferred by the maintainer, 2026-09-24: no outreach to other projects yet. The offer is not made in wave 2; whether and when to make it is decided in [plan 0004, Step 14](0004-wave-4-reach.md#25-steps-for-sub-wave-4e-usage-counts-and-the-adoption-review) |
+| 2I | Issue: kedro | Deferred | deferred by the maintainer, 2026-09-24: no outreach to other projects yet. The offer is not made in wave 2; whether and when to make it is decided in [plan 0004, Step 14](0004-wave-4-reach.md#25-steps-for-sub-wave-4e-usage-counts-and-the-adoption-review) |
+| 2I | Issue: sqlfluff | Deferred | deferred by the maintainer, 2026-09-24: no outreach to other projects yet. The offer is not made in wave 2; whether and when to make it is decided in [plan 0004, Step 14](0004-wave-4-reach.md#25-steps-for-sub-wave-4e-usage-counts-and-the-adoption-review) |
+| 2I | Second-maintainer criterion published; outcome recorded | Done | the criterion and the two newcomer-safe areas (`rb-extract-python`, `adapters/dotnet`) in `CONTRIBUTING.md` § A second maintainer. Outcome: not met in wave 2, and no invitation made, because the invitation was to go in the deferred upstream issues; carried to wave 3 as section 1.7 says |
 
 ### Wave summary
 
@@ -968,5 +968,5 @@ Nothing in 2A, 2B, 2C, 2F or the `init` proof in 2I is cut; the fallback branch 
 - [ ] Every coverage-tab row marked wave 2 flipped with a link to its proving test (2C, 2D, 2E).
 - [ ] Coverage gates green for every new crate, adapter, wrapper and front-end (2A, 2B, 2G, 2H).
 - [ ] NuGet and PyPI carry the release version (2H).
-- [ ] Four upstream issues linked; second-maintainer outcome recorded (2I).
+- [x] Second-maintainer outcome recorded (2I). The four upstream issues are deferred by the maintainer, 2026-09-24.
 - [ ] The pull request that moves this file changes only the status line.
