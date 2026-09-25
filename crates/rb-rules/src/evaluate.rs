@@ -964,6 +964,54 @@ mod tests {
     }
 
     #[test]
+    fn a_configuration_of_diagram_rules_alone_is_evaluated()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let folder = std::env::temp_dir().join(format!("rb-diagram-only-{}", std::process::id()));
+        std::fs::create_dir_all(&folder)?;
+        std::fs::write(
+            folder.join("d.puml"),
+            "@startuml\n[A] <<S.A.*>>\n[B] <<S.B.*>>\n[A] --> [B]\n@enduml\n",
+        )?;
+        let class = |full: &str, namespace: &str, target: &str| {
+            json!({ "fullName": full, "name": full.rsplit('.').next().unwrap_or(full),
+                    "namespace": namespace, "kind": "class", "language": "dotnet", "file": "a.cs",
+                    "dependencies": [{ "target": target, "kind": "field" }] })
+        };
+        let run = |code: Value| -> Result<Vec<String>, Box<dyn std::error::Error>> {
+            let document = GraphDocument {
+                code: Some(serde_json::from_value(code)?),
+                ..GraphDocument::default()
+            };
+            let mut cfg = config(json!({
+                "diagrams": [{ "name": "drawn", "select": { "kind": "class" }, "adhereTo": "d.puml" }]
+            }));
+            assert_eq!(cfg.rules.diagrams.len(), 1, "the configuration loads");
+            assert!(cfg.rules.elements.is_empty() && cfg.rules.slices.is_empty());
+            cfg.files = vec![folder.join("rulebearing.yaml")];
+            let options = EvalOptions {
+                liveness: false,
+                ..EvalOptions::default()
+            };
+            Ok(evaluate(document, &cfg, &options)?
+                .violations()
+                .iter()
+                .map(|v| format!("{} {}", v.rule.name, v.to))
+                .collect())
+        };
+        // A depends on B as drawn; B depends on A, which the diagram does not draw.
+        let drawn = run(
+            json!({ "types": [class("S.A.X", "S.A", "S.B.Y"), class("S.B.Y", "S.B", "S.B.Y")] }),
+        );
+        let undrawn = run(
+            json!({ "types": [class("S.A.X", "S.A", "S.B.Y"), class("S.B.Y", "S.B", "S.A.X")] }),
+        );
+        std::fs::remove_dir_all(&folder)?;
+        assert_eq!(drawn?, Vec::<String>::new());
+        assert_eq!(undrawn?, ["drawn S.B.Y"]);
+        Ok(())
+    }
+
+    #[test]
     fn slice_rules_see_the_module_layer() -> Result<(), EngineError> {
         let module = |source: &str, deps: &[&str]| Module {
             language: Some(rb_model::Language::Typescript),
