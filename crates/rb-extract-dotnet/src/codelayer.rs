@@ -185,6 +185,55 @@ mod flags {
     pub const INIT_ONLY: u16 = 0x20;
 }
 
+/// How deeply a serialized type name's generic arguments are followed.
+const MAX_TYPE_NAME_DEPTH: u32 = 16;
+
+/// A serialized type name's parts: the full name up to its generic argument list or its first
+/// top-level comma, each generic argument's own text, and the assembly after that comma.
+/// ``Ns.G`1[[Ns.A, AsmA],[Ns.B, AsmB]], AsmG, Version=1.0.0.0`` gives ``Ns.G`1``,
+/// `["Ns.A, AsmA", "Ns.B, AsmB"]` and `AsmG`.
+fn split_type_name(text: &str) -> (String, Vec<&str>, Option<String>) {
+    let mut depth = 0usize;
+    let mut name_end = None;
+    let mut args = Vec::new();
+    let mut arg_start = None;
+    let mut assembly = None;
+    for (at, c) in text.char_indices() {
+        match c {
+            '[' => {
+                if depth == 0 && name_end.is_none() && text[at..].starts_with("[[") {
+                    name_end = Some(at);
+                }
+                depth += 1;
+                if depth == 2 {
+                    arg_start = Some(at + 1);
+                }
+            }
+            ']' => {
+                if depth == 2
+                    && let Some(start) = arg_start.take()
+                {
+                    args.push(text[start..at].trim());
+                }
+                depth = depth.saturating_sub(1);
+            }
+            ',' if depth == 0 => {
+                assembly = text[at + 1..]
+                    .split(',')
+                    .next()
+                    .map(str::trim)
+                    .filter(|a| !a.is_empty())
+                    .map(str::to_owned);
+                name_end.get_or_insert(at);
+                break;
+            }
+            _ => {}
+        }
+    }
+    let name = text[..name_end.unwrap_or(text.len())].trim().to_owned();
+    (name, args, assembly)
+}
+
 /// An enum's underlying element type: the type of its `value__` field (ECMA-335 II.14.3).
 fn enum_underlying(ty: &Type) -> Option<u8> {
     let field = ty.fields.iter().find(|f| f.name == "value__")?;
@@ -329,12 +378,11 @@ impl<'u> Builder<'u> {
     }
 
     /// A type named by reflection text (`Ns.T, Assembly, Version=…`): a loaded definition when
-    /// one has that full name, else external.
+    /// one has that full name, else external. A generic instance
+    /// (``Ns.G`1[[Ns.A, AsmA]], AsmG``) names its definition, in the assembly after its own
+    /// top-level comma, never the argument's.
     pub(crate) fn named(&self, text: &str) -> Target {
-        let mut parts = text.split(',').map(str::trim);
-        let full_name = parts.next().unwrap_or_default();
-        let full_name = full_name.split("[[").next().unwrap_or(full_name).to_owned();
-        let assembly = parts.next().filter(|a| !a.is_empty()).map(str::to_owned);
+        let (full_name, _, assembly) = split_type_name(text);
         let loaded = (0..self.universe.assemblies.len()).find_map(|a| {
             let wanted = assembly.as_deref().is_none_or(|name| {
                 self.universe.assemblies[a]
@@ -351,6 +399,26 @@ impl<'u> Builder<'u> {
             full_name,
             assembly,
         }))
+    }
+
+    /// [`Builder::named`] with the generic arguments as the reference's arguments, so a
+    /// `typeof(G<A>)` also depends on `A` (a generic-argument dependency, phase 8).
+    pub(crate) fn named_ref(&self, text: &str) -> Ref {
+        self.named_ref_at(text, 0)
+    }
+
+    fn named_ref_at(&self, text: &str, depth: u32) -> Ref {
+        let (_, args, _) = split_type_name(text);
+        Ref {
+            target: self.named(text),
+            args: if depth < MAX_TYPE_NAME_DEPTH {
+                args.iter()
+                    .map(|a| self.named_ref_at(a, depth + 1))
+                    .collect()
+            } else {
+                Vec::new()
+            },
+        }
     }
 
     pub(crate) fn attribute_name(&self, asm: usize, token: Token) -> String {
@@ -633,7 +701,7 @@ impl<'u> Builder<'u> {
                 // AddAttributeArgumentReferenceDependencies skips compiler-generated types.
                 self.push(
                     type_deps,
-                    &Self::at(Ref::of(self.named(text)), DependencyKind::Typeof, location),
+                    &Self::at(self.named_ref(text), DependencyKind::Typeof, location),
                 );
             }
             let name = self.attribute_name(asm, attribute.type_);
@@ -1316,5 +1384,61 @@ mod tests {
         assert!(still.undecoded.is_some());
         let element = builder.attribute_element(0, "N.T", &still, &location);
         assert!(element.arguments_unknown && element.arguments.is_empty());
+    }
+
+    #[test]
+    fn a_generic_type_name_takes_its_own_assembly_and_keeps_its_arguments() {
+        assert_eq!(
+            split_type_name("Ns.G`1[[Ns.A, AsmA, Version=1.0.0.0]], AsmG, Version=2.0.0.0"),
+            (
+                "Ns.G`1".to_owned(),
+                vec!["Ns.A, AsmA, Version=1.0.0.0"],
+                Some("AsmG".to_owned())
+            )
+        );
+        assert_eq!(
+            split_type_name("Ns.D`2[[Ns.A, X],[Ns.G`1[[Ns.B, Y]], Z]]"),
+            (
+                "Ns.D`2".to_owned(),
+                vec!["Ns.A, X", "Ns.G`1[[Ns.B, Y]], Z"],
+                None
+            )
+        );
+        assert_eq!(
+            split_type_name("Ns.T, Asm"),
+            ("Ns.T".to_owned(), vec![], Some("Asm".to_owned()))
+        );
+        assert_eq!(
+            split_type_name("Ns.T[]"),
+            ("Ns.T[]".to_owned(), vec![], None)
+        );
+        assert_eq!(split_type_name(""), (String::new(), vec![], None));
+        let loaded = crate::loader::testing::empty("A");
+        let universe = Universe::new(vec![&loaded]);
+        let builder = Builder::new(&universe, &[]);
+        let r = builder.named_ref("Ns.G`1[[Ns.A, AsmA]], AsmG");
+        assert_eq!(
+            r.target,
+            Target::Type(Resolved::External {
+                full_name: "Ns.G`1".into(),
+                assembly: Some("AsmG".into())
+            })
+        );
+        assert_eq!(
+            r.args.iter().map(|a| a.target.clone()).collect::<Vec<_>>(),
+            vec![Target::Type(Resolved::External {
+                full_name: "Ns.A".into(),
+                assembly: Some("AsmA".into())
+            })]
+        );
+        // Deeply nested arguments stop at the limit instead of recursing without end.
+        let deep = format!("{}X{}", "G`1[[".repeat(500), "]]".repeat(500));
+        let mut depth = 0;
+        let mut current = builder.named_ref(&deep);
+        while let Some(next) = current.args.pop() {
+            depth += 1;
+            current = next;
+        }
+        assert_eq!(depth, 16);
     }
 }
