@@ -55,6 +55,39 @@ pub enum ElementError {
         /// Why.
         why: String,
     },
+    /// A key names a concept that means nothing for the objects it is applied to: `beSealed` on
+    /// methods, `beVirtual` on types, a diagram over members (the applicability table,
+    /// [`rb_config::capability::applicability`]).
+    #[error(
+        "rule `{rule}`: `{key}` has no meaning for `kind: {kind}` objects ({why}); select a kind it applies to or remove the key"
+    )]
+    Inapplicable {
+        /// The rule.
+        rule: String,
+        /// The key as written.
+        key: String,
+        /// The `select.kind` (or nested selector kind) it was applied to.
+        kind: String,
+        /// Why.
+        why: String,
+    },
+    /// A dependency rule narrows a side by a module property the extractor of a language that
+    /// side can select does not record (ADR-0014; [`rb_config::capability::records`]).
+    #[error(
+        "rule `{rule}`: `{side}.{key}` reads a property {language} modules do not carry ({why}); add `{side}.language` without {language}, or remove the key"
+    )]
+    Unrecorded {
+        /// The rule.
+        rule: String,
+        /// `from` or `to`.
+        side: String,
+        /// The key as written.
+        key: String,
+        /// The language.
+        language: String,
+        /// Why.
+        why: String,
+    },
     /// A regular expression does not compile.
     #[error("rule `{rule}`: `{pattern}` is not a valid pattern")]
     Pattern {

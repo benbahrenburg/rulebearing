@@ -17,6 +17,7 @@
 
 use std::collections::BTreeSet;
 
+use rb_config::capability::{ModuleNamespace, module_namespace};
 use rb_config::elements::{Concept, Operand, Test};
 
 use super::{ElementError, Evaluator, Object, operand_keys};
@@ -37,17 +38,25 @@ fn contains_ignore_case(text: &str, part: &str) -> bool {
     text.to_lowercase().contains(&part.to_lowercase())
 }
 
-/// The object's namespace: a type's own, a member's declaring type's.
-fn namespace<'a>(e: &Evaluator<'_, 'a>, object: &Object<'a>) -> Option<&'a str> {
+/// The object's namespaces: a type's own, a member's declaring type's, and a module's as the
+/// capability table maps it per language ([`module_namespace`]): its path, or its
+/// `namespaces[]`, any of which a namespace test may hold for.
+fn namespaces<'a>(e: &Evaluator<'_, 'a>, object: &Object<'a>) -> Vec<&'a str> {
     match object {
-        Object::Type(t) => t.namespace.as_deref().or(Some("")),
-        Object::Member(m) => e
-            .architecture()
-            .types
-            .get(m.declaring_type.as_str())
-            .and_then(|t| t.namespace.as_deref())
-            .or(Some("")),
-        Object::Module(_) => None,
+        Object::Type(t) => vec![t.namespace.as_deref().unwrap_or_default()],
+        Object::Member(m) => vec![
+            e.architecture()
+                .types
+                .get(m.declaring_type.as_str())
+                .and_then(|t| t.namespace.as_deref())
+                .unwrap_or_default(),
+        ],
+        Object::Module(m) => match module_namespace(m.language) {
+            ModuleNamespace::Path => vec![m.source.as_str()],
+            ModuleNamespace::Namespaces => {
+                m.namespaces.iter().flatten().map(String::as_str).collect()
+            }
+        },
     }
 }
 
@@ -98,12 +107,41 @@ fn visibility<'a>(object: &Object<'a>) -> Option<&'a str> {
     }
 }
 
-/// The full names a type or member depends on.
-fn dependencies<'a>(object: &Object<'a>) -> Vec<&'a rb_model::ElementDependency> {
+/// What an object depends on: the full names a type or member depends on, the sources a
+/// module's imports resolve to.
+fn dependencies<'a>(object: &Object<'a>) -> Vec<&'a str> {
     match object {
-        Object::Type(t) => t.dependencies.iter().collect(),
-        Object::Member(m) => m.dependencies.iter().collect(),
-        Object::Module(_) => Vec::new(),
+        Object::Type(t) => t.dependencies.iter().map(|d| d.target.as_str()).collect(),
+        Object::Member(m) => m.dependencies.iter().map(|d| d.target.as_str()).collect(),
+        Object::Module(m) => m.dependencies.iter().map(|d| d.resolved.as_str()).collect(),
+    }
+}
+
+/// The dependencies `onlyDependOn` judges, as `ArchUnitNET` judges only those on the
+/// architecture's own types: a type's or member's on types the code defines, a module's on
+/// modules of the run through an edge that is neither a core module nor unresolved.
+fn own_dependencies<'a>(e: &Evaluator<'_, 'a>, object: &Object<'a>) -> Vec<&'a str> {
+    let architecture = e.architecture();
+    match object {
+        Object::Module(m) => m
+            .dependencies
+            .iter()
+            .filter(|d| {
+                !d.core_module
+                    && !d.could_not_resolve
+                    && architecture.module_sources.contains(d.resolved.as_str())
+            })
+            .map(|d| d.resolved.as_str())
+            .collect(),
+        _ => dependencies(object)
+            .into_iter()
+            .filter(|target| {
+                architecture
+                    .types
+                    .get(target)
+                    .is_some_and(|t| t.referenced != Some(true))
+            })
+            .collect(),
     }
 }
 
@@ -258,20 +296,30 @@ pub fn test<'a>(
             let Operand::Pattern(pattern) = &test.operand else {
                 return Ok(false);
             };
-            let subject = match test.concept {
-                Concept::HaveNameMatching => Some(name.to_owned()),
-                Concept::HaveFullNameMatching => Some(key.to_owned()),
-                Concept::HaveAssemblyQualifiedNameMatching => assembly_qualified_name(e, object),
-                Concept::ResideInNamespaceMatching => namespace(e, object).map(str::to_owned),
-                _ => assembly_names(e, object).0.map(str::to_owned),
+            let subjects: Vec<String> = match test.concept {
+                Concept::HaveNameMatching => vec![name.to_owned()],
+                Concept::HaveFullNameMatching => vec![key.to_owned()],
+                Concept::HaveAssemblyQualifiedNameMatching => {
+                    assembly_qualified_name(e, object).into_iter().collect()
+                }
+                Concept::ResideInNamespaceMatching => namespaces(e, object)
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect(),
+                _ => assembly_names(e, object)
+                    .0
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect(),
             };
-            (
-                match subject {
-                    Some(subject) => pattern_matches(e, pattern, &subject)?,
-                    None => false,
-                },
-                None,
-            )
+            let mut hit = false;
+            for subject in &subjects {
+                if pattern_matches(e, pattern, subject)? {
+                    hit = true;
+                    break;
+                }
+            }
+            (hit, None)
         }
         Concept::HaveAssemblyQualifiedName
         | Concept::HaveAssemblyQualifiedNameStartingWith
@@ -286,13 +334,12 @@ pub fn test<'a>(
             };
             (any_name(&|n| f(&aqn, n)), None)
         }
-        Concept::ResideInNamespace => {
-            let ns = namespace(e, object);
-            (
-                ns.is_some_and(|ns| any_name(&|n| eq_ignore_case(ns, n))),
-                None,
-            )
-        }
+        Concept::ResideInNamespace => (
+            namespaces(e, object)
+                .iter()
+                .any(|ns| any_name(&|n| eq_ignore_case(ns, n))),
+            None,
+        ),
         Concept::ResideInAssembly => {
             let (full, simple) = assembly_names(e, object);
             (
@@ -306,25 +353,16 @@ pub fn test<'a>(
         Concept::DependOnAny => {
             let wanted = operand_keys(e, &test.operand)?;
             (
-                dependencies(object)
-                    .iter()
-                    .any(|d| wanted.contains(&d.target)),
+                dependencies(object).iter().any(|d| wanted.contains(*d)),
                 None,
             )
         }
         Concept::OnlyDependOn => {
             let allowed = operand_keys(e, &test.operand)?;
-            // `ArchUnitNET` judges only dependencies on the architecture's own types.
-            let types = &e.architecture().types;
             (
-                dependencies(object)
+                own_dependencies(e, object)
                     .iter()
-                    .filter(|d| {
-                        types
-                            .get(d.target.as_str())
-                            .is_some_and(|t| t.referenced != Some(true))
-                    })
-                    .all(|d| allowed.contains(&d.target)),
+                    .all(|d| allowed.contains(*d)),
                 None,
             )
         }

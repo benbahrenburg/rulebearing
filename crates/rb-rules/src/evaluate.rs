@@ -395,7 +395,9 @@ fn add_validations(
 ///
 /// # Errors
 /// [`EngineError::Document`] if the annotated graph does not convert back into document types,
-/// which would be a bug in the engine rather than in the input.
+/// which would be a bug in the engine rather than in the input; [`EngineError::Element`] for a
+/// rule that cannot be evaluated as written (an element, slice or diagram rule, or a dependency
+/// rule narrowing by a property its languages do not record).
 #[expect(
     clippy::too_many_lines,
     reason = "the engine's stages in dependency-cruiser's order, then the ArchUnitNET families"
@@ -414,6 +416,7 @@ pub fn evaluate(
         || !config.rules.slices.is_empty()
         || !config.rules.diagrams.is_empty();
     let facts = if uses_cross_language(rules) {
+        crate::matchers::refuse_unrecorded(rules, &document.modules)?;
         ModuleFacts::new(&document.modules, document.code.as_ref())
     } else {
         ModuleFacts::default()
