@@ -90,7 +90,7 @@ The install check also imports `rulebearing/vitest` from the installed package, 
 
 The `manylinux` tag of a `*-linux-gnu` wheel is the newest `GLIBC_2.N` symbol version the binary needs, read with `readelf`, so a wheel never claims a glibc older than the binary requires. The musl build is static and is tagged `musllinux_1_1_x86_64`; the macOS tags are Rust's default deployment targets (11.0 for arm64, 10.12 for x64).
 
-`PYPI_TOKEN` is a PyPI API token scoped to the `rulebearing` and `pytest-rulebearing` projects. Trusted publishing would need `id-token: write` on `pypi-publish` and a third-party action pinned by commit; it can replace the token in a later change without touching the other jobs.
+`PYPI_TOKEN` is a PyPI API token, stored as a repository secret (set 2026-09-25). PyPI scopes a token only to projects that already exist, and `pytest-rulebearing` does not exist until its first upload, so the first release needs either a token for the whole account or `pytest-rulebearing` reserved first; after that release, replace it with a token scoped to the two projects. A manual run of the release workflow proves the token without publishing: its `pypi-credentials` job re-uploads the `rulebearing` 0.0.1 wheel already on PyPI with `--skip-existing`, which PyPI refuses before reading the file when the token is missing, revoked or scoped to other projects, and warns while `pytest-rulebearing` is not on PyPI. Trusted publishing would need `id-token: write` on `pypi-publish` and a third-party action pinned by commit; it can replace the token in a later change without touching the other jobs.
 
 To build and install the wheels by hand on one machine, without publishing (the archive from [the npm example above](#the-npm-wrapper-from-wave-1)):
 
