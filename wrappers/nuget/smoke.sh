@@ -27,7 +27,9 @@ if [ -z "$package" ]; then
     Darwin-x86_64) rid=osx-x64 ;;
     Linux-x86_64)
       rid=linux-x64
-      if ldd --version 2>&1 | grep -qi musl; then rid=linux-musl-x64; fi
+      # musl's ldd exits 1 for --version and grep -q may close the pipe early; neither may
+      # fail the test under pipefail, so ldd's status is dropped and grep's alone decides.
+      if { ldd --version 2>&1 || true; } | grep -qi musl; then rid=linux-musl-x64; fi
       ;;
     Linux-aarch64 | Linux-arm64) rid=linux-arm64 ;;
     MINGW*-x86_64 | MSYS*-x86_64 | CYGWIN*-x86_64) rid=win-x64 ;;
