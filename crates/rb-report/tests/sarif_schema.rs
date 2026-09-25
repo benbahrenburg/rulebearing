@@ -9,7 +9,8 @@
 //! The inputs are every dependency-cruiser `test/report` result the conformance fixtures hold
 //! (valid against the cruise-result schema or not, because a reporter must write valid SARIF for
 //! whatever it is given) and a Rulebearing result with element and slice violations, a known
-//! violation, a vacuous rule and an expired entry.
+//! violation, two rules sharing the name `unnamed`, a path that needs percent-encoding, a vacuous
+//! rule, an expired entry, an exceeded ratchet and a ratchet without a budget.
 
 use std::error::Error;
 use std::path::PathBuf;
@@ -72,14 +73,20 @@ fn rulebearing_result() -> Value {
                 { "type": "element", "from": "", "to": "", "rule": { "name": "exists", "severity": "info" }, "id": "RB-00000003" },
                 { "type": "slice", "from": "Slice1", "to": "Slice2", "rule": { "name": "apart", "severity": "error" }, "id": "RB-00000004",
                   "via": [{ "name": "Slice1.A -> Slice2.B", "dependencyTypes": [] }] },
-                { "type": "dependency", "from": "src/c.ts", "to": "src/b.ts", "rule": { "name": "no-b", "severity": "ignore" }, "id": "RB-00000005" }
+                { "type": "dependency", "from": "src/c.ts", "to": "src/b.ts", "rule": { "name": "no-b", "severity": "ignore" }, "id": "RB-00000005" },
+                { "type": "dependency", "from": "app/[slug]/my page#1.tsx", "to": "src/b.ts", "rule": { "name": "unnamed", "severity": "warn" } }
             ],
             "error": 2, "warn": 1, "info": 1, "ignore": 1, "totalCruised": 3,
             "ruleSetUsed": {
                 "forbidden": [{ "name": "no-b", "severity": "error", "comment": "b is private. adr:0003", "fix": "Go through the index." }],
                 "elements": [{ "name": "sealed", "severity": "warn" }, { "name": "exists", "severity": "info" }],
-                "slices": [{ "name": "apart", "severity": "error" }]
+                "slices": [{ "name": "apart", "severity": "error" }],
+                "required": [{ "name": "unnamed", "severity": "error" }, { "name": "unnamed", "severity": "warn" }]
             },
+            "ratchets": [
+                { "name": "over", "budget": "budgets/over.json", "count": 3, "ceiling": 2, "status": "exceeded" },
+                { "name": "lost", "budget": "budgets/lost.json", "count": 1, "status": "no-budget" }
+            ],
             "vacuousRules": [{ "name": "dead", "side": "from" }],
             "expired": [{ "name": "RB-9", "expires": "2026-01-01", "kind": "knownViolation" }]
         }

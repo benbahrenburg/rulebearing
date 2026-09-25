@@ -13,6 +13,15 @@
 //! and diagram rules. A violation of a rule the rule set does not list (a result without
 //! `ruleSetUsed`) adds that rule, in name order, so no violation goes unreported. The ratchets
 //! of `summary.ratchets` follow, then any vacuous entry that names none of these.
+//!
+//! Names are not unique (every rule without one is `unnamed`), so each rule also has an
+//! [`CatalogRule::id`]: its name the first time the name occurs, then `name#2`, `name#3` and so
+//! on (skipping any id another rule already carries as its name). The id is what `junit` and
+//! `trx` name a test case, what `sarif` names a rule, and what the TRX GUIDs hash, so no two
+//! entries collide. A violation carries only its rule's name and severity; [`rule_index`] gives
+//! it to one rule of that name: the first whose family can produce its `type` and whose severity
+//! is its own, else the first whose family can produce it, else the first of the name. Vacuous and
+//! expired entries go to the first rule of their name. The adapters port this line for line.
 
 use std::fmt::Write as _;
 
@@ -23,6 +32,9 @@ use crate::text;
 /// One rule of the run.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CatalogRule {
+    /// The rule's identity within the run: the name, with `#n` for the n-th rule of a name
+    /// already taken (module documentation).
+    pub id: String,
     /// The name violations carry.
     pub name: String,
     /// `forbidden`, `allowed`, `required`, `elements`, `slices`, `diagrams`, `ratchets` or
@@ -77,6 +89,7 @@ pub fn rules(result: &Value) -> Vec<CatalogRule> {
     let mut out: Vec<CatalogRule> = Vec::new();
     let rule_set = summary(result).and_then(|s| s.get("ruleSetUsed"));
     let entry = |family: &str, rule: &Value, default_severity: &str| CatalogRule {
+        id: String::new(),
         name: string(rule, "name").unwrap_or_default(),
         family: family.to_owned(),
         severity: string(rule, "severity").unwrap_or_else(|| default_severity.to_owned()),
@@ -99,6 +112,7 @@ pub fn rules(result: &Value) -> Vec<CatalogRule> {
             .and_then(|r| string(r, "allowedSeverity"))
             .unwrap_or_else(|| "warn".into());
         out.push(CatalogRule {
+            id: String::new(),
             name: "not-in-allowed".into(),
             family: "allowed".into(),
             severity,
@@ -116,6 +130,7 @@ pub fn rules(result: &Value) -> Vec<CatalogRule> {
         let name = rule_name(violation);
         if !out.iter().chain(&unlisted).any(|r| r.name == name) {
             unlisted.push(CatalogRule {
+                id: String::new(),
                 name,
                 family: "rules".into(),
                 severity: crate::severity(violation),
@@ -128,6 +143,7 @@ pub fn rules(result: &Value) -> Vec<CatalogRule> {
     out.extend(unlisted);
     for ratchet in list(result, "ratchets") {
         out.push(CatalogRule {
+            id: String::new(),
             name: text(ratchet, "name"),
             family: "ratchets".into(),
             severity: "error".into(),
@@ -139,6 +155,7 @@ pub fn rules(result: &Value) -> Vec<CatalogRule> {
         let name = text(vacuous, "name");
         if !out.iter().any(|r| r.name == name) {
             out.push(CatalogRule {
+                id: String::new(),
                 name,
                 family: "rules".into(),
                 severity: "error".into(),
@@ -147,15 +164,77 @@ pub fn rules(result: &Value) -> Vec<CatalogRule> {
             });
         }
     }
+    identify(&mut out);
     out
 }
 
-/// The violations of the rule named `name`, in the result's order.
-pub fn violations_of<'a>(result: &'a Value, name: &str) -> Vec<&'a Value> {
+/// Gives each rule its [`CatalogRule::id`]: the name at its first occurrence, then `name#n` for
+/// the n-th, counting up past any id already taken.
+fn identify(rules: &mut [CatalogRule]) {
+    let mut taken: std::collections::BTreeSet<String> =
+        rules.iter().map(|r| r.name.clone()).collect();
+    let mut seen: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+    for rule in rules.iter_mut() {
+        let count = seen.entry(rule.name.clone()).or_insert(0);
+        *count += 1;
+        if *count == 1 {
+            rule.id = rule.name.clone();
+            continue;
+        }
+        let mut n = *count;
+        let mut id = format!("{}#{n}", rule.name);
+        while taken.contains(&id) {
+            n += 1;
+            id = format!("{}#{n}", rule.name);
+        }
+        taken.insert(id.clone());
+        rule.id = id;
+    }
+}
+
+/// Whether a rule of `family` can produce a violation of `kind` (`summary.violations[].type`).
+fn produces(family: &str, kind: Option<&str>) -> bool {
+    match kind {
+        Some("element") => matches!(family, "elements" | "diagrams"),
+        Some("slice") => family == "slices",
+        _ => matches!(family, "forbidden" | "allowed" | "required" | "rules"),
+    }
+}
+
+/// The index in `rules` of the rule a violation belongs to (module documentation), `None` when
+/// no rule other than a ratchet has its name.
+pub fn rule_index(rules: &[CatalogRule], violation: &Value) -> Option<usize> {
+    let name = rule_name(violation);
+    let named: Vec<usize> = (0..rules.len())
+        .filter(|&i| rules[i].name == name && rules[i].family != "ratchets")
+        .collect();
+    let kind = violation.get("type").and_then(Value::as_str);
+    let fitting: Vec<usize> = named
+        .iter()
+        .copied()
+        .filter(|&i| produces(&rules[i].family, kind))
+        .collect();
+    let fitting = if fitting.is_empty() { named } else { fitting };
+    let severity = crate::severity(violation);
+    fitting
+        .iter()
+        .copied()
+        .find(|&i| rules[i].severity == severity)
+        .or_else(|| fitting.first().copied())
+}
+
+/// The violations of `rules[index]`, in the result's order.
+pub fn violations_of<'a>(result: &'a Value, rules: &[CatalogRule], index: usize) -> Vec<&'a Value> {
     violations(result)
         .into_iter()
-        .filter(|v| rule_name(v) == name)
+        .filter(|v| rule_index(rules, v) == Some(index))
         .collect()
+}
+
+/// Whether `rules[index]` is the first rule named `name`, the one vacuous and expired entries of
+/// that name go to.
+fn first_of(rules: &[CatalogRule], index: usize, name: &str) -> bool {
+    rules.iter().position(|r| r.name == name) == Some(index)
 }
 
 /// A violation's `fix`, else its rule's.
@@ -272,20 +351,25 @@ pub fn cases(result: &Value) -> Vec<Case> {
     let expired = list(result, "expired");
     let ratchets = list(result, "ratchets");
     let mut out: Vec<Case> = Vec::new();
-    for rule in rules(result) {
+    let all = rules(result);
+    let mut ratchet_at = 0;
+    for (index, rule) in all.iter().enumerate() {
         let mut case = Case {
-            rule,
+            rule: rule.clone(),
             failure: None,
             errors: Vec::new(),
             output: Vec::new(),
         };
         let name = case.rule.name.clone();
+        let first = first_of(&all, index, &name);
         if case.rule.family == "ratchets" {
-            if let Some(ratchet) = ratchets.iter().find(|r| text(r, "name") == name) {
+            // The ratchet rules are summary.ratchets, in order.
+            if let Some(ratchet) = ratchets.get(ratchet_at) {
                 ratchet_case(&mut case, ratchet);
             }
+            ratchet_at += 1;
         } else {
-            let found = violations_of(result, &name);
+            let found = violations_of(result, &all, index);
             let errors: Vec<String> = found
                 .iter()
                 .filter(|v| crate::severity(v) == "error")
@@ -311,7 +395,7 @@ pub fn cases(result: &Value) -> Vec<Case> {
                 case.failure = Some((message, errors.join("\n")));
             }
         }
-        for entry in vacuous.iter().filter(|v| text(v, "name") == name) {
+        for entry in vacuous.iter().filter(|v| first && text(v, "name") == name) {
             if entry.get("severity").and_then(Value::as_str) == Some("warn") {
                 case.output
                     .push(format!("warning: {}", vacuous_message(entry)));
@@ -321,7 +405,7 @@ pub fn cases(result: &Value) -> Vec<Case> {
         }
         for entry in expired
             .iter()
-            .filter(|e| text(e, "kind") == "rule" && text(e, "name") == name)
+            .filter(|e| first && text(e, "kind") == "rule" && text(e, "name") == name)
         {
             case.errors.push(("expired".into(), expired_message(entry)));
         }
@@ -330,6 +414,7 @@ pub fn cases(result: &Value) -> Vec<Case> {
     for entry in expired.iter().filter(|e| text(e, "kind") != "rule") {
         out.push(Case {
             rule: CatalogRule {
+                id: text(entry, "name"),
                 name: text(entry, "name"),
                 family: "knownViolations".into(),
                 severity: "error".into(),
@@ -475,9 +560,10 @@ mod tests {
     #[test]
     fn violations_positions_and_descriptions() {
         let result = result();
-        assert_eq!(violations_of(&result, "sealed").len(), 2);
+        let catalog = rules(&result);
+        assert_eq!(violations_of(&result, &catalog, 4).len(), 2);
         let all = violations(&result);
-        let sealed = &rules(&result)[4];
+        let sealed = &catalog[4];
         assert_eq!(fix_of(all[1], sealed).as_deref(), Some("Seal it."));
         assert_eq!(fix_of(all[2], sealed), None);
         assert_eq!(position(&result, all[0]), Some((3, 8)));
@@ -495,6 +581,64 @@ mod tests {
         assert_eq!(describe(&result, all[2]), "b.cs -> S.B");
         assert_eq!(list(&result, "ratchets").len(), 1);
         assert!(list(&json!({}), "ratchets").is_empty());
+    }
+
+    /// A fixed vector: every anonymous rule is `unnamed`, and each must stay one rule with one
+    /// identity, holding only its own violations.
+    #[test]
+    fn rules_sharing_a_name_keep_distinct_identities_and_their_own_violations() {
+        let result = json!({ "summary": {
+            "violations": [
+                { "type": "dependency", "from": "a", "to": "b", "rule": { "name": "unnamed", "severity": "error" } },
+                { "type": "dependency", "from": "c", "to": "d", "rule": { "name": "unnamed", "severity": "warn" } },
+                { "type": "element", "from": "e.cs", "to": "E", "rule": { "name": "unnamed", "severity": "error" } },
+                { "type": "dependency", "from": "f", "to": "g", "rule": { "name": "unnamed", "severity": "ignore" } }
+            ],
+            "ruleSetUsed": {
+                "forbidden": [
+                    { "name": "unnamed", "severity": "error" },
+                    { "name": "unnamed#2" },
+                    { "severity": "warn", "name": "unnamed" }
+                ],
+                "elements": [{ "name": "unnamed", "severity": "error" }]
+            },
+            "vacuousRules": [{ "name": "unnamed", "side": "from" }]
+        } });
+        let catalog = rules(&result);
+        let ids: Vec<(&str, &str)> = catalog
+            .iter()
+            .map(|r| (r.id.as_str(), r.family.as_str()))
+            .collect();
+        assert_eq!(
+            ids,
+            [
+                ("unnamed", "forbidden"),
+                ("unnamed#2", "forbidden"),
+                ("unnamed#3", "forbidden"),
+                ("unnamed#4", "elements"),
+            ]
+        );
+        let all = violations(&result);
+        let owners: Vec<Option<usize>> = all.iter().map(|v| rule_index(&catalog, v)).collect();
+        assert_eq!(owners, [Some(0), Some(2), Some(3), Some(0)]);
+        assert_eq!(
+            rule_index(&catalog, &json!({ "rule": { "name": "none" } })),
+            None
+        );
+        let cases = cases(&result);
+        let failures: Vec<Option<&str>> = cases
+            .iter()
+            .map(|c| c.failure.as_ref().map(|f| f.1.as_str()))
+            .collect();
+        assert_eq!(failures, [Some("a -> b"), None, None, Some("e.cs -> E")]);
+        assert_eq!(cases[0].output, ["ignore: f -> g [known]"]);
+        assert_eq!(cases[2].output, ["warn: c -> d"]);
+        assert_eq!(
+            cases[0].errors.len(),
+            1,
+            "the vacuous entry goes to the first rule"
+        );
+        assert!(cases[1..].iter().all(|c| c.errors.is_empty()));
     }
 
     #[test]
