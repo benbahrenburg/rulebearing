@@ -5,11 +5,13 @@
 //! - Requirement: [FR-EXT-DN-01](../../../../docs/prd.md#fr-ext-dn-01)
 //!
 //! Only project entries whose file is a C#, F# or Visual Basic project are kept; solution folders
-//! and other items are skipped. Paths are resolved against the solution's folder, sorted and
-//! de-duplicated, so the project order never depends on how the solution was written.
+//! and other items are skipped. Paths are resolved against the solution's folder with `.` and
+//! `..` removed, sorted and de-duplicated, so the project order and the paths `excludeProjects`
+//! matches never depend on how the solution was written.
 
 use std::path::{Path, PathBuf};
 
+use super::project::normalise;
 use super::{DiscoverError, read};
 
 /// The project files a `.sln` or `.slnx` lists, resolved against the solution's folder.
@@ -34,7 +36,7 @@ pub fn solution_projects(solution: &Path) -> Result<Vec<PathBuf>, DiscoverError>
         .into_iter()
         .map(|p| p.replace('\\', "/"))
         .filter(|p| is_project_file(p))
-        .map(|p| folder.join(p))
+        .map(|p| normalise(&folder.join(p)))
         .collect();
     projects.sort();
     projects.dedup();
@@ -81,7 +83,7 @@ mod tests {
         );
         write(
             &dir.join("B.slnx"),
-            r#"<Solution><Folder Name="/src/"><Project Path="src/Core/Core.csproj" /></Folder><Project Path="tests/T.fsproj"/><Project Path="tests/T.fsproj"/></Solution>"#,
+            r#"<Solution><Folder Name="/src/"><Project Path="src/Core/Core.csproj" /></Folder><Project Path="tests/T.fsproj"/><Project Path="build/../tests/./T.fsproj"/></Solution>"#,
         );
         assert_eq!(
             solution_projects(&dir.join("A.sln")).ok(),

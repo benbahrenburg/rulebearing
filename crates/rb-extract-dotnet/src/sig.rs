@@ -18,6 +18,9 @@ use crate::metadata::tables::{Coded, TableId};
 /// The deepest type nesting a signature may have before it is rejected as malformed.
 pub const MAX_DEPTH: u32 = 64;
 
+/// The largest array rank a signature may declare (ECMA-335 II.14.1 and the runtime's limit).
+pub const MAX_RANK: u32 = 32;
+
 /// A `TypeDefOrRef` or `TypeSpec` row a signature names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Token {
@@ -106,6 +109,43 @@ impl TypeSig {
                 method.ret.collect(argument, out);
                 for param in &method.params {
                     param.collect(argument, out);
+                }
+            }
+            Self::Primitive(_) | Self::Var(_) | Self::MVar(_) => {}
+        }
+    }
+
+    /// Every token the signature names, custom modifiers included, in no particular order.
+    pub fn all_tokens(&self) -> Vec<Token> {
+        let mut out = Vec::new();
+        self.collect_all(&mut out);
+        out
+    }
+
+    fn collect_all(&self, out: &mut Vec<Token>) {
+        match self {
+            Self::Named { token, .. } => out.push(*token),
+            Self::GenericInst { base, args } => {
+                base.collect_all(out);
+                for arg in args {
+                    arg.collect_all(out);
+                }
+            }
+            Self::Modified {
+                modifier, inner, ..
+            } => {
+                out.push(*modifier);
+                inner.collect_all(out);
+            }
+            Self::SzArray(inner)
+            | Self::Ptr(inner)
+            | Self::ByRef(inner)
+            | Self::Pinned(inner)
+            | Self::Array { element: inner, .. } => inner.collect_all(out),
+            Self::FnPtr(method) => {
+                method.ret.collect_all(out);
+                for param in &method.params {
+                    param.collect_all(out);
                 }
             }
             Self::Primitive(_) | Self::Var(_) | Self::MVar(_) => {}
@@ -213,7 +253,11 @@ impl Decoder<'_> {
             0x1E => TypeSig::MVar(self.r.compressed_u32()?),
             0x14 => {
                 let element = self.ty(next)?;
+                let rank_at = self.r.position();
                 let rank = self.r.compressed_u32()?;
+                if rank > MAX_RANK {
+                    return malformed("signature array rank", rank_at);
+                }
                 let sizes = self.r.compressed_u32()?;
                 for _ in 0..sizes {
                     self.r.compressed_u32()?;
@@ -539,6 +583,42 @@ mod tests {
         assert!(type_spec(&deep).is_err());
         let fine: Vec<u8> = std::iter::repeat_n(0x0F, 10).chain([0x08]).collect();
         assert!(type_spec(&fine).is_ok());
+    }
+
+    #[test]
+    fn an_array_rank_above_the_limit_is_malformed() {
+        // int32[<rank>] with no sizes and no bounds; rank 0x1FFF_FFFF would spell a 512 MB name.
+        assert_eq!(
+            type_spec(&[0x14, 0x08, 0xDF, 0xFF, 0xFF, 0xFF, 0, 0]).map_err(|e| e.what),
+            Err("signature array rank")
+        );
+        assert_eq!(
+            type_spec(&[0x14, 0x08, 33, 0, 0]).map_err(|e| e.what),
+            Err("signature array rank")
+        );
+        assert!(matches!(
+            type_spec(&[0x14, 0x08, 32, 0, 0]),
+            Ok(TypeSig::Array { rank: 32, .. })
+        ));
+    }
+
+    #[test]
+    fn all_tokens_include_custom_modifiers() {
+        // modopt(TypeRef 2) CLASS TypeSpec 1
+        let tokens = type_spec(&[0x20, type_ref(2), 0x12, (1 << 2) | 2]).map(|t| t.all_tokens());
+        assert_eq!(
+            tokens,
+            Ok(vec![
+                Token {
+                    table: id::TYPE_REF,
+                    row: 2
+                },
+                Token {
+                    table: id::TYPE_SPEC,
+                    row: 1
+                }
+            ])
+        );
     }
 
     proptest! {

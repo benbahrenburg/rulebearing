@@ -240,6 +240,12 @@ pub struct AttributeElement {
     /// Named arguments (fields and properties set in the attribute), in declaration order.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub named_arguments: Vec<NamedArgument>,
+    /// Additive (.NET): the attribute's value could not be decoded (a malformed blob, or an
+    /// enum argument whose underlying type no loaded assembly says), so `arguments` and
+    /// `namedArguments` are unknown rather than empty. A rule on this attribute's arguments is
+    /// refused, never answered.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub arguments_unknown: bool,
     /// Where it was applied.
     #[serde(flatten)]
     pub location: Location,
@@ -498,6 +504,7 @@ mod tests {
             attribute_type: "Obsolete".to_owned(),
             arguments: vec![],
             named_arguments: vec![],
+            arguments_unknown: false,
             location: at("A.cs"),
         };
         let call = |from: &str, line: u32| CallElement {
@@ -552,6 +559,7 @@ mod tests {
                     name: "Name".into(),
                     value: "v".into(),
                 }],
+                arguments_unknown: false,
                 location: at("B.cs"),
             }],
             calls: vec![CallElement {

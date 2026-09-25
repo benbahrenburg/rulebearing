@@ -349,6 +349,7 @@ impl Builder<'_, '_, '_> {
                 attribute_type: name,
                 arguments,
                 named_arguments,
+                arguments_unknown: false,
                 location,
             });
         }

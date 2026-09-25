@@ -7,11 +7,14 @@
 //! - Architecture: [Security posture](../../docs/architecture.md#security-posture)
 //! - Requirement: [NFR-SEC-01](../../docs/prd.md#nfr-sec-01)
 //!
-//! Seeded with `TestAssembly.dll` and the extraction fixture's `Sample.dll` by `fuzz/run.sh`.
+//! Seeded with `TestAssembly.dll`, the extraction fixture's `Sample.dll` and the crate's
+//! `tests/fuzz-regressions/` inputs by `fuzz/run.sh`. Every `TypeSpec` is named too, and every
+//! attribute kept undecoded is decoded again with every enum unknown, so a spec chain or a
+//! nested attribute value must stay bounded.
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use rb_extract_dotnet::loader::Loaded;
+use rb_extract_dotnet::loader::{Loaded, decode_attribute};
 use rb_extract_dotnet::names::{Generics, Universe};
 
 fuzz_target!(|data: &[u8]| {
@@ -26,7 +29,16 @@ fuzz_target!(|data: &[u8]| {
             }
             if let Some(base) = ty.extends {
                 let _ = universe.resolve(0, base);
+                let _ = universe.token_name(0, base, Generics::default(), false);
             }
+            for attribute in &ty.attributes {
+                if let Some(undecoded) = &attribute.undecoded {
+                    let _ = decode_attribute(&undecoded.value, &undecoded.params, &|_| None);
+                }
+            }
+        }
+        for spec in &loaded.type_specs {
+            let _ = universe.sig_name(0, spec, Generics::default(), true);
         }
     }
 });

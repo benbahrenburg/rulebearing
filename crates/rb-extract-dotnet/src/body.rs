@@ -158,6 +158,7 @@ impl Builder<'_> {
         }
         let mut fields_seen = BTreeSet::new();
         let mut callees = Vec::new();
+        let mut callee_tokens = BTreeSet::new();
         let mut last_string: Option<&str> = None;
         for instruction in &body.instructions {
             let offset = Some(instruction.offset);
@@ -171,10 +172,12 @@ impl Builder<'_> {
             };
             match (instruction.use_, instruction.opcode) {
                 (Use::String, _) => {
+                    // The loader records literals in instruction order, so by ascending offset.
                     last_string = method
                         .strings
-                        .iter()
-                        .find(|(o, _)| *o == instruction.offset)
+                        .binary_search_by_key(&instruction.offset, |(o, _)| *o)
+                        .ok()
+                        .and_then(|i| method.strings.get(i))
                         .map(|(_, s)| s.as_str());
                     continue;
                 }
@@ -217,7 +220,7 @@ impl Builder<'_> {
                     }
                 }
                 (Use::Call | Use::New | Use::Token, _)
-                    if !callees.iter().any(|(t, _, _)| *t == instruction.token) =>
+                    if callee_tokens.insert(instruction.token) =>
                 {
                     callees.push((instruction.token, offset, last_string));
                 }

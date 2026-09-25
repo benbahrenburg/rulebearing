@@ -27,6 +27,10 @@ const SOURCE_LINK: [u8; 16] = [
     0x56, 0x05, 0x11, 0xCC, 0x91, 0xA0, 0x38, 0x4D, 0x9F, 0xEC, 0x25, 0xAB, 0x9A, 0x35, 0x1A, 0x6A,
 ];
 
+/// The longest document name the reader assembles. A name blob lists parts by blob index, so a
+/// short blob naming one large part many times would otherwise build a name of gigabytes.
+pub const MAX_DOCUMENT_NAME: usize = 64 * 1024;
+
 /// One visible sequence point: where the instructions from `offset` on came from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SequencePoint {
@@ -123,9 +127,15 @@ impl<'a> PortablePdb<'a> {
             first = false;
             if part != 0 {
                 let bytes = self.metadata.blob(part)?;
+                if name.len().saturating_add(bytes.len()) > MAX_DOCUMENT_NAME {
+                    return malformed("document name (too long)", r.position());
+                }
                 let text =
                     std::str::from_utf8(bytes).or_else(|_| malformed("document name part", 0))?;
                 name.push_str(text);
+            }
+            if name.len() > MAX_DOCUMENT_NAME {
+                return malformed("document name (too long)", r.position());
             }
         }
         Ok(name)
@@ -426,6 +436,41 @@ mod tests {
             ("#Blob", blob),
             ("#GUID", guid),
         ])
+    }
+
+    #[test]
+    fn a_document_name_repeating_a_large_part_is_capped() {
+        // Blob 1: a 1,000-byte part; the name blob names it 200 times (200 KB from 201 bytes).
+        let mut pdb_stream = vec![0u8; 20];
+        pdb_stream.extend(0u32.to_le_bytes());
+        pdb_stream.extend(0u64.to_le_bytes());
+        let mut blob = vec![0u8];
+        blob.extend([0x83, 0xE8]); // compressed length 1,000
+        blob.extend(std::iter::repeat_n(b'a', 1000));
+        let name_at = u32::try_from(blob.len()).unwrap_or(0);
+        blob.extend([0x80, 201, b'/']);
+        blob.extend(std::iter::repeat_n(1u8, 200));
+        let fine_at = u32::try_from(blob.len()).unwrap_or(0);
+        blob.extend([4, b'/', 1, 1, 1]);
+        let tilde = table_stream(
+            &[(
+                id::DOCUMENT,
+                vec![vec![name_at, 0, 0, 0], vec![fine_at, 0, 0, 0]],
+            )],
+            0,
+        );
+        let data = root(&[("#Pdb", pdb_stream), ("#~", tilde), ("#Blob", blob)]);
+        let pdb = PortablePdb::parse(&data);
+        let pdb = pdb.as_ref().ok();
+        assert_eq!(
+            pdb.and_then(|p| p.document_name(1).err()).map(|e| e.what),
+            Some("document name (too long)")
+        );
+        assert_eq!(
+            pdb.and_then(|p| p.document_name(2).ok()).map(|n| n.len()),
+            Some(3002)
+        );
+        assert!(pdb.is_some_and(|p| p.documents().is_err()));
     }
 
     #[test]
