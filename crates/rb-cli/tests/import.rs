@@ -386,10 +386,16 @@ fn the_eslint_sandbox_still_refuses_node_built_ins() -> Result<(), Box<dyn Error
     // `process` does not exist inside the sandbox, so nothing of the host leaks into the output.
     let output = run(&dir, &["import", "eslint", "--from", "process.mjs"])?;
     assert_eq!(output.status.code(), Some(0));
-    assert!(
-        !String::from_utf8_lossy(&output.stdout)
-            .contains(&std::env::var("HOME").unwrap_or_else(|_| "/".into()))
-    );
+    // The user's home folder is `HOME` on POSIX and `USERPROFILE` on Windows.
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for home in ["HOME", "USERPROFILE"]
+        .iter()
+        .filter_map(|v| std::env::var(v).ok())
+    {
+        for spelling in [home.clone(), home.replace('\\', "/")] {
+            assert!(!stdout.contains(&spelling), "{spelling} leaked: {stdout}");
+        }
+    }
     let missing = run(&dir, &["import", "eslint", "--from", "absent.js"])?;
     assert_eq!(missing.status.code(), Some(3));
     let none = temp("eslint-none")?;

@@ -146,7 +146,7 @@ mod tests {
         let file = dir.join("webpack.config.cjs");
         std::fs::write(
             &file,
-            "const path = require('node:path'); module.exports = (env, argv) => ({ resolve: { alias: { '@': path.join('/r', env.dir) }, extensions: [argv.mode] } });",
+            "const path = require('node:path'); module.exports = (env, argv) => ({ resolve: { alias: { '@': path.posix.join('/r', env.dir) }, extensions: [argv.mode] } });",
         )?;
         let env = serde_json::json!({ "dir": "src" });
         let arguments = serde_json::json!({ "mode": ".ts" });
