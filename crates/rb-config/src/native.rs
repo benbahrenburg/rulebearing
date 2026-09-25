@@ -182,7 +182,7 @@ pub fn from_canonical(canonical: &Map<String, Value>) -> Map<String, Value> {
             k if RULE_SET_KEYS.contains(&k) => {
                 dependencies.insert(key.clone(), value.clone());
             }
-            "ratchets" | "layers" | "independence" => {
+            "ratchets" | "layers" | "independence" | "elements" | "slices" | "diagrams" => {
                 rules.insert(key.clone(), value.clone());
             }
             _ => {
@@ -292,11 +292,18 @@ mod tests {
             "allowedSeverity": "warn",
             "options": { "doNotFollow": "node_modules" },
             "ratchets": [{ "name": "r" }],
+            "elements": [{ "name": "e", "select": { "kind": "class" }, "should": { "bePublic": true } }],
+            "slices": [{ "name": "s", "matching": "App.(*)", "should": "beFreeOfCycles" }],
+            "diagrams": [{ "name": "d", "select": { "kind": "type" }, "adhereTo": "c.puml" }],
             "extends": "x"
         }));
         let native = from_canonical(&canonical);
         assert!(native.contains_key("rules"));
         assert!(!native.contains_key("forbidden"));
+        for family in ["elements", "slices", "diagrams"] {
+            assert!(!native.contains_key(family), "{family} goes under rules");
+            assert!(native["rules"].get(family).is_some(), "{family}");
+        }
         assert_eq!(to_canonical(&native)?, canonical);
         Ok(())
     }
