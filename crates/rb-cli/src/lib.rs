@@ -69,7 +69,7 @@ impl Outcome {
         Self {
             stdout: stdout.into(),
             stderr: String::new(),
-            code: 0,
+            code: RunExit::Violations(0).code(),
         }
     }
 

@@ -33,12 +33,12 @@ When the binary cannot answer (it is not installed, the configuration is invalid
 | Step | What happens |
 | --- | --- |
 | Import forms | `import ... from`, `export * from`, `export { } from`, `import()` and `require()` with a string (or a template literal without expressions) |
-| Resolution | Off the cached graph's `modules[]`, with no second resolver: the `resolved` path of the dependency the graph records for that specifier in this file; else, for a relative specifier the graph has not recorded yet, the module among `modules[].source` it names by extension or `index` file; else, for a bare specifier, what the graph resolves it to elsewhere. What the graph cannot name is left to the gate |
-| The graph | The `graph` option when given; otherwise the newest entry under `.graph/cache/` whose `key.json` names this worktree. With none, `rulebearing impact <file> --json` writes one first (a miss extracts) |
+| Resolution | Off the cached graph's `modules[]`, with no second resolver: the `resolved` path of the dependency the graph records for that specifier in this file; else, for a relative specifier the graph has not recorded yet, the module among `modules[].source` it names by extension or `index` file; else, for a relative specifier no module matches (a file created since the graph was extracted), the first of the same candidates that is a file on disk; else, for a bare specifier, what the graph resolves it to elsewhere. A bare specifier the graph cannot name is left to the gate |
+| The graph | The `graph` option when given; otherwise the newest entry under `.graph/cache/` whose `key.json` names this worktree root (a Windows `//?/` prefix and the drive letter's case do not count), its current `HEAD`, and a configuration whose files re-hash to the recorded `configHash` (and include the `config` option's file when given). With none, `rulebearing impact <file> --json` writes one first (a miss extracts) |
 | The question | `rulebearing can-import <from> <to> --json`, in ESLint's working folder. `no` is reported; `yes` is not |
 | Memoisation | One question per distinct target per file per lint run; the graph is read once per change |
 
-The answer is the gate's own, from the same configuration and the same graph: the plugin evaluates no rule itself. The cache key follows commits, so an import added since the last commit is resolved by the relative-path step and asked as a new edge, as `can-import` answers before the import exists ([agents.md](../../docs/agents.md#questions-before-the-import-is-written)).
+The answer is the gate's own, from the same configuration and the same graph: the plugin evaluates no rule itself. The binary's cache key also follows uncommitted edits and the build's version, so `can-import` answers from the files as they are; an import added since the graph was cached is resolved by the relative-path step (or off the disk) and asked as a new edge, as `can-import` answers before the import exists ([agents.md](../../docs/agents.md#questions-before-the-import-is-written)).
 
 ## Options
 

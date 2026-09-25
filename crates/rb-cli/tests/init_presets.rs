@@ -228,3 +228,28 @@ fn cruise_init_takes_the_config_name_and_the_preset() -> Result<(), Box<dyn Erro
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
+
+#[test]
+fn init_writes_yaml_only_under_a_yaml_name() -> Result<(), Box<dyn Error>> {
+    let dir = tree("yaml-only", TYPESCRIPT)?;
+    for name in [".dependency-cruiser.cjs", "rules.json", "rulebearing"] {
+        let refused = run(&dir, &["init", "--output", name])?;
+        assert_eq!(refused.status.code(), Some(3), "{name}");
+        assert!(
+            String::from_utf8_lossy(&refused.stderr).contains("is not a .yaml or .yml file"),
+            "{}",
+            String::from_utf8_lossy(&refused.stderr)
+        );
+        assert!(!dir.join(name).exists(), "{name} is not written");
+        let oneshot = run(&dir, &["cruise", "--init", "-c", name])?;
+        assert_eq!(oneshot.status.code(), Some(3), "cruise --init -c {name}");
+        assert!(!dir.join(name).exists());
+    }
+    ok(&run(
+        &dir,
+        &["init", "--output", "arch.YML", "--owner", "@me"],
+    )?)?;
+    assert!(dir.join("arch.YML").is_file());
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
