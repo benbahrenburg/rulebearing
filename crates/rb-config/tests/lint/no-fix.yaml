@@ -1,1 +1,0 @@
-rules: { dependencies: { forbidden: [ { name: no-fix-here, comment: "adr:0001", severity: error, from: {}, to: { circular: true } } ] } }

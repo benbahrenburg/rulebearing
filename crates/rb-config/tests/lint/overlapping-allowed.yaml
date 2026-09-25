@@ -1,5 +1,0 @@
-rules:
-  dependencies:
-    allowed:
-      - { fix: "Import through the package entry.", from: { path: "^src/" }, to: { path: "^lib/" } }
-      - { fix: "Import through the package entry.", from: { path: "^src/" }, to: { path: "^lib/" } }

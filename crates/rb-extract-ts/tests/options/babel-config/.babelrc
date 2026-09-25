@@ -1,4 +1,0 @@
-{
-  "presets": ["@babel/preset-env"],
-  "plugins": [["module-resolver", { "cwd": "babelrc", "alias": { "@lib": "./src/lib" } }]]
-}

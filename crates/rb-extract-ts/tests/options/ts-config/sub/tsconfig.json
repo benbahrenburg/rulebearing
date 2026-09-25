@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "composite": true,
-    "baseUrl": ".",
-    "paths": { "@sub/*": ["lib/*"] }
-  },
-  "include": ["lib"]
-}

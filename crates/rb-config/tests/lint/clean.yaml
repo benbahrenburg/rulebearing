@@ -1,1 +1,0 @@
-rules: { dependencies: { forbidden: [ { name: src-not-to-lib, comment: "adr:0001", fix: "Import lib through its public entry.", severity: error, from: { path: "^src/" }, to: { path: "^lib/" } } ] } }
