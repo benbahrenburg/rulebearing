@@ -2144,8 +2144,8 @@ mod tests {
             (json!({}), "slices[s].graph` removes nothing"),
             (json!({ "ignore": [{}] }), "has neither `from` nor `to`"),
             (
-                json!({ "dependencyTypesNot": ["type-onl"] }),
-                "`graph`: `type-onl` is not a valid dependency type",
+                json!({ "dependencyTypesNot": ["type-hint"] }),
+                "`graph`: `type-hint` is not a valid dependency type",
             ),
             (json!({ "modulesNot": "(?=x)" }), "graph.modulesNot"),
         ] {
