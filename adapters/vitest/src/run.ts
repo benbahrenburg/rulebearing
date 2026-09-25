@@ -9,13 +9,21 @@
 // (wrappers/npm, as `rulebearing/vitest`), so it starts the package's own launcher,
 // bin/rulebearing.js, which finds the platform binary. RULEBEARING_BINARY, or the `binary` option,
 // names a binary to run instead, as it does for the launcher.
+//
+// The run always passes `--output-to -`, so a configuration that sets options.outputTo neither
+// hides the JSON from the adapter nor has a file of the user's overwritten with it.
 
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 
+import { cases, failed } from './cases.js';
+
 /** Environment variable naming a binary to run instead of the package's. */
 export const BINARY_OVERRIDE = 'RULEBEARING_BINARY';
+
+/** The exit code of a run that cannot be trusted (docs/adr/0008-exit-code-contract.md). */
+export const EXIT_UNTRUSTWORTHY = 2;
 
 /** How to run the binary. */
 export interface RunOptions {
@@ -71,12 +79,14 @@ export function resolveCommand(
   return [process.execPath, join(dirname(manifest), 'bin', 'rulebearing.js')];
 }
 
-/** The arguments after the program: `cruise --output-type json --no-progress ...`. */
+/** The arguments after the program: `cruise --output-type json --output-to - --no-progress ...`. */
 export function cruiseArguments(options: RunOptions): string[] {
   return [
     'cruise',
     '--output-type',
     'json',
+    '--output-to',
+    '-',
     '--no-progress',
     ...(options.config === undefined ? [] : ['--config', options.config]),
     ...(options.graph === undefined ? [] : ['--graph', options.graph]),
@@ -89,7 +99,9 @@ const MAX_BUFFER = 1024 * 1024 * 1024;
 
 /**
  * Runs the binary and parses its JSON. A run that finds violations (exit 1) or cannot be trusted
- * (exit 2, a vacuous rule) still writes its result; only a run that wrote none is an error.
+ * (exit 2, a vacuous rule) still writes its result; a run that wrote none is an error, and so is an
+ * exit 2 whose every rule passes, since the reason the run cannot be trusted is then not among the
+ * rules (the .NET adapter's rule).
  */
 export function cruise(options: RunOptions = {}, env: NodeJS.ProcessEnv = process.env): unknown {
   const [program, ...leading] = resolveCommand(options.binary, env);
@@ -116,6 +128,11 @@ export function cruise(options: RunOptions = {}, env: NodeJS.ProcessEnv = proces
       completed.status === null ? `signal ${String(completed.signal)}` : String(completed.status);
     throw new CruiseError(
       `\`${shown}\` exited ${status} without a result:\n${completed.stderr.trim()}`,
+    );
+  }
+  if (completed.status === EXIT_UNTRUSTWORTHY && !cases(result).some(failed)) {
+    throw new CruiseError(
+      `\`${shown}\` cannot be trusted (exit 2), and no rule says why:\n${completed.stderr.trim()}\nFix: the message above names the cause (zero modules, an unsupported file, an assembly without a portable PDB).`,
     );
   }
   return result;

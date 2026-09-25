@@ -8,6 +8,7 @@ import {
   failed,
   jsNumber,
   message,
+  ruleIndex,
   ruleName,
   rules,
   severity,
@@ -131,6 +132,7 @@ describe('cases', () => {
     };
     expect(rules(result)).toEqual([
       {
+        id: 'not-in-allowed',
         name: 'not-in-allowed',
         family: 'allowed',
         severity: 'error',
@@ -306,7 +308,7 @@ describe('jsNumber', () => {
 describe('message', () => {
   it('is the failure, then each error, one per line; empty for a passing case', () => {
     const found: Case = {
-      rule: { name: 'r', family: 'forbidden', severity: 'error' },
+      rule: { id: 'r', name: 'r', family: 'forbidden', severity: 'error' },
       failure: 'fix\nRB-1 a -> b',
       errors: [
         ['expired', 'rule `r` expired on 2026-01-01; it no longer applies and the run fails'],
@@ -321,5 +323,76 @@ describe('message', () => {
 
   it('is deterministic', () => {
     expect(cases(JUNIT_VECTOR).map(message)).toEqual(cases(JUNIT_VECTOR).map(message));
+  });
+});
+
+// The fixed vectors of crates/rb-report/src/catalog.rs,
+// rules_sharing_a_name_keep_distinct_identities_and_their_own_violations.
+describe('rules sharing a name', () => {
+  const violation = (type: string, from: string, to: string, level: string): object => ({
+    type,
+    from,
+    to,
+    rule: { name: 'unnamed', severity: level },
+  });
+
+  it('keep distinct identities and their own violations', () => {
+    const result = {
+      summary: {
+        violations: [
+          violation('dependency', 'a', 'b', 'error'),
+          violation('dependency', 'c', 'd', 'warn'),
+          violation('element', 'e.cs', 'E', 'error'),
+          violation('dependency', 'f', 'g', 'ignore'),
+        ],
+        ruleSetUsed: {
+          forbidden: [
+            { name: 'unnamed', severity: 'error' },
+            { name: 'unnamed#2' },
+            { severity: 'warn', name: 'unnamed' },
+          ],
+          elements: [{ name: 'unnamed', severity: 'error' }],
+        },
+        vacuousRules: [{ name: 'unnamed', side: 'from' }],
+      },
+    };
+    const catalogue = rules(result);
+    expect(catalogue.map((r) => [r.id, r.family])).toEqual([
+      ['unnamed', 'forbidden'],
+      ['unnamed#2', 'forbidden'],
+      ['unnamed#3', 'forbidden'],
+      ['unnamed#4', 'elements'],
+    ]);
+    expect(result.summary.violations.map((v) => ruleIndex(catalogue, v))).toEqual([0, 2, 3, 0]);
+    expect(ruleIndex(catalogue, { rule: { name: 'none' } })).toBeUndefined();
+    const found = cases(result);
+    expect(found.map((c) => c.failure)).toEqual([
+      '1 violation(s) of `unnamed`\na -> b',
+      undefined,
+      undefined,
+      '1 violation(s) of `unnamed`\ne.cs -> E',
+    ]);
+    expect(found[0]?.output).toEqual(['ignore: f -> g [known]']);
+    expect(found[2]?.output).toEqual(['warn: c -> d']);
+    expect(found[0]?.errors).toHaveLength(1);
+    expect(found.slice(1).every((c) => c.errors.length === 0)).toBe(true);
+  });
+
+  it('an element violation named like a dependency rule is a rule of its own', () => {
+    const result = {
+      summary: {
+        violations: [
+          violation('dependency', 'a', 'b', 'error'),
+          violation('element', 'e.cs', 'E', 'error'),
+        ],
+        ruleSetUsed: { forbidden: [{ name: 'unnamed', severity: 'error' }] },
+      },
+    };
+    const catalogue = rules(result);
+    expect(catalogue.map((r) => [r.id, r.family])).toEqual([
+      ['unnamed', 'forbidden'],
+      ['unnamed#2', 'rules'],
+    ]);
+    expect(result.summary.violations.map((v) => ruleIndex(catalogue, v))).toEqual([0, 1]);
   });
 });
