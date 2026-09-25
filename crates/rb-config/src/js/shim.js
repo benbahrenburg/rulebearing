@@ -30,19 +30,28 @@
     return out;
   }
 
+  // The root of a path: `/`, a Windows drive (`C:/`), or '' for a relative path. The host hands
+  // the sandbox `/`-separated paths on every platform, so on Windows `__dirname` is `C:/...`, and
+  // Node's win32 `path` treats that drive as the root just as POSIX treats `/`.
+  function rootOf(p) {
+    if (p.startsWith('/')) return '/';
+    const drive = /^[A-Za-z]:\//.exec(p);
+    return drive ? drive[0] : '';
+  }
+
   const path = {
     sep: '/',
     delimiter: ':',
     isAbsolute(p) {
-      return String(p).startsWith('/');
+      return rootOf(String(p)) !== '';
     },
     normalize(p) {
       const text = String(p);
-      const absolute = text.startsWith('/');
-      const trailing = text.endsWith('/') && text.length > 1;
-      let joined = normalizeSegments(text.split('/'), absolute).join('/');
-      if (absolute) joined = '/' + joined;
-      if (joined === '') joined = absolute ? '/' : '.';
+      const root = rootOf(text);
+      const trailing = text.endsWith('/') && text.length > root.length;
+      let joined =
+        root + normalizeSegments(text.slice(root.length).split('/'), root !== '').join('/');
+      if (joined === '') joined = '.';
       return trailing && !joined.endsWith('/') ? joined + '/' : joined;
     },
     join(...parts) {
@@ -54,19 +63,20 @@
     },
     resolve(...parts) {
       let resolved = '';
-      for (let i = parts.length - 1; i >= 0 && !resolved.startsWith('/'); i--) {
+      for (let i = parts.length - 1; i >= 0 && !path.isAbsolute(resolved); i--) {
         const part = String(parts[i]);
         if (part !== '') resolved = resolved === '' ? part : part + '/' + resolved;
       }
-      if (!resolved.startsWith('/')) resolved = global.__rb_cwd + '/' + resolved;
-      const normal = '/' + normalizeSegments(resolved.split('/'), true).join('/');
-      return normal;
+      if (!path.isAbsolute(resolved)) resolved = global.__rb_cwd + '/' + resolved;
+      const root = rootOf(resolved);
+      return root + normalizeSegments(resolved.slice(root.length).split('/'), true).join('/');
     },
     dirname(p) {
       const text = String(p);
+      const root = rootOf(text);
       const index = text.replace(/\/+$/, '').lastIndexOf('/');
       if (index < 0) return '.';
-      if (index === 0) return '/';
+      if (index < root.length) return root;
       return text.slice(0, index);
     },
     basename(p, ext) {
@@ -90,7 +100,7 @@
       const ext = path.extname(p);
       const dir = path.dirname(p);
       return {
-        root: String(p).startsWith('/') ? '/' : '',
+        root: rootOf(String(p)),
         dir,
         base,
         ext,
@@ -109,11 +119,14 @@
     if (!href.startsWith('file://')) {
       throw new TypeError('The URL must be of scheme file');
     }
-    return decodeURIComponent(href.slice('file://'.length));
+    const decoded = decodeURIComponent(href.slice('file://'.length));
+    // `file:///C:/x` names `C:/x`, as Node's win32 fileURLToPath reads it.
+    return /^\/[A-Za-z]:\//.test(decoded) ? decoded.slice(1) : decoded;
   }
 
   function pathToFileURL(p) {
-    return new URL('file://' + encodeURI(path.resolve(p)));
+    const resolved = path.resolve(p);
+    return new URL('file://' + (resolved.startsWith('/') ? '' : '/') + encodeURI(resolved));
   }
 
   class URL {

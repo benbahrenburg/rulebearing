@@ -878,6 +878,50 @@ export default { extends: path.basename(base), forbidden: [] };"#,
     }
 
     #[test]
+    fn a_windows_drive_is_a_root_as_nodes_win32_path_reads_it() -> Result<(), Box<dyn Error>> {
+        // On Windows the host hands the sandbox `C:/...` paths, so `__dirname` is one.
+        let dir = repo(&[(
+            "drive.cjs",
+            "const path = require('path'); const url = require('url'); module.exports = { resolve: { alias: {
+               resolved: path.resolve('C:/repo/app', 'src/lib'),
+               climbed: path.resolve('C:/repo', '../../x'),
+               other: path.resolve('C:/repo', 'D:/elsewhere'),
+               joined: path.join('C:/repo', '../lib'),
+               normal: path.normalize('C:/repo/./a/../b/'),
+               top: path.dirname('C:/repo'),
+               dir: path.dirname('C:/repo/a.js'),
+               root: path.parse('C:/repo/a.js').root,
+               relative: path.relative('C:/repo/a', 'C:/repo/b/c'),
+               href: url.pathToFileURL('C:/repo/a b.js').href,
+               back: url.fileURLToPath('file:///C:/repo/a%20b.js'),
+               posix: url.fileURLToPath('file:///repo/a.js'),
+               absolute: [path.isAbsolute('C:/x'), path.isAbsolute('/x'), path.isAbsolute('x'), path.isAbsolute('C:x')].join(),
+             } } };",
+        )])?;
+        let null = serde_json::Value::Null;
+        let alias = &webpack(&dir, "drive.cjs", &null, &null)?["alias"];
+        assert_eq!(
+            alias,
+            &serde_json::json!({
+                "resolved": "C:/repo/app/src/lib",
+                "climbed": "C:/x",
+                "other": "D:/elsewhere",
+                "joined": "C:/lib",
+                "normal": "C:/repo/b/",
+                "top": "C:/",
+                "dir": "C:/repo",
+                "root": "C:/",
+                "relative": "../b/c",
+                "href": "file:///C:/repo/a%20b.js",
+                "back": "C:/repo/a b.js",
+                "posix": "/repo/a.js",
+                "absolute": "true,true,false,false",
+            })
+        );
+        Ok(())
+    }
+
+    #[test]
     fn webpack_configs_are_pried_as_upstream_pries_them() -> Result<(), Box<dyn Error>> {
         let dir = repo(&[
             (
