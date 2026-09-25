@@ -1885,7 +1885,7 @@ mod tests {
     }
 
     #[test]
-    fn an_assemblys_pdb_stream_does_not_size_its_tables() {
+    fn a_pdb_stream_in_an_assembly_does_not_size_its_tables() {
         // One TypeDef, and a #Pdb stream claiming u32::MAX Field and MethodDef rows: honoured,
         // the list ranges would run to u32::MAX + 1.
         let (strings, _) = heap(&[b"M.dll", b"A"], false);
