@@ -286,7 +286,7 @@ fn check_rule(
     Ok(())
 }
 
-/// Checks the keys of a rule's `graph`: an object of [`GRAPH_KEYS`] that writes at least one,
+/// Checks the keys of a rule's `graph`: an object of `GRAPH_KEYS` that writes at least one,
 /// each `ignore` entry an object of `from` and `to` with at least one of them.
 ///
 /// # Errors

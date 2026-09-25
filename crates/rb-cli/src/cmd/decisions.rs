@@ -53,7 +53,7 @@ pub struct DecisionsArgs {
 /// `decisions` subcommands.
 #[derive(Debug, Clone, Subcommand)]
 pub enum DecisionsCommand {
-    /// Write docs/adr/NNNN-<slug>.md from the ADR template, naming the rules that enforce it
+    /// Write `docs/adr/NNNN-<slug>.md` from the ADR template, naming the rules that enforce it
     New(NewArgs),
 }
 

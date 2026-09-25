@@ -10,7 +10,7 @@
 //! Where `ArchUnitNET` defines a negation that is not the logical negation of its positive
 //! (`DoNotHaveAttributeWithArguments` means none of the arguments appears on any instance, not "no
 //! instance carries all of them"; `DoNotImplementAnyInterfaces` holds for an empty list), the
-//! negation here follows it: [`test`] asks each concept for its own negative. Name comparisons
+//! negation here follows it: [`test()`] asks each concept for its own negative. Name comparisons
 //! follow `NamingExtensions`: `HaveName`, `HaveFullName` and the assembly-qualified and full-name
 //! prefix, suffix and substring tests ignore case, the simple-name prefix, suffix and substring
 //! tests do not.

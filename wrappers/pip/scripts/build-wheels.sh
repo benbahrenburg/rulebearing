@@ -13,7 +13,7 @@
 set -euo pipefail
 
 usage="usage: wrappers/pip/scripts/build-wheels.sh <dist-dir> <version> <out-dir> [--partial]"
-[ "$#" -ge 3 ] && [ "$#" -le 4 ] || { echo "$usage" >&2; exit 2; }
+if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then echo "$usage" >&2; exit 2; fi
 dist="$1"
 version="$2"
 out="$3"

@@ -10,7 +10,7 @@
 //!   [NFR-PERF-01](../../../docs/prd.md#nfr-perf-01)
 //!
 //! Upstream removes duplicate violations with a pairwise scan, quadratic in their number: on
-//! home-assistant/core's 33,000 violations that took minutes. [`unique_violations`] keeps the
+//! home-assistant/core's 33,000 violations that took minutes. `unique_violations` keeps the
 //! same violations through an index, and a property test holds it to the pairwise scan.
 
 use std::collections::HashMap;

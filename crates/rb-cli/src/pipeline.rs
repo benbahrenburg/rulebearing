@@ -183,7 +183,11 @@ pub fn extract(
         feature = "extract-dotnet",
         feature = "extract-python"
     )),
-    expect(unused_variables, reason = "a build with no extractor reads nothing")
+    expect(
+        unused_variables,
+        unused_mut,
+        reason = "a build with no extractor reads nothing and adds nothing"
+    )
 )]
 #[cfg_attr(
     all(
