@@ -4,7 +4,9 @@
 //!   [§ The developer relations hat](../../../../../docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo)
 //! - Plan: [Wave 2, Step 11](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
 //! - Decisions: [ADR-0013](../../../../../docs/adr/0013-ruff-parser-for-python.md) (the import-linter
-//!   mapping), [ADR-0034](../../../../../docs/adr/0034-slices-group-types-or-modules-and-segments.md) (`segments`)
+//!   mapping), [ADR-0034](../../../../../docs/adr/0034-slices-group-types-or-modules-and-segments.md) (`segments`),
+//!   [ADR-0038](../../../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md) (`graph`: the
+//!   imports import-linter removes before it checks a contract)
 //! - Requirements: [FR-CLI-04](../../../../../docs/prd.md#fr-cli-04), [FR-RULE-07](../../../../../docs/prd.md#fr-rule-07)
 //!
 //! The settings come from `.importlinter`, `setup.cfg` (`[importlinter]` or
@@ -20,7 +22,17 @@
 //! | `independence` | one `reachable` `forbidden` rule per ordered pair; with `allow_indirect_imports`, or a wildcard, the `independence` shorthand |
 //! | `protected` | an `allowed` rule naming the importers, beside one rule allowing every import of an unprotected module |
 //! | `acyclic_siblings` | one slice rule per package at or below each ancestor, `segments: 1`, `beFreeOfCycles` |
-//! | `ignore_imports` | `knownViolations` entries with `reason: ignore_imports` |
+//!
+//! import-linter checks each contract over a graph it narrows first, and every rule a contract
+//! produces carries the same narrowing as `graph` (ADR-0038):
+//!
+//! | import-linter | `graph` on each rule of the contract |
+//! | --- | --- |
+//! | `ignore_imports` | `ignore`, one entry per expression: the importer's exact module, the imported module's exact module (or, outside the root packages, its name and submodules, as grimp squashes an external package); `protected` writes an `allowed` rule per expression instead |
+//! | `unmatched_ignore_imports_alerting = none` or `warn` | `allowEmpty: true`, so an entry that matches nothing is not vacuous |
+//! | `exclude_type_checking_imports = True` | `dependencyTypesNot: [type-only]`; `protected` allows `type-only` imports of its modules |
+//! | the root packages | `chainsThrough`, on a rule that follows chains: grimp's graph holds the root packages only |
+//! | a folder without `__init__.py` below a root package | `modulesNot`, the topmost such folder, read from the tree when imported |
 //!
 //! `layers` is written expanded rather than as the `layers` shorthand because the shorthand has
 //! neither `reachable` nor sibling layers, and import-linter checks chains; the expansion is the
@@ -124,11 +136,13 @@ impl Contract {
     }
 }
 
-/// The settings: the root packages and the contracts.
+/// The settings: the root packages, the contracts, and whether imports under
+/// `if TYPE_CHECKING:` are left out of the graph.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Settings {
     roots: Vec<String>,
     contracts: Vec<Contract>,
+    exclude_type_checking: bool,
 }
 
 /// Sections of an INI file, in the order written, each with its options.
@@ -202,6 +216,10 @@ fn settings_from_ini(text: &str, file: &str) -> Result<Settings, ImportError> {
     .list();
     roots.sort();
     roots.dedup();
+    let exclude_type_checking = top
+        .get("exclude_type_checking_imports")
+        .and_then(|v| Field::Text(v.clone()).flag())
+        .unwrap_or(false);
     let contract_prefix = format!("{prefix}:contract:");
     let mut contracts = Vec::new();
     for (name, options) in &sections {
@@ -221,7 +239,11 @@ fn settings_from_ini(text: &str, file: &str) -> Result<Settings, ImportError> {
                 .collect(),
         });
     }
-    Ok(Settings { roots, contracts })
+    Ok(Settings {
+        roots,
+        contracts,
+        exclude_type_checking,
+    })
 }
 
 fn toml_field(value: &toml::Value) -> Field {
@@ -270,6 +292,10 @@ fn settings_from_toml(text: &str, file: &str) -> Result<Settings, ImportError> {
         .unwrap_or_default();
     roots.sort();
     roots.dedup();
+    let exclude_type_checking = table
+        .get("exclude_type_checking_imports")
+        .and_then(|v| toml_field(v).flag())
+        .unwrap_or(false);
     let mut contracts = Vec::new();
     let mut seen = BTreeSet::new();
     for (index, entry) in table
@@ -309,7 +335,11 @@ fn settings_from_toml(text: &str, file: &str) -> Result<Settings, ImportError> {
                 .collect(),
         });
     }
-    Ok(Settings { roots, contracts })
+    Ok(Settings {
+        roots,
+        contracts,
+        exclude_type_checking,
+    })
 }
 
 /// The file names searched for, in order, when `--from` is not given.
@@ -357,6 +387,9 @@ struct Layout {
     homes: BTreeMap<String, String>,
     /// Root packages whose folder was not found.
     missing: Vec<String>,
+    /// The topmost folders below a root package that hold Python files but no `__init__.py`,
+    /// repository-relative and sorted: grimp does not walk them.
+    portions: Vec<String>,
 }
 
 impl Layout {
@@ -373,7 +406,30 @@ impl Layout {
                 None => layout.missing.push(root.clone()),
             }
         }
+        let homes: Vec<(String, String)> = layout
+            .homes
+            .iter()
+            .map(|(r, h)| (r.clone(), h.clone()))
+            .collect();
+        for (root, home) in homes {
+            let base = pattern::join(&home, &root.replace('.', "/"));
+            layout.portions.extend(portions_below(repo, &base));
+        }
+        layout.portions.sort();
+        layout.portions.dedup();
         layout
+    }
+
+    /// The Python files under each root package's folder, as path patterns: the modules a chain
+    /// may pass through in grimp's graph.
+    fn root_patterns(&self) -> Vec<String> {
+        let mut out: Vec<String> = self
+            .homes
+            .iter()
+            .map(|(root, home)| pattern::module_path(home, root, true))
+            .collect();
+        out.sort();
+        out
     }
 
     /// The folder holding the top-level package of `module`, if it is one of the roots.
@@ -405,21 +461,6 @@ impl Layout {
             .join(&home)
             .join(module.replace('.', std::path::MAIN_SEPARATOR_STR));
         dir.is_dir().then_some(dir)
-    }
-
-    /// The repository-relative file of a module: `pkg/a.py` or `pkg/a/__init__.py`.
-    fn module_file(&self, module: &str) -> Option<String> {
-        let home = self.home(module)?;
-        let base = pattern::join(&home, &module.replace('.', "/"));
-        let package = format!("{base}/__init__.py");
-        let file = format!("{base}.py");
-        if self.repo.join(&package).is_file() {
-            Some(package)
-        } else if self.repo.join(&file).is_file() {
-            Some(file)
-        } else {
-            None
-        }
     }
 
     /// The modules directly inside a package: its sub-packages and `.py` files.
@@ -469,51 +510,6 @@ impl Layout {
         out.sort();
         out
     }
-
-    /// Every module the expression names, from the tree (wildcards expanded).
-    fn expand(&self, expression: &str) -> Vec<String> {
-        let segments: Vec<&str> = expression.split('.').collect();
-        let Some((top, rest)) = segments.split_first() else {
-            return Vec::new();
-        };
-        if top.contains('*') || !self.is_local(top) {
-            return Vec::new();
-        }
-        let mut current = vec![(*top).to_owned()];
-        for segment in rest {
-            let mut next = Vec::new();
-            for module in &current {
-                match *segment {
-                    "*" => next.extend(
-                        self.children(module)
-                            .into_iter()
-                            .map(|c| format!("{module}.{c}")),
-                    ),
-                    "**" => {
-                        let mut stack: Vec<String> = self
-                            .children(module)
-                            .into_iter()
-                            .map(|c| format!("{module}.{c}"))
-                            .collect();
-                        while let Some(found) = stack.pop() {
-                            stack.extend(
-                                self.children(&found)
-                                    .into_iter()
-                                    .map(|c| format!("{found}.{c}")),
-                            );
-                            next.push(found);
-                        }
-                    }
-                    literal => next.push(format!("{module}.{literal}")),
-                }
-            }
-            current = next;
-        }
-        current.retain(|m| self.module_file(m).is_some());
-        current.sort();
-        current.dedup();
-        current
-    }
 }
 
 fn read_dir_sorted(dir: &Path) -> Vec<PathBuf> {
@@ -526,6 +522,48 @@ fn read_dir_sorted(dir: &Path) -> Vec<PathBuf> {
 
 fn is_package(dir: &Path) -> bool {
     dir.join("__init__.py").is_file()
+}
+
+/// The topmost folders below the package folder `base` (repository-relative) that hold a Python
+/// file somewhere inside but no `__init__.py`: grimp walks a root package's regular packages
+/// only, so nothing in them is a module of its graph.
+fn portions_below(repo: &Path, base: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut stack = vec![base.to_owned()];
+    while let Some(rel) = stack.pop() {
+        for entry in read_dir_sorted(&repo.join(&rel)) {
+            let name = entry
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            if !entry.is_dir() || name.starts_with('.') || SKIPPED.contains(&name.as_str()) {
+                continue;
+            }
+            let child = pattern::join(&rel, &name);
+            if is_package(&entry) {
+                stack.push(child);
+            } else if holds_python(&entry) {
+                out.push(child);
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+/// Whether a folder holds a `.py` file at any depth.
+fn holds_python(dir: &Path) -> bool {
+    let mut stack = vec![dir.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        for entry in read_dir_sorted(&dir) {
+            if entry.is_dir() {
+                stack.push(entry);
+            } else if entry.extension().is_some_and(|e| e == "py") {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 /// Finds the folder holding package `name`: the repository itself, `src/`, or the shallowest
@@ -566,10 +604,71 @@ struct Output {
     allowed: Vec<Item>,
     independence: Vec<Item>,
     slices: Vec<Item>,
-    known: Vec<Item>,
-    /// Comment lines for the knownViolations block.
+    /// Comment lines for the header.
     notes: Vec<String>,
     catch_all: BTreeSet<String>,
+}
+
+/// What import-linter takes out of a contract's graph, written as `graph` on each of its rules
+/// (ADR-0038).
+#[derive(Debug, Default)]
+struct Narrowing {
+    /// `ignore` entries, from `ignore_imports`.
+    ignore: Vec<Node>,
+    /// `exclude_type_checking_imports`.
+    type_only: bool,
+    /// The folders grimp does not walk.
+    portions: Vec<String>,
+    /// The root packages' files, for a rule that follows chains.
+    roots: Vec<String>,
+    /// `unmatched_ignore_imports_alerting` is `none` or `warn`.
+    quiet: bool,
+}
+
+impl Narrowing {
+    fn new(contract: &Contract, layout: &Layout, type_only: bool, out: &mut Output) -> Self {
+        let alerting = contract
+            .options
+            .get("unmatched_ignore_imports_alerting")
+            .map(|f| f.text().to_ascii_lowercase());
+        Self {
+            ignore: ignore_entries(contract, layout, out),
+            type_only,
+            portions: layout
+                .portions
+                .iter()
+                .map(|p| pattern::path_prefix(p))
+                .collect(),
+            roots: layout.root_patterns(),
+            quiet: matches!(alerting.as_deref(), Some("none" | "warn")),
+        }
+    }
+
+    /// The `graph` for a rule; `chains` adds `chainsThrough`, for a rule that follows chains.
+    fn node(&self, chains: bool) -> Option<Node> {
+        let mut pairs = Vec::new();
+        if !self.ignore.is_empty() {
+            pairs.push((
+                "ignore",
+                Node::List(self.ignore.iter().cloned().map(Item::plain).collect()),
+            ));
+        }
+        if self.type_only {
+            pairs.push(("dependencyTypesNot", Node::strs(&["type-only"])));
+        }
+        if !self.portions.is_empty() {
+            pairs.push(("modulesNot", path_value(&self.portions)));
+        }
+        if chains && !self.roots.is_empty() {
+            pairs.push(("chainsThrough", path_value(&self.roots)));
+        }
+        (!pairs.is_empty()).then(|| Node::map(pairs))
+    }
+
+    /// Whether an entry that matches nothing is not to fail the run.
+    fn allow_unmatched(&self) -> bool {
+        self.quiet && !self.ignore.is_empty()
+    }
 }
 
 fn path_value(patterns: &[String]) -> Node {
@@ -580,14 +679,14 @@ fn path_value(patterns: &[String]) -> Node {
     }
 }
 
-/// A `forbidden` rule.
+/// A `forbidden` rule, with the contract's narrowing as `graph`.
 fn forbidden(
     name: String,
     contract: &Contract,
-    from: &[String],
-    to: &[String],
+    (from, to): (&[String], &[String]),
     reachable: bool,
     allow_empty: bool,
+    narrowing: &Narrowing,
 ) -> Node {
     let mut to_node = vec![("path", path_value(to))];
     if reachable {
@@ -603,8 +702,11 @@ fn forbidden(
         ("from", Node::map(vec![("path", path_value(from))])),
         ("to", Node::map(to_node)),
     ];
-    if allow_empty {
+    if allow_empty || narrowing.allow_unmatched() {
         pairs.push(("allowEmpty", Node::Bool(true)));
+    }
+    if let Some(graph) = narrowing.node(reachable) {
+        pairs.push(("graph", graph));
     }
     Node::map(pairs)
 }
@@ -642,17 +744,46 @@ fn parse_layer(line: &str) -> Layer {
     }
 }
 
-/// One rule the contract produced, with its from and to patterns, for matching `ignore_imports`.
-struct Produced {
-    name: String,
-    from: Vec<String>,
-    to: Vec<String>,
-    /// Whether the rule follows chains, which makes its violations dependency-cruiser's
-    /// `reachability` kind rather than `dependency`.
-    reachable: bool,
+/// The comment on an `exhaustive` contract: which modules directly under the container no
+/// layer holds, read from the tree when imported.
+fn exhaustive(
+    contract: &Contract,
+    layout: &Layout,
+    parsed: &[Layer],
+    container: Option<&str>,
+    comments: &mut Vec<String>,
+) {
+    let container_name = container.unwrap_or_default().to_owned();
+    let named: BTreeSet<String> = parsed
+        .iter()
+        .flat_map(|l| l.members.iter().map(|m| m.0.clone()))
+        .chain(contract.list("exhaustive_ignores"))
+        .collect();
+    if layout.package_dir(&container_name).is_none() {
+        comments.push(format!(
+            "exhaustive: the package `{container_name}` was not found, so which modules sit in no layer was not checked"
+        ));
+    } else {
+        let unnamed: Vec<String> = layout
+            .children(&container_name)
+            .into_iter()
+            .filter(|c| !named.contains(c))
+            .map(|c| format!("{container_name}.{c}"))
+            .collect();
+        if unnamed.is_empty() {
+            comments.push(format!(
+                "exhaustive: every module directly under `{container_name}` is a layer (checked when imported; no rule checks it on later runs)"
+            ));
+        } else {
+            comments.push(format!(
+                "exhaustive: no layer holds {}, so import-linter reports the contract broken until one does; no rule checks this",
+                unnamed.join(", ")
+            ));
+        }
+    }
 }
 
-fn layers(contract: &Contract, layout: &Layout, out: &mut Output, produced: &mut Vec<Produced>) {
+fn layers(contract: &Contract, layout: &Layout, narrowing: &Narrowing, out: &mut Output) {
     let parsed: Vec<Layer> = contract
         .list("layers")
         .iter()
@@ -676,24 +807,18 @@ fn layers(contract: &Contract, layout: &Layout, out: &mut Output, produced: &mut
             Some(c) if passes.len() > 1 => format!("{c}:"),
             _ => String::new(),
         };
-        let mut push = |low: &(String, bool), high: &(String, bool), items: &mut Vec<Item>| {
+        let push = |low: &(String, bool), high: &(String, bool), items: &mut Vec<Item>| {
             let name = format!("{}:{prefix}{}-to-{}", contract.id, low.0, high.0);
             let from = vec![layout.pattern(&full(&low.0), true)];
             let to = vec![layout.pattern(&full(&high.0), true)];
             items.push(Item::plain(forbidden(
-                name.clone(),
+                name,
                 contract,
-                &from,
-                &to,
+                (&from, &to),
                 true,
                 low.1 || high.1,
+                narrowing,
             )));
-            produced.push(Produced {
-                name,
-                from,
-                to,
-                reachable: true,
-            });
         };
         for (lower, layer) in parsed.iter().enumerate() {
             if layer.independent {
@@ -712,41 +837,27 @@ fn layers(contract: &Contract, layout: &Layout, out: &mut Output, produced: &mut
             }
         }
         if contract.flag("exhaustive", false) {
-            let container_name = container.clone().unwrap_or_default();
-            let named: BTreeSet<String> = parsed
-                .iter()
-                .flat_map(|l| l.members.iter().map(|m| m.0.clone()))
-                .chain(contract.list("exhaustive_ignores"))
-                .collect();
-            if layout.package_dir(&container_name).is_none() {
-                comments.push(format!(
-                    "exhaustive: the package `{container_name}` was not found, so which modules sit in no layer was not checked"
-                ));
-            } else {
-                let unnamed: Vec<String> = layout
-                    .children(&container_name)
-                    .into_iter()
-                    .filter(|c| !named.contains(c))
-                    .map(|c| format!("{container_name}.{c}"))
-                    .collect();
-                if unnamed.is_empty() {
-                    comments.push(format!(
-                        "exhaustive: every module directly under `{container_name}` is a layer (checked when imported; no rule checks it on later runs)"
-                    ));
-                } else {
-                    comments.push(format!(
-                        "exhaustive: no layer holds {}, so import-linter reports the contract broken until one does; no rule checks this",
-                        unnamed.join(", ")
-                    ));
-                }
-            }
+            exhaustive(
+                contract,
+                layout,
+                &parsed,
+                container.as_deref(),
+                &mut comments,
+            );
         }
     }
     if items.is_empty() {
         comments.push("fewer than two layers: nothing to forbid".into());
         out.forbidden.push(Item {
             comments,
-            node: forbidden(contract.id.clone(), contract, &[], &[], true, true),
+            node: forbidden(
+                contract.id.clone(),
+                contract,
+                (&[], &[]),
+                true,
+                true,
+                &Narrowing::default(),
+            ),
             disabled: true,
         });
         return;
@@ -758,8 +869,8 @@ fn layers(contract: &Contract, layout: &Layout, out: &mut Output, produced: &mut
 fn forbidden_contract(
     contract: &Contract,
     layout: &Layout,
+    narrowing: &Narrowing,
     out: &mut Output,
-    produced: &mut Vec<Produced>,
 ) {
     let as_packages = contract.flag("as_packages", true);
     let from: Vec<String> = contract
@@ -773,9 +884,17 @@ fn forbidden_contract(
         .map(|m| layout.pattern(m, as_packages))
         .collect();
     let reachable = !contract.flag("allow_indirect_imports", false);
-    let node = forbidden(contract.id.clone(), contract, &from, &to, reachable, false);
-    let mut comments = contract.describe();
     let disabled = from.is_empty() || to.is_empty();
+    let unnarrowed = Narrowing::default();
+    let node = forbidden(
+        contract.id.clone(),
+        contract,
+        (&from, &to),
+        reachable,
+        false,
+        if disabled { &unnarrowed } else { narrowing },
+    );
+    let mut comments = contract.describe();
     if disabled {
         comments.push("source_modules or forbidden_modules is empty: nothing to forbid".into());
     }
@@ -784,22 +903,9 @@ fn forbidden_contract(
         node,
         disabled,
     });
-    if !disabled {
-        produced.push(Produced {
-            name: contract.id.clone(),
-            from,
-            to,
-            reachable,
-        });
-    }
 }
 
-fn independence(
-    contract: &Contract,
-    layout: &Layout,
-    out: &mut Output,
-    produced: &mut Vec<Produced>,
-) {
+fn independence(contract: &Contract, layout: &Layout, narrowing: &Narrowing, out: &mut Output) {
     let modules = contract.list("modules");
     let direct_only = contract.flag("allow_indirect_imports", false);
     let wildcard = modules.iter().any(|m| m.contains('*'));
@@ -821,55 +927,55 @@ fn independence(
                     .into(),
             );
         }
-        let node = Node::map(vec![
+        let mut pairs = vec![
             ("name", Node::str(contract.id.clone())),
             (
                 "comment",
                 Node::str(format!("import-linter contract: {}", contract.name)),
             ),
             ("severity", Node::str("error")),
-            ("pattern", Node::str(pattern.clone())),
-        ]);
+            ("pattern", Node::str(pattern)),
+        ];
+        if narrowing.allow_unmatched() {
+            pairs.push(("allowEmpty", Node::Bool(true)));
+        }
+        if let Some(graph) = narrowing.node(false) {
+            pairs.push(("graph", graph));
+        }
         out.independence.push(Item {
             comments,
-            node,
+            node: Node::map(pairs),
             disabled: false,
-        });
-        produced.push(Produced {
-            name: contract.id.clone(),
-            from: vec![pattern.clone()],
-            to: vec![pattern],
-            reachable: false,
         });
         return;
     }
     let mut items = Vec::new();
     for a in &modules {
         for b in modules.iter().filter(|b| *b != a) {
-            let name = format!("{}:{a}-to-{b}", contract.id);
             let from = vec![layout.pattern(a, true)];
             let to = vec![layout.pattern(b, true)];
             items.push(Item::plain(forbidden(
-                name.clone(),
+                format!("{}:{a}-to-{b}", contract.id),
                 contract,
-                &from,
-                &to,
+                (&from, &to),
                 true,
                 false,
+                narrowing,
             )));
-            produced.push(Produced {
-                name,
-                from,
-                to,
-                reachable: true,
-            });
         }
     }
     if items.is_empty() {
         comments.push("fewer than two modules: nothing to forbid".into());
         out.forbidden.push(Item {
             comments,
-            node: forbidden(contract.id.clone(), contract, &[], &[], true, false),
+            node: forbidden(
+                contract.id.clone(),
+                contract,
+                (&[], &[]),
+                true,
+                false,
+                &Narrowing::default(),
+            ),
             disabled: true,
         });
         return;
@@ -878,7 +984,21 @@ fn independence(
     out.forbidden.extend(items);
 }
 
-fn protected(contract: &Contract, layout: &Layout, out: &mut Output, produced: &mut Vec<Produced>) {
+/// An `allowed` rule of a protected contract.
+fn allowed(name: String, contract: &Contract, from: Node, to: Node) -> Node {
+    Node::map(vec![
+        ("name", Node::str(name)),
+        (
+            "comment",
+            Node::str(format!("import-linter contract: {}", contract.name)),
+        ),
+        ("from", from),
+        ("to", to),
+        ("allowEmpty", Node::Bool(true)),
+    ])
+}
+
+fn protected(contract: &Contract, layout: &Layout, type_only: bool, out: &mut Output) {
     let as_packages = contract.flag("as_packages", true);
     let protected: Vec<String> = contract
         .list("protected_modules")
@@ -892,16 +1012,12 @@ fn protected(contract: &Contract, layout: &Layout, out: &mut Output, produced: &
         .chain(protected.iter().cloned())
         .collect();
     out.catch_all.extend(protected.iter().cloned());
-    let node = Node::map(vec![
-        ("name", Node::str(contract.id.clone())),
-        (
-            "comment",
-            Node::str(format!("import-linter contract: {}", contract.name)),
-        ),
-        ("from", Node::map(vec![("path", path_value(&importers))])),
-        ("to", Node::map(vec![("path", path_value(&protected))])),
-        ("allowEmpty", Node::Bool(true)),
-    ]);
+    let node = allowed(
+        contract.id.clone(),
+        contract,
+        Node::map(vec![("path", path_value(&importers))]),
+        Node::map(vec![("path", path_value(&protected))]),
+    );
     let disabled = protected.is_empty();
     let mut comments = contract.describe();
     if disabled {
@@ -912,18 +1028,57 @@ fn protected(contract: &Contract, layout: &Layout, out: &mut Output, produced: &
         node,
         disabled,
     });
-    if !disabled {
-        // An import of a protected module from anywhere else is `not-in-allowed`.
-        produced.push(Produced {
-            name: "not-in-allowed".into(),
-            from: vec!["^".into()],
-            to: protected,
-            reachable: false,
-        });
+    if disabled {
+        return;
+    }
+    // import-linter checks a protected contract over a graph without these imports; an
+    // allow-list says the same by allowing them.
+    for (index, (from, to)) in ignore_pairs(contract, layout, out).into_iter().enumerate() {
+        out.allowed.push(Item::plain(allowed(
+            format!("{}:ignore-imports-{}", contract.id, index + 1),
+            contract,
+            Node::map(vec![("path", Node::str(from))]),
+            Node::map(vec![("path", Node::str(to))]),
+        )));
+    }
+    // grimp's graph has no import by a module outside the root packages or in a folder it does
+    // not walk.
+    let roots = layout.root_patterns();
+    if !roots.is_empty() {
+        out.allowed.push(Item::plain(allowed(
+            format!("{}:outside-the-root-packages", contract.id),
+            contract,
+            Node::map(vec![("pathNot", path_value(&roots))]),
+            Node::map(vec![("path", path_value(&protected))]),
+        )));
+    }
+    if !layout.portions.is_empty() {
+        let portions: Vec<String> = layout
+            .portions
+            .iter()
+            .map(|p| pattern::path_prefix(p))
+            .collect();
+        out.allowed.push(Item::plain(allowed(
+            format!("{}:not-walked", contract.id),
+            contract,
+            Node::map(vec![("path", path_value(&portions))]),
+            Node::map(vec![("path", path_value(&protected))]),
+        )));
+    }
+    if type_only {
+        out.allowed.push(Item::plain(allowed(
+            format!("{}:type-checking", contract.id),
+            contract,
+            Node::Map(Vec::new()),
+            Node::map(vec![
+                ("path", path_value(&protected)),
+                ("dependencyTypes", Node::strs(&["type-only"])),
+            ]),
+        )));
     }
 }
 
-fn acyclic_siblings(contract: &Contract, layout: &Layout, out: &mut Output) {
+fn acyclic_siblings(contract: &Contract, layout: &Layout, narrowing: &Narrowing, out: &mut Output) {
     let mut comments = contract.describe();
     let skip = contract.flag("skip_descendants", false);
     let mut packages = Vec::new();
@@ -941,10 +1096,11 @@ fn acyclic_siblings(contract: &Contract, layout: &Layout, out: &mut Output) {
     }
     packages.sort();
     packages.dedup();
+    let graph = narrowing.node(false);
     let mut items: Vec<Item> = packages
         .iter()
         .map(|package| {
-            Item::plain(Node::map(vec![
+            let mut pairs = vec![
                 ("name", Node::str(format!("{}:{package}", contract.id))),
                 (
                     "comment",
@@ -955,12 +1111,16 @@ fn acyclic_siblings(contract: &Contract, layout: &Layout, out: &mut Output) {
                 ("segments", Node::Int(1)),
                 ("should", Node::str("beFreeOfCycles")),
                 ("allowEmpty", Node::Bool(true)),
-            ]))
+            ];
+            if let Some(graph) = &graph {
+                pairs.push(("graph", graph.clone()));
+            }
+            Item::plain(Node::map(pairs))
         })
         .collect();
-    if !contract.list("ignore_imports").is_empty() {
+    if !narrowing.ignore.is_empty() {
         comments.push(
-            "ignore_imports: a slice rule has no knownViolations entry, so these imports still count toward a cycle"
+            "ignore_imports: each slice rule allows an empty slicing, so an entry that matches no import is not reported as import-linter's unmatched-ignore alerting would"
                 .into(),
         );
     }
@@ -977,81 +1137,43 @@ fn acyclic_siblings(contract: &Contract, layout: &Layout, out: &mut Output) {
     out.slices.extend(items);
 }
 
-/// `ignore_imports` as `knownViolations`: each `importer -> imported` whose modules the tree
-/// holds, once per rule of the contract whose `from` and `to` match it.
-fn ignore_imports(contract: &Contract, layout: &Layout, produced: &[Produced], out: &mut Output) {
+/// A module expression of an `ignore_imports` line as a path pattern: the exact module under the
+/// root packages, or, for any other module, its name and submodules, as grimp squashes an
+/// external package.
+fn ignored_side(layout: &Layout, expression: &str) -> String {
+    if layout.is_local(expression) {
+        layout.pattern(expression, false)
+    } else {
+        pattern::external_module(expression)
+    }
+}
+
+/// `ignore_imports` as `(importer, imported)` pattern pairs; a line that is not
+/// `importer -> imported` gets a note instead.
+fn ignore_pairs(contract: &Contract, layout: &Layout, out: &mut Output) -> Vec<(String, String)> {
+    let mut pairs = Vec::new();
     for line in contract.list("ignore_imports") {
         let Some((source, target)) = line.split_once("->") else {
             out.notes.push(format!(
-                "`{}`: `{line}` is not `importer -> imported`",
+                "`{}`: `{line}` is not `importer -> imported`, so it removes nothing",
                 contract.id
             ));
             continue;
         };
-        let (source, target) = (source.trim(), target.trim());
-        let source_files: Vec<String> = layout
-            .expand(source)
-            .iter()
-            .filter_map(|m| layout.module_file(m))
-            .collect();
-        let target_files: Vec<String> = if layout.is_local(target) {
-            layout
-                .expand(target)
-                .iter()
-                .filter_map(|m| layout.module_file(m))
-                .collect()
-        } else if target.contains('*') {
-            Vec::new()
-        } else {
-            vec![target.to_owned()]
-        };
-        if source_files.is_empty() || target_files.is_empty() {
-            out.notes.push(format!(
-                "`{}`: `{line}` names no module file under the repository, so it has no entry",
-                contract.id
-            ));
-            continue;
-        }
-        let mut matched = false;
-        for from in &source_files {
-            for to in &target_files {
-                for rule in produced {
-                    let hit = |patterns: &[String], text: &str| {
-                        patterns
-                            .iter()
-                            .any(|p| regex::Regex::new(p).is_ok_and(|re| re.is_match(text)))
-                    };
-                    if hit(&rule.from, from) && hit(&rule.to, to) {
-                        matched = true;
-                        let kind = if rule.reachable {
-                            "reachability"
-                        } else {
-                            "dependency"
-                        };
-                        out.known.push(Item::plain(Node::map(vec![
-                            ("type", Node::str(kind)),
-                            ("from", Node::str(from.clone())),
-                            ("to", Node::str(to.clone())),
-                            (
-                                "rule",
-                                Node::map(vec![
-                                    ("name", Node::str(rule.name.clone())),
-                                    ("severity", Node::str("error")),
-                                ]),
-                            ),
-                            ("reason", Node::str("ignore_imports")),
-                        ])));
-                    }
-                }
-            }
-        }
-        if !matched {
-            out.notes.push(format!(
-                "`{}`: `{line}` matches no rule of the contract, which import-linter reports as an unmatched ignore",
-                contract.id
-            ));
-        }
+        pairs.push((
+            ignored_side(layout, source.trim()),
+            ignored_side(layout, target.trim()),
+        ));
     }
+    pairs
+}
+
+/// `ignore_imports` as `graph.ignore` entries.
+fn ignore_entries(contract: &Contract, layout: &Layout, out: &mut Output) -> Vec<Node> {
+    ignore_pairs(contract, layout, out)
+        .into_iter()
+        .map(|(from, to)| Node::map(vec![("from", Node::str(from)), ("to", Node::str(to))]))
+        .collect()
 }
 
 /// Imports the settings in `file` (displayed as `display`), reading the tree beside it.
@@ -1125,25 +1247,31 @@ fn rules(
 fn document(settings: &Settings, layout: &Layout, display: &str) -> Document {
     let mut out = Output::default();
     let mut unsupported = Vec::new();
+    let mut ignores = false;
     for contract in &settings.contracts {
-        let mut produced = Vec::new();
-        match contract.kind.as_str() {
-            "forbidden" => forbidden_contract(contract, layout, &mut out, &mut produced),
-            "layers" => layers(contract, layout, &mut out, &mut produced),
-            "independence" => independence(contract, layout, &mut out, &mut produced),
-            "protected" => protected(contract, layout, &mut out, &mut produced),
-            "acyclic_siblings" => acyclic_siblings(contract, layout, &mut out),
-            other => {
-                let mut lines = contract.describe();
-                lines.push(format!(
-                    "stays in import-linter: `{other}` is a custom contract type, Python code the importer cannot translate"
-                ));
-                unsupported.push(lines);
-                continue;
-            }
+        let kind = contract.kind.as_str();
+        if !matches!(
+            kind,
+            "forbidden" | "layers" | "independence" | "protected" | "acyclic_siblings"
+        ) {
+            let mut lines = contract.describe();
+            lines.push(format!(
+                "stays in import-linter: `{kind}` is a custom contract type, Python code the importer cannot translate"
+            ));
+            unsupported.push(lines);
+            continue;
         }
-        if contract.kind != "acyclic_siblings" {
-            ignore_imports(contract, layout, &produced, &mut out);
+        if kind == "protected" {
+            protected(contract, layout, settings.exclude_type_checking, &mut out);
+            continue;
+        }
+        let narrowing = Narrowing::new(contract, layout, settings.exclude_type_checking, &mut out);
+        ignores |= !narrowing.ignore.is_empty();
+        match kind {
+            "forbidden" => forbidden_contract(contract, layout, &narrowing, &mut out),
+            "layers" => layers(contract, layout, &narrowing, &mut out),
+            "independence" => independence(contract, layout, &narrowing, &mut out),
+            _ => acyclic_siblings(contract, layout, &narrowing, &mut out),
         }
     }
     let mut header = vec![
@@ -1155,6 +1283,21 @@ fn document(settings: &Settings, layout: &Layout, display: &str) -> Document {
             "The package folder of {} was not found beside {display}; its modules are written as if it sat at the repository root.",
             layout.missing.join(", ")
         ));
+    }
+    if ignores {
+        header.push(
+            "ignore_imports: each rule's `graph.ignore` removes those imports from the graph the rule sees, chains included; an entry that matches no import makes the rule vacuous, which is import-linter's unmatched-ignore alerting.".into(),
+        );
+    }
+    if !layout.portions.is_empty() {
+        header.push(format!(
+            "import-linter does not read {}, folders without `__init__.py` below a root package: each rule's `graph.modulesNot` leaves them out as the tree stood when imported, so run the import again when one gains an `__init__.py`.",
+            layout.portions.join(", ")
+        ));
+    }
+    if !out.notes.is_empty() {
+        header.push(String::new());
+        header.extend(out.notes.iter().cloned());
     }
     for lines in unsupported {
         header.push(String::new());
@@ -1176,23 +1319,6 @@ fn document(settings: &Settings, layout: &Layout, display: &str) -> Document {
             Node::map(vec![("roots", Node::strs(&homes))]),
         )]),
     ));
-    let mut key_comments = Vec::new();
-    if out.known.is_empty() && !out.notes.is_empty() {
-        header.push(String::new());
-        header.extend(out.notes.iter().cloned());
-    }
-    if !out.known.is_empty() {
-        let mut notes = vec![
-            "ignore_imports: `rulebearing baseline --baseline-mode shrink-only` fails when an entry no longer occurs, which is import-linter's unmatched-ignore alerting.".to_owned(),
-            "An entry excuses the import from its importer to its imported module. For a rule that follows chains (reachable), dependency-cruiser keys a violation by importer and rule, so the entry excuses that importer's chains to the rule's modules; a chain through the ignored import from another module is still reported.".to_owned(),
-        ];
-        notes.extend(out.notes.iter().cloned());
-        key_comments.push(("options".to_owned(), notes));
-        body.push((
-            "options".into(),
-            Node::map(vec![("knownViolations", Node::List(out.known))]),
-        ));
-    }
     let rules = rules(
         out.forbidden,
         out.allowed,
@@ -1204,7 +1330,7 @@ fn document(settings: &Settings, layout: &Layout, display: &str) -> Document {
     Document {
         header,
         body,
-        key_comments,
+        key_comments: Vec::new(),
     }
 }
 
@@ -1252,6 +1378,126 @@ mod tests {
         let open = parse_layer("a : b");
         assert!(!open.independent);
         assert_eq!(open.members.len(), 2);
+    }
+
+    #[test]
+    fn exclude_type_checking_imports_is_read_from_both_dialects() -> Result<(), ImportError> {
+        let ini = settings_from_ini(
+            "[importlinter]\nroot_package = a\nexclude_type_checking_imports = True\n",
+            "s",
+        )?;
+        assert!(ini.exclude_type_checking);
+        assert!(
+            !settings_from_ini("[importlinter]\nroot_package = a\n", "s")?.exclude_type_checking
+        );
+        let toml = settings_from_toml(
+            "[tool.importlinter]\nroot_packages = [\"a\"]\nexclude_type_checking_imports = true\n",
+            "p",
+        )?;
+        assert!(toml.exclude_type_checking);
+        assert!(
+            !settings_from_toml("[tool.importlinter]\nroot_packages = [\"a\"]\n", "p")?
+                .exclude_type_checking
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn folders_without_init_below_a_root_are_portions() -> Result<(), Box<dyn std::error::Error>> {
+        let repo = std::env::temp_dir().join(format!("rb-il-portions-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&repo);
+        for (file, text) in [
+            ("src/app/__init__.py", ""),
+            ("src/app/sub/__init__.py", ""),
+            ("src/app/sub/ns/deep/__init__.py", ""),
+            ("src/app/sub/ns/deep/m.py", ""),
+            ("src/app/loose/x.py", ""),
+            ("src/app/static/app.js", ""),
+            ("src/app/__pycache__/x.py", ""),
+            ("src/app/.hidden/y.py", ""),
+            ("outside/z.py", ""),
+        ] {
+            let path = repo.join(file);
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            std::fs::write(path, text)?;
+        }
+        let layout = Layout::find(&repo, &["app".to_owned()]);
+        assert_eq!(layout.portions, ["src/app/loose", "src/app/sub/ns"]);
+        assert_eq!(layout.root_patterns(), ["^src/app(/.*)?\\.py$"]);
+        assert!(holds_python(&repo.join("src/app/sub/ns")));
+        assert!(!holds_python(&repo.join("src/app/static")));
+        let _ = std::fs::remove_dir_all(&repo);
+        Ok(())
+    }
+
+    #[test]
+    fn a_narrowing_writes_only_what_applies() {
+        let layout = Layout {
+            homes: BTreeMap::from([("app".to_owned(), String::new())]),
+            portions: vec!["app/ns".into()],
+            ..Layout::default()
+        };
+        assert_eq!(
+            ignored_side(&layout, "app.a"),
+            "^app/a(/__init__\\.py|\\.py)$"
+        );
+        assert_eq!(ignored_side(&layout, "requests"), "^requests(\\.|$)");
+        let contract = |options: &[(&str, &str)]| Contract {
+            id: "c".into(),
+            name: "C".into(),
+            kind: "forbidden".into(),
+            options: options
+                .iter()
+                .map(|(k, v)| ((*k).to_owned(), Field::Text((*v).to_owned())))
+                .collect(),
+        };
+        let mut out = Output::default();
+        let plain = Narrowing::new(&contract(&[]), &Layout::default(), false, &mut out);
+        assert_eq!(plain.node(true), None);
+        assert!(!plain.allow_unmatched());
+        let quiet = contract(&[
+            ("ignore_imports", "app.a -> app.b\nnot an import"),
+            ("unmatched_ignore_imports_alerting", "Warn"),
+        ]);
+        let full = Narrowing::new(&quiet, &layout, true, &mut out);
+        assert!(full.allow_unmatched());
+        assert_eq!(out.notes.len(), 1, "{:?}", out.notes);
+        assert!(out.notes[0].contains("`not an import` is not `importer -> imported`"));
+        let keys = |node: Option<Node>| -> Vec<String> {
+            match node {
+                Some(Node::Map(pairs)) => pairs.into_iter().map(|(k, _)| k).collect(),
+                _ => Vec::new(),
+            }
+        };
+        assert_eq!(
+            keys(full.node(true)),
+            [
+                "ignore",
+                "dependencyTypesNot",
+                "modulesNot",
+                "chainsThrough"
+            ]
+        );
+        assert_eq!(
+            keys(full.node(false)),
+            ["ignore", "dependencyTypesNot", "modulesNot"]
+        );
+        let loud = Narrowing::new(
+            &contract(&[("ignore_imports", "app.a -> app.b")]),
+            &layout,
+            false,
+            &mut out,
+        );
+        assert!(!loud.allow_unmatched());
+        let none_to_ignore = Narrowing::new(
+            &contract(&[("unmatched_ignore_imports_alerting", "none")]),
+            &layout,
+            false,
+            &mut out,
+        );
+        assert!(!none_to_ignore.allow_unmatched(), "nothing to be unmatched");
     }
 
     #[test]

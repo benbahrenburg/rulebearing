@@ -53,7 +53,7 @@ rules:
    - `exclude_type_checking_imports = True` becomes `graph.dependencyTypesNot: [type-only]`.
    - The root packages become `graph.chainsThrough` on every reachability rule: the Python files under each root package's folder.
    - A folder without `__init__.py` below a root package becomes a `graph.modulesNot` prefix, the topmost such folder only. The importer reads it from the tree beside the settings, as it already reads the packages `acyclic_siblings` slices and the modules `exhaustive` checks; the extractor records no new fact. `rulebearing import import-linter` run again refreshes the list.
-   - A `protected` contract's `ignore_imports` and `TYPE_CHECKING` imports become `allowed` rules for those imports, since `protected` is an allow-list.
+   - A `protected` contract is an allow-list, so the same narrowing is written as `allowed` rules: one per `ignore_imports` expression, one for `type-only` imports of the protected modules under `exclude_type_checking_imports`, one for imports by modules outside the root packages, and one for imports by modules in the folders grimp does not walk. `allowed` rules are one list for the whole file ([design § import-linter contracts](../artifacts/design.md#import-linter-contracts-for-the-python-teams-who-know-them)), so an ignored import of one protected contract is allowed for every protected contract.
    - `knownViolations` are no longer written for `ignore_imports`: the edges they named are gone from the rule's graph, so no violation is left to excuse, and `baseline --baseline-mode shrink-only` would remove every entry. Unmatched-ignore alerting is decision 3.
 
 ## Consequences

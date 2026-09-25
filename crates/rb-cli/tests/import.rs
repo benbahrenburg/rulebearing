@@ -95,6 +95,7 @@ fn import_linter_fixtures_match_their_expected_yaml() -> Result<(), Box<dyn Erro
         "protected",
         "acyclic",
         "own",
+        "narrowed",
     ] {
         let dir = fixtures().join("import-linter").join(case);
         let text = snapshot(
@@ -185,8 +186,8 @@ fn gate(case: &str, paths: &[&str]) -> Result<Vec<Violation>, Box<dyn Error>> {
 
 #[test]
 fn imported_contracts_gate_the_tree_they_came_from() -> Result<(), Box<dyn Error>> {
-    // `forbidden`: history.py reaches payments; checkout.py does too, but ignore_imports excuses
-    // it through knownViolations.
+    // `forbidden`: history.py reaches payments; checkout.py does too, but only through the import
+    // ignore_imports removes from the rule's graph (ADR-0038).
     assert_eq!(
         gate("forbidden", &["src"])?,
         [(
@@ -209,14 +210,27 @@ fn imported_contracts_gate_the_tree_they_came_from() -> Result<(), Box<dyn Error
     assert_eq!(protected.len(), 1, "{protected:?}");
     assert_eq!(protected[0].1, "lib/web.py");
     assert_eq!(protected[0].2, "lib/db/__init__.py");
-    // `independence`: the one import between features is excused for `features`, whose
-    // ignore_imports names it, and breaks `features-direct`, which names no ignore.
+    // `independence`: the one import between features is removed from the graph of `features`,
+    // whose ignore_imports names it, and breaks `features-direct`, which names no ignore.
     assert_eq!(
         gate("independence", &["pkg"])?,
         [(
             "features-direct".to_owned(),
             "pkg/features/cart/view.py".to_owned(),
             "pkg/features/search/__init__.py".to_owned()
+        )]
+    );
+    // import-linter's filters (ADR-0038): of the five modules of app/low that reach app/high,
+    // a.py goes through the ignored import, d.py only under TYPE_CHECKING, e.py through tools/
+    // outside the root package, f.py through app/ns without __init__.py; h.py imports it
+    // directly. The protected contract reports no import of app/high: each is by app/mid, ignored,
+    // under TYPE_CHECKING, from outside the root package, or from app/ns.
+    assert_eq!(
+        gate("narrowed", &["app", "tools"])?,
+        [(
+            "layered:app.low-to-app.high".to_owned(),
+            "app/low/h.py".to_owned(),
+            "app/high/c.py".to_owned()
         )]
     );
     Ok(())

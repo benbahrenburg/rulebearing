@@ -12,12 +12,12 @@ over the rules `rulebearing import import-linter` wrote from it. A rule belongs 
 its comment names ("import-linter contract: <name>"); a violation of the `allowed` list
 (`not-in-allowed`) belongs to each protected contract whose `to.path` matches the imported
 module. The violations come from `cruise -T junit` (one line each, no chain), and only
-error-severity failures count: an `ignore_imports` entry is a known violation, which the
-reporter lists without failing the rule. A disagreeing contract is re-checked over
-Rulebearing's graph with the imports import-linter removes before it follows chains
-(`ignore_imports`, and `TYPE_CHECKING` imports under `exclude_type_checking_imports`) removed
-too; when that re-check keeps the contract, the row's `cause` says so. The verdict stays
-`disagree`: the import cannot express either filter, so the imported rules do disagree.
+error-severity failures count. The imported rules carry import-linter's graph filters as
+`graph` (ADR-0038: `ignore_imports`, `TYPE_CHECKING` imports, folders without `__init__.py`,
+modules outside the root packages). A contract that still disagrees is re-checked over
+Rulebearing's graph with the same imports removed by the harness; when that re-check keeps the
+contract, the row's `cause` says so, which points at the translation of a filter rather than
+at the graph. The verdict stays `disagree`.
 
 The graph comparison is grimp's direct imports between the root packages' modules beside
 Rulebearing's local edges between the same files (from a cruise with no rules, which is also
@@ -315,7 +315,8 @@ def explain(
     import-linter removes each `ignore_imports` import, and with
     `exclude_type_checking_imports` every `TYPE_CHECKING` import, from the graph before it
     follows chains; grimp does not read a namespace portion below a root package, and a module
-    outside the root packages has no imports in its graph. The import expresses none of these.
+    outside the root packages has no imports in its graph. The import writes each as `graph`
+    (ADR-0038), so a contract kept by the re-check alone points at that translation.
     The contract is re-checked by `rulebearing cruise --graph` over Rulebearing's own graph with
     the same imports removed.
     """
@@ -349,9 +350,8 @@ def explain(
     which = ", ".join(alone) if alone else f"{', '.join(mechanisms)}, together"
     row["cause"] = (
         f"import-linter's graph has no {which}; with the same imports removed from "
-        "Rulebearing's graph the contract is kept too. The import writes ignore_imports as "
-        "knownViolations, which excuse a violation but cut no chain, and has no form for the "
-        "other filters"
+        "Rulebearing's graph the contract is kept too, so the imported rules' `graph` does not "
+        "reproduce that filter"
     )
 
 

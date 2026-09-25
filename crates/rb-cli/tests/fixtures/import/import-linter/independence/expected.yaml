@@ -1,20 +1,10 @@
 # Imported from setup.cfg by `rulebearing import import-linter`.
 # Each rule's comment names its import-linter contract; the contract's options are written above its first rule.
+# ignore_imports: each rule's `graph.ignore` removes those imports from the graph the rule sees, chains included; an entry that matches no import makes the rule vacuous, which is import-linter's unmatched-ignore alerting.
 $schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
 languages:
   python:
     roots: ["."]
-# ignore_imports: `rulebearing baseline --baseline-mode shrink-only` fails when an entry no longer occurs, which is import-linter's unmatched-ignore alerting.
-# An entry excuses the import from its importer to its imported module. For a rule that follows chains (reachable), dependency-cruiser keys a violation by importer and rule, so the entry excuses that importer's chains to the rule's modules; a chain through the ignored import from another module is still reported.
-options:
-  knownViolations:
-    - type: reachability
-      from: pkg/features/cart/view.py
-      to: pkg/features/search/__init__.py
-      rule:
-        name: features:pkg.features.cart-to-pkg.features.search
-        severity: error
-      reason: ignore_imports
 rules:
   dependencies:
     forbidden:
@@ -29,6 +19,11 @@ rules:
         to:
           path: "^pkg/features/search(/.*)?\\.py$"
           reachable: true
+        graph:
+          ignore:
+            - from: "^pkg/features/cart/view(/__init__\\.py|\\.py)$"
+              to: "^pkg/features/search(/__init__\\.py|\\.py)$"
+          chainsThrough: "^pkg(/.*)?\\.py$"
       - name: features:pkg.features.cart-to-pkg.features.profile
         comment: "import-linter contract: Features are independent"
         severity: error
@@ -37,6 +32,11 @@ rules:
         to:
           path: "^pkg/features/profile(/.*)?\\.py$"
           reachable: true
+        graph:
+          ignore:
+            - from: "^pkg/features/cart/view(/__init__\\.py|\\.py)$"
+              to: "^pkg/features/search(/__init__\\.py|\\.py)$"
+          chainsThrough: "^pkg(/.*)?\\.py$"
       - name: features:pkg.features.search-to-pkg.features.cart
         comment: "import-linter contract: Features are independent"
         severity: error
@@ -45,6 +45,11 @@ rules:
         to:
           path: "^pkg/features/cart(/.*)?\\.py$"
           reachable: true
+        graph:
+          ignore:
+            - from: "^pkg/features/cart/view(/__init__\\.py|\\.py)$"
+              to: "^pkg/features/search(/__init__\\.py|\\.py)$"
+          chainsThrough: "^pkg(/.*)?\\.py$"
       - name: features:pkg.features.search-to-pkg.features.profile
         comment: "import-linter contract: Features are independent"
         severity: error
@@ -53,6 +58,11 @@ rules:
         to:
           path: "^pkg/features/profile(/.*)?\\.py$"
           reachable: true
+        graph:
+          ignore:
+            - from: "^pkg/features/cart/view(/__init__\\.py|\\.py)$"
+              to: "^pkg/features/search(/__init__\\.py|\\.py)$"
+          chainsThrough: "^pkg(/.*)?\\.py$"
       - name: features:pkg.features.profile-to-pkg.features.cart
         comment: "import-linter contract: Features are independent"
         severity: error
@@ -61,6 +71,11 @@ rules:
         to:
           path: "^pkg/features/cart(/.*)?\\.py$"
           reachable: true
+        graph:
+          ignore:
+            - from: "^pkg/features/cart/view(/__init__\\.py|\\.py)$"
+              to: "^pkg/features/search(/__init__\\.py|\\.py)$"
+          chainsThrough: "^pkg(/.*)?\\.py$"
       - name: features:pkg.features.profile-to-pkg.features.search
         comment: "import-linter contract: Features are independent"
         severity: error
@@ -69,6 +84,11 @@ rules:
         to:
           path: "^pkg/features/search(/.*)?\\.py$"
           reachable: true
+        graph:
+          ignore:
+            - from: "^pkg/features/cart/view(/__init__\\.py|\\.py)$"
+              to: "^pkg/features/search(/__init__\\.py|\\.py)$"
+          chainsThrough: "^pkg(/.*)?\\.py$"
   independence:
     # import-linter contract `features-direct` (independence): Every feature, direct imports only
     #   allow_indirect_imports = True
