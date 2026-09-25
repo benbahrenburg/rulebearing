@@ -581,7 +581,12 @@ mod tests {
         // The temporary folder may sit inside a repository on a developer's machine; either
         // way the root is a folder that contains `dir`.
         let canonical = dir.canonicalize().unwrap_or_else(|_| dir.clone());
-        assert!(slashed(&canonical).starts_with(&key.root), "{key:?}");
+        // `canonicalize` gives Windows' verbatim form, which the key strips.
+        let canonical = strip_verbatim(&canonical.to_string_lossy());
+        assert!(
+            slashed(Path::new(&canonical)).starts_with(&key.root),
+            "{key:?}"
+        );
         assert!(!is_object_name("xyz"));
         let _ = std::fs::remove_dir_all(&dir);
     }
