@@ -501,6 +501,33 @@ pub fn relative(from: &Path, to: &Path) -> String {
     parts.join("/")
 }
 
+/// `full` relative to `base`, as [`relative`]; with `by_canonical_form`, a path that would climb
+/// out of `base` is compared again by both paths' canonical forms. Windows spells one folder two
+/// ways (`C:\Users\RUNNER~1` and `C:\Users\runneradmin`), and the resolver may return the long
+/// form under a base written short; Node never expands a short name, so upstream names the file
+/// below the base. Elsewhere the comparison stays textual, as upstream's `path.relative`.
+fn relative_to_base(base: &Path, full: &Path, by_canonical_form: bool) -> String {
+    let plain = relative(base, full);
+    if !by_canonical_form || !plain.starts_with("..") {
+        return plain;
+    }
+    let canonical = |p: &Path| {
+        p.canonicalize()
+            .map(|c| PathBuf::from(c.to_string_lossy().trim_start_matches(r"\\?\")))
+    };
+    match (canonical(base), canonical(full)) {
+        (Ok(base), Ok(full)) => {
+            let again = relative(&base, &full);
+            if again.starts_with("..") {
+                plain
+            } else {
+                again
+            }
+        }
+        _ => plain,
+    }
+}
+
 fn absolute(cwd: &Path, path: &Path) -> PathBuf {
     normalise(&if path.is_absolute() {
         path.to_path_buf()
@@ -592,8 +619,11 @@ fn resolve_commonjs(
         Ok(found) => {
             let full = found.full_path().to_string_lossy().into_owned();
             let full = strip_query(&full);
-            resolution.resolved =
-                relative(&absolute(context.cwd, context.base_dir), Path::new(full));
+            resolution.resolved = relative_to_base(
+                &absolute(context.cwd, context.base_dir),
+                Path::new(full),
+                cfg!(windows),
+            );
             let judged_by = if config.bust_the_cache {
                 list
             } else {
@@ -951,6 +981,36 @@ mod tests {
         assert_eq!(relative(Path::new("/a/b"), Path::new("/a/x.js")), "../x.js");
         assert_eq!(relative(Path::new("/a/b"), Path::new("/a/b")), "");
         assert_eq!(relative(Path::new("/a/./b/../b"), Path::new("/a/b/y")), "y");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_folder_spelt_two_ways_is_one_base_only_when_asked() -> std::io::Result<()> {
+        // A symlink stands in for Windows' short and long names of one folder.
+        let root = std::env::temp_dir().join(format!("rb-ts-two-ways-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("real/src"))?;
+        std::fs::write(root.join("real/src/a.js"), "")?;
+        std::os::unix::fs::symlink(root.join("real"), root.join("link"))?;
+        let (base, full) = (root.join("link"), root.join("real/src/a.js"));
+        assert_eq!(relative_to_base(&base, &full, false), "../real/src/a.js");
+        assert_eq!(relative_to_base(&base, &full, true), "src/a.js");
+        // A file truly outside the base still climbs, and one inside needs no second look.
+        std::fs::write(root.join("outside.js"), "")?;
+        assert_eq!(
+            relative_to_base(&base, &root.join("outside.js"), true),
+            "../outside.js"
+        );
+        assert_eq!(
+            relative_to_base(&base, &base.join("src/a.js"), true),
+            "src/a.js"
+        );
+        // A path that does not exist is left as written.
+        assert_eq!(
+            relative_to_base(&base, &root.join("gone/x.js"), true),
+            "../gone/x.js"
+        );
+        std::fs::remove_dir_all(&root)
     }
 
     #[test]
