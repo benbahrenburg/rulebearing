@@ -219,7 +219,7 @@ fn list(items: &[Item], indent: usize, out: &mut Vec<String>) {
     let pad = " ".repeat(indent);
     for item in items {
         for comment in &item.comments {
-            out.push(comment_line(&pad, comment));
+            out.extend(comment_lines(&pad, comment));
         }
         let mut lines = Vec::new();
         match &item.node {
@@ -246,12 +246,19 @@ fn list(items: &[Item], indent: usize, out: &mut Vec<String>) {
     }
 }
 
-fn comment_line(pad: &str, text: &str) -> String {
-    if text.is_empty() {
-        format!("{pad}#")
-    } else {
-        format!("{pad}# {text}")
-    }
+/// Comment text as `#` lines: text holding a line break (a multi-line contract name, a verbatim
+/// C# string) becomes one comment line per line, so no line of it is read as YAML.
+fn comment_lines(pad: &str, text: &str) -> Vec<String> {
+    text.replace("\r\n", "\n")
+        .split(['\n', '\r', '\u{85}', '\u{2028}', '\u{2029}'])
+        .map(|line| {
+            if line.is_empty() {
+                format!("{pad}#")
+            } else {
+                format!("{pad}# {line}")
+            }
+        })
+        .collect()
 }
 
 /// A document: comment lines at the top, then a mapping.
@@ -277,11 +284,11 @@ pub fn render(document: &Document) -> String {
     let mut out: Vec<String> = document
         .header
         .iter()
-        .map(|line| comment_line("", line))
+        .flat_map(|line| comment_lines("", line))
         .collect();
     for (k, v) in &document.body {
         if let Some((_, comments)) = document.key_comments.iter().find(|(name, _)| name == k) {
-            out.extend(comments.iter().map(|c| comment_line("", c)));
+            out.extend(comments.iter().flat_map(|c| comment_lines("", c)));
         }
         out.push(format!("{}:", key(k)));
         value_after_key(v, 0, &mut out);
@@ -295,6 +302,29 @@ pub fn render(document: &Document) -> String {
 mod tests {
     use super::*;
     use proptest::prelude::*;
+
+    #[test]
+    fn comments_with_line_breaks_stay_comments() {
+        let contract = "Layers\nrules: {}\r\n- live: yes\rend";
+        let item = Item {
+            comments: vec![contract.to_owned(), String::new()],
+            node: Node::map(vec![("name", Node::str("x"))]),
+            disabled: false,
+        };
+        let document = Document {
+            header: vec![format!("header {contract}")],
+            body: vec![("rules".to_owned(), Node::List(vec![item]))],
+            key_comments: vec![("rules".to_owned(), vec!["above\nrules".to_owned()])],
+        };
+        let text = render(&document);
+        assert_eq!(
+            text,
+            "# header Layers\n# rules: {}\n# - live: yes\n# end\n# above\n# rules\nrules:\n  # Layers\n  # rules: {}\n  # - live: yes\n  # end\n  #\n  - name: x\n"
+        );
+        let parsed: serde_json::Value = serde_yaml::from_str(&text).unwrap_or_default();
+        assert_eq!(parsed, serde_json::json!({"rules": [{"name": "x"}]}));
+        assert_eq!(comment_lines("  ", "a\u{2028}b"), ["  # a", "  # b"]);
+    }
 
     #[test]
     fn scalars_are_plain_only_when_they_read_back() {

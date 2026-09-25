@@ -2118,9 +2118,22 @@ pub struct Imported {
     pub enabled: usize,
 }
 
+/// `base`, or `base-2`, `base-3` ... the first not in `used`, which it joins. Two methods whose
+/// names kebab alike (`Foo` twice and `Foo_2`) still get two names.
+fn unique_name(base: &str, used: &mut std::collections::BTreeSet<String>) -> String {
+    let mut name = base.to_owned();
+    let mut n = 1usize;
+    while used.contains(&name) {
+        n += 1;
+        name = format!("{base}-{n}");
+    }
+    used.insert(name.clone());
+    name
+}
+
 /// Maps every candidate to an item.
 pub fn items(program: &Program, shown_dir: &str) -> Imported {
-    let mut names: BTreeMap<String, usize> = BTreeMap::new();
+    let mut names = std::collections::BTreeSet::new();
     let mut imported = Imported {
         elements: Vec::new(),
         slices: Vec::new(),
@@ -2129,14 +2142,7 @@ pub fn items(program: &Program, shown_dir: &str) -> Imported {
     };
     for candidate in program.candidates() {
         imported.read += 1;
-        let base = kebab(&candidate.method);
-        let count = names.entry(base.clone()).or_insert(0);
-        *count += 1;
-        let name = if *count == 1 {
-            base
-        } else {
-            format!("{base}-{count}")
-        };
+        let name = unique_name(&kebab(&candidate.method), &mut names);
         let path = if candidate.file.starts_with(shown_dir) || shown_dir.is_empty() {
             candidate.file.clone()
         } else {
@@ -2322,6 +2328,44 @@ mod tests {
         ] {
             assert_eq!(kebab(name), expected, "{name}");
         }
+    }
+
+    #[test]
+    fn rule_names_are_unique_whatever_the_methods_are_called() -> Result<(), ImportError> {
+        let mut used = std::collections::BTreeSet::new();
+        let names: Vec<String> = ["foo", "foo", "foo-2", "foo", "bar"]
+            .iter()
+            .map(|b| unique_name(b, &mut used))
+            .collect();
+        assert_eq!(names, ["foo", "foo-2", "foo-2-2", "foo-3", "bar"]);
+        let file = csharp::parse(
+            r#"using static ArchUnitNET.Fluent.ArchRuleDefinition;
+            class ArchTests {
+                void Foo() {
+                    Classes().That().HaveNameStartingWith("A").Should().BeSealed().Check(Architecture);
+                    Classes().That().HaveNameStartingWith("B").Should().BeSealed().Check(Architecture);
+                }
+                void Foo_2() {
+                    Classes().That().HaveNameStartingWith("C").Should().BeSealed().Check(Architecture);
+                }
+            }"#,
+            "T.cs",
+        )?;
+        let program = Program::from_parts(vec![(PathBuf::from("T.cs"), file)], Index::default());
+        let imported = items(&program, "");
+        let names: Vec<String> = imported
+            .elements
+            .iter()
+            .filter_map(|item| match &item.node {
+                Node::Map(pairs) => pairs
+                    .iter()
+                    .find(|(k, _)| k == "name")
+                    .map(|(_, v)| v.to_json().to_string()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(names, [r#""foo""#, r#""foo-2""#, r#""foo-2-2""#]);
+        Ok(())
     }
 
     #[test]
