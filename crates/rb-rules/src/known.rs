@@ -25,7 +25,7 @@
 //! A baseline can hold an entry per violation (`init` writes one for every violation it finds,
 //! 33,000 on home-assistant/core), so each finding is tested only against the entries an index
 //! names as candidates, by id, by `from` and rule, by type, rule and the `from` and `to` an
-//! element or slice entry gives, or through a [`SameIndex`], instead of against every entry
+//! element or slice entry gives, or through a `SameIndex`, instead of against every entry
 //! ([NFR-PERF-01](../../../docs/prd.md#nfr-perf-01)). The test itself is unchanged.
 
 use chrono::NaiveDate;

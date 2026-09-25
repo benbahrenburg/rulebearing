@@ -59,7 +59,8 @@ disallow_any_generics = true
 no_implicit_reexport = true
 exclude = "(^|/)(target|node_modules|\\.venv|testbeds/checkouts|conformance/.*/(upstream|fixtures)|crates/[^/]+/tests/fixtures|adapters/fixture)/"
 
-# PyYAML ships no type stubs and the lint job installs only ruff and mypy; the conformance tools
+# PyYAML ships no type stubs and the lint job installs ruff and mypy with only the typed packages
+# the Python sources import (pytest, hatchling, packaging); the conformance tools
 # (conformance/archunitnet/tools/port.py) call yaml.safe_dump and type what it returns.
 [[tool.mypy.overrides]]
 module = ["yaml"]

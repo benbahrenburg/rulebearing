@@ -373,7 +373,7 @@ const REPORTER_PATTERNS: &[&str] = &[
     "ddot.filters.exclude.path",
 ];
 
-/// `normalizeReporterOptions`: each pattern of [`REPORTER_PATTERNS`] given as an array becomes
+/// `normalizeReporterOptions`: each pattern of `REPORTER_PATTERNS` given as an array becomes
 /// its items joined with `|`; anything else is kept as it is.
 pub fn normalize_reporter_options(reporter_options: &mut Value) {
     for path in REPORTER_PATTERNS {
