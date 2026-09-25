@@ -141,7 +141,23 @@ pub fn resolve(base: &Path, adr_dir: &str, token: &str) -> Option<PathBuf> {
 
 /// `path` relative to `base`, `/`-separated.
 pub fn shown(base: &Path, path: &Path) -> String {
-    path.strip_prefix(base)
+    // The configuration's path may be canonical (on Windows, `\\?\C:\...` or a long name where
+    // the working directory has an 8.3 one) when `base` is not, so both are compared canonical too.
+    let canonical = |p: &Path| {
+        p.canonicalize().map(|c| {
+            std::path::PathBuf::from(crate::cache::key::strip_verbatim(&c.to_string_lossy()))
+        })
+    };
+    let relative = path
+        .strip_prefix(base)
+        .map(Path::to_path_buf)
+        .ok()
+        .or_else(|| {
+            let (base, path) = (canonical(base).ok()?, canonical(path).ok()?);
+            path.strip_prefix(&base).map(Path::to_path_buf).ok()
+        });
+    relative
+        .as_deref()
         .unwrap_or(path)
         .to_string_lossy()
         .replace('\\', "/")
@@ -431,6 +447,25 @@ mod tests {
         assert_eq!(leading_number("0010-x.md"), Some(10));
         assert_eq!(leading_number("README.md"), None);
         assert_eq!(leading_number("0010-x.txt"), None);
+    }
+
+    #[test]
+    fn a_path_is_shown_relative_whether_or_not_it_is_canonical() -> std::io::Result<()> {
+        let base = std::env::temp_dir().join(format!("rb-shown-{}", std::process::id()));
+        std::fs::create_dir_all(&base)?;
+        std::fs::write(base.join("rulebearing.yaml"), "")?;
+        // On macOS the temporary folder is a symlink (`/var` is `/private/var`); on Windows the
+        // canonical form carries `\\?\` and long names: either way only the canonical forms agree.
+        let canonical = base.canonicalize()?.join("rulebearing.yaml");
+        assert_eq!(shown(&base, &canonical), "rulebearing.yaml");
+        assert_eq!(
+            shown(&base, &base.join("rulebearing.yaml")),
+            "rulebearing.yaml"
+        );
+        assert_eq!(shown(Path::new("a"), Path::new("a/b\\c")), "b/c");
+        let elsewhere = Path::new("/nowhere/rb-shown/x.yaml");
+        assert_eq!(shown(&base, elsewhere), "/nowhere/rb-shown/x.yaml");
+        std::fs::remove_dir_all(&base)
     }
 
     #[test]
