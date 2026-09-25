@@ -1,5 +1,0 @@
-{
-  "$comment": "Specs of dependency-cruiser's test/validate and test/graph-utl that conformance gate 1 layer 2 cannot pass yet, each with a reason and the plan that removes it. Rewritten only by `node conformance/dependency-cruiser/harness/run-layer-2.mjs <checkout> --record`. The list may only shrink against a base recorded at the same pin (scripts/ratchets.sh, docs/adr/0009-conformance-suites-as-specification.md).",
-  "pin": "18.2.0",
-  "dependency-cruiser": []
-}

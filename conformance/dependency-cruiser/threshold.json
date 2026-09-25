@@ -1,4 +1,0 @@
-{
-  "$comment": "Conformance gate 1 layer 1: the minimum share of recorded test/extract cases the Rust extractor must pass. It may only rise. 0 while the harness lands without an extractor (plan 0000 sub-wave 0B), 0.95 from sub-wave 0C, 1.0 from sub-wave 1C, where every recorded case passes and layer1-open.json is empty (docs/plans/pending/0001-wave-1-typescript-parity.md § 3, Wave 1C).",
-  "layer1": 1.0
-}
