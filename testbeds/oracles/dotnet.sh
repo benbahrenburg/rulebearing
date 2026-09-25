@@ -85,6 +85,8 @@ if (cd "$checkout" && "$bin" cruise --config "$out/imported.yaml" -T json --no-p
 fi
 rm -f "$out/graph.json"
 rm -f "$out/rulebearing.xml"
+# Without an active rule there is nothing to cruise and no report: compare.py then gives every test
+# `stays` or `not-imported`, and the row the status `nothing-compared` (exit 3), never agreement.
 if grep -q '^ *- name:' "$out/imported.yaml"; then
   (cd "$checkout" && "$bin" cruise --config "$out/imported.yaml" -T junit --no-progress .) > "$out/rulebearing.xml" 2> "$out/rulebearing.err"
   cruise_status=$?
