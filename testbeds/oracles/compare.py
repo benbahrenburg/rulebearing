@@ -36,7 +36,13 @@ chains in the same method), read from the JUnit report where each rule is one te
 test whose chains the importer wrote commented out is `stays` (custom predicate) or
 `not-imported` (with the importer's reason), recorded and not counted as a disagreement.
 
-Exit 0 when nothing disagrees, 1 when something does, 2 when the inputs are unusable.
+A rule Rulebearing reports as a JUnit `<error>` (vacuous, expired, a ratchet without a budget)
+could not be checked, so a contract or test with one has the verdict `error`, never a pass or a
+fail. A result where nothing was compared (every row stays, is not imported, or neither tool
+has a verdict for it) is `nothing-compared`: reported, and never shown as agreement.
+
+Exit 0 when something was compared and nothing disagrees or errors, 1 when something disagrees
+or errors, 2 when the inputs are unusable, 3 when nothing was compared.
 """
 
 from __future__ import annotations
@@ -66,12 +72,28 @@ TYPE_ONLY = "TYPE_CHECKING imports (exclude_type_checking_imports)"
 NAMESPACE = "namespace portions below a root package"
 OUTSIDE = "imports by modules outside the root packages"
 TRX = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
+# The exit codes (module documentation).
+DISAGREES = 1
+UNUSABLE = 2
+NOTHING_COMPARED = 3
 
 
 def write(path: Path, document: dict[str, Any]) -> None:
     """Write a result file: sorted keys where order carries no meaning, two-space indent."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n")
+
+
+def outcome(summary: dict[str, int]) -> tuple[str, bool, int]:
+    """The status, whether the result agrees, and the exit code, from the verdict counts.
+
+    Agreement needs at least one agreeing row: a result whose rows all stay or are not imported
+    compared nothing, which is `nothing-compared` and not agreement.
+    """
+    if summary["agree"] == 0 and summary["disagree"] == 0 and summary["error"] == 0:
+        return "nothing-compared", False, NOTHING_COMPARED
+    agrees = summary["disagree"] == 0 and summary["error"] == 0
+    return "compared", agrees, 0 if agrees else DISAGREES
 
 
 def summarise(rows: list[dict[str, Any]]) -> dict[str, int]:
@@ -146,11 +168,18 @@ class Attribution:
             if rule.get("name") != UNPROTECTED and comment.startswith(CONTRACT):
                 self.protected.append((comment[len(CONTRACT) :], patterns(rule.get("to"))))
 
+    def rule(self, case: str) -> str:
+        """The rule a JUnit case is for: its name, less the `#n` the reporter adds to a repeat."""
+        if case in self.by_rule or case == ALLOWED:
+            return case
+        base = re.sub(r"#\d+\Z", "", case)
+        return base if base in self.by_rule or base == ALLOWED else case
+
     def violations(self, report: JUnit) -> dict[str, list[Violation]]:
         """The error-severity violations of a JUnit report, by contract name."""
         out: dict[str, list[Violation]] = {}
         for violation in report.violations:
-            name = violation[0]
+            name = self.rule(violation[0])
             owners = [self.by_rule[name]] if name in self.by_rule else []
             if name == ALLOWED:
                 owners = [c for c, ps in self.protected if any(p.search(violation[2]) for p in ps)]
@@ -172,7 +201,11 @@ class JUnit:
         self.violations: list[Violation] = []
         self.errors: dict[str, list[str]] = {}
         root = ET.parse(path).getroot()  # noqa: S314 (the file is Rulebearing's own output)
-        line = re.compile(r"^(?:RB-\S+ )?(.+?) -> (.+)$")
+        # `[RB-id ]from -> to[ (line N, column M)][ [known]]`: the position and the known marker
+        # are the reporter's, not part of the module name a protected contract's pattern matches.
+        line = re.compile(
+            r"^(?:RB-\S+ )?(.+?) -> (.+?)(?: \(line \d+, column \d+\))?(?: \[known\])?$"
+        )
         for case in root.iter("testcase"):
             name = case.get("name", "")
             for failure in case.findall("failure"):
@@ -535,6 +568,21 @@ def in_all(init: Path, target: str) -> bool:
     return False
 
 
+def rulebearing_errors(
+    attribution: Attribution, report: JUnit
+) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+    """Per contract, its vacuous rules, and every `<error>` of its rules as `rule (kind)`."""
+    vacuous: dict[str, list[str]] = {}
+    errored: dict[str, list[str]] = {}
+    for case, kinds in report.errors.items():
+        rule = attribution.rule(case)
+        owner = attribution.by_rule.get(rule, NO_CONTRACT)
+        if "vacuous" in kinds:
+            vacuous.setdefault(owner, []).append(rule)
+        errored.setdefault(owner, []).extend(f"{rule} ({kind})" for kind in kinds)
+    return vacuous, errored
+
+
 def python_rows(
     incumbent: dict[str, Any],
     imported_text: str,
@@ -543,10 +591,7 @@ def python_rows(
     """One row per contract."""
     attribution: Attribution = context["attribution"]
     violations = attribution.violations(context["junit"])
-    vacuous: dict[str, list[str]] = {}
-    for rule, kinds in context["junit"].errors.items():
-        if "vacuous" in kinds:
-            vacuous.setdefault(attribution.by_rule.get(rule, NO_CONTRACT), []).append(rule)
+    vacuous, errored = rulebearing_errors(attribution, context["junit"])
     notes = contract_notes(imported_text)
     rows = []
     for contract in incumbent["contracts"]:
@@ -569,14 +614,19 @@ def python_rows(
             row["rulebearing"] = "broken" if found else "kept"
             row["verdict"] = "error"
             row["reason"] = contract.get("detail", "")
+        elif name in errored:
+            # A rule Rulebearing could not check has no verdict to compare.
+            row["rulebearing"] = "error"
+            row["verdict"] = "error"
+            row["reason"] = f"rulebearing could not check {', '.join(sorted(errored[name]))}"
         else:
             row["rulebearing"] = "broken" if found else "kept"
-            if name in vacuous:
-                row["vacuousRules"] = sorted(vacuous[name])
             agree = row["rulebearing"] == contract["importLinter"]
             row["verdict"] = "agree" if agree else "disagree"
             if not agree and found:
                 explain(row, contract, context)
+        if name in vacuous and row["rules"]:
+            row["vacuousRules"] = sorted(vacuous[name])
         if found:
             row["sample"] = sorted({f"{r}: {a} -> {b}" for r, a, b in found})[:SAMPLE]
         rows.append(row)
@@ -619,6 +669,7 @@ def python_main(args: argparse.Namespace) -> int:
     rows = python_rows(incumbent, imported_text, context)
     comparison = python_graph(incumbent, graph, Path(args.cwd))
     summary = summarise(rows)
+    status, agrees, code = outcome(summary)
     document = {
         "repo": args.repo,
         "sha": args.sha,
@@ -626,21 +677,24 @@ def python_main(args: argparse.Namespace) -> int:
         "importLinterVersion": incumbent["importLinterVersion"],
         "settings": args.settings,
         "config": args.config_kind,
-        "status": "compared",
+        "status": status,
         "summary": summary,
         "contracts": rows,
         "graph": comparison,
-        "agrees": summary["disagree"] == 0,
+        "agrees": agrees,
     }
+    if status == "nothing-compared":
+        document["detail"] = "every contract stays or is not imported: nothing to compare"
+
     write(Path(args.out), document)
     sys.stdout.write(
         f"python-oracle: {args.repo}: {summary['total']} contracts, {summary['agree']} agree, "
         f"{summary['disagree']} disagree, {summary['stays']} stay, "
         f"{summary['not-imported']} not imported, {summary['error']} error; graph "
         f"{comparison['importLinter']} vs {comparison['rulebearing']} edges, "
-        f"{comparison['unexplained']} unexplained\n"
+        f"{comparison['unexplained']} unexplained; {status}\n"
     )
-    return 0 if document["agrees"] else 1
+    return code
 
 
 # .NET ---------------------------------------------------------------------------------------
@@ -754,15 +808,18 @@ def imported_rules(text: str) -> list[dict[str, Any]]:
 
 
 def junit_verdicts(path: Path) -> dict[str, str]:
-    """Each rule's verdict in the JUnit report: pass, fail (a failure) or error (vacuous, ...)."""
+    """Each rule's verdict in the JUnit report: pass, fail (a failure) or error (vacuous, ...).
+
+    An `<error>` wins over a `<failure>`: a rule that could not be checked has no pass or fail.
+    """
     verdicts: dict[str, str] = {}
     root = ET.parse(path).getroot()  # noqa: S314 (the file is Rulebearing's own output)
     for case in root.iter("testcase"):
         name = case.get("name", "")
-        if case.find("failure") is not None:
-            verdicts[name] = "fail"
-        elif case.find("error") is not None:
+        if case.find("error") is not None:
             verdicts[name] = "error"
+        elif case.find("failure") is not None:
+            verdicts[name] = "fail"
         else:
             verdicts[name] = "pass"
     return verdicts
@@ -879,7 +936,15 @@ def dotnet_row(
             rulebearing=None, verdict="error", reason=f"no JUnit case for {', '.join(missing)}"
         )
         return row
-    failing = [r["name"] for r in active if verdicts[r["name"]] != "pass"]
+    errored = [r["name"] for r in active if verdicts[r["name"]] == "error"]
+    if errored:
+        row.update(
+            rulebearing="error",
+            verdict="error",
+            reason=f"rulebearing could not check {', '.join(errored)} (a JUnit <error>)",
+        )
+        return row
+    failing = [r["name"] for r in active if verdicts[r["name"]] == "fail"]
     row["rulebearing"] = "failed" if failing else "passed"
     if failing:
         row["failing"] = failing
@@ -914,8 +979,10 @@ def dotnet_main(args: argparse.Namespace) -> int:
         rows.append(dotnet_row(test, matched, verdicts))
     summary = summarise(rows)
     unmatched = sorted(r["name"] for r in rules if r["active"] and r["name"] not in used)
-    status = "compared"
+    status, agrees, code = outcome(summary)
     detail = ""
+    if status == "nothing-compared":
+        detail = "every test stays or is not imported: nothing to compare"
     if not tests:
         status, detail = "error", "dotnet test ran no tests (see incumbent.log)"
     elif not rows:
@@ -939,7 +1006,7 @@ def dotnet_main(args: argparse.Namespace) -> int:
         },
         "outOfScope": out_of_scope,
         "results": rows,
-        "agrees": status == "compared" and summary["disagree"] == 0 and summary["error"] == 0,
+        "agrees": status == "compared" and agrees,
     }
     write(Path(args.out), document)
     sys.stdout.write(
@@ -948,9 +1015,7 @@ def dotnet_main(args: argparse.Namespace) -> int:
         f"{summary['stays']} stay, {summary['not-imported']} not imported, "
         f"{summary['error']} error\n"
     )
-    if status != "compared":
-        return 2
-    return 0 if document["agrees"] else 1
+    return UNUSABLE if status == "error" else code
 
 
 def main() -> int:

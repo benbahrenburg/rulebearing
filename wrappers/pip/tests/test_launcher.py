@@ -7,7 +7,10 @@ Exit codes: docs/adr/0008-exit-code-contract.md.
 
 from __future__ import annotations
 
+import os
+import signal
 import sys
+import threading
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -155,6 +158,34 @@ def test_argv_defaults_to_the_process_arguments(
 
 def test_run_returns_the_child_exit_code() -> None:
     assert _launcher._run([sys.executable, "-c", "raise SystemExit(4)"]) == 4  # noqa: SLF001
+
+
+def test_run_ignores_sigint_while_waiting_and_restores_the_handler() -> None:
+    if sys.platform == "win32":
+        pytest.skip("sending SIGINT to the own process is POSIX")
+    before = signal.getsignal(signal.SIGINT)
+    timer = threading.Timer(0.3, os.kill, (os.getpid(), signal.SIGINT))
+    timer.start()
+    try:
+        code = _launcher._run(  # noqa: SLF001
+            [sys.executable, "-c", "import time; time.sleep(1.5); raise SystemExit(5)"],
+        )
+    finally:
+        timer.cancel()
+    assert code == 5
+    assert signal.getsignal(signal.SIGINT) is before
+
+
+def test_run_off_the_main_thread_still_returns_the_code() -> None:
+    codes: list[int] = []
+    worker = threading.Thread(
+        target=lambda: codes.append(
+            _launcher._run([sys.executable, "-c", "raise SystemExit(6)"]),  # noqa: SLF001
+        ),
+    )
+    worker.start()
+    worker.join()
+    assert codes == [6]
 
 
 def test_console_exits_with_the_code_of_main(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -2,7 +2,9 @@
 // `describe` and `position` in crates/rb-report/src/catalog.rs, so each RuleResult carries the
 // message the junit reporter writes for the same rule. The adapter evaluates nothing: it reads
 // `summary.ruleSetUsed`, `summary.violations`, `summary.vacuousRules`, `summary.ratchets` and
-// `summary.expired` from the binary's JSON result.
+// `summary.expired` from the binary's JSON result. Rule names repeat (every anonymous rule is
+// `unnamed`), so each rule has an Id, the test's name (`unnamed`, `unnamed#2`, ...), and each
+// violation goes to one rule of its name, exactly as catalog.rs's `identify` and `rule_index` do.
 //
 // Contract: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, section 1.5 (the test
 // adapters' message is the junit text). Proof: tests/Rulebearing.TestAdapter.Tests/JunitEqualityTests.cs
@@ -23,7 +25,11 @@ internal static class Catalog
     private static readonly string[] ElementFamilies = ["required", "elements", "slices", "diagrams"];
 
     /// <summary>One rule of the run.</summary>
-    internal sealed record Rule(string Name, string Family, string Severity, string? Comment, string? Fix);
+    internal sealed record Rule(string Name, string Family, string Severity, string? Comment, string? Fix)
+    {
+        /// <summary>The rule's identity within the run: the name, with <c>#n</c> for the n-th rule of a name already taken.</summary>
+        public string Id { get; init; } = Name;
+    }
 
     /// <summary>Every rule of the run, in configuration order, then those known only from violations.</summary>
     public static List<Rule> Rules(JsonElement result)
@@ -66,7 +72,8 @@ internal static class Catalog
         foreach (JsonElement violation in Violations(result))
         {
             string name = RuleName(violation);
-            if (!rules.Concat(unlisted).Any(r => r.Name == name))
+            string? kind = JsValue.String(violation, "type");
+            if (!rules.Concat(unlisted).Any(r => r.Name == name && Produces(r.Family, kind)))
             {
                 unlisted.Add(new Rule(
                     name,
@@ -92,8 +99,75 @@ internal static class Catalog
             }
         }
 
-        return rules;
+        return Identify(rules);
     }
+
+    /// <summary>
+    /// The index of the rule a violation belongs to, as catalog.rs's <c>rule_index</c> picks it:
+    /// among the non-ratchet rules of its name, the first whose family can produce its <c>type</c>
+    /// and whose severity is its own, else the first whose family can produce it, else the first.
+    /// </summary>
+    public static int? RuleIndex(IReadOnlyList<Rule> rules, JsonElement violation)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        string name = RuleName(violation);
+        List<int> named = [.. Enumerable.Range(0, rules.Count).Where(i => rules[i].Name == name && rules[i].Family != "ratchets")];
+        string? kind = JsValue.String(violation, "type");
+        List<int> fitting = [.. named.Where(i => Produces(rules[i].Family, kind))];
+        if (fitting.Count == 0)
+        {
+            fitting = named;
+        }
+
+        string severity = JsValue.Severity(violation);
+        foreach (int i in fitting)
+        {
+            if (rules[i].Severity == severity)
+            {
+                return i;
+            }
+        }
+
+        return fitting.Count > 0 ? fitting[0] : null;
+    }
+
+    /// <summary>catalog.rs's <c>identify</c>: the name at its first occurrence, then <c>name#n</c>, past any id taken.</summary>
+    private static List<Rule> Identify(List<Rule> rules)
+    {
+        HashSet<string> taken = [.. rules.Select(static r => r.Name)];
+        Dictionary<string, int> seen = new(StringComparer.Ordinal);
+        List<Rule> identified = [];
+        foreach (Rule rule in rules)
+        {
+            int count = seen.GetValueOrDefault(rule.Name) + 1;
+            seen[rule.Name] = count;
+            if (count == 1)
+            {
+                identified.Add(rule with { Id = rule.Name });
+                continue;
+            }
+
+            int n = count;
+            while (taken.Contains(string.Create(CultureInfo.InvariantCulture, $"{rule.Name}#{n}")))
+            {
+                n++;
+            }
+
+            string id = string.Create(CultureInfo.InvariantCulture, $"{rule.Name}#{n}");
+            taken.Add(id);
+            identified.Add(rule with { Id = id });
+        }
+
+        return identified;
+    }
+
+    /// <summary>catalog.rs's <c>produces</c>: whether a rule of <paramref name="family"/> can produce a violation of <paramref name="kind"/>.</summary>
+    private static bool Produces(string family, string? kind) => family == "rules" || kind switch
+    {
+        "element" => family is "elements" or "diagrams",
+        "slice" => family == "slices",
+        _ => family is "forbidden" or "allowed" or "required",
+    };
 
     /// <summary>One result per rule of <see cref="Rules"/>, then one per expired known violation.</summary>
     public static List<RuleResult> Cases(JsonElement result)
@@ -102,22 +176,32 @@ internal static class Catalog
         IReadOnlyList<JsonElement> expired = List(result, "expired");
         IReadOnlyList<JsonElement> ratchets = List(result, "ratchets");
         List<RuleResult> cases = [];
-        foreach (Rule rule in Rules(result))
+        List<Rule> rules = Rules(result);
+        int ratchetAt = 0;
+        for (int index = 0; index < rules.Count; index++)
         {
+            Rule rule = rules[index];
             (string Message, string Detail)? failure = null;
             List<RuleError> errors = [];
             List<string> output = [];
             string name = rule.Name;
+
+            // Vacuous and expired entries go to the first rule of their name.
+            bool first = rules.FindIndex(r => r.Name == name) == index;
             if (rule.Family == "ratchets")
             {
-                foreach (JsonElement ratchet in ratchets.Where(r => JsValue.Text(r, "name") == name).Take(1))
+                // The ratchet rules are summary.ratchets, in order.
+                if (ratchetAt < ratchets.Count)
                 {
-                    failure = Ratchet(name, ratchet, errors, output);
+                    failure = Ratchet(name, ratchets[ratchetAt], errors, output);
                 }
+
+                ratchetAt++;
             }
             else
             {
-                List<JsonElement> found = [.. Violations(result).Where(v => RuleName(v) == name)];
+                int current = index;
+                List<JsonElement> found = [.. Violations(result).Where(v => RuleIndex(rules, v) == current)];
                 List<string> failing = [.. found.Where(static v => JsValue.Severity(v) == "error").Select(v => Describe(result, v))];
                 foreach (JsonElement v in found.Where(static v => JsValue.Severity(v) != "error"))
                 {
@@ -143,7 +227,7 @@ internal static class Catalog
                 }
             }
 
-            foreach (JsonElement entry in vacuous.Where(v => JsValue.Text(v, "name") == name))
+            foreach (JsonElement entry in vacuous.Where(v => first && JsValue.Text(v, "name") == name))
             {
                 if (JsValue.String(entry, "severity") == "warn")
                 {
@@ -155,13 +239,13 @@ internal static class Catalog
                 }
             }
 
-            foreach (JsonElement entry in expired.Where(e => JsValue.Text(e, "kind") == "rule" && JsValue.Text(e, "name") == name))
+            foreach (JsonElement entry in expired.Where(e => first && JsValue.Text(e, "kind") == "rule" && JsValue.Text(e, "name") == name))
             {
                 errors.Add(new RuleError("expired", ExpiredMessage(entry)));
             }
 
             cases.Add(new RuleResult(
-                rule.Name,
+                rule.Id,
                 rule.Family,
                 rule.Severity,
                 rule.Comment,

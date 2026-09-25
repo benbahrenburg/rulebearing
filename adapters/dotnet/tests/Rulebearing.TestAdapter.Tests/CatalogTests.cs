@@ -206,4 +206,60 @@ public sealed class CatalogTests
         Assert.Equal("1 violation(s) of `u`\ne -> f", cases[3].Message);
         Assert.Equal("unlisted", cases[3].Comment);
     }
+
+    /// <summary>
+    /// The fixed vector of catalog.rs's <c>rules_sharing_a_name_keep_distinct_identities_and_their_own_violations</c>.
+    /// </summary>
+    [Fact]
+    public void RulesSharingANameKeepDistinctIdentitiesAndTheirOwnViolations()
+    {
+        using JsonDocument document = JsonDocument.Parse("""
+            {
+              "summary": {
+                "violations": [
+                  { "type": "dependency", "from": "a", "to": "b", "rule": { "name": "unnamed", "severity": "error" } },
+                  { "type": "dependency", "from": "c", "to": "d", "rule": { "name": "unnamed", "severity": "warn" } },
+                  { "type": "element", "from": "e.cs", "to": "E", "rule": { "name": "unnamed", "severity": "error" } },
+                  { "type": "dependency", "from": "f", "to": "g", "rule": { "name": "unnamed", "severity": "ignore" } }
+                ],
+                "ruleSetUsed": {
+                  "forbidden": [{ "name": "unnamed", "severity": "error" }, { "name": "unnamed#2" }, { "severity": "warn", "name": "unnamed" }],
+                  "elements": [{ "name": "unnamed", "severity": "error" }]
+                },
+                "vacuousRules": [{ "name": "unnamed", "side": "from" }]
+              }
+            }
+            """);
+        JsonElement result = document.RootElement;
+        List<Catalog.Rule> rules = Catalog.Rules(result);
+        Assert.Equal(
+            [("unnamed", "forbidden"), ("unnamed#2", "forbidden"), ("unnamed#3", "forbidden"), ("unnamed#4", "elements")],
+            rules.Select(static r => (r.Id, r.Family)));
+        List<JsonElement> violations = [.. result.GetProperty("summary").GetProperty("violations").EnumerateArray()];
+        Assert.Equal([0, 2, 3, 0], violations.Select(v => Catalog.RuleIndex(rules, v)));
+        using JsonDocument none = JsonDocument.Parse("""{ "rule": { "name": "none" } }""");
+        Assert.Null(Catalog.RuleIndex(rules, none.RootElement));
+        List<RuleResult> cases = Catalog.Cases(result);
+        Assert.Equal(
+            ["1 violation(s) of `unnamed`\na -> b", null, null, "1 violation(s) of `unnamed`\ne.cs -> E"],
+            cases.Select(static c => c.FailureMessage));
+        Assert.Equal(["ignore: f -> g [known]"], cases[0].Output);
+        Assert.Equal(["warn: c -> d"], cases[2].Output);
+        Assert.Single(cases[0].Errors);
+        Assert.All(cases.Skip(1), static c => Assert.Empty(c.Errors));
+
+        using JsonDocument unlisted = JsonDocument.Parse("""
+            {
+              "summary": {
+                "violations": [
+                  { "type": "dependency", "from": "a", "to": "b", "rule": { "name": "unnamed", "severity": "error" } },
+                  { "type": "element", "from": "e.cs", "to": "E", "rule": { "name": "unnamed", "severity": "error" } }
+                ],
+                "ruleSetUsed": { "forbidden": [{ "name": "unnamed", "severity": "error" }] }
+              }
+            }
+            """);
+        List<Catalog.Rule> split = Catalog.Rules(unlisted.RootElement);
+        Assert.Equal([("unnamed", "forbidden"), ("unnamed#2", "rules")], split.Select(static r => (r.Id, r.Family)));
+    }
 }

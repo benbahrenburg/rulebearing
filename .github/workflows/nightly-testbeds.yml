@@ -287,7 +287,14 @@ jobs:
         run: |
           status=0
           testbeds/oracles/python.sh "$REPO" testbeds/out || status=$?
-          [ "$status" -ne 1 ]
+          # testbeds/README.md#oracle-harness: 1 (a disagreement or an error) and any unexpected
+          # code fail; 2 (not comparable) and 3 (nothing compared) are reported, never agreement.
+          case "$status" in
+            0) ;;
+            2) echo "::warning::$REPO: the oracle could not be compared (see its result file)" ;;
+            3) echo "::warning::$REPO: nothing compared; every row stays or is not imported" ;;
+            *) exit 1 ;;
+          esac
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -335,7 +342,14 @@ jobs:
         run: |
           status=0
           testbeds/oracles/dotnet.sh "$REPO" testbeds/out || status=$?
-          [ "$status" -ne 1 ]
+          # testbeds/README.md#oracle-harness: 1 (a disagreement or an error) and any unexpected
+          # code fail; 2 (not comparable) and 3 (nothing compared) are reported, never agreement.
+          case "$status" in
+            0) ;;
+            2) echo "::warning::$REPO: the oracle could not be compared (see its result file)" ;;
+            3) echo "::warning::$REPO: nothing compared; every row stays or is not imported" ;;
+            *) exit 1 ;;
+          esac
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

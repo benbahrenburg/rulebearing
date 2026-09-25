@@ -20,9 +20,9 @@ if TYPE_CHECKING:
     import pytest
 
 
-def _junit_messages(binary: Path, project: Path) -> dict[str, str]:
+def _junit_messages(binary: Path, project: Path, *extra: str) -> dict[str, str]:
     completed = subprocess.run(  # noqa: S603 - the locally built binary over the test's own copy
-        [str(binary), "cruise", "-T", "junit", "--no-progress"],
+        [str(binary), "cruise", "-T", "junit", "--output-to", "-", "--no-progress", *extra],
         cwd=project,
         capture_output=True,
         check=False,
@@ -74,3 +74,36 @@ def test_each_failure_message_is_the_junit_message(
         in reports["nothing-matches"].longreprtext
     )
     assert reports["handlers-not-to-util"].longreprtext.endswith("\n... and 2 more")
+
+
+def test_anonymous_rules_keep_their_own_identity_and_output_to_is_ignored(
+    pytester: pytest.Pytester,
+    local_binary: Path,
+    project: Path,
+) -> None:
+    """``unnamed.yaml``: four anonymous rules, and an ``outputTo`` the adapter must not follow."""
+    expected = _junit_messages(local_binary, project, "--config", "unnamed.yaml")
+    assert list(expected) == ["unnamed", "unnamed#2", "unnamed#3", "unnamed#4"]
+    recorder = pytester.inline_run(
+        "-p",
+        "pytest_rulebearing.plugin",
+        "--rulebearing",
+        f"--rulebearing-binary={local_binary}",
+        "--rulebearing-config=unnamed.yaml",
+    )
+    reports = {
+        r.nodeid.split("::")[-1]: r
+        for r in recorder.getreports("pytest_runtest_logreport")
+        if r.when == "call"
+    }
+    assert list(reports) == list(expected)
+    for name, text in expected.items():
+        if text:
+            assert reports[name].failed, name
+            assert reports[name].longreprtext == text, name
+        else:
+            assert reports[name].passed, name
+    assert reports["unnamed"].longreprtext.endswith("\n... and 2 more")
+    assert reports["unnamed#2"].passed
+    assert reports["unnamed#4"].failed
+    assert not (project / "must-not-be-written.txt").exists()

@@ -42,12 +42,32 @@ internal static class PathSearch
     }
 
     /// <summary>The first file called <paramref name="name"/> (with a Windows executable extension) on <c>PATH</c>.</summary>
-    internal static string? OnPath(string name)
+    internal static string? OnPath(string name) => OnPath(
+        name,
+        Environment.GetEnvironmentVariable("PATH") ?? string.Empty,
+        OperatingSystem.IsWindows() ? NonEmpty(Environment.GetEnvironmentVariable("PATHEXT")) ?? ".EXE;.CMD;.BAT" : null);
+
+    /// <summary>
+    /// The extensions a name is tried with, in order: on Windows (<paramref name="pathext"/> set) the
+    /// <c>PATHEXT</c> extensions first, as the shell does, so npm's <c>rulebearing.cmd</c> wins over
+    /// its extensionless shell script, which Windows cannot start; the name as given comes first
+    /// only when it already has an extension. Elsewhere, the name as given.
+    /// </summary>
+    internal static IReadOnlyList<string> Extensions(string name, string? pathext)
     {
-        string[] extensions = OperatingSystem.IsWindows()
-            ? [string.Empty, .. (NonEmpty(Environment.GetEnvironmentVariable("PATHEXT")) ?? ".EXE;.CMD;.BAT").Split(';', StringSplitOptions.RemoveEmptyEntries)]
-            : [string.Empty];
-        string path = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+        if (pathext is null)
+        {
+            return [string.Empty];
+        }
+
+        string[] listed = pathext.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return Path.HasExtension(name) ? [string.Empty, .. listed] : [.. listed, string.Empty];
+    }
+
+    /// <summary>The first file called <paramref name="name"/> in a directory of <paramref name="path"/>, trying <see cref="Extensions"/>.</summary>
+    internal static string? OnPath(string name, string path, string? pathext)
+    {
+        IReadOnlyList<string> extensions = Extensions(name, pathext);
         foreach (string directory in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
         {
             foreach (string extension in extensions)

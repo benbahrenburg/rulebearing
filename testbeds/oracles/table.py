@@ -57,13 +57,19 @@ def graph_cell(document: dict[str, Any]) -> str:
 
 def outcome(document: dict[str, Any], rows: list[dict[str, Any]]) -> str:
     """Agrees, the first recorded cause of a disagreement, or why the row could not run."""
-    if document.get("status") != "compared":
+    status = document.get("status")
+    if status == "nothing-compared" or (
+        status == "compared"
+        and not any(r.get("verdict") in ("agree", "disagree", "error") for r in rows)
+    ):
+        # Reported, and never shown as agreement (compare.py's `nothing-compared`).
+        return "nothing compared: every row stays or is not imported"
+    if status != "compared":
         return f"error: {short(str(document.get('detail', '')))}"
     disagreeing = [r for r in rows if r.get("verdict") == "disagree"]
+    errors = [r for r in rows if r.get("verdict") == "error"]
     if not disagreeing:
-        if not any(r.get("verdict") == "agree" for r in rows):
-            return "nothing compared: every test stays or is not imported"
-        return "agrees"
+        return f"{len(errors)} error" if errors else "agrees"
     explained = [r for r in disagreeing if r.get("cause")]
     lead = f"{len(disagreeing)} disagree"
     if explained:

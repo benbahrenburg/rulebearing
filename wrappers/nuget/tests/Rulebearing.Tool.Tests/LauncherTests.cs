@@ -136,6 +136,72 @@ public sealed class LauncherTests : IDisposable
         }
     }
 
+    /// <summary>A delivery is cancelled for the launcher and forwarded by name.</summary>
+    [Fact]
+    public void ASignalIsCancelledAndForwarded()
+    {
+        Assert.Equal(["INT", "TERM", "HUP"], SignalForwarding.Forwarded.Select(static f => f.Name));
+        Assert.Equal([PosixSignal.SIGINT, PosixSignal.SIGTERM, PosixSignal.SIGHUP], SignalForwarding.Forwarded.Select(static f => f.Signal));
+        List<string> sent = [];
+        PosixSignalContext context = new(PosixSignal.SIGTERM);
+        SignalForwarding.Handle(context, "TERM", sent.Add);
+        Assert.True(context.Cancel);
+        Assert.Equal(["TERM"], sent);
+    }
+
+    /// <summary>The handlers register and unregister, and a forwarded SIGTERM stops the child with its own exit code.</summary>
+    [Fact]
+    [UnsupportedOSPlatform("windows")]
+    public void SigtermReachesTheChild()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        IReadOnlyList<PosixSignalRegistration> registrations = SignalForwarding.Register(static _ => { });
+        Assert.Equal(3, registrations.Count);
+        foreach (PosixSignalRegistration registration in registrations)
+        {
+            registration.Dispose();
+        }
+
+        string script = Stage("signals", "trap", "trap 'exit 7' TERM\necho ready\nwhile :; do sleep 0.05; done");
+        System.Diagnostics.ProcessStartInfo start = new(script) { UseShellExecute = false, RedirectStandardOutput = true };
+        using System.Diagnostics.Process child = System.Diagnostics.Process.Start(start)!;
+        Assert.Equal("ready", child.StandardOutput.ReadLine());
+        Assert.True(SignalForwarding.Send(child.Id, "TERM"));
+        Assert.True(child.WaitForExit(10_000));
+        Assert.Equal(7, child.ExitCode);
+        Assert.False(SignalForwarding.Send(child.Id, "TERM"), "the child is gone");
+    }
+
+    /// <summary>
+    /// End to end: a SIGTERM to the launcher's process while it runs the binary is forwarded, and
+    /// the launcher returns the binary's exit code instead of terminating.
+    /// </summary>
+    [Fact]
+    [UnsupportedOSPlatform("windows")]
+    public async Task TheLauncherForwardsSigtermAndReturnsTheChildCode()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        string ready = Path.Combine(directory, "ready");
+        string script = Stage("forward", "rulebearing", $"trap 'exit 9' TERM\ntouch '{ready}'\nwhile :; do sleep 0.05; done");
+        Task<int> run = Task.Run(() => Launcher.Execute(script, []));
+        for (int i = 0; i < 400 && !File.Exists(ready); i++)
+        {
+            await Task.Delay(25);
+        }
+
+        Assert.True(File.Exists(ready), "the child started");
+        Assert.True(SignalForwarding.Send(Environment.ProcessId, "TERM"));
+        Assert.Equal(9, await run.WaitAsync(TimeSpan.FromSeconds(10)));
+    }
+
     /// <inheritdoc />
     public void Dispose()
     {

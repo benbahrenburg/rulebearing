@@ -8,15 +8,14 @@ is passed or ``[tool.pytest.ini_options] rulebearing = true``".
 
 from __future__ import annotations
 
+import json
+import os
 import subprocess
 import sys
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import pytest
 from pytest_rulebearing import run
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 PLUGIN = ("-p", "pytest_rulebearing.plugin")
 
@@ -170,6 +169,8 @@ def test_the_command_line(tmp_path: Path) -> None:
         "cruise",
         "--output-type",
         "json",
+        "--output-to",
+        "-",
         "--no-progress",
         "--config",
         "c.yaml",
@@ -182,6 +183,8 @@ def test_the_command_line(tmp_path: Path) -> None:
         "cruise",
         "--output-type",
         "json",
+        "--output-to",
+        "-",
         "--no-progress",
     ]
 
@@ -197,8 +200,84 @@ def _fake_binary(tmp_path: Path, body: str) -> str:
 
 
 def test_cruise_reads_the_json_of_a_run_that_exits_2(tmp_path: Path) -> None:
-    fake = _fake_binary(tmp_path, "print('{\"summary\": {}}')\nsys.exit(2)")
-    assert run.cruise(run.Options(binary=fake, cwd=tmp_path), {"PATH": ""}) == {"summary": {}}
+    result = {"summary": {"vacuousRules": [{"name": "dead", "side": "from"}]}}
+    fake = _fake_binary(tmp_path, f"print({json.dumps(result)!r})\nsys.exit(2)")
+    assert run.cruise(run.Options(binary=fake, cwd=tmp_path), {"PATH": ""}) == result
+
+
+def test_cruise_refuses_an_exit_2_whose_rules_all_pass(tmp_path: Path) -> None:
+    result = '{"summary": {"ruleSetUsed": {"forbidden": [{"name": "ok"}]}}}'
+    body = f"print({result!r})\nsys.stderr.write('zero modules')\nsys.exit(2)"
+    fake = _fake_binary(tmp_path, body)
+    with pytest.raises(run.CruiseError, match=r"cannot be trusted \(exit 2\)[^\n]*\nzero modules"):
+        run.cruise(run.Options(binary=fake, cwd=tmp_path))
+
+
+def test_a_config_with_output_to_is_read_and_its_file_left_alone(
+    pytester: pytest.Pytester,
+    project: Path,
+    local_binary: Path,
+) -> None:
+    (project / "rulebearing.yaml").write_text(
+        (project / "rulebearing.yaml").read_text(encoding="utf-8")
+        + "options:\n  outputTo: mine.txt\n",
+        encoding="utf-8",
+    )
+    (project / "mine.txt").write_text("the user's own file\n", encoding="utf-8")
+    result = pytester.runpytest(*PLUGIN, "--rulebearing", f"--rulebearing-binary={local_binary}")
+    result.assert_outcomes(passed=2, failed=3)
+    assert (project / "mine.txt").read_text(encoding="utf-8") == "the user's own file\n"
+
+
+def test_locate_searches_path_for_a_bare_name_and_anchors_a_relative_one(tmp_path: Path) -> None:
+    if sys.platform == "win32":
+        pytest.skip("an executable bit is POSIX")
+    found = tmp_path / "bin" / "rb-test-binary"
+    found.parent.mkdir()
+    found.write_text("")
+    found.chmod(0o755)
+    assert run.locate("rb-test-binary", tmp_path / "x", str(found.parent)) == str(found)
+    assert run.locate("rb-not-on-path", tmp_path, str(found.parent)) == "rb-not-on-path"
+    assert run.locate("bin/rb-test-binary", tmp_path) == str(found)
+    assert run.locate(str(found), tmp_path / "elsewhere") == str(found)
+
+
+def test_a_relative_environment_binary_is_taken_against_the_invocation_directory(
+    tmp_path: Path,
+) -> None:
+    binary = tmp_path / "tools" / "rb"
+    binary.parent.mkdir()
+    binary.write_text("")
+    relative = str(Path("tools") / "rb")
+    env = {"RULEBEARING_BINARY": relative, "PATH": ""}
+    with pytest.MonkeyPatch.context() as patch:
+        patch.chdir(tmp_path)
+        assert run.resolve_binary(None, env) == str(binary)
+    assert run.resolve_binary(None, env, tmp_path) == str(binary)
+
+
+def test_a_bare_environment_binary_is_found_on_path(tmp_path: Path) -> None:
+    if sys.platform == "win32":
+        pytest.skip("an executable bit is POSIX")
+    binary = tmp_path / "rb-on-path"
+    binary.write_text("")
+    binary.chmod(0o755)
+    env = {"RULEBEARING_BINARY": "rb-on-path", "PATH": str(tmp_path)}
+    assert run.resolve_binary(None, env, tmp_path / "elsewhere") == str(binary)
+
+
+def test_a_bare_binary_option_keeps_path_search(
+    pytester: pytest.Pytester,
+    project: Path,
+    local_binary: Path,
+) -> None:
+    del project
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setenv("PATH", f"{local_binary.parent}{os.pathsep}{os.environ.get('PATH', '')}")
+        result = pytester.runpytest(
+            *PLUGIN, "--rulebearing", f"--rulebearing-binary={local_binary.name}"
+        )
+    result.assert_outcomes(passed=2, failed=3)
 
 
 def test_cruise_refuses_json_without_a_summary(tmp_path: Path) -> None:

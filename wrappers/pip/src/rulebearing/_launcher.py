@@ -10,13 +10,16 @@
 The wheel for each platform carries the binary at ``rulebearing/bin/rulebearing`` (``.exe`` on
 Windows). The launcher never re-implements a subcommand: every argument goes to the binary
 unchanged. On POSIX the launcher process becomes the binary (``os.execv``), so the exit code and
-any signal are the binary's own; on Windows it waits for the binary and returns its exit code.
+any signal are the binary's own; on Windows it waits for the binary and returns its exit code,
+ignoring Ctrl+C while it waits (the console delivers it to the binary too, which decides how to
+stop), so an interrupted run still returns the binary's own code.
 ``RULEBEARING_BINARY`` names a binary to run instead, as it does for the npm wrapper.
 """
 
 from __future__ import annotations
 
 import os
+import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -112,8 +115,17 @@ def binary_path(
 
 
 def _run(command: Sequence[str]) -> int:
+    """Start the binary, wait with SIGINT ignored, and return the binary's exit code."""
     # The command is the resolved binary and the caller's own arguments, never a shell string.
-    return subprocess.run(command, check=False).returncode  # noqa: S603
+    process = subprocess.Popen(command)  # noqa: S603
+    try:
+        previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
+    except ValueError:  # not the main thread: signals cannot be changed, and do not arrive here
+        return process.wait()
+    try:
+        return process.wait()
+    finally:
+        signal.signal(signal.SIGINT, previous)
 
 
 def main(
