@@ -283,7 +283,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn an_assemblys_pdb_stream_cannot_inflate_its_row_counts() {
+    fn a_pdb_stream_in_an_assembly_cannot_inflate_its_row_counts() {
         // A #Pdb stream claiming u32::MAX TypeDef rows, next to an empty table stream.
         let mut pdb = vec![0u8; 20];
         pdb.extend(0u32.to_le_bytes());

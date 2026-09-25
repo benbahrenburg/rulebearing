@@ -639,7 +639,7 @@ mod tests {
         let dir = scratch("dedup");
         write(
             &dir.join("A/A.csproj"),
-            r#"<Project><ItemGroup><PackageReference Include="Abc" Version="1" /><PackageReference Include="Abd" /><PackageReference Include="abc" Version="2" /></ItemGroup></Project>"#,
+            r#"<Project><ItemGroup><PackageReference Include="Abc" Version="1" /><PackageReference Include="Abe" /><PackageReference Include="abc" Version="2" /></ItemGroup></Project>"#,
         );
         let project = ProjectFile::read(&dir.join("A/A.csproj"), "Debug", &dir).ok();
         assert_eq!(
@@ -648,7 +648,7 @@ mod tests {
                 .iter()
                 .map(|r| r.id.clone())
                 .collect::<Vec<_>>()),
-            Some(vec!["Abc".to_owned(), "Abd".to_owned()])
+            Some(vec!["Abc".to_owned(), "Abe".to_owned()])
         );
         let _ = std::fs::remove_dir_all(&dir);
     }
