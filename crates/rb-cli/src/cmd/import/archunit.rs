@@ -21,7 +21,8 @@
 //! | --- | --- |
 //! | `Types()` ... `PropertyMembers()`, `Types(true)` | `select.kind`, `includeReferenced`, and `select.language: dotnet` |
 //! | a predicate or condition | its key, the method name in camelCase, checked against `rb-config`'s vocabulary |
-//! | `And()` / `Or()`, `AndShould()` / `OrShould()` | folded left to right into `all` / `any` |
+//! | `And()` / `Or()`, `AndShould()` / `OrShould()` (ArchUnitNET) | folded left to right into `all` / `any` |
+//! | `And()` / `Or()` (NetArchTest, both sides of `Should()`) | each `Or()` starts a group: `any` of the `all` of each `And()` run |
 //! | `...TypesThat()` and what follows | a nested selector |
 //! | `typeof(X)`, `GetClassOfType(typeof(X))` | the full name |
 //! | a provider (`Types().That()...`, held in a field) | a nested selector |
@@ -789,22 +790,44 @@ pub enum Mapped {
     Unmapped(String),
 }
 
-/// Left-to-right folding of `And` / `Or` into `all` / `any`.
+/// Folding of `And` / `Or` into `all` / `any`.
+///
+/// ArchUnitNET folds left to right: `A.And().B().Or().C()` is `(A and B) or C`. NetArchTest
+/// (1.3.2, `PredicateList` and `ConditionList`) groups instead: every `Or()` starts a new group of
+/// `And()`-joined terms and the groups are or-ed, so `A.And().B().Or().C().And().D()` is
+/// `(A and B) or (C and D)` (upstream's `Or_MultipleInstances_TreatedAsSeparateGroups`).
 #[derive(Debug, Clone, Default)]
 struct Fold {
     expr: Option<Node>,
     /// The combinator of `expr` when the fold built it, so a run of one connective stays flat.
     op: Option<&'static str>,
     pending: Option<&'static str>,
+    /// `Some` in NetArchTest's grouped mode: the `And()` runs so far, each a group.
+    groups: Option<Vec<Vec<Node>>>,
 }
 
 impl Fold {
+    /// A fold with NetArchTest's grouping of `And()` runs.
+    fn grouped() -> Self {
+        Self {
+            groups: Some(Vec::new()),
+            ..Self::default()
+        }
+    }
+
     fn connective(&mut self, op: &'static str) {
         self.pending = Some(op);
     }
 
     fn push(&mut self, term: Node) {
         let op = self.pending.take().unwrap_or("all");
+        if let Some(groups) = &mut self.groups {
+            match groups.last_mut() {
+                Some(group) if op == "all" => group.push(term),
+                _ => groups.push(vec![term]),
+            }
+            return;
+        }
         match self.expr.take() {
             None => self.expr = Some(term),
             Some(Node::Map(mut pairs)) if self.op == Some(op) && pairs.len() == 1 => {
@@ -817,6 +840,28 @@ impl Fold {
                 self.expr = Some(Node::map(vec![(op, Node::list(vec![previous, term]))]));
                 self.op = Some(op);
             }
+        }
+    }
+
+    /// The folded expression, if any term was pushed.
+    fn finish(self) -> Option<Node> {
+        let Some(groups) = self.groups else {
+            return self.expr;
+        };
+        let mut groups: Vec<Node> = groups
+            .into_iter()
+            .map(|mut group| {
+                if group.len() == 1 {
+                    group.remove(0)
+                } else {
+                    netarchtest::all(group)
+                }
+            })
+            .collect();
+        match groups.len() {
+            0 => None,
+            1 => Some(groups.remove(0)),
+            _ => Some(netarchtest::any(groups)),
         }
     }
 }
@@ -895,8 +940,16 @@ impl Builder {
         Self {
             netarchtest,
             side: Side::Where,
-            where_: Fold::default(),
-            should: Fold::default(),
+            where_: if netarchtest {
+                Fold::grouped()
+            } else {
+                Fold::default()
+            },
+            should: if netarchtest {
+                Fold::grouped()
+            } else {
+                Fold::default()
+            },
             nested: None,
             because: None,
             allow_empty: false,
@@ -918,7 +971,7 @@ impl Builder {
     fn close(&mut self) {
         if let Some(n) = self.nested.take() {
             let mut selector = vec![("kind", Node::str(n.kind))];
-            if let Some(w) = n.fold.expr {
+            if let Some(w) = n.fold.finish() {
                 selector.push(("where", w));
             }
             let term = Node::Map(vec![(n.key, Node::map(selector))]);
@@ -1029,14 +1082,14 @@ impl Program {
             }
         }
         builder.close();
-        let Some(mut should_expr) = builder.should.expr.take() else {
+        let Some(mut should_expr) = std::mem::take(&mut builder.should).finish() else {
             return Mapped::Unmapped("the chain has no condition (`Should()...`)".into());
         };
         let select = dotnet_scoped(Self::select_node(
             kind,
             referenced,
             root_term,
-            builder.where_.expr.take(),
+            std::mem::take(&mut builder.where_).finish(),
         ));
         for (op, other) in std::mem::take(&mut builder.combined) {
             match self.combine(&select, &other) {
@@ -1145,7 +1198,7 @@ impl Program {
                 },
             }
         }
-        Ok(Self::select_node(kind, *referenced, None, fold.expr))
+        Ok(Self::select_node(kind, *referenced, None, fold.finish()))
     }
 
     /// One `ArchUnitNET` predicate or condition: the term, or the key of a nested selector whose
@@ -2283,11 +2336,50 @@ mod tests {
         fold.connective("any");
         fold.push(t("d"));
         assert_eq!(
-            fold.expr.map(|n| n.to_json()),
+            fold.finish().map(|n| n.to_json()),
             Some(
                 serde_json::json!({"any": [{"all": [{"a": true}, {"b": true}]}, {"c": true}, {"d": true}]})
             )
         );
+    }
+
+    /// NetArchTest 1.3.2 `Or_MultipleInstances_TreatedAsSeparateGroups` (`PredicateListTests` and
+    /// `ConditionListTests`): `A.And().B().Or().C().And().D()` is `(A and B) or (C and D)`.
+    #[test]
+    fn net_arch_test_folds_and_runs_into_or_ed_groups() {
+        use serde_json::json;
+        let t = |k: &str| Node::map(vec![(k, Node::Bool(true))]);
+        let fold_of = |ops: &[&'static str]| {
+            let mut fold = Fold::grouped();
+            fold.push(t("a"));
+            for (op, k) in ops.iter().zip(["b", "c", "d"]) {
+                fold.connective(op);
+                fold.push(t(k));
+            }
+            fold.finish().map(|n| n.to_json())
+        };
+        assert_eq!(
+            fold_of(&["all", "any", "all"]),
+            Some(
+                json!({"any": [{"all": [{"a": true}, {"b": true}]}, {"all": [{"c": true}, {"d": true}]}]})
+            )
+        );
+        assert_eq!(
+            fold_of(&["any", "any", "any"]),
+            Some(json!({"any": [{"a": true}, {"b": true}, {"c": true}, {"d": true}]}))
+        );
+        assert_eq!(
+            fold_of(&["all", "all", "all"]),
+            Some(json!({"all": [{"a": true}, {"b": true}, {"c": true}, {"d": true}]}))
+        );
+        assert_eq!(
+            fold_of(&["any", "all", "any"]),
+            Some(json!({"any": [{"a": true}, {"all": [{"b": true}, {"c": true}]}, {"d": true}]}))
+        );
+        assert_eq!(Fold::grouped().finish(), None);
+        let mut one = Fold::grouped();
+        one.push(t("a"));
+        assert_eq!(one.finish().map(|n| n.to_json()), Some(json!({"a": true})));
     }
 
     #[test]
