@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The init-layers fixture: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 15. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Shop.Application/Shop.Application.csproj" />
+  </ItemGroup>
+</Project>

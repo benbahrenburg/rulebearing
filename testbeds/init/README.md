@@ -1,0 +1,16 @@
+# init fixtures
+
+What `rulebearing init --dry-run` proposes for a test bed in [the manifest](../manifest.yaml), committed as `<owner>__<name>/rulebearing.yaml` so that a change in discovery is a reviewable diff ([plan 0001, Step 16](../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-16-init-1f); [plan 0002, Step 15](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-upstream-offers-second-maintainer-2i)). Regenerate with [`run.sh`](run.sh) over checkouts at the manifest SHAs, with the .NET solution built by the row's `build` command. Each file names the SHA it came from and the summary line of the run, which is the cruise with the proposal exiting 0. The baseline entries are replaced by their count per rule: they are the test bed's findings, not init's discovery.
+
+The two greenfield beds are the wave 2 proof ([design § Test beds](../../docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against), item 2): every rule live, and every current finding baselined. The nightly ([`greenfield.sh`](../greenfield.sh)) clones each at its SHA, builds it, writes the full proposal with `init`, cruises it back (exit 0 is the pass), and regenerates the fixture beside the committed one; a difference fails the row.
+
+| Test bed | Fixture | Notes |
+| --- | --- | --- |
+| microsoft/semantic-kernel | [microsoft__semantic-kernel](microsoft__semantic-kernel/rulebearing.yaml) | .NET in `dotnet/` (two solutions; `SK-dotnet.slnx` lists the most projects) and Python in `python/`. Built with the manifest's `build` command (`dotnet build dotnet/SK-dotnet.slnx`). The .NET namespaces name no clean-architecture layer, so the proposal's own rules are the Python ones: `semantic_kernel` never imports `samples` or `tests`, which import it |
+| microsoft/autogen | [microsoft__autogen](microsoft__autogen/rulebearing.yaml) | .NET in `dotnet/` and a uv workspace in `python/`, whose members are the import roots. Built with the manifest's `build` command (`dotnet build dotnet/AutoGen.sln`). The order of the Python packages (`autogen_core` below `autogen_agentchat` below `autogen_ext`) becomes one rule per package |
+| sverweij/dependency-cruiser | [sverweij__dependency-cruiser](sverweij__dependency-cruiser/rulebearing.yaml) | |
+| langfuse/langfuse (`web/`) | [langfuse__langfuse](langfuse__langfuse/rulebearing.yaml) | Run in `web/`. The checkout installs `web`'s dependencies only (`pnpm install --filter web...`), so `@langfuse/shared`, `uuid` and `storybook` do not resolve. dependency-cruiser 18.2.0 leaves the same 1,571 imports unresolved on that tree. |
+| infinitered/ignite | [infinitered__ignite](infinitered__ignite/rulebearing.yaml) | |
+| microsoft/FluidFramework (`packages/dds/tree`) | none | Layer 5's sparse checkout has only this package. Its `tsconfig.json` extends `common/build/build-common/tsconfig.node20.json`, which is outside the checkout, so `init` exits 2 and names the missing file. A full clone does not have this problem. |
+
+The scale beds the plan names (n8n, grafana, kibana) are the first thing its cut list drops ([plan 0001 § 3](../../docs/plans/pending/0001-wave-1-typescript-parity.md#3-wave-based-delivery-plan)). They join when the nightly run keeps full checkouts of them.

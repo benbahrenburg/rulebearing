@@ -1,0 +1,41 @@
+{
+  "repo": "ardalis/RiverBooks",
+  "sha": "0938f187f3963e225fa25e31bc10a5213932ddf4",
+  "tool": "archunitnet",
+  "tests": "src/RiverBooks.OrderProcessingTests",
+  "status": "nothing-compared",
+  "detail": "every test stays or is not imported: nothing to compare",
+  "summary": {
+    "total": 2,
+    "agree": 0,
+    "disagree": 0,
+    "stays": 0,
+    "not-imported": 2,
+    "error": 0
+  },
+  "rules": {
+    "imported": 0,
+    "commentedOut": 0,
+    "withoutTest": []
+  },
+  "outOfScope": 9,
+  "results": [
+    {
+      "test": "RiverBooks.OrderProcessingTests.Arch.InfrastructureDependencyTests.DomainTypesShouldNotReferenceInfrastructure",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    },
+    {
+      "test": "RiverBooks.OrderProcessingTests.Arch.InfrastructureDependencyTests.UseCaseTypesShouldNotReferenceInfrastructure",
+      "dotnet": "passed",
+      "rules": [],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "no fluent rule the importer reads (the test queries the architecture in C#)"
+    }
+  ],
+  "agrees": false
+}

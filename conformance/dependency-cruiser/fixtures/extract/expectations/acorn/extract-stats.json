@@ -1,0 +1,23 @@
+[
+  {
+    "id": "test/extract/acorn/extract-stats.spec.mjs#1",
+    "title": "[I] extract/acorn/extract - getStats should return stats  for a given file containing valid javascript",
+    "call": 1,
+    "surface": "stats-acorn",
+    "cwd": ".",
+    "input": {
+      "parser": "acorn",
+      "fileName": "extract-stats-testfile.mjs",
+      "cruiseOptions": {
+        "baseDir": "test/extract/__mocks__"
+      },
+      "transpileOptions": {
+        "extension": ".mjs"
+      }
+    },
+    "expected": {
+      "topLevelStatementCount": 5,
+      "size": 1010
+    }
+  }
+]

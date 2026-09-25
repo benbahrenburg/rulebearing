@@ -1,0 +1,54 @@
+# rulebearing:typescript. Original to Rulebearing. The TypeScript and JavaScript defaults, and the
+# rules only npm and Node dependencies can break: type-only imports kept as edges, export maps
+# resolved the way Node and bundlers resolve them, npm packages recorded but not followed, build
+# output left out, and the files the toolchain enters by convention not reported as orphans.
+# Composed by rulebearing:recommended; a TypeScript-only repository writes
+# `extends: [rulebearing:typescript, rulebearing:recommended]`, and these settings win.
+# Plans: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 3;
+# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 9. Requirement: FR-CFG-06.
+languages:
+  typescript:
+    tsPreCompilationDeps: true
+    enhancedResolveOptions:
+      exportsFields: [exports]
+      conditionNames: [import, require, node, default, types]
+      mainFields: [module, main, types, typings]
+rules:
+  dependencies:
+    forbidden:
+      - name: no-non-package-json
+        comment: "An npm import missing from package.json works only by accident of hoisting."
+        fix: "Add the package to dependencies (or devDependencies for test and build code) of the nearest package.json."
+        severity: error
+        from: {}
+        to: { dependencyTypes: [npm-no-pkg, npm-unknown] }
+      - name: no-deprecated-core
+        comment: "A deprecated Node built-in will be removed."
+        fix: "Replace the module: punycode with the url API, domain with async hooks or try/catch, constants with os.constants or fs.constants, sys with util."
+        severity: error
+        from: {}
+        to: { dependencyTypes: [core], path: "^(?:punycode|domain|constants|sys|_linklist|_stream_wrap)$" }
+      - name: no-duplicate-dep-types
+        comment: "A package listed in more than one dependencies section installs unpredictably."
+        fix: "Keep the package in exactly one section of package.json: dependencies for run-time code, devDependencies otherwise."
+        severity: warn
+        from: {}
+        to: { moreThanOneDependencyType: true, dependencyTypesNot: [type-only] }
+      - name: no-orphans
+        comment: "A module nothing imports and that imports nothing is usually dead code."
+        fix: "Delete the module, import it from where it belongs, or add its path to this rule's from.pathNot if it is an entry point or a configuration file."
+        severity: warn
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+        to: {}
+options:
+  doNotFollow:
+    path: node_modules
+  exclude:
+    path:
+      - "(^|/)(dist|build|coverage|\\.next|out)/"

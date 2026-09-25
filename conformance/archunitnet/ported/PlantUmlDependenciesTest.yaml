@@ -1,0 +1,27 @@
+# Ported from ArchUnitNET 0.13.4 ArchUnitNETTests/Dependencies/PlantUmlDependenciesTest.cs by hand: HasNoViolations as the verdict per type
+source: ArchUnitNETTests/Dependencies/PlantUmlDependenciesTest.cs
+architecture: [TestAssembly]
+cases:
+- id: DiagramWithNoDependencies#1
+  alsoCovers: [DiagramWithNoDependenciesFileBased#1]
+  query: 'LoadNamespacesWithinAssembly(TestAssembly, "TestAssembly.Diagram.NoDependencies") as a namespace selector: types should adhere to a diagram of two unconnected components'
+  csharp: Assert.True(Types().Should().AdhereToPlantUmlDiagram(stream).HasNoViolations(architecture))
+  family: diagram
+  rule:
+    select: &id001
+      kind: type
+      where: {resideInNamespaceMatching: ^TestAssembly\.Diagram\.NoDependencies}
+    adhereTo: PlantUmlDependenciesTest.DiagramWithNoDependencies.puml
+  expect:
+    pass: &id002 [TestAssembly.Diagram.NoDependencies.Independent.AnotherIndependenClass, TestAssembly.Diagram.NoDependencies.Independent.IndependentClass, TestAssembly.Diagram.NoDependencies.SomeNamespace.DependencyWithinNamespace, TestAssembly.Diagram.NoDependencies.SomeNamespace.IndependentOrigin]
+    fail: []
+- id: DefinedButUnusedDependencyIsAllowed#1
+  query: 'LoadNamespacesWithinAssembly(TestAssembly, "TestAssembly.Diagram.NoDependencies") as a namespace selector: types should adhere to a diagram whose one dependency no type uses'
+  csharp: Assert.True(Types().Should().AdhereToPlantUmlDiagram(stream).HasNoViolations(architecture))
+  family: diagram
+  rule:
+    select: *id001
+    adhereTo: PlantUmlDependenciesTest.DefinedButUnusedDependencyIsAllowed.puml
+  expect:
+    pass: *id002
+    fail: []

@@ -1,0 +1,251 @@
+{
+  "$comment": "Upstream ArchUnitNET tests with no case in ported/, each with a reason, written by conformance/archunitnet/tools/port.py (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7). `block` is the 1-based snapshot block of `test`, or null for a whole test that has no snapshot. Reasons: custom-predicate (a C# predicate or condition, no data-driven case), not-yet: <method or construct> (the element-rule schema or the tool cannot express it yet), not-yet: non-snapshot (asserted in C#, ported separately); a non-snapshot test's reason written by hand (wave-3: ..., api-only: ...) is kept.",
+  "pin": "0.13.4",
+  "entries": [
+    {
+      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
+      "test": "BuildUmlByDependenciesTest",
+      "block": null,
+      "query": null,
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
+    },
+    {
+      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
+      "test": "BuildUmlByDependenciesWithObjectsWithNoDependenciesTest",
+      "block": null,
+      "query": null,
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
+    },
+    {
+      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
+      "test": "BuildUmlByNamespacesTest",
+      "block": null,
+      "query": null,
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
+    },
+    {
+      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
+      "test": "BuildUmlBySlicesTest",
+      "block": null,
+      "query": null,
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
+    },
+    {
+      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
+      "test": "BuildUmlByTypesIncludingDependenciesToOtherTest",
+      "block": null,
+      "query": null,
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
+    },
+    {
+      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
+      "test": "BuildUmlByTypesTest",
+      "block": null,
+      "query": null,
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
+    },
+    {
+      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
+      "test": "HandleIllegalComponentNamesTest",
+      "block": null,
+      "query": null,
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
+    },
+    {
+      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
+      "test": "SpecialCharactersInComponentNamesTest",
+      "block": null,
+      "query": null,
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/ArchRuleEqualityTests.cs",
+      "test": "ArchRuleEqualityTest",
+      "block": null,
+      "query": null,
+      "reason": "api-only: C# Equals on IArchRule objects; Rulebearing rules are YAML data"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/DescriptionTests.cs",
+      "test": "CustomDescriptionTest",
+      "block": null,
+      "query": null,
+      "reason": "api-only: the C# As() custom description; a Rulebearing rule is described by its name, comment and because"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/DescriptionTests.cs",
+      "test": "DescriptionTest",
+      "block": null,
+      "query": null,
+      "reason": "api-only: the C# Description string a fluent chain renders; a Rulebearing rule is described by its name, comment and because"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/FreezeTests.cs",
+      "test": "FailFrozenRuleUsingXmlViolationStore",
+      "block": null,
+      "query": null,
+      "reason": "api-only: XmlViolationStore is a C# IViolationStore that keeps the same rule-to-objects store as XML; Rulebearing's store is the dependency-cruiser known-violations JSON file (--ignore-known, options.knownViolations) and has no XML form. Freezing with that store is ported from PassFrozenRules and FailFrozenRule, whose stores hold the same violations"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/FreezeTests.cs",
+      "test": "PassFrozenRulesUsingXmlViolationStore",
+      "block": null,
+      "query": null,
+      "reason": "api-only: XmlViolationStore is a C# IViolationStore that keeps the same rule-to-objects store as XML; Rulebearing's store is the dependency-cruiser known-violations JSON file (--ignore-known, options.knownViolations) and has no XML form. Freezing with that store is ported from PassFrozenRules and FailFrozenRule, whose stores hold the same violations"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs",
+      "test": "ComponentDiagramFromCustomDependenciesTest",
+      "block": null,
+      "query": null,
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs",
+      "test": "ComponentDiagramFromSlicesTest",
+      "block": null,
+      "query": null,
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs",
+      "test": "ComponentDiagramFromTypesTest",
+      "block": null,
+      "query": null,
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs",
+      "test": "ComponentDiagramWriteToFileTest",
+      "block": null,
+      "query": null,
+      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/ConjunctionFactoryTest.cs",
+      "test": "CreateSyntaxElementTest",
+      "block": null,
+      "query": null,
+      "reason": "api-only: the reflection factory ConjunctionFactory.Create behind the fluent C# syntax"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/ConjunctionFactoryTest.cs",
+      "test": "CreateSyntaxElementWithInvalidParametersThrowsExceptionTest",
+      "block": null,
+      "query": null,
+      "reason": "api-only: the reflection factory ConjunctionFactory.Create behind the fluent C# syntax"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/CustomSyntaxElementsTests.cs",
+      "test": "CustomConditionTest",
+      "block": null,
+      "query": null,
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/CustomSyntaxElementsTests.cs",
+      "test": "CustomPredicateTest",
+      "block": null,
+      "query": null,
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomConditionTest",
+      "block": 1,
+      "query": "Types that are \"TypeDependencyNamespace.ChildClass\" should follow custom condition",
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomConditionTest",
+      "block": 2,
+      "query": "Types that are \"TypeDependencyNamespace.ChildClass\" should follow custom condition",
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomConditionTest",
+      "block": 3,
+      "query": "Types that are \"TypeDependencyNamespace.ChildClass\" should follow custom condition",
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomConditionTest",
+      "block": 4,
+      "query": "Types that are \"TypeDependencyNamespace.BaseClass\" should follow custom condition",
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomConditionTest",
+      "block": 5,
+      "query": "Types that are \"TypeDependencyNamespace.BaseClass\" should follow custom condition",
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomConditionTest",
+      "block": 6,
+      "query": "Types that are \"TypeDependencyNamespace.BaseClass\" should follow custom condition",
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomPredicateTest",
+      "block": 1,
+      "query": "Types that are \"TypeDependencyNamespace.ChildClass\" should be Types that follow custom predicate",
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomPredicateTest",
+      "block": 2,
+      "query": "Types that are \"TypeDependencyNamespace.ChildClass\" should be Types that follow custom predicate",
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomPredicateTest",
+      "block": 3,
+      "query": "Types that are \"TypeDependencyNamespace.ChildClass\" should be types that follow custom predicate",
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomPredicateTest",
+      "block": 4,
+      "query": "Types that are \"TypeDependencyNamespace.ChildClass\" should be types that follow custom predicate",
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomPredicateTest",
+      "block": 5,
+      "query": "Types that are \"TypeDependencyNamespace.BaseClass\" should be Types that follow custom predicate",
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomPredicateTest",
+      "block": 6,
+      "query": "Types that are \"TypeDependencyNamespace.BaseClass\" should be Types that follow custom predicate",
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomPredicateTest",
+      "block": 7,
+      "query": "Types that are \"TypeDependencyNamespace.BaseClass\" should be types that follow custom predicate",
+      "reason": "custom-predicate"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ObjectSyntaxElementsTests.cs",
+      "test": "FollowCustomPredicateTest",
+      "block": 8,
+      "query": "Types that are \"TypeDependencyNamespace.BaseClass\" should be types that follow custom predicate",
+      "reason": "custom-predicate"
+    }
+  ]
+}

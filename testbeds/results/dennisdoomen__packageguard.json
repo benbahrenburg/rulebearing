@@ -1,0 +1,24 @@
+{
+  "repo": "dennisdoomen/packageguard",
+  "sha": "f1fdbca94ccdbd0d18c99cb49f4a2a427aea903f",
+  "tool": "netarchtest",
+  "tests": "Src/PackageGuard.Specs",
+  "status": "error",
+  "detail": "no test dotnet test ran is in a file under Src/PackageGuard.Specs that uses ArchUnitNET or NetArchTest: nothing to compare",
+  "summary": {
+    "total": 0,
+    "agree": 0,
+    "disagree": 0,
+    "stays": 0,
+    "not-imported": 0,
+    "error": 0
+  },
+  "rules": {
+    "imported": 0,
+    "commentedOut": 0,
+    "withoutTest": []
+  },
+  "outOfScope": 324,
+  "results": [],
+  "agrees": false
+}

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Prints what System.Reflection.Metadata reads from an assembly, so rb-extract-dotnet's
+       tests compare against the platform's own reader (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md,
+       Step 2). Run it with dotnet run, passing ../../fixtures/TestAssembly.dll. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,352 @@
+{
+  "valid": [
+    "report-json/anon/__fixtures__/cycle.json",
+    "report-json/anon/__fixtures__/dependents.json",
+    "report-json/anon/__fixtures__/folder-cycles.json",
+    "report-json/anon/__fixtures__/folders.json",
+    "report-json/anon/__fixtures__/reaches-report.json",
+    "report-json/anon/__fixtures__/src-report-wordlist.json",
+    "report-json/anon/__fixtures__/src-report.json",
+    "report-json/anon/__mocks__/cycle.json",
+    "report-json/anon/__mocks__/dependents.json",
+    "report-json/anon/__mocks__/folder-cycles.json",
+    "report-json/anon/__mocks__/folders.json",
+    "report-json/anon/__mocks__/reaches-report.json",
+    "report-json/anon/__mocks__/src-report-wordlist.json",
+    "report-json/anon/__mocks__/src-report.json",
+    "report-json/azure-devops/__mocks__/errors-and-known-violations.json",
+    "report-json/azure-devops/__mocks__/known-violations.json",
+    "report-json/d2/__mocks__/20-real-world-sample.json",
+    "report-json/error-html/__mocks__/orphans-cycles-metrics.json",
+    "report-json/error/__mocks__/environment-issues-no-violations.json",
+    "report-json/error/__mocks__/environment-issues-violations.json",
+    "report-json/markdown/__mocks__/orphans-cycles-metrics.json",
+    "report-json/metrics/__mocks/cruise-result-with-metrics-for-modules-and-folders.json",
+    "report-json/teamcity/__mocks__/known-violations.json",
+    "report-json/text/__mocks__/cruise-result-with-focus.json",
+    "report-json/text/__mocks__/dependencies.json",
+    "report/baseline/__mocks__/dc-result-no-violations.json",
+    "report/dot/module-level/__mocks__/bunch-of-modules.json",
+    "report/dot/module-level/__mocks__/dependency-cruiser-2022-07-17-focus-me.json",
+    "report/dot/module-level/__mocks__/orphan-deps.json",
+    "report/dot/module-level/__mocks__/prefix-non-uri.json",
+    "report/dot/module-level/__mocks__/prefix-uri.json",
+    "report/mermaid/__mocks__/orphan-deps.json",
+    "report/mermaid/__mocks__/unknown-deps.json",
+    "report/mermaid/__mocks__/with-focus.json"
+  ],
+  "invalid": [
+    {
+      "file": "report-json/azure-devops/__mocks__/circular-deps.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report-json/azure-devops/__mocks__/everything-fine.json",
+      "reason": "/summary/optionsUsed/args must be string"
+    },
+    {
+      "file": "report-json/azure-devops/__mocks__/instabilities.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report-json/azure-devops/__mocks__/module-errors.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/azure-devops/__mocks__/required-errors.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/azure-devops/__mocks__/there-are-errors.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report-json/azure-devops/__mocks__/there-are-warnings.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report-json/azure-devops/__mocks__/unsupported-severity.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/azure-devops/__mocks__/via-deps.json",
+      "reason": "/modules/4/reachable/0 must have required property 'matchedFrom'"
+    },
+    {
+      "file": "report-json/csv/__mocks__/cjs-no-dependency-valid.json",
+      "reason": "/modules/0 must have required property 'valid'"
+    },
+    {
+      "file": "report-json/d2/__mocks__/00-empty.json",
+      "reason": "/summary must have required property 'violations'"
+    },
+    {
+      "file": "report-json/d2/__mocks__/01-one-module-no-dependencies.json",
+      "reason": "/modules/0 must have required property 'valid'"
+    },
+    {
+      "file": "report-json/d2/__mocks__/02-one-module-invalid-error.json",
+      "reason": "/modules/0/rules/0 must NOT have additional properties"
+    },
+    {
+      "file": "report-json/d2/__mocks__/03-one-module-invalid-info-and-warning.json",
+      "reason": "/modules/0/rules/0 must NOT have additional properties"
+    },
+    {
+      "file": "report-json/d2/__mocks__/04-one-module-invalid-weird-severity.json",
+      "reason": "/modules/0/rules/0 must NOT have additional properties"
+    },
+    {
+      "file": "report-json/d2/__mocks__/05-one-module-in-root.json",
+      "reason": "/summary must have required property 'violations'"
+    },
+    {
+      "file": "report-json/d2/__mocks__/06-one-module-npm.json",
+      "reason": "/summary must have required property 'violations'"
+    },
+    {
+      "file": "report-json/d2/__mocks__/07-one-module-matches-highlight.json",
+      "reason": "/summary must have required property 'violations'"
+    },
+    {
+      "file": "report-json/d2/__mocks__/08-one-module-is-consolidated-and-node-module.json",
+      "reason": "/summary must have required property 'violations'"
+    },
+    {
+      "file": "report-json/d2/__mocks__/10-one-dependency.json",
+      "reason": "/modules/0 must have required property 'valid'"
+    },
+    {
+      "file": "report-json/d2/__mocks__/11-one-dependency-invalid.json",
+      "reason": "/modules/0 must have required property 'valid'"
+    },
+    {
+      "file": "report-json/d2/__mocks__/12-one-dependency-invalid-with-weird-severity.json",
+      "reason": "/modules/0 must have required property 'valid'"
+    },
+    {
+      "file": "report-json/d2/__mocks__/13-one-dependency-cycle-invalid.json",
+      "reason": "/modules/0 must have required property 'valid'"
+    },
+    {
+      "file": "report-json/d2/__mocks__/14-one-dependency-cycle-valid.json",
+      "reason": "/modules/0 must have required property 'valid'"
+    },
+    {
+      "file": "report-json/d2/__mocks__/15-one-dependency-dynamic.json",
+      "reason": "/modules/0 must have required property 'valid'"
+    },
+    {
+      "file": "report-json/d2/__mocks__/16-one-dependency-dynamic-invalid.json",
+      "reason": "/modules/0 must have required property 'valid'"
+    },
+    {
+      "file": "report-json/error-html/__mocks__/everything-fine.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/error-html/__mocks__/via-deps.json",
+      "reason": "/modules/4/reachable/0 must have required property 'matchedFrom'"
+    },
+    {
+      "file": "report-json/error-html/__mocks__/violation-more-than-once-with-an-ignore.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/error-html/__mocks__/violation-more-than-once.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/error/__mocks__/circular-deps.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report-json/error/__mocks__/cjs-no-dependency-valid.json",
+      "reason": "/modules/0 must have required property 'valid'"
+    },
+    {
+      "file": "report-json/error/__mocks__/err-only-warnings.json",
+      "reason": "/summary/environment must have required property 'version'"
+    },
+    {
+      "file": "report-json/error/__mocks__/err-with-additional-information.json",
+      "reason": "/summary/environment must have required property 'version'"
+    },
+    {
+      "file": "report-json/error/__mocks__/everything-fine.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/error/__mocks__/ignored-and-real-violations.json",
+      "reason": "/summary/environment must have required property 'version'"
+    },
+    {
+      "file": "report-json/error/__mocks__/ignored-violations.json",
+      "reason": "/summary/environment must have required property 'version'"
+    },
+    {
+      "file": "report-json/error/__mocks__/missing-violation-type.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report-json/error/__mocks__/orphan-deps.json",
+      "reason": "/summary/environment must have required property 'version'"
+    },
+    {
+      "file": "report-json/error/__mocks__/sdp-errors.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report-json/error/__mocks__/unknown-violation-type.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report-json/error/__mocks__/unresolved-violations.json",
+      "reason": "/summary must have required property 'optionsUsed'"
+    },
+    {
+      "file": "report-json/error/__mocks__/via-deps.json",
+      "reason": "/modules/4/reachable/0 must have required property 'matchedFrom'"
+    },
+    {
+      "file": "report-json/error/__mocks__/violation-more-than-once.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/html/__mocks__/cjs-no-dependency-valid.json",
+      "reason": "/modules/0 must have required property 'valid'"
+    },
+    {
+      "file": "report-json/markdown/__mocks__/everything-fine.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/markdown/__mocks__/unresolved-violations.json",
+      "reason": "/summary must have required property 'optionsUsed'"
+    },
+    {
+      "file": "report-json/markdown/__mocks__/violation-more-than-once-with-an-ignore.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/markdown/__mocks__/violation-more-than-once.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/teamcity/__mocks__/circular-deps.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report-json/teamcity/__mocks__/everything-fine.json",
+      "reason": "/summary/optionsUsed/args must be string"
+    },
+    {
+      "file": "report-json/teamcity/__mocks__/instabilities.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report-json/teamcity/__mocks__/module-errors.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/teamcity/__mocks__/required-errors.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/teamcity/__mocks__/unsupported-severity.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report-json/teamcity/__mocks__/via-deps.json",
+      "reason": "/modules/4/reachable/0 must have required property 'matchedFrom'"
+    },
+    {
+      "file": "report-json/utl/__mocks__/more-violations.json",
+      "reason": "/modules/0 must have required property 'valid'"
+    },
+    {
+      "file": "report-json/utl/__mocks__/one-violation.json",
+      "reason": "/modules/0 must have required property 'valid'"
+    },
+    {
+      "file": "report/baseline/__mocks__/dc-result-with-violations.json",
+      "reason": "/summary/ignore must be number"
+    },
+    {
+      "file": "report/dot/custom-level/__mocks__/dependency-cruiser-2020-01-25.json",
+      "reason": "/modules/1/reachable/0 must have required property 'matchedFrom'"
+    },
+    {
+      "file": "report/dot/custom-level/__mocks__/orphans.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report/dot/custom-level/__mocks__/rxjs.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report/dot/flat-level/__mocks__/dependency-cruiser-2020-01-25.json",
+      "reason": "/modules/1/reachable/0 must have required property 'matchedFrom'"
+    },
+    {
+      "file": "report/dot/flat-level/__mocks__/dependency-cruiser-collapsed-src-utl-2020-01-25.json",
+      "reason": "/modules/1/reachable/0 must have required property 'matchedFrom'"
+    },
+    {
+      "file": "report/dot/flat-level/__mocks__/orphans.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report/dot/flat-level/__mocks__/rxjs.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report/dot/folder-level/__mocks__/dependency-cruiser-2019-01-14.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report/dot/folder-level/__mocks__/orphans.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report/dot/folder-level/__mocks__/rxjs.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report/dot/module-level/__mocks__/clusterless.json",
+      "reason": "/modules/2/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report/dot/module-level/__mocks__/do-not-follow-deps.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report/dot/module-level/__mocks__/es6-unresolvable-deps.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report/mermaid/__mocks__/clusterless.json",
+      "reason": "/modules/2/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report/mermaid/__mocks__/collapsed.json",
+      "reason": "/summary/optionsUsed/cache must be boolean"
+    },
+    {
+      "file": "report/mermaid/__mocks__/contains-strings-to-be-escaped.json",
+      "reason": "/summary must have required property 'error'"
+    },
+    {
+      "file": "report/mermaid/__mocks__/dependency-cruiser-2019-01-14.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'exoticallyRequired'"
+    },
+    {
+      "file": "report/mermaid/__mocks__/do-not-follow-deps.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    },
+    {
+      "file": "report/mermaid/__mocks__/es6-unresolvable-deps.json",
+      "reason": "/modules/0/dependencies/0 must have required property 'circular'"
+    }
+  ]
+}

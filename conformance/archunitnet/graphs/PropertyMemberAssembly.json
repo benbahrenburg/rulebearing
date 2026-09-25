@@ -1,0 +1,3758 @@
+{
+  "modules": [
+    {
+      "source": "System.Runtime",
+      "dependencies": [],
+      "valid": true,
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "framework"
+      ],
+      "language": "dotnet"
+    },
+    {
+      "source": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+      "dependencies": [
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 5,
+          "dependencyKind": "inherits"
+        },
+        {
+          "module": "System.String",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 40,
+          "dependencyKind": "field"
+        },
+        {
+          "module": "System.String",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 5,
+          "dependencyKind": "signature"
+        },
+        {
+          "module": "System.Object",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 5,
+          "column": 52,
+          "dependencyKind": "body",
+          "member": "System.Object..ctor"
+        },
+        {
+          "module": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 5,
+          "column": 38,
+          "dependencyKind": "attribute"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "PropertyMemberAssembly.dll",
+      "namespaces": [
+        "PropertyMemberNamespace"
+      ],
+      "attribution": "pdb"
+    }
+  ],
+  "summary": {
+    "violations": [],
+    "error": 0,
+    "warn": 0,
+    "info": 0,
+    "totalCruised": 0,
+    "optionsUsed": {}
+  },
+  "code": {
+    "types": [
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithGetOnlyProperty",
+        "name": "ClassWithGetOnlyProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 20,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithGetOnlyProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithGetOnlyProperty",
+            "kind": "body",
+            "member": "<GetOnlyProperty>k__BackingField",
+            "line": 20
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 20
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 20
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 20
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 20
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithInitOnlyProperty",
+        "name": "ClassWithInitOnlyProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 15,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithInitOnlyProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithInitOnlyProperty",
+            "kind": "body",
+            "member": "<InitOnlyProperty>k__BackingField",
+            "line": 15
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 15
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 15
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 15
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 15
+          },
+          {
+            "target": "System.Void",
+            "kind": "signature",
+            "line": 15
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithInternalGetterProperty",
+        "name": "ClassWithInternalGetterProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 60,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithInternalGetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithInternalGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithInternalGetter>k__BackingField",
+            "line": 60
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 60
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 60
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 60
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 60
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithInternalSetterProperty",
+        "name": "ClassWithInternalSetterProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 85,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithInternalSetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithInternalSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithInternalSetter>k__BackingField",
+            "line": 85
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 85
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 85
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 85
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 85
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithNonVirtualProperty",
+        "name": "ClassWithNonVirtualProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 35,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithNonVirtualProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithNonVirtualProperty",
+            "kind": "body",
+            "member": "<NonVirtualProperty>k__BackingField",
+            "line": 35
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 35
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 35
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 35
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 35
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithPrivateGetterProperty",
+        "name": "ClassWithPrivateGetterProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 50,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithPrivateGetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateGetter>k__BackingField",
+            "line": 50
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 50
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 50
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 50
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 50
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty",
+        "name": "ClassWithPrivateProtectedGetterProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 70,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateProtectedGetter>k__BackingField",
+            "line": 70
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 70
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 70
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 70
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 70
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty",
+        "name": "ClassWithPrivateProtectedSetterProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 95,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateProtectedSetter>k__BackingField",
+            "line": 95
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 95
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 95
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 95
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 95
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithPrivateSetterProperty",
+        "name": "ClassWithPrivateSetterProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 75,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithPrivateSetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateSetter>k__BackingField",
+            "line": 75
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 75
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 75
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 75
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 75
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithProtectedGetterProperty",
+        "name": "ClassWithProtectedGetterProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 55,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithProtectedGetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedGetter>k__BackingField",
+            "line": 55
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 55
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 55
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 55
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 55
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty",
+        "name": "ClassWithProtectedInternalGetterProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 65,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedInternalGetter>k__BackingField",
+            "line": 65
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 65
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 65
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 65
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 65
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty",
+        "name": "ClassWithProtectedInternalSetterProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 90,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedInternalSetter>k__BackingField",
+            "line": 90
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 90
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 90
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 90
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 90
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithProtectedSetterProperty",
+        "name": "ClassWithProtectedSetterProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 80,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithProtectedSetterProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedSetter>k__BackingField",
+            "line": 80
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 80
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 80
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 80
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 80
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithVirtualProperty",
+        "name": "ClassWithVirtualProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 25,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithVirtualProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithVirtualProperty",
+            "kind": "body",
+            "member": "<VirtualProperty>k__BackingField",
+            "line": 25
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 25
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 25
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 25
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 25
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithWritableProperty",
+        "name": "ClassWithWritableProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 5,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithWritableProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithWritableProperty",
+            "kind": "body",
+            "member": "<WritableProperty>k__BackingField",
+            "line": 5
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 5
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 5
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 5
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 5
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.ClassWithWriteOnlyProperty",
+        "name": "ClassWithWriteOnlyProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 40,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.ClassWithWriteOnlyProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithWriteOnlyProperty",
+            "kind": "body",
+            "member": "_writeOnlyField",
+            "line": 40
+          },
+          {
+            "target": "PropertyMemberNamespace.ClassWithWriteOnlyProperty",
+            "kind": "body",
+            "member": "_writeOnlyField",
+            "line": 44
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 40
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 40
+          },
+          {
+            "target": "System.String",
+            "kind": "field",
+            "line": 40
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 40
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 44
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.OtherClassWithVirtualProperty",
+        "name": "OtherClassWithVirtualProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 30,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.OtherClassWithVirtualProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.OtherClassWithVirtualProperty",
+            "kind": "body",
+            "member": "<OtherVirtualProperty>k__BackingField",
+            "line": 30
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 30
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 30
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 30
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 30
+          }
+        ]
+      },
+      {
+        "fullName": "PropertyMemberNamespace.OtherClassWithWritableProperty",
+        "name": "OtherClassWithWritableProperty",
+        "namespace": "PropertyMemberNamespace",
+        "kind": "class",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 10,
+        "attribution": "pdb",
+        "assembly": "PropertyMemberAssembly",
+        "visibility": "public",
+        "sealed": false,
+        "abstract": false,
+        "static": false,
+        "record": false,
+        "nested": false,
+        "generic": false,
+        "baseType": "System.Object",
+        "baseTypes": [
+          "System.Object"
+        ],
+        "valueType": false,
+        "assemblyQualifiedName": "PropertyMemberNamespace.OtherClassWithWritableProperty, PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "assemblyFullName": "PropertyMemberAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=015ff5fd0dc0bfa4",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.OtherClassWithWritableProperty",
+            "kind": "body",
+            "member": "<OtherWritableProperty>k__BackingField",
+            "line": 10
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 10
+          },
+          {
+            "target": "System.Object",
+            "kind": "inherits",
+            "line": 10
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 10
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 10
+          }
+        ]
+      },
+      {
+        "fullName": "System.Object",
+        "name": "Object",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "name": "CompilerGeneratedAttribute",
+        "namespace": "System.Runtime.CompilerServices",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.String",
+        "name": "String",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Void",
+        "name": "Void",
+        "namespace": "System",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "referenced": true
+      }
+    ],
+    "members": [
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithGetOnlyProperty",
+        "name": "GetOnlyProperty",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 20,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": true,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithGetOnlyProperty::GetOnlyProperty()",
+        "getter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 20
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithGetOnlyProperty",
+        "name": "get_GetOnlyProperty()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 20,
+        "column": 37,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithGetOnlyProperty::get_GetOnlyProperty()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithGetOnlyProperty",
+            "kind": "body",
+            "member": "<GetOnlyProperty>k__BackingField",
+            "line": 20
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 20
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 20
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithGetOnlyProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 20,
+        "column": 46,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithGetOnlyProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithGetOnlyProperty",
+            "kind": "body",
+            "member": "<GetOnlyProperty>k__BackingField",
+            "line": 20
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 20
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithInitOnlyProperty",
+        "name": "InitOnlyProperty",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 15,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithInitOnlyProperty::InitOnlyProperty()",
+        "getter": {
+          "visibility": "public"
+        },
+        "initSetter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 15
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithInitOnlyProperty",
+        "name": "get_InitOnlyProperty()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 15,
+        "column": 38,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithInitOnlyProperty::get_InitOnlyProperty()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithInitOnlyProperty",
+            "kind": "body",
+            "member": "<InitOnlyProperty>k__BackingField",
+            "line": 15
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 15
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 15
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithInitOnlyProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 15,
+        "column": 53,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithInitOnlyProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithInitOnlyProperty",
+            "kind": "body",
+            "member": "<InitOnlyProperty>k__BackingField",
+            "line": 15
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 15
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithInitOnlyProperty",
+        "name": "set_InitOnlyProperty(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 15,
+        "column": 43,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit) PropertyMemberNamespace.ClassWithInitOnlyProperty::set_InitOnlyProperty(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithInitOnlyProperty",
+            "kind": "body",
+            "member": "<InitOnlyProperty>k__BackingField",
+            "line": 15
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 15
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 15
+          },
+          {
+            "target": "System.Void",
+            "kind": "signature",
+            "line": 15
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithInternalGetterProperty",
+        "name": "PropertyWithInternalGetter",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 60,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithInternalGetterProperty::PropertyWithInternalGetter()",
+        "getter": {
+          "visibility": "internal"
+        },
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 60
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithInternalGetterProperty",
+        "name": "get_PropertyWithInternalGetter()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 60,
+        "column": 48,
+        "visibility": "internal",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithInternalGetterProperty::get_PropertyWithInternalGetter()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithInternalGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithInternalGetter>k__BackingField",
+            "line": 60
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 60
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 60
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithInternalGetterProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 60,
+        "column": 71,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithInternalGetterProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithInternalGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithInternalGetter>k__BackingField",
+            "line": 60
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 60
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithInternalGetterProperty",
+        "name": "set_PropertyWithInternalGetter(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 60,
+        "column": 62,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithInternalGetterProperty::set_PropertyWithInternalGetter(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithInternalGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithInternalGetter>k__BackingField",
+            "line": 60
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 60
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 60
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithInternalSetterProperty",
+        "name": "PropertyWithInternalSetter",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 85,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithInternalSetterProperty::PropertyWithInternalSetter()",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "internal"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 85
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithInternalSetterProperty",
+        "name": "get_PropertyWithInternalSetter()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 85,
+        "column": 48,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithInternalSetterProperty::get_PropertyWithInternalSetter()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithInternalSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithInternalSetter>k__BackingField",
+            "line": 85
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 85
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 85
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithInternalSetterProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 85,
+        "column": 71,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithInternalSetterProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithInternalSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithInternalSetter>k__BackingField",
+            "line": 85
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 85
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithInternalSetterProperty",
+        "name": "set_PropertyWithInternalSetter(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 85,
+        "column": 53,
+        "visibility": "internal",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithInternalSetterProperty::set_PropertyWithInternalSetter(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithInternalSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithInternalSetter>k__BackingField",
+            "line": 85
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 85
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 85
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithNonVirtualProperty",
+        "name": "NonVirtualProperty",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 35,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithNonVirtualProperty::NonVirtualProperty()",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 35
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithNonVirtualProperty",
+        "name": "get_NonVirtualProperty()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 35,
+        "column": 40,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithNonVirtualProperty::get_NonVirtualProperty()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithNonVirtualProperty",
+            "kind": "body",
+            "member": "<NonVirtualProperty>k__BackingField",
+            "line": 35
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 35
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 35
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithNonVirtualProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 35,
+        "column": 54,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithNonVirtualProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithNonVirtualProperty",
+            "kind": "body",
+            "member": "<NonVirtualProperty>k__BackingField",
+            "line": 35
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 35
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithNonVirtualProperty",
+        "name": "set_NonVirtualProperty(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 35,
+        "column": 45,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithNonVirtualProperty::set_NonVirtualProperty(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithNonVirtualProperty",
+            "kind": "body",
+            "member": "<NonVirtualProperty>k__BackingField",
+            "line": 35
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 35
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 35
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateGetterProperty",
+        "name": "PropertyWithPrivateGetter",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 50,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithPrivateGetterProperty::PropertyWithPrivateGetter()",
+        "getter": {
+          "visibility": "private"
+        },
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 50
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateGetterProperty",
+        "name": "get_PropertyWithPrivateGetter()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 50,
+        "column": 47,
+        "visibility": "private",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithPrivateGetterProperty::get_PropertyWithPrivateGetter()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateGetter>k__BackingField",
+            "line": 50
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 50
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 50
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateGetterProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 50,
+        "column": 69,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithPrivateGetterProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateGetter>k__BackingField",
+            "line": 50
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 50
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateGetterProperty",
+        "name": "set_PropertyWithPrivateGetter(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 50,
+        "column": 60,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithPrivateGetterProperty::set_PropertyWithPrivateGetter(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateGetter>k__BackingField",
+            "line": 50
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 50
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 50
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty",
+        "name": "PropertyWithPrivateProtectedGetter",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 70,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty::PropertyWithPrivateProtectedGetter()",
+        "getter": {
+          "visibility": "private-protected"
+        },
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 70
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty",
+        "name": "get_PropertyWithPrivateProtectedGetter()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 70,
+        "column": 56,
+        "visibility": "private-protected",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty::get_PropertyWithPrivateProtectedGetter()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateProtectedGetter>k__BackingField",
+            "line": 70
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 70
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 70
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 70,
+        "column": 88,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateProtectedGetter>k__BackingField",
+            "line": 70
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 70
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty",
+        "name": "set_PropertyWithPrivateProtectedGetter(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 70,
+        "column": 79,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty::set_PropertyWithPrivateProtectedGetter(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateProtectedGetter>k__BackingField",
+            "line": 70
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 70
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 70
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty",
+        "name": "PropertyWithPrivateProtectedSetter",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 95,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty::PropertyWithPrivateProtectedSetter()",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "private-protected"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 95
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty",
+        "name": "get_PropertyWithPrivateProtectedSetter()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 95,
+        "column": 56,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty::get_PropertyWithPrivateProtectedSetter()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateProtectedSetter>k__BackingField",
+            "line": 95
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 95
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 95
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 95,
+        "column": 88,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateProtectedSetter>k__BackingField",
+            "line": 95
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 95
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty",
+        "name": "set_PropertyWithPrivateProtectedSetter(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 95,
+        "column": 61,
+        "visibility": "private-protected",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty::set_PropertyWithPrivateProtectedSetter(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateProtectedSetter>k__BackingField",
+            "line": 95
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 95
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 95
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateSetterProperty",
+        "name": "PropertyWithPrivateSetter",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 75,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithPrivateSetterProperty::PropertyWithPrivateSetter()",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "private"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 75
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateSetterProperty",
+        "name": "get_PropertyWithPrivateSetter()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 75,
+        "column": 47,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithPrivateSetterProperty::get_PropertyWithPrivateSetter()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateSetter>k__BackingField",
+            "line": 75
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 75
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 75
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateSetterProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 75,
+        "column": 69,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithPrivateSetterProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateSetter>k__BackingField",
+            "line": 75
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 75
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithPrivateSetterProperty",
+        "name": "set_PropertyWithPrivateSetter(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 75,
+        "column": 52,
+        "visibility": "private",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithPrivateSetterProperty::set_PropertyWithPrivateSetter(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithPrivateSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithPrivateSetter>k__BackingField",
+            "line": 75
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 75
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 75
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedGetterProperty",
+        "name": "PropertyWithProtectedGetter",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 55,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithProtectedGetterProperty::PropertyWithProtectedGetter()",
+        "getter": {
+          "visibility": "protected"
+        },
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 55
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedGetterProperty",
+        "name": "get_PropertyWithProtectedGetter()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 55,
+        "column": 49,
+        "visibility": "protected",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithProtectedGetterProperty::get_PropertyWithProtectedGetter()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedGetter>k__BackingField",
+            "line": 55
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 55
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 55
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedGetterProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 55,
+        "column": 73,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithProtectedGetterProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedGetter>k__BackingField",
+            "line": 55
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 55
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedGetterProperty",
+        "name": "set_PropertyWithProtectedGetter(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 55,
+        "column": 64,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithProtectedGetterProperty::set_PropertyWithProtectedGetter(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedGetter>k__BackingField",
+            "line": 55
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 55
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 55
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty",
+        "name": "PropertyWithProtectedInternalGetter",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 65,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty::PropertyWithProtectedInternalGetter()",
+        "getter": {
+          "visibility": "protected-internal"
+        },
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 65
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty",
+        "name": "get_PropertyWithProtectedInternalGetter()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 65,
+        "column": 57,
+        "visibility": "protected-internal",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty::get_PropertyWithProtectedInternalGetter()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedInternalGetter>k__BackingField",
+            "line": 65
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 65
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 65
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 65,
+        "column": 90,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedInternalGetter>k__BackingField",
+            "line": 65
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 65
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty",
+        "name": "set_PropertyWithProtectedInternalGetter(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 65,
+        "column": 81,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty::set_PropertyWithProtectedInternalGetter(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedInternalGetter>k__BackingField",
+            "line": 65
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 65
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 65
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty",
+        "name": "PropertyWithProtectedInternalSetter",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 90,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty::PropertyWithProtectedInternalSetter()",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "protected-internal"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 90
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty",
+        "name": "get_PropertyWithProtectedInternalSetter()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 90,
+        "column": 57,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty::get_PropertyWithProtectedInternalSetter()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedInternalSetter>k__BackingField",
+            "line": 90
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 90
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 90
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 90,
+        "column": 90,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedInternalSetter>k__BackingField",
+            "line": 90
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 90
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty",
+        "name": "set_PropertyWithProtectedInternalSetter(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 90,
+        "column": 62,
+        "visibility": "protected-internal",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty::set_PropertyWithProtectedInternalSetter(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedInternalSetter>k__BackingField",
+            "line": 90
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 90
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 90
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedSetterProperty",
+        "name": "PropertyWithProtectedSetter",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 80,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithProtectedSetterProperty::PropertyWithProtectedSetter()",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "protected"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 80
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedSetterProperty",
+        "name": "get_PropertyWithProtectedSetter()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 80,
+        "column": 49,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithProtectedSetterProperty::get_PropertyWithProtectedSetter()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedSetter>k__BackingField",
+            "line": 80
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 80
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 80
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedSetterProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 80,
+        "column": 73,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithProtectedSetterProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedSetter>k__BackingField",
+            "line": 80
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 80
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithProtectedSetterProperty",
+        "name": "set_PropertyWithProtectedSetter(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 80,
+        "column": 54,
+        "visibility": "protected",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithProtectedSetterProperty::set_PropertyWithProtectedSetter(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithProtectedSetterProperty",
+            "kind": "body",
+            "member": "<PropertyWithProtectedSetter>k__BackingField",
+            "line": 80
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 80
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 80
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithVirtualProperty",
+        "name": "VirtualProperty",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 25,
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithVirtualProperty::VirtualProperty()",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 25
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithVirtualProperty",
+        "name": "get_VirtualProperty()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 25,
+        "column": 45,
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithVirtualProperty::get_VirtualProperty()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithVirtualProperty",
+            "kind": "body",
+            "member": "<VirtualProperty>k__BackingField",
+            "line": 25
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 25
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 25
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithVirtualProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 25,
+        "column": 59,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithVirtualProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithVirtualProperty",
+            "kind": "body",
+            "member": "<VirtualProperty>k__BackingField",
+            "line": 25
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 25
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithVirtualProperty",
+        "name": "set_VirtualProperty(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 25,
+        "column": 50,
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithVirtualProperty::set_VirtualProperty(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithVirtualProperty",
+            "kind": "body",
+            "member": "<VirtualProperty>k__BackingField",
+            "line": 25
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 25
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 25
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithWritableProperty",
+        "name": "WritableProperty",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 5,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithWritableProperty::WritableProperty()",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 5
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithWritableProperty",
+        "name": "get_WritableProperty()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 5,
+        "column": 38,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithWritableProperty::get_WritableProperty()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithWritableProperty",
+            "kind": "body",
+            "member": "<WritableProperty>k__BackingField",
+            "line": 5
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 5
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 5
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithWritableProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 5,
+        "column": 52,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithWritableProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithWritableProperty",
+            "kind": "body",
+            "member": "<WritableProperty>k__BackingField",
+            "line": 5
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 5
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithWritableProperty",
+        "name": "set_WritableProperty(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 5,
+        "column": 43,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithWritableProperty::set_WritableProperty(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithWritableProperty",
+            "kind": "body",
+            "member": "<WritableProperty>k__BackingField",
+            "line": 5
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 5
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 5
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithWriteOnlyProperty",
+        "name": "WriteOnlyProperty",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 40,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithWriteOnlyProperty::WriteOnlyProperty()",
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 40
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithWriteOnlyProperty",
+        "name": "_writeOnlyField",
+        "kind": "field",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 40,
+        "visibility": "private",
+        "static": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.ClassWithWriteOnlyProperty::_writeOnlyField",
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "field",
+            "line": 40
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithWriteOnlyProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 40,
+        "column": 5,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithWriteOnlyProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithWriteOnlyProperty",
+            "kind": "body",
+            "member": "_writeOnlyField",
+            "line": 40
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 40
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.ClassWithWriteOnlyProperty",
+        "name": "set_WriteOnlyProperty(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 44,
+        "column": 16,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.ClassWithWriteOnlyProperty::set_WriteOnlyProperty(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.ClassWithWriteOnlyProperty",
+            "kind": "body",
+            "member": "_writeOnlyField",
+            "line": 44
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 44
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.OtherClassWithVirtualProperty",
+        "name": "OtherVirtualProperty",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 30,
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.OtherClassWithVirtualProperty::OtherVirtualProperty()",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 30
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.OtherClassWithVirtualProperty",
+        "name": "get_OtherVirtualProperty()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 30,
+        "column": 50,
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.OtherClassWithVirtualProperty::get_OtherVirtualProperty()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.OtherClassWithVirtualProperty",
+            "kind": "body",
+            "member": "<OtherVirtualProperty>k__BackingField",
+            "line": 30
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 30
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 30
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.OtherClassWithVirtualProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 30,
+        "column": 64,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.OtherClassWithVirtualProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.OtherClassWithVirtualProperty",
+            "kind": "body",
+            "member": "<OtherVirtualProperty>k__BackingField",
+            "line": 30
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 30
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.OtherClassWithVirtualProperty",
+        "name": "set_OtherVirtualProperty(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 30,
+        "column": 55,
+        "visibility": "public",
+        "static": false,
+        "virtual": true,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.OtherClassWithVirtualProperty::set_OtherVirtualProperty(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.OtherClassWithVirtualProperty",
+            "kind": "body",
+            "member": "<OtherVirtualProperty>k__BackingField",
+            "line": 30
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 30
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 30
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.OtherClassWithWritableProperty",
+        "name": "OtherWritableProperty",
+        "kind": "property",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 10,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "readonly": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.OtherClassWithWritableProperty::OtherWritableProperty()",
+        "getter": {
+          "visibility": "public"
+        },
+        "setter": {
+          "visibility": "public"
+        },
+        "dependencies": [
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 10
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.OtherClassWithWritableProperty",
+        "name": "get_OtherWritableProperty()",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 10,
+        "column": 43,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.String",
+        "fullName": "System.String PropertyMemberNamespace.OtherClassWithWritableProperty::get_OtherWritableProperty()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.OtherClassWithWritableProperty",
+            "kind": "body",
+            "member": "<OtherWritableProperty>k__BackingField",
+            "line": 10
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 10
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 10
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.OtherClassWithWritableProperty",
+        "name": ".ctor()",
+        "kind": "constructor",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 10,
+        "column": 57,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "fullName": "System.Void PropertyMemberNamespace.OtherClassWithWritableProperty::.ctor()",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.OtherClassWithWritableProperty",
+            "kind": "body",
+            "member": "<OtherWritableProperty>k__BackingField",
+            "line": 10
+          },
+          {
+            "target": "System.Object",
+            "kind": "body",
+            "member": ".ctor",
+            "line": 10
+          }
+        ]
+      },
+      {
+        "declaringType": "PropertyMemberNamespace.OtherClassWithWritableProperty",
+        "name": "set_OtherWritableProperty(System.String)",
+        "kind": "method",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 10,
+        "column": 48,
+        "visibility": "public",
+        "static": false,
+        "virtual": false,
+        "abstract": false,
+        "returnType": "System.Void",
+        "parameterTypes": [
+          "System.String"
+        ],
+        "fullName": "System.Void PropertyMemberNamespace.OtherClassWithWritableProperty::set_OtherWritableProperty(System.String)",
+        "dependencies": [
+          {
+            "target": "PropertyMemberNamespace.OtherClassWithWritableProperty",
+            "kind": "body",
+            "member": "<OtherWritableProperty>k__BackingField",
+            "line": 10
+          },
+          {
+            "target": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+            "kind": "attribute",
+            "line": 10
+          },
+          {
+            "target": "System.String",
+            "kind": "signature",
+            "line": 10
+          }
+        ]
+      }
+    ],
+    "attributes": [
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithGetOnlyProperty::get_GetOnlyProperty()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 20,
+        "column": 37
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithInitOnlyProperty::get_InitOnlyProperty()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 15,
+        "column": 38
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithInternalGetterProperty::get_PropertyWithInternalGetter()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 60,
+        "column": 48
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithInternalSetterProperty::get_PropertyWithInternalSetter()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 85,
+        "column": 48
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithNonVirtualProperty::get_NonVirtualProperty()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 35,
+        "column": 40
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithPrivateGetterProperty::get_PropertyWithPrivateGetter()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 50,
+        "column": 47
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty::get_PropertyWithPrivateProtectedGetter()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 70,
+        "column": 56
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty::get_PropertyWithPrivateProtectedSetter()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 95,
+        "column": 56
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithPrivateSetterProperty::get_PropertyWithPrivateSetter()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 75,
+        "column": 47
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithProtectedGetterProperty::get_PropertyWithProtectedGetter()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 55,
+        "column": 49
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty::get_PropertyWithProtectedInternalGetter()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 65,
+        "column": 57
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty::get_PropertyWithProtectedInternalSetter()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 90,
+        "column": 57
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithProtectedSetterProperty::get_PropertyWithProtectedSetter()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 80,
+        "column": 49
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithVirtualProperty::get_VirtualProperty()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 25,
+        "column": 45
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.ClassWithWritableProperty::get_WritableProperty()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 5,
+        "column": 38
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.OtherClassWithVirtualProperty::get_OtherVirtualProperty()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 30,
+        "column": 50
+      },
+      {
+        "target": "System.String PropertyMemberNamespace.OtherClassWithWritableProperty::get_OtherWritableProperty()",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 10,
+        "column": 43
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.ClassWithInternalGetterProperty::set_PropertyWithInternalGetter(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 60,
+        "column": 62
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.ClassWithInternalSetterProperty::set_PropertyWithInternalSetter(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 85,
+        "column": 53
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.ClassWithNonVirtualProperty::set_NonVirtualProperty(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 35,
+        "column": 45
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.ClassWithPrivateGetterProperty::set_PropertyWithPrivateGetter(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 50,
+        "column": 60
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty::set_PropertyWithPrivateProtectedGetter(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 70,
+        "column": 79
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty::set_PropertyWithPrivateProtectedSetter(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 95,
+        "column": 61
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.ClassWithPrivateSetterProperty::set_PropertyWithPrivateSetter(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 75,
+        "column": 52
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.ClassWithProtectedGetterProperty::set_PropertyWithProtectedGetter(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 55,
+        "column": 64
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty::set_PropertyWithProtectedInternalGetter(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 65,
+        "column": 81
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty::set_PropertyWithProtectedInternalSetter(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 90,
+        "column": 62
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.ClassWithProtectedSetterProperty::set_PropertyWithProtectedSetter(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 80,
+        "column": 54
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.ClassWithVirtualProperty::set_VirtualProperty(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 25,
+        "column": 50
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.ClassWithWritableProperty::set_WritableProperty(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 5,
+        "column": 43
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.OtherClassWithVirtualProperty::set_OtherVirtualProperty(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 30,
+        "column": 55
+      },
+      {
+        "target": "System.Void PropertyMemberNamespace.OtherClassWithWritableProperty::set_OtherWritableProperty(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 10,
+        "column": 48
+      },
+      {
+        "target": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit) PropertyMemberNamespace.ClassWithInitOnlyProperty::set_InitOnlyProperty(System.String)",
+        "attributeType": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 15,
+        "column": 43
+      }
+    ],
+    "calls": [
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithGetOnlyProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 20,
+        "column": 46
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithInitOnlyProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 15,
+        "column": 53
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithInternalGetterProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 60,
+        "column": 71
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithInternalSetterProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 85,
+        "column": 71
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithNonVirtualProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 35,
+        "column": 54
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithPrivateGetterProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 50,
+        "column": 69
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithPrivateProtectedGetterProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 70,
+        "column": 88
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithPrivateProtectedSetterProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 95,
+        "column": 88
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithPrivateSetterProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 75,
+        "column": 69
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithProtectedGetterProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 55,
+        "column": 73
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithProtectedInternalGetterProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 65,
+        "column": 90
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithProtectedInternalSetterProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 90,
+        "column": 90
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithProtectedSetterProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 80,
+        "column": 73
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithVirtualProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 25,
+        "column": 59
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithWritableProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 5,
+        "column": 52
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.ClassWithWriteOnlyProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 40,
+        "column": 5
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.OtherClassWithVirtualProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 30,
+        "column": 64
+      },
+      {
+        "from": "System.Void PropertyMemberNamespace.OtherClassWithWritableProperty::.ctor()",
+        "to": "System.Void System.Object::.ctor()",
+        "language": "dotnet",
+        "file": "TestAssemblies/PropertyMemberAssembly/PropertyMemberAssemblyClasses.cs",
+        "line": 10,
+        "column": 57
+      }
+    ]
+  }
+}

@@ -1,0 +1,1030 @@
+# Ported from ArchUnitNET 0.13.4 ArchUnitNETTests/Fluent/Syntax/Elements/MemberSyntaxElementsTests.cs by conformance/archunitnet/tools/port.py. Do not edit; rerun the tool.
+source: ArchUnitNETTests/Fluent/Syntax/Elements/MemberSyntaxElementsTests.cs
+architecture: [TypeAssembly]
+cases:
+- id: BeStaticTest#1
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be static
+  csharp: Members().That().Are(helper.StaticField).Should().BeStatic()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should: {beStatic: true}
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: BeStaticTest#2
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are static
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreStatic())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where: {areStatic: true}
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: BeStaticTest#3
+  query: Members that are "System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField" should be static
+  csharp: Members().That().Are(helper.NonStaticField).Should().BeStatic()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+    should: {beStatic: true}
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+- id: BeStaticTest#4
+  query: Members that are "System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField" should be Members that are static
+  csharp: Members().That().Are(helper.NonStaticField).Should().Be(Members().That().AreStatic())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+    should:
+      be:
+        kind: member
+        where: {areStatic: true}
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+- id: BeStaticTest#5
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" or "System.Int32 TypeNamespace.OtherClassWithStaticField::OtherStaticField" should be static
+  csharp: Members().That().Are(helper.StaticField, helper.OtherStaticField).Should().BeStatic()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField', 'System.Int32 TypeNamespace.OtherClassWithStaticField::OtherStaticField']
+    should: {beStatic: true}
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField', 'System.Int32 TypeNamespace.OtherClassWithStaticField::OtherStaticField']
+    fail: []
+- id: BeStaticTest#6
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" or "System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField" should be static
+  csharp: Members().That().Are(helper.StaticField, helper.NonStaticField).Should().BeStatic()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField', 'System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+    should: {beStatic: true}
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+- id: NotBeStaticTest#1
+  query: Members that are "System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField" should not be static
+  csharp: Members().That().Are(helper.NonStaticField).Should().NotBeStatic()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+    should: {notBeStatic: true}
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+    fail: []
+- id: NotBeStaticTest#2
+  query: Members that are "System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField" should be Members that are not static
+  csharp: Members().That().Are(helper.NonStaticField).Should().Be(Members().That().AreNotStatic())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+    should:
+      be:
+        kind: member
+        where: {areNotStatic: true}
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+    fail: []
+- id: NotBeStaticTest#3
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should not be static
+  csharp: Members().That().Are(helper.StaticField).Should().NotBeStatic()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should: {notBeStatic: true}
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: NotBeStaticTest#4
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are not static
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreNotStatic())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where: {areNotStatic: true}
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: NotBeStaticTest#5
+  query: Members that are "System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField" or "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" should not be static
+  csharp: Members().That().Are(helper.NonStaticField, helper.ReadOnlyField).Should().NotBeStatic()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField', 'System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    should: {notBeStatic: true}
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField', 'System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    fail: []
+- id: NotBeStaticTest#6
+  query: Members that are "System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField" or "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should not be static
+  csharp: Members().That().Are(helper.NonStaticField, helper.StaticField).Should().NotBeStatic()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField', 'System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should: {notBeStatic: true}
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: BeReadOnlyTest#1
+  query: Members that are "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" should be read only
+  csharp: Members().That().Are(helper.ReadOnlyField).Should().BeReadOnly()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    should: {beReadOnly: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    fail: []
+- id: BeReadOnlyTest#2
+  query: Members that are "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" should be Members that are read only
+  csharp: Members().That().Are(helper.ReadOnlyField).Should().Be(Members().That().AreReadOnly())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    should:
+      be:
+        kind: member
+        where: {areReadOnly: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    fail: []
+- id: BeReadOnlyTest#3
+  query: Members that are "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" should be read only
+  csharp: Members().That().Are(helper.WritableProperty).Should().BeReadOnly()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    should: {beReadOnly: true}
+  expect:
+    pass: []
+    fail: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+- id: BeReadOnlyTest#4
+  query: Members that are "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" should be Members that are read only
+  csharp: Members().That().Are(helper.WritableProperty).Should().Be(Members().That().AreReadOnly())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    should:
+      be:
+        kind: member
+        where: {areReadOnly: true}
+  expect:
+    pass: []
+    fail: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+- id: BeReadOnlyTest#5
+  query: Members that are "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" or "System.String TypeNamespace.ClassWithGetOnlyProperty::GetOnlyProperty()" should be read only
+  csharp: Members().That().Are(helper.ReadOnlyField, helper.GetOnlyProperty).Should().BeReadOnly()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField', 'System.String TypeNamespace.ClassWithGetOnlyProperty::GetOnlyProperty()']
+    should: {beReadOnly: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithGetOnlyProperty::GetOnlyProperty()', 'System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    fail: []
+- id: BeReadOnlyTest#6
+  query: Members that are "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" or "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" should be read only
+  csharp: Members().That().Are(helper.ReadOnlyField, helper.WritableProperty).Should().BeReadOnly()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField', 'System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    should: {beReadOnly: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    fail: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+- id: NotBeReadOnlyTest#1
+  query: Members that are "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" should not be read only
+  csharp: Members().That().Are(helper.WritableProperty).Should().NotBeReadOnly()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    should: {notBeReadOnly: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    fail: []
+- id: NotBeReadOnlyTest#2
+  query: Members that are "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" should be Members that are not read only
+  csharp: Members().That().Are(helper.WritableProperty).Should().Be(Members().That().AreNotReadOnly())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    should:
+      be:
+        kind: member
+        where: {areNotReadOnly: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    fail: []
+- id: NotBeReadOnlyTest#3
+  query: Members that are "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" should not be read only
+  csharp: Members().That().Are(helper.ReadOnlyField).Should().NotBeReadOnly()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    should: {notBeReadOnly: true}
+  expect:
+    pass: []
+    fail: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+- id: NotBeReadOnlyTest#4
+  query: Members that are "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" should be Members that are not read only
+  csharp: Members().That().Are(helper.ReadOnlyField).Should().Be(Members().That().AreNotReadOnly())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    should:
+      be:
+        kind: member
+        where: {areNotReadOnly: true}
+  expect:
+    pass: []
+    fail: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+- id: NotBeReadOnlyTest#5
+  query: Members that are "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" or "System.String TypeNamespace.ClassWithInitOnlyProperty::InitOnly... should not be read only
+  csharp: Members().That().Are(helper.WritableProperty, helper.InitOnlyProperty).Should().NotBeReadOnly()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()', 'System.String TypeNamespace.ClassWithInitOnlyProperty::InitOnlyProperty()']
+    should: {notBeReadOnly: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithInitOnlyProperty::InitOnlyProperty()', 'System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    fail: []
+- id: NotBeReadOnlyTest#6
+  query: Members that are "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" or "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" should not be read only
+  csharp: Members().That().Are(helper.WritableProperty, helper.ReadOnlyField).Should().NotBeReadOnly()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()', 'System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    should: {notBeReadOnly: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    fail: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+- id: BeImmutableTest#1
+  query: Members that are "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" should be immutable
+  csharp: Members().That().Are(helper.ReadOnlyField).Should().BeImmutable()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    should: {beImmutable: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    fail: []
+- id: BeImmutableTest#2
+  query: Members that are "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" should be Members that are immutable
+  csharp: Members().That().Are(helper.ReadOnlyField).Should().Be(Members().That().AreImmutable())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    should:
+      be:
+        kind: member
+        where: {areImmutable: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    fail: []
+- id: BeImmutableTest#3
+  query: Members that are "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" should be immutable
+  csharp: Members().That().Are(helper.WritableProperty).Should().BeImmutable()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    should: {beImmutable: true}
+  expect:
+    pass: []
+    fail: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+- id: BeImmutableTest#4
+  query: Members that are "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" should be Members that are immutable
+  csharp: Members().That().Are(helper.WritableProperty).Should().Be(Members().That().AreImmutable())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    should:
+      be:
+        kind: member
+        where: {areImmutable: true}
+  expect:
+    pass: []
+    fail: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+- id: BeImmutableTest#5
+  query: Members that are "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" or "System.String TypeNamespace.ClassWithGetOnlyProperty::GetOnlyProperty()" should be immutable
+  csharp: Members().That().Are(helper.ReadOnlyField, helper.GetOnlyProperty).Should().BeImmutable()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField', 'System.String TypeNamespace.ClassWithGetOnlyProperty::GetOnlyProperty()']
+    should: {beImmutable: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithGetOnlyProperty::GetOnlyProperty()', 'System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    fail: []
+- id: BeImmutableTest#6
+  query: Members that are "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" or "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" should be immutable
+  csharp: Members().That().Are(helper.ReadOnlyField, helper.WritableProperty).Should().BeImmutable()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField', 'System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    should: {beImmutable: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    fail: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+- id: NotBeImmutableTest#1
+  query: Members that are "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" should not be immutable
+  csharp: Members().That().Are(helper.WritableProperty).Should().NotBeImmutable()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    should: {notBeImmutable: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    fail: []
+- id: NotBeImmutableTest#2
+  query: Members that are "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" should be Members that are not immutable
+  csharp: Members().That().Are(helper.WritableProperty).Should().Be(Members().That().AreNotImmutable())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    should:
+      be:
+        kind: member
+        where: {areNotImmutable: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    fail: []
+- id: NotBeImmutableTest#3
+  query: Members that are "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" should not be immutable
+  csharp: Members().That().Are(helper.ReadOnlyField).Should().NotBeImmutable()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    should: {notBeImmutable: true}
+  expect:
+    pass: []
+    fail: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+- id: NotBeImmutableTest#4
+  query: Members that are "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" should be Members that are not immutable
+  csharp: Members().That().Are(helper.ReadOnlyField).Should().Be(Members().That().AreNotImmutable())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    should:
+      be:
+        kind: member
+        where: {areNotImmutable: true}
+  expect:
+    pass: []
+    fail: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+- id: NotBeImmutableTest#5
+  query: Members that are "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" or "System.String TypeNamespace.OtherClassWithWritableProperty::Oth... should not be immutable
+  csharp: Members().That().Are(helper.WritableProperty, helper.OtherWritableProperty).Should().NotBeImmutable()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()', 'System.String TypeNamespace.OtherClassWithWritableProperty::OtherWritableProperty()']
+    should: {notBeImmutable: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()', 'System.String TypeNamespace.OtherClassWithWritableProperty::OtherWritableProperty()']
+    fail: []
+- id: NotBeImmutableTest#6
+  query: Members that are "System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()" or "System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField" should not be immutable
+  csharp: Members().That().Are(helper.WritableProperty, helper.ReadOnlyField).Should().NotBeImmutable()
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()', 'System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+    should: {notBeImmutable: true}
+  expect:
+    pass: ['System.String TypeNamespace.ClassWithWritableProperty::WritableProperty()']
+    fail: ['System.String TypeNamespace.ClassWithReadOnlyField::ReadOnlyField']
+- id: BeDeclaredInTest#1
+  alsoCovers: [BeDeclaredInTest#2, BeDeclaredInTest#4, BeDeclaredInTest#5]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be declared in "TypeNamespace.ClassWithStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().BeDeclaredIn(helper.ClassWithStaticField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      beDeclaredIn: [TypeNamespace.ClassWithStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: BeDeclaredInTest#3
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be declared in Types that are "TypeNamespace.ClassWithStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().BeDeclaredIn(Types().That().Are(helper.ClassWithStaticField))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      beDeclaredIn:
+        kind: type
+        where:
+          are: [TypeNamespace.ClassWithStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: BeDeclaredInTest#6
+  alsoCovers: [BeDeclaredInTest#7, BeDeclaredInTest#9, BeDeclaredInTest#10]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are declared in "TypeNamespace.ClassWithStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreDeclaredIn(helper.ClassWithStaticField))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areDeclaredIn: [TypeNamespace.ClassWithStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: BeDeclaredInTest#8
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are declared in Types that are "TypeNamespace.ClassWithStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreDeclaredIn(Types().That().Are(helper.ClassWithStaticField)))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areDeclaredIn:
+            kind: type
+            where:
+              are: [TypeNamespace.ClassWithStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: BeDeclaredInTest#11
+  alsoCovers: [BeDeclaredInTypesThatTest#1]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be declared in types that are "TypeNamespace.ClassWithStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().BeDeclaredInTypesThat().Are(helper.ClassWithStaticField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      beDeclaredInTypesThat:
+        kind: type
+        where:
+          are: [TypeNamespace.ClassWithStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: BeDeclaredInTest#12
+  alsoCovers: [BeDeclaredInTest#13, BeDeclaredInTest#15, BeDeclaredInTest#16]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be declared in "TypeNamespace.ClassWithNonStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().BeDeclaredIn(helper.ClassWithNonStaticField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      beDeclaredIn: [TypeNamespace.ClassWithNonStaticField]
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: BeDeclaredInTest#14
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be declared in Types that are "TypeNamespace.ClassWithNonStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().BeDeclaredIn(Types().That().Are(helper.ClassWithNonStaticField))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      beDeclaredIn:
+        kind: type
+        where:
+          are: [TypeNamespace.ClassWithNonStaticField]
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: BeDeclaredInTest#17
+  alsoCovers: [BeDeclaredInTest#18, BeDeclaredInTest#20, BeDeclaredInTest#21]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are declared in "TypeNamespace.ClassWithNonStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreDeclaredIn(helper.ClassWithNonStaticField))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areDeclaredIn: [TypeNamespace.ClassWithNonStaticField]
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: BeDeclaredInTest#19
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are declared in Types that are "TypeNamespace.ClassWithNonStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreDeclaredIn(Types().That().Are(helper.ClassWithNonStaticField)))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areDeclaredIn:
+            kind: type
+            where:
+              are: [TypeNamespace.ClassWithNonStaticField]
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: BeDeclaredInTest#22
+  alsoCovers: [BeDeclaredInTypesThatTest#2]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be declared in types that are "TypeNamespace.ClassWithNonStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().BeDeclaredInTypesThat().Are(helper.ClassWithNonStaticField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      beDeclaredInTypesThat:
+        kind: type
+        where:
+          are: [TypeNamespace.ClassWithNonStaticField]
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: BeDeclaredInTest#23
+  alsoCovers: [BeDeclaredInTest#24, BeDeclaredInTest#25, BeDeclaredInTest#26]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be declared in "TypeNamespace.ClassWithStaticField" or "TypeNamespace.ClassWithNonStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().BeDeclaredIn(helper.ClassWithStaticField, helper.ClassWithNonStaticField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      beDeclaredIn: [TypeNamespace.ClassWithStaticField, TypeNamespace.ClassWithNonStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: BeDeclaredInTest#27
+  alsoCovers: [BeDeclaredInTest#28, BeDeclaredInTest#29, BeDeclaredInTest#30]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are declared in "TypeNamespace.ClassWithStaticField" or "TypeNamespace.ClassWithNonStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreDeclaredIn(helper.ClassWithStaticField, helper.ClassWithNonStaticField))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areDeclaredIn: [TypeNamespace.ClassWithStaticField, TypeNamespace.ClassWithNonStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: BeDeclaredInTest#31
+  alsoCovers: [BeDeclaredInTest#32]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be declared in no type (always false)
+  csharp: Members().That().Are(helper.StaticField).Should().BeDeclaredIn(new List<IType>())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      beDeclaredIn: []
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: BeDeclaredInTest#33
+  alsoCovers: [BeDeclaredInTest#34]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are declared in no type (always false)
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreDeclaredIn(new List<IType>()))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areDeclaredIn: []
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: BeDeclaredInTest#35
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be declared in "AttributeNamespace.ClassWithoutAttributes"
+  csharp: Members().That().Are(helper.StaticField).Should().BeDeclaredIn(new List<System.Type> { typeof(ClassWithoutAttributes) })
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      beDeclaredIn: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: BeDeclaredInTest#36
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are declared in "AttributeNamespace.ClassWithoutAttributes"
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreDeclaredIn(new List<System.Type> { typeof(ClassWithoutAttributes) }))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areDeclaredIn: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: BeDeclaredInTest#37
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" or "System.Int32 TypeNamespace.OtherClassWithStaticField::OtherStaticField" should be declared in "TypeNamespace.ClassWithStaticField"
+  csharp: Members().That().Are(helper.StaticField, helper.OtherStaticField).Should().BeDeclaredIn(helper.ClassWithStaticField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField', 'System.Int32 TypeNamespace.OtherClassWithStaticField::OtherStaticField']
+    should:
+      beDeclaredIn: [TypeNamespace.ClassWithStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: ['System.Int32 TypeNamespace.OtherClassWithStaticField::OtherStaticField']
+- id: BeDeclaredInTest#38
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" or "System.Int32 TypeNamespace.OtherClassWithStaticField::OtherStaticField" should be declared in "TypeNamespace.ClassWithStaticField" or "TypeNamespace.OtherClassWithStaticField"
+  csharp: Members().That().Are(helper.StaticField, helper.OtherStaticField).Should().BeDeclaredIn(helper.ClassWithStaticField, helper.OtherClassWithStaticField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField', 'System.Int32 TypeNamespace.OtherClassWithStaticField::OtherStaticField']
+    should:
+      beDeclaredIn: [TypeNamespace.ClassWithStaticField, TypeNamespace.OtherClassWithStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField', 'System.Int32 TypeNamespace.OtherClassWithStaticField::OtherStaticField']
+    fail: []
+- id: NotBeDeclaredInTest#1
+  alsoCovers: [NotBeDeclaredInTest#2, NotBeDeclaredInTest#4, NotBeDeclaredInTest#5]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should not be declared in "TypeNamespace.ClassWithNonStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().NotBeDeclaredIn(helper.ClassWithNonStaticField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      notBeDeclaredIn: [TypeNamespace.ClassWithNonStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: NotBeDeclaredInTest#3
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should not be declared in Types that are "TypeNamespace.ClassWithNonStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().NotBeDeclaredIn(Types().That().Are(helper.ClassWithNonStaticField))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      notBeDeclaredIn:
+        kind: type
+        where:
+          are: [TypeNamespace.ClassWithNonStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: NotBeDeclaredInTest#6
+  alsoCovers: [NotBeDeclaredInTest#7, NotBeDeclaredInTest#9, NotBeDeclaredInTest#10]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are not declared in "TypeNamespace.ClassWithNonStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreNotDeclaredIn(helper.ClassWithNonStaticField))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areNotDeclaredIn: [TypeNamespace.ClassWithNonStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: NotBeDeclaredInTest#8
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are not declared in Types that are "TypeNamespace.ClassWithNonStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreNotDeclaredIn(Types().That().Are(helper.ClassWithNonStaticField)))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areNotDeclaredIn:
+            kind: type
+            where:
+              are: [TypeNamespace.ClassWithNonStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: NotBeDeclaredInTest#11
+  alsoCovers: [NotBeDeclaredInTypesThatTest#1]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should not be declared in types that are "TypeNamespace.ClassWithNonStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().NotBeDeclaredInTypesThat().Are(helper.ClassWithNonStaticField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      notBeDeclaredInTypesThat:
+        kind: type
+        where:
+          are: [TypeNamespace.ClassWithNonStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: NotBeDeclaredInTest#12
+  alsoCovers: [NotBeDeclaredInTest#13, NotBeDeclaredInTest#15, NotBeDeclaredInTest#16]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should not be declared in "TypeNamespace.ClassWithStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().NotBeDeclaredIn(helper.ClassWithStaticField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      notBeDeclaredIn: [TypeNamespace.ClassWithStaticField]
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: NotBeDeclaredInTest#14
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should not be declared in Types that are "TypeNamespace.ClassWithStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().NotBeDeclaredIn(Types().That().Are(helper.ClassWithStaticField))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      notBeDeclaredIn:
+        kind: type
+        where:
+          are: [TypeNamespace.ClassWithStaticField]
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: NotBeDeclaredInTest#17
+  alsoCovers: [NotBeDeclaredInTest#18, NotBeDeclaredInTest#20, NotBeDeclaredInTest#21]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are not declared in "TypeNamespace.ClassWithStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreNotDeclaredIn(helper.ClassWithStaticField))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areNotDeclaredIn: [TypeNamespace.ClassWithStaticField]
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: NotBeDeclaredInTest#19
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are not declared in Types that are "TypeNamespace.ClassWithStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreNotDeclaredIn(Types().That().Are(helper.ClassWithStaticField)))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areNotDeclaredIn:
+            kind: type
+            where:
+              are: [TypeNamespace.ClassWithStaticField]
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: NotBeDeclaredInTest#22
+  alsoCovers: [NotBeDeclaredInTypesThatTest#2]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should not be declared in types that are "TypeNamespace.ClassWithStaticField"
+  csharp: Members().That().Are(helper.StaticField).Should().NotBeDeclaredInTypesThat().Are(helper.ClassWithStaticField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      notBeDeclaredInTypesThat:
+        kind: type
+        where:
+          are: [TypeNamespace.ClassWithStaticField]
+  expect:
+    pass: []
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+- id: NotBeDeclaredInTest#23
+  alsoCovers: [NotBeDeclaredInTest#24, NotBeDeclaredInTest#25, NotBeDeclaredInTest#26]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should not be declared in "TypeNamespace.ClassWithNonStaticField" or "TypeNamespace.ClassWithReadOnlyField"
+  csharp: Members().That().Are(helper.StaticField).Should().NotBeDeclaredIn(helper.ClassWithNonStaticField, helper.ClassWithReadOnlyField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      notBeDeclaredIn: [TypeNamespace.ClassWithNonStaticField, TypeNamespace.ClassWithReadOnlyField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: NotBeDeclaredInTest#27
+  alsoCovers: [NotBeDeclaredInTest#28, NotBeDeclaredInTest#29, NotBeDeclaredInTest#30]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are not declared in "TypeNamespace.ClassWithNonStaticField" or "TypeNamespace.ClassWithReadOnlyField"
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreNotDeclaredIn(helper.ClassWithNonStaticField, helper.ClassWithReadOnlyField))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areNotDeclaredIn: [TypeNamespace.ClassWithNonStaticField, TypeNamespace.ClassWithReadOnlyField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: NotBeDeclaredInTest#31
+  alsoCovers: [NotBeDeclaredInTest#32]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should not be declared in no type (always true)
+  csharp: Members().That().Are(helper.StaticField).Should().NotBeDeclaredIn(new List<IType>())
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      notBeDeclaredIn: []
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: NotBeDeclaredInTest#33
+  alsoCovers: [NotBeDeclaredInTest#34]
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are declared in any type (always true)
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreNotDeclaredIn(new List<IType>()))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areNotDeclaredIn: []
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: NotBeDeclaredInTest#35
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should not be declared in "AttributeNamespace.ClassWithoutAttributes"
+  csharp: Members().That().Are(helper.StaticField).Should().NotBeDeclaredIn(new List<System.Type> { typeof(ClassWithoutAttributes) })
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      notBeDeclaredIn: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: NotBeDeclaredInTest#36
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" should be Members that are not declared in "AttributeNamespace.ClassWithoutAttributes"
+  csharp: Members().That().Are(helper.StaticField).Should().Be(Members().That().AreNotDeclaredIn(new List<System.Type> { typeof(ClassWithoutAttributes) }))
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    should:
+      be:
+        kind: member
+        where:
+          areNotDeclaredIn: [AttributeNamespace.ClassWithoutAttributes]
+  expect: {error: TypeDoesNotExistInArchitecture}
+- id: NotBeDeclaredInTest#37
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" or "System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField" should not be declared in "TypeNamespace.ClassWithReadOnlyField"
+  csharp: Members().That().Are(helper.StaticField, helper.NonStaticField).Should().NotBeDeclaredIn(helper.ClassWithReadOnlyField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField', 'System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+    should:
+      notBeDeclaredIn: [TypeNamespace.ClassWithReadOnlyField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField', 'System.Int32 TypeNamespace.ClassWithStaticField::StaticField']
+    fail: []
+- id: NotBeDeclaredInTest#38
+  query: Members that are "System.Int32 TypeNamespace.ClassWithStaticField::StaticField" or "System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField" should not be declared in "TypeNamespace.ClassWithStaticField"
+  csharp: Members().That().Are(helper.StaticField, helper.NonStaticField).Should().NotBeDeclaredIn(helper.ClassWithStaticField)
+  rule:
+    select:
+      kind: member
+      where:
+        are: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField', 'System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+    should:
+      notBeDeclaredIn: [TypeNamespace.ClassWithStaticField]
+  expect:
+    pass: ['System.Int32 TypeNamespace.ClassWithNonStaticField::NonStaticField']
+    fail: ['System.Int32 TypeNamespace.ClassWithStaticField::StaticField']

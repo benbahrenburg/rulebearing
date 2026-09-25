@@ -1,0 +1,43 @@
+# Imported from .importlinter by `rulebearing import import-linter`.
+# Each rule's comment names its import-linter contract; the contract's options are written above its first rule.
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+languages:
+  python:
+    roots: ["."]
+rules:
+  dependencies:
+    allowed:
+      # import-linter contract `db` (protected): Only the API and the jobs reach the database
+      #   allowed_importers = lib.api, lib.jobs
+      #   protected_modules = lib.db
+      - name: db
+        comment: "import-linter contract: Only the API and the jobs reach the database"
+        from:
+          path: ["^lib/api(/.*)?\\.py$", "^lib/jobs(/.*)?\\.py$", "^lib/db(/.*)?\\.py$"]
+        to:
+          path: "^lib/db(/.*)?\\.py$"
+        allowEmpty: true
+      - name: db:outside-the-root-packages
+        comment: "import-linter contract: Only the API and the jobs reach the database"
+        from:
+          pathNot: "^lib(/.*)?\\.py$"
+        to:
+          path: "^lib/db(/.*)?\\.py$"
+        allowEmpty: true
+      # import-linter contract `empty` (protected): Nothing named
+      # protected_modules is empty: nothing to protect
+      # - name: empty
+      #   comment: "import-linter contract: Nothing named"
+      #   from:
+      #     path: []
+      #   to:
+      #     path: []
+      #   allowEmpty: true
+      # dependency-cruiser's allowed rules are one allow-list: this one allows every import of a module no protected contract names.
+      - name: import-linter:unprotected
+        comment: "import-linter: every import of an unprotected module"
+        from: {}
+        to:
+          pathNot: "^lib/db(/.*)?\\.py$"
+        allowEmpty: true
+    allowedSeverity: error

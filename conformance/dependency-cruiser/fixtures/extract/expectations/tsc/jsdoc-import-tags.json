@@ -1,0 +1,185 @@
+[
+  {
+    "id": "test/extract/tsc/jsdoc-import-tags.spec.mjs#1",
+    "title": "[U] ast-extractors/extract-typescript - jsdoc @imports extracts jsdoc @import ('as' variant)",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "/** @import * as fs from 'node:fs' */",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": true,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "node:fs",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-only",
+          "import",
+          "jsdoc",
+          "jsdoc-import-tag"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/jsdoc-import-tags.spec.mjs#2",
+    "title": "[U] ast-extractors/extract-typescript - jsdoc @imports extracts jsdoc @import ('qualified' variant)",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "/** @import {thing, thang} from './hello.mjs' */",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": true,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./hello.mjs",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-only",
+          "import",
+          "jsdoc",
+          "jsdoc-import-tag"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/jsdoc-import-tags.spec.mjs#3",
+    "title": "[U] ast-extractors/extract-typescript - jsdoc @imports extracts jsdoc @import ('default import' variant)",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "/** @import thing from './hello.mjs' */",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": true,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./hello.mjs",
+        "moduleSystem": "es6",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "type-only",
+          "import",
+          "jsdoc",
+          "jsdoc-import-tag"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/jsdoc-import-tags.spec.mjs#4",
+    "title": "[U] ast-extractors/extract-typescript - jsdoc @imports does not extract imports when detectJSDocImports is false",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "/** @import thing from './hello' */",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/tsc/jsdoc-import-tags.spec.mjs#5",
+    "title": "[U] ast-extractors/extract-typescript - jsdoc @imports does not extract imports where the module name isn't a string (identifier variant) ",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "/** @import {thing} from anIdentifier */",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": true,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/tsc/jsdoc-import-tags.spec.mjs#6",
+    "title": "[U] ast-extractors/extract-typescript - jsdoc @imports does not extract imports where the module name isn't a string (number variant) ",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "/** @import {thing} from 481 */",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": true,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/tsc/jsdoc-import-tags.spec.mjs#7",
+    "title": "[U] ast-extractors/extract-typescript - jsdoc @imports does not extract imports where the module name isn't a string (boolean variant) ",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "/** @import {thing} from true */",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": true,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/tsc/jsdoc-import-tags.spec.mjs#8",
+    "title": "[U] ast-extractors/extract-typescript - jsdoc @imports does not extract imports where the module name isn't a string (nothing variant) ",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "/** @import {thing} from  */",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": true,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/tsc/jsdoc-import-tags.spec.mjs#9",
+    "title": "[U] ast-extractors/extract-typescript - jsdoc @imports does not extract imports with dynamic looking imports (@import {import('./ting.mjs')})",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "/** @import {import('./thing.mjs').thing} */",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": true,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": []
+  }
+]

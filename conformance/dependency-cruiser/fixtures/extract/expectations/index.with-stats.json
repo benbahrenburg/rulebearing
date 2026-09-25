@@ -1,0 +1,85 @@
+[
+  {
+    "id": "test/extract/index.with-stats.spec.mjs#1",
+    "title": "[I] extract/index - with experimentalStats extracts the dependencies and stats for a simple dependency",
+    "call": 1,
+    "surface": "extract",
+    "cwd": ".",
+    "input": {
+      "files": [
+        "test/extract/__mocks__/with-stats"
+      ],
+      "cruiseOptions": {
+        "experimentalStats": true
+      },
+      "resolveOptions": {
+        "resolve": {
+          "bustTheCache": true
+        },
+        "cruise": {
+          "experimentalStats": true
+        },
+        "tsConfig": null
+      },
+      "tsConfig": null
+    },
+    "expected": [
+      {
+        "source": "test/extract/__mocks__/with-stats/aap.mjs",
+        "experimentalStats": {
+          "topLevelStatementCount": 1,
+          "size": 36
+        },
+        "dependencies": [
+          {
+            "module": "./noot.mjs",
+            "moduleSystem": "es6",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "import"
+            ],
+            "resolved": "test/extract/__mocks__/with-stats/noot.mjs",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          }
+        ]
+      },
+      {
+        "source": "test/extract/__mocks__/with-stats/noot.mjs",
+        "experimentalStats": {
+          "topLevelStatementCount": 2,
+          "size": 56
+        },
+        "dependencies": [
+          {
+            "module": "./mies.mjs",
+            "moduleSystem": "es6",
+            "dynamic": false,
+            "exoticallyRequired": false,
+            "dependencyTypes": [
+              "local",
+              "import"
+            ],
+            "resolved": "test/extract/__mocks__/with-stats/mies.mjs",
+            "coreModule": false,
+            "followable": true,
+            "couldNotResolve": false,
+            "matchesDoNotFollow": false
+          }
+        ]
+      },
+      {
+        "source": "test/extract/__mocks__/with-stats/mies.mjs",
+        "experimentalStats": {
+          "topLevelStatementCount": 1,
+          "size": 20
+        },
+        "dependencies": []
+      }
+    ]
+  }
+]

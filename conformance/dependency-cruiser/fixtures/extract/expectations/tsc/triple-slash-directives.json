@@ -1,0 +1,83 @@
+[
+  {
+    "id": "test/extract/tsc/triple-slash-directives.spec.mjs#1",
+    "title": "[U] ast-extractors/extract-typescript - triple slash directives path",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "/// <reference path=\"./ts-thing\" />",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./ts-thing",
+        "moduleSystem": "tsd",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "triple-slash-directive",
+          "triple-slash-file-reference"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/triple-slash-directives.spec.mjs#2",
+    "title": "[U] ast-extractors/extract-typescript - triple slash directives types",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "/// <reference types=\"./ts-thing-types\" />",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./ts-thing-types",
+        "moduleSystem": "tsd",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "triple-slash-directive",
+          "triple-slash-type-reference"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/tsc/triple-slash-directives.spec.mjs#3",
+    "title": "[U] ast-extractors/extract-typescript - triple slash directives amd-dependencies",
+    "call": 1,
+    "surface": "walk-tsc",
+    "cwd": ".",
+    "input": {
+      "parser": "tsc",
+      "source": "/// <amd-dependency path=\"./ts-thing-types\" />",
+      "extension": null,
+      "exoticRequireStrings": [],
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false
+    },
+    "expected": [
+      {
+        "dynamic": false,
+        "module": "./ts-thing-types",
+        "moduleSystem": "tsd",
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "triple-slash-directive",
+          "triple-slash-amd-dependency"
+        ]
+      }
+    ]
+  }
+]

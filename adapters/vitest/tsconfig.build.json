@@ -1,0 +1,12 @@
+{
+  "//": "Compiles src/ into the npm wrapper's dist/vitest/, where the rulebearing package exports it as rulebearing/vitest (wrappers/npm/package.json). Linting uses the root tsconfig.json; this file is not named tsconfig.json so the eslint project service keeps using the root one.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "../../wrappers/npm/dist/vitest",
+    "declaration": true,
+    "sourceMap": false,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"]
+}

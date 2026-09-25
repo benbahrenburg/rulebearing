@@ -1,0 +1,16 @@
+<!-- MSTest V2 fixture project: the fixture repository through [RulebearingDataSource]. Coverlet
+     measures Rulebearing.TestAdapter.MSTestV2 alone at the 70% line floor (docs/adr/0018-test-coverage-threshold.md). -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Include>[Rulebearing.TestAdapter.MSTestV2]*</Include>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Rulebearing.TestAdapter.MSTestV2/Rulebearing.TestAdapter.MSTestV2.csproj" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(TestSdkVersion)" />
+    <PackageReference Include="MSTest.TestFramework" Version="$(MSTestV2Version)" />
+    <PackageReference Include="MSTest.TestAdapter" Version="$(MSTestV2Version)" />
+    <!-- MSTest.TestAdapter 2.2.10 asks for Newtonsoft.Json 10.0.3, which has a published advisory
+         (GHSA-5crp-9r3c-p9vr); the fixed release satisfies the same range. -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+</Project>

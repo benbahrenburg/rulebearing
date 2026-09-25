@@ -1,0 +1,13 @@
+{
+    // Read with `--from packages/app/.eslintrc.json`: the paths are relative to this folder.
+    "settings": {
+        "boundaries/elements": [{ "type": "feature", "pattern": "features/*" }]
+    },
+    "rules": {
+        "import/no-restricted-paths": ["error", { "zones": [{ "target": "./src/server", "from": "./src/client" }] }],
+        "boundaries/element-types": ["error", { "default": "allow", "rules": [{ "from": "feature", "disallow": "feature" }] }]
+    },
+    "overrides": [
+        { "files": ["src/legacy/**"], "rules": { "boundaries/element-types": "off" } }
+    ]
+}

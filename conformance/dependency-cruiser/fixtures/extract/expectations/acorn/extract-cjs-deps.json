@@ -1,0 +1,160 @@
+[
+  {
+    "id": "test/extract/acorn/extract-cjs-deps.spec.mjs#1",
+    "title": "[U] acorn/extract-cjs-deps require with in an assignment",
+    "call": 1,
+    "surface": "walk-acorn-cjs",
+    "cwd": ".",
+    "input": {
+      "parser": "acorn",
+      "source": "const x = require('./static')",
+      "extension": ".js",
+      "form": "cjs",
+      "moduleSystem": "cjs",
+      "exoticRequireStrings": []
+    },
+    "expected": [
+      {
+        "module": "./static",
+        "moduleSystem": "cjs",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "require"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/acorn/extract-cjs-deps.spec.mjs#2",
+    "title": "[U] acorn/extract-cjs-deps use an exotic require and specify it as exoticRequireString",
+    "call": 1,
+    "surface": "walk-acorn-cjs",
+    "cwd": ".",
+    "input": {
+      "parser": "acorn",
+      "source": "const need = require; const x = need('./static-required-with-need')",
+      "extension": ".js",
+      "form": "cjs",
+      "moduleSystem": "cjs",
+      "exoticRequireStrings": [
+        "need"
+      ]
+    },
+    "expected": [
+      {
+        "module": "./static-required-with-need",
+        "moduleSystem": "cjs",
+        "dynamic": false,
+        "exoticallyRequired": true,
+        "exoticRequire": "need",
+        "dependencyTypes": [
+          "exotic-require"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/acorn/extract-cjs-deps.spec.mjs#3",
+    "title": "[U] acorn/extract-cjs-deps use an exotic combined require and specify it as exoticRequireString",
+    "call": 1,
+    "surface": "walk-acorn-cjs",
+    "cwd": ".",
+    "input": {
+      "parser": "acorn",
+      "source": "const x = window.require('./static-required-with-need')",
+      "extension": ".js",
+      "form": "cjs",
+      "moduleSystem": "cjs",
+      "exoticRequireStrings": [
+        "window.require"
+      ]
+    },
+    "expected": [
+      {
+        "module": "./static-required-with-need",
+        "moduleSystem": "cjs",
+        "dynamic": false,
+        "exoticallyRequired": true,
+        "exoticRequire": "window.require",
+        "dependencyTypes": [
+          "exotic-require"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/acorn/extract-cjs-deps.spec.mjs#4",
+    "title": "[U] acorn/extract-cjs-deps use an exotic require and don't specify it as exoticRequireString",
+    "call": 1,
+    "surface": "walk-acorn-cjs",
+    "cwd": ".",
+    "input": {
+      "parser": "acorn",
+      "source": "const need = require; const x = need('./static-required-with-need')",
+      "extension": ".js",
+      "form": "cjs",
+      "moduleSystem": "cjs",
+      "exoticRequireStrings": []
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/acorn/extract-cjs-deps.spec.mjs#5",
+    "title": "[U] acorn/extract-cjs-deps require with in an assignment - template literal argument",
+    "call": 1,
+    "surface": "walk-acorn-cjs",
+    "cwd": ".",
+    "input": {
+      "parser": "acorn",
+      "source": "const x = require(`template-literal`)",
+      "extension": ".js",
+      "form": "cjs",
+      "moduleSystem": "cjs",
+      "exoticRequireStrings": []
+    },
+    "expected": [
+      {
+        "module": "template-literal",
+        "moduleSystem": "cjs",
+        "dynamic": false,
+        "exoticallyRequired": false,
+        "dependencyTypes": [
+          "require"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "test/extract/acorn/extract-cjs-deps.spec.mjs#6",
+    "title": "[U] acorn/extract-cjs-deps non-string argument doesn't yield a dependency (number)",
+    "call": 1,
+    "surface": "walk-acorn-cjs",
+    "cwd": ".",
+    "input": {
+      "parser": "acorn",
+      "source": "require(42);",
+      "extension": ".js",
+      "form": "cjs",
+      "moduleSystem": "cjs",
+      "exoticRequireStrings": []
+    },
+    "expected": []
+  },
+  {
+    "id": "test/extract/acorn/extract-cjs-deps.spec.mjs#7",
+    "title": "[U] acorn/extract-cjs-deps non-string argument doesn't yield a dependency (function call)",
+    "call": 1,
+    "surface": "walk-acorn-cjs",
+    "cwd": ".",
+    "input": {
+      "parser": "acorn",
+      "source": "\n            determineWhatToImport = () => 'bla';\n            require(determineWhatToImport());\n        ",
+      "extension": ".js",
+      "form": "cjs",
+      "moduleSystem": "cjs",
+      "exoticRequireStrings": []
+    },
+    "expected": []
+  }
+]

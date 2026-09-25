@@ -1,0 +1,316 @@
+# Ported from ArchUnitNET 0.13.4 ArchUnitNETTests/Fluent/Syntax/Elements/AttributeSyntaxElementsTests.cs by conformance/archunitnet/tools/port.py. Do not edit; rerun the tool.
+source: ArchUnitNETTests/Fluent/Syntax/Elements/AttributeSyntaxElementsTests.cs
+architecture: [AttributeAssembly]
+cases:
+- id: BeAbstractTest#1
+  query: Attributes that are "AttributeNamespace.AbstractAttribute" should be abstract
+  csharp: Attributes().That().Are(helper.AbstractAttribute).Should().BeAbstract()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.AbstractAttribute]
+    should: {beAbstract: true}
+  expect:
+    pass: [AttributeNamespace.AbstractAttribute]
+    fail: []
+- id: BeAbstractTest#2
+  query: Attributes that are "AttributeNamespace.AbstractAttribute" should be Attributes that are abstract
+  csharp: Attributes().That().Are(helper.AbstractAttribute).Should().Be(Attributes().That().AreAbstract())
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.AbstractAttribute]
+    should:
+      be:
+        kind: attribute
+        where: {areAbstract: true}
+  expect:
+    pass: [AttributeNamespace.AbstractAttribute]
+    fail: []
+- id: BeAbstractTest#3
+  query: Attributes that are "AttributeNamespace.RegularAttribute" should be abstract
+  csharp: Attributes().That().Are(helper.RegularAttribute).Should().BeAbstract()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.RegularAttribute]
+    should: {beAbstract: true}
+  expect:
+    pass: []
+    fail: [AttributeNamespace.RegularAttribute]
+- id: BeAbstractTest#4
+  query: Attributes that are "AttributeNamespace.RegularAttribute" should be Attributes that are abstract
+  csharp: Attributes().That().Are(helper.RegularAttribute).Should().Be(Attributes().That().AreAbstract())
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.RegularAttribute]
+    should:
+      be:
+        kind: attribute
+        where: {areAbstract: true}
+  expect:
+    pass: []
+    fail: [AttributeNamespace.RegularAttribute]
+- id: BeAbstractTest#5
+  query: Attributes that are "AttributeNamespace.AbstractAttribute" or "AttributeNamespace.OtherAbstractAttribute" should be abstract
+  csharp: Attributes().That().Are(helper.AbstractAttribute, helper.OtherAbstractAttribute).Should().BeAbstract()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.AbstractAttribute, AttributeNamespace.OtherAbstractAttribute]
+    should: {beAbstract: true}
+  expect:
+    pass: [AttributeNamespace.AbstractAttribute, AttributeNamespace.OtherAbstractAttribute]
+    fail: []
+- id: BeAbstractTest#6
+  query: Attributes that are "AttributeNamespace.AbstractAttribute" or "AttributeNamespace.RegularAttribute" should be abstract
+  csharp: Attributes().That().Are(helper.AbstractAttribute, helper.RegularAttribute).Should().BeAbstract()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.AbstractAttribute, AttributeNamespace.RegularAttribute]
+    should: {beAbstract: true}
+  expect:
+    pass: [AttributeNamespace.AbstractAttribute]
+    fail: [AttributeNamespace.RegularAttribute]
+- id: NotBeAbstractTest#1
+  query: Attributes that are "AttributeNamespace.RegularAttribute" should not be abstract
+  csharp: Attributes().That().Are(helper.RegularAttribute).Should().NotBeAbstract()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.RegularAttribute]
+    should: {notBeAbstract: true}
+  expect:
+    pass: [AttributeNamespace.RegularAttribute]
+    fail: []
+- id: NotBeAbstractTest#2
+  query: Attributes that are "AttributeNamespace.RegularAttribute" should be Attributes that are not abstract
+  csharp: Attributes().That().Are(helper.RegularAttribute).Should().Be(Attributes().That().AreNotAbstract())
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.RegularAttribute]
+    should:
+      be:
+        kind: attribute
+        where: {areNotAbstract: true}
+  expect:
+    pass: [AttributeNamespace.RegularAttribute]
+    fail: []
+- id: NotBeAbstractTest#3
+  query: Attributes that are "AttributeNamespace.AbstractAttribute" should not be abstract
+  csharp: Attributes().That().Are(helper.AbstractAttribute).Should().NotBeAbstract()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.AbstractAttribute]
+    should: {notBeAbstract: true}
+  expect:
+    pass: []
+    fail: [AttributeNamespace.AbstractAttribute]
+- id: NotBeAbstractTest#4
+  query: Attributes that are "AttributeNamespace.AbstractAttribute" should be Attributes that are not abstract
+  csharp: Attributes().That().Are(helper.AbstractAttribute).Should().Be(Attributes().That().AreNotAbstract())
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.AbstractAttribute]
+    should:
+      be:
+        kind: attribute
+        where: {areNotAbstract: true}
+  expect:
+    pass: []
+    fail: [AttributeNamespace.AbstractAttribute]
+- id: NotBeAbstractTest#5
+  query: Attributes that are "AttributeNamespace.RegularAttribute" or "AttributeNamespace.OtherRegularAttribute" should not be abstract
+  csharp: Attributes().That().Are(helper.RegularAttribute, helper.OtherRegularAttribute).Should().NotBeAbstract()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.RegularAttribute, AttributeNamespace.OtherRegularAttribute]
+    should: {notBeAbstract: true}
+  expect:
+    pass: [AttributeNamespace.OtherRegularAttribute, AttributeNamespace.RegularAttribute]
+    fail: []
+- id: NotBeAbstractTest#6
+  query: Attributes that are "AttributeNamespace.RegularAttribute" or "AttributeNamespace.AbstractAttribute" should not be abstract
+  csharp: Attributes().That().Are(helper.RegularAttribute, helper.AbstractAttribute).Should().NotBeAbstract()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.RegularAttribute, AttributeNamespace.AbstractAttribute]
+    should: {notBeAbstract: true}
+  expect:
+    pass: [AttributeNamespace.RegularAttribute]
+    fail: [AttributeNamespace.AbstractAttribute]
+- id: BeSealedTest#1
+  query: Attributes that are "AttributeNamespace.SealedAttribute" should be sealed
+  csharp: Attributes().That().Are(helper.SealedAttribute).Should().BeSealed()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.SealedAttribute]
+    should: {beSealed: true}
+  expect:
+    pass: [AttributeNamespace.SealedAttribute]
+    fail: []
+- id: BeSealedTest#2
+  query: Attributes that are "AttributeNamespace.SealedAttribute" should be Attributes that are sealed
+  csharp: Attributes().That().Are(helper.SealedAttribute).Should().Be(Attributes().That().AreSealed())
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.SealedAttribute]
+    should:
+      be:
+        kind: attribute
+        where: {areSealed: true}
+  expect:
+    pass: [AttributeNamespace.SealedAttribute]
+    fail: []
+- id: BeSealedTest#3
+  query: Attributes that are "AttributeNamespace.RegularAttribute" should be sealed
+  csharp: Attributes().That().Are(helper.RegularAttribute).Should().BeSealed()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.RegularAttribute]
+    should: {beSealed: true}
+  expect:
+    pass: []
+    fail: [AttributeNamespace.RegularAttribute]
+- id: BeSealedTest#4
+  query: Attributes that are "AttributeNamespace.RegularAttribute" should be Attributes that are sealed
+  csharp: Attributes().That().Are(helper.RegularAttribute).Should().Be(Attributes().That().AreSealed())
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.RegularAttribute]
+    should:
+      be:
+        kind: attribute
+        where: {areSealed: true}
+  expect:
+    pass: []
+    fail: [AttributeNamespace.RegularAttribute]
+- id: BeSealedTest#5
+  query: Attributes that are "AttributeNamespace.SealedAttribute" or "AttributeNamespace.OtherSealedAttribute" should be sealed
+  csharp: Attributes().That().Are(helper.SealedAttribute, helper.OtherSealedAttribute).Should().BeSealed()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.SealedAttribute, AttributeNamespace.OtherSealedAttribute]
+    should: {beSealed: true}
+  expect:
+    pass: [AttributeNamespace.OtherSealedAttribute, AttributeNamespace.SealedAttribute]
+    fail: []
+- id: BeSealedTest#6
+  query: Attributes that are "AttributeNamespace.SealedAttribute" or "AttributeNamespace.RegularAttribute" should be sealed
+  csharp: Attributes().That().Are(helper.SealedAttribute, helper.RegularAttribute).Should().BeSealed()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.SealedAttribute, AttributeNamespace.RegularAttribute]
+    should: {beSealed: true}
+  expect:
+    pass: [AttributeNamespace.SealedAttribute]
+    fail: [AttributeNamespace.RegularAttribute]
+- id: NotBeSealedTest#1
+  query: Attributes that are "AttributeNamespace.RegularAttribute" should not be sealed
+  csharp: Attributes().That().Are(helper.RegularAttribute).Should().NotBeSealed()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.RegularAttribute]
+    should: {notBeSealed: true}
+  expect:
+    pass: [AttributeNamespace.RegularAttribute]
+    fail: []
+- id: NotBeSealedTest#2
+  query: Attributes that are "AttributeNamespace.RegularAttribute" should be Attributes that are not sealed
+  csharp: Attributes().That().Are(helper.RegularAttribute).Should().Be(Attributes().That().AreNotSealed())
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.RegularAttribute]
+    should:
+      be:
+        kind: attribute
+        where: {areNotSealed: true}
+  expect:
+    pass: [AttributeNamespace.RegularAttribute]
+    fail: []
+- id: NotBeSealedTest#3
+  query: Attributes that are "AttributeNamespace.SealedAttribute" should not be sealed
+  csharp: Attributes().That().Are(helper.SealedAttribute).Should().NotBeSealed()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.SealedAttribute]
+    should: {notBeSealed: true}
+  expect:
+    pass: []
+    fail: [AttributeNamespace.SealedAttribute]
+- id: NotBeSealedTest#4
+  query: Attributes that are "AttributeNamespace.SealedAttribute" should be Attributes that are not sealed
+  csharp: Attributes().That().Are(helper.SealedAttribute).Should().Be(Attributes().That().AreNotSealed())
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.SealedAttribute]
+    should:
+      be:
+        kind: attribute
+        where: {areNotSealed: true}
+  expect:
+    pass: []
+    fail: [AttributeNamespace.SealedAttribute]
+- id: NotBeSealedTest#5
+  query: Attributes that are "AttributeNamespace.RegularAttribute" or "AttributeNamespace.OtherRegularAttribute" should not be sealed
+  csharp: Attributes().That().Are(helper.RegularAttribute, helper.OtherRegularAttribute).Should().NotBeSealed()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.RegularAttribute, AttributeNamespace.OtherRegularAttribute]
+    should: {notBeSealed: true}
+  expect:
+    pass: [AttributeNamespace.OtherRegularAttribute, AttributeNamespace.RegularAttribute]
+    fail: []
+- id: NotBeSealedTest#6
+  query: Attributes that are "AttributeNamespace.RegularAttribute" or "AttributeNamespace.SealedAttribute" should not be sealed
+  csharp: Attributes().That().Are(helper.RegularAttribute, helper.SealedAttribute).Should().NotBeSealed()
+  rule:
+    select:
+      kind: attribute
+      where:
+        are: [AttributeNamespace.RegularAttribute, AttributeNamespace.SealedAttribute]
+    should: {notBeSealed: true}
+  expect:
+    pass: [AttributeNamespace.RegularAttribute]
+    fail: [AttributeNamespace.SealedAttribute]

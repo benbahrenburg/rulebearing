@@ -1,0 +1,13 @@
+{
+  "modules": [
+    {
+      "source": "mies.js",
+      "valid": true,
+      "orphan": true,
+      "dependencies": []
+    }
+  ],
+  "summary": {
+    "optionsUsed": {}
+  }
+}

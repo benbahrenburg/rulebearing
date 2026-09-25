@@ -1,0 +1,28 @@
+# Dependency updates. Pinned GitHub Actions are bumped here, by SHA, never by editing a tag
+# (docs/adr/0025-ci-and-supply-chain-hardening.md). Conformance pins are deliberate and are
+# excluded: the upstream version is the specification (docs/adr/0009-conformance-suites-as-specification.md).
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      rust-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      linters:
+        patterns: ["eslint*", "@eslint/*", "typescript-eslint", "prettier*", "typescript"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns: ["*"]
