@@ -260,6 +260,22 @@ pub(crate) mod tests {
         f
     }
 
+    /// A PE32 image like [`tiny_pe`] whose one section grows to hold metadata of any size, for
+    /// tests that build whole assemblies.
+    pub(crate) fn pe_with(metadata: &[u8]) -> Vec<u8> {
+        let raw = (0x48 + metadata.len()).div_ceil(0x200) * 0x200;
+        let raw32 = u32::try_from(raw).unwrap_or(0);
+        let mut f = tiny_pe(&[], None);
+        f.resize(0x200 + raw, 0);
+        let sec = 0x98 + 224;
+        f[sec + 8..sec + 12].copy_from_slice(&raw32.to_le_bytes()); // virtual size
+        f[sec + 16..sec + 20].copy_from_slice(&raw32.to_le_bytes()); // raw size
+        let size = u32::try_from(metadata.len()).unwrap_or(0);
+        f[0x20C..0x210].copy_from_slice(&size.to_le_bytes());
+        f[0x248..0x248 + metadata.len()].copy_from_slice(metadata);
+        f
+    }
+
     fn codeview_entry(path: &str, portable: bool) -> Vec<u8> {
         let mut raw = b"RSDS".to_vec();
         raw.extend([0u8; 20]);

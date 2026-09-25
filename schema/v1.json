@@ -26,6 +26,10 @@
           },
           "type": "array"
         },
+        "argumentsUnknown": {
+          "description": "Additive (.NET): the attribute's value could not be decoded (a malformed blob, or an\nenum argument whose underlying type no loaded assembly says), so `arguments` and\n`namedArguments` are unknown rather than empty. A rule on this attribute's arguments is\nrefused, never answered.",
+          "type": "boolean"
+        },
         "attributeType": {
           "description": "The attribute type's full name.",
           "type": "string"

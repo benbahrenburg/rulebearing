@@ -6,9 +6,9 @@
       "valid": true,
       "followable": false,
       "coreModule": false,
-      "couldNotResolve": true,
+      "couldNotResolve": false,
       "dependencyTypes": [
-        "unresolved"
+        "package"
       ],
       "language": "dotnet"
     },
@@ -20,12 +20,12 @@
           "resolved": "NetArchTest.CrossAssemblyTest.A",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -36,12 +36,12 @@
           "resolved": "NetArchTest.CrossAssemblyTest.A",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -66,12 +66,12 @@
           "resolved": "NetArchTest.CrossAssemblyTest.A",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -82,12 +82,12 @@
           "resolved": "NetArchTest.CrossAssemblyTest.A",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,

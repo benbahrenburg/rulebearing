@@ -18,6 +18,7 @@
 use std::collections::BTreeSet;
 
 use rb_config::elements::{Concept, Operand, Test};
+use rb_model::AttributeElement;
 
 use super::{ElementError, Evaluator, Object, operand_keys};
 
@@ -126,13 +127,10 @@ fn argument_values<'a>(
     e: &Evaluator<'_, 'a>,
     object: &Object<'a>,
     filter: &dyn Fn(&str) -> bool,
-) -> Vec<Vec<&'a str>> {
-    e.architecture()
-        .attributes_of
-        .get(object.key())
+    key: &str,
+) -> Result<Vec<Vec<&'a str>>, ElementError> {
+    Ok(decoded_attributes(e, object, filter, key)?
         .into_iter()
-        .flatten()
-        .filter(|a| filter(&a.attribute_type))
         .map(|a| {
             a.arguments
                 .iter()
@@ -140,7 +138,35 @@ fn argument_values<'a>(
                 .chain(a.named_arguments.iter().map(|n| n.value.as_str()))
                 .collect()
         })
-        .collect()
+        .collect())
+}
+
+/// The instances of the attributes `filter` accepts on `object`, refusing the test when one of
+/// them has arguments the extractor could not decode (`argumentsUnknown`).
+fn decoded_attributes<'a>(
+    e: &Evaluator<'_, 'a>,
+    object: &Object<'a>,
+    filter: &dyn Fn(&str) -> bool,
+    key: &str,
+) -> Result<Vec<&'a AttributeElement>, ElementError> {
+    let instances: Vec<&'a AttributeElement> = e
+        .architecture()
+        .attributes_of
+        .get(object.key())
+        .into_iter()
+        .flatten()
+        .copied()
+        .filter(|a| filter(&a.attribute_type))
+        .collect();
+    if let Some(unknown) = instances.iter().find(|a| a.arguments_unknown) {
+        return Err(ElementError::UndecodableArguments {
+            rule: e.rule().to_owned(),
+            key: key.to_owned(),
+            attribute: unknown.attribute_type.clone(),
+            target: unknown.target.clone(),
+        });
+    }
+    Ok(instances)
 }
 
 /// Every `(name, value)` named argument of every instance of the attributes `filter` accepts.
@@ -148,20 +174,17 @@ fn named_values<'a>(
     e: &Evaluator<'_, 'a>,
     object: &Object<'a>,
     filter: &dyn Fn(&str) -> bool,
-) -> Vec<Vec<(&'a str, &'a str)>> {
-    e.architecture()
-        .attributes_of
-        .get(object.key())
+    key: &str,
+) -> Result<Vec<Vec<(&'a str, &'a str)>>, ElementError> {
+    Ok(decoded_attributes(e, object, filter, key)?
         .into_iter()
-        .flatten()
-        .filter(|a| filter(&a.attribute_type))
         .map(|a| {
             a.named_arguments
                 .iter()
                 .map(|n| (n.name.as_str(), n.value.as_str()))
                 .collect()
         })
-        .collect()
+        .collect())
 }
 
 fn attribute_types<'a>(e: &Evaluator<'_, 'a>, object: &Object<'a>) -> BTreeSet<&'a str> {
@@ -374,7 +397,7 @@ pub fn test<'a>(
             };
             let attribute_keys = attribute.as_ref().map(|a| e.resolve(a)).transpose()?;
             let filter = |t: &str| attribute_keys.as_ref().is_none_or(|k| k.contains(t));
-            let instances = argument_values(e, object, &filter);
+            let instances = argument_values(e, object, &filter, &test.key)?;
             let wanted: Vec<&str> = positional.iter().map(String::as_str).collect();
             let (p, n) = attribute_arguments(&instances, &wanted);
             (p, Some(n))
@@ -388,7 +411,7 @@ pub fn test<'a>(
             };
             let attribute_keys = attribute.as_ref().map(|a| e.resolve(a)).transpose()?;
             let filter = |t: &str| attribute_keys.as_ref().is_none_or(|k| k.contains(t));
-            let instances = named_values(e, object, &filter);
+            let instances = named_values(e, object, &filter, &test.key)?;
             let wanted: Vec<(&str, &str)> = named
                 .iter()
                 .map(|(k, v)| (k.as_str(), v.as_str()))

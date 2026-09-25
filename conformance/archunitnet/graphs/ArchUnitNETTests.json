@@ -708,12 +708,12 @@
           "resolved": "AttributeAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -883,12 +883,12 @@
           "resolved": "ClassAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -1058,12 +1058,12 @@
           "resolved": "MethodDependencyAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -1252,12 +1252,12 @@
           "resolved": "DuplicateFullNameAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -1270,12 +1270,12 @@
           "resolved": "MethodMemberAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -1464,12 +1464,12 @@
           "resolved": "PropertyMemberAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -1713,12 +1713,12 @@
           "resolved": "TypeAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -1906,12 +1906,12 @@
           "resolved": "TypeDependencyAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -2100,12 +2100,12 @@
           "resolved": "VisibilityAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -3353,12 +3353,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -3370,12 +3370,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -3388,12 +3388,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -3407,12 +3407,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -4342,12 +4342,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -7145,12 +7145,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -7647,12 +7647,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -11673,12 +11673,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -12046,12 +12046,12 @@
           "resolved": "DuplicateFullNameAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -12064,12 +12064,12 @@
           "resolved": "OtherDuplicateFullNameAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -14163,12 +14163,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -14432,12 +14432,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -18083,12 +18083,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -18100,12 +18100,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -18117,12 +18117,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -18136,12 +18136,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -18153,12 +18153,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -18814,12 +18814,12 @@
           "resolved": "AttributeAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -18958,12 +18958,12 @@
           "resolved": "TypeDependencyAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -19139,12 +19139,12 @@
           "resolved": "AttributeAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -19301,12 +19301,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -19319,12 +19319,12 @@
           "resolved": "TypeAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -19515,12 +19515,12 @@
           "resolved": "DuplicateFullNameAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -19552,12 +19552,12 @@
           "resolved": "OtherDuplicateFullNameAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -19908,12 +19908,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -21692,12 +21692,12 @@
           "resolved": "AttributeAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -21710,12 +21710,12 @@
           "resolved": "ClassAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -21728,12 +21728,12 @@
           "resolved": "DuplicateFullNameAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -21746,12 +21746,12 @@
           "resolved": "MethodDependencyAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -21764,12 +21764,12 @@
           "resolved": "MethodMemberAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -21782,12 +21782,12 @@
           "resolved": "OtherDuplicateFullNameAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -21800,12 +21800,12 @@
           "resolved": "PropertyMemberAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -21854,12 +21854,12 @@
           "resolved": "TestAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -21872,12 +21872,12 @@
           "resolved": "TypeAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -21890,12 +21890,12 @@
           "resolved": "TypeDependencyAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -21908,12 +21908,12 @@
           "resolved": "VisibilityAssembly",
           "coreModule": false,
           "dependencyTypes": [
-            "unresolved"
+            "package"
           ],
           "followable": false,
           "dynamic": false,
           "exoticallyRequired": false,
-          "couldNotResolve": true,
+          "couldNotResolve": false,
           "circular": false,
           "moduleSystem": "clr",
           "valid": true,
@@ -21937,9 +21937,9 @@
       "valid": true,
       "followable": false,
       "coreModule": false,
-      "couldNotResolve": true,
+      "couldNotResolve": false,
       "dependencyTypes": [
-        "unresolved"
+        "package"
       ],
       "language": "dotnet"
     },
@@ -21949,9 +21949,9 @@
       "valid": true,
       "followable": false,
       "coreModule": false,
-      "couldNotResolve": true,
+      "couldNotResolve": false,
       "dependencyTypes": [
-        "unresolved"
+        "package"
       ],
       "language": "dotnet"
     },
@@ -21961,9 +21961,9 @@
       "valid": true,
       "followable": false,
       "coreModule": false,
-      "couldNotResolve": true,
+      "couldNotResolve": false,
       "dependencyTypes": [
-        "unresolved"
+        "package"
       ],
       "language": "dotnet"
     },
@@ -21973,9 +21973,9 @@
       "valid": true,
       "followable": false,
       "coreModule": false,
-      "couldNotResolve": true,
+      "couldNotResolve": false,
       "dependencyTypes": [
-        "unresolved"
+        "package"
       ],
       "language": "dotnet"
     },
@@ -21985,9 +21985,9 @@
       "valid": true,
       "followable": false,
       "coreModule": false,
-      "couldNotResolve": true,
+      "couldNotResolve": false,
       "dependencyTypes": [
-        "unresolved"
+        "package"
       ],
       "language": "dotnet"
     },
@@ -22009,9 +22009,9 @@
       "valid": true,
       "followable": false,
       "coreModule": false,
-      "couldNotResolve": true,
+      "couldNotResolve": false,
       "dependencyTypes": [
-        "unresolved"
+        "package"
       ],
       "language": "dotnet"
     },
@@ -22021,9 +22021,9 @@
       "valid": true,
       "followable": false,
       "coreModule": false,
-      "couldNotResolve": true,
+      "couldNotResolve": false,
       "dependencyTypes": [
-        "unresolved"
+        "package"
       ],
       "language": "dotnet"
     },
@@ -22105,9 +22105,9 @@
       "valid": true,
       "followable": false,
       "coreModule": false,
-      "couldNotResolve": true,
+      "couldNotResolve": false,
       "dependencyTypes": [
-        "unresolved"
+        "package"
       ],
       "language": "dotnet"
     },
@@ -22117,9 +22117,9 @@
       "valid": true,
       "followable": false,
       "coreModule": false,
-      "couldNotResolve": true,
+      "couldNotResolve": false,
       "dependencyTypes": [
-        "unresolved"
+        "package"
       ],
       "language": "dotnet"
     },
@@ -22129,9 +22129,9 @@
       "valid": true,
       "followable": false,
       "coreModule": false,
-      "couldNotResolve": true,
+      "couldNotResolve": false,
       "dependencyTypes": [
-        "unresolved"
+        "package"
       ],
       "language": "dotnet"
     },
@@ -22165,9 +22165,9 @@
       "valid": true,
       "followable": false,
       "coreModule": false,
-      "couldNotResolve": true,
+      "couldNotResolve": false,
       "dependencyTypes": [
-        "unresolved"
+        "package"
       ],
       "language": "dotnet"
     },

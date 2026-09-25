@@ -19,7 +19,19 @@
 //! `$(Configuration)`, `$(TargetFramework)` or another property the project or its props define;
 //! anything still unexpanded after that is treated as unset. A `PackageReference` without a
 //! `Version` takes the version the nearest `Directory.Packages.props` gives its id (central
-//! package management).
+//! package management). An expansion longer than 32 KiB (a property defined through itself many
+//! times over) is treated as unset too.
+//!
+//! MSBuild conditions are not evaluated: an element carrying a `Condition` attribute, or inside
+//! one that does (a conditioned `PropertyGroup` or `ItemGroup`, a `Choose`/`When`/`Otherwise`),
+//! is skipped, so a property, package or import that applies only under a condition applies to
+//! no project rather than to every project. A `Directory.Build.props` that adds a test framework
+//! under `Condition="'$(IsTestProject)' == 'true'"` therefore does not make every project a test
+//! project.
+//!
+//! `ArtifactsPath` may name `$(MSBuildThisFileDirectory)` (the props file's folder, as .NET's
+//! documentation writes it) or a property the same props file defines; `\` is read as `/`, and a
+//! value that does not fully expand is treated as unset (the `artifacts/` default).
 
 use std::path::{Path, PathBuf};
 
@@ -60,7 +72,11 @@ impl Properties {
     fn parse(text: &str) -> Result<Self, String> {
         let document = roxmltree::Document::parse(text).map_err(|e| e.to_string())?;
         let mut properties = Self::default();
-        for node in document.descendants().filter(roxmltree::Node::is_element) {
+        for node in document
+            .descendants()
+            .filter(roxmltree::Node::is_element)
+            .filter(|n| !conditional(*n))
+        {
             let parent = node.parent_element().map(|p| p.tag_name().name());
             let value = || node.text().unwrap_or_default().trim().to_owned();
             if parent == Some("PropertyGroup") {
@@ -128,6 +144,14 @@ impl Properties {
     }
 }
 
+/// Whether an element applies only under an MSBuild condition this reader does not evaluate: it
+/// or an ancestor carries `Condition`, or it sits inside a `Choose`.
+fn conditional(node: roxmltree::Node<'_, '_>) -> bool {
+    node.ancestors()
+        .filter(roxmltree::Node::is_element)
+        .any(|n| n.attribute("Condition").is_some() || n.has_tag_name("Choose"))
+}
+
 /// The `name` files (`Directory.Build.props`, `Directory.Packages.props`) from the project's
 /// folder up to `root`, nearest first.
 fn files_above(project: &Path, root: &Path, name: &str) -> Vec<(PathBuf, Properties)> {
@@ -165,18 +189,33 @@ fn global_json_folder(project: &Path, root: &Path) -> Option<PathBuf> {
 }
 
 /// The .NET 8 `artifacts/` folder, when a `Directory.Build.props` turns `UseArtifactsOutput`
-/// on: its `ArtifactsPath`, else `artifacts/` beside it.
+/// on: its `ArtifactsPath` expanded (`$(MSBuildThisFileDirectory)` is the props file's folder),
+/// else `artifacts/` beside it.
 fn artifacts_output(props: &[(PathBuf, Properties)]) -> Option<PathBuf> {
-    props
-        .iter()
-        .find(|(_, p)| {
-            p.get("UseArtifactsOutput")
-                .is_some_and(|v| v.eq_ignore_ascii_case("true"))
+    let (dir, p) = props.iter().find(|(_, p)| {
+        p.get("UseArtifactsOutput")
+            .is_some_and(|v| v.eq_ignore_ascii_case("true"))
+    })?;
+    let this_file_directory = format!("{}/", dir.display());
+    let path = p
+        .get("ArtifactsPath")
+        .map(|value| {
+            expand(value, &|name: &str| {
+                if name.eq_ignore_ascii_case("MSBuildThisFileDirectory") {
+                    Some(this_file_directory.clone())
+                } else if name.eq_ignore_ascii_case("ArtifactsPath") {
+                    None
+                } else {
+                    p.get(name).map(str::to_owned)
+                }
+            })
         })
-        .map(|(dir, p)| {
-            p.get("ArtifactsPath")
-                .map_or_else(|| dir.join("artifacts"), |a| dir.join(a))
-        })
+        .filter(|expanded| !expanded.contains("$(") && !expanded.trim().is_empty())
+        .map_or_else(
+            || dir.join("artifacts"),
+            |expanded| dir.join(expanded.trim().replace('\\', "/")),
+        );
+    Some(normalise(&path))
 }
 
 /// A project file read, before its output is located.
@@ -298,8 +337,7 @@ impl ProjectFile {
                 PackageRef { id, version }
             })
             .collect();
-        packages.sort();
-        packages.dedup_by(|a, b| a.id.eq_ignore_ascii_case(&b.id));
+        sort_packages(&mut packages);
         Ok(Self {
             path: path.to_path_buf(),
             stem,
@@ -314,6 +352,19 @@ impl ProjectFile {
             package_refs: packages,
         })
     }
+}
+
+/// Sorts package references by id case-insensitively first, so every spelling of one id is
+/// adjacent, then keeps one per id.
+fn sort_packages(packages: &mut Vec<PackageRef>) {
+    packages.sort_by(|a, b| {
+        (a.id.to_ascii_lowercase(), &a.id, &a.version).cmp(&(
+            b.id.to_ascii_lowercase(),
+            &b.id,
+            &b.version,
+        ))
+    });
+    packages.dedup_by(|a, b| a.id.eq_ignore_ascii_case(&b.id));
 }
 
 /// Removes `.` and `a/..` components without touching the file system, so a `ProjectReference`
@@ -334,8 +385,13 @@ pub fn normalise(path: &Path) -> PathBuf {
     out
 }
 
+/// The longest value [`expand`] builds before giving up on it.
+pub const MAX_EXPANDED: usize = 32 * 1024;
+
 /// Expands `$(Name)` references through `resolve`, a few levels deep; an unknown name is left
-/// as written so the caller can see the value is not fully known.
+/// as written so the caller can see the value is not fully known. An expansion that grows past
+/// [`MAX_EXPANDED`] (four levels of a property naming itself many times) returns `value`
+/// unexpanded, so it reads as not fully known too.
 pub fn expand(value: &str, resolve: &dyn Fn(&str) -> Option<String>) -> String {
     let mut current = value.to_owned();
     for _ in 0..4 {
@@ -356,6 +412,9 @@ pub fn expand(value: &str, resolve: &dyn Fn(&str) -> Option<String>) -> String {
                     changed = true;
                 }
                 None => next.push_str(&rest[start..start + 3 + end]),
+            }
+            if next.len() > MAX_EXPANDED {
+                return value.to_owned();
             }
             rest = &after[end + 1..];
         }
@@ -470,6 +529,127 @@ mod tests {
             ProjectFile::read(&dir.join("D/D.csproj"), "Debug", &dir),
             Err(DiscoverError::Xml { .. })
         ));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_self_multiplying_property_is_unset_not_a_billion_laughs() {
+        let dir = scratch("laughs");
+        let mut group = String::from("<L0>lol</L0>");
+        for level in 1..=8 {
+            let body = format!("$(L{})", level - 1).repeat(10);
+            group.extend([format!("<L{level}>"), body, format!("</L{level}>")]);
+        }
+        write(
+            &dir.join("Directory.Build.props"),
+            &format!(
+                "<Project><PropertyGroup>{group}<AssemblyName>$(L8)</AssemblyName><RootNamespace>$(L1)</RootNamespace></PropertyGroup></Project>"
+            ),
+        );
+        write(&dir.join("A/A.csproj"), "<Project/>");
+        let project = ProjectFile::read(&dir.join("A/A.csproj"), "Debug", &dir).ok();
+        assert_eq!(
+            project.as_ref().map(|p| p.assembly_name.as_str()),
+            Some("A"),
+            "an expansion past the cap is unset"
+        );
+        assert_eq!(
+            project.as_ref().map(|p| p.root_namespace.len()),
+            Some(30),
+            "a small expansion still expands"
+        );
+        let wide = |_: &str| Some("$(X)".repeat(20_000));
+        assert_eq!(expand("$(X)", &wide), "$(X)");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn conditioned_properties_items_and_choices_are_skipped() {
+        let dir = scratch("conditions");
+        write(
+            &dir.join("Directory.Build.props"),
+            r#"<Project>
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'"><PackageReference Include="Microsoft.NET.Test.Sdk" /><PackageReference Include="xunit" /></ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'"><AssemblyName>Wrong</AssemblyName></PropertyGroup>
+  <PropertyGroup><RootNamespace Condition="false">AlsoWrong</RootNamespace><TargetFramework>net10.0</TargetFramework></PropertyGroup>
+  <Choose><When Condition="true"><PropertyGroup><OutputPath>chosen</OutputPath></PropertyGroup></When><Otherwise><ItemGroup><PackageReference Include="Otherwise" /></ItemGroup></Otherwise></Choose>
+  <ItemGroup><PackageReference Include="Always" Version="1.0" /></ItemGroup>
+</Project>"#,
+        );
+        write(&dir.join("A/A.csproj"), "<Project/>");
+        let project = ProjectFile::read(&dir.join("A/A.csproj"), "Debug", &dir).ok();
+        let p = project.as_ref();
+        assert_eq!(
+            p.map(|p| p.is_test),
+            Some(false),
+            "no project becomes a test project"
+        );
+        assert_eq!(p.map(|p| p.assembly_name.as_str()), Some("A"));
+        assert_eq!(p.map(|p| p.root_namespace.as_str()), Some("A"));
+        assert_eq!(p.and_then(|p| p.output_path.clone()), None);
+        assert_eq!(
+            p.map(|p| p.target_frameworks.clone()),
+            Some(vec!["net10.0".to_owned()])
+        );
+        assert_eq!(
+            p.map(|p| p
+                .package_refs
+                .iter()
+                .map(|r| r.id.as_str())
+                .collect::<Vec<_>>()),
+            Some(vec!["Always"])
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn artifacts_path_expands_the_props_folder_and_backslashes() {
+        let dir = scratch("artifacts-path");
+        let props = |path: &str| {
+            format!(
+                "<Project><PropertyGroup><UseArtifactsOutput>true</UseArtifactsOutput><Out>out</Out><ArtifactsPath>{path}</ArtifactsPath></PropertyGroup></Project>"
+            )
+        };
+        write(&dir.join("A/A.csproj"), "<Project/>");
+        for (path, expected) in [
+            (
+                "$(MSBuildThisFileDirectory)build\\artifacts",
+                dir.join("build/artifacts"),
+            ),
+            (
+                "$(MSBuildThisFileDirectory)$(Out)\\..\\artifacts",
+                dir.join("artifacts"),
+            ),
+            ("custom", dir.join("custom")),
+            ("$(Unknown)\\x", dir.join("artifacts")),
+        ] {
+            write(&dir.join("Directory.Build.props"), &props(path));
+            let project = ProjectFile::read(&dir.join("A/A.csproj"), "Debug", &dir).ok();
+            assert_eq!(
+                project.and_then(|p| p.artifacts),
+                Some(normalise(&expected)),
+                "{path}"
+            );
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn package_ids_dedup_case_insensitively_even_when_not_adjacent() {
+        let dir = scratch("dedup");
+        write(
+            &dir.join("A/A.csproj"),
+            r#"<Project><ItemGroup><PackageReference Include="Abc" Version="1" /><PackageReference Include="Abd" /><PackageReference Include="abc" Version="2" /></ItemGroup></Project>"#,
+        );
+        let project = ProjectFile::read(&dir.join("A/A.csproj"), "Debug", &dir).ok();
+        assert_eq!(
+            project.map(|p| p
+                .package_refs
+                .iter()
+                .map(|r| r.id.clone())
+                .collect::<Vec<_>>()),
+            Some(vec!["Abc".to_owned(), "Abd".to_owned()])
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
