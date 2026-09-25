@@ -1,0 +1,12 @@
+{
+    // eslint-plugin-boundaries with no `default`: the plugin disallows what no rule allows.
+    "settings": {
+        "boundaries/elements": [
+            { "type": "ui", "pattern": "src/ui" },
+            { "type": "domain", "pattern": "src/domain" }
+        ]
+    },
+    "rules": {
+        "boundaries/element-types": ["error", { "rules": [{ "from": "ui", "allow": ["domain"] }] }]
+    }
+}

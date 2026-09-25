@@ -327,7 +327,7 @@ fn archunit_writes_to_a_file_and_refuses_a_folder_without_csharp() -> Result<(),
 
 #[test]
 fn eslint_fixtures_match_their_expected_yaml() -> Result<(), Box<dyn Error>> {
-    for case in ["flat", "legacy", "commonjs", "package"] {
+    for case in ["flat", "legacy", "commonjs", "package", "default"] {
         let source = fixtures().join("eslint").join(case);
         let dir = temp(&format!("eslint-{case}"))?;
         copy_tree(&source, &dir)?;
@@ -411,6 +411,81 @@ fn import_linter_needs_settings() -> Result<(), Box<dyn Error>> {
     assert_eq!(named.status.code(), Some(3));
     assert!(String::from_utf8_lossy(&named.stderr).contains("no [importlinter]"));
     let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// A configuration in a subfolder, read with `--from`: its paths are relative to its folder, and
+/// the rules written are relative to the working directory the gate runs in.
+#[test]
+fn an_eslint_configuration_in_a_subfolder_is_written_relative_to_the_working_directory()
+-> Result<(), Box<dyn Error>> {
+    let source = fixtures().join("eslint/subfolder");
+    let dir = temp("eslint-subfolder")?;
+    copy_tree(&source, &dir)?;
+    let from = ["import", "eslint", "--from", "packages/app/.eslintrc.json"];
+    snapshot(&dir, &from, &source.join("expected.yaml"))?;
+    for (file, text) in [
+        (
+            "packages/app/src/server/api.ts",
+            "import { b } from '../client/app';\nexport const a = b;\n",
+        ),
+        ("packages/app/src/client/app.ts", "export const b = 1;\n"),
+        (
+            "packages/app/features/cart/index.ts",
+            "import { s } from '../search';\nexport const cart = s;\n",
+        ),
+        (
+            "packages/app/features/search/index.ts",
+            "export const s = 1;\n",
+        ),
+        (
+            "packages/other/src/server/api.ts",
+            "import { b } from '../client/app';\nexport const a = b;\n",
+        ),
+        ("packages/other/src/client/app.ts", "export const b = 1;\n"),
+    ] {
+        let path = dir.join(file);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(path, text)?;
+    }
+    let mut args = from.to_vec();
+    args.extend(["--out", "rulebearing.yaml"]);
+    let output = run(&dir, &args)?;
+    assert_eq!(output.status.code(), Some(0));
+    let found = errors(&dir, &["packages"])?;
+    let inside = run(
+        &dir.join("packages/other"),
+        &["import", "eslint", "--from", "../app/.eslintrc.json"],
+    )?;
+    let _ = std::fs::remove_dir_all(&dir);
+    let names: Vec<(&str, &str, &str)> = found
+        .iter()
+        .map(|(r, f, t)| (r.as_str(), f.as_str(), t.as_str()))
+        .collect();
+    assert_eq!(
+        names,
+        [
+            (
+                "boundaries:feature-to-feature",
+                "packages/app/features/cart/index.ts",
+                "packages/app/features/search/index.ts"
+            ),
+            (
+                "no-restricted-paths:1",
+                "packages/app/src/server/api.ts",
+                "packages/app/src/client/app.ts"
+            ),
+        ]
+    );
+    assert_eq!(
+        inside.status.code(),
+        Some(3),
+        "an import error, as every importer reports one"
+    );
+    let stderr = String::from_utf8_lossy(&inside.stderr);
+    assert!(stderr.contains("outside the working directory"), "{stderr}");
     Ok(())
 }
 

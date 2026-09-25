@@ -14,6 +14,8 @@ Inputs for `rulebearing import`, each folder with the `expected.yaml` the import
 | `eslint/legacy` | `.eslintrc.json` with comments, `overrides`, `import-x/`, a brace glob |
 | `eslint/commonjs` | `.eslintrc.cjs` with `require`, and a captured-value selector the importer refuses |
 | `eslint/package` | `eslintConfig` in `package.json`, `mode: full`, and a `basePattern` the importer refuses |
+| `eslint/default` | `boundaries/element-types` with no `default`, which eslint-plugin-boundaries reads as `disallow` |
+| `eslint/subfolder` | `.eslintrc.json` in `packages/app`, read with `--from` from the root: every path is written under `packages/app`; an `overrides` entry turning the rule off later in the file |
 | `archunit/fluent` | ArchUnitNET: a loader, a provider field, a `GetClassOfType` field, a local holding the rule, `And`/`Or`, `AndShould`/`OrShould`, `...TypesThat()`, `Because`, `WithoutRequiringPositiveResults`, `Types(true)`, a slice rule, an alias and nested types; five chains that are not imported, each with its reason |
 | `archunit/netarchtest` | NetArchTest: `InAssembly`, `InCurrentDomain`, `InNamespace`, `ShouldNot`, `Or`, `And()` runs grouped by `Or()` on both sides, ordinal comparison, the README table's patterns, a `[Theory]` read once per `[InlineData]` row, a project's own `ShouldSucceed()` extension, a property named `Types`, a relative `using`; `MeetCustomRule`, `BeImmutable`, an expected failure, `FromFile`, `[MemberData]` rows and a helper's result, not imported |
 | `archunit/roundtrip` | two ArchUnitNET test files, evaluated over the gate 2 graphs of `TestAssembly` and `ArchUnitNETTests` |
