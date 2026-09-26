@@ -1,0 +1,10 @@
+{
+  "repo": "home-assistant/core",
+  "sha": "f50d777440e878554ef6872062341d24c6da0289",
+  "role": "scale",
+  "tool": "none",
+  "status": "idle",
+  "detail": "no incumbent tool; the Rulebearing column starts in wave 1",
+  "incumbent": null,
+  "rulebearing": null
+}

@@ -1,0 +1,10 @@
+{
+  "repo": "getsentry/sentry",
+  "sha": "813bab919d13177e71d444b187473ee3cd881ae4",
+  "role": "greenfield",
+  "tool": "none",
+  "status": "idle",
+  "detail": "no incumbent tool; the Rulebearing column starts in wave 1",
+  "incumbent": null,
+  "rulebearing": null
+}

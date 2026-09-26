@@ -1,0 +1,10 @@
+{
+  "repo": "microsoft/autogen",
+  "sha": "027ecf0a379bcc1d09956d46d12d44a3ad9cee14",
+  "role": "greenfield",
+  "tool": "none",
+  "status": "idle",
+  "detail": "no incumbent tool; the Rulebearing column starts in wave 1",
+  "incumbent": null,
+  "rulebearing": null
+}

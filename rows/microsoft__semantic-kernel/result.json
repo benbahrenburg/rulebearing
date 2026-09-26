@@ -1,0 +1,10 @@
+{
+  "repo": "microsoft/semantic-kernel",
+  "sha": "ca40aa7226531d28a721d0ca0e451d0aaf86dafc",
+  "role": "greenfield",
+  "tool": "none",
+  "status": "idle",
+  "detail": "no incumbent tool; the Rulebearing column starts in wave 1",
+  "incumbent": null,
+  "rulebearing": null
+}

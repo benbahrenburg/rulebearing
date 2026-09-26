@@ -1,0 +1,10 @@
+{
+  "repo": "dotnet/aspnetcore",
+  "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
+  "role": "scale",
+  "tool": "none",
+  "status": "idle",
+  "detail": "no incumbent tool; the Rulebearing column starts in wave 1",
+  "incumbent": null,
+  "rulebearing": null
+}

@@ -1,0 +1,10 @@
+{
+  "repo": "grafana/grafana",
+  "sha": "423f85091b0a63a21fb571122a933133da1652cd",
+  "role": "scale",
+  "tool": "none",
+  "status": "idle",
+  "detail": "no incumbent tool; the Rulebearing column starts in wave 1",
+  "incumbent": null,
+  "rulebearing": null
+}

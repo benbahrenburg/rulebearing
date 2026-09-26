@@ -1,0 +1,10 @@
+{
+  "repo": "jellyfin/jellyfin",
+  "sha": "fd75964da853765d63101b4889f23a4161e2758b",
+  "role": "scale",
+  "tool": "none",
+  "status": "idle",
+  "detail": "no incumbent tool; the Rulebearing column starts in wave 1",
+  "incumbent": null,
+  "rulebearing": null
+}
