@@ -2009,13 +2009,15 @@ mod tests {
     }
 
     /// Every key the `ArchUnitNET` coverage tab's "Rulebearing key" column names for an element
-    /// predicate or condition, read from the tab so the two cannot drift apart.
-    fn coverage_tab_keys() -> Vec<String> {
+    /// predicate or condition, read from the tab so the two cannot drift apart. `None` when the
+    /// tab is absent: `docs/artifacts/` is kept local, so a fresh clone and CI do not have it
+    /// (`docs/adr/0039-plans-and-design-kept-local.md`).
+    fn coverage_tab_keys() -> Option<Vec<String>> {
         let tab = std::fs::read_to_string(
             std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../docs/artifacts/archunitnet-0.13.4-coverage.md"),
         )
-        .unwrap_or_default();
+        .ok()?;
         let mut keys = Vec::new();
         for section in tab.split("\n## ") {
             let title = section.lines().next().unwrap_or_default();
@@ -2040,7 +2042,7 @@ mod tests {
                 }
             }
         }
-        keys
+        Some(keys)
     }
 
     #[test]
@@ -2070,7 +2072,12 @@ mod tests {
 
     #[test]
     fn every_key_the_coverage_tab_names_parses() {
-        let keys = coverage_tab_keys();
+        let Some(keys) = coverage_tab_keys() else {
+            eprintln!(
+                "skipped: docs/artifacts/archunitnet-0.13.4-coverage.md is not in this checkout"
+            );
+            return;
+        };
         assert!(
             keys.len() > 60,
             "{} keys read from the coverage tab",

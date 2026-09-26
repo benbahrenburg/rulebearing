@@ -13,6 +13,11 @@
 //! - `file/<tab-id>` targets in `docs/artifacts/design.md`, which are the source document's own
 //!   tab references, kept because the export is verbatim ([docs/artifacts/README.md](../../docs/artifacts/README.md)).
 //! - Anything inside a fenced code block, which is an example rather than a reference.
+//! - A link into a [`LOCAL_ONLY_ROOTS`] directory, on a CI server only (the `CI` environment
+//!   variable is set). The plans and the exported design are kept out of the published
+//!   repository, so the server does not have them. On a developer's machine those links are
+//!   checked like any other, and a missing plans directory is reported as broken links rather
+//!   than skipped ([ADR-0039](../../docs/adr/0039-plans-and-design-kept-local.md)).
 
 use crate::{walk, walk_shallow};
 use std::collections::{BTreeMap, BTreeSet};
@@ -38,6 +43,11 @@ pub const MARKDOWN_ROOTS: &[&str] = &[
 
 /// Directories scanned for Rust doc comments, relative to the repository root.
 pub const RUST_ROOTS: &[&str] = &["crates", "xtask", "fuzz"];
+
+/// Directories that are git-ignored and live only on a developer's machine, relative to the
+/// repository root. A link into one is checked locally and skipped on a CI server
+/// ([ADR-0039](../../docs/adr/0039-plans-and-design-kept-local.md)).
+pub const LOCAL_ONLY_ROOTS: &[&str] = &["docs/plans", "docs/artifacts"];
 
 /// Why a link did not resolve.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -227,6 +237,17 @@ fn is_ignored(target: &str) -> bool {
         || target.starts_with('<')
 }
 
+/// True when `relative` lies under a [`LOCAL_ONLY_ROOTS`] directory.
+fn is_local_only(relative: &Path) -> bool {
+    LOCAL_ONLY_ROOTS.iter().any(|dir| relative.starts_with(dir))
+}
+
+/// True when the value of the `CI` environment variable says this is a CI server: set, and
+/// neither empty nor `false`, as GitHub Actions and most other providers set it.
+fn is_ci(value: Option<&std::ffi::OsStr>) -> bool {
+    value.is_some_and(|v| !v.is_empty() && !v.eq_ignore_ascii_case("false") && v != "0")
+}
+
 /// Resolves `.` and `..` without touching the filesystem, so a link that escapes the repository
 /// is reported rather than silently followed.
 ///
@@ -276,6 +297,15 @@ pub fn scanned_files(root: &Path) -> io::Result<Vec<PathBuf>> {
 /// # Errors
 /// Returns the underlying error when a directory cannot be listed or a file cannot be read.
 pub fn check(root: &Path) -> io::Result<Report> {
+    check_links(root, is_ci(std::env::var_os("CI").as_deref()))
+}
+
+/// Checks every relative link under `root`, skipping links into [`LOCAL_ONLY_ROOTS`] when
+/// `skip_local_only` is true. [`check`] sets it on a CI server.
+///
+/// # Errors
+/// Returns the underlying error when a directory cannot be listed or a file cannot be read.
+pub fn check_links(root: &Path, skip_local_only: bool) -> io::Result<Report> {
     let files = scanned_files(root)?;
     let mut report = Report {
         files: files.len(),
@@ -295,7 +325,6 @@ pub fn check(root: &Path) -> io::Result<Report> {
                 Some((p, a)) => (p, Some(a)),
                 None => (link.target.as_str(), None),
             };
-            report.checked += 1;
             let target_path = if path_part.is_empty() {
                 file.clone()
             } else {
@@ -305,6 +334,10 @@ pub fn check(root: &Path) -> io::Result<Report> {
                 .strip_prefix(root)
                 .unwrap_or(&target_path)
                 .to_path_buf();
+            if skip_local_only && is_local_only(&relative) {
+                continue;
+            }
+            report.checked += 1;
             if !target_path.exists() {
                 report.broken.push(Broken {
                     file: relative_to(root, file),
@@ -682,6 +715,57 @@ mod tests {
         assert_eq!(report.broken[0].file, PathBuf::from("docs/a.md"));
         fs::remove_dir_all(&root)?;
         Ok(())
+    }
+
+    #[test]
+    fn a_local_only_link_is_checked_locally_and_skipped_on_ci() -> io::Result<()> {
+        let root = std::env::temp_dir().join(format!("rb-doclinks-local-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let docs = root.join("docs");
+        fs::create_dir_all(docs.join("plans"))?;
+        fs::write(docs.join("plans/p.md"), "# Step two\n")?;
+        fs::write(
+            docs.join("a.md"),
+            "[plan](plans/p.md#step-one)\n[design](artifacts/d.md)\n[other](gone.md)\n",
+        )?;
+        // Locally every link is checked: a wrong anchor into a plan and a missing artifacts
+        // directory are both reported, not skipped.
+        let report = check_links(&root, false)?;
+        assert_eq!(report.checked, 3);
+        let targets: Vec<&str> = report.broken.iter().map(|b| b.target.as_str()).collect();
+        assert_eq!(
+            targets,
+            ["plans/p.md#step-one", "artifacts/d.md", "gone.md"]
+        );
+        assert_eq!(report.broken[0].reason, Reason::MissingAnchor);
+        assert_eq!(report.broken[1].reason, Reason::MissingFile);
+        // On CI only the published link is checked.
+        let report = check_links(&root, true)?;
+        assert_eq!(report.checked, 1);
+        assert_eq!(report.broken.len(), 1);
+        assert_eq!(report.broken[0].target, "gone.md");
+        fs::remove_dir_all(&root)?;
+        Ok(())
+    }
+
+    #[test]
+    fn local_only_roots_match_by_path_component() {
+        assert!(is_local_only(Path::new("docs/plans/pending/0001.md")));
+        assert!(is_local_only(Path::new("docs/artifacts/design.md")));
+        assert!(!is_local_only(Path::new("docs/plansx/a.md")));
+        assert!(!is_local_only(Path::new("docs/prd.md")));
+    }
+
+    #[test]
+    fn the_ci_variable_is_read_as_providers_set_it() {
+        use std::ffi::OsStr;
+        assert!(!is_ci(None));
+        for off in ["", "false", "FALSE", "0"] {
+            assert!(!is_ci(Some(OsStr::new(off))), "{off:?}");
+        }
+        for on in ["true", "1", "yes"] {
+            assert!(is_ci(Some(OsStr::new(on))), "{on:?}");
+        }
     }
 
     #[test]

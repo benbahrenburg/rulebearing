@@ -44,3 +44,4 @@ A rule in `rulebearing.yaml` cites a decision with the token `adr:NNNN` in its `
 | [0036](0036-markdown-fences-follow-the-configuration-format.md) | Markdown fences are read for a native configuration; a dependency-cruiser one keeps upstream's `extraExtensionsToScan` | Accepted |
 | [0037](0037-baseline-modes.md) | `baseline` has three modes of Rulebearing's own (`full`, `shrink-only`, `format`); dependency-cruiser has none | Accepted |
 | [0038](0038-a-rule-narrows-the-graph-it-sees.md) | A rule narrows the graph it sees: `graph.ignore`, `graph.dependencyTypesNot`, `graph.modulesNot`, `graph.chainsThrough`; import-linter's filters are written with it | Accepted |
+| [0039](0039-plans-and-design-kept-local.md) | The delivery plans and the exported design are kept local; the link check skips links into them on CI only | Accepted |
