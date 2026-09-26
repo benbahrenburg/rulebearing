@@ -24,6 +24,8 @@ fn main() {
     // Re-run only when something the check reads has changed.
     println!("cargo::rerun-if-changed=build.rs");
     println!("cargo::rerun-if-env-changed=RB_SKIP_DOC_LINK_CHECK");
+    // On a CI server links into the local-only plans and design are skipped (ADR-0039).
+    println!("cargo::rerun-if-env-changed=CI");
     for dir in xtask::doclinks::MARKDOWN_ROOTS
         .iter()
         .chain(xtask::doclinks::RUST_ROOTS)

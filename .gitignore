@@ -42,3 +42,6 @@ __pycache__/
 /wrappers/nuget/runtimes/
 # grimp's import cache (import-linter)
 .grimp_cache/
+# The delivery plans and the exported design are kept local, not published (docs/adr/0039-plans-and-design-kept-local.md).
+/docs/plans/
+/docs/artifacts/

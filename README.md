@@ -2,7 +2,7 @@
 
 **Deterministic guardrails for agentic engineering.** Architecture rules your coding agent cannot talk its way past, with the fix attached to every finding, for TypeScript, .NET and Python in one rule file.
 
-> **Status: wave 0.** The design is complete, every quality gate is wired and green, and no subcommand ships yet. The first release, a drop-in for repositories already using dependency-cruiser, is [wave 1](docs/plans/pending/0001-wave-1-typescript-parity.md). If the problem below is yours, star or watch the repository; the [roadmap](#roadmap) says what lands when.
+> **Status: wave 0.** The design is complete, every quality gate is wired and green, and no subcommand ships yet. The first release, a drop-in for repositories already using dependency-cruiser, is wave 1. If the problem below is yours, star or watch the repository; the [roadmap](#roadmap) says what lands when.
 
 ## The problem with telling an agent the rules
 
@@ -107,7 +107,7 @@ An agent asked to "stop Domain from reaching Web" will write the regex. The tool
 
 ## One rule file for the whole repository
 
-The rules above work the same way whether the edge is a TypeScript import, a .NET type reference read from the compiled assembly, or a Python import. Rulebearing is a strict superset of [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) for TypeScript and JavaScript and of [ArchUnitNET](https://github.com/TNG/ArchUnitNET) for .NET, with [import-linter](https://github.com/seddonym/import-linter)'s contract kinds mapped one to one for Python. Every rule attribute, option, flag and reporter of the incumbents has a row in the [coverage tables](docs/artifacts/README.md) with its status; nothing is dropped, and the claim is proven by running their own test suites against this tool as required checks.
+The rules above work the same way whether the edge is a TypeScript import, a .NET type reference read from the compiled assembly, or a Python import. Rulebearing is a strict superset of [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) for TypeScript and JavaScript and of [ArchUnitNET](https://github.com/TNG/ArchUnitNET) for .NET, with [import-linter](https://github.com/seddonym/import-linter)'s contract kinds mapped one to one for Python. Every rule attribute, option, flag and reporter of the incumbents is accounted for; nothing is dropped, and the claim is proven by running their own test suites against this tool as required checks ([conformance](conformance/README.md)).
 
 So a repository with a TypeScript front end, a .NET service and a Python pipeline keeps one rule file, one gate, one graph other scripts can read, and one answer to "may this file import that one". If you already have a `.dependency-cruiser.js`, it runs unchanged on day one.
 
@@ -154,15 +154,15 @@ The same rules run as tests in the suite you already have: `Rulebearing.TestAdap
 
 ## Roadmap
 
-Five waves of part-time work, TypeScript first because that is where the largest set of validation repositories is. Each wave has a [plan](docs/plans/README.md) with an architect section, step-by-step developer instructions and a sub-wave schedule.
+Five waves of part-time work, TypeScript first because that is where the largest set of validation repositories is.
 
 | Wave | Weeks | What lands for you | Exit criterion |
 | --- | --- | --- | --- |
-| **[0 Spike](docs/plans/pending/0000-wave-0-spike.md)** | 4 | The TypeScript extractor, matching dependency-cruiser on 292 of the 296 cases its own extraction suite records (0.9865); the .NET metadata reader, attributing 99.29% of the .NET oracles' types to a source file, so the C# fallback is not needed ([ADR-0022](docs/adr/0022-dotnet-reader-in-rust-confirmed.md)); both conformance harnesses; the nightly test beds; the name held on four registries | Fixtures at 95%; 99% of .NET types attributed to a source file, or the fallback extractor is invoked |
-| **[1 TypeScript](docs/plans/pending/0001-wave-1-typescript-parity.md)** | 10 | The drop-in: full dependency-cruiser parity, the `agent` reporter, `fix` and `examples`, line-precise findings, liveness by default, `init`, `adopt`, `hooks install`, `attest`, `can-import`, `explain`, `test`; npm package and GitHub Action | Zero difference against dependency-cruiser on its own repository, langfuse and FluidFramework |
-| **[2 .NET and Python](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md)** | 10 | Both extractors; ArchUnitNET's full vocabulary as declarative element rules; `propose`, `impact`, `place`, `docs`; importers; test-runner adapters; the ESLint rule; SARIF and JUnit | Every imported .NET test agrees with `dotnet test`; every Python contract reproduces |
-| **[3 Inner loop](docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md)** | 8 | Caching and `--affected`; a source mode for .NET that answers without a build; `guard --watch`; the Roslyn analyzer; MCP and LSP servers; framework presets; the public rule library | Stop hook under two seconds on a large .NET solution; all reporters byte-compared |
-| **[4 Reach](docs/plans/pending/0004-wave-4-reach.md)** | 8 | Browser playground; pull-request app; `fix --plan`; rules across a fleet of repositories | Funded only if the numbers below move |
+| **0 Spike** | 4 | The TypeScript extractor, matching dependency-cruiser on 292 of the 296 cases its own extraction suite records (0.9865); the .NET metadata reader, attributing 99.29% of the .NET oracles' types to a source file, so the C# fallback is not needed ([ADR-0022](docs/adr/0022-dotnet-reader-in-rust-confirmed.md)); both conformance harnesses; the nightly test beds; the name held on four registries | Fixtures at 95%; 99% of .NET types attributed to a source file, or the fallback extractor is invoked |
+| **1 TypeScript** | 10 | The drop-in: full dependency-cruiser parity, the `agent` reporter, `fix` and `examples`, line-precise findings, liveness by default, `init`, `adopt`, `hooks install`, `attest`, `can-import`, `explain`, `test`; npm package and GitHub Action | Zero difference against dependency-cruiser on its own repository, langfuse and FluidFramework |
+| **2 .NET and Python** | 10 | Both extractors; ArchUnitNET's full vocabulary as declarative element rules; `propose`, `impact`, `place`, `docs`; importers; test-runner adapters; the ESLint rule; SARIF and JUnit | Every imported .NET test agrees with `dotnet test`; every Python contract reproduces |
+| **3 Inner loop** | 8 | Caching and `--affected`; a source mode for .NET that answers without a build; `guard --watch`; the Roslyn analyzer; MCP and LSP servers; framework presets; the public rule library | Stop hook under two seconds on a large .NET solution; all reporters byte-compared |
+| **4 Reach** | 8 | Browser playground; pull-request app; `fix --plan`; rules across a fleet of repositories | Funded only if the numbers below move |
 
 **This is measured, not believed.** From wave 1, six signals are tracked on the repositories where agent-authored pull requests can be seen: the share that pass the boundary check on their first CI run (target above 90%), the median turns from a violation to green (target one), rules caught by the authoring guardrails, Stop-hook latency, the share of rules carrying `fix` text, and budget raises merged (target zero). If the first two do not move, the agent surface is cut back to the reporter and the hook, and what remains is a faster dependency-cruiser that also covers .NET and Python. Saying that in advance is cheaper than discovering it later.
 
@@ -231,7 +231,7 @@ Rows: 52; error 2, failed 4, idle 19, ok 27. Zero-diff and the Rulebearing timin
 
 ### Oracle agreement: migrated rules against the incumbent
 
-For the .NET and Python oracles the question is sharper than whether the tools agree on a graph: does a team's existing rule set, migrated with `rulebearing import archunit` or `rulebearing import import-linter`, give the verdict the incumbent gives, test by test and contract by contract ([plan 0002, Step 11](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)). The harness in [testbeds/oracles](testbeds/README.md#oracle-harness) runs both sides at the pinned commit and writes one file per repository; `stays` is a test or contract the importer leaves with the incumbent (a custom predicate or contract type), `not imported` one it could not translate, each with its reason in the file. The table is generated from those files by `python3 testbeds/oracles/table.py --readme README.md`, and CI fails when it is stale.
+For the .NET and Python oracles the question is sharper than whether the tools agree on a graph: does a team's existing rule set, migrated with `rulebearing import archunit` or `rulebearing import import-linter`, give the verdict the incumbent gives, test by test and contract by contract. The harness in [testbeds/oracles](testbeds/README.md#oracle-harness) runs both sides at the pinned commit and writes one file per repository; `stays` is a test or contract the importer leaves with the incumbent (a custom predicate or contract type), `not imported` one it could not translate, each with its reason in the file. The table is generated from those files by `python3 testbeds/oracles/table.py --readme README.md`, and CI fails when it is stale.
 
 <!-- oracles:start -->
 | Repository | Incumbent | Compared | Agree | Disagree | Stays | Not imported | Errors | Graph (grimp vs Rulebearing) | Result |
@@ -281,11 +281,9 @@ The reasoning behind each is a numbered decision record in [docs/adr/](docs/adr/
 
 | Path | What is there |
 | --- | --- |
-| [docs/artifacts/](docs/artifacts/README.md) | The source design and the two coverage tables, exported verbatim |
-| [docs/prd.md](docs/prd.md) | Requirements with fixed identifiers the plans and code cite |
+| [docs/prd.md](docs/prd.md) | Requirements with fixed identifiers the code cites |
 | [docs/architecture.md](docs/architecture.md) | Stages, crates, the graph document, extractors, security, performance |
 | [docs/adr/](docs/adr/README.md) | Every decision, numbered |
-| [docs/plans/](docs/plans/README.md) | One plan per wave |
 | [docs/config.md](docs/config.md), [rules.md](docs/rules.md), [reporters.md](docs/reporters.md), [cli.md](docs/cli.md), [agents.md](docs/agents.md) | The user guides |
 | [docs/perf.md](docs/perf.md), [docs/adoption.md](docs/adoption.md) | The performance and adoption measurements |
 | `crates/` | The Rust workspace: model, config, rules, three extractors, ingest, reporters, CLI, Node binding |
