@@ -39,17 +39,25 @@ print(f"{repo}: {status} {detail}".rstrip())
 PY
 }
 
-# Clones $repo at $sha into $checkout, shallowly. The Git LFS filter is switched off for the
-# checkout, so LFS files stay pointers whether or not git-lfs is installed: no row reads them.
+# Clones $repo at $sha into $checkout, shallowly, with the submodules the row's `submodules` field
+# names (each at the commit the checkout records, one commit deep); the others stay empty. The Git
+# LFS filter is switched off for the checkout and its submodules, so LFS files stay pointers
+# whether or not git-lfs is installed: no row reads them.
 clone_row() {
   : "${checkout:?}" "${repo:?}" "${sha:?}"
+  local lfs_off=(-c filter.lfs.smudge= -c filter.lfs.process= -c filter.lfs.required=false)
+  local submodules
+  submodules="$(manifest_field submodules)" || return 1
   rm -rf "$checkout"
   mkdir -p "$checkout"
   git -C "$checkout" init --quiet &&
     git -C "$checkout" remote add origin "https://github.com/$repo.git" &&
     git -C "$checkout" fetch --quiet --depth 1 origin "$sha" &&
-    git -C "$checkout" -c filter.lfs.smudge= -c filter.lfs.process= -c filter.lfs.required=false \
-      -c advice.detachedHead=false checkout --quiet FETCH_HEAD
+    git -C "$checkout" "${lfs_off[@]}" -c advice.detachedHead=false checkout --quiet FETCH_HEAD || return 1
+  [ -n "$submodules" ] || return 0
+  local paths=()
+  IFS=, read -r -a paths <<< "$submodules"
+  git -C "$checkout" "${lfs_off[@]}" submodule update --quiet --init --depth 1 -- "${paths[@]}"
 }
 
 # The paths init's proposal is cruised over, one per line, from the last line `init` printed to
