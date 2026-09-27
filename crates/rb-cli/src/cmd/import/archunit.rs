@@ -30,12 +30,19 @@
 //! | `Slices().Matching(p)` ... | a slice rule |
 //! | `Types.InAssembly(typeof(X).Assembly)` (NetArchTest) | `resideInAssembly` on X's assembly, then the README table; the assembly also joins `languages.dotnet.assemblies` |
 //! | `new ArchLoader().LoadAssemblies(...)` | `languages.dotnet` |
+//! | a helper the sources declare whose body is one returned expression (`GetTypesThat()`, `namespaceof<T>()`, an extension method over its `this` or C# 14 `extension(...)` receiver) | its expression, evaluated with the arguments, defaults, `params` array and type arguments bound |
+//! | a constructor parameter of a class that implements `IClassFixture<T>` | an instance of `T`, whose members are read |
+//! | `selection.GetTypes().Select(t => t.FullName)` (NetArchTest), given to a dependency search | the selection's types and the types nested in them, a nested selector of .NET types |
 //!
 //! A chain is written commented out, with the reason, when it holds a custom predicate (`stays in
 //! ArchUnitNET: custom predicate`), when a method has no key, when a value cannot be read from
-//! source (a helper's result, a member reference, a type whose namespace is not in the sources
-//! read), or when the test expects the rule to fail (`Assert.False`, `Assert.Throws`,
-//! `AssertOnlyViolations`). The importer never guesses.
+//! source (a helper with more than one statement or an overload chosen by type, a member
+//! reference, a type whose namespace is not in the sources read), when the tests use
+//! NetArchTest.eNhancedEdition, which is not NetArchTest 1.3.2, or when the test expects the rule
+//! to fail (`Assert.False`, `Assert.Throws`, `AssertOnlyViolations`). A test in a file that uses
+//! either library and runs no rule at all (it queries the architecture and asserts in C#) is
+//! written as a commented-out entry that stays with the incumbent, as a custom predicate does.
+//! The importer never guesses.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -94,6 +101,11 @@ pub enum Val {
     Instance(String),
     /// An enum member, as written (`StringComparison.Ordinal`).
     Enum(String),
+    /// The full names of the types a NetArchTest selection returns
+    /// (`GetTypes().Select(t => t.FullName)`), the selection kept as its chain.
+    Names(Chain),
+    /// The same names, the selection mapped to its nested selector.
+    Selected(Node),
 }
 
 impl Val {
@@ -111,6 +123,8 @@ impl Val {
             Self::Chain(c) => format!("the chain `{}`", c.text),
             Self::Instance(c) => format!("an instance of `{c}`"),
             Self::Enum(e) => format!("`{e}`"),
+            Self::Names(c) => format!("the names of the types `{}` selects", c.text),
+            Self::Selected(_) => "the names of the types of a selection".into(),
         }
     }
 }
@@ -235,6 +249,8 @@ pub struct Program {
     pub index: Index,
     /// Which files are the tests to import (the others only declare types).
     tests: usize,
+    /// The test project references NetArchTest.eNhancedEdition, not NetArchTest.
+    pub netarchtest_enhanced: bool,
 }
 
 impl Program {
@@ -262,6 +278,7 @@ impl Program {
             files,
             index,
             tests: tests.len(),
+            netarchtest_enhanced: false,
         })
     }
 
@@ -276,6 +293,7 @@ impl Program {
             files,
             index,
             tests,
+            netarchtest_enhanced: false,
         }
     }
 
@@ -287,6 +305,25 @@ impl Program {
                 .iter()
                 .flat_map(|t| t.methods.iter())
                 .any(|m| m.extension && m.name == name)
+        })
+    }
+
+    /// Whether an expression is a call of a method the sources declare, whose result a rule-running
+    /// call then runs (`Built().GetResult()`): a rule the importer reports even when it cannot
+    /// read it.
+    fn calls_a_helper(&self, expr: &Expr) -> bool {
+        let Expr::Call(function, _) = expr else {
+            return false;
+        };
+        let (Expr::Name(name) | Expr::Generic(name, _) | Expr::Member(_, name)) = function.as_ref()
+        else {
+            return false;
+        };
+        self.files.iter().any(|(_, file)| {
+            file.types
+                .iter()
+                .flat_map(|t| t.methods.iter())
+                .any(|m| &m.name == name)
         })
     }
 
@@ -306,9 +343,21 @@ struct Scope<'p> {
     path: &'p Path,
     decl: &'p TypeDecl,
     locals: Vec<(String, Result<Val, String>, Expr)>,
+    /// A generic helper's type parameters, bound to the types of the call.
+    types: Vec<(String, TypeInfo)>,
 }
 
-impl Scope<'_> {
+impl<'p> Scope<'p> {
+    /// A scope in a type declaration, with no locals.
+    const fn new(path: &'p Path, decl: &'p TypeDecl) -> Self {
+        Self {
+            path,
+            decl,
+            locals: Vec::new(),
+            types: Vec::new(),
+        }
+    }
+
     fn enclosing(&self) -> Vec<String> {
         let mut out = Vec::new();
         let mut prefix = self.decl.namespace.clone();
@@ -337,6 +386,12 @@ const DEPTH: usize = 24;
 
 impl Program {
     fn resolve_type(&self, scope: &Scope<'_>, name: &csharp::TypeName) -> Result<TypeInfo, String> {
+        if let [(single, 0)] = name.segments.as_slice()
+            && !name.global
+            && let Some((_, bound)) = scope.types.iter().rev().find(|(t, _)| t == single)
+        {
+            return Ok(bound.clone());
+        }
         self.index.resolve(
             name,
             &scope.decl.namespace,
@@ -349,18 +404,10 @@ impl Program {
     fn member(&self, full: &str, name: &str, depth: usize) -> Option<Result<Val, String>> {
         let (path, decl) = self.decl(full)?;
         if let Some(member) = decl.members.iter().rev().find(|m| m.name == name) {
-            let scope = Scope {
-                path,
-                decl,
-                locals: Vec::new(),
-            };
+            let scope = Scope::new(path, decl);
             return Some(self.eval(&scope, &member.value, depth + 1));
         }
-        let base_scope = Scope {
-            path,
-            decl,
-            locals: Vec::new(),
-        };
+        let base_scope = Scope::new(path, decl);
         for base in &decl.bases {
             if let Ok(info) = self.resolve_type(&base_scope, base)
                 && let Some(found) = self.member(&info.full, name, depth + 1)
@@ -381,11 +428,7 @@ impl Program {
         if decl.members.iter().any(|m| m.name == name) {
             return true;
         }
-        let scope = Scope {
-            path,
-            decl,
-            locals: Vec::new(),
-        };
+        let scope = Scope::new(path, decl);
         decl.bases.iter().any(|b| {
             self.resolve_type(&scope, b)
                 .is_ok_and(|info| self.has_member(&info.full, name, depth + 1))
@@ -451,6 +494,9 @@ impl Program {
                     return value.clone();
                 }
                 if let Some(found) = self.member(&scope.decl.full_name(), name, depth) {
+                    return found;
+                }
+                if let Some(found) = self.fixture(scope, name) {
                     return found;
                 }
                 Err(format!(
@@ -576,8 +622,9 @@ impl Program {
         let text = csharp::render(expr);
         match function {
             Expr::Name(name) if !self.bound(scope, name) => {
-                self.name_call(scope, text, name, args, depth)
+                self.name_call(scope, text, name, &[], args, depth)
             }
+            Expr::Generic(name, types) => self.name_call(scope, text, name, types, args, depth),
             Expr::Member(receiver, method) => {
                 // `Assembly.Load`, or `System.Reflection.Assembly.Load` written out.
                 let owner = match receiver.as_ref() {
@@ -599,7 +646,9 @@ impl Program {
                     _ => None,
                 };
                 if let Some(owner) = owner
-                    && let Some(found) = self.static_call(scope, &text, &owner, method, args, depth)
+                    && let Some(found) = self
+                        .static_call(scope, &text, &owner, method, args, depth)
+                        .or_else(|| self.static_helper(scope, &text, &owner, method, args, depth))
                 {
                     return found;
                 }
@@ -612,9 +661,18 @@ impl Program {
                     };
                 }
                 match self.eval(scope, receiver, depth + 1)? {
-                    Val::Chain(_) if self.declares_extension(method) => Err(format!(
-                        "`{text}` calls `{method}`, an extension method the sources declare, whose result the importer does not evaluate"
-                    )),
+                    Val::Chain(chain)
+                        if !library_member(method) && self.declares_extension(method) =>
+                    {
+                        self.extension_call(scope, &text, Val::Chain(chain), method, args, depth)
+                    }
+                    Val::Chain(chain) if method == "Select" => names_of(chain, args, &text),
+                    names @ Val::Names(_)
+                        if args.is_empty()
+                            && matches!(method.as_str(), "Distinct" | "ToArray" | "ToList") =>
+                    {
+                        Ok(names)
+                    }
                     Val::Chain(mut chain) => {
                         chain.calls.push(Call {
                             name: method.clone(),
@@ -664,15 +722,19 @@ impl Program {
     }
 
     /// A call of a bare name: an `ArchRuleDefinition` root through `using static`, `Slices()`,
-    /// `nameof(...)`.
+    /// `nameof(...)`, or a helper method the sources declare.
     fn name_call(
         &self,
         scope: &Scope<'_>,
         text: String,
         name: &str,
+        types: &[csharp::TypeName],
         args: &[Arg],
         depth: usize,
     ) -> Result<Val, String> {
+        if !types.is_empty() {
+            return self.helper_call(scope, &text, name, types, args, depth);
+        }
         if let Some((_, kind)) = ROOTS.iter().find(|(r, _)| *r == name) {
             return Ok(self.elements_root(scope, kind, args, depth, text));
         }
@@ -691,12 +753,7 @@ impl Program {
                 .map(Val::Str)
                 .ok_or_else(|| "`nameof()` names nothing".to_owned());
         }
-        if scope.decl.methods.iter().any(|m| m.name == name) {
-            return Err(format!(
-                "`{text}` calls the helper method `{name}`, whose result the importer does not evaluate"
-            ));
-        }
-        Err(format!("`{text}` cannot be read from source"))
+        self.helper_call(scope, &text, name, types, args, depth)
     }
 
     /// A call of a static method on a type name, or `None` when it is not one the importer
@@ -762,6 +819,378 @@ impl Program {
             _ => return None,
         })
     }
+}
+
+/// The helpers: methods the sources declare whose body is one returned expression, evaluated with
+/// their arguments bound to their parameters.
+impl Program {
+    /// The methods a bare call of `name` can reach from `scope`: the class and its bases, the
+    /// enclosing classes, and the classes a `using static` names.
+    fn reachable(&self, scope: &Scope<'_>, name: &str) -> Vec<(&Path, &TypeDecl, &csharp::Method)> {
+        let mut classes: Vec<String> = Vec::new();
+        let mut pending = vec![scope.decl.full_name()];
+        pending.extend(scope.enclosing());
+        while let Some(full) = pending.pop() {
+            if classes.contains(&full) || classes.len() > DEPTH {
+                continue;
+            }
+            if let Some((path, decl)) = self.decl(&full) {
+                let base_scope = Scope::new(path, decl);
+                pending.extend(
+                    decl.bases
+                        .iter()
+                        .filter_map(|b| self.resolve_type(&base_scope, b).ok())
+                        .map(|info| info.full),
+                );
+            }
+            classes.push(full);
+        }
+        let globals = self
+            .files
+            .iter()
+            .flat_map(|(_, f)| f.global_usings.statics.iter());
+        classes.extend(scope.decl.usings.statics.iter().chain(globals).cloned());
+        let mut out = Vec::new();
+        for full in &classes {
+            if let Some((path, decl)) = self.decl(full) {
+                for method in decl
+                    .methods
+                    .iter()
+                    .filter(|m| m.name == name && !m.extension)
+                {
+                    if !out
+                        .iter()
+                        .any(|(_, _, m): &(&Path, &TypeDecl, &csharp::Method)| {
+                            std::ptr::eq(*m, method)
+                        })
+                    {
+                        out.push((path.as_path(), decl, method));
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    /// A call of a helper method the sources declare, by its bare name.
+    fn helper_call(
+        &self,
+        scope: &Scope<'_>,
+        text: &str,
+        name: &str,
+        types: &[csharp::TypeName],
+        args: &[Arg],
+        depth: usize,
+    ) -> Result<Val, String> {
+        let found = self.reachable(scope, name);
+        if found.is_empty() {
+            return Err(format!("`{text}` cannot be read from source"));
+        }
+        let (path, decl, method) = one_overload(&found, text, name, args.len())?;
+        let site = Site {
+            text,
+            receiver: None,
+            types,
+            args,
+        };
+        self.invoke(scope, site, (path, decl, method), depth)
+    }
+
+    /// `Helper.Method(...)` on a class the sources declare, or `None` when the owner is not one.
+    fn static_helper(
+        &self,
+        scope: &Scope<'_>,
+        text: &str,
+        owner: &str,
+        method: &str,
+        args: &[Arg],
+        depth: usize,
+    ) -> Option<Result<Val, String>> {
+        let written = csharp::TypeName {
+            segments: vec![(owner.to_owned(), 0)],
+            global: false,
+            text: owner.to_owned(),
+        };
+        let info = self.resolve_type(scope, &written).ok()?;
+        let (path, decl) = self.decl(&info.full)?;
+        let found: Vec<(&Path, &TypeDecl, &csharp::Method)> = decl
+            .methods
+            .iter()
+            .filter(|m| m.name == method && !m.extension)
+            .map(|m| (path.as_path(), decl, m))
+            .collect();
+        if found.is_empty() {
+            return None;
+        }
+        Some(
+            one_overload(&found, text, method, args.len()).and_then(|target| {
+                let site = Site {
+                    text,
+                    receiver: None,
+                    types: &[],
+                    args,
+                };
+                self.invoke(scope, site, target, depth)
+            }),
+        )
+    }
+
+    /// `receiver.Method(...)` where the sources declare an extension method `Method`.
+    fn extension_call(
+        &self,
+        scope: &Scope<'_>,
+        text: &str,
+        receiver: Val,
+        method: &str,
+        args: &[Arg],
+        depth: usize,
+    ) -> Result<Val, String> {
+        let mut found: Vec<(&Path, &TypeDecl, &csharp::Method)> = Vec::new();
+        for (path, file) in &self.files {
+            for decl in &file.types {
+                for m in decl
+                    .methods
+                    .iter()
+                    .filter(|m| m.extension && m.name == method)
+                {
+                    found.push((path.as_path(), decl, m));
+                }
+            }
+        }
+        let target = one_overload(&found, text, method, args.len() + 1)?;
+        let site = Site {
+            text,
+            receiver: Some(receiver),
+            types: &[],
+            args,
+        };
+        self.invoke(scope, site, target, depth)
+    }
+
+    /// Evaluates a helper's returned expression with its parameters bound: the receiver of an
+    /// extension method, the arguments by position or name, a `params` array, the defaults, and
+    /// the type arguments of a generic helper.
+    fn invoke(
+        &self,
+        caller: &Scope<'_>,
+        site: Site<'_>,
+        (path, decl, method): (&Path, &TypeDecl, &csharp::Method),
+        depth: usize,
+    ) -> Result<Val, String> {
+        let Site {
+            text,
+            receiver,
+            types,
+            args,
+        } = site;
+        let name = &method.name;
+        let [Stmt::Expr { expr: body, .. }] = method.body.as_slice() else {
+            return Err(format!(
+                "`{text}` calls `{name}`, whose body is not one returned expression, which the importer does not evaluate"
+            ));
+        };
+        if types.len() != method.type_parameters.len() {
+            return Err(format!(
+                "`{text}` calls the generic `{name}` without its type arguments, which the importer does not infer"
+            ));
+        }
+        let mut inner = Scope::new(path, decl);
+        for (parameter, written) in method.type_parameters.iter().zip(types) {
+            inner
+                .types
+                .push((parameter.clone(), self.resolve_type(caller, written)?));
+        }
+        let mut values: Vec<Option<Result<Val, String>>> = vec![None; method.parameters.len()];
+        let mut next = 0;
+        if let Some(receiver) = receiver {
+            if let Some(slot) = values.first_mut() {
+                *slot = Some(Ok(receiver));
+            }
+            next = 1;
+        }
+        let last = method.parameters.len().checked_sub(1);
+        let mut rest = Vec::new();
+        for arg in args {
+            let value = self.eval(caller, &arg.value, depth + 1);
+            if let Some(named) = &arg.name {
+                match method.parameters.iter().position(|p| p == named) {
+                    Some(at) => values[at] = Some(value),
+                    None => {
+                        return Err(format!(
+                            "`{text}` names `{named}`, which `{name}` does not take"
+                        ));
+                    }
+                }
+            } else if method.params && Some(next) == last {
+                rest.push(value);
+            } else if next < values.len() {
+                values[next] = Some(value);
+                next += 1;
+            } else {
+                return Err(format!(
+                    "`{text}` passes more arguments than `{name}` takes"
+                ));
+            }
+        }
+        if method.params
+            && let Some(at) = last
+            && values[at].is_none()
+        {
+            values[at] = Some(match rest.as_slice() {
+                [Ok(Val::List(items))] => Ok(Val::List(items.clone())),
+                _ => rest
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()
+                    .map(Val::List),
+            });
+        }
+        for (at, parameter) in method.parameters.iter().enumerate() {
+            let value = match values[at].take() {
+                Some(value) => value,
+                None => match method.defaults.get(at).and_then(Option::as_ref) {
+                    Some(default) => self.eval(&inner, default, depth + 1),
+                    None => Err(format!("`{text}` does not give `{name}` its `{parameter}`")),
+                },
+            };
+            inner
+                .locals
+                .push((parameter.clone(), value, Expr::Name(parameter.clone())));
+        }
+        self.eval(&inner, body, depth + 1)
+            .map_err(|reason| format!("{reason} (in `{name}`, called by `{text}`)"))
+    }
+
+    /// A parameter the test framework fills with a class fixture: `C(Fixture fixture)`, primary
+    /// or not, in a class that implements `IClassFixture<Fixture>`. xUnit builds the fixture with
+    /// its parameterless constructor, so it is an instance of a class the sources declare.
+    fn fixture(&self, scope: &Scope<'_>, name: &str) -> Option<Result<Val, String>> {
+        let decl = scope.decl;
+        let constructors = decl.methods.iter().filter(|m| m.name == decl.name);
+        let written = decl
+            .primary
+            .iter()
+            .find(|(n, _)| n == name)
+            .map(|(_, t)| t.clone())
+            .or_else(|| {
+                constructors
+                    .flat_map(|m| m.parameters.iter().zip(&m.parameter_types))
+                    .find(|(n, _)| *n == name)
+                    .map(|(_, t)| t.clone())
+            })?;
+        let Some(written) = written else {
+            return Some(Err(format!(
+                "`{name}` is a constructor parameter whose type the importer cannot read"
+            )));
+        };
+        let fixture = format!("IClassFixture<{}>", written.text.replace(' ', ""));
+        let class_fixture = decl.bases.iter().any(|b| {
+            let base = b.text.replace(' ', "");
+            base == fixture || base.ends_with(&format!(".{fixture}"))
+        });
+        if !class_fixture {
+            return Some(Err(format!(
+                "`{name}` is a constructor parameter the test framework fills, which the importer does not evaluate"
+            )));
+        }
+        Some(match self.resolve_type(scope, &written) {
+            Ok(info) if self.decl(&info.full).is_some() => Ok(Val::Instance(info.full)),
+            Ok(info) => Err(format!(
+                "`{name}` is the class fixture `{}`, which the sources read do not declare",
+                info.full
+            )),
+            Err(reason) => Err(reason),
+        })
+    }
+}
+
+/// A call of a helper: its C#, the receiver of an extension method, and the type arguments and
+/// arguments written.
+struct Site<'a> {
+    text: &'a str,
+    receiver: Option<Val>,
+    types: &'a [csharp::TypeName],
+    args: &'a [Arg],
+}
+
+/// The one method of `found` a call with `given` arguments can reach; an overload the importer
+/// cannot choose between by the number of arguments is refused.
+fn one_overload<'m>(
+    found: &[(&'m Path, &'m TypeDecl, &'m csharp::Method)],
+    text: &str,
+    name: &str,
+    given: usize,
+) -> Result<(&'m Path, &'m TypeDecl, &'m csharp::Method), String> {
+    let fits: Vec<_> = found
+        .iter()
+        .filter(|(_, _, m)| {
+            let required = m
+                .defaults
+                .iter()
+                .enumerate()
+                .filter(|(at, d)| d.is_none() && !(m.params && at + 1 == m.parameters.len()))
+                .count();
+            given >= required && (m.params || given <= m.parameters.len())
+        })
+        .copied()
+        .collect();
+    match fits.as_slice() {
+        [one] => Ok(*one),
+        [] => Err(format!(
+            "`{text}` calls `{name}` with {given} arguments, which no declaration of it takes"
+        )),
+        _ => Err(format!(
+            "`{text}` calls `{name}`, overloaded in the sources, which the importer does not resolve"
+        )),
+    }
+}
+
+/// Whether ArchUnitNET or NetArchTest has a member of this name on a fluent chain, which C# calls
+/// in preference to an extension method of the same name.
+fn library_member(name: &str) -> bool {
+    const STRUCTURE: &[&str] = &[
+        "That",
+        "As",
+        "And",
+        "Or",
+        "Should",
+        "ShouldNot",
+        "AndShould",
+        "OrShould",
+        "Because",
+        "WithoutRequiringPositiveResults",
+        "GetTypes",
+        "Select",
+    ];
+    if STRUCTURE.contains(&name) || SINKS.contains(&name) || CUSTOM.contains(&name) {
+        return true;
+    }
+    let key = lower_first(name);
+    [Side::Where, Side::Should].into_iter().any(|side| {
+        let (base, _, _) = split_key(&key, side);
+        VOCABULARY.iter().any(|(n, _, _, _)| *n == base)
+    })
+}
+
+/// `selection.GetTypes().Select(t => t.FullName)` on a NetArchTest chain: the full names of the
+/// types the selection returns.
+fn names_of(mut chain: Chain, args: &[Arg], text: &str) -> Result<Val, String> {
+    let full_name = matches!(
+        args,
+        [Arg { value: Expr::Lambda(parameter, body), .. }]
+            if matches!(body.as_ref(), Expr::Member(of, n) if n == "FullName" && **of == Expr::Name(parameter.trim().to_owned()))
+    );
+    let from_types = chain
+        .calls
+        .last()
+        .is_some_and(|c| c.name == "GetTypes" && c.args.is_empty());
+    if !(full_name && from_types && matches!(chain.root, Root::NetArchTest { .. })) {
+        return Err(format!("`{text}` cannot be read from source"));
+    }
+    chain.calls.pop();
+    if let Some(at) = chain.text.rfind(".GetTypes()") {
+        chain.text.truncate(at);
+    }
+    Ok(Val::Names(chain))
 }
 
 fn assembly_of(index: &Index, t: &TypeInfo) -> Result<Val, String> {
@@ -1031,7 +1460,10 @@ impl Builder {
                     self.side
                 };
                 let term = if self.netarchtest {
-                    netarchtest::term(name, &call.args, side).map(|n| (n, None))
+                    program
+                        .selections(&call.args)
+                        .and_then(|args| netarchtest::term(name, &args, side))
+                        .map(|n| (n, None))
                 } else {
                     program.term(name, &call.args, side)
                 };
@@ -1057,6 +1489,12 @@ impl Program {
     pub fn map(&self, chain: &Chain) -> Mapped {
         if contains_custom(chain) {
             return Mapped::Custom;
+        }
+        if self.netarchtest_enhanced && matches!(chain.root, Root::NetArchTest { .. }) {
+            return Mapped::Unmapped(format!(
+                "the tests use {}, which is not backwards compatible with NetArchTest 1.3.2, the version the mapping is proven against (conformance/netarchtest/README.md)",
+                types::NETARCHTEST_ENHANCED
+            ));
         }
         match &chain.root {
             Root::Slices => map_slices(chain),
@@ -1169,6 +1607,49 @@ impl Program {
             select.push(("where", w));
         }
         Node::map(select)
+    }
+
+    /// The arguments of a NetArchTest call with each `Val::Names` mapped to its selection.
+    fn selections(&self, args: &[Result<Val, String>]) -> Result<Vec<Result<Val, String>>, String> {
+        args.iter()
+            .map(|arg| match arg {
+                Ok(Val::Names(chain)) => self
+                    .netarchtest_selection(chain)
+                    .map(|n| Ok(Val::Selected(n))),
+                other => Ok(other.clone()),
+            })
+            .collect()
+    }
+
+    /// A NetArchTest selection (`Types.InAssembly(...).That()...`, no condition) as a nested
+    /// selector of .NET types: the types its `GetTypes()` returns.
+    fn netarchtest_selection(&self, chain: &Chain) -> Result<Node, String> {
+        let Root::NetArchTest { method, args } = &chain.root else {
+            return Err(format!("`{}` is not a NetArchTest selection", chain.text));
+        };
+        let root = netarchtest::root(method, args)?;
+        let mut builder = Builder::new(true);
+        for call in &chain.calls {
+            if matches!(call.name.as_str(), "Should" | "ShouldNot") {
+                return Err(format!(
+                    "`{}` has a condition, so it is not a selection",
+                    chain.text
+                ));
+            }
+            builder.call(self, call).map_err(|mapped| match mapped {
+                Mapped::Unmapped(reason) => reason,
+                _ => "stays in NetArchTest: custom predicate (MeetCustomRule)".to_owned(),
+            })?;
+        }
+        builder.close();
+        // NetArchTest's types are .NET types, and a key such as `resideInAssembly` has no
+        // answer for another language, so the selection is scoped as a rule's own `select` is.
+        Ok(dotnet_scoped(Self::select_node(
+            "type",
+            false,
+            root,
+            std::mem::take(&mut builder.where_).finish(),
+        )))
     }
 
     /// A provider chain (`Types().That()...`) as a nested selector.
@@ -1473,11 +1954,7 @@ impl Program {
                             method.rows.iter().map(Some).collect()
                         };
                     for row in rows {
-                        let mut scope = Scope {
-                            path,
-                            decl,
-                            locals: Vec::new(),
-                        };
+                        let mut scope = Scope::new(path, decl);
                         if let Some((_, values)) = row {
                             for (name, value) in method.parameters.iter().zip(values) {
                                 let read = self.eval(&scope, value, 0);
@@ -1544,10 +2021,16 @@ impl Program {
                 }
                 let chain = match self.eval(scope, receiver, 0) {
                     Ok(Val::Chain(chain)) if chain.root != Root::Loader => Ok(chain),
-                    Ok(other) if looks_like_rule(receiver, scope) => {
+                    Ok(other)
+                        if looks_like_rule(receiver, scope) || self.calls_a_helper(receiver) =>
+                    {
                         Err(format!("the rule is {}", other.describe()))
                     }
-                    Err(reason) if looks_like_rule(receiver, scope) => Err(reason),
+                    Err(reason)
+                        if looks_like_rule(receiver, scope) || self.calls_a_helper(receiver) =>
+                    {
+                        Err(reason)
+                    }
                     _ => continue,
                 };
                 let text = match &chain {
@@ -1585,11 +2068,7 @@ impl Program {
         let mut out = Vec::new();
         for (path, file) in &self.files {
             for decl in &file.types {
-                let scope = Scope {
-                    path,
-                    decl,
-                    locals: Vec::new(),
-                };
+                let scope = Scope::new(path, decl);
                 let mut exprs: Vec<(&Expr, usize)> =
                     decl.members.iter().map(|m| (&m.value, m.line)).collect();
                 for method in &decl.methods {
@@ -2116,6 +2595,159 @@ pub struct Imported {
     pub read: usize,
     /// How many were written as rules rather than commented out.
     pub enabled: usize,
+    /// How many tests run no rule and check the architecture in C#.
+    pub queried: usize,
+}
+
+/// A test that runs no rule: it queries the architecture and asserts in C# (`GetTypes()` or
+/// `Architecture.Types` and LINQ, or a condition's `GetReflectionTypes()`), so it stays with the
+/// incumbent as a custom predicate does.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Query {
+    /// The file, as shown.
+    pub file: String,
+    /// The 1-based line of the test method.
+    pub line: usize,
+    /// The test method.
+    pub method: String,
+    /// The library the file uses: `ArchUnitNET`, `NetArchTest`, or both.
+    pub tool: &'static str,
+}
+
+/// Calls that run a rule, beside [`SINKS`]: ArchUnitNET's `IArchRule.Evaluate`, NetArchTest's
+/// `Policy.Evaluate`, and `ArchRuleAssert`'s two assertions.
+const RUNS: &[&str] = &["Evaluate", "CheckRule", "FulfilsRule"];
+
+/// The names a piece of C# calls, over-approximated: every identifier followed by `(` or `<`.
+fn called_names(text: &str) -> Vec<&str> {
+    let bytes = text.as_bytes();
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < bytes.len() {
+        let c = bytes[i];
+        if c.is_ascii_alphabetic() || c == b'_' {
+            let start = i;
+            while i < bytes.len() && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_') {
+                i += 1;
+            }
+            let mut j = i;
+            while j < bytes.len() && bytes[j].is_ascii_whitespace() {
+                j += 1;
+            }
+            if matches!(bytes.get(j), Some(b'(' | b'<')) {
+                out.push(&text[start..i]);
+            }
+        } else {
+            i += 1;
+        }
+    }
+    out
+}
+
+impl Program {
+    /// The library a test file uses, from its using directives and the test files' global ones;
+    /// `None` when it uses neither (a unit test beside the architecture tests).
+    fn tool_of(&self, decl: &TypeDecl) -> Option<&'static str> {
+        let globals = self.files.iter().take(self.tests).flat_map(|(_, f)| {
+            f.global_usings
+                .namespaces
+                .iter()
+                .chain(&f.global_usings.statics)
+        });
+        let (mut archunit, mut netarchtest) = (false, false);
+        for used in decl
+            .usings
+            .namespaces
+            .iter()
+            .chain(&decl.usings.statics)
+            .chain(globals)
+        {
+            archunit |= used.starts_with("ArchUnitNET");
+            netarchtest |= used.starts_with("NetArchTest");
+        }
+        match (archunit, netarchtest) {
+            (true, true) => Some("ArchUnitNET and NetArchTest"),
+            (true, false) => Some("ArchUnitNET"),
+            (false, true) => Some("NetArchTest"),
+            (false, false) => None,
+        }
+    }
+
+    /// Whether a method, or any method of that name the sources declare that it calls, calls
+    /// something that runs a rule. Names are matched as written, so a call the text only
+    /// resembles counts too: a test is said to run no rule only when nothing it reaches could.
+    /// Another test is not followed (no test calls a test; a repository names its tests after
+    /// the API they test, `HaveNameStartingWith`).
+    fn runs_a_rule(&self, method: &csharp::Method, extensions: &BTreeMap<String, Expect>) -> bool {
+        let mut seen: Vec<&str> = vec![method.name.as_str()];
+        let mut pending: Vec<&str> = vec![method.text.as_str()];
+        while let Some(text) = pending.pop() {
+            for name in called_names(text) {
+                if SINKS.contains(&name) || RUNS.contains(&name) || extensions.contains_key(name) {
+                    return true;
+                }
+                if seen.contains(&name) {
+                    continue;
+                }
+                seen.push(name);
+                for (index, (_, file)) in self.files.iter().enumerate() {
+                    // Outside the tests, the incumbent's own sources (a repository that is the
+                    // library) implement its API; a call of `That()` is not a helper.
+                    let library = |decl: &&TypeDecl| {
+                        index >= self.tests
+                            && (decl.namespace.starts_with("ArchUnitNET")
+                                || decl.namespace.starts_with("NetArchTest"))
+                    };
+                    for decl in file.types.iter().filter(|d| !library(d)) {
+                        pending.extend(
+                            decl.methods
+                                .iter()
+                                .filter(|m| m.name == name && !m.test)
+                                .map(|m| m.text.as_str()),
+                        );
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    /// Every test method in a file that uses ArchUnitNET or NetArchTest that has no rule chain
+    /// and runs no rule, in file and line order.
+    pub fn queries(&self) -> Vec<Query> {
+        let extensions = self.extension_sinks();
+        let with_rules: std::collections::BTreeSet<(String, String)> = self
+            .candidates()
+            .into_iter()
+            .map(|c| (c.file, c.method))
+            .collect();
+        let mut out = Vec::new();
+        for (_, file) in self.files.iter().take(self.tests) {
+            for decl in &file.types {
+                let Some(tool) = self.tool_of(decl) else {
+                    continue;
+                };
+                for method in decl.methods.iter().filter(|m| m.test) {
+                    if with_rules.contains(&(file.shown.clone(), method.name.clone()))
+                        || self.runs_a_rule(method, &extensions)
+                    {
+                        continue;
+                    }
+                    out.push(Query {
+                        file: file.shown.clone(),
+                        line: method.line,
+                        method: method.name.clone(),
+                        tool,
+                    });
+                }
+            }
+        }
+        out.sort_by(|a, b| {
+            let at = |f: &str| self.files.iter().position(|(_, s)| s.shown == f);
+            (at(&a.file), a.line).cmp(&(at(&b.file), b.line))
+        });
+        out
+    }
 }
 
 /// `base`, or `base-2`, `base-3` ... the first not in `used`, which it joins. Two methods whose
@@ -2131,6 +2763,68 @@ fn unique_name(base: &str, used: &mut std::collections::BTreeSet<String>) -> Str
     name
 }
 
+/// A candidate's rule body, whether it is a slice rule, and why it is commented out.
+type Outcome = (Option<Vec<(String, Node)>>, bool, Option<String>);
+
+/// What a candidate becomes: see [`Outcome`].
+fn mapped(program: &Program, candidate: &Candidate) -> Outcome {
+    let mapped = match &candidate.chain {
+        Ok(chain) => program.map(chain),
+        Err(reason) => Mapped::Unmapped(reason.clone()),
+    };
+    let (body, slice, reason) = match mapped {
+        Mapped::Element(body) => (Some(body), false, None),
+        Mapped::Slice(body) => (Some(body), true, None),
+        Mapped::Custom => (
+            None,
+            false,
+            Some(
+                if matches!(
+                    &candidate.chain,
+                    Ok(Chain {
+                        root: Root::NetArchTest { .. },
+                        ..
+                    })
+                ) {
+                    "stays in NetArchTest: custom predicate (MeetCustomRule)"
+                } else {
+                    "stays in ArchUnitNET: custom predicate"
+                }
+                .to_owned(),
+            ),
+        ),
+        Mapped::Unmapped(reason) => (None, false, Some(format!("not imported: {reason}"))),
+    };
+    let reason = reason.or_else(|| {
+        (candidate.expect == Expect::Fails).then(|| {
+            "not imported: the test expects this rule to be broken (Assert.False, Assert.Throws, AssertOnlyViolations), so it is not a rule to enforce".to_owned()
+        })
+    });
+    (body, slice, reason)
+}
+
+/// A test that runs no rule, as a commented-out entry that stays with the incumbent.
+fn query_item(query: &Query, name: String, path: &str) -> Item {
+    let file = query.file.rsplit('/').next().unwrap_or(&query.file);
+    Item {
+        comments: vec![
+            format!("{}()   [{file}:{}]", query.method, query.line),
+            format!(
+                "stays in {}: the test checks the architecture in C#, not with a rule",
+                query.tool
+            ),
+        ],
+        node: Node::Map(vec![
+            ("name".to_owned(), Node::str(name)),
+            (
+                "comment".to_owned(),
+                Node::str(format!("imported from {path}:{}", query.line)),
+            ),
+        ]),
+        disabled: true,
+    }
+}
+
 /// Maps every candidate to an item.
 pub fn items(program: &Program, shown_dir: &str) -> Imported {
     let mut names = std::collections::BTreeSet::new();
@@ -2139,15 +2833,44 @@ pub fn items(program: &Program, shown_dir: &str) -> Imported {
         slices: Vec::new(),
         read: 0,
         enabled: 0,
+        queried: 0,
     };
-    for candidate in program.candidates() {
+    let shown = |file: &str| {
+        if file.starts_with(shown_dir) || shown_dir.is_empty() {
+            file.to_owned()
+        } else {
+            format!("{shown_dir}/{file}")
+        }
+    };
+    let at = |file: &str| program.files.iter().position(|(_, f)| f.shown == file);
+    let mut entries: Vec<(Option<usize>, usize, Result<Candidate, Query>)> = program
+        .candidates()
+        .into_iter()
+        .map(|c| (at(&c.file), c.line, Ok(c)))
+        .chain(
+            program
+                .queries()
+                .into_iter()
+                .map(|q| (at(&q.file), q.line, Err(q))),
+        )
+        .collect();
+    // Stable: the chains of one method keep their order, and a query sorts among them by line.
+    entries.sort_by_key(|(file, line, _)| (*file, *line));
+    for (_, _, entry) in entries {
+        let candidate = match entry {
+            Ok(candidate) => candidate,
+            Err(query) => {
+                imported.queried += 1;
+                let name = unique_name(&kebab(&query.method), &mut names);
+                imported
+                    .elements
+                    .push(query_item(&query, name, &shown(&query.file)));
+                continue;
+            }
+        };
         imported.read += 1;
         let name = unique_name(&kebab(&candidate.method), &mut names);
-        let path = if candidate.file.starts_with(shown_dir) || shown_dir.is_empty() {
-            candidate.file.clone()
-        } else {
-            format!("{shown_dir}/{}", candidate.file)
-        };
+        let path = shown(&candidate.file);
         let mut head = vec![
             ("name".to_owned(), Node::str(name)),
             (
@@ -2156,38 +2879,7 @@ pub fn items(program: &Program, shown_dir: &str) -> Imported {
             ),
         ];
         let mut comments = chain_comment(&candidate);
-        let mapped = match &candidate.chain {
-            Ok(chain) => program.map(chain),
-            Err(reason) => Mapped::Unmapped(reason.clone()),
-        };
-        let (body, slice, reason) = match mapped {
-            Mapped::Element(body) => (Some(body), false, None),
-            Mapped::Slice(body) => (Some(body), true, None),
-            Mapped::Custom => (
-                None,
-                false,
-                Some(
-                    if matches!(
-                        &candidate.chain,
-                        Ok(Chain {
-                            root: Root::NetArchTest { .. },
-                            ..
-                        })
-                    ) {
-                        "stays in NetArchTest: custom predicate (MeetCustomRule)"
-                    } else {
-                        "stays in ArchUnitNET: custom predicate"
-                    }
-                    .to_owned(),
-                ),
-            ),
-            Mapped::Unmapped(reason) => (None, false, Some(format!("not imported: {reason}"))),
-        };
-        let reason = reason.or_else(|| {
-            (candidate.expect == Expect::Fails).then(|| {
-                "not imported: the test expects this rule to be broken (Assert.False, Assert.Throws, AssertOnlyViolations), so it is not a rule to enforce".to_owned()
-            })
-        });
+        let (body, slice, reason) = mapped(program, &candidate);
         let disabled = reason.is_some();
         if let Some(reason) = reason {
             comments.push(reason);
@@ -2245,6 +2937,13 @@ pub fn import(request: &Request) -> Result<Document, ImportError> {
         }
     }
     let mut program = Program::read(&tests, &declarations, &root, &request.cwd)?;
+    program.netarchtest_enhanced = tests.iter().any(|(path, _)| {
+        types::project_of(path, &root).is_some_and(|(_, dir)| {
+            types::projects_in(&dir)
+                .iter()
+                .any(|p| types::references_enhanced(p))
+        })
+    });
     if let Some(graph) = &request.graph {
         let shown = graph.to_string_lossy().into_owned();
         let text = std::fs::read_to_string(graph).map_err(|e| ImportError::Read {
@@ -2281,6 +2980,12 @@ pub fn document(program: &Program, shown_dir: &str) -> Document {
             imported.read - imported.enabled
         ),
     ];
+    if imported.queried > 0 {
+        header.push(format!(
+            "{} tests run no rule (they check the architecture in C#) and stay, commented out.",
+            imported.queried
+        ));
+    }
     if dotnet.is_none() && !loader_comments.is_empty() {
         header.push(String::new());
         header.extend(loader_comments.iter().cloned());
@@ -2469,6 +3174,237 @@ mod tests {
         assert_eq!(result_expectation("result", &m[0].body[1..]), Expect::Fails);
         assert_eq!(result_expectation("r", &m[1].body[1..]), Expect::Passes);
         assert_eq!(result_expectation("q", &m[1].body[1..]), Expect::Passes);
+        Ok(())
+    }
+
+    /// A program over one test file and, optionally, files read only for their declarations.
+    fn program_of(test: &str, others: &[&str]) -> Result<Program, ImportError> {
+        let mut files = vec![(PathBuf::from("T.cs"), csharp::parse(test, "T.cs")?)];
+        for (i, other) in others.iter().enumerate() {
+            let shown = format!("O{i}.cs");
+            files.push((PathBuf::from(&shown), csharp::parse(other, &shown)?));
+        }
+        let mut index = Index::default();
+        for (_, file) in &files {
+            index.add_source(file, None);
+        }
+        Ok(Program {
+            files,
+            index,
+            tests: 1,
+            netarchtest_enhanced: false,
+        })
+    }
+
+    fn imported(program: &Program) -> String {
+        super::super::yaml::render(&document(program, ""))
+    }
+
+    #[test]
+    fn helpers_are_evaluated_with_their_arguments_bound() -> Result<(), ImportError> {
+        let program = program_of(
+            r#"using static ArchUnitNET.Fluent.ArchRuleDefinition;
+            using static N.Utils;
+            namespace N;
+            class Order { }
+            static class Utils { public static string nsof<T>() => typeof(T).Namespace; }
+            class ArchTests {
+                static IArchRule Rule(string prefix, string suffix = "Service", params string[] more) =>
+                    Classes().That().HaveNameStartingWith(prefix).Should().HaveNameEndingWith(suffix);
+                [Fact] void Defaulted() { Rule("A").Check(Architecture); }
+                [Fact] void Named() { Rule(suffix: "X", prefix: "B").Check(Architecture); }
+                [Fact] void Generic() { Classes().That().ResideInNamespace(nsof<Order>()).Should().BeSealed().Check(Architecture); }
+                [Fact] void Inferred() { Classes().That().ResideInNamespace(nsof()).Should().BeSealed().Check(Architecture); }
+                [Fact] void Unknown() { Rule(nope: "x").Check(Architecture); }
+                [Fact] void TooMany() { Other("a", "b").Check(Architecture); }
+                static IArchRule Other(string a) => Classes().Should().HaveName(a);
+            }"#,
+            &[],
+        )?;
+        let text = imported(&program);
+        for expected in [
+            "- name: defaulted",
+            "haveNameStartingWith: A",
+            "haveNameEndingWith: Service",
+            "haveNameStartingWith: B",
+            "haveNameEndingWith: X",
+            "- name: generic",
+            "resideInNamespace: \"N\"",
+            "# not imported: `nsof()` calls the generic `nsof` without its type arguments, which the importer does not infer",
+            "`Rule(nope: \"x\")` names `nope`, which `Rule` does not take",
+            "`Other(\"a\", \"b\")` calls `Other` with 2 arguments, which no declaration of it takes",
+        ] {
+            assert!(text.contains(expected), "{expected}\n{text}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn a_params_array_collects_the_rest() -> Result<(), ImportError> {
+        let program = program_of(
+            r#"using static ArchUnitNET.Fluent.ArchRuleDefinition;
+            class ArchTests {
+                static IArchRule Named(params string[] names) => Classes().Should().HaveName(names);
+                [Fact] void Two() { Named("A", "B").Check(Architecture); }
+                [Fact] void Array() { Named(new[] { "C", "D" }).Check(Architecture); }
+                [Fact] void None() { Named().Check(Architecture); }
+            }"#,
+            &[],
+        )?;
+        let text = imported(&program);
+        assert!(text.contains("haveName: [A, B]"), "{text}");
+        assert!(text.contains("haveName: [C, D]"), "{text}");
+        assert!(text.contains("`HaveName` names nothing"), "{text}");
+        Ok(())
+    }
+
+    #[test]
+    fn a_class_fixture_is_an_instance_of_its_class() -> Result<(), ImportError> {
+        let program = program_of(
+            r#"using NetArchTest.Rules;
+            namespace N;
+            public class Fix { public Types Types { get; } = Types.InCurrentDomain(); }
+            public class A : IClassFixture<Fix> {
+                private readonly Fix _fix;
+                public A(Fix fix) { _fix = fix; }
+                [Fact] public void Sealed() { Assert.True(_fix.Types.That().HaveNameEndingWith("S", StringComparison.Ordinal).Should().BeSealed().GetResult().IsSuccessful); }
+            }
+            public class B(Fix fix) {
+                [Fact] public void NotFixture() { Assert.True(fix.Types.Should().BeSealed().GetResult().IsSuccessful); }
+            }"#,
+            &[],
+        )?;
+        let text = imported(&program);
+        assert!(text.contains("- name: sealed\n"), "{text}");
+        assert!(text.contains("haveNameEndingWith: S"), "{text}");
+        assert!(
+            text.contains("`fix` is a constructor parameter the test framework fills"),
+            "{text}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn extension_methods_continue_the_chain_or_name_a_selection() -> Result<(), ImportError> {
+        let program = program_of(
+            r#"using System.Linq;
+            using NetArchTest.Rules;
+            namespace N;
+            static class Ext {
+                internal static string[] Full(this PredicateList p) => p.GetTypes().Select(t => t.FullName).ToList();
+                internal static string[] Short(this PredicateList p) => p.GetTypes().Select(t => t.Name).ToArray();
+                internal static ConditionList Twice(this PredicateList p) => p.Should().BeSealed();
+                internal static ConditionList Twice(this PredicateList p, int n = 1) => p.Should().BeSealed();
+            }
+            class A {
+                [Fact] void Full() { Assert.True(Types.InCurrentDomain().ShouldNot().HaveDependencyOnAny(Types.InCurrentDomain().That().ResideInNamespace("X").Full()).GetResult().IsSuccessful); }
+                [Fact] void Short() { Assert.True(Types.InCurrentDomain().ShouldNot().HaveDependencyOnAny(Types.InCurrentDomain().That().ResideInNamespace("X").Short()).GetResult().IsSuccessful); }
+                [Fact] void Overloaded() { Assert.True(Types.InCurrentDomain().That().AreSealed().Twice().GetResult().IsSuccessful); }
+                [Fact] void WithCondition() { Assert.True(Types.InCurrentDomain().ShouldNot().HaveDependencyOnAny(Types.InCurrentDomain().Should().BeSealed().GetTypes().Select(t => t.FullName)).GetResult().IsSuccessful); }
+            }"#,
+            &[],
+        )?;
+        let text = imported(&program);
+        assert!(text.contains("- areNestedIn:"), "{text}");
+        assert!(text.contains("haveFullNameStartingWith: X"), "{text}");
+        assert!(
+            text.contains("`p.GetTypes().Select(t => t.Name)` cannot be read from source"),
+            "{text}"
+        );
+        assert!(
+            text.contains(
+                "calls `Twice`, overloaded in the sources, which the importer does not resolve"
+            ),
+            "{text}"
+        );
+        assert!(
+            text.contains("has a condition, so it is not a selection"),
+            "{text}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_test_that_runs_no_rule_stays() -> Result<(), ImportError> {
+        let program = program_of(
+            r#"using System.Linq;
+            using ArchUnitNET.Domain;
+            using static ArchUnitNET.Fluent.ArchRuleDefinition;
+            namespace N;
+            class ArchTests {
+                [Fact] void Counted() { Assert.Single(Architecture.Classes.Where(c => c.IsSealed)); }
+                [Fact] void ThroughAHelper() { Run(); }
+                [Fact] void ThroughALibraryName() { Assert.Single(Sealed()); }
+                [Test] void HaveName() { Classes().Should().HaveName("A").Check(Architecture); }
+                [Fact] void NamedLikeATest() { Assert.Single(HaveName()); }
+                void Run() { Classes().Should().BeSealed().Check(Architecture); }
+            }"#,
+            &["namespace ArchUnitNET.Fluent { class Api { object Sealed() { return Check(); } } }"],
+        )?;
+        let queries: Vec<String> = program.queries().into_iter().map(|q| q.method).collect();
+        // `Run` runs a rule; the library's own `Sealed` is not a helper; a test is not followed.
+        assert_eq!(
+            queries,
+            ["Counted", "ThroughALibraryName", "NamedLikeATest"]
+        );
+        let text = imported(&program);
+        assert!(
+            text.contains("# stays in ArchUnitNET: the test checks the architecture in C#, not with a rule\n    # - name: counted"),
+            "{text}"
+        );
+        assert!(text.contains("3 tests run no rule"), "{text}");
+        // A file that uses neither library holds no architecture test.
+        let plain = program_of(
+            "class U { [Fact] void Adds() { Assert.Equal(2, 1 + 1); } }",
+            &[],
+        )?;
+        assert!(plain.queries().is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn called_names_over_approximate_calls() {
+        assert_eq!(
+            called_names("a.B(c).D<E>(F) + G (1) - h[2] + i.J"),
+            ["B", "D", "G"]
+        );
+        assert!(called_names("").is_empty());
+    }
+
+    #[test]
+    fn library_members_win_over_extension_methods() {
+        for (name, library) in [
+            ("That", true),
+            ("GetResult", true),
+            ("FollowCustomCondition", true),
+            ("BeSealed", true),
+            ("HaveNameStartingWith", true),
+            ("GetModuleTypes", false),
+            ("NotHavePublicSetters", false),
+        ] {
+            assert_eq!(library_member(name), library, "{name}");
+        }
+    }
+
+    #[test]
+    fn net_arch_test_enhanced_edition_is_not_read_as_net_arch_test() -> Result<(), ImportError> {
+        let mut program = program_of(
+            r"using NetArchTest.Rules;
+            class A { [Fact] void S() { Assert.True(Types.InCurrentDomain().Should().BeSealed().GetResult().IsSuccessful); }
+                      [Fact] void C() { Assert.True(Types.InCurrentDomain().Should().MeetCustomRule(new R()).GetResult().IsSuccessful); } }",
+            &[],
+        )?;
+        assert!(imported(&program).contains("- name: s\n"));
+        program.netarchtest_enhanced = true;
+        let text = imported(&program);
+        assert!(
+            text.contains("# not imported: the tests use NetArchTest.eNhancedEdition, which is not backwards compatible"),
+            "{text}"
+        );
+        assert!(
+            text.contains("stays in NetArchTest: custom predicate"),
+            "{text}"
+        );
         Ok(())
     }
 }

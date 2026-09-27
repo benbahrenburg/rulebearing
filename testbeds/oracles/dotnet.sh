@@ -19,8 +19,9 @@
 #      a cruise of the assemblies the first import names, so that types from packages resolve;
 #      then `rulebearing cruise -T junit` with the imported configuration;
 #   5. compare.py joins each TRX result with the JUnit cases of the rules named from its method.
-# A test the importer writes commented out is recorded as `stays` (custom predicate) or
-# `not-imported` with the importer's reason; it is never counted as a disagreement.
+# A test the importer writes commented out is recorded as `stays` (a custom predicate, or a test
+# that runs no rule and checks the architecture in C#) or `not-imported` with the importer's
+# reason; it is never counted as a disagreement.
 #
 # Writes testbeds/results/<owner>__<repo>.json (or under $RB_ORACLE_RESULTS), which
 # testbeds/oracles/table.py renders, and keeps every intermediate file in <out-dir>/<owner>__<repo>.

@@ -1,6 +1,6 @@
 # Imported from tests/RiverBooks.ArchitectureTests by `rulebearing import archunit`.
 # Each rule is preceded by the C# chain it came from; a chain that cannot be translated is kept, commented out, with the reason.
-# 11 rule chains read: 6 imported, 5 commented out.
+# 11 rule chains read: 7 imported, 4 commented out.
 $schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
 # new ArchLoader().LoadAssemblies(typeof(Book).Assembly, typeof(Users.User).Assembly).Build()   [ArchitectureTests.cs:10]
 languages:
@@ -99,9 +99,18 @@ rules:
     # Classes().That().Are(GetEntities())
     #   .Should().BeSealed()
     #   .Check(Architecture)   [ArchitectureTests.cs:67]
-    # not imported: `GetEntities()` calls the helper method `GetEntities`, whose result the importer does not evaluate
-    # - name: these-are-not-imported-2
-    #   comment: "imported from tests/RiverBooks.ArchitectureTests/ArchitectureTests.cs:67"
+    - name: these-are-not-imported-2
+      comment: "imported from tests/RiverBooks.ArchitectureTests/ArchitectureTests.cs:67"
+      select:
+        kind: class
+        language: dotnet
+        where:
+          are:
+            kind: class
+            where:
+              areAssignableTo: [RiverBooks.Books.Entity]
+      should:
+        beSealed: true
     # Classes().That().Are(typeof(Book))
     #   .Should().NotHavePropertySetterWithVisibility(Visibility.Public)
     #   .Check(Architecture)   [ArchitectureTests.cs:68]
