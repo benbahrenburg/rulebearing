@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@lib/*": ["../lib/*"],
+      "@shared/*": ["${configDir}/shared/*"]
+    }
+  }
+}

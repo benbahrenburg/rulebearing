@@ -54,7 +54,7 @@ use rb_model::{
 };
 
 use babel::BabelAliases;
-use pipeline::{Extracted, PipelineError, Settings};
+use pipeline::{Extracted, PipelineError, PreCompilation, Settings, TsCompilerOptions};
 use resolve::ResolveConfig;
 
 /// File extensions this extractor owns, from
@@ -150,11 +150,15 @@ fn absolute(cwd: &Path, path: &Path) -> PathBuf {
     }
 }
 
-/// Reads the tsconfig named in `config` (with its `extends` chain) and records its `baseUrl` and
-/// `paths` keys, which classify a dependency as `aliased-tsconfig-*`.
-fn load_tsconfig(config: &mut ResolveConfig, cwd: &Path) -> Result<(), ExtractError> {
+/// Reads the tsconfig named in `config` (with its `extends` chain), records its `baseUrl` and
+/// `paths` keys, which classify a dependency as `aliased-tsconfig-*`, and returns its `module`
+/// and `target`, which decide what `transpileModule` hands acorn.
+fn load_tsconfig(
+    config: &mut ResolveConfig,
+    cwd: &Path,
+) -> Result<TsCompilerOptions, ExtractError> {
     let Some(file) = config.tsconfig.clone() else {
-        return Ok(());
+        return Ok(TsCompilerOptions::default());
     };
     let file = absolute(cwd, &file);
     config.tsconfig = Some(file.clone());
@@ -174,7 +178,33 @@ fn load_tsconfig(config: &mut ResolveConfig, cwd: &Path) -> Result<(), ExtractEr
         .as_ref()
         .map(|p| p.keys().cloned().collect())
         .unwrap_or_default();
-    Ok(())
+    Ok(TsCompilerOptions {
+        module: options.module.as_deref().map(str::to_ascii_lowercase),
+        target: options.target.as_deref().map(str::to_ascii_lowercase),
+    })
+}
+
+/// Stops a run whose tsconfig sets a `module` in [`pipeline::UNSUPPORTED_MODULES`] when some
+/// TypeScript file will be compiled for acorn, which is when `tsPreCompilationDeps` is not
+/// `true` and neither `tsc` nor `swc` is the parser (`"specify"` compiles too, to compare).
+fn check_module(settings: &Settings, tsconfig: Option<&Path>) -> Result<(), ExtractError> {
+    let Some(module) = settings.compiler_options.module.as_deref() else {
+        return Ok(());
+    };
+    let compiles = pipeline::flavour_for(settings, "module.ts") == walk::Flavour::Acorn
+        || settings.pre_compilation == PreCompilation::Specify;
+    if !compiles || !pipeline::UNSUPPORTED_MODULES.contains(&module) {
+        return Ok(());
+    }
+    Err(ExtractError::UnsupportedFile {
+        path: tsconfig.map(Path::to_path_buf).unwrap_or_default(),
+        reason: format!(
+            "compilerOptions.module \"{module}\" is not supported when TypeScript is compiled \
+             before extraction (TypeScript 6 deprecates it and TypeScript 7 removes it); set \
+             module to commonjs, nodenext, esnext or preserve, or set tsPreCompilationDeps to \
+             true"
+        ),
+    })
 }
 
 /// The `.pnp.cjs` at or above `start`, checked well-formed enough for the resolver: the manifest
@@ -257,7 +287,8 @@ pub fn prepare(
 ) -> Result<(Settings, ResolveConfig), ExtractError> {
     let mut settings = Settings::new(options, cwd)?;
     let mut config = resolve_config(options);
-    load_tsconfig(&mut config, cwd)?;
+    settings.compiler_options = load_tsconfig(&mut config, cwd)?;
+    check_module(&settings, config.tsconfig.as_deref())?;
     if let Some(file) = options
         .babel_config
         .as_ref()

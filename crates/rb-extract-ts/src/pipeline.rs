@@ -122,6 +122,55 @@ pub enum PreCompilation {
     Specify,
 }
 
+/// What TypeScript's `transpileModule` emits for a TypeScript file that acorn then reads.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Emit {
+    /// `es2015` modules: imports stay, and `export * as ns from` is lowered to an import.
+    Es2015,
+    /// `es2020` and later, and `preserve`: imports and `export * as ns from` stay.
+    Es2020,
+    /// `node16` to `nodenext`, in a file named `module.ts`: every static import and re-export
+    /// becomes a `require`; `import()` stays.
+    Node,
+    /// `commonjs`: every static import, re-export and `import()` becomes a `require`.
+    CommonJs,
+}
+
+/// The `module` values `transpileModule` wraps in a loader (`define`, `System.register`) or
+/// treats inconsistently (`none`), which acorn's reading of the output does not follow here.
+/// TypeScript 6.0 deprecates each of them and TypeScript 7 removes them.
+pub const UNSUPPORTED_MODULES: [&str; 4] = ["amd", "umd", "system", "none"];
+
+/// The tsconfig's `compilerOptions.module` and `compilerOptions.target`, lower-cased. Upstream
+/// spreads the tsconfig's compiler options over its own defaults when it hands a TypeScript file
+/// to `transpileModule` (`src/extract/transpile/typescript-wrap.mjs`), so they decide what acorn
+/// reads.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct TsCompilerOptions {
+    /// `compilerOptions.module`.
+    pub module: Option<String>,
+    /// `compilerOptions.target`.
+    pub target: Option<String>,
+}
+
+impl TsCompilerOptions {
+    /// What `transpileModule` emits. The tsconfig's `module` when it sets one; otherwise
+    /// `nodenext` for upstream's ESM flavour (`.mts`, `.d.mts`), and TypeScript's default for the
+    /// rest: `commonjs` for an ES3 or ES5 target, `es2015` for any later one.
+    #[must_use]
+    pub fn emit(&self, esm_flavour: bool) -> Emit {
+        match self.module.as_deref() {
+            Some("commonjs") => Emit::CommonJs,
+            Some("node16" | "node18" | "node20" | "nodenext") => Emit::Node,
+            Some("es6" | "es2015") => Emit::Es2015,
+            Some(_) => Emit::Es2020,
+            None if esm_flavour => Emit::Node,
+            None if matches!(self.target.as_deref(), Some("es3" | "es5")) => Emit::CommonJs,
+            None => Emit::Es2015,
+        }
+    }
+}
+
 /// dependency-cruiser's cruise options, normalised for extraction.
 #[expect(
     clippy::struct_excessive_bools,
@@ -169,6 +218,8 @@ pub struct Settings {
     /// extension is never read); the command line turns it on for a native configuration
     /// ([ADR-0036](../../../docs/adr/0036-markdown-fences-follow-the-configuration-format.md)).
     pub markdown_fences: bool,
+    /// The tsconfig's `module` and `target`, read by [`crate::prepare`] when `tsConfig` names one.
+    pub compiler_options: TsCompilerOptions,
 }
 
 impl Settings {
@@ -204,6 +255,7 @@ impl Settings {
             babel: None,
             code_layer: true,
             markdown_fences: false,
+            compiler_options: TsCompilerOptions::default(),
         })
     }
 
@@ -396,8 +448,9 @@ fn type_declarations(source: &str, source_type: SourceType) -> Vec<Span> {
         .collect()
 }
 
-/// [`Transpiled`] for a TypeScript source. `esm` is upstream's ESM flavour (`.mts`, `.d.mts`),
-/// which targets ES2022 and keeps `export * as ns` as it is.
+/// [`Transpiled`] for a TypeScript source. `keeps_export_star_as` is any module kind but
+/// [`Emit::Es2015`]: ES2020 modules and later keep `export * as ns` as it is, and the CommonJS
+/// kinds turn it into a `require` whatever it was.
 ///
 /// # Errors
 /// When a dotted name is longer than [`walk::MAX_SEMANTIC_CHAIN`] segments, which oxc's semantic
@@ -405,7 +458,7 @@ fn type_declarations(source: &str, source_type: SourceType) -> Vec<Span> {
 pub fn transpiled(
     source: &str,
     source_type: SourceType,
-    esm: bool,
+    keeps_export_star_as: bool,
 ) -> Result<Transpiled, walk::ParseError> {
     let allocator = Allocator::default();
     let parsed = OxcParser::new(&allocator, source, source_type).parse();
@@ -436,7 +489,7 @@ pub fn transpiled(
             Statement::ExportAllDeclaration(export) => {
                 if export.export_kind == ImportOrExportKind::Type {
                     result.elided.push(export.span);
-                } else if export.exported.is_some() && !esm {
+                } else if export.exported.is_some() && !keeps_export_star_as {
                     result.lowered_to_import.push(export.span);
                 }
             }
@@ -715,11 +768,14 @@ fn forms(
         }
         Flavour::Acorn if source_type.is_typescript() => {
             // acorn reads TypeScript only after compiling it, which drops imports used as types
-            // and type-only re-exports, and lowers `export * as ns` for the ES2015 target.
+            // and type-only re-exports, lowers `export * as ns` for ES2015 modules, and turns
+            // imports into `require` when the module kind is CommonJS.
             let esm = path
                 .to_str()
                 .is_some_and(|p| matches!(resolve::extension(p), ".mts" | ".d.mts"));
-            let compiled = transpiled(source, source_type, esm).map_err(parse_error)?;
+            let emit = settings.compiler_options.emit(esm);
+            let compiled =
+                transpiled(source, source_type, emit != Emit::Es2015).map_err(parse_error)?;
             let (mut found, collected) =
                 walk::walk_source_then(source, source_type, Flavour::Acorn, &options, then)
                     .map_err(parse_error)?;
@@ -735,8 +791,8 @@ fn forms(
                     }
                 }
             }
-            if esm {
-                commonjs_output(&mut found, &options.module_systems);
+            if matches!(emit, Emit::Node | Emit::CommonJs) {
+                commonjs_output(&mut found, &options.module_systems, emit == Emit::CommonJs);
             }
             Ok((found, collected))
         }
@@ -780,18 +836,21 @@ impl<'s> Lines<'s> {
     }
 }
 
-/// Upstream compiles `.mts` and `.d.mts` with `module: "nodenext"` through `transpileModule`,
-/// whose file is `module.ts`, so the output is CommonJS: every static import and re-export
-/// left after elision is a `require` to acorn. `import()` stays as it is. A form that becomes
-/// CommonJS is dropped when `moduleSystems` leaves `cjs` out.
-fn commonjs_output(found: &mut Vec<Found>, module_systems: &[ModuleSystem]) {
+/// The CommonJS output of `transpileModule` ([`Emit::Node`], [`Emit::CommonJs`]): every static
+/// import and re-export left after elision is a `require` to acorn. Under `node16` to
+/// `nodenext` (upstream's default for `.mts` and `.d.mts`, whose file is `module.ts`) `import()`
+/// stays as it is; under `commonjs` (`dynamic_too`) it becomes a `require` inside a promise,
+/// which acorn reads as a static one. A form that becomes CommonJS is dropped when
+/// `moduleSystems` leaves `cjs` out.
+fn commonjs_output(found: &mut Vec<Found>, module_systems: &[ModuleSystem], dynamic_too: bool) {
     let keep = module_systems.is_empty() || module_systems.contains(&ModuleSystem::Cjs);
     found.retain_mut(|f| {
-        if f.module_system != ModuleSystem::Es6 || f.dynamic {
+        if f.module_system != ModuleSystem::Es6 || (f.dynamic && !dynamic_too) {
             return true;
         }
         f.module_system = ModuleSystem::Cjs;
         f.dependency_types = vec![DependencyType::Require];
+        f.dynamic = false;
         keep
     });
 }
@@ -1477,6 +1536,91 @@ pub fn utf16_length(source: &str) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The module kind `transpileModule` emits, over the `module` vocabulary TypeScript 6 and 7
+    /// accept, unset with each flavour, and unset with the targets that change the default.
+    #[test]
+    fn the_emitted_module_kind_follows_module_then_the_flavour_then_the_target() {
+        let options = |module: Option<&str>, target: Option<&str>| TsCompilerOptions {
+            module: module.map(str::to_owned),
+            target: target.map(str::to_owned),
+        };
+        let cases: [(Option<&str>, Option<&str>, bool, Emit); 20] = [
+            (Some("commonjs"), None, false, Emit::CommonJs),
+            (Some("commonjs"), None, true, Emit::CommonJs),
+            (Some("node16"), None, false, Emit::Node),
+            (Some("node18"), None, false, Emit::Node),
+            (Some("node20"), None, false, Emit::Node),
+            (Some("nodenext"), None, true, Emit::Node),
+            (Some("es6"), None, false, Emit::Es2015),
+            (Some("es2015"), None, true, Emit::Es2015),
+            (Some("es2020"), None, false, Emit::Es2020),
+            (Some("es2022"), None, false, Emit::Es2020),
+            (Some("esnext"), Some("es5"), false, Emit::Es2020),
+            (Some("preserve"), None, false, Emit::Es2020),
+            (Some("commonjs"), Some("esnext"), false, Emit::CommonJs),
+            (None, None, false, Emit::Es2015),
+            (None, None, true, Emit::Node),
+            (None, Some("es3"), false, Emit::CommonJs),
+            (None, Some("es5"), false, Emit::CommonJs),
+            (None, Some("es5"), true, Emit::Node),
+            (None, Some("es2015"), false, Emit::Es2015),
+            (None, Some("esnext"), false, Emit::Es2015),
+        ];
+        for (module, target, esm, expected) in cases {
+            assert_eq!(
+                options(module, target).emit(esm),
+                expected,
+                "{module:?} {target:?} {esm}"
+            );
+        }
+    }
+
+    /// Under `nodenext` `import()` stays; under `commonjs` it becomes a static `require`; a form
+    /// that becomes CommonJS goes when `moduleSystems` leaves `cjs` out.
+    #[test]
+    fn commonjs_output_lowers_imports_and_import_calls_under_commonjs_only() {
+        let form = |module: &str, dynamic: bool| Found {
+            module: module.to_owned(),
+            module_system: ModuleSystem::Es6,
+            dependency_types: vec![if dynamic {
+                DependencyType::DynamicImport
+            } else {
+                DependencyType::Import
+            }],
+            dynamic,
+            exotically_required: false,
+            exotic_require: None,
+            span: Span::default(),
+        };
+        let lowered = |dynamic_too: bool, systems: &[ModuleSystem]| {
+            let mut found = vec![form("a", false), form("b", true)];
+            commonjs_output(&mut found, systems, dynamic_too);
+            found
+                .into_iter()
+                .map(|f| (f.module, f.module_system, f.dynamic))
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            lowered(false, &[]),
+            [
+                ("a".to_owned(), ModuleSystem::Cjs, false),
+                ("b".to_owned(), ModuleSystem::Es6, true)
+            ]
+        );
+        assert_eq!(
+            lowered(true, &[]),
+            [
+                ("a".to_owned(), ModuleSystem::Cjs, false),
+                ("b".to_owned(), ModuleSystem::Cjs, false)
+            ]
+        );
+        assert_eq!(
+            lowered(false, &[ModuleSystem::Es6]),
+            [("b".to_owned(), ModuleSystem::Es6, true)]
+        );
+        assert!(lowered(true, &[ModuleSystem::Es6]).is_empty());
+    }
 
     #[test]
     fn statements_count_directives_and_a_json_document_as_one() {

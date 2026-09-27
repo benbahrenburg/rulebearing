@@ -132,6 +132,17 @@ npx rulebearing cruise --output-type agent
 
 or in GitHub Actions, `uses: benbahrenburg/rulebearing@v0.1.0` with `args: --config rulebearing.yaml src`. A repository already on dependency-cruiser keeps its configuration: replace `depcruise` with `rulebearing cruise` and change nothing else, or run `rulebearing adopt` for a baseline, a CI step and one green pull request.
 
+**TypeScript 7.** Rulebearing parses with oxc and resolves with `oxc_resolver`; it never loads the `typescript` package, so the compiler version a repository installs does not matter to it. What TypeScript 7 changes for an extractor is the tsconfig, and that is what is tested:
+
+| What | How it is proven |
+| --- | --- |
+| `paths` without `baseUrl`, in the tsconfig itself or inherited through `extends` from another folder, and `${configDir}` | fixture [`ts7-config`](crates/rb-extract-ts/tests/options/ts7-config) |
+| `moduleResolution: bundler` and `nodenext`, `.js` specifiers for `.ts` files, `#` subpath imports | the same fixture |
+| The tsconfig's `module` and `target` deciding whether an import reaches the rules as `import` or `require` when `tsPreCompilationDeps` is off, as dependency-cruiser's `transpileModule` step decides it | fixture [`ts-config-module`](crates/rb-extract-ts/tests/options/ts-config-module), every expectation taken from dependency-cruiser 18.2.0 with TypeScript 6.0.3 |
+| A real repository on TypeScript 7 | gate 1 layer 5 on langfuse, whose `web` package is on `typescript ^7.0.2` with a `baseUrl`-free tsconfig: 3,832 modules and 369 violations, zero differences from dependency-cruiser |
+
+dependency-cruiser cannot load TypeScript 7 itself (its manifest accepts `typescript >=2.0.0 <7.0.0`), so a repository that keeps it beside Rulebearing installs TypeScript 6 for it, as langfuse does with `@typescript/typescript6`. Two resolutions follow TypeScript rather than dependency-cruiser, whose `tsconfig-paths` 4.2.0 departs from the compiler once `baseUrl` is gone: inherited `paths` resolve (dependency-cruiser leaves them unresolved), and a bare `src/x` with no `baseUrl` stays unresolved (dependency-cruiser resolves it against the tsconfig's folder). `module: amd`, `umd`, `system` and `none`, which TypeScript 7 removes, stop a run with exit 2 unless `tsPreCompilationDeps` is `true`. The reasoning is [ADR-0040](docs/adr/0040-typescript-tsconfig-semantics-where-tsconfig-paths-departs.md).
+
 The guides: [configuration](docs/config.md), [rules](docs/rules.md), [reporters](docs/reporters.md), [the command line](docs/cli.md) and [Rulebearing for coding agents](docs/agents.md).
 
 **.NET and Python (wave 2).** The .NET extractor reads the compiled assemblies and their portable PDBs, so build first; the Python extractor reads the source, without running an interpreter. Once the wave 2 release is published, install with `dotnet tool install -g Rulebearing` or `pip install rulebearing`; from source, use `./target/release/rulebearing` as above.
