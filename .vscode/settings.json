@@ -1,0 +1,10 @@
+{
+  "python.analysis.exclude": [
+    "**/target",
+    "**/node_modules",
+    "**/bin",
+    "**/obj",
+    "**/.graph",
+    "conformance"
+  ]
+}
