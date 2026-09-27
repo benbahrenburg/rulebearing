@@ -2,9 +2,9 @@
 
 - **Status:** Proposed
 - **Date:** 2026-09-26
-- **Derives from:** [design § Why](../artifacts/design.md#why) ("superset, precisely; nothing is dropped"), [ADR-0009](0009-conformance-suites-as-specification.md) (the upstream suites are the specification), [ADR-0012](0012-oxc-for-typescript.md) (oxc parses and `oxc_resolver` resolves), [ADR-0036](0036-markdown-fences-follow-the-configuration-format.md) (the precedent for a behaviour that departs from upstream)
+- **Derives from:** the project's promise, "superset, precisely; nothing is dropped"; [ADR-0009](0009-conformance-suites-as-specification.md) (the upstream suites are the specification), [ADR-0012](0012-oxc-for-typescript.md) (oxc parses and `oxc_resolver` resolves), [ADR-0036](0036-markdown-fences-follow-the-configuration-format.md) (the precedent for a behaviour that departs from upstream)
 - **Constrains:** `crates/rb-extract-ts` (`lib.rs` `load_tsconfig` and `check_module`, `pipeline.rs` `TsCompilerOptions` and `commonjs_output`), [conformance/divergences.md](../../conformance/divergences.md)
-- **Implemented by:** [Wave 1 plan, sub-wave 1C](../plans/pending/0001-wave-1-typescript-parity.md#wave-1c-rb-extract-ts-completion)
+- **Implemented by:** `crates/rb-extract-ts`, with the fixtures `tests/options/ts7-config` and `tests/options/ts-config-module`
 - **Requirements:** [FR-EXT-TS-02](../prd.md#fr-ext-ts-02), [FR-EXT-TS-03](../prd.md#fr-ext-ts-03)
 
 ## Context
