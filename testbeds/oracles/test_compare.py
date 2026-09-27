@@ -188,6 +188,51 @@ def test_a_dotnet_row_where_every_test_is_not_imported_compares_nothing(tmp_path
     )
 
 
+def test_a_dotnet_test_that_runs_no_rule_stays(tmp_path: Path) -> None:
+    root = tmp_path.resolve()
+    tests = root / "tests"
+    tests.mkdir()
+    (tests / "Arch.cs").write_text("using NetArchTest.Rules;\nclass ArchTests {}\n")
+    trx = root / "incumbent.trx"
+    trx.write_text(
+        f'<TestRun xmlns="{compare.TRX[1:-1]}"><TestDefinitions>'
+        '<UnitTest id="1"><TestMethod className="Ns.ArchTests" name="Counted" /></UnitTest>'
+        '<UnitTest id="2"><TestMethod className="Ns.ArchTests" name="Hidden" /></UnitTest>'
+        "</TestDefinitions><Results>"
+        '<UnitTestResult testId="1" testName="Ns.ArchTests.Counted" outcome="Passed" />'
+        '<UnitTestResult testId="2" testName="Ns.ArchTests.Hidden" outcome="Passed" />'
+        "</Results></TestRun>\n",
+    )
+    imported = root / "imported.yaml"
+    imported.write_text(
+        "rules:\n  elements:\n"
+        "    # Counted()   [Arch.cs:3]\n"
+        "    # stays in NetArchTest: the test checks the architecture in C#, not with a rule\n"
+        "    # - name: counted\n"
+        '    #   comment: "imported from tests/Arch.cs:3"\n'
+    )
+    out = root / "result.json"
+    args = argparse.Namespace(
+        trx=str(trx),
+        imported=str(imported),
+        junit=str(root / "absent.xml"),
+        tests_dir=str(tests),
+        tests_shown="tests",
+        cwd=str(root),
+        repo="owner/name",
+        sha="0" * 40,
+        tool="netarchtest",
+        out=str(out),
+    )
+    assert compare.dotnet_main(args) == compare.NOTHING_COMPARED
+    rows = {r["test"]: r for r in json.loads(out.read_text())["results"]}
+    assert rows["Ns.ArchTests.Counted"]["verdict"] == "stays"
+    counted = rows["Ns.ArchTests.Counted"]
+    assert counted["reason"].startswith("stays in NetArchTest: the test checks")
+    assert rows["Ns.ArchTests.Hidden"]["verdict"] == "not-imported"
+    assert "wrote no entry" in rows["Ns.ArchTests.Hidden"]["reason"]
+
+
 def test_the_table_never_shows_nothing_compared_as_agreement() -> None:
     legacy = {"status": "compared", "detail": ""}
     rows: list[dict[str, Any]] = [{"verdict": "not-imported"}, {"verdict": "stays"}]

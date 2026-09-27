@@ -1,0 +1,119 @@
+# Imported from tests/Shop.ArchitectureTests by `rulebearing import archunit`.
+# Each rule is preceded by the C# chain it came from; a chain that cannot be translated is kept, commented out, with the reason.
+# 8 rule chains read: 4 imported, 4 commented out.
+# 2 tests run no rule (they check the architecture in C#) and stay, commented out.
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+# new ArchLoader().LoadAssemblies(typeof(Order).Assembly).Build()   [ArchTests.cs:13]
+# NetArchTest's Types.InAssembly(...) loads the assemblies its tests name
+languages:
+  dotnet:
+    assemblies: ["src/Shop.Core/bin/**/Shop.Core.dll"]
+rules:
+  elements:
+    # Classes().That().HaveNameEndingWith("Service")
+    #   .Should().BeSealed().AndShould().BePublic()
+    #   .Check(Architecture)   [ArchTests.cs:18]
+    - name: services-are-sealed-and-public
+      comment: "imported from tests/Shop.ArchitectureTests/ArchTests.cs:18"
+      select:
+        kind: class
+        language: dotnet
+        where:
+          haveNameEndingWith: Service
+      should:
+        all:
+          - beSealed: true
+          - bePublic: true
+    # Classes().That().ResideInNamespace("Shop.Core.Domain")
+    #   .Should().FollowCustomCondition(c => c.GetPropertyMembers().All(p => p.SetterVisibility != Visibility.Public), "have no public setters", "has a public setter")
+    #   .Check(Architecture)   [ArchTests.cs:23]
+    # stays in ArchUnitNET: custom predicate
+    # - name: domain-has-no-public-setters
+    #   comment: "imported from tests/Shop.ArchitectureTests/ArchTests.cs:23"
+    # Services_Are_Counted()   [ArchTests.cs:26]
+    # stays in ArchUnitNET: the test checks the architecture in C#, not with a rule
+    # - name: services-are-counted
+    #   comment: "imported from tests/Shop.ArchitectureTests/ArchTests.cs:26"
+    # Types.InAssembly(typeof(Order).Assembly).That().ResideInNamespace(namespaceof<Order>()).And().HaveNameEndingWith("Service")
+    #   .Should().BeSealed()
+    #   .GetResult()   [FixtureTests.cs:21]
+    - name: services-are-sealed
+      comment: "imported from tests/Shop.ArchitectureTests/FixtureTests.cs:21"
+      select:
+        kind: type
+        language: dotnet
+        where:
+          all:
+            - resideInAssembly: Shop.Core
+            - haveFullNameStartingWith: Shop.Core.Domain
+            - haveNameMatching: "[Ss][Ee][Rr][Vv][Ii][Cc][Ee]$"
+      should:
+        beSealed: true
+    # Sealed_Types_Are_Counted()   [FixtureTests.cs:26]
+    # stays in NetArchTest: the test checks the architecture in C#, not with a rule
+    # - name: sealed-types-are-counted
+    #   comment: "imported from tests/Shop.ArchitectureTests/FixtureTests.cs:26"
+    # Types.InAssembly(typeof(Order).Assembly).That().ResideInNamespace("Shop.Core.Domain")
+    #   .ShouldNot().HaveDependencyOnAny(forbidden)
+    #   .GetResult()   [FixtureTests.cs:39]
+    #   with [InlineData("Shop.Core.Billing")]
+    - name: domain-does-not-use-module
+      comment: "imported from tests/Shop.ArchitectureTests/FixtureTests.cs:39"
+      select:
+        kind: type
+        language: dotnet
+        where:
+          all:
+            - resideInAssembly: Shop.Core
+            - haveFullNameStartingWith: Shop.Core.Domain
+      should:
+        not:
+          dependOnAny:
+            kind: type
+            language: dotnet
+            where:
+              any:
+                - all:
+                    - resideInAssembly: Shop.Core
+                    - haveFullNameStartingWith: Shop.Core.Billing
+                - areNestedIn:
+                    kind: type
+                    language: dotnet
+                    where:
+                      all:
+                        - resideInAssembly: Shop.Core
+                        - haveFullNameStartingWith: Shop.Core.Billing
+    # Types.InAssembly(typeof(Order).Assembly).That().ResideInNamespace(within)
+    #   .ShouldNot().HaveDependencyOn(forbidden)
+    #   .GetResult()   [FixtureTests.cs:45]
+    - name: domain-does-not-use-web
+      comment: "imported from tests/Shop.ArchitectureTests/FixtureTests.cs:45"
+      select:
+        kind: type
+        language: dotnet
+        where:
+          all:
+            - resideInAssembly: Shop.Core
+            - haveFullNameStartingWith: Shop.Core.Domain
+      should:
+        not:
+          dependOnAny:
+            kind: type
+            where:
+              haveFullNameMatching: "^(?:Shop\\.Web)(?:$|[.+])"
+    # Built()
+    #   .GetResult()   [FixtureTests.cs:54]
+    # not imported: `Built()` calls `Built`, whose body is not one returned expression, which the importer does not evaluate
+    # - name: helper-with-statements
+    #   comment: "imported from tests/Shop.ArchitectureTests/FixtureTests.cs:54"
+    # Pick("a")
+    #   .GetResult()   [FixtureTests.cs:64]
+    # not imported: `Pick("a")` calls `Pick`, overloaded in the sources, which the importer does not resolve
+    # - name: overloaded-helper
+    #   comment: "imported from tests/Shop.ArchitectureTests/FixtureTests.cs:64"
+    # output.Types.That().AreSealed()
+    #   .Should().BePublic()
+    #   .GetResult()   [FixtureTests.cs:77]
+    # not imported: `output` is a constructor parameter the test framework fills, which the importer does not evaluate
+    # - name: constructor-parameter
+    #   comment: "imported from tests/Shop.ArchitectureTests/FixtureTests.cs:77"

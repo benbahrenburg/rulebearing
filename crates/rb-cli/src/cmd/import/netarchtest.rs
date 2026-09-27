@@ -137,24 +137,30 @@ pub fn ignore_case(pattern: &str) -> Result<String, String> {
     Ok(out)
 }
 
-fn strings(args: Args<'_>) -> Result<Vec<String>, String> {
-    let mut out = Vec::new();
+/// The entries of a dependency search: the names written, and the selections whose types' full
+/// names a helper returned (`GetTypes().Select(t => t.FullName)`), each as its nested selector.
+fn entries(args: Args<'_>) -> Result<(Vec<String>, Vec<Node>), String> {
+    let mut names = Vec::new();
+    let mut selections = Vec::new();
+    let mut add = |val: &Val| match val {
+        Val::Str(s) => {
+            names.push(s.clone());
+            Ok(())
+        }
+        Val::Selected(node) => {
+            selections.push(node.clone());
+            Ok(())
+        }
+        other => Err(format!("{} is not a string", other.describe())),
+    };
     for arg in args {
         match arg {
-            Ok(Val::Str(s)) => out.push(s.clone()),
-            Ok(Val::List(items)) => {
-                for item in items {
-                    match item {
-                        Val::Str(s) => out.push(s.clone()),
-                        other => return Err(format!("{} is not a string", other.describe())),
-                    }
-                }
-            }
-            Ok(other) => return Err(format!("{} is not a string", other.describe())),
+            Ok(Val::List(items)) => items.iter().try_for_each(&mut add)?,
+            Ok(other) => add(other)?,
             Err(reason) => return Err(reason.clone()),
         }
     }
-    Ok(out)
+    Ok((names, selections))
 }
 
 fn one_string(args: Args<'_>) -> Result<String, String> {
@@ -240,6 +246,47 @@ fn namespace_matching(side: Side, pattern: &str, negated: bool) -> Result<Node, 
         ]));
     }
     Ok(negated_if(any(branches), negated))
+}
+
+/// The .NET types a dependency search names, when some entries are the full names of the types a
+/// selection returns: a type of the selection, or a type nested in one (the entry begins its
+/// full name at a `+`), beside the names written. The third way a name begins another in whole
+/// segments, a namespace named like a selected type, is not written: within one assembly the C#
+/// compiler refuses a namespace and a type of the same full name (CS0101).
+fn dependencies_of(names: &[String], selections: &[Node]) -> Result<Node, String> {
+    if selections.is_empty() {
+        return Ok(dependencies(names));
+    }
+    let mut items = Vec::new();
+    if !names.is_empty()
+        && let Node::Map(pairs) = dependencies(names)
+        && let Some((_, where_)) = pairs.into_iter().find(|(k, _)| k == "where")
+    {
+        items.push(where_);
+    }
+    for selection in selections {
+        let where_ = match selection {
+            Node::Map(pairs) => pairs
+                .iter()
+                .find(|(k, _)| k == "where")
+                .map(|(_, v)| v.clone()),
+            _ => None,
+        };
+        let Some(where_) = where_ else {
+            return Err(
+                "the types' names come from a selection of every type, which names every dependency"
+                    .into(),
+            );
+        };
+        items.push(where_);
+        items.push(test("nestedIn", Side::Where, false, selection.clone()));
+    }
+    // Only a .NET type is a selected type or nested in one.
+    Ok(Node::map(vec![
+        ("kind", Node::str("type")),
+        ("language", Node::str("dotnet")),
+        ("where", any(items)),
+    ]))
 }
 
 /// The types a dependency search names: a prefix of the full name in whole segments.
@@ -480,11 +527,42 @@ fn type_term(
             ]),
             negated,
         ),
+        "HaveDependencyOn"
+        | "HaveDependencyOnAny"
+        | "HaveDependencyOnAll"
+        | "OnlyHaveDependenciesOn"
+        | "OnlyHaveDependencyOn" => dependency_term(method, concept, args, side, negated)?,
+        _ => return Err(unsupported(method, concept)),
+    };
+    Ok(node)
+}
+
+/// The dependency concepts: `HaveDependencyOn`, `HaveDependencyOnAny`, `HaveDependencyOnAll`
+/// and `OnlyHaveDependenciesOn`.
+fn dependency_term(
+    method: &str,
+    concept: &str,
+    args: Args<'_>,
+    side: Side,
+    negated: bool,
+) -> Result<Node, String> {
+    Ok(match concept {
         "HaveDependencyOn" | "HaveDependencyOnAny" => {
-            test("dependOnAny", side, negated, dependencies(&strings(args)?))
+            let (names, selections) = entries(args)?;
+            test(
+                "dependOnAny",
+                side,
+                negated,
+                dependencies_of(&names, &selections)?,
+            )
         }
         "HaveDependencyOnAll" => {
-            let entries = strings(args)?;
+            let (entries, selections) = entries(args)?;
+            if !selections.is_empty() {
+                return Err(format!(
+                    "`{method}` given the names of a selection's types asks a dependency on each of them, which one selector cannot say"
+                ));
+            }
             let mut distinct: Vec<String> = Vec::new();
             for e in entries {
                 if !distinct.contains(&e) {
@@ -507,11 +585,16 @@ fn type_term(
             )
         }
         "OnlyHaveDependenciesOn" | "OnlyHaveDependencyOn" => {
-            test("onlyDependOn", side, negated, dependencies(&strings(args)?))
+            let (names, selections) = entries(args)?;
+            test(
+                "onlyDependOn",
+                side,
+                negated,
+                dependencies_of(&names, &selections)?,
+            )
         }
         _ => return Err(unsupported(method, concept)),
-    };
-    Ok(node)
+    })
 }
 
 /// Why a NetArchTest call has no element-rule equivalent.
@@ -568,6 +651,68 @@ mod tests {
         for (concept, side, negated, expected) in table {
             assert_eq!(key(concept, side, negated), expected);
         }
+    }
+
+    /// `HaveDependencyOnAny(selection.GetTypes().Select(t => t.FullName))`: a type of the
+    /// selection or one nested in it, beside any names written.
+    #[test]
+    fn a_selection_s_names_are_its_types_and_their_nested_types() -> Result<(), String> {
+        let selection = selector(
+            "type",
+            Some(test(
+                "haveFullNameStartingWith",
+                Side::Where,
+                false,
+                Node::str("A.B"),
+            )),
+        );
+        let args = [Ok(Val::Selected(selection.clone())), Ok(s("X.Y"))];
+        assert_eq!(
+            json(&term("NotHaveDependencyOnAny", &args, Side::Should)?),
+            serde_json::json!({"notDependOnAny": {"kind": "type", "language": "dotnet", "where": {"any": [
+                {"haveFullNameMatching": "^(?:X\\.Y)(?:$|[.+])"},
+                {"haveFullNameStartingWith": "A.B"},
+                {"areNestedIn": {"kind": "type", "where": {"haveFullNameStartingWith": "A.B"}}}
+            ]}}})
+        );
+        assert_eq!(
+            json(&term(
+                "OnlyHaveDependenciesOn",
+                &[Ok(Val::Selected(selection.clone()))],
+                Side::Should
+            )?),
+            serde_json::json!({"onlyDependOn": {"kind": "type", "language": "dotnet", "where": {"any": [
+                {"haveFullNameStartingWith": "A.B"},
+                {"areNestedIn": {"kind": "type", "where": {"haveFullNameStartingWith": "A.B"}}}
+            ]}}})
+        );
+        // Names alone keep the README table's form.
+        assert_eq!(
+            json(&term("HaveDependencyOn", &[Ok(s("X"))], Side::Where)?),
+            serde_json::json!({"dependOnAny": {"kind": "type", "where": {"haveFullNameMatching": "^(?:X)(?:$|[.+])"}}})
+        );
+        let every = selector("type", None);
+        assert!(
+            term(
+                "HaveDependencyOnAny",
+                &[Ok(Val::Selected(every))],
+                Side::Where
+            )
+            .is_err_and(|e| e.contains("every type"))
+        );
+        assert!(
+            term(
+                "HaveDependencyOnAll",
+                &[Ok(Val::Selected(selection))],
+                Side::Where
+            )
+            .is_err_and(|e| e.contains("each of them"))
+        );
+        assert!(
+            term("HaveDependencyOn", &[Ok(Val::Bool(true))], Side::Where)
+                .is_err_and(|e| e.contains("is not a string"))
+        );
+        Ok(())
     }
 
     #[test]

@@ -75,6 +75,9 @@ pub enum Expr {
     Interpolated(Vec<Part>),
     /// `parameters => body`, an expression body only; the parameters as written.
     Lambda(String, Box<Expr>),
+    /// A generic method's name with its type arguments, as the function of a call
+    /// (`namespaceof<PublicClass>()`).
+    Generic(String, Vec<TypeName>),
     /// Anything else, as written.
     Other(String),
 }
@@ -129,11 +132,46 @@ pub struct Method {
     pub body: Vec<Stmt>,
     /// The parameter names, in order.
     pub parameters: Vec<String>,
-    /// An extension method: the first parameter is `this`.
+    /// Each parameter's type as written, where the parser read one.
+    pub parameter_types: Vec<Option<TypeName>>,
+    /// Each parameter's default value (`int n = 2`), where it has one.
+    pub defaults: Vec<Option<Expr>>,
+    /// The last parameter is a `params` array.
+    pub params: bool,
+    /// The method's type parameters (`M<T, U>`), in order.
+    pub type_parameters: Vec<String>,
+    /// An extension method: the first parameter is `this`, or the method is declared in a C# 14
+    /// `extension(T receiver) { ... }` block, whose receiver is prepended as the first parameter.
     pub extension: bool,
     /// Data rows of a parameterised test (`[InlineData]`, `[TestCase]`, `[DataRow]`): each
     /// attribute as written and its argument expressions.
     pub rows: Vec<(String, Vec<Expr>)>,
+    /// The method carries a test attribute (`[Fact]`, `[Theory]`, `[Test]`, `[TestCase]`,
+    /// `[TestMethod]`, `[DataTestMethod]` ...).
+    pub test: bool,
+    /// The declaration as written, for a search of what it calls.
+    pub text: String,
+}
+
+/// Attributes that make a method a test, by their simple name without `Attribute` (xUnit,
+/// `NUnit`, `MSTest`).
+const TEST_ATTRIBUTES: &[&str] = &[
+    "Fact",
+    "Theory",
+    "SkippableFact",
+    "SkippableTheory",
+    "Test",
+    "TestCase",
+    "TestCaseSource",
+    "TestMethod",
+    "DataTestMethod",
+];
+
+/// One parameter as read.
+struct Parameter {
+    name: String,
+    ty: Option<TypeName>,
+    default: Option<Expr>,
 }
 
 /// A field or property with a value.
@@ -162,6 +200,8 @@ pub struct TypeDecl {
     pub kind: String,
     /// The base list, as written.
     pub bases: Vec<TypeName>,
+    /// The primary constructor's parameters (`class C(Fixture fixture)`), with their types.
+    pub primary: Vec<(String, Option<TypeName>)>,
     /// Fields and properties with values; constructor assignments to a simple name are added
     /// after the initializers, so the last value written is found last.
     pub members: Vec<Member>,
@@ -428,6 +468,17 @@ impl Reader<'_, '_> {
             .flat_map(named_children)
             .filter_map(|b| self.type_name(b))
             .collect();
+        let primary = named_children(node)
+            .into_iter()
+            .find(|c| c.kind() == "parameter_list")
+            .map(|list| {
+                self.parameters(list)
+                    .0
+                    .into_iter()
+                    .map(|p| (p.name, p.ty))
+                    .collect()
+            })
+            .unwrap_or_default();
         let mut decl = TypeDecl {
             name: name.clone(),
             arity,
@@ -435,6 +486,7 @@ impl Reader<'_, '_> {
             outer: outer.to_vec(),
             kind,
             bases,
+            primary,
             members: Vec::new(),
             methods: Vec::new(),
             usings: usings.clone(),
@@ -461,6 +513,9 @@ impl Reader<'_, '_> {
                         }
                     }
                     "property_declaration" => decl.members.extend(self.property(member)),
+                    "constructor_declaration" if self.extension_block(member, &decl.name) => {
+                        decl.methods.extend(self.extension_members(member));
+                    }
                     "method_declaration"
                     | "constructor_declaration"
                     | "local_function_statement" => {
@@ -539,6 +594,91 @@ impl Reader<'_, '_> {
             .collect()
     }
 
+    /// Whether a constructor declaration is a C# 14 `extension(T receiver) { ... }` block, which
+    /// `tree-sitter-c-sharp` 0.23 reads as a constructor named `extension` holding local
+    /// functions. A real constructor is named after its class.
+    fn extension_block(&self, node: Node<'_>, class: &str) -> bool {
+        let name = node
+            .child_by_field_name("name")
+            .map(|n| self.text(n))
+            .unwrap_or_default();
+        name == "extension" && class != "extension"
+    }
+
+    /// The members of an extension block, each an extension method whose first parameter is the
+    /// block's receiver.
+    fn extension_members(&self, node: Node<'_>) -> Vec<Method> {
+        let (receiver, _) = node
+            .child_by_field_name("parameters")
+            .map(|list| self.parameters(list))
+            .unwrap_or_default();
+        let Some(receiver) = receiver.into_iter().next() else {
+            return Vec::new();
+        };
+        node.child_by_field_name("body")
+            .map(named_children)
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|c| c.kind() == "local_function_statement")
+            .map(|f| {
+                let mut method = self.method(f);
+                method.parameters.insert(0, receiver.name.clone());
+                method.parameter_types.insert(0, receiver.ty.clone());
+                method.defaults.insert(0, None);
+                method.extension = true;
+                method
+            })
+            .collect()
+    }
+
+    /// A parameter list: each parameter, and whether the last is a `params` array. The grammar
+    /// writes a `params T[] name` parameter as `type` and `name` fields of the list itself.
+    fn parameters(&self, list: Node<'_>) -> (Vec<Parameter>, bool) {
+        let mut out: Vec<Parameter> = named_children(list)
+            .into_iter()
+            .filter(|p| p.kind() == "parameter")
+            .filter_map(|p| {
+                let name_node = p.child_by_field_name("name")?;
+                let ty = p
+                    .child_by_field_name("type")
+                    .and_then(|t| self.type_name(t));
+                let default = named_children(p)
+                    .into_iter()
+                    .filter(|c| c.start_byte() > name_node.end_byte())
+                    .find(|c| c.kind() != "attribute_list")
+                    .map(|c| {
+                        if c.kind() == "equals_value_clause" {
+                            c.named_child(0)
+                                .map_or(Expr::Other(self.text(c)), |e| self.expr(e))
+                        } else {
+                            self.expr(c)
+                        }
+                    });
+                Some(Parameter {
+                    name: self.text(name_node),
+                    ty,
+                    default,
+                })
+            })
+            .collect();
+        let params = match list.child_by_field_name("name") {
+            Some(name) => {
+                out.push(Parameter {
+                    name: self.text(name),
+                    ty: list
+                        .child_by_field_name("type")
+                        .and_then(|t| self.type_name(t)),
+                    default: None,
+                });
+                true
+            }
+            None => named_children(list)
+                .last()
+                .is_some_and(|p| children(*p).iter().any(|c| c.kind() == "params")),
+        };
+        (out, params)
+    }
+
     fn method(&self, node: Node<'_>) -> Method {
         let name = node
             .child_by_field_name("name")
@@ -564,31 +704,62 @@ impl Reader<'_, '_> {
             Some(block) => self.statements(block, &mut body),
             None => {}
         }
-        let parameters: Vec<Node<'_>> = node
-            .child_by_field_name("parameters")
+        let list = node.child_by_field_name("parameters");
+        let extension = list
+            .and_then(|l| {
+                named_children(l)
+                    .into_iter()
+                    .find(|p| p.kind() == "parameter")
+            })
+            .is_some_and(|p| {
+                named_children(p)
+                    .iter()
+                    .any(|m| m.kind() == "modifier" && text(*m, self.source) == "this")
+            });
+        let (parameters, params) = list.map(|l| self.parameters(l)).unwrap_or_default();
+        let type_parameters = node
+            .child_by_field_name("type_parameters")
             .map(|list| {
                 named_children(list)
                     .into_iter()
-                    .filter(|p| p.kind() == "parameter")
+                    .filter_map(|t| t.child_by_field_name("name").map(|n| self.text(n)))
                     .collect()
             })
             .unwrap_or_default();
-        let extension = parameters.first().is_some_and(|p| {
-            named_children(*p)
-                .iter()
-                .any(|m| m.kind() == "modifier" && text(*m, self.source) == "this")
-        });
+        let attributes = self.attributes(node);
         Method {
             name,
             line: line(node),
             body,
-            parameters: parameters
-                .iter()
-                .filter_map(|p| p.child_by_field_name("name").map(|n| self.text(n)))
-                .collect(),
+            parameter_types: parameters.iter().map(|p| p.ty.clone()).collect(),
+            defaults: parameters.iter().map(|p| p.default.clone()).collect(),
+            parameters: parameters.into_iter().map(|p| p.name).collect(),
+            params,
+            type_parameters,
             extension,
             rows: self.rows(node),
+            test: attributes
+                .iter()
+                .any(|a| TEST_ATTRIBUTES.contains(&a.as_str())),
+            text: self.text(node),
         }
+    }
+
+    /// The simple names of a declaration's attributes, without the `Attribute` suffix.
+    fn attributes(&self, node: Node<'_>) -> Vec<String> {
+        named_children(node)
+            .into_iter()
+            .filter(|c| c.kind() == "attribute_list")
+            .flat_map(named_children)
+            .filter(|a| a.kind() == "attribute")
+            .filter_map(|a| a.child_by_field_name("name"))
+            .map(|n| {
+                let name = text(n, self.source);
+                let name = name.rsplit('.').next().unwrap_or(name);
+                let name = name.split('<').next().unwrap_or(name);
+                name.strip_suffix("Attribute").unwrap_or(name).to_owned()
+            })
+            .collect()
     }
 
     /// The data rows of a parameterised test method.
@@ -834,9 +1005,15 @@ impl Reader<'_, '_> {
                 Expr::Member(Box::new(receiver), name)
             }
             "invocation_expression" => {
-                let function = node
-                    .child_by_field_name("function")
-                    .map_or(Expr::Other(String::new()), |f| self.expr(f));
+                let function =
+                    node.child_by_field_name("function")
+                        .map_or(Expr::Other(String::new()), |f| {
+                            if f.kind() == "generic_name" {
+                                self.generic(f)
+                            } else {
+                                self.expr(f)
+                            }
+                        });
                 let args = node
                     .child_by_field_name("arguments")
                     .map(|a| self.args(a))
@@ -879,6 +1056,23 @@ impl Reader<'_, '_> {
             "collection_expression" | "initializer_expression" => Expr::Array(self.elements(node)),
             "tuple_expression" => Expr::Tuple(self.args(node)),
             _ => Expr::Other(self.text(node)),
+        }
+    }
+
+    /// A generic name in call position, with its type arguments.
+    fn generic(&self, node: Node<'_>) -> Expr {
+        let Some(name) = node.named_child(0).map(|n| self.text(n)) else {
+            return Expr::Other(self.text(node));
+        };
+        let arguments = named_children(node)
+            .into_iter()
+            .find(|c| c.kind() == "type_argument_list")
+            .map(named_children)
+            .unwrap_or_default();
+        let types: Option<Vec<TypeName>> = arguments.iter().map(|t| self.type_name(*t)).collect();
+        match types {
+            Some(types) if !types.is_empty() => Expr::Generic(name, types),
+            _ => Expr::Name(name),
         }
     }
 
@@ -972,6 +1166,13 @@ impl Reader<'_, '_> {
                 ),
                 _ => Expr::Other(self.text(node)),
             },
+            // `x!`, the null-forgiving operator, is `x`.
+            "postfix_unary_expression"
+                if children(node).last().is_some_and(|o| self.text(*o) == "!") =>
+            {
+                node.named_child(0)
+                    .map_or(Expr::Other(self.text(node)), |e| self.expr(e))
+            }
             "await_expression" | "checked_expression" | "ref_expression" => node
                 .named_child(0)
                 .map_or(Expr::Other(self.text(node)), |e| self.expr(e)),
@@ -1083,6 +1284,14 @@ pub fn render(expr: &Expr) -> String {
             out
         }
         Expr::Lambda(parameters, body) => format!("{parameters} => {}", render(body)),
+        Expr::Generic(name, types) => format!(
+            "{name}<{}>",
+            types
+                .iter()
+                .map(|t| t.text.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
         Expr::Other(text) => text.split_whitespace().collect::<Vec<_>>().join(" "),
     }
 }
@@ -1190,6 +1399,77 @@ enum E { A }
         )?;
         let names: Vec<String> = blocks.types.iter().map(TypeDecl::full_name).collect();
         assert_eq!(names, ["X.Y.C", "Z.W.I"]);
+        Ok(())
+    }
+
+    #[test]
+    fn parameters_fixtures_generics_and_extension_blocks_are_read() -> Result<(), ImportError> {
+        let file = parse(
+            r"public class P(AFixture fixture, int x = 3) : IClassFixture<AFixture>
+            {
+                public P(BFixture b, params string[] names) { _b = b; }
+                static string M<T, U>(T a, int n = 2, params Type[] more) => typeof(T).Namespace!;
+                [Fact] void Q() { var r = namespaceof<PublicClass>(); var s = x.Get<int>(); }
+                [Xunit.TheoryAttribute] void R(string a, params int[] b) { }
+            }
+            public static class E
+            {
+                extension(ClassesShould should)
+                {
+                    public ClassesShouldConjunction Sealed(string why) => should.BeSealed();
+                }
+            }",
+            "P.cs",
+        )?;
+        let class = &file.types[0];
+        assert_eq!(class.primary.len(), 2);
+        assert_eq!(class.primary[0].0, "fixture");
+        assert_eq!(
+            class.primary[0].1.as_ref().map(|t| t.text.as_str()),
+            Some("AFixture")
+        );
+        assert_eq!(class.bases[0].text, "IClassFixture<AFixture>");
+        let method = |name: &str| {
+            class
+                .methods
+                .iter()
+                .find(|candidate| candidate.name == name)
+                .ok_or_else(|| ImportError::Invalid(name.into()))
+        };
+        let constructor = method("P")?;
+        assert_eq!(constructor.parameters, ["b", "names"]);
+        assert!(constructor.params);
+        assert!(!constructor.test);
+        let generic = method("M")?;
+        assert_eq!(generic.type_parameters, ["T", "U"]);
+        assert_eq!(generic.parameters, ["a", "n", "more"]);
+        assert_eq!(generic.defaults, [None, Some(Expr::Num("2".into())), None]);
+        assert!(generic.params);
+        // `!` is the expression it forgives.
+        assert!(
+            matches!(&generic.body[0], Stmt::Expr { expr, .. } if render(expr) == "typeof(T).Namespace")
+        );
+        let test = method("Q")?;
+        assert!(test.test);
+        assert!(test.text.starts_with("[Fact] void Q()"));
+        let Stmt::Local { value, .. } = &test.body[0] else {
+            return Err(ImportError::Invalid("Q body".into()));
+        };
+        assert!(
+            matches!(value, Expr::Call(f, _) if matches!(f.as_ref(), Expr::Generic(n, t) if n == "namespaceof" && t.len() == 1))
+        );
+        assert_eq!(render(value), "namespaceof<PublicClass>()");
+        let theory = method("R")?;
+        assert!(theory.test && theory.params);
+        let ext = &file.types[1];
+        assert_eq!(ext.methods.len(), 1);
+        let sealed = &ext.methods[0];
+        assert!(sealed.extension);
+        assert_eq!(sealed.parameters, ["should", "why"]);
+        assert_eq!(
+            sealed.parameter_types[0].as_ref().map(|t| t.text.as_str()),
+            Some("ClassesShould")
+        );
         Ok(())
     }
 
