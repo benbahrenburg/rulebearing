@@ -1,5 +1,5 @@
 # testbeds/init: `rulebearing init --dry-run` on microsoft/autogen at 027ecf0a379bcc1d09956d46d12d44a3ad9cee14
-# (a cruise of . with this configuration exits 0 (1437 findings baselined)). Regenerate with testbeds/init/run.sh.
+# (a cruise of . with this configuration exits 0 (1284 findings baselined)). Regenerate with testbeds/init/run.sh.
 # rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
 # Found: .NET (dotnet/AutoGen.sln), Python (python/packages/agbench/src, python/packages/autogen-agentchat/src, python/packages/autogen-core/src, python/packages/autogen-ext/src, python/packages/autogen-studio, python/packages/autogen-test-utils/src, python/packages/component-schema-gen/src, python/packages/magentic-one-cli/src, python/packages/pyautogen/src).
 # Every rule says why it exists (comment) and what to do when it fires (fix);
@@ -53,4 +53,4 @@ rules:
 options:
   # Findings present when this file was written. Each expires; fix it before then.
   knownViolations:
-    # no-circular: 25, no-orphans: 31, not-to-unresolvable: 1381 (entries elided)
+    # no-circular: 25, no-orphans: 31, not-to-unresolvable: 1228 (entries elided)
