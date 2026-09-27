@@ -140,6 +140,73 @@ fn a_rule_not_reached_through_the_narrowed_graph_is_reported() -> Result<()> {
     Ok(())
 }
 
+/// The violations of one rule as `from -> to`, and its vacuous sides.
+fn one_outcome(rule: &Value) -> Result<(Vec<String>, Vec<String>)> {
+    let evaluation = run(&one(rule)?)?;
+    let violations = evaluation
+        .violations()
+        .iter()
+        .map(|v| format!("{} -> {}", v.from, v.to))
+        .collect();
+    let vacuous = evaluation.vacuous.iter().map(|v| v.side.clone()).collect();
+    Ok((violations, vacuous))
+}
+
+#[test]
+fn a_redirect_gives_an_import_of_an_unwalked_folder_to_its_package() -> Result<()> {
+    // `pkg/ns/` has no `__init__.py`: grimp reads `pkg/low/f.py`'s import of `pkg.ns.g` as an
+    // import of `pkg`, and reads nothing `pkg/ns/g.py` imports (ADR-0051).
+    let redirect = json!([{ "to": "^pkg/ns/", "into": "pkg/__init__.py" }]);
+    let direct = |graph: Value| {
+        json!({ "name": "low-not-to-pkg", "severity": "error", "from": { "path": "^pkg/low/" },
+                "to": { "path": "^pkg/__init__\\.py$" }, "graph": graph })
+    };
+    let (dropped, _) = one_outcome(&direct(json!({ "modulesNot": "^pkg/ns(/|$)" })))?;
+    assert!(dropped.is_empty(), "modulesNot alone loses the import");
+    let (led, _) = one_outcome(&direct(
+        json!({ "modulesNot": "^pkg/ns(/|$)", "redirect": redirect }),
+    ))?;
+    assert_eq!(
+        led,
+        ["pkg/low/f.py -> pkg/ns/g.py"],
+        "the violation names the file the document resolved"
+    );
+    // The ignore entry import-linter writes names the package; it is live only through the
+    // redirect.
+    let ignored = |graph: Value| {
+        json!({ "name": "f-to-pkg-ignored", "severity": "error", "from": { "path": "^pkg/low/" },
+                "to": { "path": "^pkg/__init__\\.py$" }, "graph": graph })
+    };
+    let entry = json!([{ "from": "^pkg/low/f\\.py$", "to": "^pkg/__init__\\.py$" }]);
+    let (_, stale) = one_outcome(&ignored(
+        json!({ "modulesNot": "^pkg/ns(/|$)", "ignore": entry }),
+    ))?;
+    assert_eq!(stale, ["graph.ignore[0]"]);
+    let (kept, live) = one_outcome(&ignored(
+        json!({ "modulesNot": "^pkg/ns(/|$)", "ignore": entry, "redirect": redirect }),
+    ))?;
+    assert!(kept.is_empty() && live.is_empty(), "{kept:?} {live:?}");
+    // A chain continues from the package, not from the unwalked module: `pkg/ns/g.py` imports
+    // `pkg/high/c.py`, `pkg/__init__.py` imports nothing.
+    let reach = |graph: Option<Value>| {
+        let mut rule = json!({ "name": "f-not-to-high", "severity": "error",
+                               "from": { "path": "^pkg/low/f\\.py$" },
+                               "to": { "path": "^pkg/high/", "reachable": true } });
+        if let Some(graph) = graph {
+            rule["graph"] = graph;
+        }
+        one_outcome(&rule).map(|(v, _)| v)
+    };
+    assert_eq!(reach(None)?, ["pkg/low/f.py -> pkg/high/c.py"]);
+    assert!(
+        reach(Some(
+            json!({ "modulesNot": "^pkg/ns(/|$)", "redirect": redirect })
+        ))?
+        .is_empty()
+    );
+    Ok(())
+}
+
 #[test]
 fn rules_with_different_graphs_see_different_graphs() -> Result<()> {
     let rules = json!([
@@ -267,6 +334,42 @@ fn a_slice_rule_joins_slices_over_its_narrowed_graph() -> Result<()> {
     )?;
     assert_eq!(count(&allowed), 1);
     assert!(allowed.vacuous.is_empty());
+    Ok(())
+}
+
+#[test]
+fn a_slice_rule_joins_slices_over_redirected_imports() -> Result<()> {
+    // `app/b/loose/` has no `__init__.py`: `app/a/x.py`'s import of `app.b.loose.y` is an import
+    // of `app.b`, which imports `app.a.x` back (ADR-0051).
+    let edge = |to: &str| {
+        json!({ "module": to, "moduleSystem": "py", "resolved": to, "dependencyTypes": ["local"],
+                "coreModule": false, "couldNotResolve": false, "followable": true, "dynamic": false,
+                "exoticallyRequired": false, "circular": false, "valid": true })
+    };
+    let module = |source: &str, dotted: &str, dependencies: Vec<Value>| {
+        json!({ "source": source, "dependencies": dependencies, "valid": true, "language": "python",
+                "namespaces": [dotted] })
+    };
+    let document = || -> Result<GraphDocument> {
+        Ok(GraphDocument {
+            modules: serde_json::from_value(json!([
+                module("app/a/x.py", "app.a.x", vec![edge("app/b/loose/y.py")]),
+                module("app/b/__init__.py", "app.b", vec![edge("app/a/x.py")]),
+                module("app/b/loose/y.py", "app.b.loose.y", vec![]),
+            ]))?,
+            ..GraphDocument::default()
+        })
+    };
+    let dropped = slices(document()?, Some(json!({ "modulesNot": "^app/b/loose/" })))?;
+    assert!(dropped.violations().is_empty());
+    let led = slices(
+        document()?,
+        Some(json!({
+            "modulesNot": "^app/b/loose/",
+            "redirect": [{ "to": "^app/b/loose/", "into": "app/b/__init__.py" }]
+        })),
+    )?;
+    assert_eq!(led.violations().len(), 1, "the cycle a -> b -> a");
     Ok(())
 }
 

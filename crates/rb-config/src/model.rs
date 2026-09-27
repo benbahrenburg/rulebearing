@@ -384,6 +384,13 @@ pub struct GraphFilter {
     /// chain's start and end need not match.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub chains_through: Option<Patterns>,
+    /// Imports led to another module, each `{ to, into }`: an edge whose resolved target matches
+    /// `to` leads to the module `into` in the rule's graph, before the other keys apply, and an
+    /// edge a redirect leads back to its importer is removed. grimp's attribution of an import of
+    /// a module it does not walk to the root package that holds it
+    /// ([ADR-0051](../../../docs/adr/0051-a-rule-redirects-the-imports-it-sees.md)).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub redirect: Vec<RedirectedImports>,
 }
 
 impl GraphFilter {
@@ -393,7 +400,18 @@ impl GraphFilter {
             && self.dependency_types_not.is_none()
             && self.modules_not.is_none()
             && self.chains_through.is_none()
+            && self.redirect.is_empty()
     }
+}
+
+/// One `graph.redirect` entry.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct RedirectedImports {
+    /// Paths the edge's resolved target must match.
+    pub to: Patterns,
+    /// The module path the edge leads to instead, as the document writes `source`.
+    pub into: String,
 }
 
 /// One `graph.ignore` entry.

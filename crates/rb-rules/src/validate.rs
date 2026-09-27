@@ -80,6 +80,9 @@ impl Matcher {
 /// rule's `graph`: an edge the rule's graph lacks matches nothing
 /// ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).
 pub fn dependency_match(rule: &Rule, from: &Value, to: &Value, facts: &ModuleFacts) -> bool {
+    let led = redirected(rule, to);
+    let dependency = to;
+    let to = led.as_ref().unwrap_or(dependency);
     let groups = from_groups(rule, &js::text(from, "source"));
     matches_from_path(rule, from)
         && matches_from_path_not(rule, from)
@@ -103,7 +106,23 @@ pub fn dependency_match(rule: &Rule, from: &Value, to: &Value, facts: &ModuleFac
         && matches_ancestor(rule, from, to)
         && matches_from_cross_language(rule, from, facts)
         && matches_to_cross_language(rule, to, facts)
-        && in_rule_graph(rule, from, to)
+        && in_rule_graph(rule, from, dependency)
+}
+
+/// The dependency as the rule's graph sees it when `graph.redirect` leads it elsewhere: the same
+/// dependency with `resolved` naming the module it leads to
+/// ([ADR-0051](../../../docs/adr/0051-a-rule-redirects-the-imports-it-sees.md)); `None` when
+/// no redirect applies.
+fn redirected(rule: &Rule, to: &Value) -> Option<Value> {
+    let graph = rule.graph.as_ref().filter(|g| !g.redirect.is_empty())?;
+    let into = View::new(graph)
+        .redirected(&js::text(to, "resolved"))?
+        .to_owned();
+    let mut led = to.clone();
+    if let Value::Object(map) = &mut led {
+        map.insert("resolved".into(), Value::String(into));
+    }
+    Some(led)
 }
 
 /// Whether the rule's graph has the edge: always without `graph`.
@@ -509,6 +528,57 @@ mod tests {
             validate_module(&set, &orphan, &none())["rules"][0]["name"],
             "no-orphans"
         );
+    }
+
+    #[test]
+    fn a_redirected_dependency_matches_where_it_leads() {
+        let r = rule(json!({
+            "from": { "path": "^core/" },
+            "to": { "path": "^services/__init__\\.py$" },
+            "graph": {
+                "redirect": [{ "to": "^services/loose/", "into": "services/__init__.py" }],
+                "modulesNot": "^services/loose/"
+            }
+        }));
+        let from = json!({ "source": "core/a.py" });
+        assert!(
+            dependency_match(
+                &r,
+                &from,
+                &json!({ "resolved": "services/loose/m.py" }),
+                &none()
+            ),
+            "an import of the loose module is an import of the package"
+        );
+        assert!(dependency_match(
+            &r,
+            &from,
+            &json!({ "resolved": "services/__init__.py" }),
+            &none()
+        ));
+        assert!(!dependency_match(
+            &r,
+            &from,
+            &json!({ "resolved": "services/m.py" }),
+            &none()
+        ));
+        assert!(
+            !dependency_match(
+                &r,
+                &json!({ "source": "services/__init__.py" }),
+                &json!({ "resolved": "services/loose/m.py" }),
+                &none()
+            ),
+            "an edge led back to its importer is gone"
+        );
+        let plain = rule(json!({ "from": {}, "to": { "path": "^services/loose/" } }));
+        assert!(dependency_match(
+            &plain,
+            &from,
+            &json!({ "resolved": "services/loose/m.py" }),
+            &none()
+        ));
+        assert!(redirected(&plain, &json!({ "resolved": "services/loose/m.py" })).is_none());
     }
 
     #[test]

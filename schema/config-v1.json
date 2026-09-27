@@ -3752,6 +3752,13 @@
             }
           ],
           "description": "Modules whose path matches lose every edge from or to them."
+        },
+        "redirect": {
+          "description": "Imports led to another module, each `{ to, into }`: an edge whose resolved target matches\n`to` leads to the module `into` in the rule's graph, before the other keys apply, and an\nedge a redirect leads back to its importer is removed. grimp's attribution of an import of\na module it does not walk to the root package that holds it\n([ADR-0051](../../../docs/adr/0051-a-rule-redirects-the-imports-it-sees.md)).",
+          "items": {
+            "$ref": "#/$defs/RedirectedImports"
+          },
+          "type": "array"
         }
       },
       "type": "object"
@@ -4840,6 +4847,25 @@
         "from",
         "to",
         "budget"
+      ],
+      "type": "object"
+    },
+    "RedirectedImports": {
+      "additionalProperties": false,
+      "description": "One `graph.redirect` entry.",
+      "properties": {
+        "into": {
+          "description": "The module path the edge leads to instead, as the document writes `source`.",
+          "type": "string"
+        },
+        "to": {
+          "$ref": "#/$defs/Patterns",
+          "description": "Paths the edge's resolved target must match."
+        }
+      },
+      "required": [
+        "to",
+        "into"
       ],
       "type": "object"
     },

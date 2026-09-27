@@ -28,6 +28,8 @@
 //! `.dependency-cruiser.*` file), legal on `forbidden` rules only (not on an orphan, dependents or
 //! folder-scoped one), `chainsThrough` needs `to.reachable`, and an empty `graph` or an `ignore`
 //! entry with neither `from` nor `to` is an error, since it would remove nothing or everything.
+//! A `redirect` entry ([ADR-0051](../../../docs/adr/0051-a-rule-redirects-the-imports-it-sees.md))
+//! needs both `to` and `into`.
 //!
 //! **Normalisation** is `normalizeRuleSet` from dependency-cruiser 18.2.0: `severity` defaults to
 //! `warn`, `name` to `unnamed`, `scope` to `module`; arrays of patterns are joined with `|`;
@@ -62,9 +64,13 @@ const GRAPH_KEYS: &[&str] = &[
     "dependencyTypesNot",
     "modulesNot",
     "chainsThrough",
+    "redirect",
 ];
 /// The keys of one `graph.ignore` entry.
 const IGNORE_KEYS: &[&str] = &["from", "to"];
+/// The keys of one `graph.redirect` entry, both required
+/// ([ADR-0051](../../../docs/adr/0051-a-rule-redirects-the-imports-it-sees.md)).
+const REDIRECT_KEYS: &[&str] = &["to", "into"];
 const FROM_KEYS: &[&str] = &["path", "pathNot", "orphan"];
 /// The cross-language keys of `from` and `to`, native configurations only.
 pub const CROSS_LANGUAGE_KEYS: &[&str] = &[
@@ -287,7 +293,8 @@ fn check_rule(
 }
 
 /// Checks the keys of a rule's `graph`: an object of `GRAPH_KEYS` that writes at least one,
-/// each `ignore` entry an object of `from` and `to` with at least one of them.
+/// each `ignore` entry an object of `from` and `to` with at least one of them, each `redirect`
+/// entry an object with both `to` and a non-empty `into`.
 ///
 /// # Errors
 /// [`ConfigError::Invalid`] naming the key.
@@ -295,9 +302,10 @@ pub fn check_graph(graph: &Value, at: &str) -> Result<(), ConfigError> {
     check_object(graph, at, GRAPH_KEYS)?;
     if graph.as_object().is_none_or(Map::is_empty) {
         return Err(ConfigError::Invalid(format!(
-            "`{at}` removes nothing; write `ignore`, `dependencyTypesNot`, `modulesNot` or `chainsThrough`, or remove it"
+            "`{at}` removes nothing; write `ignore`, `dependencyTypesNot`, `modulesNot`, `chainsThrough` or `redirect`, or remove it"
         )));
     }
+    check_redirect(graph.get("redirect"), at)?;
     match graph.get("ignore") {
         None => Ok(()),
         Some(Value::Array(entries)) => {
@@ -316,6 +324,38 @@ pub fn check_graph(graph: &Value, at: &str) -> Result<(), ConfigError> {
             "`{at}.ignore` must be a list of `{{ from, to }}` entries"
         ))),
     }
+}
+
+/// Checks `graph.redirect`: a list of `{ to, into }` entries, `into` a module path.
+fn check_redirect(redirect: Option<&Value>, at: &str) -> Result<(), ConfigError> {
+    let entries = match redirect {
+        None => return Ok(()),
+        Some(Value::Array(entries)) => entries,
+        Some(_) => {
+            return Err(ConfigError::Invalid(format!(
+                "`{at}.redirect` must be a list of `{{ to, into }}` entries"
+            )));
+        }
+    };
+    for (index, entry) in entries.iter().enumerate() {
+        let here = format!("{at}.redirect[{index}]");
+        check_object(entry, &here, REDIRECT_KEYS)?;
+        if entry.get("to").is_none_or(Value::is_null) {
+            return Err(ConfigError::Invalid(format!(
+                "`{here}` has no `to`; name the modules whose imports lead elsewhere"
+            )));
+        }
+        if entry
+            .get("into")
+            .and_then(Value::as_str)
+            .is_none_or(str::is_empty)
+        {
+            return Err(ConfigError::Invalid(format!(
+                "`{here}.into` must be the path of the module the imports lead to"
+            )));
+        }
+    }
+    Ok(())
 }
 
 /// The cross-language keys written in one side of a rule.
@@ -421,6 +461,9 @@ pub fn normalise_graph(graph: &mut GraphFilter) {
     }
     joined(&mut graph.modules_not);
     joined(&mut graph.chains_through);
+    for entry in &mut graph.redirect {
+        entry.to = Patterns::One(entry.to.joined());
+    }
 }
 
 /// The warning for a rule whose `from` or `to` can only match .NET modules and that names
@@ -743,6 +786,9 @@ pub fn graph_patterns(graph: &GraphFilter) -> Vec<(&'static str, &str)> {
         "graph.chainsThrough",
         graph.chains_through.as_ref(),
     );
+    for entry in &graph.redirect {
+        add(&mut out, "graph.redirect.to", Some(&entry.to));
+    }
     out
 }
 
@@ -1176,7 +1222,11 @@ mod tests {
         let with = |graph: Value| {
             object(json!({ "forbidden": [{ "name": "r", "from": {}, "to": {}, "graph": graph }] }))
         };
-        let good = with(json!({ "ignore": [{ "from": "^a" }], "modulesNot": "^n/" }));
+        let good = with(json!({
+            "ignore": [{ "from": "^a" }],
+            "modulesNot": "^n/",
+            "redirect": [{ "to": ["^n/", "^o/"], "into": "n.py" }]
+        }));
         assert!(
             check_keys(&good, CompatMode::Native, false)?
                 .warnings
@@ -1214,6 +1264,34 @@ mod tests {
             (
                 json!({ "ignore": [{ "to": "x" }, 3] }),
                 "`forbidden[0].graph.ignore[1]` must be an object",
+            ),
+            (
+                json!({ "redirect": { "to": "x", "into": "y" } }),
+                "`forbidden[0].graph.redirect` must be a list",
+            ),
+            (
+                json!({ "redirect": [{ "into": "y" }] }),
+                "`forbidden[0].graph.redirect[0]` has no `to`",
+            ),
+            (
+                json!({ "redirect": [{ "to": null, "into": "y" }] }),
+                "`forbidden[0].graph.redirect[0]` has no `to`",
+            ),
+            (
+                json!({ "redirect": [{ "to": "x" }] }),
+                "`forbidden[0].graph.redirect[0].into` must be the path",
+            ),
+            (
+                json!({ "redirect": [{ "to": "x", "into": "" }] }),
+                "`forbidden[0].graph.redirect[0].into` must be the path",
+            ),
+            (
+                json!({ "redirect": [{ "to": "x", "into": 3 }] }),
+                "`forbidden[0].graph.redirect[0].into` must be the path",
+            ),
+            (
+                json!({ "redirect": [{ "to": "x", "into": "y", "from": "z" }] }),
+                "`forbidden[0].graph.redirect[0].from` is not a key",
             ),
             (json!([]), "`forbidden[0].graph` must be an object"),
         ] {
@@ -1279,7 +1357,8 @@ mod tests {
             { "name": "direct", "from": {}, "to": { "path": "y" }, "graph": {
                 "ignore": [{ "from": ["^a", "^b"], "to": ["^c", "^d"] }, { "to": "^e" }],
                 "dependencyTypesNot": ["type-only"],
-                "modulesNot": ["^m", "^n"]
+                "modulesNot": ["^m", "^n"],
+                "redirect": [{ "to": ["^m/", "^n/"], "into": "m.py" }]
             } },
             { "name": "chains", "from": {}, "to": { "path": "y", "reachable": true }, "graph": { "chainsThrough": ["^src/", "^lib/"] } },
             { "name": "unreached", "from": {}, "to": { "path": "y", "reachable": false }, "graph": { "chainsThrough": "^src/" } }
@@ -1289,6 +1368,8 @@ mod tests {
         assert_eq!(graph.ignore[0].to, Some(Patterns::One("^c|^d".into())));
         assert_eq!(graph.ignore[1].from, None);
         assert_eq!(graph.modules_not, Some(Patterns::One("^m|^n".into())));
+        assert_eq!(graph.redirect[0].to, Patterns::One("^m/|^n/".into()));
+        assert_eq!(graph.redirect[0].into, "m.py");
         assert_eq!(
             graph.dependency_types_not,
             Some(vec![rb_model::DependencyType::TypeOnly])
@@ -1308,6 +1389,7 @@ mod tests {
                 ("graph.ignore.to", "^c|^d"),
                 ("graph.ignore.to", "^e"),
                 ("graph.modulesNot", "^m|^n"),
+                ("graph.redirect.to", "^m/|^n/"),
             ]
         );
         assert_eq!(
@@ -1346,6 +1428,13 @@ mod tests {
             },
             GraphFilter {
                 ignore: vec![crate::model::IgnoredEdges::default()],
+                ..GraphFilter::default()
+            },
+            GraphFilter {
+                redirect: vec![crate::model::RedirectedImports {
+                    to: Patterns::One("x".into()),
+                    into: "y".into(),
+                }],
                 ..GraphFilter::default()
             },
         ] {

@@ -303,7 +303,7 @@ struct Member<'a> {
 fn members<'a>(
     architecture: &Architecture<'a>,
     separator: char,
-    view: Option<&View>,
+    view: Option<&'a View>,
 ) -> Vec<Member<'a>> {
     let by_types =
         |language: Option<Language>| language.is_some_and(|l| slice_unit(l) == SliceUnit::Types);
@@ -350,7 +350,8 @@ fn members<'a>(
                             )
                         })
                     })
-                    .map(|d| d.resolved.as_str())
+                    // Where `graph.redirect` leads the import (ADR-0051).
+                    .map(|d| view.map_or(d.resolved.as_str(), |v| v.target(&d.resolved)))
                     .collect(),
                 is_type: false,
             });
