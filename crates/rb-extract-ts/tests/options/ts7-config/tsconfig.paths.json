@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "paths": {
+      "@app/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}

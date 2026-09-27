@@ -403,6 +403,202 @@ fn an_mts_file_compiled_for_acorn_requires_what_it_imports() {
     );
 }
 
+/// `(module, module system, types, dynamic)` of each dependency of `file`, extracted with
+/// `tsConfig` naming `tsconfig` in the `ts-config-module` fixture.
+fn module_kinds(tsconfig: &str, file: &str) -> Vec<(String, String, Vec<String>, bool)> {
+    let options = format!(r#"{{"tsConfig": {{"fileName": "{tsconfig}"}}}}"#);
+    run("ts-config-module", &options, &[file])
+        .ok()
+        .map(|found| {
+            details(&found, file)
+                .into_iter()
+                .map(|(module, _, system, kinds, _, dynamic)| (module, system, kinds, dynamic))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Upstream spreads the tsconfig's compiler options over its own when it compiles TypeScript for
+/// acorn, so the tsconfig's `module` (or, when unset, an ES3 or ES5 `target`) decides whether
+/// imports reach acorn as `import` or `require`, whether `export * as ns` is lowered, and
+/// whether `import()` survives. Each row is 18.2.0's `cruise([file], {tsConfig})` on the
+/// fixture with TypeScript 6.0.3; `import type` is gone in every row.
+#[test]
+fn the_tsconfig_module_decides_what_acorn_reads() {
+    let row = |kinds: [(&str, &[&str], bool); 4]| -> Vec<(String, String, Vec<String>, bool)> {
+        ["./b.js", "./c.js", "./d.js", "./e.js"]
+            .iter()
+            .zip(kinds)
+            .map(|(module, (system, types_, dynamic))| {
+                (
+                    (*module).to_owned(),
+                    system.to_owned(),
+                    types(types_),
+                    dynamic,
+                )
+            })
+            .collect()
+    };
+    let require = ("cjs", &["local", "require"][..], false);
+    let dynamic = ("es6", &["local", "dynamic-import"][..], true);
+    let import = ("es6", &["local", "import"][..], false);
+    let export = ("es6", &["local", "export"][..], false);
+    let es2015 = row([import, export, import, dynamic]);
+    let es2020 = row([import, export, export, dynamic]);
+    let node = row([require, require, require, dynamic]);
+    let commonjs = row([require; 4]);
+    let cases: [(&str, &str, &Vec<_>); 18] = [
+        ("tsconfig.json", "src/a.ts", &es2015),
+        ("tsconfig.json", "src/m.mts", &node),
+        ("tsconfig.commonjs.json", "src/a.ts", &commonjs),
+        ("tsconfig.commonjs.json", "src/m.mts", &commonjs),
+        ("tsconfig.node16.json", "src/a.ts", &node),
+        ("tsconfig.node16.json", "src/m.mts", &node),
+        ("tsconfig.nodenext.json", "src/a.ts", &node),
+        ("tsconfig.nodenext.json", "src/m.mts", &node),
+        ("tsconfig.extends.json", "src/a.ts", &node),
+        ("tsconfig.extends.json", "src/m.mts", &node),
+        ("tsconfig.es2015.json", "src/a.ts", &es2015),
+        ("tsconfig.es2015.json", "src/m.mts", &es2015),
+        ("tsconfig.esnext.json", "src/a.ts", &es2020),
+        ("tsconfig.esnext.json", "src/m.mts", &es2020),
+        ("tsconfig.preserve.json", "src/a.ts", &es2020),
+        ("tsconfig.preserve.json", "src/m.mts", &es2020),
+        ("tsconfig.es5.json", "src/a.ts", &commonjs),
+        ("tsconfig.es5.json", "src/m.mts", &node),
+    ];
+    for (tsconfig, file, expected) in cases {
+        assert_eq!(&module_kinds(tsconfig, file), expected, "{tsconfig} {file}");
+    }
+}
+
+/// `amd`, `umd`, `system` and `none` stop the run with the tsconfig named, when TypeScript is
+/// compiled for acorn (`"specify"` compiles too); with `tsPreCompilationDeps: true`, or `tsc` as
+/// the parser, nothing is compiled and the run goes on.
+#[test]
+fn a_module_kind_typescript_7_removes_stops_a_compiling_run() {
+    let options =
+        |extra: &str| format!(r#"{{"tsConfig": {{"fileName": "tsconfig.amd.json"}}{extra}}}"#);
+    let stopped = |extra: &str| {
+        matches!(
+            run("ts-config-module", &options(extra), &["src/a.ts"]),
+            Err(ExtractError::UnsupportedFile { path, reason })
+                if path.ends_with("tsconfig.amd.json")
+                    && reason.contains(r#"compilerOptions.module "amd""#)
+                    && reason.contains("tsPreCompilationDeps")
+        )
+    };
+    assert!(stopped(""));
+    assert!(stopped(r#", "tsPreCompilationDeps": "specify""#));
+    assert!(!stopped(r#", "tsPreCompilationDeps": true"#));
+    assert!(!stopped(r#", "parser": "tsc""#));
+    assert!(
+        run(
+            "ts-config-module",
+            &options(r#", "tsPreCompilationDeps": true"#),
+            &["src/a.ts"]
+        )
+        .is_ok()
+    );
+}
+
+/// A TypeScript 7 tsconfig: no `baseUrl`, `paths` inherited from a config in another folder
+/// (relative to that folder, and through `${configDir}`), `moduleResolution: bundler`, `.js`
+/// specifiers for `.ts` files and `#` subpath imports. The resolutions are TypeScript's.
+/// 18.2.0 leaves `@lib/lib` and `@shared/shared` unresolved, because `tsconfig-paths` 4.2.0
+/// takes inherited `paths` against the extending config and does not expand `${configDir}`;
+/// the extractor follows TypeScript there
+/// ([ADR-0040](../../../docs/adr/0040-typescript-tsconfig-semantics-where-tsconfig-paths-departs.md)).
+#[test]
+fn a_typescript_7_tsconfig_resolves_inherited_paths_without_base_url() {
+    let found = run(
+        "ts7-config",
+        r#"{"tsConfig": {"fileName": "tsconfig.json"}}"#,
+        &["src/index.ts"],
+    );
+    let Ok(found) = found else {
+        unreachable!("{found:?}");
+    };
+    let paths = [
+        "aliased",
+        "aliased-tsconfig",
+        "aliased-tsconfig-paths",
+        "local",
+        "import",
+    ];
+    assert_eq!(
+        edges(&found, "src/index.ts"),
+        [
+            (
+                "./util.js".to_owned(),
+                "src/util.ts".to_owned(),
+                types(&["local", "import"])
+            ),
+            (
+                "@lib/lib".to_owned(),
+                "lib/lib.ts".to_owned(),
+                types(&paths)
+            ),
+            (
+                "@shared/shared".to_owned(),
+                "shared/shared.ts".to_owned(),
+                types(&paths)
+            ),
+            (
+                "#internal/internal.js".to_owned(),
+                "internal/internal.ts".to_owned(),
+                types(&["aliased", "aliased-subpath-import", "local", "import"])
+            ),
+        ]
+    );
+}
+
+/// `paths` of the tsconfig itself, with no `baseUrl`, resolve against its folder, as in 18.2.0;
+/// under `module: nodenext` the imports reach acorn as `require`. A bare `src/util.js` stays
+/// unresolved, which is TypeScript's answer without `baseUrl`: 18.2.0 resolves it, because
+/// `tsconfig-paths-webpack-plugin` 4.2.0 adds a match-all `*` against the tsconfig's folder
+/// whether or not `baseUrl` is set
+/// ([ADR-0040](../../../docs/adr/0040-typescript-tsconfig-semantics-where-tsconfig-paths-departs.md)).
+#[test]
+fn a_typescript_7_tsconfig_resolves_its_own_paths_and_no_implicit_base_url() {
+    let found = run(
+        "ts7-config",
+        r#"{"tsConfig": {"fileName": "tsconfig.paths.json"}}"#,
+        &["src/app.ts"],
+    );
+    let Ok(found) = found else {
+        unreachable!("{found:?}");
+    };
+    assert_eq!(
+        details(&found, "src/app.ts"),
+        [
+            (
+                "@app/feature/feature.js".to_owned(),
+                "src/feature/feature.ts".to_owned(),
+                "cjs".to_owned(),
+                types(&[
+                    "aliased",
+                    "aliased-tsconfig",
+                    "aliased-tsconfig-paths",
+                    "local",
+                    "require"
+                ]),
+                true,
+                false
+            ),
+            (
+                "src/util.js".to_owned(),
+                "src/util.js".to_owned(),
+                "cjs".to_owned(),
+                types(&["unknown"]),
+                false,
+                false
+            ),
+        ]
+    );
+    assert_eq!(resolved(&found, "src/feature/feature.ts"), ["src/util.ts"]);
+}
+
 #[test]
 fn detect_process_builtin_module_calls_finds_both_spellings() {
     let edge = |options: &str| {
