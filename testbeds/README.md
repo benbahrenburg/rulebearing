@@ -57,3 +57,14 @@ python3 testbeds/oracles/table.py --readme README.md
 ## Adding or bumping a row
 
 Add one line to `manifest.yaml` with `repo`, `role`, `languages` and `tool`. An oracle also needs `config` (dependency-cruiser) or `solution` and `test` (.NET). A greenfield or scale row with .NET projects needs `build`, the command that builds them at the checkout root (Rulebearing reads the built assemblies, [ADR-0011](../docs/adr/0011-read-dotnet-assemblies-not-source.md)). Then run `testbeds/pin.sh <owner/repo>` and `testbeds/run.sh <owner/repo>` locally before opening the pull request. Bump a SHA with `pin.sh` in its own pull request, so the nightly figures before and after the bump can be told apart.
+
+Two optional fields make a repository build on the Linux runner without changing it. Each row that uses one says why in its `note`.
+
+| Field | Read by | What it does | Example |
+| --- | --- | --- | --- |
+| `submodules` | `greenfield.sh`, `scale.sh` (the clone in `lib.sh`) | The submodule paths the build needs, each initialised one commit deep at the commit the checkout records; the others stay empty | aspnetcore's Components.Server compiles MessagePack-CSharp from `src/submodules/MessagePack-CSharp` |
+| `msbuild` | `run.sh`, `oracles/dotnet.sh` | Extra MSBuild arguments, separated by spaces, for both `dotnet build` and `dotnet test` of a .NET oracle's `test` project | DrJohnMelville/Pdf names its props file `Directory.Build.Props`, which MSBuild finds under the default name only on a case-insensitive file system, so the row passes `-p:_DirectoryBuildPropsFile=Directory.Build.Props` |
+
+A greenfield or scale row passes MSBuild properties in its `build` command instead: autogen's has `-p:CreateVenv=False`, which skips the `uv sync` of the Python packages that its integration-test project runs after `PrepareForBuild`; the .NET build does not read that environment.
+
+A row whose incumbent tests do not build or run at the pinned SHA because of the repository itself is bumped to the first upstream commit that fixes it, not patched here: Nager.Date at `124effb` references MSTest.TestAdapter 4.4.0 beside MSTest.TestFramework 4.4.1, which the adapter refuses to load, so `dotnet test` found no tests until upstream `816103d` aligned them.

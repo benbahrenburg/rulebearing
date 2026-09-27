@@ -211,8 +211,13 @@ case "$tool" in
     # EnableWindowsTargeting lets projects that target Windows build on a Linux runner, as a user
     # building in CI would. NuGet signature verification is off for these throwaway clones only:
     # the Linux runner's certificate bundle rejects some valid author signatures (NU3012).
+    # A row's `msbuild` arguments (separated by spaces) go to the build and the test run both, for
+    # a repository that builds on Linux only with them (README.md, "Adding or bumping a row").
+    msbuild_args=()
+    read -r -a msbuild_args <<< "$(field msbuild)"
     if ! (cd "$checkout" && DOTNET_NUGET_SIGNATURE_VERIFICATION=false \
-          dotnet build "$test_project" -c Release -p:DebugType=portable -p:EnableWindowsTargeting=true) > "$out/build.log" 2>&1; then
+          dotnet build "$test_project" -c Release -p:DebugType=portable -p:EnableWindowsTargeting=true \
+            ${msbuild_args[@]+"${msbuild_args[@]}"}) > "$out/build.log" 2>&1; then
       result error "dotnet build failed (see build.log)"
       exit 0
     fi
@@ -221,7 +226,7 @@ case "$tool" in
     filter_args=()
     [ -n "$filter" ] && filter_args=(--filter "$filter")
     timed "$out/timing.json" "$checkout" "$out/incumbent.log" dotnet test "$test_project" -c Release --no-build \
-      ${filter_args[@]+"${filter_args[@]}"} --logger "trx;LogFileName=incumbent.trx" --results-directory "$out"
+      ${filter_args[@]+"${filter_args[@]}"} ${msbuild_args[@]+"${msbuild_args[@]}"} --logger "trx;LogFileName=incumbent.trx" --results-directory "$out"
     status=$?
     if [ -f "$out/incumbent.trx" ]; then
       if [ "$status" -eq 0 ]; then result ok "$tool tests passed"; else result failed "$tool tests failed (exit $status)"; fi
