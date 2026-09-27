@@ -1,8 +1,8 @@
 # Rulebearing
 
-**Deterministic guardrails for agentic engineering.** Architecture rules your coding agent cannot talk its way past, with the fix attached to every finding, for TypeScript, .NET and Python in one rule file.
+**Deterministic guardrails for agentic engineering.** Architecture rules your coding agent cannot talk its way past, with the fix attached to every finding, for TypeScript (TypeScript 7 included), JavaScript, .NET and Python in one rule file.
 
-> **Status: wave 0.** The design is complete, every quality gate is wired and green, and no subcommand ships yet. The first release, a drop-in for repositories already using dependency-cruiser, is wave 1. If the problem below is yours, star or watch the repository; the [roadmap](#roadmap) says what lands when.
+> **Status: waves 1 and 2 built, first release in progress.** Wave 1, the drop-in for repositories already using dependency-cruiser, builds and runs from source and supports TypeScript 7 ([how it is proven](#typescript-7)); its `v0.1.0` release is being cut. Wave 2, .NET and Python, is built, with its nightly evidence and the NuGet and PyPI packages still to finish. If the problem below is yours, star or watch the repository; the [roadmap](#roadmap) says what lands when.
 
 ## The problem with telling an agent the rules
 
@@ -132,17 +132,6 @@ npx rulebearing cruise --output-type agent
 
 or in GitHub Actions, `uses: benbahrenburg/rulebearing@v0.1.0` with `args: --config rulebearing.yaml src`. A repository already on dependency-cruiser keeps its configuration: replace `depcruise` with `rulebearing cruise` and change nothing else, or run `rulebearing adopt` for a baseline, a CI step and one green pull request.
 
-**TypeScript 7.** Rulebearing parses with oxc and resolves with `oxc_resolver`; it never loads the `typescript` package, so the compiler version a repository installs does not matter to it. What TypeScript 7 changes for an extractor is the tsconfig, and that is what is tested:
-
-| What | How it is proven |
-| --- | --- |
-| `paths` without `baseUrl`, in the tsconfig itself or inherited through `extends` from another folder, and `${configDir}` | fixture [`ts7-config`](crates/rb-extract-ts/tests/options/ts7-config) |
-| `moduleResolution: bundler` and `nodenext`, `.js` specifiers for `.ts` files, `#` subpath imports | the same fixture |
-| The tsconfig's `module` and `target` deciding whether an import reaches the rules as `import` or `require` when `tsPreCompilationDeps` is off, as dependency-cruiser's `transpileModule` step decides it | fixture [`ts-config-module`](crates/rb-extract-ts/tests/options/ts-config-module), every expectation taken from dependency-cruiser 18.2.0 with TypeScript 6.0.3 |
-| A real repository on TypeScript 7 | gate 1 layer 5 on langfuse, whose `web` package is on `typescript ^7.0.2` with a `baseUrl`-free tsconfig: 3,832 modules and 369 violations, zero differences from dependency-cruiser |
-
-dependency-cruiser cannot load TypeScript 7 itself (its manifest accepts `typescript >=2.0.0 <7.0.0`), so a repository that keeps it beside Rulebearing installs TypeScript 6 for it, as langfuse does with `@typescript/typescript6`. Two resolutions follow TypeScript rather than dependency-cruiser, whose `tsconfig-paths` 4.2.0 departs from the compiler once `baseUrl` is gone: inherited `paths` resolve (dependency-cruiser leaves them unresolved), and a bare `src/x` with no `baseUrl` stays unresolved (dependency-cruiser resolves it against the tsconfig's folder). `module: amd`, `umd`, `system` and `none`, which TypeScript 7 removes, stop a run with exit 2 unless `tsPreCompilationDeps` is `true`. The reasoning is [ADR-0040](docs/adr/0040-typescript-tsconfig-semantics-where-tsconfig-paths-departs.md).
-
 The guides: [configuration](docs/config.md), [rules](docs/rules.md), [reporters](docs/reporters.md), [the command line](docs/cli.md) and [Rulebearing for coding agents](docs/agents.md).
 
 **.NET and Python (wave 2).** The .NET extractor reads the compiled assemblies and their portable PDBs, so build first; the Python extractor reads the source, without running an interpreter. Once the wave 2 release is published, install with `dotnet tool install -g Rulebearing` or `pip install rulebearing`; from source, use `./target/release/rulebearing` as above.
@@ -163,17 +152,40 @@ rulebearing import eslint --from eslint.config.js --out rulebearing.yaml        
 
 The same rules run as tests in the suite you already have: `Rulebearing.TestAdapter` for xUnit, NUnit, MSTest and TUnit, `pytest-rulebearing`, and `rulebearing/vitest`, one test per rule with the fix in the failure message; `eslint-plugin-rulebearing` flags a boundary in the editor. ArchUnitNET's predicates are keys of [element rules](docs/rules.md), with each key's meaning in every language in the [generated reference](docs/reference/element-rules.md).
 
+## TypeScript 7
+
+TypeScript 7 is supported. Rulebearing parses with oxc and resolves with `oxc_resolver`; it never loads the `typescript` package, so the compiler version a repository installs does not matter to it. What TypeScript 7 changes for an extractor is the tsconfig, and that is what is tested:
+
+| What | How it is proven |
+| --- | --- |
+| `paths` without `baseUrl`, in the tsconfig itself or inherited through `extends` from another folder, and `${configDir}` | fixture [`ts7-config`](crates/rb-extract-ts/tests/options/ts7-config) |
+| `moduleResolution: bundler` and `nodenext`, `.js` specifiers for `.ts` files, `#` subpath imports | the same fixture |
+| The tsconfig's `module` and `target` deciding whether an import reaches the rules as `import` or `require` when `tsPreCompilationDeps` is off, as dependency-cruiser's `transpileModule` step decides it | fixture [`ts-config-module`](crates/rb-extract-ts/tests/options/ts-config-module), every expectation taken from dependency-cruiser 18.2.0 with TypeScript 6.0.3 |
+| A real repository on TypeScript 7 | gate 1 layer 5 on langfuse, whose `web` package is on `typescript ^7.0.2` with a `baseUrl`-free tsconfig: 3,832 modules and 369 violations, zero differences from dependency-cruiser |
+
+dependency-cruiser cannot load TypeScript 7 itself (its manifest accepts `typescript >=2.0.0 <7.0.0`), so a repository that keeps it beside Rulebearing installs TypeScript 6 for it, as langfuse does with `@typescript/typescript6`. Two resolutions follow TypeScript rather than dependency-cruiser, whose `tsconfig-paths` 4.2.0 departs from the compiler once `baseUrl` is gone: inherited `paths` resolve (dependency-cruiser leaves them unresolved), and a bare `src/x` with no `baseUrl` stays unresolved (dependency-cruiser resolves it against the tsconfig's folder). `module: amd`, `umd`, `system` and `none`, which TypeScript 7 removes, stop a run with exit 2 unless `tsPreCompilationDeps` is `true`. The reasoning is [ADR-0040](docs/adr/0040-typescript-tsconfig-semantics-where-tsconfig-paths-departs.md).
+
 ## Roadmap
 
 Five waves of part-time work, TypeScript first because that is where the largest set of validation repositories is.
 
-| Wave | Weeks | What lands for you | Exit criterion |
-| --- | --- | --- | --- |
-| **0 Spike** | 4 | The TypeScript extractor, matching dependency-cruiser on 292 of the 296 cases its own extraction suite records (0.9865); the .NET metadata reader, attributing 99.29% of the .NET oracles' types to a source file, so the C# fallback is not needed ([ADR-0022](docs/adr/0022-dotnet-reader-in-rust-confirmed.md)); both conformance harnesses; the nightly test beds; the name held on four registries | Fixtures at 95%; 99% of .NET types attributed to a source file, or the fallback extractor is invoked |
-| **1 TypeScript** | 10 | The drop-in: full dependency-cruiser parity, the `agent` reporter, `fix` and `examples`, line-precise findings, liveness by default, `init`, `adopt`, `hooks install`, `attest`, `can-import`, `explain`, `test`; npm package and GitHub Action | Zero difference against dependency-cruiser on its own repository, langfuse and FluidFramework |
-| **2 .NET and Python** | 10 | Both extractors; ArchUnitNET's full vocabulary as declarative element rules; `propose`, `impact`, `place`, `docs`; importers; test-runner adapters; the ESLint rule; SARIF and JUnit | Every imported .NET test agrees with `dotnet test`; every Python contract reproduces |
-| **3 Inner loop** | 8 | Caching and `--affected`; a source mode for .NET that answers without a build; `guard --watch`; the Roslyn analyzer; MCP and LSP servers; framework presets; the public rule library | Stop hook under two seconds on a large .NET solution; all reporters byte-compared |
-| **4 Reach** | 8 | Browser playground; pull-request app; `fix --plan`; rules across a fleet of repositories | Funded only if the numbers below move |
+| Wave | Weeks | What lands for you | Exit criterion | Status |
+| --- | --- | --- | --- | --- |
+| **0 Spike** | 4 | The TypeScript extractor, matching dependency-cruiser on 292 of the 296 cases its own extraction suite records (0.9865); the .NET metadata reader, attributing 99.29% of the .NET oracles' types to a source file, so the C# fallback is not needed ([ADR-0022](docs/adr/0022-dotnet-reader-in-rust-confirmed.md)); both conformance harnesses; the nightly test beds; the name held on four registries | Fixtures at 95%; 99% of .NET types attributed to a source file, or the fallback extractor is invoked | Done |
+| **1 TypeScript** | 10 | The drop-in: full dependency-cruiser parity, TypeScript 7 included; the `agent` reporter, `fix` and `examples`, line-precise findings, liveness by default, `init`, `adopt`, `hooks install`, `attest`, `can-import`, `explain`, `test`; npm package and GitHub Action | Zero difference against dependency-cruiser on its own repository, langfuse and FluidFramework | Built; the `v0.1.0` release is in progress |
+| **2 .NET and Python** | 10 | Both extractors; ArchUnitNET's full vocabulary as declarative element rules; `propose`, `impact`, `place`, `docs`; importers; test-runner adapters; the ESLint rule; SARIF and JUnit | Every imported .NET test agrees with `dotnet test`; every Python contract reproduces | Built; the nightly oracle evidence and the NuGet and PyPI publishing are in progress |
+| **3 Inner loop** | 8 | Caching and `--affected`; a source mode for .NET that answers without a build; `guard --watch`; the Roslyn analyzer; MCP and LSP servers; framework presets; the public rule library | Stop hook under two seconds on a large .NET solution; all reporters byte-compared | Not started |
+| **4 Reach** | 8 | Browser playground; pull-request app; `fix --plan`; rules across a fleet of repositories | Funded only if the numbers below move | Not started |
+
+Beside the waves, five tracks. Two run alongside waves 1 and 2. The other three add languages and incumbents once wave 2 is done, under the same promise: each incumbent's own test suite becomes a conformance gate before its row says Parity.
+
+| Track | Weeks | What lands for you | Exit criterion | Status |
+| --- | --- | --- | --- | --- |
+| **Guard catalogue** | 5 | Quality, convention and lifecycle guards (cycles, dead code, licences, layer fences, budgets that only fall, exceptions that expire) as executable recipes: one fixture per guard, and the cookbook page generated from the fixtures so it cannot drift from the engine | Every recipe a green fixture in CI, none vacuous; the page checked against the fixtures | Started |
+| **Rulebearing on Rulebearing** | 5 | This repository gated by its own tool: one graph over its five languages, the gate in CI, the test runners, the editor and the agent loop, and the first month of signals | The self-check green on `main`; the test runners agree with the gate | Started |
+| **Java and ArchUnit** | 9 | Java as the fourth language, read from compiled classes; ArchUnit's vocabulary and library rules (layered and onion architectures, `GeneralCodingRules`); an importer for existing ArchUnit tests; JUnit adapter and a Maven Central package | ArchUnit's own tests pass as conformance gate 3; the Java oracles agree | Not started |
+| **.NET, complete** | 6 | VB.NET and F# projects read as C# ones are; NetArchTest's own definitions as additive options, so a NetArchTest suite migrates without a changed verdict | NetArchTest's ported cases at 388 with ArchUnitNET's unchanged; the three .NET oracles that compare nothing today compared | Not started |
+| **Rust** | 9 | Rust as the fifth language, with arch-lint, archaven and TangleGuard as the incumbents; importers for their configurations; a crates.io package; this repository's own rules on the Rust graph instead of a script | Their suites pass as conformance gate 4; zero difference on the Rust oracles, or each difference recorded | Not started |
 
 **This is measured, not believed.** From wave 1, six signals are tracked on the repositories where agent-authored pull requests can be seen: the share that pass the boundary check on their first CI run (target above 90%), the median turns from a violation to green (target one), rules caught by the authoring guardrails, Stop-hook latency, the share of rules carrying `fix` text, and budget raises merged (target zero). If the first two do not move, the agent surface is cut back to the reporter and the hook, and what remains is a faster dependency-cruiser that also covers .NET and Python. Saying that in advance is cheaper than discovering it later.
 
