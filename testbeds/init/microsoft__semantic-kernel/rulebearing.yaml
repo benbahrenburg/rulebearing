@@ -1,5 +1,5 @@
 # testbeds/init: `rulebearing init --dry-run` on microsoft/semantic-kernel at ca40aa7226531d28a721d0ca0e451d0aaf86dafc
-# (a cruise of . with this configuration exits 0 (3045 findings baselined)). Regenerate with testbeds/init/run.sh.
+# (a cruise of . with this configuration exits 0 (2573 findings baselined)). Regenerate with testbeds/init/run.sh.
 # rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
 # Found: .NET (dotnet/SK-dotnet.slnx), Python (python).
 # Every rule says why it exists (comment) and what to do when it fires (fix);
@@ -41,4 +41,4 @@ rules:
 options:
   # Findings present when this file was written. Each expires; fix it before then.
   knownViolations:
-    # no-circular: 613, no-orphans: 81, not-to-unresolvable: 2351 (entries elided)
+    # no-circular: 613, no-orphans: 81, not-to-unresolvable: 1879 (entries elided)

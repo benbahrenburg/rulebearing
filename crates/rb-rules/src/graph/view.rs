@@ -6,8 +6,11 @@
 //!   [FR-RULE-08](../../../../docs/prd.md#fr-rule-08)
 //!
 //! [`View::removes`] answers for one edge, from the importer's path, the edge's `resolved` and
-//! its dependency types; [`View::passes`] says whether a chain may continue from a module. The
-//! direct-edge matcher, the reachability derivation and the slice edges all ask the same two
+//! its dependency types; [`View::passes`] says whether a chain may continue from a module;
+//! [`View::target`] names the module an edge leads to in the rule's graph, which `redirect`
+//! changes before the other keys apply
+//! ([ADR-0051](../../../../docs/adr/0051-a-rule-redirects-the-imports-it-sees.md)). The
+//! direct-edge matcher, the reachability derivation and the slice edges all ask the same
 //! questions, so a rule sees one graph wherever it looks. The engine compares the strings the
 //! document carries and never asks which language an edge is in
 //! ([ADR-0010](../../../../docs/adr/0010-crate-layout-and-extractor-boundary.md)).
@@ -65,6 +68,13 @@ impl Entry {
     }
 }
 
+/// A compiled `graph.redirect` entry.
+#[derive(Debug, Clone)]
+struct Redirect {
+    to: Compiled,
+    into: String,
+}
+
 /// A rule's `graph`, compiled once.
 #[derive(Debug, Clone)]
 pub struct View {
@@ -72,6 +82,7 @@ pub struct View {
     types_not: Vec<&'static str>,
     modules_not: Compiled,
     chains_through: Compiled,
+    redirect: Vec<Redirect>,
 }
 
 impl View {
@@ -87,17 +98,43 @@ impl View {
                 .collect(),
             modules_not: Compiled::new(filter.modules_not.as_ref()),
             chains_through: Compiled::new(filter.chains_through.as_ref()),
+            redirect: filter
+                .redirect
+                .iter()
+                .map(|r| Redirect {
+                    to: Compiled::new(Some(&r.to)),
+                    into: r.into.clone(),
+                })
+                .collect(),
         }
     }
 
-    /// Whether the rule's graph lacks the edge from `from` to `to` carrying `types`.
+    /// The module an edge to `to` leads to instead, from the first `redirect` entry whose `to`
+    /// matches; `None` when no entry does.
+    pub fn redirected(&self, to: &str) -> Option<&str> {
+        self.redirect
+            .iter()
+            .find(|r| r.to.test(to, false))
+            .map(|r| r.into.as_str())
+    }
+
+    /// The module an edge to `to` leads to in the rule's graph: [`Self::redirected`], else `to`.
+    pub fn target<'a>(&'a self, to: &'a str) -> &'a str {
+        self.redirected(to).unwrap_or(to)
+    }
+
+    /// Whether the rule's graph lacks the edge from `from` to `to` carrying `types`. The other
+    /// keys see the edge where `redirect` leads it, and an edge it leads back to `from` is gone.
     pub fn removes<'t>(
         &self,
         from: &str,
         to: &str,
         types: impl IntoIterator<Item = &'t str>,
     ) -> bool {
-        self.modules_not.test(from, false)
+        let redirected = self.redirected(to);
+        let to = redirected.unwrap_or(to);
+        redirected == Some(from)
+            || self.modules_not.test(from, false)
             || self.modules_not.test(to, false)
             || types.into_iter().any(|t| self.types_not.contains(&t))
             || self.ignore.iter().any(|e| e.matches(from, to))
@@ -122,7 +159,8 @@ impl View {
     }
 
     /// The `graph.ignore` entries, by index, that match none of `edges` (`(from, resolved)`
-    /// pairs): each an exception that no longer excuses anything, which liveness reports.
+    /// pairs, each read where `redirect` leads it): each an exception that no longer excuses
+    /// anything, which liveness reports.
     pub fn unmatched<'e>(&self, edges: impl IntoIterator<Item = (&'e str, &'e str)>) -> Vec<usize> {
         // The entries not matched yet; the scan stops once every one has matched.
         let mut open: Vec<usize> = (0..self.ignore.len()).collect();
@@ -130,6 +168,7 @@ impl View {
             if open.is_empty() {
                 break;
             }
+            let to = self.target(to);
             open.retain(|at| !self.ignore[*at].matches(from, to));
         }
         open
@@ -297,7 +336,61 @@ mod tests {
         assert!(single.unmatched([("a", "x"), ("a", "y")]).is_empty());
     }
 
+    #[test]
+    fn a_redirect_leads_an_edge_elsewhere_before_the_other_keys() {
+        let v = view(json!({
+            "redirect": [
+                { "to": "^pkg/loose/", "into": "pkg/__init__.py" },
+                { "to": "^pkg/", "into": "never.py" }
+            ],
+            "modulesNot": "^pkg/loose/",
+            "ignore": [{ "from": "^a\\.py$", "to": "^pkg/__init__\\.py$" }]
+        }));
+        // The first entry whose `to` matches decides.
+        assert_eq!(v.redirected("pkg/loose/x.py"), Some("pkg/__init__.py"));
+        assert_eq!(v.redirected("pkg/y.py"), Some("never.py"));
+        assert_eq!(v.redirected("other.py"), None);
+        assert_eq!(v.target("pkg/loose/x.py"), "pkg/__init__.py");
+        assert_eq!(v.target("other.py"), "other.py");
+        // `modulesNot` still removes edges from the loose folder, and no longer the edges to it,
+        // which lead to the package.
+        assert!(v.removes("pkg/loose/x.py", "b.py", ["local"]));
+        assert!(!v.removes("b.py", "pkg/loose/x.py", ["local"]));
+        // `ignore` sees the redirected edge: an entry naming the package removes it.
+        assert!(v.removes("a.py", "pkg/loose/x.py", ["local"]));
+        // An edge led back to its importer is gone; an import the document has of itself stays.
+        assert!(v.removes("pkg/__init__.py", "pkg/loose/x.py", ["local"]));
+        assert!(!v.removes("self.py", "self.py", ["local"]));
+        // Liveness reads the redirected edge too.
+        assert!(v.unmatched([("a.py", "pkg/loose/x.py")]).is_empty());
+        assert_eq!(v.unmatched([("a.py", "pkg/other.py")]), [0]);
+        assert!(v.removes_dependency("a.py", &json!({ "resolved": "pkg/loose/z.py" })));
+    }
+
     proptest::proptest! {
+        /// Over any edge, a redirect changes where it leads and nothing else: removal equals
+        /// removal of the edge written to the redirected module, apart from an edge a redirect
+        /// leads to its importer, which is gone.
+        #[test]
+        fn a_redirected_edge_is_the_edge_to_its_target(
+            from in "[abc]{1,2}",
+            to in "[abc]{1,2}",
+            prefix in "[abc]",
+            into in "[abc]{1,2}",
+            module in "[abc]",
+        ) {
+            let redirected = view(json!({
+                "redirect": [{ "to": format!("^{prefix}"), "into": into }],
+                "modulesNot": format!("^{module}x")
+            }));
+            let plain = view(json!({ "modulesNot": format!("^{module}x") }));
+            let led = to.starts_with(prefix.as_str());
+            let lands = if led { into.as_str() } else { to.as_str() };
+            proptest::prop_assert_eq!(redirected.target(&to), lands);
+            let expected = (led && lands == from) || plain.removes(&from, lands, ["local"]);
+            proptest::prop_assert_eq!(redirected.removes(&from, &to, ["local"]), expected);
+        }
+
         /// Over any edge, an ignore entry removes exactly the edges both of its sides match, and
         /// `modulesNot` exactly the edges touching a matching module.
         #[test]

@@ -52,22 +52,33 @@ impl IndexedGraph {
     /// Indexes `modules` by the string at `attribute`; a later duplicate replaces an earlier
     /// one, as `new Map(entries)` does.
     pub fn new(modules: &[Value], attribute: &str) -> Self {
-        Self::build(modules, attribute, |_, _| true)
+        Self::build(modules, attribute, |_, _| true, ToOwned::to_owned)
     }
 
     /// The graph a rule with `graph` sees
     /// ([ADR-0038](../../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)): modules
-    /// indexed by `source`, without the edges `view` removes, and with a path continuing only
-    /// from the vertices `view` lets a chain pass. A path's start always continues.
+    /// indexed by `source`, without the edges `view` removes, each remaining edge leading where
+    /// `view` redirects it
+    /// ([ADR-0051](../../../../docs/adr/0051-a-rule-redirects-the-imports-it-sees.md)), and with
+    /// a path continuing only from the vertices `view` lets a chain pass. A path's start always
+    /// continues.
     pub fn narrowed(modules: &[Value], view: &View) -> Self {
-        let mut graph = Self::build(modules, "source", |from, d| {
-            !view.removes_dependency(from, d)
-        });
+        let mut graph = Self::build(
+            modules,
+            "source",
+            |from, d| !view.removes_dependency(from, d),
+            |name| view.target(name).to_owned(),
+        );
         graph.blocked = graph.names.iter().map(|n| !view.passes(n)).collect();
         graph
     }
 
-    fn build(modules: &[Value], attribute: &str, keep: impl Fn(&str, &Value) -> bool) -> Self {
+    fn build(
+        modules: &[Value],
+        attribute: &str,
+        keep: impl Fn(&str, &Value) -> bool,
+        lead: impl Fn(&str) -> String,
+    ) -> Self {
         let mut graph = Self::default();
         for module in modules {
             let name = js::text(module, attribute).into_owned();
@@ -76,8 +87,8 @@ impl IndexedGraph {
                 .filter(|d| keep(&name, d))
                 .map(|d| {
                     let name = match d.get("name") {
-                        Some(n) if js::truthy(Some(n)) => js::text(d, "name").into_owned(),
-                        _ => js::text(d, "resolved").into_owned(),
+                        Some(n) if js::truthy(Some(n)) => lead(&js::text(d, "name")),
+                        _ => lead(&js::text(d, "resolved")),
                     };
                     let types = d
                         .get("dependencyTypes")
@@ -735,6 +746,39 @@ mod tests {
             whole.cycle("a", "b"),
             Vec::<Step>::new(),
             "cycles read the same edges"
+        );
+    }
+
+    #[test]
+    fn a_narrowed_graph_leads_edges_where_redirect_says() {
+        // `p/loose/m` is in a folder grimp does not walk: an import of it is an import of `p`,
+        // and its own imports are not in the graph.
+        let edges: &[(&str, &[&str])] = &[
+            ("a", &["p/loose/m"]),
+            ("p/loose/m", &["z"]),
+            ("p", &["c", "p/loose/m"]),
+            ("c", &[]),
+            ("z", &[]),
+        ];
+        let whole = narrowed(edges, json!({}));
+        assert_eq!(names(&whole.path("a", "z")), ["p/loose/m", "z"]);
+        let folded = narrowed(
+            edges,
+            json!({ "redirect": [{ "to": "^p/loose/", "into": "p" }], "modulesNot": "^p/loose/" }),
+        );
+        assert_eq!(
+            names(&folded.path("a", "c")),
+            ["p", "c"],
+            "the chain continues from the package"
+        );
+        assert!(
+            folded.path("a", "z").is_empty(),
+            "the loose module imports nothing"
+        );
+        assert!(folded.may_reach(&folded.reachable_from("a"), "c"));
+        assert!(
+            folded.cycle("p", "p").is_empty(),
+            "the package's import of its loose module is no self-import"
         );
     }
 
