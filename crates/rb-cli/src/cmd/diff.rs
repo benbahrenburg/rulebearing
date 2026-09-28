@@ -190,7 +190,7 @@ fn saved(ctx: &Context<'_>, args: &DiffArgs) -> Result<Diff, Outcome> {
 }
 
 /// `git` in `dir`, with hooks off; its trimmed stdout, or its stderr as the error.
-fn git(dir: &Path, arguments: &[&str]) -> Result<String, String> {
+pub(crate) fn git(dir: &Path, arguments: &[&str]) -> Result<String, String> {
     let no_hooks = std::env::temp_dir().join("rulebearing-no-git-hooks");
     let output = Command::new("git")
         .arg("-c")

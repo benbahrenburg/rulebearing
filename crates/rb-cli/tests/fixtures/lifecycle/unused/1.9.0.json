@@ -1,0 +1,35 @@
+{
+  "version": "1.9.0",
+  "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "counts": {
+    "modules": 6,
+    "dependencies": 5,
+    "violations": {
+      "error": 0,
+      "warn": 2,
+      "info": 0
+    }
+  },
+  "instability": {
+    "src": 0.5,
+    "src/db": 0
+  },
+  "rules": {
+    "busy": {
+      "fromMatches": 3,
+      "toMatches": 2,
+      "violations": 2
+    },
+    "idle": {
+      "fromMatches": 0,
+      "toMatches": 0,
+      "violations": 0
+    },
+    "idle-lately": {
+      "fromMatches": 1,
+      "toMatches": 0,
+      "violations": 0
+    }
+  },
+  "ratchets": {}
+}

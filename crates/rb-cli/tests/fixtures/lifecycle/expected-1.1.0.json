@@ -1,0 +1,42 @@
+{
+  "version": "1.1.0",
+  "sha": "2222222222222222222222222222222222222222",
+  "counts": {
+    "modules": 7,
+    "dependencies": 6,
+    "violations": {
+      "error": 1,
+      "warn": 2,
+      "info": 0
+    }
+  },
+  "instability": {
+    "src": 0,
+    "src/db": 0,
+    "src/domain": 0.5,
+    "src/features": 0,
+    "src/features/a": 0.5,
+    "src/features/b": 0,
+    "src/ui": 0.5
+  },
+  "rules": {
+    "app-layers:2-to-1": {
+      "fromMatches": 1,
+      "toMatches": 2,
+      "violations": 1
+    },
+    "no-legacy-http": {
+      "fromMatches": 7,
+      "toMatches": 0,
+      "violations": 0
+    },
+    "ui-through-services": {
+      "fromMatches": 2,
+      "toMatches": 1,
+      "violations": 1
+    }
+  },
+  "ratchets": {
+    "ui-to-db": 1
+  }
+}
