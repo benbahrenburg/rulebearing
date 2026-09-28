@@ -773,6 +773,38 @@ rules:
     }
 
     #[test]
+    fn an_edge_lists_every_boundary_it_crosses() {
+        let (since, to) = (snapshot("1", &[], &[], 1), snapshot("2", &[], &[], 1));
+        let mut log = compute(&Config::default(), &since, &to, Err(Vec::new()));
+        log.new_edges_across_boundaries = Some(Vec::new());
+        assert!(markdown(&log).contains("## New edges across boundaries\n\nNone.\n"));
+        log.new_edges_across_boundaries = Some(vec![BoundaryEdge {
+            from: "src/ui/a|b.ts".into(),
+            to: "src/domain/c.ts".into(),
+            boundaries: vec![
+                Boundary {
+                    kind: "layers",
+                    rule: "l".into(),
+                    from: "1".into(),
+                    to: "2".into(),
+                },
+                Boundary {
+                    kind: "slices",
+                    rule: "s".into(),
+                    from: "ui".into(),
+                    to: "domain".into(),
+                },
+            ],
+        }]);
+        assert!(markdown(&log).contains(
+            "| `src/ui/a\\|b.ts` | `src/domain/c.ts` | `l` layer 1 to layer 2; `s` slice `ui` to slice `domain` |\n"
+        ));
+        assert!(markdown(&log).contains("## Retired rules\n\nNone.\n"));
+        assert!(markdown(&log).contains("## Ratchets that fell\n\nNone.\n"));
+        assert_eq!(markdown(&log), markdown(&log.clone()), "deterministic");
+    }
+
+    #[test]
     fn cells_and_changes_render() {
         assert_eq!(cell("a|b"), "a\\|b");
         assert_eq!(change(1, 3), "+2");
