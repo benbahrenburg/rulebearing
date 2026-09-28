@@ -1,0 +1,41 @@
+# testbeds/init: `rulebearing init --dry-run --preset nextjs` on langfuse/langfuse at 17c3e9d97ca93603fe448436083e20c44ac1822a
+# (a cruise of src with this configuration exits 0 (4153 findings baselined)). Regenerate with testbeds/init/run.sh.
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: TypeScript, src/features, next, vitest, storybook.
+# Framework presets named with --preset, each an opinion that is off unless named: rulebearing:nextjs.
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: [rulebearing:typescript, rulebearing:recommended, rulebearing:nextjs]
+languages:
+  typescript:
+    tsConfig: { fileName: tsconfig.json }
+    tsPreCompilationDeps: true
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+            - "\\.(spec|test)\\.[cm]?[jt]sx?$"
+            - "(^|/)__tests__/"
+            - "\\.stories\\.[cm]?[jt]sx?$"
+            - "(^|/)app/(.+/)?(page|layout|route|loading|error|not-found|template|default)\\.[jt]sx?$"
+            - "(^|/)pages/"
+            - "(^|/)middleware\\.[jt]s$"
+      - name: features-are-independent
+        comment: "A feature is changed and removed on its own; it never imports another feature."
+        fix: "Move what both features need into a shared module outside the features folder, or pass it in from the page that composes them."
+        severity: error
+        from: { path: "^(src/features/[^/]+)/" }
+        to: { path: "^src/features/[^/]+/", pathNot: "^$1/" }
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    # features-are-independent: 1485, nextjs-components-not-to-server: 15, nextjs-no-import-of-api-routes: 2, no-circular: 450, no-non-package-json: 9, not-to-unresolvable: 2192 (entries elided)

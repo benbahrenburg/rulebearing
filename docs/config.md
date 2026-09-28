@@ -30,6 +30,11 @@ A `.dependency-cruiser.js` that works with dependency-cruiser 18.2.0 works here 
 | `rulebearing:dotnet` | The .NET exclusions and nothing else: C# sources under `obj/` and `bin/`, `*.g.cs`, `*.Designer.cs` left out; `Program.cs`, `Startup.cs`, `AssemblyInfo.cs` and `Migrations/` not orphans ([presets/rulebearing/dotnet.yaml](../presets/rulebearing/dotnet.yaml)) |
 | `rulebearing:python` | The Python exclusions and nothing else: `.venv/`, `venv/`, `site-packages/`, `__pycache__/` and `.pyi` stubs left out; `__main__.py` and `conftest.py` not orphans ([presets/rulebearing/python.yaml](../presets/rulebearing/python.yaml)) |
 | `rulebearing:recommended` | Composes the three (`extends: [rulebearing:typescript, rulebearing:dotnet, rulebearing:python]`) and adds `no-circular` and `not-to-unresolvable`; every rule has a `fix` ([presets/rulebearing/recommended.yaml](../presets/rulebearing/recommended.yaml)) |
+| `rulebearing:nextjs` | An opinion, off unless named: route entries and API handlers are not imported, `components/`, `hooks/` and `lib/` never import a route, components never import `server/` ([presets/frameworks/nextjs.yaml](../presets/frameworks/nextjs.yaml)) |
+| `rulebearing:clean-architecture` | An opinion, off unless named: Domain <- Application <- Infrastructure and Presentation, read from path segments, for a .NET solution or a TypeScript or Python tree ([presets/frameworks/clean-architecture.yaml](../presets/frameworks/clean-architecture.yaml)) |
+| `rulebearing:django` | An opinion, off unless named: models are innermost, views are reached through URL configurations, migrations are not imported ([presets/frameworks/django.yaml](../presets/frameworks/django.yaml)) |
+| `rulebearing:fastapi` | An opinion, off unless named: routers, services, repositories, each importing only the layers beneath it, with models and schemas innermost ([presets/frameworks/fastapi.yaml](../presets/frameworks/fastapi.yaml)) |
+| `rulebearing:vertical-slices` | An opinion, off unless named: a slice under `features/` or `slices/` never imports another, and the shared kernel never imports a slice ([presets/frameworks/vertical-slices.yaml](../presets/frameworks/vertical-slices.yaml)) |
 
 The merge replaces a rule's `from` and an option's value whole, so `rulebearing:recommended` lists the union of the three presets' `no-orphans` exclusions and `exclude` patterns, and a test keeps it the union. A repository with one language puts its own preset first, so that its exclusions win and no other language's are carried ([design § What stays honest across the boundary](artifacts/design.md#what-stays-honest-across-the-boundary)):
 
@@ -38,6 +43,12 @@ extends: [rulebearing:python, rulebearing:recommended]
 ```
 
 `rulebearing init` writes that line for the language it finds, and `extends: rulebearing:recommended` when it finds several ([cli.md](cli.md#commands)).
+
+The framework presets are opinions, and nothing extends one unless a configuration names it ([design § The developer relations hat](artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo): "off by default, each a documented opinion"). Each reads module paths only, declares its own rules (named with its prefix, so none replaces a language preset's) and no options, and goes after the language presets. Every rule's `comment` carries the decision token `plan:rulebearing-<preset>`, which `--require-comment-token` accepts, and its `examples` pass `rulebearing test`. The opinion behind each rule is in [presets/frameworks/README.md](../presets/frameworks/README.md).
+
+```yaml
+extends: [rulebearing:typescript, rulebearing:recommended, rulebearing:nextjs]
+```
 
 Rules merge by name, as dependency-cruiser merges them: a rule in the extending file with the name of an extended rule replaces the attributes it names.
 
