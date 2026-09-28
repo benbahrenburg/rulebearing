@@ -41,9 +41,12 @@
 //! | a file added or deleted, a manifest, git unable to say | everything is read again |
 //!
 //! Every path ends in [`pipeline::merge`], which a cold run goes through too, so the document is
-//! the cold run's byte for byte.
+//! the cold run's byte for byte. On a full hit the entry can also hold the evaluated run
+//! ([`evaluated`]), keyed on the extraction and everything evaluation reads; when its key
+//! matches, the extraction is not even read and only the reporter runs.
 
 pub mod changes;
+pub mod evaluated;
 pub mod key;
 pub mod manifest;
 
@@ -248,37 +251,114 @@ impl std::fmt::Display for Served {
     }
 }
 
+/// A writer thread's result: the digest of the extraction the entry holds.
+type Written = std::thread::JoinHandle<Result<String, String>>;
+
 /// The entry being written while the run evaluates: the next run needs it, this one does not.
 /// Waited for by [`Writing::wait`], or when dropped, so a process never exits with it half done.
 #[derive(Debug, Default)]
-pub struct Writing(Option<std::thread::JoinHandle<Result<(), String>>>);
+pub struct Writing {
+    /// The writer, when anything is being written.
+    handle: Option<Written>,
+    /// The extraction's digest when nothing needs writing to know it.
+    known: Option<String>,
+}
 
 impl Writing {
-    /// Waits for the write; the reason when it failed.
-    pub fn wait(mut self) -> Option<String> {
-        let handle = self.0.take()?;
-        match handle.join() {
-            Ok(result) => result.err(),
-            Err(_) => Some("the cache writer stopped".to_owned()),
+    /// A writer on its own thread.
+    fn spawn(write: impl FnOnce() -> Result<String, String> + Send + 'static) -> Self {
+        Self {
+            handle: Some(std::thread::spawn(write)),
+            known: None,
         }
+    }
+
+    /// Nothing to write; the entry holds the extraction with `digest`.
+    fn written(digest: String) -> Self {
+        Self {
+            handle: None,
+            known: Some(digest),
+        }
+    }
+
+    /// Waits for the write: the digest of the extraction the entry now holds (none when the run
+    /// wrote no entry), or the reason it failed.
+    ///
+    /// # Errors
+    /// Why the entry was not written.
+    pub fn wait(mut self) -> Result<Option<String>, String> {
+        match self.handle.take() {
+            None => Ok(self.known.take()),
+            Some(handle) => match handle.join() {
+                Ok(result) => result.map(Some),
+                Err(_) => Err("the cache writer stopped".to_owned()),
+            },
+        }
+    }
+
+    /// After this write, stores `verdict` as the evaluation of the written extraction under
+    /// `partial` ([`evaluated::key`]), in `folder`.
+    #[must_use]
+    pub fn then_remember(
+        self,
+        folder: PathBuf,
+        partial: String,
+        verdict: evaluated::Verdict,
+        compressed: bool,
+    ) -> Self {
+        Self::spawn(move || {
+            let Some(extraction) = self.wait()? else {
+                return Err("no extraction was written".to_owned());
+            };
+            let key = evaluated::key(&partial, &extraction);
+            evaluated::store(&folder, &key, &verdict, compressed).map_err(|e| e.to_string())?;
+            Ok(extraction)
+        })
+    }
+}
+
+impl Writing {
+    /// After this write, stores the rendered `output` of a served verdict and its `tail` under
+    /// `key` ([`evaluated::render_key`]), in `folder`.
+    #[must_use]
+    pub fn then_render(
+        self,
+        folder: PathBuf,
+        key: String,
+        output: String,
+        tail: evaluated::Tail,
+    ) -> Self {
+        Self::spawn(move || {
+            let written = self.wait()?;
+            evaluated::store_rendered(&folder, &key, &output, tail).map_err(|e| e.to_string())?;
+            written.ok_or_else(|| "no extraction was written".to_owned())
+        })
     }
 }
 
 impl Drop for Writing {
     fn drop(&mut self) {
-        if let Some(handle) = self.0.take() {
+        if let Some(handle) = self.handle.take() {
             let _ = handle.join();
         }
     }
 }
 
-/// The extraction `cruise --cache` evaluates, and what the cache did.
+/// What the cache gave a run.
+#[derive(Debug)]
+pub enum Content {
+    /// The extraction, still to be evaluated, and the extractors' warnings.
+    Extracted(Box<GraphDocument>, Vec<rb_model::Warning>),
+    /// The evaluated run of an unchanged extraction under an unchanged evaluation key, stored
+    /// and not yet read.
+    Evaluated(evaluated::Stored),
+}
+
+/// The extraction `cruise --cache` evaluates, or the evaluated run, and what the cache did.
 #[derive(Debug)]
 pub struct Cached {
-    /// The document, before evaluation.
-    pub document: GraphDocument,
-    /// The extractors' warnings, as a cold run reports them.
-    pub warnings: Vec<rb_model::Warning>,
+    /// What the cache gave.
+    pub content: Content,
     /// `summary.cache`.
     pub summary: CacheSummary,
     /// How it was served.
@@ -461,7 +541,7 @@ struct Pending {
 
 impl Pending {
     /// Records the inputs and writes the entry.
-    fn write(self) -> Result<(), String> {
+    fn write(self) -> Result<String, String> {
         let recorded = inputs(
             &self.cwd,
             &self.config,
@@ -481,9 +561,47 @@ impl Pending {
             ..self.manifest
         };
         manifest::store(&self.folder, manifest, &self.parts, &self.options)
-            .map(|_| ())
+            .map(|written| written.extraction)
             .map_err(|e| e.to_string())
     }
+}
+
+/// Where a `--cache` run is: the working directory, the worktree and its `HEAD`, the extensions
+/// scanned and the cache folder.
+fn scope_of(ctx: &Context<'_>, config: &Config, folder: &Path) -> changes::Scope {
+    let root = key::worktree_root(&ctx.cwd);
+    changes::Scope {
+        base: ctx.cwd.canonicalize().unwrap_or_else(|_| ctx.cwd.clone()),
+        head: Some(key::head(&root)).filter(|h| !h.is_empty()),
+        root,
+        extra_extensions: config
+            .languages
+            .typescript
+            .extra_extensions_to_scan
+            .clone()
+            .unwrap_or_default(),
+        cache_folder: folder
+            .canonicalize()
+            .unwrap_or_else(|_| folder.to_path_buf()),
+    }
+}
+
+/// The manifest of a hit rewritten when its stamps, hashes or `HEAD` moved; nothing written
+/// when it is as recorded.
+fn refresh(
+    folder: PathBuf,
+    recorded: &manifest::Manifest,
+    refreshed: &manifest::Manifest,
+) -> Writing {
+    if refreshed == recorded {
+        return Writing::written(recorded.extraction.clone());
+    }
+    let refreshed = refreshed.clone();
+    Writing::spawn(move || {
+        manifest::store_manifest(&folder, &refreshed)
+            .map(|()| refreshed.extraction)
+            .map_err(|e| e.to_string())
+    })
 }
 
 /// The extraction `cruise` evaluates under `--cache` or `options.cache`
@@ -495,6 +613,10 @@ impl Pending {
 /// the ones a cold run would produce and [`pipeline::merge`] joins them as it does for a cold
 /// run.
 ///
+/// With `evaluation` (the [`evaluated::partial_key`] of the run), a full hit first looks for the
+/// evaluated run stored under that key and this extraction, and names it without reading the
+/// extraction ([`Content::Evaluated`]); the caller reads it, or its rendered output.
+///
 /// # Errors
 /// [`ExtractError`] from an extractor, as a cold run fails; never from the cache itself, whose
 /// every doubtful entry is a miss and whose write failure [`Writing::wait`] reports.
@@ -503,22 +625,11 @@ pub fn extract_cached(
     config: &Config,
     paths: &[String],
     options: &CacheOptions,
+    evaluation: Option<&str>,
 ) -> Result<Cached, ExtractError> {
-    let root = key::worktree_root(&ctx.cwd);
-    let head = Some(key::head(&root)).filter(|h| !h.is_empty());
     let folder = ctx.resolve(&options.folder);
-    let scope = changes::Scope {
-        base: ctx.cwd.canonicalize().unwrap_or_else(|_| ctx.cwd.clone()),
-        root: root.clone(),
-        head: head.clone(),
-        extra_extensions: config
-            .languages
-            .typescript
-            .extra_extensions_to_scan
-            .clone()
-            .unwrap_or_default(),
-        cache_folder: folder.canonicalize().unwrap_or_else(|_| folder.clone()),
-    };
+    let scope = scope_of(ctx, config, &folder);
+    let (root, head) = (scope.root.clone(), scope.head.clone());
     let fresh = manifest::Manifest {
         tool_version: key::VERSION.to_owned(),
         config_hash: key::extraction_hash(config, &root, &ctx.cwd, paths),
@@ -547,18 +658,48 @@ pub fn extract_cached(
             parts,
         };
         Ok(Cached {
-            document,
-            warnings,
+            content: Content::Extracted(Box::new(document), warnings),
             summary: summary(&served),
             served,
-            writing: Writing(Some(std::thread::spawn(move || pending.write()))),
+            writing: Writing::spawn(move || pending.write()),
         })
     };
-    let entry = match manifest::load(&folder, &fresh.key(), options) {
+    let recorded = match manifest::load_manifest(&folder, &fresh.key(), options) {
+        Ok(recorded) => recorded,
+        Err(miss) => return extract(full(miss.to_string()), BTreeMap::new()),
+    };
+    let found = changes::detect(&recorded, options.strategy, &scope);
+    let refreshed = manifest::Manifest {
+        inputs: found.hashes.clone(),
+        stamps: if options.strategy == CacheStrategy::Metadata {
+            found.stamps.clone()
+        } else {
+            BTreeMap::new()
+        },
+        extraction: recorded.extraction.clone(),
+        ..fresh.clone()
+    };
+    let refresh = |folder: PathBuf| refresh(folder, &recorded, &refreshed);
+    if found.is_empty()
+        && let Some(partial) = evaluation
+        && let key = evaluated::key(partial, &recorded.extraction)
+        && evaluated::stored_under(&folder, &key)
+    {
+        return Ok(Cached {
+            content: Content::Evaluated(evaluated::Stored {
+                folder: folder.clone(),
+                key,
+                compressed: options.compressed(),
+            }),
+            summary: summary(&Served::Hit),
+            served: Served::Hit,
+            writing: refresh(folder.clone()),
+        });
+    }
+    let entry = match manifest::load_extraction(&folder, recorded.clone(), options) {
         Ok(entry) => entry,
         Err(miss) => return extract(full(miss.to_string()), BTreeMap::new()),
     };
-    let found = changes::detect(&entry.manifest, options.strategy, &scope);
     if !found.is_empty() {
         let decision = match entry.with_states() {
             Ok(parts) => decide(config, &scope, &parts, &found),
@@ -569,29 +710,11 @@ pub fn extract_cached(
         }
     }
     let (document, warnings) = pipeline::merge(config, &entry.parts)?;
-    let refreshed = manifest::Manifest {
-        inputs: found.hashes,
-        stamps: if options.strategy == CacheStrategy::Metadata {
-            found.stamps
-        } else {
-            BTreeMap::new()
-        },
-        extraction: entry.manifest.extraction.clone(),
-        ..fresh.clone()
-    };
-    let writing = if refreshed == entry.manifest {
-        Writing::default()
-    } else {
-        Writing(Some(std::thread::spawn(move || {
-            manifest::store_manifest(&folder, &refreshed).map_err(|e| e.to_string())
-        })))
-    };
     Ok(Cached {
-        document,
-        warnings,
+        content: Content::Extracted(Box::new(document), warnings),
         summary: summary(&Served::Hit),
         served: Served::Hit,
-        writing,
+        writing: refresh(folder.clone()),
     })
 }
 
@@ -646,10 +769,27 @@ mod tests {
             Served::Full("no entry".into()).to_string(),
             "in full: no entry"
         );
-        assert_eq!(Writing::default().wait(), None);
-        let failed = Writing(Some(std::thread::spawn(|| Err("disk full".to_owned()))));
-        assert_eq!(failed.wait().as_deref(), Some("disk full"));
-        drop(Writing(Some(std::thread::spawn(|| Ok(())))));
+        assert_eq!(Writing::default().wait(), Ok(None));
+        assert_eq!(
+            Writing::written("sha256:x".into()).wait(),
+            Ok(Some("sha256:x".into()))
+        );
+        let failed = Writing::spawn(|| Err("disk full".to_owned()));
+        assert_eq!(failed.wait(), Err("disk full".to_owned()));
+        drop(Writing::spawn(|| Ok(String::new())));
+        let nothing = Writing::default().then_remember(
+            std::env::temp_dir().join("rb-never-written"),
+            "p".into(),
+            evaluated::Verdict {
+                document: GraphDocument::default(),
+                expired: Vec::new(),
+                vacuous: Vec::new(),
+                ratchets: crate::ratchets::Ratchets::default(),
+                warnings: Vec::new(),
+            },
+            false,
+        );
+        assert_eq!(nothing.wait(), Err("no extraction was written".to_owned()));
     }
 
     #[test]

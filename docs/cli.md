@@ -115,6 +115,8 @@ The folder holds `manifest.json` (the build's version, a `sha256:` hash of the c
 | an assembly or a PDB | the .NET graph is read again whole, so edges between assemblies stay exact |
 | a file added or deleted, a manifest (`package.json` anywhere, `tsconfig*.json`, project and lock files), or git cannot say | everything is read again |
 
+When nothing an extractor reads changed, the entry can also answer with the evaluated run, as dependency-cruiser's cache does: `evaluated.json` names the run as the reporter receives it, keyed on the extraction and everything evaluation reads besides (the configuration, the options after the flags and `optionsUsed`, the known violations in force, the liveness mode, the paths, today's date, every ratchet budget and every diagram rule's `.puml`), and `rendered.json` with `rendered.out` keeps the reporter's output for the output type and report options last used (the timestamp counts only for `err-html`, `junit`, `trx` and `teamcity`, which print it). Either is used only when its key matches; a changed input misses it and the run evaluates again from the cached extraction. `--affected` does not use the evaluated layer, because its changed files come from version control rather than from the inputs the cache records.
+
 `summary.cache` records `{ "hit": true | false, "strategy": ... }`, so a JSON result from a warm run differs from a cold run's in that field alone; `--strict-schema` removes it. `--progress` names how the extract stage was served. Outside a git repository the `metadata` strategy lists files and compares their size and modification time instead of stopping as dependency-cruiser does. A file edited without changing its size or time, and not listed by git, is only seen by `content`.
 
 ```sh

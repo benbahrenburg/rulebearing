@@ -550,6 +550,9 @@ fn a_corrupt_entry_is_discarded_never_trusted() -> Result {
         same_as_cold(&run, &reference)?;
     }
     // A damaged extraction under an intact manifest is refused by its digest, then repaired.
+    // The evaluated run is set aside first, since a full hit it answers never reads the
+    // extraction.
+    std::fs::remove_file(dir.join(".graph/cache/evaluated.json"))?;
     let text: Value = serde_json::from_str(&std::fs::read_to_string(&manifest)?)?;
     let hex = text["extraction"]
         .as_str()
@@ -1005,6 +1008,392 @@ fn a_warm_run_over_a_generated_tree_is_byte_identical_and_its_speed_recorded() -
     println!(
         "cache: modules=402 uncached_ms={plain_ms} cold_ms={cold_ms} warm_ms={warm_ms} partial_ms={partial_ms} ratio={ratio:.2}"
     );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// A configuration whose evaluation has something to say: an error, a warning, a rule past its
+/// `expires`, a ratchet over its budget, and a rule that matches nothing.
+const JUDGED: &str = "forbidden:
+  - name: no-circular
+    severity: warn
+    comment: \"adr:0010\"
+    from: {}
+    to: { circular: true }
+  - name: not-to-unresolvable
+    severity: error
+    comment: \"adr:0010\"
+    from: {}
+    to: { couldNotResolve: true }
+  - name: lapsed
+    severity: warn
+    comment: \"adr:0010\"
+    expires: \"2026-06-01\"
+    from: { path: \"^src/lib/\" }
+    to: { path: \"^src/c\" }
+  - name: nothing-here
+    severity: error
+    comment: \"adr:0010\"
+    from: { path: \"^nowhere/\" }
+    to: {}
+rules:
+  ratchets:
+    - name: a-to-b
+      comment: \"adr:0010\"
+      from: { path: \"^src/a\" }
+      to: { path: \"^src/b\" }
+      budget: eng/budget.json
+";
+
+/// [`TREE`] under [`JUDGED`], with a cycle, an unresolvable import and a budget of 0.
+fn judged(name: &str) -> Result<PathBuf> {
+    let mut files: Vec<(&str, &str)> = TREE.to_vec();
+    files[0] = ("rulebearing.yaml", JUDGED);
+    files.push((
+        "src/a.ts",
+        "import { b } from \"./b\";\nimport { c } from \"./c\";\nimport { x } from \"./missing\";\nexport const a = b + c + x;\n",
+    ));
+    files.push((
+        "src/lib/d.ts",
+        "import { C } from \"../c\";\nexport const d = 2;\nexport const seen = C;\n",
+    ));
+    files.push(("eng/budget.json", "{ \"ceiling\": 0 }\n"));
+    let dir = tree(name, &files)?;
+    Ok(dir)
+}
+
+/// `rulebearing cruise src -T <type> <extra>` on the day `epoch` names, without progress, so its
+/// stderr is comparable byte for byte.
+fn judge(dir: &Path, output_type: &str, extra: &[&str], epoch: &str) -> Result<Output> {
+    Ok(isolated(BIN, dir)
+        .env("SOURCE_DATE_EPOCH", epoch)
+        .args(["cruise", "src", "-T", output_type])
+        .args(extra)
+        .output()?)
+}
+
+/// How the extract and evaluate stages of the same run were served, from `--progress`.
+fn stages(dir: &Path, output_type: &str, extra: &[&str], epoch: &str) -> Result<(String, bool)> {
+    let mut flags = extra.to_vec();
+    flags.extend(["--progress", "cli-feedback"]);
+    let output = judge(dir, output_type, &flags, epoch)?;
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    Ok((
+        served(&output),
+        stderr.contains("evaluate (from the cache) ..."),
+    ))
+}
+
+const DAY: &str = "1790000000";
+
+/// Asserts `warm` is the cold run's output, stderr and exit code, `summary.cache.hit` aside.
+fn same_run(warm: &Output, cold: &Output, output_type: &str) {
+    assert_eq!(warm.status.code(), cold.status.code(), "{output_type}");
+    assert_eq!(
+        String::from_utf8_lossy(&warm.stderr),
+        String::from_utf8_lossy(&cold.stderr),
+        "{output_type}"
+    );
+    let warm_text =
+        String::from_utf8_lossy(&warm.stdout).replace("\"hit\": true", "\"hit\": false");
+    assert_eq!(
+        warm_text,
+        String::from_utf8_lossy(&cold.stdout),
+        "{output_type}"
+    );
+}
+
+#[test]
+fn a_full_hit_serves_the_evaluated_run_byte_for_byte() -> Result {
+    let dir = judged("evaluated")?;
+    for output_type in [
+        "err", "err-long", "json", "csv", "agent", "teamcity", "dot", "text",
+    ] {
+        let flags = ["--cache"];
+        let aside = dir.join(".graph/cache-aside");
+        let _ = std::fs::remove_dir_all(&aside);
+        let had = dir.join(".graph/cache").exists();
+        if had {
+            std::fs::rename(dir.join(".graph/cache"), &aside)?;
+        }
+        let cold = judge(&dir, output_type, &flags, DAY)?;
+        let _ = std::fs::remove_dir_all(dir.join(".graph/cache"));
+        if had {
+            std::fs::rename(&aside, dir.join(".graph/cache"))?;
+        }
+        assert!(
+            !cold.stdout.is_empty() || output_type == "err",
+            "{output_type}: {}",
+            String::from_utf8_lossy(&cold.stderr)
+        );
+        // The first run with this reporter stores its evaluation; the second is served from it.
+        judge(&dir, output_type, &flags, DAY)?;
+        assert_eq!(
+            stages(&dir, output_type, &flags, DAY)?,
+            ("from the cache".to_owned(), true),
+            "{output_type}"
+        );
+        let warm = judge(&dir, output_type, &flags, DAY)?;
+        same_run(&warm, &cold, output_type);
+    }
+    let json = judge(&dir, "json", &["--cache"], DAY)?;
+    let result: Value = serde_json::from_slice(&json.stdout)?;
+    assert_eq!(result["summary"]["cache"]["hit"], Value::Bool(true));
+    assert_eq!(result["summary"]["expired"][0]["name"], "lapsed");
+    assert_eq!(result["summary"]["ratchets"][0]["status"], "exceeded");
+    assert!(
+        String::from_utf8_lossy(&json.stderr).contains("nothing-here"),
+        "the vacuous rule is reported from the stored run"
+    );
+    assert_eq!(
+        json.status.code(),
+        Some(2),
+        "a vacuous rule under strict liveness exits 2 whatever the reporter"
+    );
+    let err = judge(&dir, "err", &["--cache"], DAY)?;
+    assert_eq!(
+        err.status.code(),
+        Some(2),
+        "a vacuous rule under strict liveness"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// A change to one input of the evaluation.
+type Change = fn(&Path) -> Result;
+
+/// Each change the evaluated layer must see, with the flags and the day the run takes after it,
+/// in order: each row changes one input from the row before.
+fn key_changes() -> [(&'static str, Change, Vec<&'static str>, &'static str); 7] {
+    let unchanged: Change = |_| Ok(());
+    [
+        (
+            "baseline",
+            unchanged,
+            vec!["--ignore-known", "eng/known.json"],
+            DAY,
+        ),
+        (
+            "the known violations",
+            |d| {
+                // One entry given an owner: a different file with the same findings.
+                let path = d.join("eng/known.json");
+                let mut entries: Value = serde_json::from_slice(&std::fs::read(&path)?)?;
+                if let Some(first) = entries.get_mut(0).and_then(Value::as_object_mut) {
+                    first.insert("owner".into(), Value::from("someone"));
+                }
+                Ok(std::fs::write(path, serde_json::to_vec(&entries)?)?)
+            },
+            vec!["--ignore-known", "eng/known.json"],
+            DAY,
+        ),
+        (
+            "--no-ignore-known",
+            unchanged,
+            vec!["--no-ignore-known"],
+            DAY,
+        ),
+        (
+            "the date",
+            unchanged,
+            vec!["--no-ignore-known"],
+            "1690000000",
+        ),
+        (
+            "the liveness",
+            unchanged,
+            vec!["--no-ignore-known", "--liveness", "warn"],
+            DAY,
+        ),
+        (
+            "a ratchet budget",
+            |d| {
+                Ok(std::fs::write(
+                    d.join("eng/budget.json"),
+                    "{ \"ceiling\": 5 }\n",
+                )?)
+            },
+            vec!["--no-ignore-known", "--liveness", "warn"],
+            DAY,
+        ),
+        (
+            "a report filter",
+            unchanged,
+            vec![
+                "--no-ignore-known",
+                "--liveness",
+                "warn",
+                "--focus",
+                "^src/lib",
+            ],
+            DAY,
+        ),
+    ]
+}
+
+/// Asserts two JSON results are equal once `summary.cache` and `optionsUsed.cache` are removed.
+fn same_json_without_cache(warm: &Output, cold: &Output, what: &str) -> Result {
+    let mut warm_value: Value = serde_json::from_slice(&warm.stdout)?;
+    let mut cold_value: Value = serde_json::from_slice(&cold.stdout)?;
+    for value in [&mut warm_value, &mut cold_value] {
+        if let Some(summary) = value.get_mut("summary").and_then(Value::as_object_mut) {
+            summary.remove("cache");
+            if let Some(used) = summary
+                .get_mut("optionsUsed")
+                .and_then(Value::as_object_mut)
+            {
+                used.remove("cache");
+            }
+        }
+    }
+    assert_eq!(warm_value, cold_value, "{what}");
+    Ok(())
+}
+
+#[test]
+fn each_evaluation_input_misses_the_evaluated_run_and_keeps_the_extraction() -> Result {
+    let dir = judged("evaluated-keys")?;
+    let known = judge(&dir, "err", &[], DAY)?;
+    assert!(!known.stdout.is_empty());
+    let baseline = isolated(BIN, &dir)
+        .env("SOURCE_DATE_EPOCH", DAY)
+        .args(["baseline", "src", "-f", "eng/known.json"])
+        .output()?;
+    assert!(
+        dir.join("eng/known.json").is_file(),
+        "{}",
+        String::from_utf8_lossy(&baseline.stderr)
+    );
+    let table = key_changes();
+    // Warm the entry, extraction and evaluation both, under the first row's inputs; each row
+    // then changes one input from the row before it.
+    judge(
+        &dir,
+        "json",
+        &["--ignore-known", "eng/known.json", "--cache"],
+        DAY,
+    )?;
+    judge(
+        &dir,
+        "json",
+        &["--ignore-known", "eng/known.json", "--cache"],
+        DAY,
+    )?;
+    for (what, change, extra, epoch) in table {
+        let mut flags = extra.clone();
+        flags.push("--cache");
+        change(&dir)?;
+        if what != "baseline" {
+            assert_eq!(
+                stages(&dir, "json", &flags, epoch)?,
+                ("from the cache".to_owned(), false),
+                "{what}: the extraction is reused and the evaluation is not"
+            );
+        }
+        assert_eq!(
+            stages(&dir, "json", &flags, epoch)?,
+            ("from the cache".to_owned(), true),
+            "{what}: stored again"
+        );
+        let warm = judge(&dir, "json", &flags, epoch)?;
+        let cold = judge(&dir, "json", &extra, epoch)?;
+        assert_eq!(warm.status.code(), cold.status.code(), "{what}");
+        assert_eq!(warm.stderr, cold.stderr, "{what}");
+        same_json_without_cache(&warm, &cold, what)?;
+    }
+    // An earlier date brings the lapsed rule back to life: the verdicts really differ.
+    let before = judge(
+        &dir,
+        "json",
+        &["--no-ignore-known", "--cache"],
+        "1690000000",
+    )?;
+    let after = judge(&dir, "json", &["--no-ignore-known", "--cache"], DAY)?;
+    let expired = |o: &Output| -> Result<Value> {
+        Ok(serde_json::from_slice::<Value>(&o.stdout)?["summary"]["expired"].clone())
+    };
+    assert_ne!(expired(&before)?, expired(&after)?);
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn affected_runs_do_not_use_the_evaluated_run() -> Result {
+    let dir = judged("evaluated-affected")?;
+    write(&dir, ".gitignore", ".graph/\n")?;
+    git(&dir, &["init", "-q"])?;
+    git(&dir, &["add", "-A"])?;
+    git(&dir, &["commit", "-q", "-m", "one"])?;
+    let flags = ["--affected", "HEAD", "--cache"];
+    judge(&dir, "json", &flags, DAY)?;
+    judge(&dir, "json", &flags, DAY)?;
+    assert_eq!(
+        stages(&dir, "json", &flags, DAY)?,
+        ("from the cache".to_owned(), false)
+    );
+    assert!(!dir.join(".graph/cache/evaluated.json").exists());
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// `rulebearing cruise` for `flags` with the cache folder set aside, so it finds no entry.
+fn judge_cold(dir: &Path, output_type: &str, flags: &[&str]) -> Result<Output> {
+    let aside = dir.join(".graph/cache-aside");
+    let _ = std::fs::remove_dir_all(&aside);
+    std::fs::rename(dir.join(".graph/cache"), &aside)?;
+    let cold = judge(dir, output_type, flags, DAY);
+    std::fs::remove_dir_all(dir.join(".graph/cache"))?;
+    std::fs::rename(&aside, dir.join(".graph/cache"))?;
+    cold
+}
+
+#[test]
+fn a_report_option_misses_the_rendered_output_and_keeps_the_evaluated_run() -> Result {
+    let dir = judged("rendered-keys")?;
+    for _ in 0..3 {
+        judge(&dir, "json", &["--cache"], DAY)?;
+    }
+    assert!(dir.join(".graph/cache/rendered.json").is_file());
+    for (what, extra) in [
+        ("--strict-schema", vec!["--strict-schema"]),
+        ("--output-to", vec!["-f", "out.json"]),
+    ] {
+        let mut flags = extra.clone();
+        flags.push("--cache");
+        let warm = judge(&dir, "json", &flags, DAY)?;
+        let written = std::fs::read(dir.join("out.json")).unwrap_or_default();
+        let _ = std::fs::remove_file(dir.join("out.json"));
+        let cold = judge_cold(&dir, "json", &flags)?;
+        let cold_written = std::fs::read(dir.join("out.json")).unwrap_or_default();
+        let _ = std::fs::remove_file(dir.join("out.json"));
+        same_run(&warm, &cold, what);
+        assert_eq!(
+            String::from_utf8_lossy(&written).replace("\"hit\": true", "\"hit\": false"),
+            String::from_utf8_lossy(&cold_written),
+            "{what}"
+        );
+    }
+    // A damaged rendered output is a miss: the stored verdict is rendered again.
+    std::fs::write(dir.join(".graph/cache/rendered.json"), "{")?;
+    let cold = judge_cold(&dir, "json", &["--cache"])?;
+    let warm = judge(&dir, "json", &["--cache"], DAY)?;
+    same_run(&warm, &cold, "a damaged rendered output");
+    // A stored verdict that cannot be read sends the run back through the extraction.
+    std::fs::write(dir.join(".graph/cache/rendered.json"), "{")?;
+    for entry in std::fs::read_dir(dir.join(".graph/cache"))? {
+        let path = entry?.path();
+        if path
+            .file_name()
+            .is_some_and(|n| n.to_string_lossy().starts_with("evaluated-"))
+        {
+            std::fs::write(&path, "damaged")?;
+        }
+    }
+    let (extract, evaluate) = stages(&dir, "json", &["--cache"], DAY)?;
+    assert_eq!((extract.as_str(), evaluate), ("from the cache", false));
+    let warm = judge(&dir, "json", &["--cache"], DAY)?;
+    same_run(&warm, &cold, "a damaged verdict");
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }

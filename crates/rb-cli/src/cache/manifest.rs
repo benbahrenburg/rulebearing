@@ -289,6 +289,15 @@ fn is_extraction_file(name: &str) -> bool {
 /// # Errors
 /// A [`Miss`] naming why the entry cannot be used; the caller extracts afresh.
 pub fn load(folder: &Path, key: &Key, options: &CacheOptions) -> Result<Entry, Miss> {
+    let manifest = load_manifest(folder, key, options)?;
+    load_extraction(folder, manifest, options)
+}
+
+/// The first half of [`load`]: the manifest, checked against `key` and the strategy.
+///
+/// # Errors
+/// A [`Miss`] naming why the manifest cannot be used.
+pub fn load_manifest(folder: &Path, key: &Key, options: &CacheOptions) -> Result<Manifest, Miss> {
     let manifest_path = folder.join(MANIFEST_FILE);
     let text = match std::fs::read(&manifest_path) {
         Ok(text) => text,
@@ -309,8 +318,22 @@ pub fn load(folder: &Path, key: &Key, options: &CacheOptions) -> Result<Entry, M
     if manifest.strategy != options.strategy {
         return Err(Miss::Stale("strategy"));
     }
-    let compressed = options.compressed();
-    let path = folder.join(extraction_file(&manifest.extraction, compressed));
+    Ok(manifest)
+}
+
+/// The bytes of the stored file `name` in `folder`, checked against `expected` (a `sha256:`
+/// digest of the stored bytes) and inflated when `compressed`.
+///
+/// # Errors
+/// A [`Miss`]: `Stale("compress")` when the file is absent, `Corrupt` when it cannot be read,
+/// does not match its digest or does not inflate.
+pub fn read_payload(
+    folder: &Path,
+    name: &str,
+    expected: &str,
+    compressed: bool,
+) -> Result<Vec<u8>, Miss> {
+    let path = folder.join(name);
     let payload = std::fs::read(&path).map_err(|e| {
         if e.kind() == std::io::ErrorKind::NotFound {
             Miss::Stale("compress")
@@ -318,18 +341,33 @@ pub fn load(folder: &Path, key: &Key, options: &CacheOptions) -> Result<Entry, M
             Miss::Corrupt(format!("{}: {e}", path.display()))
         }
     })?;
-    if digest(&payload) != manifest.extraction {
+    if digest(&payload) != expected {
         return Err(Miss::Corrupt(format!(
             "{} does not match its digest",
             path.display()
         )));
     }
-    let bytes = if compressed {
+    if compressed {
         miniz_oxide::inflate::decompress_to_vec_zlib_with_limit(&payload, INFLATE_LIMIT)
-            .map_err(|e| Miss::Corrupt(format!("{}: {e:?}", path.display())))?
+            .map_err(|e| Miss::Corrupt(format!("{}: {e:?}", path.display())))
     } else {
-        payload
-    };
+        Ok(payload)
+    }
+}
+
+/// The second half of [`load`]: the extraction `manifest` names.
+///
+/// # Errors
+/// A [`Miss`] naming why the extraction cannot be used.
+pub fn load_extraction(
+    folder: &Path,
+    manifest: Manifest,
+    options: &CacheOptions,
+) -> Result<Entry, Miss> {
+    let compressed = options.compressed();
+    let name = extraction_file(&manifest.extraction, compressed);
+    let path = folder.join(&name);
+    let bytes = read_payload(folder, &name, &manifest.extraction, compressed)?;
     let mut stream = serde_json::Deserializer::from_slice(&bytes).into_iter::<Parts>();
     let parts = stream
         .next()
@@ -408,7 +446,7 @@ pub fn store_manifest(folder: &Path, manifest: &Manifest) -> Result<(), CacheErr
 }
 
 /// Writes `bytes` to `folder/name` through a temporary name, then renames it into place.
-fn replace(folder: &Path, name: &str, bytes: &[u8]) -> std::io::Result<()> {
+pub(crate) fn replace(folder: &Path, name: &str, bytes: &[u8]) -> std::io::Result<()> {
     let temporary = folder.join(format!("{name}.{}.tmp", std::process::id()));
     std::fs::write(&temporary, bytes)?;
     std::fs::rename(&temporary, folder.join(name)).inspect_err(|_| {

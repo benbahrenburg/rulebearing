@@ -99,6 +99,17 @@ pub fn gates(output_type: &str) -> bool {
     GATING.contains(&output_type)
 }
 
+/// The reporters whose output carries [`ReportOptions::timestamp`]; every other reporter's
+/// output is the same at any time, which the `--cache` layer that keeps rendered output relies
+/// on ([Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// A test renders every output type at two times and holds this list to what changes.
+pub const STAMPED: &[&str] = &["err-html", "junit", "trx", "teamcity"];
+
+/// Whether `output_type`'s output carries the run's timestamp.
+pub fn stamps(output_type: &str) -> bool {
+    STAMPED.contains(&output_type)
+}
+
 /// Whether `name` is a known output type. `plugin:<path>` is always accepted syntactically and
 /// resolved at run time ([coverage § Output types](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types)).
 pub fn is_output_type(name: &str) -> bool {
@@ -364,6 +375,44 @@ pub(crate) fn decision(comment: &str) -> Option<String> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn only_the_stamped_reporters_change_with_the_time() {
+        let result = json!({
+            "modules": [
+                { "source": "a.ts", "valid": false, "dependencies": [
+                    { "module": "./b", "resolved": "b.ts", "coreModule": false, "followable": true,
+                      "couldNotResolve": false, "dependencyTypes": ["local"], "dynamic": false,
+                      "exoticallyRequired": false, "moduleSystem": "es6", "circular": false,
+                      "valid": false, "rules": [{ "name": "r", "severity": "error" }] } ] },
+                { "source": "b.ts", "valid": true, "dependencies": [] }
+            ],
+            "summary": {
+                "violations": [{ "from": "a.ts", "to": "b.ts", "rule": { "name": "r", "severity": "error" } }],
+                "error": 1, "warn": 0, "info": 0, "ignore": 0, "totalCruised": 2,
+                "totalDependenciesCruised": 1,
+                "optionsUsed": {},
+                "ruleSetUsed": { "forbidden": [{ "name": "r", "severity": "error", "from": {}, "to": {} }] }
+            }
+        });
+        let at = |timestamp: &str| ReportOptions {
+            timestamp: timestamp.to_owned(),
+            ..ReportOptions::default()
+        };
+        let mut rendered = 0;
+        for (name, _) in OUTPUT_TYPES {
+            let (Ok(one), Ok(two)) = (
+                render(name, &result, &at("2026-01-01T00:00:00.000")),
+                render(name, &result, &at("2027-02-02T11:11:11.111")),
+            ) else {
+                continue;
+            };
+            rendered += 1;
+            assert_eq!(one.output != two.output, stamps(name), "{name}");
+        }
+        assert!(rendered > 20, "{rendered}");
+        assert!(stamps("teamcity") && !stamps("err"));
+    }
 
     #[test]
     fn knows_every_dependency_cruiser_output_type() {
