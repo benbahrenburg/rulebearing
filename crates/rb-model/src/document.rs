@@ -476,6 +476,10 @@ pub struct Summary {
     /// ([Wave 3 plan § 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub affected: Option<Affected>,
+    /// Additive: the `plugin:<path>` reporter modules the run rendered through, each relative to
+    /// the repository root ([Wave 3 plan § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub plugins: Option<Vec<String>>,
 }
 
 /// `summary.affected`: the receipt of an `--affected` run
@@ -1139,6 +1143,21 @@ mod tests {
             serde_json::from_value(serde_json::to_value(&summary).unwrap_or_default())
                 .unwrap_or_default();
         assert_eq!(back, summary);
+    }
+
+    #[test]
+    fn the_plugins_receipt_has_its_contract_shape() {
+        let mut summary = Summary::default();
+        let plain = serde_json::to_value(&summary).unwrap_or_default();
+        assert!(plain.get("plugins").is_none(), "absent without a plugin");
+        summary.plugins = Some(vec!["reporters/stats.mjs".into()]);
+        let value = serde_json::to_value(&summary).unwrap_or_default();
+        assert_eq!(value["plugins"], serde_json::json!(["reporters/stats.mjs"]));
+        let back: Summary = serde_json::from_value(value).unwrap_or_default();
+        assert_eq!(
+            back.plugins.as_deref(),
+            Some(&["reporters/stats.mjs".to_owned()][..])
+        );
     }
 
     #[test]

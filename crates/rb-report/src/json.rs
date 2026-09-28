@@ -30,6 +30,7 @@ pub const SUMMARY_ADDITIONS: &[&str] = &[
     "ratchets",
     "expired",
     "affected",
+    "plugins",
 ];
 /// Rule-set keys Rulebearing adds (inside `summary.ruleSetUsed`): the element, slice and diagram
 /// rules.
@@ -97,7 +98,7 @@ mod tests {
     fn strict_schema_strips_every_addition() {
         let result = json!({
             "modules": [{ "source": "a", "language": "typescript", "valid": true, "dependencies": [{ "resolved": "b", "line": 1, "column": 2, "dependencyKind": "import" }] }],
-            "summary": { "violations": [{ "from": "a", "to": "b", "id": "RB-1", "fix": "f", "decision": "adr:1" }], "inspected": {}, "vacuousRules": [], "affected": { "revision": "main", "changed": ["affectedFile"], "closure": [] },
+            "summary": { "violations": [{ "from": "a", "to": "b", "id": "RB-1", "fix": "f", "decision": "adr:1" }], "inspected": {}, "vacuousRules": [], "affected": { "revision": "main", "changed": ["affectedFile"], "closure": [] }, "plugins": ["pluginFile.mjs"],
                          "ruleSetUsed": { "forbidden": [{ "name": "r", "fix": "f", "allowEmpty": true }],
                                           "elements": [{ "name": "sealedElement" }], "slices": [{ "name": "apartSlice" }],
                                           "diagrams": [{ "name": "drawnDiagram" }] } },
@@ -112,6 +113,7 @@ mod tests {
             "inspected",
             "vacuousRules",
             "affectedFile",
+            "pluginFile",
             "allowEmpty",
             "\"code\"",
             "sealedElement",

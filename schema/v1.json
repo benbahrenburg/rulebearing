@@ -1738,6 +1738,16 @@
           "description": "The options, verbatim.",
           "type": "object"
         },
+        "plugins": {
+          "description": "Additive: the `plugin:<path>` reporter modules the run rendered through, each relative to\nthe repository root ([Wave 3 plan § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)).",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
         "ratchets": {
           "description": "Additive: each ratchet's count against its budget\n([ADR-0029](../../../docs/adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)).",
           "items": {
