@@ -118,6 +118,28 @@ fn from_applies(args: &CruiseArgs, output_type: &str) -> Result<(), RunError> {
     }
 }
 
+/// The configuration's warnings as `warning:` lines, each naming its rule when it has one.
+fn config_warnings(config: &Config) -> String {
+    let mut out = String::new();
+    for warning in &config.warnings {
+        let rule = warning
+            .rule
+            .as_deref()
+            .map(|r| format!("rule `{r}`: "))
+            .unwrap_or_default();
+        let _ = writeln!(out, "warning: {rule}{}", warning.message);
+    }
+    out
+}
+
+/// Whether the rendered cache layer may serve and store `output_type`'s output. A plugin's
+/// output is never served from, or stored in, it; nor is `x-dot-webpage`'s, which depends on the
+/// GraphViz installed at the time of the run, not on the key (ADR-0053): without `dot` it must
+/// exit 2, never serve an old page.
+fn renders_cached(output_type: &str) -> bool {
+    rb_config::js::plugin::plugin_name(output_type).is_none() && output_type != "x-dot-webpage"
+}
+
 fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
     if args.info {
         return Outcome {
@@ -149,15 +171,7 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
         Err(outcome) => return *outcome,
     };
     progress.stage("configuration");
-    let mut stderr = String::new();
-    for warning in &effective.warnings {
-        let rule = warning
-            .rule
-            .as_deref()
-            .map(|r| format!("rule `{r}`: "))
-            .unwrap_or_default();
-        let _ = writeln!(stderr, "warning: {rule}{}", warning.message);
-    }
+    let stderr = config_warnings(&effective);
     let (output_type, output_to) = outputs(args, &effective);
     if let Err(e) = from_applies(args, &output_type) {
         return failed(&e, &stderr);
@@ -181,11 +195,7 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
     let (cache, evaluation) = cache_of(ctx, &effective, args, &options, liveness);
     let report_options = report_options(ctx, &effective, args, &output_type, &output_to);
     let report_part = report_key(&output_type, &output_to, &report_options);
-    // A plugin's output is never served from, or stored in, the rendered layer; nor is
-    // `x-dot-webpage`'s, which depends on the GraphViz installed at the time of the run, not on
-    // the key (ADR-0053): without `dot` it must exit 2, never serve an old page.
-    let renders_cached = rb_config::js::plugin::plugin_name(&output_type).is_none()
-        && output_type != "x-dot-webpage";
+    let renders_cached = renders_cached(&output_type);
     let mode = Mode {
         cache: cache.as_ref(),
         evaluation: evaluation.as_deref(),
@@ -746,7 +756,42 @@ fn stop_hook(code: RunExit, report: &str, stderr: String) -> Outcome {
 
 #[cfg(test)]
 mod tests {
-    use super::vacuous_message;
+    use super::{config_warnings, renders_cached, vacuous_message};
+
+    #[test]
+    fn only_reporters_that_depend_on_the_key_alone_are_served_rendered() {
+        for (output_type, cached) in [
+            ("err", true),
+            ("json", true),
+            ("dot", true),
+            ("plantuml", true),
+            ("x-dot-webpage", false),
+            ("plugin:./p.cjs", false),
+            ("plugin:file:///repo/p.cjs", false),
+        ] {
+            assert_eq!(renders_cached(output_type), cached, "{output_type}");
+        }
+    }
+
+    #[test]
+    fn config_warnings_name_their_rule() {
+        let mut config = rb_config::Config::default();
+        assert_eq!(config_warnings(&config), "");
+        config.warnings = vec![
+            rb_config::ConfigWarning {
+                rule: Some("r".into()),
+                message: "one".into(),
+            },
+            rb_config::ConfigWarning {
+                rule: None,
+                message: "two".into(),
+            },
+        ];
+        assert_eq!(
+            config_warnings(&config),
+            "warning: rule `r`: one\nwarning: two\n"
+        );
+    }
 
     #[test]
     fn a_stale_ignore_entry_is_named_as_one() {
