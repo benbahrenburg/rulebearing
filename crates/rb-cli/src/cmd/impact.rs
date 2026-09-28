@@ -257,6 +257,7 @@ fn report(ctx: &mut Context<'_>, args: &ImpactArgs, file: &str) -> Result<Value,
         liveness: false,
         options_used: serde_json::Map::new(),
         paths: Vec::new(),
+        affected: None,
     };
     let evaluation =
         pipeline::evaluate_document(ctx, &config, graph, &options, &mut Progress::new(None))

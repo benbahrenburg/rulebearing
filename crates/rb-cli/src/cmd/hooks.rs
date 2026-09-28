@@ -36,7 +36,8 @@ pub struct InstallArgs {
 pub const SESSION_START: &str = "rulebearing summary --format agent";
 /// Before an edit: what the file is subject to.
 pub const PRE_TOOL_USE: &str = "rulebearing impact --from-hook";
-/// Before the turn ends: the findings, for the agent (wave 3 narrows it to `--affected HEAD`).
+/// Before the turn ends: the findings, for the agent. `cruise --affected HEAD` exists (plan 0003,
+/// Step 3); the hook recipe narrows to it with the guard branch of Step 16.
 pub const STOP: &str = "rulebearing cruise --output-type agent --from-hook";
 
 fn command(command: &str) -> Value {

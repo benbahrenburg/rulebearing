@@ -79,6 +79,7 @@ pub fn statistics(
         liveness: false,
         options_used: serde_json::Map::new(),
         paths: graph.paths.clone(),
+        affected: None,
     };
     pipeline::evaluate_document(ctx, config, document, &options, &mut Progress::new(None))
         .map(|run| run.evaluation)

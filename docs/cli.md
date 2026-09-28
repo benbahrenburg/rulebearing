@@ -6,7 +6,7 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 
 | Command | For | dependency-cruiser |
 | --- | --- | --- |
-| `cruise [paths]` | Extract, evaluate, report | `depcruise`, with the same flags and short forms (`-T`, `-f`, `-c`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-X`, `-P`, `-p`, `-m`, `-i`), `--webpack-config` and `--init [oneshot]` |
+| `cruise [paths]` | Extract, evaluate, report | `depcruise`, with the same flags and short forms (`-T`, `-f`, `-c`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-X`, `-P`, `-p`, `-m`, `-i`, `-A`), `--webpack-config`, `--affected [revision]` and `--init [oneshot]` |
 | `fmt <result.json>` | Re-report a saved result without extracting | `depcruise-fmt`, with its short forms (`-T`, `-f`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-e`, `-p`) |
 | `rules [--json]` | Every rule with its family, severity and match counts | |
 | `explain <rule> [--plain]` | One rule in a sentence, with its reason, `fix` and first edges | |
@@ -79,6 +79,23 @@ A checkout holds what git tracks and nothing else. Edges into installed packages
 
 `diff` is a report and exits 0, as the reporters that do not gate do ([ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). `--exit-code` (`-e`) makes it gate on what the change introduced: the exit code is the number of new error-severity violations, capped at 255. An input that cannot be read or is not a cruise result, an unknown revision, a folder outside a git repository with `--base`, and a side that cannot be cruised exit 2 with the reason; an invalid configuration, an output type other than the three, or a wrong number of results exit 3.
 
+## Affected runs
+
+`cruise --affected [revision]` (`-A`) reports only the modules changed since `revision` (default `main`) and every module that reaches them. What it reports follows the configuration format ([ADR-0052](adr/0052-affected-is-upstreams-reaches-filter.md)), as liveness does.
+
+With a dependency-cruiser configuration, or none, it does what dependency-cruiser does ([coverage § Command line](artifacts/dependency-cruiser-18.2.0-coverage.md#command-line), row `--affected [revision]`). The changes are what `git diff <revision> --name-status` and the untracked files of `git status --porcelain` list, with the extensions dependency-cruiser lists; they become the `reaches` expression, so `summary.optionsUsed.reaches` and the report are dependency-cruiser's. That has three consequences worth knowing: an edge from a changed module to an unchanged one that does not reach a changed module is not in the report, so neither is a violation on it; a deleted file is not in the expression; and a new file in a new, untracked folder counts once it is staged, because `git status` reports the folder rather than the file.
+
+With a `rulebearing.*` configuration, the rules are evaluated over the whole graph and the report keeps the closure's modules with every edge they have, and every violation that touches the closure: its `from` module is in it, or, for a cycle or reachability violation, a module of its path. An edited file's import of an unchanged, forbidden module is reported. Each file of a new untracked folder counts, every changed file that is a module counts whatever its extension, and a deleted file's importers are read from `.graph/cruise.json` when it exists. No `reaches` expression is set.
+
+| Addition, in both modes | What it does |
+| --- | --- |
+| .NET and Python | A changed Python module, a changed .NET module, and a changed file the PDB attributes a type to (either file of a partial class) count as changed modules |
+| `--affected-depth N` | Only the modules that reach a changed one in at most `N` steps; `0`, the default, keeps them all |
+| `summary.affected` | The receipt: `revision`, every `changed` path (deleted files included), the `closure` the report kept, and `depth` when given; `--strict-schema` strips it |
+| Paths | Relative to the directory the cruise runs in, as module names are; dependency-cruiser keeps git's repository-relative paths, so its cruise from a subdirectory matches nothing |
+
+A gating reporter exits with the error count of what the report kept. A revision git does not know, or a directory outside a git repository, exits 2. `options.affected` in a `rulebearing.*` configuration applies as the flag would; in a dependency-cruiser configuration it is ignored with a warning, as dependency-cruiser ignores it.
+
 ## Flags the query commands share
 
 | Flag | Meaning |
@@ -103,7 +120,16 @@ A checkout holds what git tracks and nothing else. Edges into installed packages
 | 2 | The run cannot be trusted: no modules found, an unsupported file, a vacuous rule under `strict` liveness, a ratchet budget that cannot be read |
 | 3 | The configuration is invalid |
 
-A run with exactly two or three error violations also exits 2 or 3; the report says which it was ([ADR-0008](adr/0008-exit-code-contract.md), [ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). `fmt` exits 0 unless `--exit-code` is given, as `depcruise-fmt` does; with it, the code comes from the saved result alone (`summary.error`, `summary.expired`, the exceeded ratchets, and 2 for `vacuousRules` or a ratchet without a budget), so a saved result gates as the cruise would have ([ADR-0031](adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)). `diff` exits 0 unless `--exit-code` is given, then with the number of new error-severity violations ([above](#diff)). `can-import` exits 1 for "no" and 2 when the target is unknown. `attest --verify` exits 1 when a hash differs. The `--from-hook` forms of `cruise` and `impact` always exit 0 ([agents.md](agents.md#the-hooks)).
+A run with exactly two or three error violations also exits 2 or 3; the report says which it was ([ADR-0008](adr/0008-exit-code-contract.md), [ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). `--exit-code-mode strict`, on `cruise` and on `fmt --exit-code`, removes the ambiguity for a pipeline that needs it:
+
+| Outcome | `default` | `strict` |
+| --- | --- | --- |
+| no error-severity violation | 0 | 0 |
+| `n` error-severity violations | `n`, capped at 255 | `10 + n`, capped at 255 |
+| the run cannot be trusted | 2 | 2 |
+| the configuration is invalid | 3 | 3 |
+
+`fmt` exits 0 unless `--exit-code` is given, as `depcruise-fmt` does; with it, the code comes from the saved result alone (`summary.error`, `summary.expired`, the exceeded ratchets, and 2 for `vacuousRules` or a ratchet without a budget), so a saved result gates as the cruise would have ([ADR-0031](adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)). `diff` exits 0 unless `--exit-code` is given, then with the number of new error-severity violations ([above](#diff)). `can-import` exits 1 for "no" and 2 when the target is unknown. `attest --verify` exits 1 when a hash differs. The `--from-hook` forms of `cruise` and `impact` always exit 0 ([agents.md](agents.md#the-hooks)).
 
 ## Pipelines
 

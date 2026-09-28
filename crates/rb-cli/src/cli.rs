@@ -13,6 +13,8 @@
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
+use crate::exit::ExitCodeMode;
+
 /// The exit-code table, printed under every help text
 /// ([ADR-0008](../../../docs/adr/0008-exit-code-contract.md), [ADR-0030](../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)).
 pub const EXIT_CODES: &str = "Exit codes:
@@ -22,7 +24,9 @@ pub const EXIT_CODES: &str = "Exit codes:
           (json, csv and text exit 0, as in dependency-cruiser)
   2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule
   3       the configuration is invalid
-A run with exactly 2 or 3 error violations also exits 2 or 3; the report says which it was.";
+A run with exactly 2 or 3 error violations also exits 2 or 3; the report says which it was.
+--exit-code-mode strict exits 10 + n for n error violations instead (capped at 255), so 2 and 3
+only ever mean an untrustworthy run and an invalid configuration.";
 
 /// `rulebearing`: one architecture rule set for TypeScript, .NET and Python.
 #[derive(Debug, Parser)]
@@ -356,6 +360,20 @@ pub struct CruiseArgs {
     /// there are errors, exit 0 always
     #[arg(long)]
     pub from_hook: bool,
+    /// Only report the modules changed since REVISION (default main), committed or not, and
+    /// every module that reaches them, as dependency-cruiser does; with a rulebearing.* configuration,
+    /// also every violation on their edges that leave them. .NET source files map to their types' modules
+    #[arg(short = 'A', long, value_name = "REVISION", num_args = 0..=1,
+          default_missing_value = rb_config::model::DEFAULT_AFFECTED_REVISION)]
+    pub affected: Option<String>,
+    /// With --affected or options.affected: how many steps of dependents to include; 0 (the
+    /// default) for all
+    #[arg(long, value_name = "NUMBER")]
+    pub affected_depth: Option<u32>,
+    /// How the error count becomes the exit code: default (the count) or strict (10 + the count,
+    /// so 2 and 3 are never a count)
+    #[arg(long, value_enum, value_name = "MODE", default_value_t = ExitCodeMode::Default)]
+    pub exit_code_mode: ExitCodeMode,
 }
 
 /// `fmt`.
@@ -398,6 +416,10 @@ pub struct FmtArgs {
     /// Exit with the number of error violations
     #[arg(short = 'e', long)]
     pub exit_code: bool,
+    /// With --exit-code: default (the count) or strict (10 + the count, so 2 and 3 are never a
+    /// count)
+    #[arg(long, value_enum, value_name = "MODE", default_value_t = ExitCodeMode::Default)]
+    pub exit_code_mode: ExitCodeMode,
     /// Prefix for links in the reports
     #[arg(short = 'p', long, value_name = "PREFIX")]
     pub prefix: Option<String>,

@@ -435,6 +435,7 @@ fn against_base(ctx: &mut Context<'_>, args: &DiffArgs, reference: &str) -> Resu
         liveness: false,
         options_used: configure::options_used(has_config.then_some(&config), ctx, "json", "-"),
         paths: args.inputs.clone(),
+        affected: None,
     };
     let head = pipeline::extract(ctx, &config, &args.inputs)
         .map_err(|e| side_failed("the working tree", &RunError::Extract(e)))?;

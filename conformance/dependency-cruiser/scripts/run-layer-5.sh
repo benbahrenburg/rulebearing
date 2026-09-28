@@ -8,7 +8,9 @@
 #   --all                the three oracles the plan names, one after the other
 #   --mutations          apply mutations/mutations.patch to a fresh checkout of dependency-cruiser's
 #                        repository at its manifest SHA and assert that both tools report exactly
-#                        the twelve violations in mutations/expected.json, and agree otherwise
+#                        the twelve violations in mutations/expected.json, and agree otherwise;
+#                        then, with the mutations committed, that `--affected <manifest SHA>`
+#                        gives the same result from both, exactly mutations/expected-affected.json
 #
 # Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 18 and sub-wave 1G.
 # Requirements: docs/prd.md#nfr-conf-01, docs/prd.md#nfr-conf-03.
@@ -244,6 +246,18 @@ run_mutations() {
   # The pinned incumbent: the mutation config uses nothing newer than 18.2.0.
   cruise_both "$out" "$dir" .dependency-cruiser.mutations.cjs "$(pinned_incumbent)" src bin
   zero_diff "$out" "$name" --expect "$gate/mutations/expected.json"
+  # --affected (plan 0003, Step 3): the mutations committed on top of the manifest SHA, then both
+  # tools with `--affected <sha>`. Committed, because `git status --porcelain` lists the new
+  # untracked folder src/mutation/ rather than its files, which neither tool would count. Both
+  # must agree field for field and report exactly mutations/expected-affected.json: the
+  # violations between modules of the closure, as dependency-cruiser's reaches filter keeps them
+  # (docs/adr/0052-affected-is-upstreams-reaches-filter.md).
+  git -C "$dir" add --all
+  git -C "$dir" -c user.name=layer5 -c user.email=layer5@example.invalid -c commit.gpgsign=false \
+    commit --quiet --no-verify -m "the mutation branch"
+  cruise_both "$out/affected" "$dir" .dependency-cruiser.mutations.cjs "$(pinned_incumbent)" \
+    --affected "$sha" src bin
+  zero_diff "$out/affected" "$name" --expect "$gate/mutations/expected-affected.json"
 }
 
 case "$mode" in

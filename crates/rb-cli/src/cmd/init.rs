@@ -740,6 +740,7 @@ pub fn converge(
         liveness: true,
         options_used: serde_json::Map::new(),
         paths: found.roots.clone(),
+        affected: None,
     };
     let mut dropped = Vec::new();
     let mut derived = false;

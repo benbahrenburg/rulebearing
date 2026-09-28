@@ -46,6 +46,8 @@ pub struct RunOptions {
     pub options_used: Map<String, Value>,
     /// The positional arguments.
     pub paths: Vec<String>,
+    /// `--affected`: the changes since the revision ([`crate::affected`]).
+    pub affected: Option<crate::affected::Selection>,
 }
 
 /// A finished run.
@@ -372,31 +374,60 @@ pub fn evaluate_document(
     progress: &mut Progress,
 ) -> Result<Run, RunError> {
     let inspected = receipt(&document);
+    let mut filters = cruise_filters(config);
+    let mut options_used = options.options_used.clone();
+    // `--affected` with a dependency-cruiser configuration: the other languages' changed modules
+    // join upstream's expression, which is only known once the graph is (crate::affected).
+    let upstream = options
+        .affected
+        .as_ref()
+        .filter(|s| s.mode == crate::affected::Mode::Upstream)
+        .map(|selection| {
+            let pattern = selection.pattern(&document);
+            crate::affected::Selection::record(&mut options_used, &pattern);
+            filters.reaches = Some(Filter {
+                path: Some(pattern.clone()),
+                depth: selection.depth,
+            });
+            (selection, pattern)
+        });
     let eval_options = EvalOptions {
         liveness: options.liveness,
         validate: true,
         metrics: config.options.metrics.unwrap_or(false),
         today: ctx.today,
         args: options.paths.clone(),
-        options_used: options.options_used.clone(),
+        options_used,
     };
     let evaluation = evaluate(document, config, &eval_options)?;
     progress.stage("evaluate");
     let format = FormatOptions {
-        filters: cruise_filters(config),
+        filters,
         collapse: cruise_collapse(config),
         options: Map::new(),
     };
-    let mut document = rewrap(
-        evaluation.document.clone(),
-        &format,
-        Some(&config.rules.dependencies),
-    )?;
+    // With a native configuration, the rules were evaluated over the whole graph and the report
+    // keeps what touches the closure (crate::affected::Selection::narrow).
+    let (evaluated, native) = match options
+        .affected
+        .as_ref()
+        .filter(|s| s.mode == crate::affected::Mode::Closure)
+    {
+        Some(selection) => {
+            let (narrowed, receipt) = selection.narrow(&evaluation.document);
+            (narrowed, Some(receipt))
+        }
+        None => (evaluation.document.clone(), None),
+    };
+    let mut document = rewrap(evaluated, &format, Some(&config.rules.dependencies))?;
     document.summary.inspected = Some(inspected);
     document
         .summary
         .vacuous_rules
         .clone_from(&evaluation.document.summary.vacuous_rules);
+    document.summary.affected = native.or_else(|| {
+        upstream.map(|(selection, pattern)| selection.receipt(&evaluation.document, &pattern))
+    });
     Ok(Run {
         evaluation,
         document,
