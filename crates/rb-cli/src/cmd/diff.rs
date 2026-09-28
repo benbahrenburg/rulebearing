@@ -24,8 +24,10 @@
 //! not what an edit to the rules did. Liveness is off on both sides: `diff` reports, and a rule
 //! that matches nothing is `cruise`'s finding. The base graph comes from the cache when an entry
 //! for that commit exists; otherwise `REF` is checked out with `git worktree add --detach` into a
-//! folder under the system temporary directory (git hooks off), extracted there from the same
-//! subfolder the command runs in, and the worktree is removed afterwards, on an error too. The
+//! folder under the system temporary directory (git hooks off: `core.hooksPath` is a fresh,
+//! private, empty folder), extracted there from the same subfolder the command runs
+//! in, and the worktree is removed afterwards, on an error too. A path the base does not have, or a
+//! base with no module, is an empty base graph: everything on the working-tree side is added. The
 //! user's working tree is never touched. The extracted base graph is then written to the cache,
 //! keyed on the repository root, the commit, the configuration, the build and the paths, so a
 //! second `diff --base` against the same commit does not check it out again. `--no-cache` neither
@@ -41,7 +43,8 @@
 //! ([ADR-0030](../../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)).
 //! `--exit-code` makes it gate on what the change introduced: the exit code is the number of new
 //! error-severity violations, capped at 255, with the same 2-and-3 ambiguity [ADR-0008](../../../../docs/adr/0008-exit-code-contract.md)
-//! documents. An unreadable input, a file that is not a cruise result, an unknown revision, a
+//! documents; `--exit-code-mode strict` shifts a non-zero count to `10 + n`, as on `cruise` and
+//! `fmt`. An unreadable input, a file that is not a cruise result, an unknown revision, a
 //! folder outside a repository and a base that cannot be cruised exit 2 with the reason; an invalid
 //! configuration, an unknown output type or a wrong command line exit 3.
 
@@ -56,7 +59,7 @@ use rb_report::diff::{self, Diff, Side};
 use crate::cache::{self, CacheKey, key};
 use crate::cli::{ConfigArgs, CruiseArgs};
 use crate::context::Context;
-use crate::exit::RunExit;
+use crate::exit::{ExitCodeMode, RunExit};
 use crate::pipeline::{self, RunError, RunOptions};
 use crate::progress::Progress;
 use crate::{Outcome, configure, ratchets, write_output};
@@ -65,6 +68,7 @@ use crate::{Outcome, configure, ratchets, write_output};
 pub const DIFF_EXIT_CODES: &str = "Exit codes:
   0       the diff was written (with --exit-code: no new error-severity violation)
   1-255   with --exit-code: the number of new error-severity violations, capped at 255
+          (with --exit-code-mode strict: 10 + the number, so 2 and 3 are never a count)
   2       an input cannot be read or is not a cruise result, the revision is unknown, or a side
           cannot be cruised
   3       the configuration, the output type or the command line is invalid";
@@ -92,6 +96,16 @@ pub struct DiffArgs {
     /// Exit with the number of new error-severity violations
     #[arg(short = 'e', long)]
     pub exit_code: bool,
+    /// With --exit-code: default (the count) or strict (10 + the count, so 2 and 3 are never a
+    /// count)
+    #[arg(
+        long,
+        value_enum,
+        value_name = "MODE",
+        default_value_t = ExitCodeMode::Default,
+        requires = "exit_code"
+    )]
+    pub exit_code_mode: ExitCodeMode,
     /// With --base: check the base out and extract it even when the cache holds its graph, and
     /// do not write the entry
     #[arg(long)]
@@ -145,7 +159,7 @@ pub fn run(ctx: &mut Context<'_>, args: &DiffArgs) -> Outcome {
     Outcome {
         stdout,
         stderr: String::new(),
-        code: code.code(),
+        code: code.code_in(args.exit_code_mode),
     }
 }
 
@@ -189,16 +203,84 @@ fn saved(ctx: &Context<'_>, args: &DiffArgs) -> Result<Diff, Outcome> {
     Ok(diff::compute(&read(ctx, old)?, &read(ctx, new)?))
 }
 
-/// `git` in `dir`, with hooks off; its trimmed stdout, or its stderr as the error.
+/// A folder this process created under the system temporary directory, removed with everything
+/// in it when dropped: the empty `core.hooksPath` of every git call, and the parent of the base
+/// checkout.
+///
+/// A fixed or guessable path in the shared temporary directory would let whoever creates it first
+/// decide what is in it: a `post-checkout` that `git worktree add` then runs as the user, or a
+/// folder (or a link) the checkout lands in. This folder is new (`create_dir` refuses an entry
+/// that exists, of any kind, and a fresh name is tried), and private to the user on Unix (mode
+/// 0700), so nobody else can put anything into it.
+#[derive(Debug)]
+pub(crate) struct PrivateDir {
+    /// The folder.
+    pub(crate) path: PathBuf,
+}
+
+impl PrivateDir {
+    /// Creates `<temp>/<prefix><pid>-<nanos>-<n>`, trying up to sixteen names.
+    ///
+    /// # Errors
+    /// The I/O error when no fresh folder can be created.
+    pub(crate) fn create(prefix: &str) -> std::io::Result<Self> {
+        static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let names = std::iter::repeat_with(|| {
+            let nanos = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |d| d.as_nanos());
+            let n = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            std::env::temp_dir().join(format!("{prefix}{}-{nanos}-{n}", std::process::id()))
+        })
+        .take(16);
+        Self::create_first(names)
+    }
+
+    /// Creates the first of `candidates` that does not exist yet; an existing entry is skipped,
+    /// never used.
+    ///
+    /// # Errors
+    /// The I/O error of the last attempt when every candidate exists, or the first other error.
+    pub(crate) fn create_first(
+        candidates: impl IntoIterator<Item = PathBuf>,
+    ) -> std::io::Result<Self> {
+        let mut last = std::io::Error::from(std::io::ErrorKind::AlreadyExists);
+        for path in candidates {
+            let mut builder = std::fs::DirBuilder::new();
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::DirBuilderExt as _;
+                builder.mode(0o700);
+            }
+            match builder.create(&path) {
+                Ok(()) => return Ok(Self { path }),
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => last = e,
+                Err(e) => return Err(e),
+            }
+        }
+        Err(last)
+    }
+}
+
+impl Drop for PrivateDir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.path);
+    }
+}
+
+/// `git` in `dir`, with hooks off (`core.hooksPath` is a fresh, private, empty
+/// [`PrivateDir`]); its trimmed stdout, or its stderr as the error.
 pub(crate) fn git(dir: &Path, arguments: &[&str]) -> Result<String, String> {
-    let no_hooks = std::env::temp_dir().join("rulebearing-no-git-hooks");
+    let no_hooks = PrivateDir::create("rulebearing-no-hooks-")
+        .map_err(|e| format!("cannot create a private empty folder for git's hooks: {e}"))?;
     let output = Command::new("git")
         .arg("-c")
-        .arg(format!("core.hooksPath={}", no_hooks.display()))
+        .arg(format!("core.hooksPath={}", no_hooks.path.display()))
         .args(arguments)
         .current_dir(dir)
         .output()
         .map_err(|e| format!("cannot run git: {e}"))?;
+    drop(no_hooks);
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
     } else {
@@ -234,14 +316,16 @@ pub fn resolve_revision(dir: &Path, reference: &str) -> Result<String, String> {
     .ok_or_else(unknown)
 }
 
-/// A detached checkout of one commit in a folder under the system temporary directory, removed
-/// when dropped.
+/// A detached checkout of one commit, in `base/` inside a [`PrivateDir`] of its own under the
+/// system temporary directory; the worktree and the folder are removed when dropped.
 #[derive(Debug)]
 pub struct Checkout {
     /// The repository the worktree belongs to.
     repository: PathBuf,
     /// The worktree's folder.
     pub path: PathBuf,
+    /// The private folder that holds it, removed after the worktree, as the field drops.
+    folder: PrivateDir,
 }
 
 impl Checkout {
@@ -250,14 +334,13 @@ impl Checkout {
     /// # Errors
     /// Git's message when the worktree cannot be added.
     pub fn add(repository: &Path, sha: &str) -> Result<Self, String> {
-        let nanos = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_or(0, |d| d.as_nanos());
-        let path =
-            std::env::temp_dir().join(format!("rulebearing-diff-{}-{nanos}", std::process::id()));
+        let folder = PrivateDir::create("rulebearing-diff-").map_err(|e| {
+            format!("cannot create a private folder for the checkout of {sha}: {e}")
+        })?;
         let checkout = Self {
             repository: repository.to_path_buf(),
-            path,
+            path: folder.path.join("base"),
+            folder,
         };
         let target = checkout.path.to_string_lossy().into_owned();
         git(
@@ -276,9 +359,9 @@ impl Drop for Checkout {
             &self.repository,
             &["worktree", "remove", "--force", &target],
         );
-        if self.path.exists() {
-            let _ = std::fs::remove_dir_all(&self.path);
-        }
+        // What git left, and the private folder around it (dropping the field removes it again,
+        // harmlessly).
+        let _ = std::fs::remove_dir_all(&self.folder.path);
         let _ = git(&self.repository, &["worktree", "prune"]);
     }
 }
@@ -356,7 +439,18 @@ fn evaluate(
     Ok(document)
 }
 
-/// The base graph, extracted: from the cache, else from a checkout (then cached).
+/// The paths of `paths` the base checkout at `cwd` has: a glob (`*`, `?`, `[`, `{`) is kept as
+/// it is, a literal path only when it exists there.
+pub fn present_paths(cwd: &Path, paths: &[String]) -> Vec<String> {
+    paths
+        .iter()
+        .filter(|p| p.contains(['*', '?', '[', '{']) || cwd.join(p.as_str()).exists())
+        .cloned()
+        .collect()
+}
+
+/// The base graph, extracted: from the cache, else from a checkout (then cached). A base without
+/// the given paths or without any module is an empty graph, not an error.
 fn base_graph(
     ctx: &Context<'_>,
     config: &Config,
@@ -385,8 +479,23 @@ fn base_graph(
         color_terminal: false,
     };
     let base = args.base.as_deref().unwrap_or(sha);
-    let document = pipeline::extract(&base_ctx, config, &args.inputs)
-        .map_err(|e| side_failed(&format!("the base `{base}` ({sha})"), &RunError::Extract(e)))?;
+    // A path the change adds is not in the base yet, and a base with nothing to extract (a
+    // first commit, a new package) is empty: both mean everything on the head side is added.
+    let present = present_paths(&base_ctx.cwd, &args.inputs);
+    let document = if !args.inputs.is_empty() && present.is_empty() {
+        GraphDocument::default()
+    } else {
+        match pipeline::extract(&base_ctx, config, &present) {
+            Ok(document) => document,
+            Err(rb_model::ExtractError::NoModulesFound) => GraphDocument::default(),
+            Err(e) => {
+                return Err(side_failed(
+                    &format!("the base `{base}` ({sha})"),
+                    &RunError::Extract(e),
+                ));
+            }
+        }
+    };
     drop(checkout);
     if !args.no_cache {
         // A cache that cannot be written costs the next run a checkout, not this one its answer.
@@ -455,6 +564,131 @@ fn against_base(ctx: &mut Context<'_>, args: &DiffArgs, reference: &str) -> Resu
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_hooks_folder_is_fresh_empty_private_and_removed() -> std::io::Result<()> {
+        let (a, b) = (
+            PrivateDir::create("rb-test-hooks-")?,
+            PrivateDir::create("rb-test-hooks-")?,
+        );
+        assert_ne!(a.path, b.path, "each call has its own folder");
+        assert!(a.path.is_dir());
+        assert_eq!(std::fs::read_dir(&a.path)?.count(), 0);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt as _;
+            let mode = std::fs::metadata(&a.path)?.permissions().mode() & 0o777;
+            assert_eq!(mode, 0o700);
+        }
+        let path = a.path.clone();
+        drop(a);
+        assert!(!path.exists());
+        // git runs with it: a plain query answers.
+        assert!(git(&std::env::temp_dir(), &["--version"]).is_ok_and(|v| v.starts_with("git")));
+        Ok(())
+    }
+
+    #[test]
+    fn an_entry_that_already_exists_at_a_name_is_never_used() -> std::io::Result<()> {
+        let dir = std::env::temp_dir().join(format!("rb-diff-guessed-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir)?;
+        // Someone else got there first: a folder holding a hook, a plain file, and on Unix a link
+        // to a folder of theirs.
+        let planted = dir.join("planted");
+        std::fs::create_dir_all(&planted)?;
+        std::fs::write(planted.join("post-checkout"), "#!/bin/sh\n")?;
+        std::fs::write(dir.join("file"), "x")?;
+        let mut candidates = vec![planted.clone(), dir.join("file")];
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(&planted, dir.join("link"))?;
+            candidates.push(dir.join("link"));
+        }
+        candidates.push(dir.join("fresh"));
+        let made = PrivateDir::create_first(candidates.clone())?;
+        assert_eq!(made.path, dir.join("fresh"));
+        assert_eq!(std::fs::read_dir(&made.path)?.count(), 0);
+        drop(made);
+        assert!(planted.join("post-checkout").is_file(), "left as it was");
+        assert!(!dir.join("fresh").exists());
+        // With every name taken, nothing is created and the error says so.
+        candidates.pop();
+        let none = PrivateDir::create_first(candidates);
+        assert!(none.is_err_and(|e| e.kind() == std::io::ErrorKind::AlreadyExists));
+        let _ = std::fs::remove_dir_all(&dir);
+        Ok(())
+    }
+
+    #[test]
+    fn a_checkout_lives_in_a_private_folder_that_goes_with_it() -> Result<(), String> {
+        let repo = std::env::temp_dir().join(format!("rb-diff-checkout-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&repo);
+        std::fs::create_dir_all(&repo).map_err(|e| e.to_string())?;
+        std::fs::write(repo.join("a.ts"), "export const a = 1;\n").map_err(|e| e.to_string())?;
+        for args in [
+            &["init", "--quiet"][..],
+            &["add", "."],
+            &[
+                "-c",
+                "user.name=t",
+                "-c",
+                "user.email=t@example.invalid",
+                "-c",
+                "commit.gpgsign=false",
+                "commit",
+                "--quiet",
+                "-m",
+                "one",
+            ],
+        ] {
+            git(&repo, args)?;
+        }
+        let sha = resolve_revision(&repo, "HEAD")?;
+        let checkout = Checkout::add(&repo, &sha)?;
+        let parent = checkout
+            .path
+            .parent()
+            .map(Path::to_path_buf)
+            .unwrap_or_default();
+        assert!(checkout.path.join("a.ts").is_file());
+        assert!(
+            parent
+                .file_name()
+                .is_some_and(|n| n.to_string_lossy().starts_with("rulebearing-diff-"))
+        );
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt as _;
+            let mode = std::fs::metadata(&parent)
+                .map_err(|e| e.to_string())?
+                .permissions()
+                .mode();
+            assert_eq!(mode & 0o777, 0o700);
+        }
+        drop(checkout);
+        assert!(!parent.exists());
+        let listed = git(&repo, &["worktree", "list", "--porcelain"])?;
+        assert_eq!(listed.matches("worktree ").count(), 1, "{listed}");
+        let _ = std::fs::remove_dir_all(&repo);
+        Ok(())
+    }
+
+    #[test]
+    fn only_the_paths_the_base_has_are_extracted() {
+        let dir = std::env::temp_dir().join(format!("rb-diff-present-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(dir.join("src"));
+        let paths: Vec<String> = ["src", "gone", "lib/**/*.ts", "a?.ts", "[ab].ts", "{x,y}"]
+            .iter()
+            .map(|s| (*s).to_owned())
+            .collect();
+        assert_eq!(
+            present_paths(&dir, &paths),
+            ["src", "lib/**/*.ts", "a?.ts", "[ab].ts", "{x,y}"]
+        );
+        assert!(present_paths(&dir, &[]).is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn any_configuration_flag_counts_as_given() {
