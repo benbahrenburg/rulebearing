@@ -18,10 +18,12 @@ ruff_text_size = { workspace = true }
 rayon = { workspace = true }
 toml = { workspace = true }
 thiserror = { workspace = true }
+# The per-file state an incremental run reuses (plan 0003, Step 2).
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
-serde_json = { workspace = true }
 
 [lints]
 workspace = true

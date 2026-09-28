@@ -70,6 +70,14 @@ pub enum PipelineError {
         /// The parser's message.
         reason: String,
     },
+    /// A CoffeeScript or LiveScript file, which only the Node sidecar reads
+    /// ([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)); it is never parsed
+    /// as JavaScript.
+    #[error("{path}: {reason}", path = path.display(), reason = crate::SIDECAR_REASON)]
+    NeedsSidecar {
+        /// The file, as the walk names it.
+        path: PathBuf,
+    },
 }
 
 /// A compiled `doNotFollow`, `exclude` or `includeOnly`.
@@ -213,6 +221,10 @@ pub struct Settings {
     /// Whether each extracted file's code layer is read from the same parse
     /// ([`codelayer`]); on by default.
     pub code_layer: bool,
+    /// Whether the extraction keeps each file's code layer before linking in
+    /// [`rb_model::Extraction::files`], so a later incremental run can reuse the file
+    /// ([`crate::extract_incremental`]). Off by default; the cache turns it on.
+    pub keep_file_states: bool,
     /// Whether a `.md` file that `extraExtensionsToScan` lists has its JavaScript and TypeScript
     /// fences read ([`md`]). Off by default, which is dependency-cruiser's behaviour (a listed
     /// extension is never read); the command line turns it on for a native configuration
@@ -220,6 +232,10 @@ pub struct Settings {
     pub markdown_fences: bool,
     /// The tsconfig's `module` and `target`, read by [`crate::prepare`] when `tsConfig` names one.
     pub compiler_options: TsCompilerOptions,
+    /// With `--sidecar node`, the options block the sidecar hands dependency-cruiser
+    /// ([`crate::sidecar::options_block`]); `None` stops the run at the first CoffeeScript
+    /// or LiveScript file the walk reads.
+    pub sidecar: Option<serde_json::Map<String, serde_json::Value>>,
 }
 
 impl Settings {
@@ -254,8 +270,12 @@ impl Settings {
             experimental_stats: options.experimental_stats.unwrap_or(false),
             babel: None,
             code_layer: true,
+            keep_file_states: false,
             markdown_fences: false,
             compiler_options: TsCompilerOptions::default(),
+            sidecar: options
+                .sidecar
+                .map(|_| crate::sidecar::options_block(options)),
         })
     }
 
@@ -943,6 +963,27 @@ type Resolved = (
     Option<FileCode>,
 );
 
+/// Whether `file` is not parsed at all: `Ok(true)` for an extension `extraExtensionsToScan`
+/// lists (scanned, never read), and [`PipelineError::NeedsSidecar`] for CoffeeScript and
+/// LiveScript, which are not JavaScript even where they parse as such; only the sidecar reads
+/// them.
+fn not_parsed(file: &str, settings: &Settings) -> Result<bool, PipelineError> {
+    if !reads_fences(settings, file)
+        && settings
+            .extra_extensions_to_scan
+            .iter()
+            .any(|e| e == node_extname(file))
+    {
+        return Ok(true);
+    }
+    if crate::needs_sidecar(file) {
+        return Err(PipelineError::NeedsSidecar {
+            path: PathBuf::from(file),
+        });
+    }
+    Ok(false)
+}
+
 /// [`extract_dependencies`], and the extension list of the file's first resolution that found
 /// a file, in upstream's resolving order (before filtering), for
 /// [`ResolveConfig::settle_followable`]; with `collect`, also the file's code layer.
@@ -952,12 +993,7 @@ fn resolved_dependencies(
     config: &ResolveConfig,
     collect: bool,
 ) -> Result<Resolved, PipelineError> {
-    if !reads_fences(settings, file)
-        && settings
-            .extra_extensions_to_scan
-            .iter()
-            .any(|e| e == node_extname(file))
-    {
+    if not_parsed(file, settings)? {
         return Ok((Vec::new(), None, None));
     }
     let mut first_found = None;
@@ -1317,6 +1353,19 @@ pub struct ExtractedModule {
     pub code: Option<FileCode>,
 }
 
+/// One file's result carried over from an earlier extraction instead of reading the file again
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// its resolved, filtered, sorted dependencies and its statistics.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Reused {
+    /// The dependencies, as the file's own extraction returned them.
+    pub dependencies: Vec<Extracted>,
+    /// Its `experimentalStats`, when the earlier run computed them.
+    pub experimental_stats: Option<ExperimentalStats>,
+    /// Its code layer before linking, when the code layer is on.
+    pub code: Option<FileCode>,
+}
+
 /// Whether a dependency leads to a file the walk extracts in turn.
 fn followed(dependency: &Extracted) -> bool {
     dependency.followable && !dependency.matches_do_not_follow
@@ -1331,6 +1380,7 @@ fn reachable_dependencies(
     initial: &[String],
     settings: &Settings,
     config: &ResolveConfig,
+    reused: &BTreeMap<String, Reused>,
 ) -> BTreeMap<String, FileResult> {
     let mut done: BTreeMap<String, FileResult> = BTreeMap::new();
     let mut seen: BTreeSet<&str> = BTreeSet::new();
@@ -1344,7 +1394,10 @@ fn reachable_dependencies(
         let results: Vec<(String, FileResult)> = frontier
             .into_par_iter()
             .map(|file| {
-                let result = extract_file(&file, settings, config);
+                let result = match reused.get(&file) {
+                    Some(earlier) => Ok((earlier.dependencies.clone(), earlier.code.clone())),
+                    None => extract_file(&file, settings, config),
+                };
                 (file, result)
             })
             .collect();
@@ -1442,14 +1495,36 @@ pub fn extract(
     settings: &Settings,
     config: &ResolveConfig,
 ) -> Result<Vec<ExtractedModule>, PipelineError> {
+    extract_reusing(inputs, settings, config, &BTreeMap::new())
+}
+
+/// [`extract`], taking each file in `reused` from there instead of reading it. Phase one is seeded
+/// with the reused results and phase two replays as it always does, so the modules, their order
+/// and the depth `maxDepth` counts are the ones a full extraction gives, provided each reused
+/// result is what reading its file would give (the caller's soundness rule:
+/// [`crate::extract_incremental`]).
+///
+/// # Errors
+/// As [`extract`].
+pub fn extract_reusing(
+    inputs: &[String],
+    settings: &Settings,
+    config: &ResolveConfig,
+    reused: &BTreeMap<String, Reused>,
+) -> Result<Vec<ExtractedModule>, PipelineError> {
     let initial = gather_initial_sources(inputs, settings)?;
     settle_followable(&initial, settings, config);
-    let found = reachable_dependencies(&initial, settings, config);
+    let found = reachable_dependencies(&initial, settings, config, reused);
     let mut modules = replay(&initial, settings, config, found)?;
     if settings.experimental_stats {
         let all: Vec<Result<ExperimentalStats, PipelineError>> = modules
             .par_iter()
-            .map(|m| stats(&m.source, settings))
+            .map(
+                |m| match reused.get(&m.source).and_then(|r| r.experimental_stats) {
+                    Some(earlier) => Ok(earlier),
+                    None => stats(&m.source, settings),
+                },
+            )
             .collect();
         for (module, result) in modules.iter_mut().zip(all) {
             module.experimental_stats = Some(result?);
@@ -1483,6 +1558,39 @@ pub fn extract(
         }
     }
     Ok(complete)
+}
+
+/// The first phase of [`extract_reusing`] alone, for the sidecar
+/// ([`crate::sidecar`]): the CoffeeScript and LiveScript files the walk can reach that `reused`
+/// does not answer, sorted. Every other file the phase read successfully joins `reused` with the
+/// result reading it gave, so the walk that follows reads no file twice.
+///
+/// # Errors
+/// When an input is missing.
+pub fn sidecar_pending(
+    inputs: &[String],
+    settings: &Settings,
+    config: &ResolveConfig,
+    reused: &mut BTreeMap<String, Reused>,
+) -> Result<Vec<String>, PipelineError> {
+    let initial = gather_initial_sources(inputs, settings)?;
+    settle_followable(&initial, settings, config);
+    let mut pending = Vec::new();
+    for (file, result) in reachable_dependencies(&initial, settings, config, reused) {
+        match result {
+            Ok((dependencies, code)) => {
+                reused.entry(file).or_insert(Reused {
+                    dependencies,
+                    experimental_stats: None,
+                    code,
+                });
+            }
+            Err(PipelineError::NeedsSidecar { .. }) => pending.push(file),
+            // Reported by the walk, and only if it reaches the file.
+            Err(_) => {}
+        }
+    }
+    Ok(pending)
 }
 
 /// `experimentalStats` for one file: top-level statements and size.

@@ -476,6 +476,30 @@ pub struct Summary {
     /// ([Wave 3 plan § 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub affected: Option<Affected>,
+    /// Additive: whether the extraction came from the `--cache` entry, and how its freshness was
+    /// checked; absent when the run did not use the cache
+    /// ([Wave 3 § 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cache: Option<CacheSummary>,
+    /// Additive: the Node sidecar's part in the graph, when `--sidecar node` extracted any file
+    /// ([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md),
+    /// [Wave 3 § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sidecar: Option<SidecarReceipt>,
+}
+
+/// `summary.sidecar`: the tool that extracted the CoffeeScript and LiveScript files, its version,
+/// and how many files it extracted
+/// ([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SidecarReceipt {
+    /// The package the sidecar ran: always `dependency-cruiser`.
+    pub tool: String,
+    /// Its version, as its `package.json` gives it.
+    pub version: String,
+    /// The files in the graph whose dependencies it extracted.
+    pub files: u64,
 }
 
 /// `summary.affected`: the receipt of an `--affected` run
@@ -494,6 +518,17 @@ pub struct Affected {
     /// How many steps of dependents were followed, when `--affected-depth` limited them.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub depth: Option<u32>,
+}
+
+/// `summary.cache`: what the cache did for this run.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CacheSummary {
+    /// `true` when every input was unchanged and the cached extraction was used as it was;
+    /// `false` when anything was extracted, in full or for the changed files only.
+    pub hit: bool,
+    /// The strategy that decided it.
+    pub strategy: crate::options::CacheStrategy,
 }
 
 /// One violation: `summary.violations[]`.

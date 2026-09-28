@@ -156,9 +156,10 @@ pub struct Options {
     /// `reporterOptions`, verbatim; each reporter reads its own key.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reporter_options: Option<Value>,
-    /// `cache`, accepted and recorded (the content-addressed cache is wave 3).
+    /// `cache`, normalised as dependency-cruiser normalises it ([`CacheSetting`]); `--cache`,
+    /// `--cache-strategy` and `--no-cache` are laid over it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cache: Option<Value>,
+    pub cache: Option<CacheSetting>,
     /// `outputType`, when a config pins one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub output_type: Option<String>,
@@ -182,6 +183,95 @@ pub struct Options {
     pub webpack_config_json: Option<Value>,
 }
 
+/// `options.cache` after normalisation: off (`false`, or `--no-cache`), or the folder, strategy
+/// and compression ([coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)
+/// row `cache`, [Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// It serialises as dependency-cruiser's `optionsUsed.cache` does: `false`, or the object.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CacheSetting {
+    /// `cache: false` or `--no-cache`.
+    Off,
+    /// The cache is on.
+    On(rb_model::CacheOptions),
+}
+
+impl CacheSetting {
+    /// The options when the cache is on.
+    pub fn options(&self) -> Option<&rb_model::CacheOptions> {
+        match self {
+            Self::Off => None,
+            Self::On(options) => Some(options),
+        }
+    }
+
+    /// The folder `cache: true` or `--cache` without a folder means: Rulebearing's for a native
+    /// configuration, dependency-cruiser's for a dependency-cruiser one.
+    pub fn default_folder(compat: CompatMode) -> &'static str {
+        match compat {
+            CompatMode::Native => rb_model::CacheOptions::DEFAULT_FOLDER,
+            CompatMode::DependencyCruiser => rb_model::CacheOptions::DEPENDENCY_CRUISER_FOLDER,
+        }
+    }
+
+    /// `normalizeCacheOptions`: `true` is the default folder, a string is the folder, an object
+    /// has its missing `folder` and `strategy` filled in, `false` is off.
+    ///
+    /// # Errors
+    /// A message naming what is wrong with any other value.
+    pub fn normalise(value: &Value, compat: CompatMode) -> Result<Self, String> {
+        let folder = Self::default_folder(compat);
+        match value {
+            Value::Bool(false) => Ok(Self::Off),
+            Value::Bool(true) => Ok(Self::On(rb_model::CacheOptions::in_folder(folder))),
+            Value::String(named) if !named.is_empty() => {
+                Ok(Self::On(rb_model::CacheOptions::in_folder(named.clone())))
+            }
+            Value::Object(map) => {
+                let mut filled = map.clone();
+                filled
+                    .entry("folder")
+                    .or_insert_with(|| Value::String(folder.to_owned()));
+                serde_json::from_value::<rb_model::CacheOptions>(Value::Object(filled))
+                    .map(Self::On)
+                    .map_err(|e| {
+                        format!("{e}; use folder (a path), strategy (metadata or content) and compress (true or false)")
+                    })
+            }
+            other => Err(format!(
+                "{other} is not a cache setting; use true, false, a folder, or {{ folder, strategy, compress }}"
+            )),
+        }
+    }
+}
+
+impl Serialize for CacheSetting {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::Off => serializer.serialize_bool(false),
+            Self::On(options) => options.serialize(serializer),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for CacheSetting {
+    /// Reads the normalised forms only (`false`, or the object with its folder), as
+    /// [`CacheSetting::normalise`] writes them.
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Written {
+            Off(bool),
+            On(rb_model::CacheOptions),
+        }
+        match Written::deserialize(deserializer)? {
+            Written::Off(false) => Ok(Self::Off),
+            Written::Off(true) => Err(serde::de::Error::custom(
+                "cache: true must be normalised to a folder first",
+            )),
+            Written::On(options) => Ok(Self::On(options)),
+        }
+    }
+}
 /// `options.affected`, in dependency-cruiser's shape (`string | boolean`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
@@ -980,6 +1070,87 @@ pub struct KnownRule {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_cache_form_normalises_as_dependency_cruiser_does() {
+        use rb_model::{CacheOptions, CacheStrategy};
+        let native = CompatMode::Native;
+        let cruiser = CompatMode::DependencyCruiser;
+        let table = [
+            (
+                serde_json::json!(true),
+                native,
+                Ok(CacheSetting::On(CacheOptions::in_folder(".graph/cache"))),
+            ),
+            (
+                serde_json::json!(true),
+                cruiser,
+                Ok(CacheSetting::On(CacheOptions::in_folder(
+                    "node_modules/.cache/dependency-cruiser",
+                ))),
+            ),
+            (serde_json::json!(false), native, Ok(CacheSetting::Off)),
+            (
+                serde_json::json!("tmp/c"),
+                cruiser,
+                Ok(CacheSetting::On(CacheOptions::in_folder("tmp/c"))),
+            ),
+            (
+                serde_json::json!({ "strategy": "content", "compress": true }),
+                native,
+                Ok(CacheSetting::On(CacheOptions {
+                    folder: ".graph/cache".into(),
+                    strategy: CacheStrategy::Content,
+                    compress: Some(true),
+                })),
+            ),
+            (
+                serde_json::json!({ "folder": "f" }),
+                cruiser,
+                Ok(CacheSetting::On(CacheOptions::in_folder("f"))),
+            ),
+        ];
+        for (value, compat, expected) in table {
+            assert_eq!(CacheSetting::normalise(&value, compat), expected, "{value}");
+        }
+        for wrong in [
+            serde_json::json!(3),
+            serde_json::json!(""),
+            serde_json::json!(null),
+            serde_json::json!(["a"]),
+            serde_json::json!({ "strategy": "fastest" }),
+            serde_json::json!({ "folder": "f", "size": 1 }),
+        ] {
+            let error = CacheSetting::normalise(&wrong, native);
+            assert!(error.is_err(), "{wrong}");
+        }
+        assert!(
+            CacheSetting::normalise(&serde_json::json!({ "strategy": 1 }), native)
+                .is_err_and(|e| e.contains("metadata or content"))
+        );
+    }
+
+    #[test]
+    fn a_cache_setting_serialises_as_options_used_records_it() -> Result<(), serde_json::Error> {
+        let on = CacheSetting::On(rb_model::CacheOptions::in_folder("x"));
+        assert_eq!(
+            serde_json::to_string(&on)?,
+            r#"{"folder":"x","strategy":"metadata"}"#
+        );
+        assert_eq!(serde_json::to_string(&CacheSetting::Off)?, "false");
+        assert_eq!(
+            serde_json::from_str::<CacheSetting>("false")?,
+            CacheSetting::Off
+        );
+        assert_eq!(
+            serde_json::from_str::<CacheSetting>(r#"{"folder":"x"}"#)?,
+            on
+        );
+        assert!(serde_json::from_str::<CacheSetting>("true").is_err());
+        assert_eq!(on.options().map(|o| o.folder.as_str()), Some("x"));
+        assert_eq!(CacheSetting::Off.options(), None);
+        Ok(())
+    }
 
     #[test]
     fn affected_takes_dependency_cruisers_string_or_boolean() {

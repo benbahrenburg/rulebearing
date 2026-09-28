@@ -338,7 +338,7 @@ fn side_failed(side: &str, error: &RunError) -> Outcome {
         RunError::Config(_) | RunError::Engine(rb_rules::EngineError::Element(_)) => {
             RunExit::InvalidConfig
         }
-        RunError::Extract(_) | RunError::Engine(_) => RunExit::Untrustworthy,
+        RunError::Extract(_) | RunError::Engine(_) | RunError::Report(_) => RunExit::Untrustworthy,
     };
     failed(code, &format!("{side} cannot be cruised: {error}"))
 }

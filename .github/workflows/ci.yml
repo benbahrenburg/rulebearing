@@ -327,6 +327,10 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
+      # Layer 3 compares x-dot-webpage with upstream's, and both draw with GraphViz' dot
+      # (docs/adr/0053-x-dot-webpage-draws-with-graphviz-dot.md).
+      - name: GraphViz
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends graphviz
       # Layer 1 (recorded test/extract cases, threshold.json) and layer 2 (upstream specs through
       # the shim, excluded.json); conformance/dependency-cruiser/run.sh documents both.
       - run: conformance/dependency-cruiser/run.sh

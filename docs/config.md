@@ -98,6 +98,27 @@ The top level holds `$schema`, `extends`, `defines`, `languages`, `options`, `ru
 
 **Markdown fences.** In a native file, listing `.md` in `extraExtensionsToScan` also reads the `js`, `ts`, `jsx`, `tsx`, `javascript` and `typescript` code fences of those files, with each dependency's line and column pointing into the Markdown. A dependency-cruiser file keeps dependency-cruiser's behaviour, which never reads a file of `extraExtensionsToScan` ([ADR-0036](adr/0036-markdown-fences-follow-the-configuration-format.md)).
 
+## The cache
+
+`options.cache` turns on the extraction cache `cruise --cache` uses ([cli.md](cli.md#the-cache); [coverage § Options](artifacts/dependency-cruiser-18.2.0-coverage.md#options) row `cache`). It takes dependency-cruiser's forms in both formats, and `optionsUsed` records it normalised, as dependency-cruiser does:
+
+| Written | Means |
+| --- | --- |
+| `true` | on, in `.graph/cache` (`node_modules/.cache/dependency-cruiser` in a dependency-cruiser file) |
+| `"tmp/cache"` | on, in that folder |
+| `{ folder, strategy, compress }` | each given; `strategy` is `metadata` (default) or `content`, `compress: true` stores the extraction zlib-compressed |
+| `false` | off |
+
+```yaml
+options:
+  cache:
+    folder: .graph/cache
+    strategy: metadata
+    compress: true
+```
+
+`--cache`, `--cache-strategy` and `--no-cache` replace it for one run.
+
 ## Rule metadata
 
 Every rule, in either format, may carry five fields dependency-cruiser does not have. They are what `explain`, `err-long` and the `agent` reporter print ([design § Rule metadata](artifacts/design.md#rule-metadata-that-says-what-to-do)).

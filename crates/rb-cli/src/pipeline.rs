@@ -6,18 +6,21 @@
 //! - Source: [design § The five stages](../../../docs/artifacts/design.md#the-five-stages)
 //! - Plan: [Wave 1 § 1.4](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#14-architecture-of-what-this-wave-builds)
 //!   (the path a gate takes)
-//! - Requirements: [FR-CORE-02](../../../docs/prd.md#fr-core-02), [FR-CORE-04](../../../docs/prd.md#fr-core-04)
+//! - Requirements: [FR-CORE-02](../../../docs/prd.md#fr-core-02), [FR-CORE-04](../../../docs/prd.md#fr-core-04),
+//!   [FR-CLI-05](../../../docs/prd.md#fr-cli-05) (the extraction in parts the cache keeps:
+//!   [Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict))
 
 #[cfg(any(feature = "extract-ts", feature = "extract-python"))]
 use std::path::PathBuf;
 
 use rb_config::{Config, ConfigError};
-#[cfg(any(feature = "extract-dotnet", feature = "extract-python"))]
-use rb_model::Language;
-use rb_model::{ExtractError, GraphDocument, Inspected, Receipt};
+use rb_model::{
+    ExtractError, ExtractRequest, Extraction, GraphDocument, Inspected, Language, Receipt,
+};
 use rb_rules::graph::filters::{Filter, Filters};
 use rb_rules::rewrap::{FormatOptions, collapse_pattern, rewrap};
 use rb_rules::{EngineError, EvalOptions, Evaluation, evaluate};
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::context::Context;
@@ -35,6 +38,10 @@ pub enum RunError {
     /// An engine bug (exit 2).
     #[error(transparent)]
     Engine(#[from] EngineError),
+    /// The report could not be made: `x-dot-webpage` without a working GraphViz `dot`
+    /// ([ADR-0053](../../../docs/adr/0053-x-dot-webpage-draws-with-graphviz-dot.md)) (exit 2).
+    #[error("{0}")]
+    Report(String),
 }
 
 /// What a run needs besides the configuration.
@@ -80,42 +87,50 @@ pub fn receipt(document: &GraphDocument) -> Inspected {
     inspected
 }
 
-/// One extractor's result folded into the run's document.
-#[derive(Debug, Default)]
-struct Merged {
-    modules: Vec<rb_model::Module>,
-    code: Option<rb_model::CodeLayer>,
-    inspected: Inspected,
-    warnings: Vec<rb_model::Warning>,
+/// Each language's extraction, kept apart so the cache can store them and a later run can reuse
+/// or re-extract them one by one ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// [`merge`] turns them into the run's document; a cold run and a cached one both go through it,
+/// so equal parts give byte-identical documents.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Parts {
+    /// The TypeScript and JavaScript extraction, with the warnings the command line added before
+    /// it; present with no modules when the walk found none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub typescript: Option<Extraction>,
+    /// The .NET extraction as the extractor returned it, before the path filters; absent when
+    /// .NET was not asked for or found nothing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dotnet: Option<Extraction>,
+    /// The Python extraction, likewise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub python: Option<Extraction>,
 }
 
-#[cfg(any(feature = "extract-dotnet", feature = "extract-python"))]
-impl Merged {
-    /// Adds one extraction, its receipt keyed by `language`.
-    fn add(&mut self, language: Language, extraction: rb_model::Extraction) {
-        self.modules.extend(extraction.modules);
-        if let Some(code) = extraction.code {
-            self.code.get_or_insert_with(Default::default).merge(code);
-        }
-        self.inspected.insert(language, extraction.inspected);
-        self.warnings.extend(extraction.warnings);
-    }
+/// How one language is extracted in a run.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub enum Plan {
+    /// Every file read.
+    #[default]
+    Full,
+    /// The changed files read, the unchanged ones taken from the earlier extraction.
+    Incremental(ExtractRequest),
+    /// The earlier extraction as it was: none of the language's inputs changed.
+    Reuse(Option<Extraction>),
+}
 
-    /// Adds `result` unless the extractor found nothing to read; any other error stops the run.
-    fn take(
-        &mut self,
-        language: Language,
-        result: Result<rb_model::Extraction, ExtractError>,
-    ) -> Result<(), ExtractError> {
-        match result {
-            Ok(extraction) => {
-                self.add(language, extraction);
-                Ok(())
-            }
-            Err(ExtractError::NoModulesFound) => Ok(()),
-            Err(error) => Err(error),
-        }
-    }
+/// How each language is extracted, and whether the extractors keep the per-file state a later
+/// incremental run reuses.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Plans {
+    /// TypeScript and JavaScript.
+    pub typescript: Plan,
+    /// .NET: [`Plan::Full`] or [`Plan::Reuse`]; the assembly is the unit of change.
+    pub dotnet: Plan,
+    /// Python.
+    pub python: Plan,
+    /// Keep each file's state in [`Extraction::files`].
+    pub keep_file_states: bool,
 }
 
 /// Whether a file with one of `names` sits in `root` (not below it): the signal that a language
@@ -129,9 +144,28 @@ fn has_root_file(root: &std::path::Path, test: impl Fn(&str) -> bool) -> bool {
     })
 }
 
+/// Whether the .NET extractor runs: `languages.dotnet` is set or a solution sits in the working
+/// directory.
+#[cfg(feature = "extract-dotnet")]
+pub fn dotnet_enabled(ctx: &Context<'_>, config: &Config) -> bool {
+    let solution = |name: &str| {
+        std::path::Path::new(name)
+            .extension()
+            .is_some_and(|e| e.eq_ignore_ascii_case("sln") || e.eq_ignore_ascii_case("slnx"))
+    };
+    config.languages.dotnet.is_some() || has_root_file(&ctx.cwd, solution)
+}
+
+/// Whether the Python extractor runs: `languages.python` is set or a `pyproject.toml`,
+/// `setup.cfg` or `setup.py` sits in the working directory.
+#[cfg(feature = "extract-python")]
+fn python_enabled(ctx: &Context<'_>, config: &Config) -> bool {
+    let project = |name: &str| matches!(name, "pyproject.toml" | "setup.cfg" | "setup.py");
+    config.languages.python.is_some() || has_root_file(&ctx.cwd, project)
+}
+
 /// `options.exclude` and `includeOnly` applied to the modules of an extractor that does not apply
 /// them while it walks, with the same filter code the report uses.
-#[cfg(any(feature = "extract-dotnet", feature = "extract-python"))]
 fn filter_paths(config: &Config, modules: Vec<rb_model::Module>) -> Vec<rb_model::Module> {
     let filter = |f: &Option<rb_model::options::PathFilter>| {
         f.as_ref().and_then(|f| f.path()).map(|p| Filter {
@@ -179,6 +213,20 @@ pub fn extract(
 ///
 /// # Errors
 /// As [`extract`].
+pub fn extract_with_warnings(
+    ctx: &Context<'_>,
+    config: &Config,
+    paths: &[String],
+) -> Result<(GraphDocument, Vec<rb_model::Warning>), ExtractError> {
+    let parts = extract_parts(ctx, config, paths, &Plans::default())?;
+    merge(config, &parts)
+}
+
+/// Runs each extractor as `plans` says, in the order [`merge`] joins them; the first error that
+/// makes the run untrustworthy stops it.
+///
+/// # Errors
+/// As [`extract`].
 #[cfg_attr(
     not(any(
         feature = "extract-ts",
@@ -201,118 +249,210 @@ pub fn extract(
         reason = "the .NET extractor reads the solution, not the positional paths"
     )
 )]
-pub fn extract_with_warnings(
+pub fn extract_parts(
     ctx: &Context<'_>,
     config: &Config,
     paths: &[String],
-) -> Result<(GraphDocument, Vec<rb_model::Warning>), ExtractError> {
-    let mut merged = Merged::default();
+    plans: &Plans,
+) -> Result<Parts, ExtractError> {
+    let mut parts = Parts::default();
     #[cfg(feature = "extract-ts")]
     {
-        let roots: Vec<PathBuf> = if paths.is_empty() {
-            vec![PathBuf::from(".")]
-        } else {
-            paths.iter().map(PathBuf::from).collect()
-        };
-        let (mut settings, mut resolve) =
-            rb_extract_ts::prepare(&config.languages.typescript, &ctx.cwd)?;
-        // Markdown fences are a native addition; a dependency-cruiser configuration never has a
-        // file of `extraExtensionsToScan` read (ADR-0036).
-        settings.markdown_fences = config.compat == rb_config::CompatMode::Native;
-        // The webpack configuration's `resolve` block wins over `enhancedResolveOptions`, as
-        // upstream spreads it last.
-        if let Some(block) = config
-            .options
-            .webpack_config_json
-            .as_ref()
-            .and_then(Value::as_object)
-        {
-            let unread = rb_extract_ts::resolve::apply_resolve_block(&mut resolve, block);
-            if !unread.is_empty() {
-                merged.warnings.push(rb_model::Warning {
-                    path: None,
-                    message: format!(
-                        "the webpack resolve keys {} are not applied; the resolver reads {}",
-                        unread.join(", "),
-                        rb_extract_ts::resolve::RESOLVE_BLOCK_KEYS.join(", ")
-                    ),
-                });
-            }
-        }
-        // Licences and deprecations are read from package.json only when a rule asks for them, as
-        // upstream's ruleSetHasLicenseRule and ruleSetHasDeprecationRule decide.
-        resolve.resolve_licenses = rb_rules::derive::has_license_rule(&config.rules.dependencies);
-        resolve.resolve_deprecations =
-            rb_rules::derive::has_deprecation_rule(&config.rules.dependencies);
-        match rb_extract_ts::extract_with(&roots, &settings, &resolve) {
-            // The TypeScript receipt keeps its wave 1 shape: counted per language from the modules.
-            Ok(extraction) => {
-                merged.modules.extend(extraction.modules);
-                merged.warnings.extend(extraction.warnings);
-                if let Some(code) = extraction.code {
-                    merged.code.get_or_insert_with(Default::default).merge(code);
-                }
-            }
-            Err(ExtractError::NoModulesFound) => {}
-            Err(error) => return Err(error),
-        }
+        parts.typescript = typescript_part(ctx, config, paths, plans)?;
     }
     #[cfg(feature = "extract-dotnet")]
     {
-        use rb_model::Extractor as _;
-        let solution = |name: &str| {
-            std::path::Path::new(name)
-                .extension()
-                .is_some_and(|e| e.eq_ignore_ascii_case("sln") || e.eq_ignore_ascii_case("slnx"))
+        parts.dotnet = match &plans.dotnet {
+            Plan::Reuse(part) => part.clone(),
+            Plan::Full | Plan::Incremental(_) if dotnet_enabled(ctx, config) => {
+                use rb_model::Extractor as _;
+                let options = config.languages.dotnet.clone().unwrap_or_default();
+                let result = rb_extract_dotnet::DotnetExtractor
+                    .extract(std::slice::from_ref(&ctx.cwd), &options);
+                found(result)?
+            }
+            Plan::Full | Plan::Incremental(_) => None,
         };
-        if config.languages.dotnet.is_some() || has_root_file(&ctx.cwd, solution) {
-            let options = config.languages.dotnet.clone().unwrap_or_default();
-            let result = rb_extract_dotnet::DotnetExtractor
-                .extract(std::slice::from_ref(&ctx.cwd), &options);
-            let mut before = std::mem::take(&mut merged.modules);
-            merged.take(Language::Dotnet, result)?;
-            let added = filter_paths(config, std::mem::take(&mut merged.modules));
-            before.extend(added);
-            merged.modules = before;
-        }
     }
     #[cfg(feature = "extract-python")]
     {
-        let project = |name: &str| matches!(name, "pyproject.toml" | "setup.cfg" | "setup.py");
-        if config.languages.python.is_some() || has_root_file(&ctx.cwd, project) {
-            let options = config.languages.python.clone().unwrap_or_default();
-            let inputs: Vec<PathBuf> = if paths.is_empty() {
-                vec![PathBuf::from(".")]
-            } else {
-                paths.iter().map(PathBuf::from).collect()
-            };
-            let virtual_env = std::env::var_os("VIRTUAL_ENV").map(PathBuf::from);
-            let result =
-                rb_extract_python::extract_at(&ctx.cwd, &inputs, &options, virtual_env.as_deref());
-            let mut before = std::mem::take(&mut merged.modules);
-            merged.take(Language::Python, result)?;
-            let added = filter_paths(config, std::mem::take(&mut merged.modules));
-            before.extend(added);
-            merged.modules = before;
+        parts.python = python_part(ctx, config, paths, plans)?;
+    }
+    Ok(parts)
+}
+
+/// An extraction, or nothing when the extractor found nothing to read; any other error stops
+/// the run.
+#[cfg(any(feature = "extract-dotnet", feature = "extract-python"))]
+fn found(result: Result<Extraction, ExtractError>) -> Result<Option<Extraction>, ExtractError> {
+    match result {
+        Ok(extraction) => Ok(Some(extraction)),
+        Err(ExtractError::NoModulesFound) => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
+/// The TypeScript and JavaScript part: the walk from `paths` (the working directory when none),
+/// with the warnings about the webpack `resolve` keys the resolver does not read first.
+#[cfg(feature = "extract-ts")]
+fn typescript_part(
+    ctx: &Context<'_>,
+    config: &Config,
+    paths: &[String],
+    plans: &Plans,
+) -> Result<Option<Extraction>, ExtractError> {
+    if let Plan::Reuse(part) = &plans.typescript {
+        return Ok(part.clone());
+    }
+    let roots: Vec<PathBuf> = if paths.is_empty() {
+        vec![PathBuf::from(".")]
+    } else {
+        paths.iter().map(PathBuf::from).collect()
+    };
+    let (mut settings, mut resolve) =
+        rb_extract_ts::prepare(&config.languages.typescript, &ctx.cwd)?;
+    // Markdown fences are a native addition; a dependency-cruiser configuration never has a
+    // file of `extraExtensionsToScan` read (ADR-0036).
+    settings.markdown_fences = config.compat == rb_config::CompatMode::Native;
+    settings.keep_file_states = plans.keep_file_states;
+    let mut warnings = Vec::new();
+    // The webpack configuration's `resolve` block wins over `enhancedResolveOptions`, as
+    // upstream spreads it last.
+    if let Some(block) = config
+        .options
+        .webpack_config_json
+        .as_ref()
+        .and_then(Value::as_object)
+    {
+        let unread = rb_extract_ts::resolve::apply_resolve_block(&mut resolve, block);
+        if !unread.is_empty() {
+            warnings.push(rb_model::Warning {
+                path: None,
+                message: format!(
+                    "the webpack resolve keys {} are not applied; the resolver reads {}",
+                    unread.join(", "),
+                    rb_extract_ts::resolve::RESOLVE_BLOCK_KEYS.join(", ")
+                ),
+            });
         }
     }
-    if merged.modules.is_empty() {
+    // Licences and deprecations are read from package.json only when a rule asks for them, as
+    // upstream's ruleSetHasLicenseRule and ruleSetHasDeprecationRule decide.
+    resolve.resolve_licenses = rb_rules::derive::has_license_rule(&config.rules.dependencies);
+    resolve.resolve_deprecations =
+        rb_rules::derive::has_deprecation_rule(&config.rules.dependencies);
+    let result = match &plans.typescript {
+        Plan::Incremental(request) => {
+            rb_extract_ts::extract_incremental(&roots, &settings, &resolve, request)
+        }
+        Plan::Full | Plan::Reuse(_) => rb_extract_ts::extract_with(&roots, &settings, &resolve),
+    };
+    match result {
+        Ok(mut extraction) => {
+            warnings.append(&mut extraction.warnings);
+            extraction.warnings = warnings;
+            Ok(Some(extraction))
+        }
+        Err(ExtractError::NoModulesFound) => Ok(Some(Extraction {
+            warnings,
+            ..Extraction::default()
+        })),
+        Err(error) => Err(error),
+    }
+}
+
+/// The Python part, when Python is asked for or found.
+#[cfg(feature = "extract-python")]
+fn python_part(
+    ctx: &Context<'_>,
+    config: &Config,
+    paths: &[String],
+    plans: &Plans,
+) -> Result<Option<Extraction>, ExtractError> {
+    if let Plan::Reuse(part) = &plans.python {
+        return Ok(part.clone());
+    }
+    if !python_enabled(ctx, config) {
+        return Ok(None);
+    }
+    let options = config.languages.python.clone().unwrap_or_default();
+    let inputs: Vec<PathBuf> = if paths.is_empty() {
+        vec![PathBuf::from(".")]
+    } else {
+        paths.iter().map(PathBuf::from).collect()
+    };
+    let virtual_env = std::env::var_os("VIRTUAL_ENV").map(PathBuf::from);
+    let result = rb_extract_python::prepare(&ctx.cwd, &options, virtual_env.as_deref()).and_then(
+        |mut settings| {
+            settings.keep_file_states = plans.keep_file_states;
+            match &plans.python {
+                Plan::Incremental(request) => {
+                    rb_extract_python::extract_incremental(&inputs, &settings, request)
+                }
+                Plan::Full | Plan::Reuse(_) => rb_extract_python::extract_with(&inputs, &settings),
+            }
+        },
+    );
+    found(result)
+}
+
+/// Joins the parts into the run's document: the TypeScript modules in dependency-cruiser's
+/// visiting order, then the .NET and the Python modules, each already sorted by source and
+/// passed through the path filters; the code layers merged and normalised; the .NET and Python
+/// receipts and the sidecar's (`summary.sidecar`, [ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md));
+/// the warnings in the same order.
+///
+/// # Errors
+/// [`ExtractError::NoModulesFound`] when no part has a module.
+pub fn merge(
+    config: &Config,
+    parts: &Parts,
+) -> Result<(GraphDocument, Vec<rb_model::Warning>), ExtractError> {
+    let mut modules = Vec::new();
+    let mut code: Option<rb_model::CodeLayer> = None;
+    let mut inspected = Inspected::new();
+    let mut warnings = Vec::new();
+    if let Some(typescript) = &parts.typescript {
+        modules.extend(typescript.modules.iter().cloned());
+        warnings.extend(typescript.warnings.iter().cloned());
+        if let Some(layer) = &typescript.code {
+            code.get_or_insert_with(Default::default)
+                .merge(layer.clone());
+        }
+    }
+    for (language, part) in [
+        (Language::Dotnet, &parts.dotnet),
+        (Language::Python, &parts.python),
+    ] {
+        let Some(extraction) = part else {
+            continue;
+        };
+        modules.extend(filter_paths(config, extraction.modules.clone()));
+        if let Some(layer) = &extraction.code {
+            code.get_or_insert_with(Default::default)
+                .merge(layer.clone());
+        }
+        inspected.insert(language, extraction.inspected.clone());
+        warnings.extend(extraction.warnings.iter().cloned());
+    }
+    if modules.is_empty() {
         return Err(ExtractError::NoModulesFound);
     }
     // The TypeScript modules keep dependency-cruiser's visiting order; each other extractor's
     // follow, already sorted by source.
     let mut document = GraphDocument {
-        modules: merged.modules,
-        code: merged.code.map(|mut code| {
+        modules,
+        code: code.map(|mut code| {
             code.normalise();
             code
         }),
         ..GraphDocument::default()
     };
-    if !merged.inspected.is_empty() {
-        document.summary.inspected = Some(merged.inspected);
+    if !inspected.is_empty() {
+        document.summary.inspected = Some(inspected);
     }
-    Ok((document, merged.warnings))
+    document.summary.sidecar = parts.typescript.as_ref().and_then(|t| t.sidecar.clone());
+    Ok((document, warnings))
 }
 
 /// The report filters `cruise` applies after evaluation: `reaches` and `highlight` (the rest were
@@ -351,6 +491,21 @@ pub fn run(
 ) -> Result<Run, RunError> {
     let (document, warnings) = extract_with_warnings(ctx, config, &options.paths)?;
     progress.stage("extract");
+    run_extracted(ctx, config, (document, warnings), options, progress)
+}
+
+/// [`run`] from an extraction already made (by the cache, say): evaluation, the report's
+/// re-summary, and the warnings as `path: message` lines.
+///
+/// # Errors
+/// [`RunError::Engine`].
+pub fn run_extracted(
+    ctx: &Context<'_>,
+    config: &Config,
+    (document, warnings): (GraphDocument, Vec<rb_model::Warning>),
+    options: &RunOptions,
+    progress: &mut Progress,
+) -> Result<Run, RunError> {
     let mut run = evaluate_document(ctx, config, document, options, progress)?;
     run.warnings = warnings
         .into_iter()
@@ -374,6 +529,7 @@ pub fn evaluate_document(
     progress: &mut Progress,
 ) -> Result<Run, RunError> {
     let inspected = receipt(&document);
+    let sidecar = document.summary.sidecar.clone();
     let mut filters = cruise_filters(config);
     let mut options_used = options.options_used.clone();
     // `--affected` with a dependency-cruiser configuration: the other languages' changed modules
@@ -421,6 +577,7 @@ pub fn evaluate_document(
     };
     let mut document = rewrap(evaluated, &format, Some(&config.rules.dependencies))?;
     document.summary.inspected = Some(inspected);
+    document.summary.sidecar = sidecar;
     document
         .summary
         .vacuous_rules

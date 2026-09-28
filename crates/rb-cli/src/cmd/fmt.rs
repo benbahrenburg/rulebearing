@@ -139,9 +139,14 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
             .from
             .clone()
             .filter(|f| rb_report::plantuml::From::parse(f).is_some()),
+        graphviz: Some(crate::graphviz::system()),
     };
     let rendered = match rb_report::render(&args.output_type, &value, &options) {
         Ok(r) => r,
+        // `x-dot-webpage` without a working `dot`: the report could not be made (ADR-0053).
+        Err(e @ rb_report::ReportError::Graphviz(_)) => {
+            return failed(RunExit::Untrustworthy, &e.to_string());
+        }
         Err(e) => return failed(RunExit::InvalidConfig, &e.to_string()),
     };
     let mut stdout = String::new();

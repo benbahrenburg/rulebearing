@@ -14,13 +14,14 @@
 //! | Module | Does |
 //! | --- | --- |
 //! | [`affected`] | `--affected`: the changed files and the modules that reach them |
-//! | [`cache`] | the worktree-aware graph cache the query commands read |
+//! | [`cache`] | the worktree-aware graph cache the query commands read, and `cruise --cache` |
 //! | [`cli`] | every flag, declared once |
 //! | [`cmd`] | one module per subcommand |
 //! | [`pipeline`] | the five stages as one call |
 //! | [`configure`] | the configuration and the flags laid over it |
 //! | [`context`] | the working directory, the clock, the terminal |
 //! | [`exit`] | the exit-code table |
+//! | [`graphviz`] | GraphViz' `dot`, for `x-dot-webpage` only ([ADR-0053](../../../docs/adr/0053-x-dot-webpage-draws-with-graphviz-dot.md)) |
 //! | [`progress`] | `--progress` |
 //! | [`protocol`] | the conformance harness's `validate` and `report` |
 
@@ -31,6 +32,7 @@ pub mod cmd;
 pub mod configure;
 pub mod context;
 pub mod exit;
+pub mod graphviz;
 pub mod pipeline;
 pub mod progress;
 pub mod protocol;
@@ -158,6 +160,7 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         Command::Baseline(a) => cmd::baseline::run(ctx, &a),
         Command::Diff(a) => cmd::diff::run(ctx, &a),
         Command::Import(c) => cmd::import::run(ctx, &c),
+        Command::WrapHtml(a) => cmd::wrap_html::run(ctx, &a),
         Command::Validate(a) => match protocol_input(ctx, &a) {
             Ok(text) => protocol::validate(&text),
             Err(e) => Outcome::failed(
@@ -180,6 +183,28 @@ fn protocol_input(ctx: &mut Context<'_>, args: &cli::ProtocolArgs) -> std::io::R
     match &args.input {
         Some(file) => std::fs::read_to_string(ctx.resolve(file)),
         None => ctx.read_stdin(),
+    }
+}
+
+/// Runs a command line that streams standard input to standard output (`wrap-html`) straight
+/// through the process's streams, so an input of any size is never held in memory; `None` for
+/// every other command line, which [`run_with_input`] then runs.
+pub fn run_streaming(
+    args: &[String],
+    stdin: &mut dyn std::io::Read,
+    stdout: &mut dyn std::io::Write,
+    stderr: &mut dyn std::io::Write,
+) -> Option<u8> {
+    let command_line = std::iter::once("rulebearing".to_owned()).chain(args.iter().cloned());
+    match Cli::try_parse_from(command_line).ok()?.command {
+        Command::WrapHtml(_) => Some(match cmd::wrap_html::stream(stdin, stdout) {
+            Ok(()) => RunExit::Violations(0).code(),
+            Err(e) => {
+                let _ = std::io::Write::write_all(stderr, cmd::wrap_html::failure(&e).as_bytes());
+                RunExit::Untrustworthy.code()
+            }
+        }),
+        _ => None,
     }
 }
 

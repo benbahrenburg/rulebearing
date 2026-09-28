@@ -34,7 +34,7 @@ Options:
   -T, --output-type <TYPE>
           Output type: err, err-long, err-html, json, text, csv, teamcity, azure-devops,
           github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat,
-          fdot, mermaid, d2, metrics, plantuml, null
+          fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, plantuml, null
 
       --from <NODES>
           plantuml: what the diagram's nodes are (slices, types, namespaces or folders); wins over
@@ -92,6 +92,19 @@ Options:
       --suffix <SUFFIX>
           Suffix for links in the reports
 
+  -C, --cache [<FOLDER>]
+          Keep the extraction in FOLDER and re-read only what changed since the last run (default
+          .graph/cache; node_modules/.cache/dependency-cruiser for a dependency-cruiser
+          configuration); replaces options.cache
+
+      --cache-strategy <STRATEGY>
+          How the cache finds what changed: metadata (git and file size and time, the default) or
+          content (every input hashed)
+
+          Possible values:
+          - metadata: git status and diff against the recorded commit, and file size and time
+          - content:  Every input hashed
+
       --ts-pre-compilation-deps [<VALUE>]
           Keep TypeScript edges that vanish in compilation: true, false or specify
 
@@ -108,6 +121,15 @@ Options:
       --webpack-config-json <FILE>
           A webpack configuration, or its `resolve` block, already evaluated to JSON; wins over
           --webpack-config and webpackConfig
+
+      --sidecar <RUNTIME>
+          Extract CoffeeScript and LiveScript files (.coffee, .litcoffee, .coffee.md, .ls, .cjsx,
+          .csx) by running the repository's own dependency-cruiser with Node; their edges are marked
+          sidecar: true. Without it such a file stops the run (exit 2)
+
+          Possible values:
+          - node: The repository's dependency-cruiser, run by the node on the path (or
+            `$RULEBEARING_NODE`)
 
   -p, --progress [<TYPE>]
           Show progress on stderr

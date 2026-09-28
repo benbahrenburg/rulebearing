@@ -24,6 +24,7 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | `adopt` | A dependency-cruiser repository behind a green gate with a baseline, in one pull request | |
 | `baseline [paths] [--baseline-mode full\|shrink-only\|format] [--expires DATE --owner NAME --reason TEXT]` | Write the current violations to a known-violations file (default `.dependency-cruiser-known-violations.json`, `-f` to change it); [below](#baselines) | `depcruise-baseline`, which has one behaviour: `full` |
 | `diff <old.json> <new.json>`, `diff --base <ref> [paths]` | Added and removed edges, new and resolved violations and moved ratchets, as `json`, `markdown` or `agent`; [below](#diff) | |
+| `wrap-html` | An SVG read from stdin, written between the header and the footer of the page `x-dot-webpage` writes; [below](#wrap-html) | `depcruise-wrap-stream-in-html` |
 
 `cruise --init [oneshot]` is `depcruise --init` without the questions: it writes what `init` writes, to `--config FILE` or `rulebearing.yaml`, with `--preset typescript,dotnet,python` naming the languages instead of detecting them. `yes`, a bare `--init` and any other name write the configuration; `x-scripts` also adds `rulebearing`, `rulebearing:text` and `rulebearing:focus` run scripts to `package.json` after the existing ones and, as dependency-cruiser does, leaves an existing configuration be. dependency-cruiser's graph and HTML scripts need the `dot`, `archi` and `err-html` reporters and `wrap-html`, and are not written until those exist. One language extends its own preset first, `[rulebearing:python, rulebearing:recommended]`, so its exclusions win; several extend `rulebearing:recommended` ([config.md](config.md#presets)).
 
@@ -79,6 +80,16 @@ A checkout holds what git tracks and nothing else. Edges into installed packages
 
 `diff` is a report and exits 0, as the reporters that do not gate do ([ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). `--exit-code` (`-e`) makes it gate on what the change introduced: the exit code is the number of new error-severity violations, capped at 255. An input that cannot be read or is not a cruise result, an unknown revision, a folder outside a git repository with `--base`, and a side that cannot be cruised exit 2 with the reason; an invalid configuration, an output type other than the three, or a wrong number of results exit 3.
 
+## wrap-html
+
+`wrap-html` is `depcruise-wrap-stream-in-html`: it writes the header of the `x-dot-webpage` page (its stylesheet and hint box), then standard input unchanged, then the footer (the highlighting script), so a graph drawn by GraphViz becomes the interactive page without running a reporter ([coverage tab § Command line](artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)):
+
+```sh
+rulebearing cruise src -T dot | dot -T svg | rulebearing wrap-html > dependency-graph.html
+```
+
+The input is streamed, not held in memory, and copied byte for byte. The page is byte-identical to the one dependency-cruiser 18.2.0 writes for the same input ([crates/rb-cli/tests/fixtures/wrap-html](../crates/rb-cli/tests/fixtures/wrap-html/expected.html)). It exits 0, or 2 when standard input or output fails.
+
 ## Affected runs
 
 `cruise --affected [revision]` (`-A`) reports only the modules changed since `revision` (default `main`) and every module that reaches them. What it reports follows the configuration format ([ADR-0052](adr/0052-affected-is-upstreams-reaches-filter.md)), as liveness does.
@@ -95,6 +106,58 @@ With a `rulebearing.*` configuration, the rules are evaluated over the whole gra
 | Paths | Relative to the directory the cruise runs in, as module names are; dependency-cruiser keeps git's repository-relative paths, so its cruise from a subdirectory matches nothing |
 
 A gating reporter exits with the error count of what the report kept. A revision git does not know, or a directory outside a git repository, exits 2. `options.affected` in a `rulebearing.*` configuration applies as the flag would; in a dependency-cruiser configuration it is ignored with a warning, as dependency-cruiser ignores it.
+
+## The cache
+
+`cruise --cache [folder]` keeps the extraction and, on the next run, reads again only what changed ([coverage § Command line](artifacts/dependency-cruiser-18.2.0-coverage.md#command-line) rows `--cache [folder]`, `--cache-strategy`, `--no-cache`; [Wave 3, Steps 1 and 2](plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)). The rules are evaluated afresh on every run, so a cached run reports exactly what a cold run reports.
+
+| Flag | Meaning |
+| --- | --- |
+| `-C, --cache [FOLDER]` | Use the cache in `FOLDER`, relative to the working directory. Without a value: `.graph/cache`, or `node_modules/.cache/dependency-cruiser` under a dependency-cruiser configuration, as dependency-cruiser does. Replaces `options.cache` ([config.md](config.md#the-cache)) |
+| `--cache-strategy metadata\|content` | How a change is found. `metadata` (the default): `git` lists what changed since the recorded commit, and only files whose size or modification time moved are hashed. `content`: every input is hashed. Turns the cache on by itself |
+| `--no-cache` | No cache, whatever `options.cache` or `--cache` say |
+
+The folder holds `manifest.json` (the build's version, a `sha256:` hash of the configuration and the extraction settings, the worktree, `HEAD`, the strategy, and a `sha256:` hash per input) and the extraction it names. Before anything is reused the manifest must match this build, this configuration, this worktree and this strategy, and the extraction must match its recorded hash; otherwise the entry is ignored and rewritten, never trusted, and a folder that cannot be written is a warning. What happens next depends on what changed:
+
+| What changed | What runs |
+| --- | --- |
+| nothing an extractor reads | nothing is read: the stored extraction is used |
+| TypeScript or Python files | those files are read again; the rest come from the cache |
+| an assembly or a PDB | the .NET graph is read again whole, so edges between assemblies stay exact |
+| a file added or deleted, a manifest (`package.json` anywhere, `tsconfig*.json`, project and lock files), or git cannot say | everything is read again |
+
+When nothing an extractor reads changed, the entry can also answer with the evaluated run, as dependency-cruiser's cache does: `evaluated.json` names the run as the reporter receives it, keyed on the extraction and everything evaluation reads besides (the configuration, the options after the flags and `optionsUsed`, the known violations in force, the liveness mode, the paths, today's date, every ratchet budget and every diagram rule's `.puml`), and `rendered.json` with `rendered.out` keeps the reporter's output for the output type and report options last used (the timestamp counts only for `err-html`, `junit`, `trx` and `teamcity`, which print it). Either is used only when its key matches; a changed input misses it and the run evaluates again from the cached extraction. `--affected` does not use the evaluated layer, because its changed files come from version control rather than from the inputs the cache records.
+
+`summary.cache` records `{ "hit": true | false, "strategy": ... }`, so a JSON result from a warm run differs from a cold run's in that field alone; `--strict-schema` removes it. `--progress` names how the extract stage was served. Outside a git repository the `metadata` strategy lists files and compares their size and modification time instead of stopping as dependency-cruiser does. A file edited without changing its size or time, and not listed by git, is only seen by `content`.
+
+```sh
+rulebearing cruise --cache -T err src                    # .graph/cache, metadata strategy
+rulebearing cruise --cache /tmp/rb --cache-strategy content -T json src
+```
+
+Under `--sidecar node` a CoffeeScript or LiveScript file is one of the files read again when it changes: the sidecar is run for the changed ones only, and the rest are reused. The flag is part of the entry's key, so an entry written with it is never used without it, nor the reverse.
+
+## CoffeeScript and LiveScript: `--sidecar node`
+
+`cruise --sidecar node` extracts `.coffee`, `.litcoffee`, `.coffee.md`, `.ls`, `.cjsx` and `.csx` files by running the repository's own dependency-cruiser with Node, and merges what it finds into the graph ([coverage § Extraction and resolution](artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution), row "CoffeeScript, LiveScript"; [ADR-0017](adr/0017-coffeescript-livescript-sidecar.md); [Wave 3, Step 10](plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)). It is, with `--config-via-node`, the only way the binary starts Node, and it never does without the flag.
+
+| Situation | Result |
+| --- | --- |
+| No flag, and the walk reaches such a file | exit 2: `<file>: unsupported-file-needs-sidecar: ...`, naming `--sidecar node` or excluding the file as the fix |
+| No flag, and the file is only an unfollowed dependency | nothing: the file is never read |
+| The flag, no `node_modules/dependency-cruiser` in the repository or above it | exit 2, naming the `npm install --save-dev dependency-cruiser@18.2.0 coffeescript` that fixes it |
+| The flag, no Node (`node` on the path, or `$RULEBEARING_NODE`) | exit 2, naming Node 22 or later and `RULEBEARING_NODE` |
+| The flag, and dependency-cruiser cannot load `coffeescript` or `livescript` | exit 2, naming the package to install; dependency-cruiser would otherwise read the file as JavaScript without saying so |
+| The flag, and a dependency-cruiser other than 18.2.0 | the run goes on with a warning; the edges are proven against 18.2.0 only |
+
+dependency-cruiser is found as Node would find it from the working directory: `node_modules/dependency-cruiser` there or in a folder above, or the folder itself when it is a dependency-cruiser checkout. It runs its own command line with `--output-type json` over the files the walk reached, and a configuration written to the system's temporary folder: the run's TypeScript options, whether the configuration was a dependency-cruiser file or a `rulebearing.yaml` (whose `languages.typescript` block uses dependency-cruiser's names), with `maxDepth` `0` and none of the run's rules. The run's rules are evaluated by Rulebearing over the merged graph, as for every other file.
+
+The walk stays Rulebearing's: each CoffeeScript or LiveScript file is extracted by dependency-cruiser, and the walk continues natively from its dependencies, so a JavaScript file a CoffeeScript file imports is read once, by `oxc`. Every dependency of a sidecar file carries `sidecar: true` and no `line` or `column`; no other dependency has the field. `summary.sidecar` records `{ "tool": "dependency-cruiser", "version": "18.2.0", "files": N }`, N being the files of the graph the sidecar extracted. `--strict-schema` removes both. The flag is not a dependency-cruiser option, so it is not in `optionsUsed`, and a configuration file cannot set it.
+
+```sh
+npm install --save-dev dependency-cruiser@18.2.0 coffeescript   # livescript for .ls
+rulebearing cruise --sidecar node -T err src
+```
 
 ## Flags the query commands share
 

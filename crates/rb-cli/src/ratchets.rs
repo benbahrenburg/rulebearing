@@ -20,7 +20,7 @@ use crate::cmd::count::read_budget;
 use crate::context::Context;
 
 /// What the ratchets say about a run.
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Ratchets {
     /// One result per ratchet, in configuration order.
     pub results: Vec<RatchetResult>,

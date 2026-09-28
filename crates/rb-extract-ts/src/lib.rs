@@ -28,6 +28,7 @@
 //! | [`codelayer`] | classes, interfaces, enums, type aliases, functions, members, decorators and calls |
 //! | [`collate`] | JavaScript's `localeCompare` order, which dependency-cruiser sorts with |
 //! | [`pipeline`] | files to resolved, filtered, sorted dependencies, and the reachable modules |
+//! | [`sidecar`] | `--sidecar node`: CoffeeScript and LiveScript through the repository's own dependency-cruiser |
 //!
 //! `checksum` is left absent on every module: dependency-cruiser computes it only in its cache
 //! (`src/cache/`), never during extraction, and the cache is a later wave's surface.
@@ -43,6 +44,7 @@ pub mod npm;
 pub mod pipeline;
 pub mod resolve;
 pub mod sfc;
+pub mod sidecar;
 pub mod walk;
 
 use std::path::{Path, PathBuf};
@@ -82,9 +84,11 @@ fn extension(path: &str) -> Option<&str> {
     Some(ext)
 }
 
-/// The reason a sidecar file stops a run without `--sidecar node`.
-pub const SIDECAR_REASON: &str = "CoffeeScript and LiveScript are extracted by the Node sidecar \
-     (ADR-0017), which is not enabled; run with `--sidecar node`, or exclude the file";
+/// The reason a sidecar file stops a run without `--sidecar node`, opening with the reason's name
+/// ([Wave 3 § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)).
+pub const SIDECAR_REASON: &str = "unsupported-file-needs-sidecar: CoffeeScript and LiveScript are \
+     extracted by the Node sidecar (ADR-0017), which is not enabled; run with `--sidecar node`, or \
+     exclude the file";
 
 /// The TypeScript and JavaScript extractor.
 #[derive(Debug, Clone, Copy, Default)]
@@ -99,6 +103,10 @@ impl From<PipelineError> for ExtractError {
                 reason: format!("cannot be read: {source}"),
             },
             PipelineError::Parse { path, reason } => Self::UnsupportedFile { path, reason },
+            PipelineError::NeedsSidecar { path } => Self::UnsupportedFile {
+                path,
+                reason: SIDECAR_REASON.to_owned(),
+            },
             PipelineError::Pattern { pattern, reason } => Self::UnsupportedFile {
                 path: PathBuf::from(pattern),
                 reason,
@@ -313,7 +321,10 @@ pub fn prepare(
     Ok((settings, config))
 }
 
-fn to_dependency(extracted: &Extracted) -> Dependency {
+/// A dependency the walk kept, as the document writes it. One of a file the sidecar extracted
+/// carries `sidecar: true` and no position, which dependency-cruiser does not record.
+fn to_dependency(extracted: &Extracted, by_sidecar: bool) -> Dependency {
+    let position = |at: u32| (!by_sidecar).then_some(at);
     Dependency {
         protocol: extracted.protocol,
         mime_type: extracted.mime_type.clone(),
@@ -327,9 +338,10 @@ fn to_dependency(extracted: &Extracted) -> Dependency {
         matches_do_not_follow: Some(extracted.matches_do_not_follow),
         could_not_resolve: extracted.could_not_resolve,
         pre_compilation_only: extracted.pre_compilation_only,
-        line: Some(extracted.line),
-        column: Some(extracted.column),
+        line: position(extracted.line),
+        column: position(extracted.column),
         dependency_kind: Some(DependencyKind::Import),
+        sidecar: by_sidecar.then_some(true),
         ..Dependency::new(
             extracted.module.clone(),
             extracted.resolved.clone(),
@@ -347,29 +359,194 @@ pub fn line_column(source: &str, offset: u32) -> (u32, u32) {
 /// dependency-cruiser's visiting order (depth first from the sorted initial sources, each
 /// module's unfollowed dependencies right after it).
 ///
+/// With [`Settings::sidecar`] set, the CoffeeScript and LiveScript files the walk reaches are
+/// extracted by the sidecar ([`sidecar`]).
+///
 /// # Errors
 /// Any [`ExtractError`]: a missing input, an unreadable or unparsable file, a file only the
-/// sidecar reads ([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)), or no
-/// module at all.
+/// sidecar reads when it is off ([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md))
+/// or a sidecar that cannot run, or no module at all.
 pub fn extract_with(
     roots: &[PathBuf],
     settings: &Settings,
     config: &ResolveConfig,
 ) -> Result<Extraction, ExtractError> {
-    let inputs: Vec<String> = roots
+    let walked = sidecar::extract_modules(
+        &inputs(roots),
+        settings,
+        config,
+        &std::collections::BTreeMap::new(),
+        None,
+    )?;
+    finish(walked, settings)
+}
+
+/// The walk as an [`Extraction`], with the sidecar's receipt and, off the pinned version, its
+/// warning.
+fn finish(walked: sidecar::Walked, settings: &Settings) -> Result<Extraction, ExtractError> {
+    let mut extraction = to_extraction(walked.modules, settings)?;
+    extraction.sidecar = sidecar::receipt(&extraction.modules, walked.version.as_deref());
+    if let Some(warning) = extraction
+        .sidecar
+        .as_ref()
+        .and_then(sidecar::version_warning)
+    {
+        extraction.warnings.push(warning);
+    }
+    Ok(extraction)
+}
+
+fn inputs(roots: &[PathBuf]) -> Vec<String> {
+    roots
         .iter()
         .map(|r| r.to_string_lossy().replace('\\', "/"))
-        .collect();
-    let mut extracted = pipeline::extract(&inputs, settings, config)?;
-    if let Some(sidecar) = extracted
-        .iter()
-        .find(|m| m.as_dependency.is_none() && needs_sidecar(&m.source))
-    {
+        .collect()
+}
+
+/// A dependency of an earlier extraction back in the pipeline's form: the inverse of
+/// `to_dependency` for every field the pipeline reads after a file is extracted. The span is
+/// not kept in the document; nothing after the file's own extraction reads it.
+pub fn from_dependency(dependency: &Dependency) -> Extracted {
+    Extracted {
+        module: dependency.module.clone(),
+        module_system: dependency.module_system,
+        dynamic: dependency.dynamic,
+        exotically_required: dependency.exotically_required,
+        exotic_require: dependency.exotic_require.clone(),
+        dependency_types: dependency.dependency_types.clone(),
+        protocol: dependency.protocol,
+        mime_type: dependency.mime_type.clone(),
+        pre_compilation_only: dependency.pre_compilation_only,
+        resolved: dependency.resolved.clone(),
+        core_module: dependency.core_module,
+        followable: dependency.followable,
+        could_not_resolve: dependency.could_not_resolve,
+        matches_do_not_follow: dependency.matches_do_not_follow.unwrap_or(false),
+        license: dependency.license.clone(),
+        span: oxc_span::Span::default(),
+        line: dependency.line.unwrap_or(0),
+        column: dependency.column.unwrap_or(0),
+    }
+}
+
+/// Why an incremental extraction reads every file instead of reusing the unchanged ones, or
+/// `None` when reuse is exact: `exclude.dynamic` removes, after the walk, dependencies the walk
+/// followed, so the modules no longer carry each file's result. (A file whose code layer before
+/// linking was not kept, [`Settings::keep_file_states`], is read on its own account.)
+pub fn reuse_refused(settings: &Settings) -> Option<&'static str> {
+    if settings.exclude.as_ref().and_then(|f| f.dynamic).is_some() {
+        return Some(
+            "exclude.dynamic removed dependencies the walk followed, so the kept ones are not the file's result",
+        );
+    }
+    None
+}
+
+/// [`extract_with`] after some files changed: each file `request.unchanged` names is taken from
+/// `request.previous` instead of being read, and the walk replays over them
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// The result equals [`extract_with`]'s, module order included, when the caller's precondition
+/// holds: no file was added, deleted or renamed and no manifest changed since `previous`, so
+/// every unchanged file resolves as it did. When [`reuse_refused`] gives a reason, every file is
+/// read.
+///
+/// # Errors
+/// As [`extract_with`].
+pub fn extract_incremental(
+    roots: &[PathBuf],
+    settings: &Settings,
+    config: &ResolveConfig,
+    request: &rb_model::ExtractRequest,
+) -> Result<Extraction, ExtractError> {
+    let mut reused = std::collections::BTreeMap::new();
+    if reuse_refused(settings).is_none() {
+        let unchanged = request.unchanged_sources();
+        let changed: std::collections::BTreeSet<String> = request
+            .changed
+            .iter()
+            .map(|p| rb_model::source_name(p))
+            .collect();
+        for module in &request.previous.modules {
+            // A module with a language is a file the walk read; the rest stand for dependencies
+            // it did not follow and are rebuilt from those.
+            if module.language.is_none()
+                || !unchanged.contains(&module.source)
+                || changed.contains(&module.source)
+                // Only the sidecar may stand behind a CoffeeScript or LiveScript result.
+                || (settings.sidecar.is_none() && needs_sidecar(&module.source))
+            {
+                continue;
+            }
+            // With the code layer on, a file is reused only with the code layer its earlier run
+            // kept; without one it is read.
+            let code = if settings.code_layer {
+                match request
+                    .previous
+                    .files
+                    .get(&module.source)
+                    .map(|state| state.code.clone().map(serde_json::from_value).transpose())
+                {
+                    Some(Ok(code)) => code,
+                    Some(Err(_)) | None => continue,
+                }
+            } else {
+                None
+            };
+            reused.insert(
+                module.source.clone(),
+                pipeline::Reused {
+                    dependencies: module.dependencies.iter().map(from_dependency).collect(),
+                    experimental_stats: module.experimental_stats,
+                    code,
+                },
+            );
+        }
+    }
+    let earlier = request
+        .previous
+        .sidecar
+        .as_ref()
+        .map(|r| r.version.as_str());
+    let walked = sidecar::extract_modules(&inputs(roots), settings, config, &reused, earlier)?;
+    finish(walked, settings)
+}
+
+/// The modules of a walk as an [`Extraction`]: the sidecar check, the linked code layer and the
+/// document's modules in the walk's order, the dependencies of each file the sidecar extracted
+/// marked `sidecar: true`. The sidecar's receipt is [`extract_with`]'s to add.
+///
+/// # Errors
+/// A file only the sidecar reads when [`Settings::sidecar`] is off, or no file at all.
+pub fn to_extraction(
+    mut extracted: Vec<pipeline::ExtractedModule>,
+    settings: &Settings,
+) -> Result<Extraction, ExtractError> {
+    if let Some(sidecar) = extracted.iter().find(|m| {
+        settings.sidecar.is_none() && m.as_dependency.is_none() && needs_sidecar(&m.source)
+    }) {
         return Err(ExtractError::UnsupportedFile {
             path: PathBuf::from(&sidecar.source),
             reason: SIDECAR_REASON.to_owned(),
         });
     }
+    let states = if settings.keep_file_states {
+        extracted
+            .iter()
+            .filter(|m| m.as_dependency.is_none())
+            .filter_map(|m| {
+                let code = m.code.as_ref().map(serde_json::to_value).transpose().ok()?;
+                Some((
+                    m.source.clone(),
+                    rb_model::FileState {
+                        code,
+                        warnings: Vec::new(),
+                    },
+                ))
+            })
+            .collect()
+    } else {
+        std::collections::BTreeMap::new()
+    };
     let code = settings.code_layer.then(|| {
         codelayer::link(
             extracted
@@ -390,7 +567,12 @@ pub fn extract_with(
             node.dependency_types = Some(dependency.dependency_types.clone());
         } else {
             files += 1;
-            node.dependencies = module.dependencies.iter().map(to_dependency).collect();
+            let by_sidecar = needs_sidecar(&module.source);
+            node.dependencies = module
+                .dependencies
+                .iter()
+                .map(|d| to_dependency(d, by_sidecar))
+                .collect();
             node.experimental_stats = module.experimental_stats;
             node.language = Some(codelayer::language_of(&module.source));
         }
@@ -409,6 +591,8 @@ pub fn extract_with(
         code,
         inspected: Receipt::counts(files, 0, count),
         warnings: Vec::new(),
+        files: states,
+        sidecar: None,
     })
 }
 

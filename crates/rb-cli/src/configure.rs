@@ -235,6 +235,9 @@ pub fn apply_flags(
     if args.preserve_symlinks {
         ts.preserve_symlinks = Some(true);
     }
+    if let Some(sidecar) = args.sidecar {
+        ts.sidecar = Some(sidecar.runtime());
+    }
     let options = &mut config.options;
     if let Some(p) = &args.focus {
         options.focus = Some(FilterOption {
@@ -296,8 +299,49 @@ pub fn apply_flags(
             &path.display().to_string(),
         )?);
     }
+    cache_flags(config, args);
     known_violations(config, &args.known, ctx)?;
     check_report_patterns(config)
+}
+
+/// The folder `--cache` without a value, or `cache: true`, means for this configuration:
+/// dependency-cruiser's for a dependency-cruiser file, Rulebearing's for a native one or none.
+pub fn default_cache_folder(config: &Config) -> &'static str {
+    let none = config.canonical.is_empty() && config.files.is_empty();
+    if none {
+        rb_model::CacheOptions::DEFAULT_FOLDER
+    } else {
+        rb_config::model::CacheSetting::default_folder(config.compat)
+    }
+}
+
+/// `--cache [folder]`, `--cache-strategy` and `--no-cache` over `options.cache`, as
+/// dependency-cruiser's `normalizeCache` and `normalizeCacheStrategy` lay them: either flag
+/// replaces the configuration's setting with `{ folder, strategy }` (the default folder when
+/// none is named); `--no-cache` turns the cache off, and here it wins over `--cache-strategy`
+/// ([Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+pub fn cache_flags(config: &mut Config, args: &CruiseArgs) {
+    use rb_config::model::CacheSetting;
+    if args.no_cache {
+        config.options.cache = Some(CacheSetting::Off);
+        return;
+    }
+    if args.cache.is_none() && args.cache_strategy.is_none() {
+        return;
+    }
+    let folder = args
+        .cache
+        .clone()
+        .filter(|f| !f.is_empty())
+        .unwrap_or_else(|| default_cache_folder(config).to_owned());
+    config.options.cache = Some(CacheSetting::On(rb_model::CacheOptions {
+        folder,
+        strategy: args.cache_strategy.map_or(
+            rb_model::CacheStrategy::Metadata,
+            crate::cli::CacheStrategyArg::strategy,
+        ),
+        compress: None,
+    }));
 }
 
 /// `--ignore-known [file]` replaces `options.knownViolations` with the file's entries, as
@@ -569,10 +613,15 @@ mod tests {
             suffix: Some("s".into()),
             metrics: true,
             webpack_config_json: Some("webpack.json".into()),
+            sidecar: Some(crate::cli::SidecarArg::Node),
             ..CruiseArgs::default()
         };
         apply_flags(&mut config, &args, &c)?;
         assert_eq!(config.languages.typescript.max_depth(), 2);
+        assert_eq!(
+            config.languages.typescript.sidecar,
+            Some(rb_model::SidecarRuntime::Node)
+        );
         assert!(config.languages.typescript.keeps_pre_compilation_deps());
         assert_eq!(config.options.focus.as_ref().and_then(|f| f.depth), Some(2));
         assert!(config.options.webpack_config_json.is_some());
@@ -586,6 +635,8 @@ mod tests {
         assert_eq!(used["outputType"], "json");
         assert_eq!(used["rulesFile"], ".dependency-cruiser.json");
         assert_eq!(used["moduleSystems"], json!(["es6"]));
+        // Not a dependency-cruiser option: the receipt records the sidecar, optionsUsed does not.
+        assert!(used.get("sidecar").is_none());
         let wrong = CruiseArgs {
             ts_pre_compilation_deps: Some("maybe".into()),
             ..CruiseArgs::default()
@@ -654,5 +705,81 @@ mod tests {
         let mut mixed = json!({ "ddot": { "collapsePattern": ["a", null, 1] } });
         normalize_reporter_options(&mut mixed);
         assert_eq!(mixed["ddot"]["collapsePattern"], json!("a||1"));
+    }
+
+    #[test]
+    fn the_cache_flags_lay_over_options_cache_as_dependency_cruiser_lays_them() {
+        use crate::cli::CacheStrategyArg;
+        use rb_config::model::CacheSetting;
+        use rb_model::{CacheOptions, CacheStrategy};
+        let native = Config {
+            compat: rb_config::CompatMode::Native,
+            files: vec![PathBuf::from("rulebearing.yaml")],
+            ..Config::default()
+        };
+        let cruiser = Config {
+            compat: rb_config::CompatMode::DependencyCruiser,
+            files: vec![PathBuf::from(".dependency-cruiser.json")],
+            ..Config::default()
+        };
+        assert_eq!(default_cache_folder(&native), ".graph/cache");
+        assert_eq!(
+            default_cache_folder(&cruiser),
+            "node_modules/.cache/dependency-cruiser"
+        );
+        assert_eq!(default_cache_folder(&Config::default()), ".graph/cache");
+        let configured = Some(CacheSetting::On(CacheOptions {
+            compress: Some(true),
+            ..CacheOptions::in_folder("from-config")
+        }));
+        let args =
+            |cache: Option<&str>, strategy: Option<CacheStrategyArg>, off: bool| CruiseArgs {
+                cache: cache.map(str::to_owned),
+                cache_strategy: strategy,
+                no_cache: off,
+                ..CruiseArgs::default()
+            };
+        let table = [
+            (args(None, None, false), configured.clone()),
+            (
+                args(Some(""), None, false),
+                Some(CacheSetting::On(CacheOptions::in_folder(
+                    "node_modules/.cache/dependency-cruiser",
+                ))),
+            ),
+            (
+                args(Some("f"), Some(CacheStrategyArg::Content), false),
+                Some(CacheSetting::On(CacheOptions {
+                    strategy: CacheStrategy::Content,
+                    ..CacheOptions::in_folder("f")
+                })),
+            ),
+            (
+                args(None, Some(CacheStrategyArg::Metadata), false),
+                Some(CacheSetting::On(CacheOptions::in_folder(
+                    "node_modules/.cache/dependency-cruiser",
+                ))),
+            ),
+            (
+                args(Some("f"), Some(CacheStrategyArg::Content), true),
+                Some(CacheSetting::Off),
+            ),
+        ];
+        for (flags, expected) in table {
+            let mut config = Config {
+                options: rb_config::model::Options {
+                    cache: configured.clone(),
+                    ..rb_config::model::Options::default()
+                },
+                ..cruiser.clone()
+            };
+            cache_flags(&mut config, &flags);
+            assert_eq!(config.options.cache, expected, "{flags:?}");
+        }
+        assert_eq!(CacheStrategyArg::Content.strategy(), CacheStrategy::Content);
+        assert_eq!(
+            CacheStrategyArg::Metadata.strategy(),
+            CacheStrategy::Metadata
+        );
     }
 }

@@ -81,11 +81,12 @@ use rb_model::{
     Accessor, AttributeElement, CallElement, CodeLayer, ElementDependency, Language, Location,
     MemberElement, TypeElement,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::pipeline::Lines;
 
 /// What an import binds.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 enum Imported {
     /// One export by name; a default import is the export `default`.
     Named(String),
@@ -97,7 +98,7 @@ enum Imported {
 }
 
 /// Where a name points, as its file sees it.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 enum Target {
     /// Declared in this file: the qualified name, `Outer.Inner` for a namespace member.
     Local(String),
@@ -112,7 +113,7 @@ enum Target {
 }
 
 /// A name written in the source, before linking.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct Reference {
     target: Target,
     written: String,
@@ -120,7 +121,7 @@ struct Reference {
 }
 
 /// One entry of a module's export list.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 enum Export {
     /// `export class X`, `export { X as Y }`, `export default X`: a name the file declares.
     Local { exported: String, local: String },
@@ -135,14 +136,14 @@ enum Export {
     All { specifier: String },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct PendingDependency {
     target: Reference,
-    kind: &'static str,
+    kind: String,
     member: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct PendingType {
     element: TypeElement,
     base: Option<Reference>,
@@ -150,20 +151,20 @@ struct PendingType {
     dependencies: Vec<PendingDependency>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct PendingMember {
     element: MemberElement,
     dependencies: Vec<PendingDependency>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct PendingAttribute {
     element: AttributeElement,
     attribute: Reference,
 }
 
 /// The object a method is called on.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 enum Receiver {
     /// `this`, inside the type with this full name.
     This(String),
@@ -171,7 +172,7 @@ enum Receiver {
     Typed(Reference),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct PendingCall {
     from: String,
     receiver: Receiver,
@@ -180,7 +181,7 @@ struct PendingCall {
 }
 
 /// One file's code layer, with its names not yet resolved against the other files.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileCode {
     file: String,
     types: Vec<PendingType>,
@@ -858,7 +859,7 @@ impl<'s> Collector<'s> {
             let target = self.reference(&segments, offset);
             into.push(PendingDependency {
                 target,
-                kind,
+                kind: kind.to_owned(),
                 member: None,
             });
         }
@@ -925,7 +926,7 @@ impl<'s> Collector<'s> {
             });
             dependencies.push(PendingDependency {
                 target: attribute,
-                kind: "attribute",
+                kind: "attribute".to_owned(),
                 member: None,
             });
         }
@@ -1339,7 +1340,7 @@ impl<'s> Collector<'s> {
         if let Some(base) = &base {
             dependencies.push(PendingDependency {
                 target: base.clone(),
-                kind: "inherits",
+                kind: "inherits".to_owned(),
                 member: None,
             });
         }
@@ -1352,7 +1353,7 @@ impl<'s> Collector<'s> {
             );
             dependencies.push(PendingDependency {
                 target: interface.clone(),
-                kind: "implements",
+                kind: "implements".to_owned(),
                 member: None,
             });
             interfaces.push(interface);
@@ -1637,7 +1638,7 @@ impl<'s> Collector<'s> {
             self.type_argument_dependencies(heritage.type_arguments.as_deref(), &mut dependencies);
             dependencies.push(PendingDependency {
                 target: extended.clone(),
-                kind: "inherits",
+                kind: "inherits".to_owned(),
                 member: None,
             });
             interfaces.push(extended);
@@ -1873,7 +1874,7 @@ impl BodyWalker<'_, '_> {
         if let Receiver::Typed(reference) = &receiver {
             self.dependencies.push(PendingDependency {
                 target: reference.clone(),
-                kind: "body",
+                kind: "body".to_owned(),
                 member: Some(method.to_owned()),
             });
         }
@@ -1936,7 +1937,7 @@ impl<'a> Visit<'a> for BodyWalker<'_, '_> {
         if let Some(target) = self.named_type(&it.callee) {
             self.dependencies.push(PendingDependency {
                 target,
-                kind: "body",
+                kind: "body".to_owned(),
                 member: Some("constructor".to_owned()),
             });
         }
@@ -2033,7 +2034,7 @@ pub fn link(files: Vec<FileCode>) -> CodeLayer {
         let dependency = |pending: &PendingDependency| {
             resolve(&pending.target).map(|target| ElementDependency {
                 target,
-                kind: pending.kind.to_owned(),
+                kind: pending.kind.clone(),
                 member: pending.member.clone(),
                 line: Some(pending.target.line),
                 // A body dependency is `new X()` or a call on X: both are calls.

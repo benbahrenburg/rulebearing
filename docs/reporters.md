@@ -28,7 +28,30 @@
 | `junit` | JUnit XML, one test case per rule ([below](#junit-and-trx)) | no |
 | `trx` | Visual Studio TRX, one unit test per rule | no |
 
-`dot`, `ddot`, `archi`, `flat`, `mermaid`, `d2` and `metrics` arrive later in wave 2; `html`, `markdown`, `anon` and `plantuml` in wave 3. Asking for one now exits 2 and names the wave.
+The rest of wave 2 is the graph reporters (`dot`, `ddot`, `archi` / `cdot`, `flat` / `fdot`, `mermaid`, `d2`), `metrics` and `err-html`; none gates.
+
+## Wave 3
+
+| Output type | Writes | Gates |
+| --- | --- | --- |
+| `markdown` | The summary, the rules with their counts, and every violation as Markdown, for a pull-request comment or a job summary | no |
+| `html` | The dependency matrix as one HTML page: a row and a column per module, each cell coloured by the edge and the severity of the first rule it breaks | no |
+| `anon` | `json` with every module name anonymised ([below](#anon)) | no |
+| `x-dot-webpage` | The `dot` graph drawn by GraphViz as SVG, in an HTML page with hover highlighting ([below](#x-dot-webpage)) | no |
+
+Each is byte for byte dependency-cruiser 18.2.0's: gate 1 layer 3 runs upstream's `test/report/{markdown,html,anon,dot-webpage}` specs and renders every `test/report` mock through both implementations. `plantuml` arrives later in wave 3; asking for it now exits 2 and names the wave.
+
+### `markdown`
+
+`reporterOptions.markdown` takes dependency-cruiser's keys with its defaults: `showTitle`, `title`, `showSummary`, `showSummaryHeader`, `summaryHeader`, `showStatsSummary`, `showRulesSummary`, `includeIgnoredInSummary`, `showDetails`, `includeIgnoredInDetails`, `showDetailsHeader`, `detailsHeader`, `collapseDetails`, `collapsedMessage`, `noViolationsMessage`, `showFooter`, `footer`, `showExternalModulesUnresolved` and `showAliasedModulesUnresolved` ([coverage tab § Options](artifacts/dependency-cruiser-18.2.0-coverage.md#options)). As upstream, `showStatsSummary` is accepted and has no effect (upstream's reporter always writes the statistics line), and a key given as `null` replaces its default. The default footer names dependency-cruiser 18.2.0, whose output this reproduces, and the run's time, which `SOURCE_DATE_EPOCH` pins.
+
+### `anon`
+
+Each path element that is not a common folder or file name (`src`, `lib`, `test`, `index.ts` and the rest of upstream's list) has its part before the first dot replaced by the next word of `reporterOptions.anon.wordlist`, the same part by the same word throughout. dependency-cruiser bundles no word list; with none, or when the words run out, a part becomes a string of its shape (letters for letters with their case, digits for digits, `-`, `_` and `.` kept). Upstream draws that string at random on every run; Rulebearing draws it from the part itself, so two runs over the same result print the same bytes. That is the one difference, and a word list as long as the result needs removes it.
+
+### `x-dot-webpage`
+
+The module-level `dot` output, with `reporterOptions.dot`, is drawn by the GraphViz `dot` on `PATH`, as dependency-cruiser draws it, and wrapped in upstream's page. This output type is the only one that starts GraphViz ([ADR-0053](adr/0053-x-dot-webpage-draws-with-graphviz-dot.md)). Without GraphViz, or when `dot` fails, the run exits 2 with dependency-cruiser's message. `rulebearing wrap-html` writes the same page around an SVG drawn elsewhere ([cli.md § wrap-html](cli.md#wrap-html)).
 
 ## `diff` renderings
 

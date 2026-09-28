@@ -1,11 +1,15 @@
 // Module loader hooks for run-layer-3.mjs: when a dependency-cruiser report spec imports one of
 // the reporters, it gets a module whose default export forwards to `rulebearing report`, so
 // upstream's own report specs run unmodified against Rulebearing's reporters. A spec that tests a
-// reporter's internals (theming, module-utl, error-html utl) gets each export forwarded to
-// `rulebearing validate`, the layer 2 protocol, which the reporters answer for `#report/` modules.
+// reporter's internals (theming, module-utl, error-html utl, random-string) gets each export
+// forwarded to `rulebearing validate`, the layer 2 protocol, which the reporters answer for
+// `#report/` modules. Two wave 3 modules get a harness module of their own: the anonymiser, whose
+// word list and cache live between calls (anon-forward.mjs), and `x-dot-webpage`, whose spec
+// passes a `spawnFunction` (dot-webpage-forward.mjs).
 //
 // Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 12 (gate 1 layer 3);
-// docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 10 (the wave 2 reporters).
+// docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 10 (the wave 2 reporters);
+// docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 6 (the wave 3 reporters).
 // Protocol: `rulebearing report --output-type <type>` reads { result, options } on stdin and
 // answers { output, exitCode }, the value a dependency-cruiser reporter returns.
 
@@ -27,6 +31,10 @@ const REPORTERS = new Map([
     ['#report/d2.mjs', 'd2'],
     ['#report/metrics.mjs', 'metrics'],
     ['#report/error-html/index.mjs', 'err-html'],
+    // Wave 3 (plan 0003, Step 6).
+    ['#report/markdown.mjs', 'markdown'],
+    ['#report/html/index.mjs', 'html'],
+    ['#report/anon/index.mjs', 'anon'],
 ]);
 // `#report/dot/index.mjs` exports the factory `dot(granularity)`; each granularity is an output
 // type (`dot()` without one renders at module level, as `dot`).
@@ -37,7 +45,20 @@ const INTERNALS = [
     '#report/dot/theming.mjs',
     '#report/dot/module-utl.mjs',
     '#report/error-html/utl.mjs',
+    '#report/anon/random-string.mjs',
 ];
+// Wave 3 modules replaced by a harness module of their own (see the header).
+const HARNESS_MODULES = new Map([
+    [
+        '#report/anon/anonymize-path-element.mjs',
+        new URL('./anon-forward.mjs', import.meta.url).href,
+    ],
+    ['#report/anon/anonymize-path.mjs', new URL('./anon-forward.mjs', import.meta.url).href],
+    [
+        '#report/dot-webpage/dot-module.mjs',
+        new URL('./dot-webpage-forward.mjs', import.meta.url).href,
+    ],
+]);
 const SHIM = new URL('./shim.mjs', import.meta.url).href;
 
 export async function resolve(specifier, context, nextResolve) {
@@ -47,6 +68,10 @@ export async function resolve(specifier, context, nextResolve) {
     const outputType = REPORTERS.get(specifier);
     if (outputType) {
         return { url: `${FORWARD}${outputType}`, shortCircuit: true };
+    }
+    const harnessModule = HARNESS_MODULES.get(specifier);
+    if (harnessModule) {
+        return { url: harnessModule, shortCircuit: true };
     }
     if (specifier === DOT_FACTORY) {
         return { url: FORWARD_DOT, shortCircuit: true };
