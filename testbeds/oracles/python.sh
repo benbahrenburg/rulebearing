@@ -12,7 +12,9 @@
 # the root), and runs import-linter (pinned below) through lint_imports_json.py in a throwaway
 # virtual environment, with the roots the importer found on PYTHONPATH: grimp reads the source and
 # only needs the packages findable, so the repository's own dependencies are not installed. A row
-# may name extra packages in `pip` (a custom contract type's dependency). Then `rulebearing cruise
+# may name extra packages in `pip` (a custom contract type's dependency, or what the root package's
+# `__init__.py` imports, since import-linter imports it to find it), and a `prepare` command run in
+# the checkout before either tool reads it (code the repository generates first). Then `rulebearing cruise
 # -T junit` with the imported rules and `cruise -T json` with none, and compare.py joins the verdicts
 # per contract and compares grimp's import graph with Rulebearing's local edges.
 #
@@ -55,20 +57,6 @@ dir="$checkout/${dir_rel:-.}"
 oracle_clone "$repo" "$sha" "$checkout" "$out/clone.log" ||
   { oracle_error "$result" "$repo" "$sha" "$tool" "clone failed at $sha"; exit 2; }
 
-translation="$(oracle_field "$manifest" "$repo" translation)"
-if [ -n "$translation" ]; then
-  config="$here/configs/$translation"
-  kind="hand translation (testbeds/oracles/configs/$translation)"
-  [ -f "$config" ] || { oracle_error "$result" "$repo" "$sha" "$tool" "no hand translation $config"; exit 2; }
-else
-  config="$out/imported.yaml"
-  kind="imported"
-  if ! (cd "$dir" && "$bin" import import-linter --out "$config") 2> "$out/import.err"; then
-    oracle_error "$result" "$repo" "$sha" "$tool" "rulebearing import import-linter failed: $(head -c 300 "$out/import.err")"
-    exit 2
-  fi
-fi
-
 # The interpreter that runs import-linter also runs compare.py, so it carries PyYAML. The
 # environment is made with $RB_ORACLE_PYTHON (default python3; the nightly's is 3.12, which a
 # row's `pip` packages may need), and reused only when it was made with the same interpreter for
@@ -84,6 +72,30 @@ if [ "$(cat "$venv/.rb-oracle" 2> /dev/null)" != "$made" ]; then
     exit 2
   fi
   echo "$made" > "$venv/.rb-oracle"
+fi
+
+# A row's `prepare` is a shell command run in the checkout, with the environment's interpreter
+# first on PATH, before either tool reads the tree: code the repository generates before its own
+# import-linter run (OpenMetadata's pydantic models), so that both tools read the same tree.
+prepare="$(oracle_field "$manifest" "$repo" prepare)"
+if [ -n "$prepare" ] &&
+  ! (cd "$checkout" && PATH="$venv/bin:$PATH" VIRTUAL_ENV="$venv" bash -euo pipefail -c "$prepare") > "$out/prepare.log" 2>&1; then
+  oracle_error "$result" "$repo" "$sha" "$tool" "the row's prepare command failed (see prepare.log)"
+  exit 2
+fi
+
+translation="$(oracle_field "$manifest" "$repo" translation)"
+if [ -n "$translation" ]; then
+  config="$here/configs/$translation"
+  kind="hand translation (testbeds/oracles/configs/$translation)"
+  [ -f "$config" ] || { oracle_error "$result" "$repo" "$sha" "$tool" "no hand translation $config"; exit 2; }
+else
+  config="$out/imported.yaml"
+  kind="imported"
+  if ! (cd "$dir" && "$bin" import import-linter --out "$config") 2> "$out/import.err"; then
+    oracle_error "$result" "$repo" "$sha" "$tool" "rulebearing import import-linter failed: $(head -c 300 "$out/import.err")"
+    exit 2
+  fi
 fi
 
 roots=()

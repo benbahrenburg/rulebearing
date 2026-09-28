@@ -58,12 +58,13 @@ python3 testbeds/oracles/table.py --readme README.md
 
 Add one line to `manifest.yaml` with `repo`, `role`, `languages` and `tool`. An oracle also needs `config` (dependency-cruiser) or `solution` and `test` (.NET). A greenfield or scale row with .NET projects needs `build`, the command that builds them at the checkout root (Rulebearing reads the built assemblies, [ADR-0011](../docs/adr/0011-read-dotnet-assemblies-not-source.md)). Then run `testbeds/pin.sh <owner/repo>` and `testbeds/run.sh <owner/repo>` locally before opening the pull request. Bump a SHA with `pin.sh` in its own pull request, so the nightly figures before and after the bump can be told apart.
 
-Two optional fields make a repository build on the Linux runner without changing it. Each row that uses one says why in its `note`.
+Three optional fields make a repository build or run on the Linux runner without changing it. Each row that uses one says why in its `note`.
 
 | Field | Read by | What it does | Example |
 | --- | --- | --- | --- |
 | `submodules` | `greenfield.sh`, `scale.sh` (the clone in `lib.sh`) | The submodule paths the build needs, each initialised one commit deep at the commit the checkout records; the others stay empty | aspnetcore's Components.Server compiles MessagePack-CSharp from `src/submodules/MessagePack-CSharp` |
 | `msbuild` | `run.sh`, `oracles/dotnet.sh` | Extra MSBuild arguments, separated by spaces, for both `dotnet build` and `dotnet test` of a .NET oracle's `test` project | DrJohnMelville/Pdf names its props file `Directory.Build.Props`, which MSBuild finds under the default name only on a case-insensitive file system, so the row passes `-p:_DirectoryBuildPropsFile=Directory.Build.Props` |
+| `prepare` | `oracles/python.sh` | A shell command run at the checkout root, in the oracle's virtual environment (its interpreter first on `PATH`, `VIRTUAL_ENV` set), after the environment is made and before either tool reads the tree, so that both read the same generated code; the row's `pip` packages are installed first. A failure is the row's `error` with `prepare.log` | open-metadata/OpenMetadata's `metadata/__init__.py` imports `metadata.generated`, which its `make generate` writes from the JSON schemas: the row installs the ingestion package, runs the pinned model generator and the antlr 4.9.2 tool (downloaded with its SHA-256 checked, run with the runner's Java), as `make generate` does without its JavaScript and install steps |
 
 A greenfield or scale row passes MSBuild properties in its `build` command instead. A property that a repository's own target sets cannot be overridden that way: autogen's integration-test project sets `CreateVenv` inside a target and then runs `uv sync` over its locked Python workspace, so the nightly's `greenfield-init` job installs uv 0.12.5, and the committed fixture was measured with that environment in place.
 
