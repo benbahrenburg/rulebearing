@@ -1329,8 +1329,128 @@ mod tests {
         assert_eq!(mixed.len(), 2, "a (**) slice keeps every slice");
     }
 
+    fn pairs(builder: &Builder) -> Vec<(String, String, DependencyType)> {
+        builder
+            .dependencies()
+            .iter()
+            .map(|d| (d.origin.clone(), d.target.clone(), d.kind))
+            .collect()
+    }
+
+    fn packaged(name: &str, deps: &[(&str, &str)]) -> ExportSlice {
+        slice(name, Some("N."), None, deps)
+    }
+
+    #[test]
+    fn limited_arrows_with_packages_skip_a_target_another_slice_contains() -> Result<(), ExportError>
+    {
+        use DependencyType::OneToOneIfSameParentNamespace as Same;
+        let limited = GenerationOptions {
+            limit_dependencies: true,
+            ..GenerationOptions::default()
+        };
+        // Deeper target: kept although `N.N.B.C` contains its name.
+        let deeper = [
+            packaged("N.A", &[("N.A.T", "N.B.C.T")]),
+            packaged("N.B.C", &[]),
+            packaged("N.N.B.C", &[]),
+        ];
+        let built = Builder::new().with_slices(&deeper, &limited)?;
+        assert_eq!(pairs(&built), [("N.A".into(), "N.B.C".into(), Same)]);
+        // As deep: dropped, because `N.N.B` contains `N.B`.
+        let level = [
+            packaged("N.A", &[("N.A.T", "N.B.T")]),
+            packaged("N.B", &[]),
+            packaged("N.N.B", &[]),
+        ];
+        assert!(
+            Builder::new()
+                .with_slices(&level, &limited)?
+                .dependencies()
+                .is_empty()
+        );
+        // As deep with no slice containing the target: kept.
+        let plain = [packaged("N.A", &[("N.A.T", "N.B.T")]), packaged("N.B", &[])];
+        assert_eq!(
+            pairs(&Builder::new().with_slices(&plain, &limited)?),
+            [("N.A".into(), "N.B".into(), Same)]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn slices_come_before_namespaces_of_any_length() -> Result<(), ExportError> {
+        let mut namespace = slice("A", None, None, &[]);
+        namespace.is_namespace = true;
+        let builder = Builder::new().with_slices(
+            &[namespace, slice("S", None, None, &[])],
+            &GenerationOptions::default(),
+        )?;
+        assert!(matches!(builder.elements()[0], Element::Slice(_)));
+        assert!(matches!(builder.elements()[1], Element::Namespace(_)));
+        Ok(())
+    }
+
+    #[test]
+    fn showing_packages_rewrites_and_drops_arrows_as_upstream() -> Result<(), ExportError> {
+        use DependencyType::*;
+        let draw =
+            |slices: &[ExportSlice]| -> Result<Vec<(String, String, DependencyType)>, ExportError> {
+                Ok(pairs(
+                    &Builder::new().with_slices(slices, &GenerationOptions::default())?,
+                ))
+            };
+        // A package's arrow to a slice becomes package-to-package when another slice contains
+        // the target's name; a slice's arrow to it, one-to-package.
+        assert_eq!(
+            draw(&[
+                packaged("N.A", &[("N.A.T", "N.C.T")]),
+                packaged("N.A.X", &[]),
+                packaged("N.C", &[]),
+                packaged("N.D", &[("N.D.T", "N.C.T")]),
+                packaged("N.N.C", &[]),
+            ])?,
+            [
+                ("N.A".into(), "N.C".into(), PackageToPackage),
+                ("N.D".into(), "N.C".into(), OneToPackage),
+            ]
+        );
+        // An arrow into a slice whose name holds the origin's is dropped.
+        assert_eq!(
+            draw(&[
+                packaged("N.A", &[("N.A.T", "N.A.X.T")]),
+                packaged("N.A.X", &[]),
+                packaged("N.B", &[("N.B.T", "N.A.X.T")]),
+            ])?,
+            [("N.B".into(), "N.A.X".into(), OneToOne)]
+        );
+        // A package arrow that a deeper origin also draws to the same target is dropped.
+        assert_eq!(
+            draw(&[
+                packaged("N.A", &[("N.A.T", "N.B.T")]),
+                packaged("N.A.X", &[("N.A.X.T", "N.B.T")]),
+                packaged("N.B", &[]),
+            ])?,
+            [("N.A.X".into(), "N.B".into(), OneToOne)]
+        );
+        // Without a namespace on every slice nothing is rewritten.
+        assert_eq!(
+            draw(&[
+                slice("A", None, None, &[("A.T", "C.T")]),
+                slice("C", None, None, &[]),
+                slice("NC", None, None, &[]),
+            ])?,
+            [("A".into(), "C".into(), OneToOne)]
+        );
+        Ok(())
+    }
+
     #[test]
     fn upstreams_named_filters() {
+        assert!(
+            !ignore_dependencies_to_parents("A.B", "A"),
+            "only one end has a dot"
+        );
         assert!(!ignore_dependencies_to_parents("A.B+C", "A.B"));
         assert!(ignore_dependencies_to_parents("A.B", "A.B+C"));
         assert!(
