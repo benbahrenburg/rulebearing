@@ -19,7 +19,7 @@
 //! | --- | --- |
 //! | Counts | modules, dependencies and violations by severity, at each release, and the change |
 //! | New edges across boundaries | the edges `diff` finds added between the two cruise results ([`rb_report::diff`]) whose two ends fall in different layers of a `layers` entry, or in different slices of a slice rule that slices paths (a `matching` with `/`) |
-//! | Retired rules | rules the older snapshot records and the newer does not, and rules of the configuration whose `deprecated` release is after `--since` and not after `--to` ([`rb_config::version`] order), with their `replacedBy` |
+//! | Retired rules | rules the older snapshot records and the newer does not, and rules, `layers` and `independence` entries and ratchets of the configuration whose `deprecated` release is after `--since` and not after `--to` ([`rb_config::version::precedence`], so `v1.1.0` and `1.1.0` are one release), with their `replacedBy`; a `layers` entry once |
 //! | Ratchets that fell | ratchets both snapshots record whose edge count is lower in the newer one |
 //!
 //! The edges need both cruise results `snapshot` writes beside the snapshots
@@ -205,32 +205,14 @@ pub fn boundaries(config: &Config, from: &str, to: &str) -> Vec<Boundary> {
     out
 }
 
-/// The name, `deprecated` and `replacedBy` of every rule of every family that has `deprecated`.
+/// The name, `deprecated` and `replacedBy` of everything that has `deprecated`: rules of every
+/// family, `layers` and `independence` entries and ratchets, a `layers` entry once
+/// ([`rb_config::lint::lifecycle_entries`]).
 fn deprecations(config: &Config) -> Vec<(&str, &str, Option<&str>)> {
-    let rules = &config.rules;
-    let dependency = rules.all_dependency_rules().filter_map(|(_, r)| {
-        r.meta
-            .deprecated
-            .as_deref()
-            .map(|d| (r.name(), d, r.meta.replaced_by.as_deref()))
-    });
-    let element = rules
-        .elements
-        .iter()
-        .map(|r| (r.name.as_str(), &r.lifecycle))
-        .chain(rules.slices.iter().map(|r| (r.name.as_str(), &r.lifecycle)))
-        .chain(
-            rules
-                .diagrams
-                .iter()
-                .map(|r| (r.name.as_str(), &r.lifecycle)),
-        )
-        .filter_map(|(name, l)| {
-            l.deprecated
-                .as_deref()
-                .map(|d| (name, d, l.replaced_by.as_deref()))
-        });
-    dependency.chain(element).collect()
+    rb_config::lint::lifecycle_entries(config)
+        .into_iter()
+        .filter_map(|e| e.deprecated.map(|d| (e.name, d, e.replaced_by)))
+        .collect()
 }
 
 /// The rules retired between `since` and `to`, by name.
@@ -249,8 +231,9 @@ pub fn retired(config: &Config, since: &Snapshot, to: &Snapshot) -> Vec<Retired>
         );
     }
     for (name, deprecated, replaced_by) in deprecations(config) {
-        let in_range = rb_config::version::compare(deprecated, &since.version) == Ordering::Greater
-            && rb_config::version::compare(deprecated, &to.version) != Ordering::Greater;
+        let in_range = rb_config::version::precedence(deprecated, &since.version)
+            == Ordering::Greater
+            && rb_config::version::precedence(deprecated, &to.version) != Ordering::Greater;
         if !in_range {
             continue;
         }
@@ -714,6 +697,40 @@ rules:
             after.is_empty(),
             "deprecated at 1.1.0 is not after 1.1.0: {after:?}"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn a_deprecation_is_in_range_whatever_the_spelling_of_the_release()
+    -> Result<(), rb_config::ConfigError> {
+        let config = |deprecated: &str| {
+            rb_config::load_text(
+                &format!(
+                    "rules:\n  dependencies:\n    forbidden:\n      - {{ name: r, from: {{}}, to: {{}}, deprecated: \"{deprecated}\" }}\n"
+                ),
+                rb_config::read::Syntax::Yaml,
+                &std::env::temp_dir(),
+                &rb_config::LoadOptions::default(),
+            )
+        };
+        for (deprecated, since, to) in [
+            ("v1.1.0", "1.0.0", "1.1.0"),
+            ("1.1.0", "v1.0.0", "v1.1.0"),
+            ("1.1.0+build.2", "1.0.0", "v1.1.0"),
+        ] {
+            let (a, b) = (snapshot(since, &[], &[], 1), snapshot(to, &[], &[], 1));
+            let config = config(deprecated)?;
+            let listed = retired(&config, &a, &b);
+            assert_eq!(listed.len(), 1, "{deprecated} in {since}..{to}");
+            assert_eq!(listed[0].deprecated.as_deref(), Some(deprecated));
+            // Deprecated at `since` itself is the previous changelog's news, not this one's.
+            let before = snapshot(deprecated, &[], &[], 1);
+            let later = snapshot("1.2.0", &[], &[], 1);
+            assert!(
+                retired(&config, &before, &later).is_empty(),
+                "{deprecated} is not after {deprecated}"
+            );
+        }
         Ok(())
     }
 

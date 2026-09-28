@@ -615,7 +615,7 @@ fn config_lint_and_rules_json_carry_the_lifecycle_fields() -> Result {
     let lint = run(&dir, &["config", "lint"])?;
     assert_eq!(
         text(&lint.stdout),
-        "replaced-by-unknown old: `replacedBy` names `gone`, which is no rule or ratchet of this configuration; add that rule or correct the name\nsince-after-deprecated old: `since` 2.0.0 is later than `deprecated` 1.0.0; a rule is deprecated after it arrives, so correct one of the two\nconfig lint: 2 finding(s)\n"
+        "replaced-by-unknown old: `replacedBy` names `gone`, which is no rule, shorthand or ratchet of this configuration; add that rule or correct the name\nsince-after-deprecated old: `since` 2.0.0 is later than `deprecated` 1.0.0; a rule is deprecated after it arrives, so correct one of the two\nconfig lint: 2 finding(s)\n"
     );
     assert_eq!(lint.status.code(), Some(2));
     write(&dir, "src/a.ts", "export const a = 1;\n")?;
@@ -625,6 +625,168 @@ fn config_lint_and_rules_json_carry_the_lifecycle_fields() -> Result {
     assert_eq!(value["rules"][0]["since"], "2.0.0");
     assert_eq!(value["rules"][0]["deprecated"], "1.0.0");
     assert_eq!(value["rules"][0]["replacedBy"], "gone");
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn a_snapshot_describes_the_tree_at_its_commit_not_a_saved_graph() -> Result {
+    let dir = project("fresh", CONFIG_2)?;
+    write(&dir, ".gitignore", ".graph/\n")?;
+    write(&dir, "src/a.ts", "export const a = 1;\n")?;
+    git(&dir, &["init", "-q"])?;
+    git(&dir, &["add", "-A"])?;
+    git(&dir, &["commit", "-q", "-m", "A"])?;
+    // A result saved at commit A, as `cruise -T json -f .graph/cruise.json` leaves it.
+    let saved = run(
+        &dir,
+        &["cruise", "src", "-T", "json", "-f", ".graph/cruise.json"],
+    )?;
+    assert!(
+        dir.join(".graph/cruise.json").is_file(),
+        "{}",
+        text(&saved.stderr)
+    );
+    write(
+        &dir,
+        "src/b.ts",
+        "import { a } from \"./a\";\nexport const b = a;\n",
+    )?;
+    write(
+        &dir,
+        "src/c.ts",
+        "import { b } from \"./b\";\nexport const c = b;\n",
+    )?;
+    git(&dir, &["add", "-A"])?;
+    git(&dir, &["commit", "-q", "-m", "B"])?;
+    git(&dir, &["tag", "v2.0.0"])?;
+    let head = git(&dir, &["rev-parse", "HEAD"])?;
+    let out = run(&dir, &["snapshot", "src"])?;
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    let written: Value = serde_json::from_str(&std::fs::read_to_string(
+        dir.join(".graph/snapshots/v2.0.0.json"),
+    )?)?;
+    assert_eq!(written["sha"], Value::String(head));
+    assert_eq!(
+        written["counts"]["modules"], 3,
+        "the tree at B, not the result saved at A"
+    );
+    assert_eq!(written["counts"]["dependencies"], 2);
+    // `--graph` given explicitly is what the caller vouches for, and is read as it is.
+    let explicit = run(
+        &dir,
+        &[
+            "snapshot",
+            "--version",
+            "old",
+            "--graph",
+            ".graph/cruise.json",
+        ],
+    )?;
+    assert_eq!(
+        explicit.status.code(),
+        Some(0),
+        "{}",
+        text(&explicit.stderr)
+    );
+    let old: Value = serde_json::from_str(&std::fs::read_to_string(
+        dir.join(".graph/snapshots/old.json"),
+    )?)?;
+    assert_eq!(old["counts"]["modules"], 1);
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn shorthands_and_ratchets_carry_the_lifecycle_fields_into_expand_and_changelog() -> Result {
+    let retiring = CONFIG_2
+        .replace(
+            "      layers: [\"^src/ui/\", \"^src/domain/\"]\n",
+            "      layers: [\"^src/ui/\", \"^src/domain/\"]\n      since: \"1.0.0\"\n      deprecated: \"1.1.0\"\n      replacedBy: features\n",
+        )
+        .replace(
+            "      budget: budgets/ui-to-db.json\n",
+            "      budget: budgets/ui-to-db.json\n      deprecated: \"v1.1.0\"\n      replacedBy: ui-through-services\n",
+        );
+    let dir = history("shorthands")?;
+    write(&dir, "rulebearing.yaml", &retiring)?;
+    let expanded = run(&dir, &["config", "expand", "rulebearing.yaml"])?;
+    assert_eq!(
+        expanded.status.code(),
+        Some(0),
+        "{}",
+        text(&expanded.stderr)
+    );
+    let expanded = text(&expanded.stdout);
+    assert!(
+        expanded.contains("app-layers:2-to-1") && expanded.contains("replacedBy: features"),
+        "{expanded}"
+    );
+    let lint = run(&dir, &["config", "lint"])?;
+    assert!(
+        !text(&lint.stdout).contains("replaced-by"),
+        "every replacedBy names something: {}",
+        text(&lint.stdout)
+    );
+    let json = run(&dir, &["changelog", "--since", "1.0.0", "-T", "json"])?;
+    assert_eq!(json.status.code(), Some(0), "{}", text(&json.stderr));
+    let value: Value = serde_json::from_slice(&json.stdout)?;
+    let retired: Vec<(&str, &str)> = value["retiredRules"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .map(|r| {
+                    (
+                        r["name"].as_str().unwrap_or_default(),
+                        r["deprecated"].as_str().unwrap_or_default(),
+                    )
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    assert_eq!(
+        retired,
+        [
+            ("app-layers", "1.1.0"),
+            ("no-legacy-http", "1.1.0"),
+            ("old-rule", ""),
+            ("ui-to-db", "v1.1.0"),
+        ],
+        "the layers entry once, and the ratchet whose release is spelt with a v"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn a_snapshot_must_record_the_version_its_file_is_named_for() -> Result {
+    let dir = history("renamed")?;
+    let snapshots = dir.join(".graph/snapshots");
+    std::fs::copy(snapshots.join("1.0.0.json"), snapshots.join("0.9.0.json"))?;
+    let out = run(&dir, &["changelog", "--since", "1.0.0"])?;
+    assert_eq!(out.status.code(), Some(2));
+    assert!(
+        text(&out.stderr)
+            .contains("0.9.0.json records the version `1.0.0` but is named for `0.9.0`"),
+        "{}",
+        text(&out.stderr)
+    );
+    std::fs::remove_file(snapshots.join("0.9.0.json"))?;
+    let escaping = std::fs::read_to_string(snapshots.join("1.0.0.json"))?
+        .replace("\"version\": \"1.0.0\"", "\"version\": \"../../x\"");
+    write(&dir, ".graph/snapshots/x.json", &escaping)?;
+    for args in [
+        &["changelog", "--since", "../../x"][..],
+        &["rules", "--unused"][..],
+    ] {
+        let refused = run(&dir, args)?;
+        assert_eq!(refused.status.code(), Some(2), "{args:?}");
+        assert!(
+            text(&refused.stderr).contains("records a version that cannot name a snapshot"),
+            "{args:?}: {}",
+            text(&refused.stderr)
+        );
+    }
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }

@@ -12,10 +12,12 @@
 //!   (a report exits 0)
 //! - Requirement: [FR-CLI-07](../../../../docs/prd.md#fr-cli-07)
 //!
-//! The command cruises as the query commands do (`--graph FILE`, else `.graph/cruise.json` when
-//! it exists, else a fresh extraction of the paths), with the configuration the flags find,
-//! liveness off (a rule that matches nothing is `cruise`'s finding) and the folder metrics on. It
-//! writes two files under `.graph/snapshots/`:
+//! The command extracts the paths afresh (the working directory by default), or reads the saved
+//! result `--graph FILE` names, and evaluates it with the configuration the flags find, liveness
+//! off (a rule that matches nothing is `cruise`'s finding) and the folder metrics on. Unlike the
+//! query commands it never falls back to a saved `.graph/cruise.json`: a release record must
+//! describe the tree at its commit, and a saved result may come from any commit. `--graph` is for
+//! a result the caller knows is of that release. It writes two files under `.graph/snapshots/`:
 //!
 //! | File | Holds |
 //! | --- | --- |
@@ -43,7 +45,7 @@ use rb_config::Config;
 use rb_model::GraphDocument;
 use serde::{Deserialize, Serialize};
 
-use crate::cli::{ConfigArgs, CruiseArgs, GraphArgs};
+use crate::cli::{ConfigArgs, CruiseArgs};
 use crate::context::Context;
 use crate::exit::RunExit;
 use crate::pipeline::{self, RunError, RunOptions};
@@ -62,9 +64,12 @@ pub struct SnapshotArgs {
     /// Configuration
     #[command(flatten)]
     pub config: ConfigArgs,
-    /// The graph
-    #[command(flatten)]
-    pub graph: GraphArgs,
+    /// A saved cruise result of this release to summarise, instead of extracting the paths
+    #[arg(long, value_name = "FILE")]
+    pub graph: Option<String>,
+    /// Files, directories and globs to extract (default: the working directory)
+    #[arg(value_name = "FILES-OR-DIRECTORIES")]
+    pub paths: Vec<String>,
     /// The release this snapshot records (default: the git tag at HEAD)
     #[arg(long = "version", value_name = "VERSION")]
     pub release: Option<String>,
@@ -249,11 +254,43 @@ pub fn read(path: &Path) -> Result<Snapshot, String> {
     })
 }
 
-/// Every snapshot in `directory`, oldest first by [`rb_config::version::sort`]; none when the
-/// folder does not exist. The version is the one the file records.
+/// Checks that the snapshot read from `path` records the version its file is named for, and a
+/// version [`invalid_version`] accepts: the version names the cruise result beside it, so a
+/// snapshot that records another version (a file renamed by hand) would pair with another
+/// release's edges, and one that records a path (`../../x`) would reach outside the folder.
 ///
 /// # Errors
-/// A message naming the file that cannot be read, or the folder when it cannot be listed.
+/// A message naming the file, what it records and the fix.
+pub fn check_named(path: &Path, snapshot: &Snapshot) -> Result<(), String> {
+    let stem = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .and_then(|n| n.strip_suffix(".json"))
+        .unwrap_or_default();
+    if let Some(reason) = invalid_version(&snapshot.version) {
+        return Err(format!(
+            "{} records a version that cannot name a snapshot: {reason}",
+            path.display()
+        ));
+    }
+    if snapshot.version != stem {
+        return Err(format!(
+            "{} records the version `{}` but is named for `{stem}`, so it would be paired with the wrong cruise result; write it again with `rulebearing snapshot --version {stem}`, or rename it to {}.json with its {}{CRUISE_SUFFIX}",
+            path.display(),
+            snapshot.version,
+            snapshot.version,
+            snapshot.version
+        ));
+    }
+    Ok(())
+}
+
+/// Every snapshot in `directory`, oldest first by [`rb_config::version::sort`]; none when the
+/// folder does not exist. Each must record the version its file is named for ([`check_named`]).
+///
+/// # Errors
+/// A message naming the file that cannot be read or does not record its own version, or the
+/// folder when it cannot be listed.
 pub fn read_all(directory: &Path) -> Result<Vec<Snapshot>, String> {
     let entries = match std::fs::read_dir(directory) {
         Ok(entries) => entries,
@@ -274,7 +311,7 @@ pub fn read_all(directory: &Path) -> Result<Vec<Snapshot>, String> {
     files.sort();
     let mut snapshots = files
         .iter()
-        .map(|f| read(f))
+        .map(|f| read(f).and_then(|s| check_named(f, &s).map(|()| s)))
         .collect::<Result<Vec<_>, _>>()?;
     let mut order: Vec<String> = snapshots.iter().map(|s| s.version.clone()).collect();
     rb_config::version::sort(&mut order);
@@ -338,7 +375,8 @@ fn configuration(ctx: &mut Context<'_>, args: &ConfigArgs) -> Result<(Config, bo
     Ok((config, has_config))
 }
 
-/// Cruises as `snapshot` does: the evaluated result with its ratchets, and the per-rule
+/// Cruises as `snapshot` does: `graph` when given, else a fresh extraction of `paths` (never the
+/// saved `.graph/cruise.json`); the evaluated result with its ratchets, and the per-rule
 /// statistics.
 ///
 /// # Errors
@@ -347,14 +385,21 @@ pub fn cruise(
     ctx: &Context<'_>,
     config: &Config,
     has_config: bool,
-    graph: &GraphArgs,
+    (graph, paths): (Option<&str>, &[String]),
 ) -> Result<(GraphDocument, Vec<rb_rules::RuleStats>), Outcome> {
-    let document = pipeline::query_graph(ctx, config, graph.graph.as_deref(), &graph.paths)
-        .map_err(|m| failed(RunExit::Untrustworthy, &m))?;
+    let mut document = match graph {
+        Some(file) => {
+            pipeline::load_graph(ctx, file).map_err(|m| failed(RunExit::Untrustworthy, &m))?
+        }
+        None => {
+            pipeline::extract(ctx, config, paths).map_err(|e| run_failed(&RunError::Extract(e)))?
+        }
+    };
+    pipeline::reset(&mut document);
     let options = RunOptions {
         liveness: false,
         options_used: configure::options_used(has_config.then_some(config), ctx, "json", "-"),
-        paths: graph.paths.clone(),
+        paths: paths.to_vec(),
         affected: None,
     };
     let run =
@@ -386,7 +431,12 @@ pub fn run(ctx: &mut Context<'_>, args: &SnapshotArgs) -> Outcome {
         Ok(c) => c,
         Err(o) => return o,
     };
-    let (document, stats) = match cruise(ctx, &config, has_config, &args.graph) {
+    let (document, stats) = match cruise(
+        ctx,
+        &config,
+        has_config,
+        (args.graph.as_deref(), &args.paths),
+    ) {
         Ok(c) => c,
         Err(o) => return o,
     };
@@ -598,6 +648,27 @@ mod tests {
         std::fs::write(dir.join("notes.txt"), "x").map_err(|e| e.to_string())?;
         let versions: Vec<String> = read_all(&dir)?.into_iter().map(|s| s.version).collect();
         assert_eq!(versions, ["1.9.0", "1.10.0-rc.1", "1.10.0"]);
+        for (file, recorded, needle) in [
+            (
+                "1.12.0.json",
+                "1.13.0",
+                "records the version `1.13.0` but is named for `1.12.0`",
+            ),
+            (
+                "x.json",
+                "../../x",
+                "records a version that cannot name a snapshot",
+            ),
+        ] {
+            let bad = Snapshot {
+                version: recorded.into(),
+                ..Snapshot::default()
+            };
+            std::fs::write(dir.join(file), bad.to_text()).map_err(|e| e.to_string())?;
+            let error = read_all(&dir).err().unwrap_or_default();
+            assert!(error.contains(needle), "{file}: {error}");
+            std::fs::remove_file(dir.join(file)).map_err(|e| e.to_string())?;
+        }
         std::fs::write(dir.join("broken.json"), "[").map_err(|e| e.to_string())?;
         let error = read_all(&dir).err().unwrap_or_default();
         assert!(error.contains("broken.json is not a snapshot"), "{error}");
