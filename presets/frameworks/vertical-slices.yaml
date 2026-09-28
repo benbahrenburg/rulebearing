@@ -1,0 +1,45 @@
+# rulebearing:vertical-slices. Original to Rulebearing. An opinion, off by default: a feature
+# (a slice) is added, changed and deleted on its own, so it never imports another feature, and the
+# shared kernel every feature may use never imports a feature back. A feature is a folder directly
+# under a features/, Features/, slices/ or Slices/ folder, anywhere in the tree, so the preset
+# holds for src/features/<name>/ in TypeScript and for Features/<Name>/ in a .NET project alike;
+# the shared kernel is a shared/, Shared/, common/, Common/, kernel/, SharedKernel/ or
+# shared-kernel/ folder. Documented, rule by rule, in
+# presets/frameworks/README.md#rulebearingvertical-slices. Named with
+# `init --preset vertical-slices` or `extends: rulebearing:vertical-slices`.
+# Source: docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo.
+# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 11. Requirements:
+# FR-CLI-08, FR-REACH-04.
+rules:
+  dependencies:
+    forbidden:
+      - name: slices-are-independent
+        comment: "A slice owns its request, handler, validation and data access; one that imports another slice cannot be changed or deleted on its own. plan:rulebearing-vertical-slices"
+        fix: "Move what both slices need into the shared kernel, or have one slice publish an event or call the other through its public request rather than its internals."
+        severity: error
+        from:
+          path: "^((?:.*/)?(?:Features|features|Slices|slices)/[^/]+)/"
+        to:
+          path: "(^|/)(Features|features|Slices|slices)/[^/]+/"
+          pathNot: "^$1/"
+        examples:
+          forbidden:
+            - "src/features/cart/CartView.tsx -> src/features/checkout/pay.ts"
+            - "src/Web/Features/Orders/CreateOrder.cs -> src/Web/Features/Customers/GetCustomer.cs"
+          allowed:
+            - "src/features/cart/CartView.tsx -> src/features/cart/useCart.ts"
+            - "src/features/cart/CartView.tsx -> src/shared/Button.tsx"
+      - name: slices-shared-kernel-not-to-slices
+        comment: "The shared kernel is what every slice may use; one that imports a slice makes every slice depend on it. plan:rulebearing-vertical-slices"
+        fix: "Move the code the shared kernel needs out of the slice into the shared kernel, or invert the dependency behind an interface the slice implements."
+        severity: error
+        from:
+          path: "(^|/)(Shared|shared|Common|common|Kernel|kernel|SharedKernel|shared-kernel)/"
+        to:
+          path: "(^|/)(Features|features|Slices|slices)/[^/]+/"
+        examples:
+          forbidden:
+            - "src/shared/api.ts -> src/features/cart/cartApi.ts"
+            - "src/SharedKernel/Result.cs -> src/Features/Orders/Order.cs"
+          allowed:
+            - "src/features/cart/cartApi.ts -> src/shared/api.ts"

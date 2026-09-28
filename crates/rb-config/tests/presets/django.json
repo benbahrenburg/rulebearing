@@ -1,0 +1,74 @@
+{
+  "forbidden": [
+    {
+      "comment": "Models are imported by every other layer of an app; a model that imports a view, form, admin, serializer or URL configuration makes that a cycle and loads the web layer with the ORM. plan:rulebearing-django",
+      "examples": {
+        "allowed": [
+          "shop/views.py -> shop/models.py",
+          "shop/models.py -> accounts/models.py"
+        ],
+        "forbidden": [
+          "shop/models.py -> shop/views.py",
+          "shop/models/order.py -> shop/serializers.py"
+        ]
+      },
+      "fix": "Move the logic the model needs into the model or a service module that both sides import, or connect it with a signal in the app's apps.py ready().",
+      "from": {
+        "path": "(^|/)models(\\.py$|/)"
+      },
+      "name": "django-models-are-innermost",
+      "severity": "error",
+      "to": {
+        "path": "(^|/)(views|forms|admin|serializers|urls)(\\.py$|/)"
+      }
+    },
+    {
+      "comment": "A view is an entry Django reaches through a URL configuration; any other module that imports one ties itself to the request cycle. plan:rulebearing-django",
+      "examples": {
+        "allowed": [
+          "shop/urls.py -> shop/views.py",
+          "shop/tests/test_views.py -> shop/views.py"
+        ],
+        "forbidden": [
+          "shop/forms.py -> shop/views.py",
+          "shop/services/checkout.py -> shop/views/cart.py"
+        ]
+      },
+      "fix": "Move the shared logic out of the view into a service or a model method and import that; reverse() a URL name instead of importing the view.",
+      "from": {
+        "pathNot": [
+          "(^|/)(urls|views)(\\.py$|/)",
+          "(^|/)(tests?|test_[^/]*|[^/]*_tests?)(\\.py$|/)",
+          "(^|/)conftest\\.py$"
+        ]
+      },
+      "name": "django-views-only-from-urls",
+      "severity": "error",
+      "to": {
+        "path": "(^|/)views(\\.py$|/)"
+      }
+    },
+    {
+      "comment": "A migration is a frozen snapshot Django runs in order; code that imports one breaks when the migration is squashed or renamed. plan:rulebearing-django",
+      "examples": {
+        "allowed": [
+          "shop/migrations/0002_data.py -> shop/migrations/0001_initial.py",
+          "shop/migrations/0002_data.py -> shop/utils.py"
+        ],
+        "forbidden": [
+          "shop/models.py -> shop/migrations/0001_initial.py"
+        ]
+      },
+      "fix": "Import the model or the function from the app itself; a data migration that needs shared code imports it from the app, not the other way round.",
+      "from": {
+        "pathNot": "(^|/)migrations/"
+      },
+      "name": "django-no-import-of-migrations",
+      "severity": "error",
+      "to": {
+        "path": "(^|/)migrations/"
+      }
+    }
+  ],
+  "options": {}
+}

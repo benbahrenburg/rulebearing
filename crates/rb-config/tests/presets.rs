@@ -17,7 +17,7 @@
 use std::error::Error;
 use std::path::{Path, PathBuf};
 
-use rb_config::extends::{NATIVE_PRESETS, Target, resolve};
+use rb_config::extends::{FRAMEWORK_PRESETS, NATIVE_PRESETS, Target, resolve};
 use rb_config::read::Syntax;
 use rb_config::{LoadOptions, load_text};
 use serde_json::Value;
@@ -40,6 +40,11 @@ const LINES: &[(&str, &str)] = &[
         "[rulebearing:python, rulebearing:recommended]",
         "python-only",
     ),
+    ("rulebearing:nextjs", "nextjs"),
+    ("rulebearing:clean-architecture", "clean-architecture"),
+    ("rulebearing:django", "django"),
+    ("rulebearing:fastapi", "fastapi"),
+    ("rulebearing:vertical-slices", "vertical-slices"),
 ];
 
 fn resolved(line: &str) -> Result<String, Box<dyn Error>> {
@@ -240,4 +245,100 @@ fn every_native_preset_is_snapshotted() {
             "rulebearing:{name} has no snapshot"
         );
     }
+}
+
+/// Each framework preset: rules only (no `extends`, no `options`, so it composes after the
+/// language presets without replacing their settings), and every rule named with the preset's
+/// prefix, commented with the decision token `plan:rulebearing-<preset>`, with a `fix`, a
+/// `severity`, and `examples` of both kinds
+/// ([plan 0003, Step 11](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
+#[test]
+fn framework_presets_are_documented_opinions() -> Result<(), Box<dyn Error>> {
+    let mut seen: Vec<String> = Vec::new();
+    for language in ["recommended", "typescript", "dotnet", "python"] {
+        seen.extend(rule_names(&written(language)?));
+    }
+    for name in FRAMEWORK_PRESETS {
+        assert!(NATIVE_PRESETS.iter().any(|(n, _)| n == name), "{name}");
+        let preset = written(name)?;
+        let top: Vec<&str> = preset
+            .as_object()
+            .map(|o| o.keys().map(String::as_str).collect())
+            .unwrap_or_default();
+        assert_eq!(top, ["rules"], "{name}: rules only");
+        let rules = preset
+            .pointer("/rules/dependencies/forbidden")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        assert!(!rules.is_empty(), "{name}");
+        let prefix = match *name {
+            "vertical-slices" => "slices-",
+            "clean-architecture" => "clean-",
+            other => other,
+        };
+        for rule in &rules {
+            let rule_name = rule["name"].as_str().unwrap_or_default();
+            assert!(rule_name.starts_with(prefix), "{name}: {rule_name}");
+            assert!(
+                !seen.iter().any(|s| s == rule_name),
+                "{rule_name} is declared twice"
+            );
+            seen.push(rule_name.to_owned());
+            let comment = rule["comment"].as_str().unwrap_or_default();
+            assert_eq!(
+                rb_config::decision_token(comment),
+                Some(format!("plan:rulebearing-{name}")),
+                "{rule_name}"
+            );
+            assert!(
+                rule["fix"].as_str().is_some_and(|f| f.len() > 20),
+                "{rule_name}"
+            );
+            assert!(
+                matches!(rule["severity"].as_str(), Some("error" | "warn")),
+                "{rule_name}"
+            );
+            for kind in ["forbidden", "allowed"] {
+                assert!(
+                    !strings(rule, &format!("/examples/{kind}")).is_empty(),
+                    "{rule_name}: examples.{kind}"
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+fn rule_names(preset: &Value) -> Vec<String> {
+    preset
+        .pointer("/rules/dependencies/forbidden")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|r| r["name"].as_str().map(str::to_owned))
+        .collect()
+}
+
+/// The README section each decision token points at exists.
+#[test]
+fn every_framework_preset_has_its_readme_section() -> Result<(), Box<dyn Error>> {
+    let readme = std::fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../presets/frameworks/README.md"),
+    )?;
+    for name in FRAMEWORK_PRESETS {
+        assert!(
+            readme.contains(&format!("\n## `rulebearing:{name}`\n")),
+            "{name}"
+        );
+        let (_, text) = NATIVE_PRESETS
+            .iter()
+            .find(|(n, _)| n == name)
+            .ok_or("missing")?;
+        assert!(
+            text.contains(&format!("presets/frameworks/README.md#rulebearing{name}")),
+            "{name}: the file names its README section"
+        );
+    }
+    Ok(())
 }

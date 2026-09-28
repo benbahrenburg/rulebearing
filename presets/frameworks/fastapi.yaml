@@ -1,0 +1,70 @@
+# rulebearing:fastapi. Original to Rulebearing. An opinion, off by default: the layering most
+# FastAPI services are written in, read from folder and file names. Routers (routers/, routes/,
+# endpoints/) handle HTTP and call services; services (services/, service.py) hold the logic and
+# call repositories; repositories (repositories/, repository.py, crud/, crud.py) talk to the
+# database; models and schemas (models/, schemas/) are data every layer shares. Each layer imports
+# only the layers beneath it, and a router goes through a service rather than straight to a
+# repository. Documented, rule by rule, in presets/frameworks/README.md#rulebearingfastapi. Named
+# with `init --preset fastapi` or `extends: rulebearing:fastapi`, beside the Python preset.
+# Source: docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo.
+# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 11. Requirements:
+# FR-CLI-08, FR-REACH-04.
+rules:
+  dependencies:
+    forbidden:
+      - name: fastapi-services-not-to-routers
+        comment: "A service holds the logic a router, a worker or a test calls; one that imports a router depends on HTTP and cannot be called from anything else. plan:rulebearing-fastapi"
+        fix: "Raise a domain exception in the service and translate it to an HTTPException in the router; move shared request types into schemas/."
+        severity: error
+        from:
+          path: "(^|/)services?(\\.py$|/)"
+        to:
+          path: "(^|/)(routers?|routes|endpoints)(\\.py$|/)"
+        examples:
+          forbidden:
+            - "app/services/orders.py -> app/routers/orders.py"
+          allowed:
+            - "app/routers/orders.py -> app/services/orders.py"
+            - "app/services/orders.py -> app/repositories/orders.py"
+      - name: fastapi-repositories-not-to-services-or-routers
+        comment: "A repository is the lowest layer: it knows the database and the models, not the logic or the HTTP layer that calls it. plan:rulebearing-fastapi"
+        fix: "Return data from the repository and let the service decide what to do with it; move the shared type into models/ or schemas/."
+        severity: error
+        from:
+          path: "(^|/)(repositories|repository|crud)(\\.py$|/)"
+        to:
+          path: "(^|/)(services?|routers?|routes|endpoints)(\\.py$|/)"
+        examples:
+          forbidden:
+            - "app/repositories/orders.py -> app/services/orders.py"
+            - "app/crud.py -> app/api/routes/items.py"
+          allowed:
+            - "app/repositories/orders.py -> app/models/order.py"
+      - name: fastapi-routers-through-services
+        comment: "A router that calls a repository directly puts business logic in the HTTP layer, where a worker or a test cannot reach it. plan:rulebearing-fastapi"
+        fix: "Add a service function that calls the repository and call it from the router; inject it with Depends()."
+        severity: warn
+        from:
+          path: "(^|/)(routers?|routes|endpoints)(\\.py$|/)"
+        to:
+          path: "(^|/)(repositories|repository|crud)(\\.py$|/)"
+        examples:
+          forbidden:
+            - "app/routers/orders.py -> app/repositories/orders.py"
+          allowed:
+            - "app/routers/orders.py -> app/services/orders.py"
+            - "app/routers/orders.py -> app/schemas/order.py"
+      - name: fastapi-models-and-schemas-are-innermost
+        comment: "Models and schemas are data every layer shares; one that imports a router, a service or a repository makes that a cycle. plan:rulebearing-fastapi"
+        fix: "Move the behaviour into a service and keep the model or schema a plain declaration; a validator that needs a lookup belongs in the service."
+        severity: error
+        from:
+          path: "(^|/)(models|schemas)(\\.py$|/)"
+        to:
+          path: "(^|/)(services?|routers?|routes|endpoints|repositories|repository|crud)(\\.py$|/)"
+        examples:
+          forbidden:
+            - "app/schemas/order.py -> app/services/orders.py"
+            - "app/models.py -> app/crud.py"
+          allowed:
+            - "app/schemas/order.py -> app/models/order.py"
