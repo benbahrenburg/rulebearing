@@ -32,7 +32,7 @@
 //! | `unmatched_ignore_imports_alerting = none` or `warn` | `allowEmpty: true`, so an entry that matches nothing is not vacuous |
 //! | `exclude_type_checking_imports = True` | `dependencyTypesNot: [type-only]`; `protected` allows `type-only` imports of its modules |
 //! | the root packages | `chainsThrough`, on a rule that follows chains: grimp's graph holds the root packages only |
-//! | a folder without `__init__.py` below a root package | `modulesNot`, the topmost such folder, read from the tree when imported, and `redirect` from that folder into the root package's `__init__.py`: grimp reads none of the folder's imports and gives an import of one of its modules to the root package that holds it ([ADR-0051](../../../../../docs/adr/0051-a-rule-redirects-the-imports-it-sees.md)) |
+//! | a folder without `__init__.py` below a regular package of a root (grimp walks every folder below a namespace root) | `modulesNot`, the topmost such folder, read from the tree when imported; with `include_external_packages`, also `redirect` from that folder to the module grimp distils an import of one of its modules to (the name cut after its common prefix with a dotted root package and one more component, else its first component); without it grimp drops the import, as `modulesNot` does ([ADR-0051](../../../../../docs/adr/0051-a-rule-redirects-the-imports-it-sees.md)) |
 //!
 //! `layers` is written expanded rather than as the `layers` shorthand because the shorthand has
 //! neither `reachable` nor sibling layers, and import-linter checks chains; the expansion is the
@@ -143,6 +143,9 @@ struct Settings {
     roots: Vec<String>,
     contracts: Vec<Contract>,
     exclude_type_checking: bool,
+    /// `include_external_packages`: grimp keeps an import of a name it did not find as a
+    /// distilled module instead of dropping it, which is what `graph.redirect` writes.
+    include_external: bool,
 }
 
 /// Sections of an INI file, in the order written, each with its options.
@@ -220,6 +223,10 @@ fn settings_from_ini(text: &str, file: &str) -> Result<Settings, ImportError> {
         .get("exclude_type_checking_imports")
         .and_then(|v| Field::Text(v.clone()).flag())
         .unwrap_or(false);
+    let include_external = top
+        .get("include_external_packages")
+        .and_then(|v| Field::Text(v.clone()).flag())
+        .unwrap_or(false);
     let contract_prefix = format!("{prefix}:contract:");
     let mut contracts = Vec::new();
     for (name, options) in &sections {
@@ -243,6 +250,7 @@ fn settings_from_ini(text: &str, file: &str) -> Result<Settings, ImportError> {
         roots,
         contracts,
         exclude_type_checking,
+        include_external,
     })
 }
 
@@ -296,6 +304,10 @@ fn settings_from_toml(text: &str, file: &str) -> Result<Settings, ImportError> {
         .get("exclude_type_checking_imports")
         .and_then(|v| toml_field(v).flag())
         .unwrap_or(false);
+    let include_external = table
+        .get("include_external_packages")
+        .and_then(|v| toml_field(v).flag())
+        .unwrap_or(false);
     let mut contracts = Vec::new();
     let mut seen = BTreeSet::new();
     for (index, entry) in table
@@ -339,6 +351,7 @@ fn settings_from_toml(text: &str, file: &str) -> Result<Settings, ImportError> {
         roots,
         contracts,
         exclude_type_checking,
+        include_external,
     })
 }
 
@@ -399,7 +412,7 @@ impl Layout {
             ..Self::default()
         };
         for root in roots {
-            match find_package(repo, root) {
+            match find_root(repo, root) {
                 Some(home) => {
                     layout.homes.insert(root.clone(), home);
                 }
@@ -411,9 +424,14 @@ impl Layout {
             .iter()
             .map(|(r, h)| (r.clone(), h.clone()))
             .collect();
-        for (root, home) in homes {
-            let base = pattern::join(&home, &root.replace('.', "/"));
-            layout.portions.extend(portions_below(repo, &base));
+        // A root package may itself be a folder without `__init__.py` (a namespace portion that
+        // the settings name so that grimp walks it); such a folder is walked, not a portion.
+        let bases: BTreeSet<String> = homes
+            .iter()
+            .map(|(root, home)| pattern::join(home, &root.replace('.', "/")))
+            .collect();
+        for base in &bases {
+            layout.portions.extend(portions_below(repo, base, &bases));
         }
         layout.portions.sort();
         layout.portions.dedup();
@@ -428,6 +446,55 @@ impl Layout {
             .map(|(root, home)| pattern::join(home, &root.replace('.', "/")))
             .filter(|base| path.starts_with(&format!("{base}/")))
             .max_by_key(String::len)
+    }
+
+    /// The module path grimp gives an import of a module in the unwalked folder `portion` to when
+    /// `include_external_packages` is on, or `None` when grimp drops the import. This is grimp
+    /// 3.17's `_distill_external_module`: neither the name nor its parent is a module it found,
+    /// so for each dotted root package sharing the name's first component the name is cut after
+    /// their common prefix and one more component (and dropped when that root is a whole prefix
+    /// of it); the deepest cut wins, and with no dotted root the name is its first component.
+    fn grimp_target(&self, portion: &str) -> Option<String> {
+        let base = self.root_folder(portion)?;
+        let root = self
+            .homes
+            .iter()
+            .find(|(root, home)| pattern::join(home, &root.replace('.', "/")) == base)
+            .map(|(root, _)| root.clone())?;
+        let rest = portion.get(base.len() + 1..)?.replace('/', ".");
+        // The imported name: the folder's dotted name and the object imported from below it.
+        let dotted = format!("{root}.{rest}.object");
+        let name: Vec<&str> = dotted.split('.').collect();
+        let top = name[0];
+        let mut deepest: Option<usize> = None;
+        for found in self.homes.keys() {
+            if !found.starts_with(&format!("{top}.")) {
+                continue;
+            }
+            let found_parts: Vec<&str> = found.split('.').collect();
+            let common = found_parts
+                .iter()
+                .zip(&name)
+                .take_while(|(a, b)| a == b)
+                .count();
+            if common == found_parts.len() {
+                return None;
+            }
+            deepest = Some(deepest.map_or(common + 1, |d| d.max(common + 1)));
+        }
+        let module = name[..deepest.unwrap_or(1)].join("/");
+        let home = self
+            .homes
+            .iter()
+            .find(|(r, _)| r.as_str() == top || r.starts_with(&format!("{top}.")))
+            .map(|(_, home)| home.clone())?;
+        let path = pattern::join(&home, &module);
+        let file = format!("{path}.py");
+        Some(if self.repo.join(&file).is_file() {
+            file
+        } else {
+            pattern::join(&path, "__init__.py")
+        })
     }
 
     /// The Python files under each root package's folder, as path patterns: the modules a chain
@@ -535,12 +602,17 @@ fn is_package(dir: &Path) -> bool {
 }
 
 /// The topmost folders below the package folder `base` (repository-relative) that hold a Python
-/// file somewhere inside but no `__init__.py`: grimp walks a root package's regular packages
-/// only, so nothing in them is a module of its graph.
-fn portions_below(repo: &Path, base: &str) -> Vec<String> {
+/// file somewhere inside but no `__init__.py`, below a regular package: grimp walks a regular
+/// package's regular subpackages only, so nothing in them is a module of its graph. Below a
+/// namespace folder (a root package without `__init__.py`, or a folder without one inside such a
+/// root) grimp walks every folder, so those are walked here too; checked against grimp 3.17 on
+/// `open-metadata/OpenMetadata`, whose namespace roots hold over 1,100 modules in such folders. A folder that is
+/// itself one of the root packages' folders (`roots`) is walked for that root, so it is neither
+/// a portion nor entered.
+fn portions_below(repo: &Path, base: &str, roots: &BTreeSet<String>) -> Vec<String> {
     let mut out = Vec::new();
-    let mut stack = vec![base.to_owned()];
-    while let Some(rel) = stack.pop() {
+    let mut stack = vec![(base.to_owned(), !is_package(&repo.join(base)))];
+    while let Some((rel, namespace)) = stack.pop() {
         for entry in read_dir_sorted(&repo.join(&rel)) {
             let name = entry
                 .file_name()
@@ -550,8 +622,13 @@ fn portions_below(repo: &Path, base: &str) -> Vec<String> {
                 continue;
             }
             let child = pattern::join(&rel, &name);
+            if roots.contains(&child) {
+                continue;
+            }
             if is_package(&entry) {
-                stack.push(child);
+                stack.push((child, false));
+            } else if namespace {
+                stack.push((child, true));
             } else if holds_python(&entry) {
                 out.push(child);
             }
@@ -574,6 +651,21 @@ fn holds_python(dir: &Path) -> bool {
         }
     }
     false
+}
+
+/// Finds the folder holding root package `name`. A dotted name (`metadata.ingestion`) is looked
+/// up below its top-level package's folder, and may be a folder without `__init__.py`: import-linter
+/// accepts a namespace portion as a root package, and grimp walks it.
+fn find_root(repo: &Path, name: &str) -> Option<String> {
+    let Some((top, rest)) = name.split_once('.') else {
+        return find_package(repo, name);
+    };
+    let home = find_package(repo, top)?;
+    let dir = repo
+        .join(&home)
+        .join(top)
+        .join(rest.replace('.', std::path::MAIN_SEPARATOR_STR));
+    dir.is_dir().then_some(home)
 }
 
 /// Finds the folder holding package `name`: the repository itself, `src/`, or the shallowest
@@ -640,7 +732,12 @@ struct Narrowing {
 }
 
 impl Narrowing {
-    fn new(contract: &Contract, layout: &Layout, type_only: bool, out: &mut Output) -> Self {
+    fn new(
+        contract: &Contract,
+        layout: &Layout,
+        (type_only, external): (bool, bool),
+        out: &mut Output,
+    ) -> Self {
         let alerting = contract
             .options
             .get("unmatched_ignore_imports_alerting")
@@ -653,14 +750,16 @@ impl Narrowing {
                 .iter()
                 .map(|p| pattern::path_prefix(p))
                 .collect(),
-            redirect: layout
-                .portions
-                .iter()
-                .filter_map(|p| {
-                    let root = layout.root_folder(p)?;
-                    Some((pattern::path_prefix(p), pattern::join(&root, "__init__.py")))
-                })
-                .collect(),
+            // Without `include_external_packages` grimp drops such an import, as `modulesNot` does.
+            redirect: if external {
+                layout
+                    .portions
+                    .iter()
+                    .filter_map(|p| Some((pattern::path_prefix(p), layout.grimp_target(p)?)))
+                    .collect()
+            } else {
+                Vec::new()
+            },
             roots: layout.root_patterns(),
             quiet: matches!(alerting.as_deref(), Some("none" | "warn")),
         }
@@ -1323,7 +1422,12 @@ fn document(settings: &Settings, layout: &Layout, display: &str) -> Document {
             protected(contract, layout, settings.exclude_type_checking, &mut out);
             continue;
         }
-        let narrowing = Narrowing::new(contract, layout, settings.exclude_type_checking, &mut out);
+        let narrowing = Narrowing::new(
+            contract,
+            layout,
+            (settings.exclude_type_checking, settings.include_external),
+            &mut out,
+        );
         ignores |= !narrowing.ignore.is_empty();
         match kind {
             "forbidden" => forbidden_contract(contract, layout, &narrowing, &mut out),
@@ -1348,8 +1452,13 @@ fn document(settings: &Settings, layout: &Layout, display: &str) -> Document {
         );
     }
     if !layout.portions.is_empty() {
+        let imports_of_them = if settings.include_external {
+            "`graph.redirect` gives an import of one of their modules to the module grimp distils it to (include_external_packages)"
+        } else {
+            "an import of one of their modules is dropped, as grimp drops it without include_external_packages"
+        };
         header.push(format!(
-            "import-linter does not read {}, folders without `__init__.py` below a root package: each rule's `graph.modulesNot` leaves their imports out and `graph.redirect` gives an import of one of their modules to the root package holding the folder, as grimp does, as the tree stood when imported, so run the import again when one gains an `__init__.py`.",
+            "import-linter does not read {}, folders without `__init__.py` below a regular package: each rule's `graph.modulesNot` leaves their imports out and {imports_of_them}, as the tree stood when imported, so run the import again when one gains an `__init__.py`.",
             layout.portions.join(", ")
         ));
     }
@@ -1461,6 +1570,30 @@ mod tests {
     }
 
     #[test]
+    fn include_external_packages_is_read_from_both_dialects() -> Result<(), ImportError> {
+        assert!(
+            settings_from_ini(
+                "[importlinter]\nroot_package = a\ninclude_external_packages = True\n",
+                "s"
+            )?
+            .include_external
+        );
+        assert!(!settings_from_ini("[importlinter]\nroot_package = a\n", "s")?.include_external);
+        assert!(
+            settings_from_toml(
+                "[tool.importlinter]\nroot_packages = [\"a\"]\ninclude_external_packages = true\n",
+                "p"
+            )?
+            .include_external
+        );
+        assert!(
+            !settings_from_toml("[tool.importlinter]\nroot_packages = [\"a\"]\n", "p")?
+                .include_external
+        );
+        Ok(())
+    }
+
+    #[test]
     fn folders_without_init_below_a_root_are_portions() -> Result<(), Box<dyn std::error::Error>> {
         let repo = std::env::temp_dir().join(format!("rb-il-portions-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&repo);
@@ -1486,6 +1619,36 @@ mod tests {
         assert_eq!(layout.root_patterns(), ["^src/app(/.*)?\\.py$"]);
         assert!(holds_python(&repo.join("src/app/sub/ns")));
         assert!(!holds_python(&repo.join("src/app/static")));
+        // A portion the settings name as a root package (OpenMetadata lists `metadata.ingestion`
+        // so that grimp walks it) is found under its top-level package and walked, not left out;
+        // the folders without `__init__.py` below it are its own portions.
+        std::fs::create_dir_all(repo.join("src/app/loose/inner"))?;
+        std::fs::write(repo.join("src/app/loose/inner/y.py"), "")?;
+        let named = Layout::find(&repo, &["app".to_owned(), "app.loose".to_owned()]);
+        assert!(named.missing.is_empty(), "{:?}", named.missing);
+        assert_eq!(
+            named.homes.get("app.loose").map(String::as_str),
+            Some("src")
+        );
+        // `app.loose` has no `__init__.py`, so grimp walks every folder below it: `inner` is not
+        // a portion, while `sub/ns`, below the regular package `app.sub`, still is.
+        assert_eq!(named.portions, ["src/app/sub/ns"]);
+        std::fs::create_dir_all(repo.join("src/app/loose/pkg/hidden"))?;
+        std::fs::write(repo.join("src/app/loose/pkg/__init__.py"), "")?;
+        std::fs::write(repo.join("src/app/loose/pkg/hidden/z.py"), "")?;
+        let nested = Layout::find(&repo, &["app".to_owned(), "app.loose".to_owned()]);
+        assert_eq!(
+            nested.portions,
+            ["src/app/loose/pkg/hidden", "src/app/sub/ns"],
+            "below a regular package inside the namespace root, a folder is a portion again"
+        );
+        assert_eq!(
+            nested.root_folder("src/app/loose/pkg/hidden"),
+            Some("src/app/loose".to_owned())
+        );
+        let absent = Layout::find(&repo, &["app".to_owned(), "app.gone".to_owned()]);
+        assert_eq!(absent.missing, ["app.gone"]);
+        assert_eq!(find_root(&repo, "nowhere.at_all"), None);
         let _ = std::fs::remove_dir_all(&repo);
         Ok(())
     }
@@ -1519,14 +1682,14 @@ mod tests {
                 .collect(),
         };
         let mut out = Output::default();
-        let plain = Narrowing::new(&contract(&[]), &Layout::default(), false, &mut out);
+        let plain = Narrowing::new(&contract(&[]), &Layout::default(), (false, false), &mut out);
         assert_eq!(plain.node(true), None);
         assert!(!plain.allow_unmatched());
         let quiet = contract(&[
             ("ignore_imports", "app.a -> app.b\nnot an import"),
             ("unmatched_ignore_imports_alerting", "Warn"),
         ]);
-        let full = Narrowing::new(&quiet, &layout, true, &mut out);
+        let full = Narrowing::new(&quiet, &layout, (true, true), &mut out);
         assert!(full.allow_unmatched());
         assert_eq!(out.notes.len(), 1, "{:?}", out.notes);
         assert!(out.notes[0].contains("`not an import` is not `importer -> imported`"));
@@ -1550,8 +1713,8 @@ mod tests {
             keys(full.node(false)),
             ["ignore", "dependencyTypesNot", "modulesNot", "redirect"]
         );
-        // An import of a module in the unwalked folder leads to the root package holding it,
-        // however deep the folder, as grimp attributes it; nested roots take the deepest.
+        // With `include_external_packages`, an import of a module in the unwalked folder leads
+        // where grimp distils it: with no dotted root, to the first component.
         assert_eq!(
             full.redirect,
             [("^app/ns(/|$)".to_owned(), "app/__init__.py".to_owned())]
@@ -1564,31 +1727,34 @@ mod tests {
             portions: vec!["src/app/sub/ns".into(), "src/app/plugins/loose".into()],
             ..Layout::default()
         };
+        // With a dotted root `app.plugins`, the name is cut after the prefix it shares with that
+        // root and one more component (`app.sub`); below the dotted root itself grimp drops the
+        // import, so no redirect is written and `modulesNot` removes it.
         assert_eq!(
-            Narrowing::new(&contract(&[]), &deep, false, &mut out).redirect,
-            [
-                (
-                    "^src/app/sub/ns(/|$)".to_owned(),
-                    "src/app/__init__.py".to_owned()
-                ),
-                (
-                    "^src/app/plugins/loose(/|$)".to_owned(),
-                    "src/app/plugins/__init__.py".to_owned()
-                )
-            ]
+            Narrowing::new(&contract(&[]), &deep, (false, true), &mut out).redirect,
+            [(
+                "^src/app/sub/ns(/|$)".to_owned(),
+                "src/app/sub/__init__.py".to_owned()
+            )]
+        );
+        // Without `include_external_packages` grimp drops every such import.
+        assert!(
+            Narrowing::new(&contract(&[]), &deep, (false, false), &mut out)
+                .redirect
+                .is_empty()
         );
         assert_eq!(deep.root_folder("elsewhere/x"), None);
         let loud = Narrowing::new(
             &contract(&[("ignore_imports", "app.a -> app.b")]),
             &layout,
-            false,
+            (false, false),
             &mut out,
         );
         assert!(!loud.allow_unmatched());
         let none_to_ignore = Narrowing::new(
             &contract(&[("unmatched_ignore_imports_alerting", "none")]),
             &layout,
-            false,
+            (false, false),
             &mut out,
         );
         assert!(!none_to_ignore.allow_unmatched(), "nothing to be unmatched");
