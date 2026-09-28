@@ -26,6 +26,7 @@ pub mod catalog;
 pub mod conformance;
 pub mod csv;
 pub mod d2;
+pub mod diff;
 pub mod dot;
 pub mod err;
 pub mod err_html;
