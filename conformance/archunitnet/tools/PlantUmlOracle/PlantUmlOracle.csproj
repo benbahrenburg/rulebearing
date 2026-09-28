@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Writes what ArchUnitNET 0.13.4's PlantUmlFileBuilder generates over the committed fixture
+       assemblies, for the ported PlantUmlFileBuilderTest and PlantUmlFluentComponentDiagramTests
+       cases that assert only a non-empty diagram upstream (docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md,
+       Step 9). Usage: dotnet run with the fixtures folder and the output folder as arguments. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="TngTech.ArchUnitNET" Version="0.13.4" />
+  </ItemGroup>
+</Project>

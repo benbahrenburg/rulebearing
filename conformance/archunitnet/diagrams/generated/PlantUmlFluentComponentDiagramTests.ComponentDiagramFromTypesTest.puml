@@ -1,0 +1,45 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+HIDE_STEREOTYPE()
+
+class "ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests" {
+}
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Domain.Architecture]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Domain.IType]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Domain.PlantUml.Export.GenerationOptions]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Domain.PlantUml.Export.IPlantUmlElement]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Domain.PlantUml.Export.PlantUmlClass]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Domain.PlantUml.Export.PlantUmlDependency]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Domain.PlantUml.Export.RenderOptions]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Fluent.ArchRuleDefinition]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Fluent.PlantUml.GivenPlantUmlFluentComponentDiagram]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Fluent.PlantUml.PlantUmlDefinition]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Fluent.PlantUml.PlantUmlFluentComponentDiagramInitializer]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Fluent.Slices.GivenSlices]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Fluent.Slices.SliceRuleDefinition]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Fluent.Slices.SliceRuleInitializer]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Fluent.Syntax.Elements.GivenObjectsConjunctionWithDescription`3]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Fluent.Syntax.Elements.GivenObjects`3]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Fluent.Syntax.Elements.Types.AddTypePredicate`3]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Fluent.Syntax.Elements.Types.GivenTypesConjunction]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Fluent.Syntax.Elements.Types.GivenTypesThat]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Fluent.Syntax.Elements.Types.TypesShould]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [ArchUnitNET.Loader.ArchLoader]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [System.Boolean]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [System.Collections.Generic.List`1]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [System.Environment]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [System.IDisposable]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [System.IO.Directory]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [System.IO.File]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [System.IO.StreamReader]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [System.IO.TextReader]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [System.Int32]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [System.Linq.Enumerable]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [System.Object]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [System.String]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [System.Type]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [Xunit.Assert]
+[ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests] --|> [Xunit.FactAttribute]
+@enduml

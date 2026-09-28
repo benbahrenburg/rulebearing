@@ -30,6 +30,7 @@
 //! | [`ratchet`] | ratchet counts |
 //! | [`conformance`] | the `rulebearing validate` protocol layer 2 speaks |
 //! | [`js`], [`patterns`] | JavaScript's value and pattern semantics |
+//! | [`plantuml`], [`plantuml_export`] | reading a `PlantUML` diagram for `adhereTo`; generating one |
 
 pub mod compare;
 pub mod conformance;
@@ -44,6 +45,7 @@ pub mod known;
 pub mod matchers;
 pub mod patterns;
 pub mod plantuml;
+pub mod plantuml_export;
 pub mod ratchet;
 pub mod rewrap;
 pub mod slices;
