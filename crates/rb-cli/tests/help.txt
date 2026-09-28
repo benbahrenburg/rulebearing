@@ -26,6 +26,8 @@ Commands:
               results, or between a revision and the working tree
   import      Translate ArchUnitNET, NetArchTest, import-linter or eslint rules into a
               rulebearing.yaml
+  wrap-html   Wrap an SVG read from stdin in the page x-dot-webpage writes: dependency-cruiser's
+              depcruise-wrap-stream-in-html
 
 Options:
   -h, --help     Print help

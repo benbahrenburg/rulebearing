@@ -24,6 +24,7 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | `adopt` | A dependency-cruiser repository behind a green gate with a baseline, in one pull request | |
 | `baseline [paths] [--baseline-mode full\|shrink-only\|format] [--expires DATE --owner NAME --reason TEXT]` | Write the current violations to a known-violations file (default `.dependency-cruiser-known-violations.json`, `-f` to change it); [below](#baselines) | `depcruise-baseline`, which has one behaviour: `full` |
 | `diff <old.json> <new.json>`, `diff --base <ref> [paths]` | Added and removed edges, new and resolved violations and moved ratchets, as `json`, `markdown` or `agent`; [below](#diff) | |
+| `wrap-html` | An SVG read from stdin, written between the header and the footer of the page `x-dot-webpage` writes; [below](#wrap-html) | `depcruise-wrap-stream-in-html` |
 
 `cruise --init [oneshot]` is `depcruise --init` without the questions: it writes what `init` writes, to `--config FILE` or `rulebearing.yaml`, with `--preset typescript,dotnet,python` naming the languages instead of detecting them. `yes`, a bare `--init` and any other name write the configuration; `x-scripts` also adds `rulebearing`, `rulebearing:text` and `rulebearing:focus` run scripts to `package.json` after the existing ones and, as dependency-cruiser does, leaves an existing configuration be. dependency-cruiser's graph and HTML scripts need the `dot`, `archi` and `err-html` reporters and `wrap-html`, and are not written until those exist. One language extends its own preset first, `[rulebearing:python, rulebearing:recommended]`, so its exclusions win; several extend `rulebearing:recommended` ([config.md](config.md#presets)).
 
@@ -78,6 +79,16 @@ With `--base`, both sides run the whole cruise (extraction, evaluation, ratchets
 A checkout holds what git tracks and nothing else. Edges into installed packages (`node_modules`) resolve differently there than in a working tree where the packages are installed, and a .NET solution has no assemblies to read until it is built (the base side then exits 2 with the extractor's reason). For those repositories, cruise each revision where it is installed and built, and compare the two results.
 
 `diff` is a report and exits 0, as the reporters that do not gate do ([ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). `--exit-code` (`-e`) makes it gate on what the change introduced: the exit code is the number of new error-severity violations, capped at 255. An input that cannot be read or is not a cruise result, an unknown revision, a folder outside a git repository with `--base`, and a side that cannot be cruised exit 2 with the reason; an invalid configuration, an output type other than the three, or a wrong number of results exit 3.
+
+## wrap-html
+
+`wrap-html` is `depcruise-wrap-stream-in-html`: it writes the header of the `x-dot-webpage` page (its stylesheet and hint box), then standard input unchanged, then the footer (the highlighting script), so a graph drawn by GraphViz becomes the interactive page without running a reporter ([coverage tab § Command line](artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)):
+
+```sh
+rulebearing cruise src -T dot | dot -T svg | rulebearing wrap-html > dependency-graph.html
+```
+
+The input is streamed, not held in memory, and copied byte for byte. The page is byte-identical to the one dependency-cruiser 18.2.0 writes for the same input ([crates/rb-cli/tests/fixtures/wrap-html](../crates/rb-cli/tests/fixtures/wrap-html/expected.html)). It exits 0, or 2 when standard input or output fails.
 
 ## Affected runs
 

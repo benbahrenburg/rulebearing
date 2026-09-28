@@ -5,6 +5,8 @@
 //!   (`docs`, `propose`, `place`, `decisions`, `test --generate`)
 //! - Plan: [Wave 3, Step 4](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
 //!   (`diff`)
+//! - Plan: [Wave 3, Step 8](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+//!   (`wrap-html`)
 //! - Requirement: [FR-CLI-01](../../../../docs/prd.md#fr-cli-01)
 
 pub mod adopt;
@@ -32,3 +34,4 @@ pub mod propose;
 pub mod rules;
 pub mod summary;
 pub mod test_rules;
+pub mod wrap_html;

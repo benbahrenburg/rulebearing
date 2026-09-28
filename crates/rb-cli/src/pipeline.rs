@@ -38,6 +38,10 @@ pub enum RunError {
     /// An engine bug (exit 2).
     #[error(transparent)]
     Engine(#[from] EngineError),
+    /// The report could not be made: `x-dot-webpage` without a working GraphViz `dot`
+    /// ([ADR-0053](../../../docs/adr/0053-x-dot-webpage-draws-with-graphviz-dot.md)) (exit 2).
+    #[error("{0}")]
+    Report(String),
 }
 
 /// What a run needs besides the configuration.

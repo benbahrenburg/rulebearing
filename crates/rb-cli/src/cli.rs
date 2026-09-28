@@ -92,6 +92,9 @@ pub enum Command {
     /// Translate ArchUnitNET, NetArchTest, import-linter or eslint rules into a rulebearing.yaml
     #[command(subcommand)]
     Import(crate::cmd::import::ImportCommand),
+    /// Wrap an SVG read from stdin in the page x-dot-webpage writes: dependency-cruiser's
+    /// depcruise-wrap-stream-in-html
+    WrapHtml(crate::cmd::wrap_html::WrapHtmlArgs),
     /// Conformance gate 1 layer 2's protocol (hidden).
     #[command(hide = true)]
     Validate(ProtocolArgs),
@@ -267,7 +270,7 @@ pub struct CruiseArgs {
     pub graph: Option<String>,
     /// Output type: err, err-long, err-html, json, text, csv, teamcity, azure-devops,
     /// github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot,
-    /// mermaid, d2, metrics, null
+    /// x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, null
     #[arg(short = 'T', long, value_name = "TYPE")]
     pub output_type: Option<String>,
     /// File to write output to; - for stdout
@@ -417,7 +420,9 @@ pub struct FmtArgs {
     /// The result to re-report; - for stdin
     #[arg(value_name = "RESULT-JSON")]
     pub input: String,
-    /// Output type
+    /// Output type: any of cruise's (err, err-long, err-html, json, text, csv, teamcity,
+    /// azure-devops, github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi,
+    /// cdot, flat, fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, null)
     #[arg(short = 'T', long, value_name = "TYPE", default_value = "err")]
     pub output_type: String,
     /// File to write output to; - for stdout

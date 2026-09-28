@@ -90,7 +90,7 @@ fn run_failed(error: &RunError) -> Outcome {
         RunError::Config(_) | RunError::Engine(rb_rules::EngineError::Element(_)) => {
             RunExit::InvalidConfig
         }
-        RunError::Extract(_) | RunError::Engine(_) => RunExit::Untrustworthy,
+        RunError::Extract(_) | RunError::Engine(_) | RunError::Report(_) => RunExit::Untrustworthy,
     };
     failed(code, &error.to_string())
 }

@@ -34,7 +34,7 @@ Options:
   -T, --output-type <TYPE>
           Output type: err, err-long, err-html, json, text, csv, teamcity, azure-devops,
           github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat,
-          fdot, mermaid, d2, metrics, null
+          fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, null
 
   -f, --output-to <FILE>
           File to write output to; - for stdout

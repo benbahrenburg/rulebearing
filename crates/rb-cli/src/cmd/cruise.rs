@@ -76,7 +76,7 @@ fn failed(error: &RunError, stderr: &str) -> Outcome {
         RunError::Config(_) | RunError::Engine(rb_rules::EngineError::Element(_)) => {
             RunExit::InvalidConfig
         }
-        RunError::Extract(_) | RunError::Engine(_) => RunExit::Untrustworthy,
+        RunError::Extract(_) | RunError::Engine(_) | RunError::Report(_) => RunExit::Untrustworthy,
     };
     Outcome {
         stdout: String::new(),
@@ -450,6 +450,7 @@ fn report_options(
         baseline: rb_report::baseline::Lifecycle::default(),
         // The same collapse the cruise applied to its modules (pipeline.rs), as upstream passes it.
         collapse_pattern: crate::pipeline::cruise_collapse(config),
+        graphviz: Some(crate::graphviz::system()),
     }
 }
 
@@ -472,7 +473,11 @@ fn render(
     let value = serde_json::to_value(&verdict.document).map_err(|e| RunError::Engine(e.into()))?;
     rb_report::render(output_type, &value, options)
         .map(|rendered| rendered.output)
-        .map_err(|e| RunError::Config(rb_config::ConfigError::Invalid(e.to_string())))
+        .map_err(|e| match e {
+            // `x-dot-webpage` without a working `dot`: the report could not be made (ADR-0053).
+            rb_report::ReportError::Graphviz(message) => RunError::Report(message),
+            e => RunError::Config(rb_config::ConfigError::Invalid(e.to_string())),
+        })
 }
 
 /// `stderr` with the extractors' warnings after it, as a failed report prints them.
