@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [metadata_reader, ecma335, pdb, config_js, config_data, plantuml_parser]
+        target: [metadata_reader, ecma335, pdb, config_js, config_data, cache_manifest, plantuml_parser]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

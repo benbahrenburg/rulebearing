@@ -1,53 +1,53 @@
 @startuml
 
-hide stereotype
+' A partial picture, not a diagram for adhereTo: DependencyFilters leave(s) arrows out.
 
-[TestAssembly] <<^TestAssembly(?:\.(?:[^\x2EDPS][^\x2E]*|D(?:|[^\x2Eeio][^\x2E]*|e(?:|[^\x2Ep][^\x2E]*|p(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2En][^\x2E]*|n(?:|[^\x2Ed][^\x2E]*|d(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2En][^\x2E]*|n(?:|[^\x2Ec][^\x2E]*|c(?:|[^\x2Ey][^\x2E]*|y(?:|[^\x2ET][^\x2E]*|T(?:|[^\x2Ea][^\x2E]*|a(?:|[^\x2Er][^\x2E]*|r(?:|[^\x2Eg][^\x2E]*|g(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2Et][^\x2E]*|t(?:|[^\x2Es][^\x2E]*|s(?:[^\x2E][^\x2E]*))))))))))))))))|i(?:|[^\x2Ea][^\x2E]*|a(?:|[^\x2Eg][^\x2E]*|g(?:|[^\x2Er][^\x2E]*|r(?:|[^\x2Ea][^\x2E]*|a(?:|[^\x2Em][^\x2E]*|m(?:[^\x2E][^\x2E]*))))))|o(?:|[^\x2Em][^\x2E]*|m(?:|[^\x2Ea][^\x2E]*|a(?:|[^\x2Ei][^\x2E]*|i(?:|[^\x2En][^\x2E]*|n(?:[^\x2E][^\x2E]*))))))|P(?:|[^\x2El][^\x2E]*|l(?:|[^\x2Ea][^\x2E]*|a(?:|[^\x2En][^\x2E]*|n(?:|[^\x2Et][^\x2E]*|t(?:|[^\x2EU][^\x2E]*|U(?:|[^\x2Em][^\x2E]*|m(?:|[^\x2El][^\x2E]*|l(?:[^\x2E][^\x2E]*))))))))|S(?:|[^\x2El][^\x2E]*|l(?:|[^\x2Ei][^\x2E]*|i(?:|[^\x2Ec][^\x2E]*|c(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2Es][^\x2E]*|s(?:[^\x2E][^\x2E]*))))))))?$>>
-[TestAssembly.DependencyTargets] <<^TestAssembly\.DependencyTargets(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Diagram.ConfusingNamespaceNames.FooNamespace.BarNamespace] <<^TestAssembly\.Diagram\.ConfusingNamespaceNames\.FooNamespace\.BarNamespace(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Diagram.NoDependencies.Independent] <<^TestAssembly\.Diagram\.NoDependencies\.Independent(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Diagram.NoDependencies.SomeNamespace] <<^TestAssembly\.Diagram\.NoDependencies\.SomeNamespace(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Diagram.SimpleDependency.Origin] <<^TestAssembly\.Diagram\.SimpleDependency\.Origin(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Diagram.SimpleDependency.Target] <<^TestAssembly\.Diagram\.SimpleDependency\.Target(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Domain.Entities] <<^TestAssembly\.Domain\.Entities(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Domain.Marker] <<^TestAssembly\.Domain\.Marker(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Domain.Repository] <<^TestAssembly\.Domain\.Repository(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Domain.Services] <<^TestAssembly\.Domain\.Services(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.PlantUml.Addresses] <<^TestAssembly\.PlantUml\.Addresses(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.PlantUml.Catalog] <<^TestAssembly\.PlantUml\.Catalog(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.PlantUml.Customers] <<^TestAssembly\.PlantUml\.Customers(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.PlantUml.Importer] <<^TestAssembly\.PlantUml\.Importer(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.PlantUml.Orders] <<^TestAssembly\.PlantUml\.Orders(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.PlantUml.Products] <<^TestAssembly\.PlantUml\.Products(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.PlantUml.Xml.Processor] <<^TestAssembly\.PlantUml\.Xml\.Processor(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.PlantUml.Xml.Types] <<^TestAssembly\.PlantUml\.Xml\.Types(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.PlantUml.Xml.Utils] <<^TestAssembly\.PlantUml\.Xml\.Utils(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Slices.Slice1] <<^TestAssembly\.Slices\.Slice1(?:\.(?:[^\x2ES][^\x2E]*|S(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2Er][^\x2E]*|r(?:|[^\x2Ev][^\x2E]*|v(?:|[^\x2Ei][^\x2E]*|i(?:|[^\x2Ec][^\x2E]*|c(?:|[^\x2Ee][^\x2E]*|e(?:[^\x2E][^\x2E]*)))))))))?$>>
-[TestAssembly.Slices.Slice1.Service] <<^TestAssembly\.Slices\.Slice1\.Service(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Slices.Slice2] <<^TestAssembly\.Slices\.Slice2(?:\.(?:[^\x2ES][^\x2E]*|S(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2Er][^\x2E]*|r(?:|[^\x2Ev][^\x2E]*|v(?:|[^\x2Ei][^\x2E]*|i(?:|[^\x2Ec][^\x2E]*|c(?:|[^\x2Ee][^\x2E]*|e(?:[^\x2E][^\x2E]*)))))))))?$>>
-[TestAssembly.Slices.Slice2.Service] <<^TestAssembly\.Slices\.Slice2\.Service(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Slices.Slice3] <<^TestAssembly\.Slices\.Slice3(?:\.(?:[^\x2EG][^\x2E]*|G(?:|[^\x2Er][^\x2E]*|r(?:|[^\x2Eo][^\x2E]*|o(?:|[^\x2Eu][^\x2E]*|u(?:|[^\x2Ep][^\x2E]*|p(?:|[^\x2E12][^\x2E]*|1(?:[^\x2E][^\x2E]*)|2(?:[^\x2E][^\x2E]*))))))))?$>>
-[TestAssembly.Slices.Slice3.Group1] <<^TestAssembly\.Slices\.Slice3\.Group1(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Slices.Slice3.Group2] <<^TestAssembly\.Slices\.Slice3\.Group2(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.Diagram.SimpleDependency.Origin] --> [TestAssembly.Diagram.SimpleDependency.Target]
-[TestAssembly.PlantUml.Addresses] --> [TestAssembly.PlantUml.Catalog]
-[TestAssembly.PlantUml.Catalog] --> [TestAssembly.PlantUml.Orders]
-[TestAssembly.PlantUml.Catalog] --> [TestAssembly.PlantUml.Products]
-[TestAssembly.PlantUml.Customers] --> [TestAssembly.PlantUml.Addresses]
-[TestAssembly.PlantUml.Customers] --> [TestAssembly.PlantUml.Orders]
-[TestAssembly.PlantUml.Orders] --> [TestAssembly.PlantUml.Customers]
-[TestAssembly.PlantUml.Importer] --> [TestAssembly.PlantUml.Catalog]
-[TestAssembly.PlantUml.Importer] --> [TestAssembly.PlantUml.Customers]
-[TestAssembly.PlantUml.Importer] --> [TestAssembly.PlantUml.Xml.Processor]
-[TestAssembly.PlantUml.Importer] --> [TestAssembly.PlantUml.Xml.Types]
-[TestAssembly.PlantUml.Orders] --> [TestAssembly.PlantUml.Addresses]
-[TestAssembly.PlantUml.Orders] --> [TestAssembly.PlantUml.Products]
-[TestAssembly.PlantUml.Products] --> [TestAssembly.PlantUml.Orders]
-[TestAssembly.PlantUml.Products] --> [TestAssembly.PlantUml.Customers]
-[TestAssembly.Slices.Slice1] --> [TestAssembly.Slices.Slice2]
-[TestAssembly.Slices.Slice1.Service] --> [TestAssembly.Slices.Slice2.Service]
-[TestAssembly.Slices.Slice2] --> [TestAssembly.Slices.Slice3]
-[TestAssembly.Slices.Slice2.Service] --> [TestAssembly.Slices.Slice3]
-[TestAssembly.Slices.Slice3] --> [TestAssembly.Slices.Slice1]
-[TestAssembly.Slices.Slice3.Group1] --> [TestAssembly.Slices.Slice3]
+[TestAssembly] as C1
+[TestAssembly.DependencyTargets] as C2
+[TestAssembly.Diagram.ConfusingNamespaceNames.FooNamespace.BarNamespace] as C3
+[TestAssembly.Diagram.NoDependencies.Independent] as C4
+[TestAssembly.Diagram.NoDependencies.SomeNamespace] as C5
+[TestAssembly.Diagram.SimpleDependency.Origin] as C6
+[TestAssembly.Diagram.SimpleDependency.Target] as C7
+[TestAssembly.Domain.Entities] as C8
+[TestAssembly.Domain.Marker] as C9
+[TestAssembly.Domain.Repository] as C10
+[TestAssembly.Domain.Services] as C11
+[TestAssembly.PlantUml.Addresses] as C12
+[TestAssembly.PlantUml.Catalog] as C13
+[TestAssembly.PlantUml.Customers] as C14
+[TestAssembly.PlantUml.Importer] as C15
+[TestAssembly.PlantUml.Orders] as C16
+[TestAssembly.PlantUml.Products] as C17
+[TestAssembly.PlantUml.Xml.Processor] as C18
+[TestAssembly.PlantUml.Xml.Types] as C19
+[TestAssembly.PlantUml.Xml.Utils] as C20
+[TestAssembly.Slices.Slice1] as C21
+[TestAssembly.Slices.Slice1.Service] as C22
+[TestAssembly.Slices.Slice2] as C23
+[TestAssembly.Slices.Slice2.Service] as C24
+[TestAssembly.Slices.Slice3] as C25
+[TestAssembly.Slices.Slice3.Group1] as C26
+[TestAssembly.Slices.Slice3.Group2] as C27
+C6 --> C7
+C12 --> C13
+C13 --> C16
+C13 --> C17
+C14 --> C12
+C14 --> C16
+C16 --> C14
+C15 --> C13
+C15 --> C14
+C15 --> C18
+C15 --> C19
+C16 --> C12
+C16 --> C17
+C17 --> C16
+C17 --> C14
+C21 --> C23
+C22 --> C24
+C23 --> C25
+C24 --> C25
+C25 --> C21
+C26 --> C25
 @enduml

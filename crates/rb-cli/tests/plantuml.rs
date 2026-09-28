@@ -294,3 +294,180 @@ fn from_on_fmt_and_the_refusals() -> Result<(), Box<dyn Error>> {
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
+
+/// A small TypeScript tree: classes in `src/index.ts`, `src/lib/util.ts` and `src/feature/a.ts`.
+fn typescript_tree(name: &str) -> Result<PathBuf, Box<dyn Error>> {
+    let dir =
+        std::env::temp_dir().join(format!("rb-cli-plantuml-ts-{name}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    for (file, text) in [
+        ("package.json", "{ \"name\": \"fixture\" }\n"),
+        (
+            "src/index.ts",
+            "import { Util } from \"./lib/util\";\nimport { A } from \"./feature/a\";\nexport class Main { u = new Util(); a = new A(); }\n",
+        ),
+        ("src/lib/util.ts", "export class Util { n = 1; }\n"),
+        (
+            "src/feature/a.ts",
+            "import { Util } from \"../lib/util\";\nexport class A { u = new Util(); }\n",
+        ),
+    ] {
+        let path = dir.join(file);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(path, text)?;
+    }
+    Ok(dir.canonicalize()?)
+}
+
+#[test]
+fn path_slices_of_typescript_round_trip() -> Result<(), Box<dyn Error>> {
+    let dir = typescript_tree("slices")?;
+    std::fs::write(dir.join("graph.yaml"), "rules: {}\n")?;
+    let out = run(
+        &dir,
+        &["cruise", "--config", "graph.yaml", "-T", "json", "src"],
+    )?;
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    std::fs::write(dir.join("graph.json"), &out.stdout)?;
+    let graph = dir.join("graph.json");
+    for (pattern, components) in [
+        ("src/(*)", 1),
+        ("src/(*)/", 1),
+        ("src/(**)", 3),
+        ("src/(**)//", 2),
+    ] {
+        let config =
+            format!("options:\n  reporterOptions:\n    plantuml:\n      Matching: \"{pattern}\"\n");
+        let diagram = generate(&dir, &graph, &config, "slices")?;
+        let parsed = rb_rules::plantuml::parse(&diagram)?;
+        assert_eq!(parsed.components.len(), components, "{pattern}: {diagram}");
+        assert_adhered(
+            &enforce(&dir, &graph, &described(&diagram)?)?,
+            &graph,
+            pattern,
+        );
+        if components > 1 {
+            assert!(
+                diagram.contains(" --> "),
+                "{pattern}: arrows between the slices: {diagram}"
+            );
+        }
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// A .NET graph: `App.Core.Thing` depends on `App.System.Clock`, which depends on `System.String`;
+/// with `extra`, `App.Core.Thing` depends on `System.String` too.
+fn clash_graph(extra: bool) -> Value {
+    let ty = |full: &str, ns: &str, deps: &[&str]| {
+        let dependencies: Vec<Value> = deps
+            .iter()
+            .map(|d| serde_json::json!({ "target": d, "kind": "field" }))
+            .collect();
+        serde_json::json!({ "fullName": full, "name": full.rsplit('.').next(), "namespace": ns,
+            "kind": "class", "language": "dotnet", "dependencies": dependencies })
+    };
+    let mut thing = vec!["App.System.Clock"];
+    if extra {
+        thing.push("System.String");
+    }
+    let mut string = ty("System.String", "System", &[]);
+    string["referenced"] = Value::Bool(true);
+    serde_json::json!({
+        "modules": [],
+        "summary": { "violations": [], "error": 0, "warn": 0, "info": 0, "ignore": 0,
+                     "totalCruised": 0, "totalDependenciesCruised": 0, "optionsUsed": {} },
+        "code": { "types": [
+            ty("App.Core.Thing", "App.Core", &thing),
+            ty("App.System.Clock", "App.System", &["System.String"]),
+            string,
+        ] }
+    })
+}
+
+#[test]
+fn a_slice_and_an_other_node_of_one_name_stay_two_components() -> Result<(), Box<dyn Error>> {
+    let dir = std::env::temp_dir().join(format!("rb-cli-plantuml-clash-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir)?;
+    let (drawn, changed) = (dir.join("a.json"), dir.join("b.json"));
+    std::fs::write(&drawn, serde_json::to_string(&clash_graph(false))?)?;
+    std::fs::write(&changed, serde_json::to_string(&clash_graph(true))?)?;
+    let config = "options:\n  reporterOptions:\n    plantuml:\n      Matching: \"App.(*)\"\n      IncludeDependenciesToOther: true\n";
+    let diagram = generate(&dir, &drawn, config, "slices")?;
+    assert!(
+        diagram.contains("\n[System] <<^App\\.System(?:"),
+        "{diagram}"
+    );
+    assert!(
+        diagram.contains("\n[System (other)] <<^System(?:"),
+        "{diagram}"
+    );
+    let parsed = rb_rules::plantuml::parse(&diagram)?;
+    assert_eq!(parsed.components.len(), 3, "{diagram}");
+    let select = "^App\\.";
+    assert_adhered(&enforce(&dir, &drawn, select)?, &drawn, "as drawn");
+    // The diagram draws Core -> System (the slice) only: Core -> System.String is not allowed.
+    let violations = enforce(&dir, &changed, select)?;
+    let objects: Vec<&str> = violations.iter().filter_map(|v| v["to"].as_str()).collect();
+    assert_eq!(objects, ["App.Core.Thing"], "{violations:?}");
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn from_is_refused_where_nothing_reads_it() -> Result<(), Box<dyn Error>> {
+    let dir = std::env::temp_dir().join(format!("rb-cli-plantuml-from-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir)?;
+    let graph = conformance().join("archunitnet/graphs/TestAssembly.json");
+    let graph = graph.to_string_lossy();
+    for args in [
+        &["cruise", "--graph", &graph, "-T", "json", "--from", "types"][..],
+        &["fmt", &graph, "-T", "err", "--from", "slices"][..],
+    ] {
+        let out = run(&dir, args)?;
+        assert_eq!(out.status.code(), Some(3), "{args:?}");
+        assert!(
+            text(&out.stderr).contains("applies to --output-type plantuml"),
+            "{}",
+            text(&out.stderr)
+        );
+    }
+    let provenance = run(&dir, &["fmt", &graph, "-T", "err", "--from", "rulebearing"])?;
+    assert_eq!(
+        provenance.status.code(),
+        Some(0),
+        "{}",
+        text(&provenance.stderr)
+    );
+    std::fs::write(
+        dir.join("sliced.yaml"),
+        "options:\n  reporterOptions:\n    plantuml:\n      Matching: \"TestAssembly.(*)\"\n",
+    )?;
+    let out = run(
+        &dir,
+        &[
+            "cruise",
+            "--config",
+            "sliced.yaml",
+            "--graph",
+            &graph,
+            "-T",
+            "plantuml",
+            "--from",
+            "namespaces",
+        ],
+    )?;
+    assert_eq!(out.status.code(), Some(3));
+    assert!(
+        text(&out.stderr).contains("slice pattern"),
+        "{}",
+        text(&out.stderr)
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
