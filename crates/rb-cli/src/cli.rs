@@ -358,8 +358,8 @@ pub struct CruiseArgs {
     #[arg(long)]
     pub from_hook: bool,
     /// Only report the modules changed since REVISION (default main), committed or not, and
-    /// every module that reaches them, as dependency-cruiser does; .NET source files map to their
-    /// types' modules
+    /// every module that reaches them, as dependency-cruiser does; with a rulebearing.* configuration,
+    /// also every violation on their edges that leave them. .NET source files map to their types' modules
     #[arg(short = 'A', long, value_name = "REVISION", num_args = 0..=1,
           default_missing_value = rb_config::model::DEFAULT_AFFECTED_REVISION)]
     pub affected: Option<String>,

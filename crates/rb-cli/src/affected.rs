@@ -17,7 +17,14 @@
 //!   (the PDB attribution the .NET mapping reads)
 //! - Requirement: [FR-CLI-05](../../../docs/prd.md#fr-cli-05)
 //!
-//! **The decision: exactly as upstream, plus two additions.** dependency-cruiser 18.2.0's
+//! **The semantics follow the configuration format** ([`Mode`]), as liveness does
+//! ([ADR-0032](../../../docs/adr/0032-liveness-follows-the-configuration-format.md)): a
+//! dependency-cruiser configuration (or none) gets dependency-cruiser's behaviour byte for byte,
+//! described first below; a `rulebearing.*` configuration gets the closure the plan describes,
+//! described after it.
+//!
+//! **With a dependency-cruiser configuration: exactly as upstream, plus two additions.**
+//! dependency-cruiser 18.2.0's
 //! `normalizeOptions` (`src/cli/normalize-cli-options.mjs`) asks watskeburt 6.0.0 for the files
 //! changed since the revision and sets `reaches` to the regular expression it returns; the
 //! report then holds the matching modules and every module that reaches them (`filterReaches`),
@@ -51,7 +58,28 @@
 //!   `N` steps; the default, 0, keeps them all, as upstream. The depth is never written to
 //!   `optionsUsed`, whose `reaches` upstream's schema closes; the receipt records it.
 //!
-//! One divergence, on purpose: paths are made relative to the cruise's base directory, the way
+//! **With a `rulebearing.*` configuration: the closure.** The rules are evaluated over the whole
+//! graph, so cycles, reachability, dependents and instability are what a full cruise finds; the
+//! report then keeps what touches the closure ([`Selection::narrow`]):
+//!
+//! - The changes are listed with `git status --porcelain --untracked-files=all`, so each file of
+//!   a new, untracked folder counts. Every changed file that is a module counts, whatever its
+//!   extension and language, plus the .NET mapping. A deleted file is no module of the current
+//!   graph and its importers' edges no longer resolve to it, so its dependents are read from the
+//!   saved graph (`.graph/cruise.json`) when there is one; without one they are not known.
+//! - The closure is those modules and the modules that reach them (to `--affected-depth`). The
+//!   report keeps the closure's modules with every edge they have, so a violation on an edge that
+//!   leaves the closure (an edited file importing an unchanged, forbidden module) is reported.
+//! - Which violations touch the closure ([`touches`]): a dependency, instability or module-level
+//!   violation (orphan, `required`, `numberOfDependentsLessThan`) when its `from` module is in
+//!   it; a cycle or reachability violation when any module of its path, or its `to`, is (without
+//!   a depth the `from` module then is too, since it reaches every module of the path; with a
+//!   depth, the `from` module joins the report); a folder violation when a closure module sits in
+//!   the folder; an element or slice violation when an end names a closure module or a type
+//!   declared in a closure file, and a slice violation whose ends name neither is kept.
+//! - `reaches` is not set, so `optionsUsed` carries no expression.
+//!
+//! One divergence in both modes, on purpose: paths are made relative to the cruise's base directory, the way
 //! module `source` names are. Upstream uses git's repository-relative paths as they are, so a
 //! cruise from a subdirectory matches nothing and silently reports an empty graph.
 //!
@@ -127,6 +155,14 @@ pub enum AffectedError {
         /// What was given.
         revision: String,
     },
+    /// The saved graph a native run reads deleted files' dependents from cannot be read.
+    #[error("--affected: {reason}; delete or rewrite it (`rulebearing cruise -T json -f {}`)", file.display())]
+    SavedGraph {
+        /// The file.
+        file: PathBuf,
+        /// What is wrong with it.
+        reason: String,
+    },
     /// git failed otherwise.
     #[error("--affected: `git {command}` failed: {detail}")]
     Git {
@@ -147,6 +183,29 @@ pub struct Change {
     pub kind: ChangeType,
 }
 
+/// Which semantics an `--affected` run has: it follows the configuration format, as liveness
+/// does ([ADR-0032](../../../docs/adr/0032-liveness-follows-the-configuration-format.md)).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Mode {
+    /// A dependency-cruiser configuration, or none: dependency-cruiser's `reaches` filter, byte
+    /// for byte.
+    #[default]
+    Upstream,
+    /// A `rulebearing.*` configuration: the closure's modules, with every violation that touches
+    /// the closure, edges leaving it included.
+    Closure,
+}
+
+impl Mode {
+    /// The mode for a configuration's format.
+    pub fn of(compat: CompatMode) -> Self {
+        match compat {
+            CompatMode::DependencyCruiser => Self::Upstream,
+            CompatMode::Native => Self::Closure,
+        }
+    }
+}
+
 /// What an `--affected` run asks for.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Request {
@@ -154,6 +213,8 @@ pub struct Request {
     pub revision: String,
     /// `--affected-depth`, when given and not 0.
     pub depth: Option<u32>,
+    /// The semantics, from the configuration format.
+    pub mode: Mode,
 }
 
 /// The changes an `--affected` run found, carried from the command line to the evaluation.
@@ -165,6 +226,10 @@ pub struct Selection {
     pub depth: Option<u32>,
     /// The changes, in git's order: the diff first, then the untracked files.
     pub changes: Vec<Change>,
+    /// The semantics.
+    pub mode: Mode,
+    /// [`Mode::Closure`]: the modules that depended on a deleted file in the saved graph.
+    pub dependents_of_deleted: Vec<String>,
 }
 
 /// watskeburt's `mapChangeType`: git's one-letter status to its name.
@@ -310,6 +375,23 @@ pub fn relative_to_base(path: &str, prefix: &str) -> Option<String> {
 /// [`AffectedError`] when git is missing, `repo` is not in a repository, or git does not know
 /// the revision.
 pub fn changed_since(repo: &Path, revision: &str) -> Result<Vec<Change>, AffectedError> {
+    list_changes(repo, revision, false)
+}
+
+/// [`changed_since`], with each file of an untracked folder listed (`git status --porcelain
+/// --untracked-files=all`) rather than the folder: what a native `--affected` run reads.
+///
+/// # Errors
+/// As [`changed_since`].
+pub fn changed_since_all(repo: &Path, revision: &str) -> Result<Vec<Change>, AffectedError> {
+    list_changes(repo, revision, true)
+}
+
+fn list_changes(
+    repo: &Path,
+    revision: &str,
+    every_untracked_file: bool,
+) -> Result<Vec<Change>, AffectedError> {
     if revision.is_empty() || revision.starts_with('-') {
         return Err(AffectedError::NotARevision {
             revision: revision.to_owned(),
@@ -325,8 +407,12 @@ pub fn changed_since(repo: &Path, revision: &str) -> Result<Vec<Change>, Affecte
         },
         other => git_error(repo, &diff_args, other),
     })?;
-    let status_args = ["status", "--porcelain"];
-    let status = git(repo, &status_args).map_err(|e| git_error(repo, &status_args, e))?;
+    let status_args: &[&str] = if every_untracked_file {
+        &["status", "--porcelain", "--untracked-files=all"]
+    } else {
+        &["status", "--porcelain"]
+    };
+    let status = git(repo, status_args).map_err(|e| git_error(repo, status_args, e))?;
     let untracked = status
         .lines()
         .filter_map(parse_status_line)
@@ -492,10 +578,12 @@ pub fn affected_closure<S: AsRef<str>>(
 /// dependency-cruiser ignores it.
 pub fn request(flag: Option<&str>, depth: Option<u32>, config: &mut Config) -> Option<Request> {
     let depth = depth.filter(|d| *d != 0);
+    let mode = Mode::of(config.compat);
     if let Some(revision) = flag {
         return Some(Request {
             revision: revision.to_owned(),
             depth,
+            mode,
         });
     }
     let option = config.options.affected.clone()?;
@@ -508,32 +596,217 @@ pub fn request(flag: Option<&str>, depth: Option<u32>, config: &mut Config) -> O
     option.revision().map(|revision| Request {
         revision: revision.to_owned(),
         depth,
+        mode,
     })
 }
 
-/// Lists the changes for `request` and sets the configuration's `reaches` to dependency-cruiser's
-/// expression, so `optionsUsed` and the report are upstream's.
+/// The modules that depended on one of `deleted` in the saved graph at `file`, when there is
+/// one: the current graph cannot name them, since the deleted module is gone from it and its
+/// importers' edges no longer resolve to it. Sorted.
 ///
 /// # Errors
-/// [`AffectedError`] from [`changed_since`].
+/// [`AffectedError::SavedGraph`] when the file exists and is not a cruise result.
+pub fn dependents_in_saved_graph(
+    file: &Path,
+    deleted: &[&str],
+) -> Result<Vec<String>, AffectedError> {
+    if deleted.is_empty() || !file.is_file() {
+        return Ok(Vec::new());
+    }
+    let unreadable = |reason: String| AffectedError::SavedGraph {
+        file: file.to_path_buf(),
+        reason,
+    };
+    let text = std::fs::read_to_string(file)
+        .map_err(|e| unreadable(format!("cannot read {}: {e}", file.display())))?;
+    let saved = rb_ingest::dependency_cruiser::read(&text)
+        .map_err(|e| unreadable(format!("{} is not a cruise result: {e}", file.display())))?;
+    let deleted: BTreeSet<&str> = deleted.iter().copied().collect();
+    let found: BTreeSet<String> = saved
+        .modules
+        .iter()
+        .filter(|m| {
+            m.dependencies
+                .iter()
+                .any(|d| deleted.contains(d.resolved.as_str()))
+        })
+        .map(|m| m.source.clone())
+        .collect();
+    Ok(found.into_iter().collect())
+}
+
+/// Lists the changes for `request`. [`Mode::Upstream`] sets the configuration's `reaches` to
+/// dependency-cruiser's expression, so `optionsUsed` and the report are upstream's;
+/// [`Mode::Closure`] lists every untracked file and reads the dependents of deleted files from
+/// the saved graph `saved`, and leaves `reaches` alone.
+///
+/// # Errors
+/// [`AffectedError`] from [`changed_since`] and [`dependents_in_saved_graph`].
 pub fn select(
     repo: &Path,
+    saved: &Path,
     request: Request,
     config: &mut Config,
 ) -> Result<Selection, AffectedError> {
-    let changes = changed_since(repo, &request.revision)?;
-    config.options.reaches = Some(FilterOption {
-        path: Some(upstream_pattern(&upstream_names(&changes))),
-        depth: None,
-    });
+    let (changes, dependents_of_deleted) = match request.mode {
+        Mode::Upstream => {
+            let changes = changed_since(repo, &request.revision)?;
+            config.options.reaches = Some(FilterOption {
+                path: Some(upstream_pattern(&upstream_names(&changes))),
+                depth: None,
+            });
+            (changes, Vec::new())
+        }
+        Mode::Closure => {
+            let changes = changed_since_all(repo, &request.revision)?;
+            let deleted: Vec<&str> = changes
+                .iter()
+                .filter(|c| c.kind == ChangeType::Deleted)
+                .map(|c| c.path.as_str())
+                .collect();
+            let dependents = dependents_in_saved_graph(saved, &deleted)?;
+            (changes, dependents)
+        }
+    };
     Ok(Selection {
         revision: request.revision,
         depth: request.depth,
         changes,
+        mode: request.mode,
+        dependents_of_deleted,
     })
 }
 
+/// Whether `violation` touches `closure`, for a native run: its `from` is in it; for a cycle or a
+/// reachability violation, any module of its path or its `to` is; for a folder violation, a
+/// module of the closure sits in the folder; for an element or slice violation, an end names a
+/// module of the closure or a type declared in one of its files (`types`), and a slice violation
+/// whose ends name no module and no type (slices are named by their pattern) is kept, since it
+/// cannot be placed.
+fn touches(
+    violation: &rb_model::Violation,
+    closure: &BTreeSet<&str>,
+    types: &BTreeMap<&str, bool>,
+) -> bool {
+    use rb_model::ViolationType as T;
+    let named = |name: &str| closure.contains(name) || types.get(name) == Some(&true);
+    match violation.violation_type {
+        Some(T::Cycle) => {
+            closure.contains(violation.from.as_str())
+                || violation
+                    .cycle
+                    .iter()
+                    .flatten()
+                    .any(|step| closure.contains(step.name.as_str()))
+        }
+        Some(T::Reachability) => {
+            closure.contains(violation.from.as_str())
+                || closure.contains(violation.to.as_str())
+                || violation
+                    .via
+                    .iter()
+                    .flatten()
+                    .any(|step| closure.contains(step.name.as_str()))
+        }
+        Some(T::Folder) => {
+            let folder = format!("{}/", violation.from);
+            closure.iter().any(|m| m.starts_with(&folder))
+        }
+        Some(T::Element) => named(&violation.from) || named(&violation.to),
+        Some(T::Slice) => {
+            named(&violation.from)
+                || named(&violation.to)
+                || !(types.contains_key(violation.from.as_str())
+                    || types.contains_key(violation.to.as_str()))
+        }
+        _ => closure.contains(violation.from.as_str()),
+    }
+}
+
 impl Selection {
+    /// [`Mode::Closure`]: the modules of `doc` the changes name: a changed file that is a module
+    /// in any language, the .NET modules the PDB maps a changed file to, and the modules that
+    /// depended on a deleted file in the saved graph. Sorted.
+    pub fn seeds(&self, doc: &GraphDocument) -> Vec<String> {
+        let present: BTreeSet<&str> = doc.modules.iter().map(|m| m.source.as_str()).collect();
+        let paths: Vec<&str> = self
+            .changes
+            .iter()
+            .filter(|c| {
+                !matches!(
+                    c.kind,
+                    ChangeType::Unmodified | ChangeType::Ignored | ChangeType::Unknown
+                )
+            })
+            .map(|c| c.path.as_str())
+            .collect();
+        let mut seeds: BTreeSet<String> = paths
+            .iter()
+            .copied()
+            .chain(self.dependents_of_deleted.iter().map(String::as_str))
+            .filter(|p| present.contains(p))
+            .map(str::to_owned)
+            .collect();
+        seeds.extend(pdb_documents_to_modules(doc, &paths));
+        seeds.into_iter().collect()
+    }
+
+    /// [`Mode::Closure`]: `doc` (the evaluated, unfiltered graph) narrowed to what a native run
+    /// reports, and the receipt. The report keeps the closure's modules with every edge they
+    /// have, so a violation on an edge that leaves the closure stays; with `--affected-depth`,
+    /// also the `from` module of each cycle or reachability violation whose path touches the
+    /// closure. Folders keep the ones a kept module sits in; element and slice violations, which
+    /// belong to no module, keep the ones that touch the closure ([`touches`]). The re-summary
+    /// then counts the kept modules' violations.
+    pub fn narrow(&self, doc: &GraphDocument) -> (GraphDocument, Affected) {
+        let closure = affected_closure(doc, &self.seeds(doc), self.depth.unwrap_or(0));
+        let set: BTreeSet<&str> = closure.iter().map(String::as_str).collect();
+        let mut types: BTreeMap<&str, bool> = BTreeMap::new();
+        for ty in doc.code.iter().flat_map(|c| &c.types) {
+            let declared = ty
+                .location
+                .file
+                .iter()
+                .chain(&ty.files)
+                .any(|f| set.contains(f.as_str()));
+            *types.entry(ty.full_name.as_str()).or_default() |= declared;
+        }
+        let mut kept = set.clone();
+        for v in &doc.summary.violations {
+            if matches!(
+                v.violation_type,
+                Some(rb_model::ViolationType::Cycle | rb_model::ViolationType::Reachability)
+            ) && touches(v, &set, &types)
+            {
+                kept.insert(v.from.as_str());
+            }
+        }
+        let mut narrowed = doc.clone();
+        narrowed
+            .modules
+            .retain(|m| kept.contains(m.source.as_str()));
+        if let Some(folders) = narrowed.folders.as_mut() {
+            folders.retain(|f| {
+                let folder = format!("{}/", f.name);
+                kept.iter().any(|m| m.starts_with(&folder))
+            });
+        }
+        narrowed.summary.violations.retain(|v| {
+            !matches!(
+                v.violation_type,
+                Some(rb_model::ViolationType::Element | rb_model::ViolationType::Slice)
+            ) || touches(v, &set, &types)
+        });
+        let changed: BTreeSet<String> = self.changes.iter().map(|c| c.path.clone()).collect();
+        let receipt = Affected {
+            revision: self.revision.clone(),
+            changed: changed.into_iter().collect(),
+            closure,
+            depth: self.depth,
+        };
+        (narrowed, receipt)
+    }
+
     /// The expression for `doc`: upstream's, plus the other languages' affected modules.
     pub fn pattern(&self, doc: &GraphDocument) -> String {
         pattern_with(
@@ -878,6 +1151,7 @@ mod tests {
             revision: "HEAD".into(),
             depth: None,
             changes: changes.to_vec(),
+            ..Selection::default()
         };
         let pattern = selection.pattern(&doc);
         assert_eq!(
@@ -920,7 +1194,8 @@ mod tests {
             request(Some("HEAD"), Some(0), &mut native),
             Some(Request {
                 revision: "HEAD".into(),
-                depth: None
+                depth: None,
+                mode: Mode::Closure,
             })
         );
         native.options.affected = Some(AffectedOption::Enabled(true));
@@ -928,7 +1203,8 @@ mod tests {
             request(None, Some(2), &mut native),
             Some(Request {
                 revision: DEFAULT_AFFECTED_REVISION.into(),
-                depth: Some(2)
+                depth: Some(2),
+                mode: Mode::Closure,
             })
         );
         assert_eq!(
@@ -943,6 +1219,11 @@ mod tests {
             compat: CompatMode::DependencyCruiser,
             ..Config::default()
         };
+        assert_eq!(
+            request(Some("HEAD"), None, &mut cruiser).map(|r| r.mode),
+            Some(Mode::Upstream),
+            "a dependency-cruiser configuration keeps upstream's semantics"
+        );
         cruiser.options.affected = Some(AffectedOption::Revision("dev".into()));
         assert_eq!(request(None, None, &mut cruiser), None);
         assert_eq!(cruiser.warnings.len(), 1);
@@ -950,15 +1231,214 @@ mod tests {
     }
 
     #[test]
+    fn the_mode_follows_the_configuration_format() {
+        assert_eq!(Mode::of(CompatMode::DependencyCruiser), Mode::Upstream);
+        assert_eq!(Mode::of(CompatMode::Native), Mode::Closure);
+        assert_eq!(Mode::default(), Mode::Upstream);
+    }
+
+    fn rule(name: &str) -> rb_model::RuleSummary {
+        rb_model::RuleSummary {
+            name: name.into(),
+            severity: rb_model::Severity::Error,
+        }
+    }
+
+    fn violation(kind: rb_model::ViolationType, from: &str, to: &str) -> rb_model::Violation {
+        rb_model::Violation {
+            from: from.into(),
+            to: to.into(),
+            unresolved_to: None,
+            dependency_types: None,
+            violation_type: Some(kind),
+            rule: rule("r"),
+            cycle: None,
+            via: None,
+            metrics: None,
+            comment: None,
+            id: None,
+            fix: None,
+            decision: None,
+        }
+    }
+
+    fn steps(names: &[&str]) -> Vec<rb_model::MiniDependency> {
+        names
+            .iter()
+            .map(|n| rb_model::MiniDependency {
+                name: (*n).into(),
+                dependency_types: Vec::new(),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_violation_touches_the_closure_by_its_shape() {
+        use rb_model::ViolationType as T;
+        let closure: BTreeSet<&str> = ["src/b.ts", "src/Order.cs"].into_iter().collect();
+        let types: BTreeMap<&str, bool> = [("Sample.Order", true), ("Sample.Other", false)]
+            .into_iter()
+            .collect();
+        let yes = |v: &rb_model::Violation| touches(v, &closure, &types);
+        assert!(yes(&violation(T::Dependency, "src/b.ts", "src/outside.ts")));
+        assert!(!yes(&violation(T::Dependency, "src/a.ts", "src/b.ts")));
+        assert!(yes(&violation(T::Module, "src/b.ts", "src/b.ts")));
+        assert!(!yes(&violation(T::Instability, "src/c.ts", "src/b.ts")));
+        let mut cycle = violation(T::Cycle, "src/a.ts", "src/c.ts");
+        assert!(!yes(&cycle));
+        cycle.cycle = Some(steps(&["src/c.ts", "src/b.ts", "src/a.ts"]));
+        assert!(yes(&cycle), "a module of the cycle is in the closure");
+        let mut reach = violation(T::Reachability, "src/a.ts", "src/z.ts");
+        reach.via = Some(steps(&["src/m.ts", "src/z.ts"]));
+        assert!(!yes(&reach));
+        reach.via = Some(steps(&["src/b.ts", "src/z.ts"]));
+        assert!(yes(&reach), "the path runs through the closure");
+        assert!(yes(&violation(T::Reachability, "src/a.ts", "src/b.ts")));
+        assert!(yes(&violation(T::Folder, "src", "src")));
+        assert!(!yes(&violation(T::Folder, "lib", "lib")));
+        assert!(!yes(&violation(T::Folder, "sr", "sr")));
+        assert!(yes(&violation(T::Element, "Sample.Order", "Sample.Order")));
+        assert!(!yes(&violation(T::Element, "Sample.Other", "Sample.Other")));
+        assert!(yes(&violation(T::Slice, "Sample.Other", "Sample.Order")));
+        assert!(!yes(&violation(T::Slice, "Sample.Other", "Sample.Other")));
+        assert!(
+            yes(&violation(T::Slice, "orders", "billing")),
+            "a slice violation that names no module or type cannot be placed, and stays"
+        );
+    }
+
+    #[test]
+    fn a_native_run_keeps_edges_that_leave_the_closure() {
+        use rb_model::ViolationType as T;
+        // a (changed) -> forbidden; b -> a; c alone with a cycle c <-> d.
+        let mut doc = GraphDocument {
+            modules: vec![
+                module("src/a.ts", &["src/forbidden.ts"], None),
+                module("src/b.ts", &["src/a.ts"], None),
+                module("src/c.ts", &["src/d.ts"], None),
+                module("src/d.ts", &["src/c.ts", "src/b.ts"], None),
+                module("src/forbidden.ts", &[], None),
+                module("py/app.py", &[], Some(Language::Python)),
+            ],
+            folders: Some(vec![rb_model::Folder {
+                name: "src".into(),
+                dependents: None,
+                dependencies: None,
+                module_count: 5,
+                afferent_couplings: None,
+                efferent_couplings: None,
+                instability: None,
+                experimental_stats: None,
+            }]),
+            ..GraphDocument::default()
+        };
+        let mut cycle = violation(T::Cycle, "src/c.ts", "src/d.ts");
+        cycle.cycle = Some(steps(&["src/d.ts", "src/c.ts"]));
+        doc.summary.violations = vec![
+            violation(T::Dependency, "src/a.ts", "src/forbidden.ts"),
+            cycle,
+            violation(T::Slice, "orders", "billing"),
+        ];
+        let selection = Selection {
+            revision: "HEAD".into(),
+            depth: None,
+            changes: vec![
+                change("src/a.ts", ChangeType::Modified),
+                change("src/gone.ts", ChangeType::Deleted),
+                change("notes.md", ChangeType::Untracked),
+            ],
+            mode: Mode::Closure,
+            dependents_of_deleted: vec!["src/c.ts".into(), "src/removed-too.ts".into()],
+        };
+        assert_eq!(selection.seeds(&doc), ["src/a.ts", "src/c.ts"]);
+        let (narrowed, receipt) = selection.narrow(&doc);
+        assert_eq!(
+            receipt.closure,
+            ["src/a.ts", "src/b.ts", "src/c.ts", "src/d.ts"]
+        );
+        assert_eq!(receipt.changed, ["notes.md", "src/a.ts", "src/gone.ts"]);
+        let kept: Vec<&str> = narrowed.modules.iter().map(|m| m.source.as_str()).collect();
+        assert_eq!(kept, ["src/a.ts", "src/b.ts", "src/c.ts", "src/d.ts"]);
+        assert_eq!(
+            narrowed.modules[0].dependencies[0].resolved, "src/forbidden.ts",
+            "the edge that leaves the closure stays"
+        );
+        assert_eq!(narrowed.folders.as_ref().map(Vec::len), Some(1));
+        assert_eq!(narrowed.summary.violations.len(), 3, "the slice stays");
+
+        // With a depth of 1 from src/a.ts alone, the cycle is outside; a cycle path through the
+        // closure brings its `from` module in.
+        let shallow = Selection {
+            depth: Some(1),
+            dependents_of_deleted: Vec::new(),
+            ..selection
+        };
+        let (narrowed, receipt) = shallow.narrow(&doc);
+        assert_eq!(receipt.closure, ["src/a.ts", "src/b.ts"]);
+        let kept: Vec<&str> = narrowed.modules.iter().map(|m| m.source.as_str()).collect();
+        assert_eq!(kept, ["src/a.ts", "src/b.ts"]);
+        let mut through = violation(T::Cycle, "src/d.ts", "src/b.ts");
+        through.cycle = Some(steps(&["src/b.ts", "src/d.ts"]));
+        doc.summary.violations.push(through);
+        let (narrowed, _) = shallow.narrow(&doc);
+        let kept: Vec<&str> = narrowed.modules.iter().map(|m| m.source.as_str()).collect();
+        assert_eq!(kept, ["src/a.ts", "src/b.ts", "src/d.ts"]);
+    }
+
+    #[test]
+    fn deleted_files_dependents_come_from_the_saved_graph() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let dir = std::env::temp_dir().join(format!("rb-affected-saved-{}", std::process::id()));
+        std::fs::create_dir_all(&dir)?;
+        let file = dir.join("cruise.json");
+        assert!(
+            dependents_in_saved_graph(&file, &["src/gone.ts"])?.is_empty(),
+            "no file"
+        );
+        let saved = GraphDocument {
+            modules: vec![
+                module("src/user.ts", &["src/gone.ts"], None),
+                module("src/other.ts", &["src/user.ts"], None),
+                module("src/also.ts", &["src/gone.ts"], None),
+                module("src/gone.ts", &[], None),
+            ],
+            ..GraphDocument::default()
+        };
+        std::fs::write(&file, serde_json::to_string(&saved)?)?;
+        assert_eq!(
+            dependents_in_saved_graph(&file, &["src/gone.ts"])?,
+            ["src/also.ts", "src/user.ts"]
+        );
+        assert!(dependents_in_saved_graph(&file, &[])?.is_empty());
+        std::fs::write(&file, "not json")?;
+        let error = dependents_in_saved_graph(&file, &["src/gone.ts"]);
+        assert!(
+            matches!(error, Err(AffectedError::SavedGraph { .. })),
+            "{error:?}"
+        );
+        assert!(
+            error
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default()
+                .contains("is not a cruise result")
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+        Ok(())
+    }
+
+    #[test]
     fn option_like_revisions_are_refused_before_git_runs() {
         let dir = std::env::temp_dir();
         for revision in ["", "--output=/tmp/x", "-p"] {
-            assert_eq!(
-                changed_since(&dir, revision),
-                Err(AffectedError::NotARevision {
-                    revision: revision.into()
-                })
-            );
+            for list in [changed_since, changed_since_all] {
+                assert_eq!(
+                    list(&dir, revision),
+                    Err(AffectedError::NotARevision {
+                        revision: revision.into()
+                    })
+                );
+            }
         }
     }
 

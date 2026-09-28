@@ -147,7 +147,41 @@ fn typescript_repository(tag: &str) -> Result<PathBuf> {
     write(&dir, "src/untracked.ts", "export const t = 1;\n")?;
     git(&dir, &["rm", "-q", "src/gone.ts"])?;
     git(&dir, &["mv", "src/old-name.ts", "src/new-name.ts"])?;
+    // A new file in a new, untracked folder, which imports the forbidden module.
+    write(
+        &dir,
+        "src/newdir/fresh.ts",
+        "import { x } from \"../forbidden\";\nexport const f = x;\n",
+    )?;
     Ok(dir)
+}
+
+/// `cruise --config <native file> --affected HEAD -T <output_type> src`.
+fn native(dir: &Path, config: &str, output_type: &str) -> Result<Output> {
+    cruise(
+        dir,
+        &[
+            "--config",
+            config,
+            "--affected",
+            "HEAD",
+            "-T",
+            output_type,
+            "src",
+        ],
+    )
+}
+
+/// The same rules as [`CONFIG`], in a native file outside the repository, so the tree is the
+/// same as the dependency-cruiser runs see.
+fn native_config(tag: &str) -> Result<PathBuf> {
+    let dir = scratch(&format!("{tag}-config"))?;
+    let file = dir.join("rulebearing.yaml");
+    std::fs::write(
+        &file,
+        "rules:\n  dependencies:\n    forbidden:\n      - { name: no-forbidden, comment: t, severity: error, from: {}, to: { path: forbidden } }\n      - { name: no-circular, comment: t, severity: error, from: {}, to: { circular: true } }\n      - { name: no-orphans, comment: t, severity: error, from: { orphan: true }, to: {} }\n",
+    )?;
+    Ok(file)
 }
 
 fn cruise(dir: &Path, args: &[&str]) -> Result<Output> {
@@ -236,6 +270,7 @@ fn affected_reports_the_changed_modules_and_what_reaches_them() -> Result {
                 "src/a.ts",
                 "src/gone.ts",
                 "src/new-name.ts",
+                "src/newdir/",
                 "src/staged.ts",
                 "src/untracked.ts"
             ],
@@ -428,6 +463,162 @@ fn what_cannot_be_compared_is_named() -> Result {
         String::from_utf8_lossy(&alone.stderr)
     );
     let _ = std::fs::remove_dir_all(&outside);
+    Ok(())
+}
+
+#[test]
+fn a_native_run_reports_every_violation_that_touches_the_closure() -> Result {
+    let dir = typescript_repository("native")?;
+    let config = native_config("native")?;
+    let config = config.to_string_lossy().into_owned();
+    let output = native(&dir, &config, "json")?;
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(output.status.code(), Some(0), "{stderr}");
+    let result: Value = serde_json::from_slice(&output.stdout)?;
+    assert_eq!(
+        sources(&result),
+        [
+            "src/a.ts",
+            "src/b.ts",
+            "src/c.ts",
+            "src/new-name.ts",
+            "src/newdir/fresh.ts",
+            "src/staged.ts",
+            "src/untracked.ts"
+        ],
+        "the file in the untracked folder counts; the forbidden module and src/untouched.ts do not"
+    );
+    let found = violations(&result);
+    assert!(
+        found.contains(&triple("no-forbidden", "src/a.ts", "src/forbidden.ts")),
+        "the edited file's import of an unchanged forbidden module is reported: {found:?}"
+    );
+    assert!(found.contains(&triple(
+        "no-forbidden",
+        "src/newdir/fresh.ts",
+        "src/forbidden.ts"
+    )));
+    assert!(
+        !found.contains(&triple(
+            "no-forbidden",
+            "src/untouched.ts",
+            "src/forbidden.ts"
+        )),
+        "a violation outside the closure is not"
+    );
+    for orphan in ["src/new-name.ts", "src/staged.ts", "src/untracked.ts"] {
+        assert!(
+            found.contains(&triple("no-orphans", orphan, orphan)),
+            "{orphan}"
+        );
+    }
+    assert!(found.contains(&triple("no-circular", "src/a.ts", "src/b.ts")));
+    assert!(
+        found
+            .iter()
+            .all(|(_, from, _)| sources(&result).contains(from)),
+        "every violation starts in the report: {found:?}"
+    );
+    assert_eq!(result["summary"]["error"], found.len());
+    assert!(
+        result["summary"]["optionsUsed"].get("reaches").is_none(),
+        "no reaches filter"
+    );
+    assert_eq!(
+        result["summary"]["affected"]["changed"],
+        json!([
+            "src/a.ts",
+            "src/gone.ts",
+            "src/new-name.ts",
+            "src/newdir/fresh.ts",
+            "src/staged.ts",
+            "src/untracked.ts"
+        ])
+    );
+    // The agent report gates with the same count.
+    let agent = native(&dir, &config, "agent")?;
+    assert_eq!(
+        agent.status.code().map(i64::from),
+        result["summary"]["error"].as_i64()
+    );
+    let again = native(&dir, &config, "json")?;
+    assert_eq!(again.stdout, output.stdout, "byte for byte");
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn the_same_tree_under_a_dependency_cruiser_configuration_is_upstreams() -> Result {
+    // Neither forbidden import is reported, and the untracked folder does not count.
+    let dir = typescript_repository("native-upstream")?;
+    let upstream = cruise(&dir, &["--affected", "HEAD", "-T", "json", "src"])?;
+    let upstream: Value = serde_json::from_slice(&upstream.stdout)?;
+    let upstream_found = violations(&upstream);
+    assert!(!upstream_found.contains(&triple("no-forbidden", "src/a.ts", "src/forbidden.ts")));
+    assert!(!sources(&upstream).contains(&"src/newdir/fresh.ts".to_owned()));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn a_native_run_follows_a_deleted_file_to_its_dependents_in_the_saved_graph() -> Result {
+    let dir = scratch("deleted")?;
+    git(&dir, &["init", "-q"])?;
+    for (file, text) in [
+        ("src/gone.ts", "export const g = 1;\n"),
+        (
+            "src/user.ts",
+            "import { g } from \"./gone\";\nexport const v = g;\n",
+        ),
+        (
+            "src/top.ts",
+            "import { v } from \"./user\";\nexport const t = v;\n",
+        ),
+        ("src/alone.ts", "export const a = 1;\n"),
+    ] {
+        write(&dir, file, text)?;
+    }
+    git(&dir, &["add", "-A"])?;
+    git(&dir, &["commit", "-qm", "base"])?;
+    let config = native_config("deleted")?;
+    let config = config.to_string_lossy().into_owned();
+    let saved = cruise(
+        &dir,
+        &[
+            "--config",
+            &config,
+            "--no-liveness",
+            "-T",
+            "json",
+            "-f",
+            ".graph/cruise.json",
+            "src",
+        ],
+    )?;
+    assert_eq!(saved.status.code(), Some(0));
+    git(&dir, &["rm", "-q", "src/gone.ts"])?;
+    let args = [
+        "--config",
+        &config,
+        "--no-liveness",
+        "-A",
+        "HEAD",
+        "-T",
+        "json",
+        "src",
+    ];
+    let output = cruise(&dir, &args)?;
+    let result: Value = serde_json::from_slice(&output.stdout)?;
+    assert_eq!(
+        result["summary"]["affected"]["closure"],
+        json!(["src/top.ts", "src/user.ts"]),
+        "the saved graph names the deleted file's importer, and what reaches it follows"
+    );
+    std::fs::write(dir.join(".graph/cruise.json"), "not json")?;
+    let broken = cruise(&dir, &args)?;
+    assert_eq!(broken.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&broken.stderr).contains("is not a cruise result"));
+    let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
 
@@ -629,12 +820,9 @@ fn a_changed_source_file_maps_through_the_pdb() -> Result {
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert_eq!(output.status.code(), Some(0), "{stderr}");
     let result: Value = serde_json::from_slice(&output.stdout)?;
-    let reaches = result["summary"]["optionsUsed"]["reaches"]["path"]
-        .as_str()
-        .unwrap_or_default();
     assert!(
-        reaches.contains("src/Order\\.cs") && reaches.contains("src/Order\\.Lines\\.cs"),
-        "both files of the partial class: {reaches}"
+        result["summary"]["optionsUsed"].get("reaches").is_none(),
+        "a native run sets no reaches filter"
     );
     let closure = result["summary"]["affected"]["closure"].clone();
     let expected = [

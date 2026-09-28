@@ -1,4 +1,4 @@
-# ADR-0052: `--affected` is dependency-cruiser's `reaches` filter, plus other languages and a depth
+# ADR-0052: `--affected` follows the configuration format: dependency-cruiser's `reaches` filter, or the closure
 
 - **Status:** Proposed
 - **Date:** 2026-09-27
@@ -22,6 +22,10 @@ Measured on 2026-09-27 on a scratch repository with the pinned upstream binary (
 
 ## Decision
 
+The semantics follow the configuration format, as liveness does ([ADR-0032](0032-liveness-follows-the-configuration-format.md)): a dependency-cruiser configuration, or none, gets dependency-cruiser's behaviour; a `rulebearing.*` configuration, which has no upstream to match, gets the closure the plan describes.
+
+### With a dependency-cruiser configuration
+
 - `--affected [revision]` does what dependency-cruiser does, with the same `git` commands, the same line parsing and the same escaping, so `summary.optionsUsed.reaches`, the modules, the edges, the violations and the exit code of a TypeScript cruise are dependency-cruiser's. Points 1 to 3 and 5 hold here as they do upstream. Layer 5's `zero-diff.mjs` over the scratch repository above finds no difference.
 - A gating reporter's error count is the filtered report's (point 6), for `reaches` as for `--affected`, as ADR-0030's "the reporter's exit code" already implies. Before this, `cruise --reaches` exited with the whole graph's count.
 - Three additions, none of which changes a TypeScript cruise:
@@ -29,18 +33,29 @@ Measured on 2026-09-27 on a scratch repository with the pinned upstream binary (
   - **Depth.** `--affected-depth N` keeps the modules that reach a changed one in at most `N` steps. It is never written to `optionsUsed`, whose `reaches` upstream's schema closes.
   - **Receipt.** `summary.affected: { revision, changed, closure, depth? }`, stripped by `--strict-schema`.
 - One divergence: paths are relative to the cruise's base directory, as module names are (point 4). Upstream's behaviour there is a silent empty cruise, the failure mode ADR-0008 exists to remove.
+### With a `rulebearing.*` configuration
+
+- The rules are evaluated over the whole graph, so cycles, reachability, dependents and instability are what a full cruise finds. The report keeps the closure (the changed modules and the modules that reach them, to `--affected-depth`) with every edge its modules have, and the violations that touch it. Point 1 does not hold: the edited file's import of an unchanged, forbidden module is reported.
+- A violation touches the closure when its `from` module is in it (dependency, instability and module-level violations: orphans, `required`, `numberOfDependentsLessThan`); for a cycle or reachability violation, when any module of its path or its `to` is (with a depth, its `from` module then joins the report); for a folder violation, when a closure module sits in the folder; for an element or slice violation, when an end names a closure module or a type declared in a closure file. A slice violation whose ends name no module and no type is kept, since it cannot be placed.
+- Every changed file that is a module counts, whatever its extension (Python and .NET included), with the PDB mapping. Point 3 does not hold: the changes are listed with `git status --porcelain --untracked-files=all`. For point 2, a deleted file's importers are read from the saved graph (`.graph/cruise.json`) when it exists, since the current graph no longer names them; an unreadable saved graph exits 2.
+- `reaches` is not set, so `optionsUsed` carries no expression; the receipt records the closure.
+
+### Both
+
 - `options.affected` applies in a `rulebearing.*` configuration as the flag would, and is ignored with a warning in a dependency-cruiser configuration, as dependency-cruiser ignores it. The flag wins over both.
 - A revision git does not know, a directory outside a repository, a missing `git`, or a revision that begins with `-` (which git would read as an option) exits 2 with the reason named.
 
 ## Consequences
 
 - A pipeline that switches from `depcruise --affected` to `rulebearing cruise --affected` gets the same report.
-- The Stop hook recipe `cruise --affected HEAD --output-type agent` inherits points 1 and 3: an agent's new import from an edited file to an unchanged, forbidden module, and a file in a new folder that is not yet staged, are not reported by the affected run. The full cruise in CI still reports both. If the hook needs them, a closure mode that keeps every edge leaving a changed module is a further decision, recorded as its own ADR, and cannot be the default for a dependency-cruiser configuration without breaking parity.
+- The Stop hook recipe `cruise --affected HEAD --output-type agent` reports an agent's new forbidden import from an edited file in a repository with a `rulebearing.*` configuration. With a dependency-cruiser configuration it inherits points 1 and 3, as `depcruise --affected` does; the full cruise in CI still reports both.
+- The same command gives different reports under the two formats, as liveness already does; `summary.affected` and the absence of `optionsUsed.reaches` say which ran.
 - `cruise --reaches` with a gating reporter now exits with the filtered count, as dependency-cruiser does.
 
 ## Alternatives considered
 
-- **The plan's closure: every violation whose `from` is in the closure, edges leaving it kept.** Rejected as the default: the report, `optionsUsed` and the exit code would differ from dependency-cruiser's on every repository where an edited file imports an unchanged module, and parity with dependency-cruiser is the bar for a TypeScript cruise.
+- **The plan's closure for every configuration.** Rejected: the report, `optionsUsed` and the exit code would differ from dependency-cruiser's on every repository where an edited file imports an unchanged module, and parity is the bar for a dependency-cruiser configuration.
+- **Upstream's filter for every configuration.** Rejected: the Stop hook, the reason the feature exists, would miss the most common violation an agent introduces.
 - **`git diff <revision>...HEAD` (the merge base), as the plan's step sketches.** Rejected: watskeburt compares the revision itself with the working tree, and a different base changes which files count.
-- **Expand untracked folders (`git status --untracked-files=all`).** Rejected for the same reason: it changes the expression and so `optionsUsed.reaches`.
+- **Expand untracked folders under a dependency-cruiser configuration too.** Rejected for the same reason: it changes the expression and so `optionsUsed.reaches`.
 - **Keep upstream's repository-relative paths.** Rejected: it reproduces a silent empty report.

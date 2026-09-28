@@ -42,11 +42,15 @@ A known-violations file is a JSON array of `knownViolations` entries, each keyed
 
 ## Affected runs
 
-`cruise --affected [revision]` (`-A`) reports only the modules changed since `revision` (default `main`) and every module that reaches them, as dependency-cruiser does ([coverage § Command line](artifacts/dependency-cruiser-18.2.0-coverage.md#command-line), row `--affected [revision]`). The changes are what `git diff <revision> --name-status` and the untracked files of `git status --porcelain` list, with the extensions dependency-cruiser lists; they become the `reaches` expression, so `summary.optionsUsed.reaches` and the report are dependency-cruiser's. That has three consequences worth knowing: an edge from a changed module to an unchanged one that does not reach a changed module is not in the report, so neither is a violation on it; a deleted file is not in the expression; and a new file in a new, untracked folder counts once it is staged, because `git status` reports the folder rather than the file.
+`cruise --affected [revision]` (`-A`) reports only the modules changed since `revision` (default `main`) and every module that reaches them. What it reports follows the configuration format ([ADR-0052](adr/0052-affected-is-upstreams-reaches-filter.md)), as liveness does.
 
-| Addition | What it does |
+With a dependency-cruiser configuration, or none, it does what dependency-cruiser does ([coverage § Command line](artifacts/dependency-cruiser-18.2.0-coverage.md#command-line), row `--affected [revision]`). The changes are what `git diff <revision> --name-status` and the untracked files of `git status --porcelain` list, with the extensions dependency-cruiser lists; they become the `reaches` expression, so `summary.optionsUsed.reaches` and the report are dependency-cruiser's. That has three consequences worth knowing: an edge from a changed module to an unchanged one that does not reach a changed module is not in the report, so neither is a violation on it; a deleted file is not in the expression; and a new file in a new, untracked folder counts once it is staged, because `git status` reports the folder rather than the file.
+
+With a `rulebearing.*` configuration, the rules are evaluated over the whole graph and the report keeps the closure's modules with every edge they have, and every violation that touches the closure: its `from` module is in it, or, for a cycle or reachability violation, a module of its path. An edited file's import of an unchanged, forbidden module is reported. Each file of a new untracked folder counts, every changed file that is a module counts whatever its extension, and a deleted file's importers are read from `.graph/cruise.json` when it exists. No `reaches` expression is set.
+
+| Addition, in both modes | What it does |
 | --- | --- |
-| .NET and Python | A changed Python module, a changed .NET module, and a changed file the PDB attributes a type to (either file of a partial class) add their modules to the expression |
+| .NET and Python | A changed Python module, a changed .NET module, and a changed file the PDB attributes a type to (either file of a partial class) count as changed modules |
 | `--affected-depth N` | Only the modules that reach a changed one in at most `N` steps; `0`, the default, keeps them all |
 | `summary.affected` | The receipt: `revision`, every `changed` path (deleted files included), the `closure` the report kept, and `depth` when given; `--strict-schema` strips it |
 | Paths | Relative to the directory the cruise runs in, as module names are; dependency-cruiser keeps git's repository-relative paths, so its cruise from a subdirectory matches nothing |

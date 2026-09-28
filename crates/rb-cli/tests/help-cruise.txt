@@ -169,8 +169,9 @@ Options:
 
   -A, --affected [<REVISION>]
           Only report the modules changed since REVISION (default main), committed or not, and every
-          module that reaches them, as dependency-cruiser does; .NET source files map to their
-          types' modules
+          module that reaches them, as dependency-cruiser does; with a rulebearing.* configuration,
+          also every violation on their edges that leave them. .NET source files map to their types'
+          modules
 
       --affected-depth <NUMBER>
           With --affected or options.affected: how many steps of dependents to include; 0 (the

@@ -325,7 +325,8 @@ fn affected(
             None => Ok(None),
         };
     };
-    crate::affected::select(&ctx.cwd, request, config)
+    let saved = ctx.resolve(pipeline::SAVED_GRAPH);
+    crate::affected::select(&ctx.cwd, &saved, request, config)
         .map(Some)
         .map_err(|e| {
             Box::new(Outcome::failed(
