@@ -73,7 +73,10 @@ const COMMAND: &str = r##"import fs from "node:fs";
 import path from "node:path";
 const args = process.argv.slice(2);
 const config = JSON.parse(fs.readFileSync(args[args.indexOf("--config") + 1], "utf8"));
-const files = args.filter((a, i) => !a.startsWith("--") && !args[i - 1]?.startsWith("--"));
+// Every file follows `--`, as the sidecar passes them; none is taken from before it.
+const files = args.includes("--")
+  ? args.slice(args.indexOf("--") + 1).map((f) => path.posix.normalize(f))
+  : [];
 const here = path.dirname(path.dirname(new URL(import.meta.url).pathname));
 fs.appendFileSync(path.join(here, "calls.log"), JSON.stringify({ files, config }) + "\n");
 const modules = new Map();
@@ -207,6 +210,46 @@ fn without_the_flag_a_coffeescript_file_stops_the_run() -> Result {
         "no sidecar, no receipt"
     );
     let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// A `.csx` file (also the C# script extension) is never skipped, and the reason says it may be
+/// a C# script and how to exclude it; excluded, the run passes.
+#[test]
+fn a_csx_file_is_named_as_a_possible_csharp_script() -> Result {
+    let dir = tree(
+        "csx",
+        &[
+            ("rulebearing.yaml", CONFIG),
+            ("a.ts", "export const a = 1;\n"),
+            (
+                "scripts/build.csx",
+                "#r \"nuget: Foo, 1.0\"\nConsole.WriteLine(\"hi\");\n",
+            ),
+        ],
+    )?;
+    let output = cruise(&dir, &["-T", "json", "."])?;
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(output.status.code(), Some(2), "{stderr}");
+    assert!(
+        stderr.contains("scripts/build.csx: unsupported-file-needs-sidecar")
+            && stderr.contains("C# script")
+            && stderr.contains("options.exclude"),
+        "{stderr}"
+    );
+    let excluded = cruise(&dir, &["-T", "json", "--exclude", "\\.csx$", "."])?;
+    assert_eq!(
+        excluded.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&excluded.stderr)
+    );
+    // A CoffeeScript file's reason has no such note.
+    let coffee = tree("coffee-reason", TREE)?;
+    let output = cruise(&coffee, &["-T", "json", "src"])?;
+    assert!(!String::from_utf8_lossy(&output.stderr).contains("C# script"));
+    let _ = std::fs::remove_dir_all(&dir);
+    let _ = std::fs::remove_dir_all(&coffee);
     Ok(())
 }
 
@@ -445,10 +488,9 @@ fn a_cached_run_re_runs_the_sidecar_for_a_changed_file_only() -> Result {
     Ok(())
 }
 
-/// The real dependency-cruiser over its own CoffeeScript fixture, through the command line,
-/// when a checkout with its `node_modules` is at hand.
-#[test]
-fn the_real_dependency_cruiser_extracts_its_coffeescript_fixture() -> Result {
+/// The dependency-cruiser checkout the real-tool tests run, or `None` (with the reason printed)
+/// when it or Node is missing; with `RB_LAYER1_SIDECAR` set, a missing one fails the test.
+fn real_checkout() -> Option<PathBuf> {
     let checkout = std::env::var_os("RB_LAYER1_SIDECAR").map_or_else(
         || {
             Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -456,18 +498,122 @@ fn the_real_dependency_cruiser_extracts_its_coffeescript_fixture() -> Result {
         },
         PathBuf::from,
     );
-    if !node_available() || !checkout.join("node_modules/coffeescript").is_dir() {
-        assert!(
-            std::env::var_os("RB_LAYER1_SIDECAR").is_none(),
-            "RB_LAYER1_SIDECAR is set, but there is no node or no {}",
-            checkout.join("node_modules/coffeescript").display()
-        );
-        println!(
-            "skipped: needs node and a dependency-cruiser checkout with node_modules at {}",
-            checkout.display()
-        );
-        return Ok(());
+    if node_available() && checkout.join("node_modules/coffeescript").is_dir() {
+        return Some(checkout);
     }
+    assert!(
+        std::env::var_os("RB_LAYER1_SIDECAR").is_none(),
+        "RB_LAYER1_SIDECAR is set, but there is no node or no {}",
+        checkout.join("node_modules/coffeescript").display()
+    );
+    println!(
+        "skipped: needs node and a dependency-cruiser checkout with node_modules at {}",
+        checkout.display()
+    );
+    None
+}
+
+/// Installs `checkout` as `dir`'s `node_modules/dependency-cruiser`, by a link.
+fn link(checkout: &Path, dir: &Path) -> Result {
+    std::fs::create_dir_all(dir.join("node_modules"))?;
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(checkout, dir.join("node_modules/dependency-cruiser"))?;
+    #[cfg(windows)]
+    std::os::windows::fs::symlink_dir(checkout, dir.join("node_modules/dependency-cruiser"))?;
+    Ok(())
+}
+
+/// Every file under `dir`, `node_modules` and `.graph` aside, relative and sorted.
+fn listing(dir: &Path) -> Vec<String> {
+    fn walk(root: &Path, at: &Path, out: &mut Vec<String>) {
+        for entry in std::fs::read_dir(at).into_iter().flatten().flatten() {
+            let path = entry.path();
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if name == "node_modules" || name == ".graph" {
+                continue;
+            }
+            if path.is_dir() {
+                walk(root, &path, out);
+            } else if let Ok(relative) = path.strip_prefix(root) {
+                out.push(relative.to_string_lossy().replace('\\', "/"));
+            }
+        }
+    }
+    let mut out = Vec::new();
+    walk(dir, dir, &mut out);
+    out.sort();
+    out
+}
+
+/// A file whose name reads as one of dependency-cruiser's options is passed as a path: with the
+/// real dependency-cruiser, files named `--output-to=pwned.coffee` and `--config=x.coffee`, and a
+/// folder named `--output-to=..` holding `a.coffee`, are extracted with the right edges and no
+/// file is written, in the repository or beside it.
+#[test]
+fn a_file_named_like_an_option_is_never_an_option() -> Result {
+    let Some(checkout) = real_checkout() else {
+        return Ok(());
+    };
+    let dir = tree(
+        "dashes",
+        &[
+            ("rulebearing.yaml", CONFIG),
+            (
+                "main.js",
+                "import a from \"./--output-to=pwned.coffee\";\nimport b from \"./--config=x.coffee\";\nimport c from \"./--output-to=../a.coffee\";\nexport default [a, b, c];\n",
+            ),
+            (
+                "--output-to=pwned.coffee",
+                "import u from \"./util.js\"\nexport default u\n",
+            ),
+            (
+                "--config=x.coffee",
+                "import u from \"./util.js\"\nexport default u\n",
+            ),
+            (
+                "--output-to=../a.coffee",
+                "import u from \"../util.js\"\nexport default u\n",
+            ),
+            ("util.js", "export default 1;\n"),
+        ],
+    )?;
+    link(&checkout, &dir)?;
+    let parent = dir.parent().map(Path::to_path_buf).unwrap_or_default();
+    let beside = |name: &str| parent.join(name).exists();
+    let before = listing(&dir);
+    let output = cruise(&dir, &["-T", "json", "--sidecar", "node", "main.js"])?;
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(output.status.code(), Some(0), "{stderr}");
+    assert_eq!(listing(&dir), before, "dependency-cruiser wrote nothing");
+    assert!(
+        !beside("a.coffee") && !beside("pwned.coffee"),
+        "nor beside the repository"
+    );
+    let result = json(&output)?;
+    for (source, target) in [
+        ("--output-to=pwned.coffee", "util.js"),
+        ("--config=x.coffee", "util.js"),
+        ("--output-to=../a.coffee", "util.js"),
+    ] {
+        let dependencies = &module(&result, source)["dependencies"];
+        assert_eq!(
+            dependencies[0]["resolved"], target,
+            "{source}: {dependencies}"
+        );
+        assert_eq!(dependencies[0]["sidecar"], true, "{source}");
+    }
+    assert_eq!(result["summary"]["sidecar"]["files"], 3);
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// The real dependency-cruiser over its own CoffeeScript fixture, through the command line,
+/// when a checkout with its `node_modules` is at hand.
+#[test]
+fn the_real_dependency_cruiser_extracts_its_coffeescript_fixture() -> Result {
+    let Some(checkout) = real_checkout() else {
+        return Ok(());
+    };
     let mocks = Path::new(env!("CARGO_MANIFEST_DIR")).join(
         "../../conformance/dependency-cruiser/fixtures/extract/test/extract/__mocks__/coffee",
     );
@@ -485,11 +631,7 @@ fn the_real_dependency_cruiser_extracts_its_coffeescript_fixture() -> Result {
             &std::fs::read_to_string(mocks.join(file))?,
         )?;
     }
-    std::fs::create_dir_all(dir.join("node_modules"))?;
-    #[cfg(unix)]
-    std::os::unix::fs::symlink(&checkout, dir.join("node_modules/dependency-cruiser"))?;
-    #[cfg(windows)]
-    std::os::windows::fs::symlink_dir(&checkout, dir.join("node_modules/dependency-cruiser"))?;
+    link(&checkout, &dir)?;
     let output = cruise(
         &dir,
         &["-T", "json", "--sidecar", "node", "src/index.coffee"],

@@ -25,9 +25,12 @@
 //! the run here instead, naming the package to install.
 //!
 //! **Running.** Node runs dependency-cruiser's own command line, no shell, arguments as a vector:
-//! `--config <file> --output-type json` and the CoffeeScript and LiveScript files the walk
-//! reached. The configuration file is written to the system's temporary folder and removed after
-//! the run. It holds the run's TypeScript options block ([`options_block`]), whatever format the
+//! `--config <file> --output-type json --` and the CoffeeScript and LiveScript files the walk
+//! reached, each starting with `-` given as `./<file>`, so no file name is ever read as an option
+//! (a file named `--output-to=x.coffee` would otherwise make dependency-cruiser write a file). The
+//! configuration file is created new, mode 0600, in a folder of its own made fresh with mode 0700
+//! under the system's temporary folder, and the folder is removed after the run, so another user
+//! of a shared temporary folder cannot plant or swap it. It holds the run's TypeScript options block ([`options_block`]), whatever format the
 //! run's configuration was in: a dependency-cruiser configuration's options are that block
 //! already, and a native `rulebearing.yaml`'s `languages.typescript` block uses dependency-cruiser's
 //! names, so both translate without loss and dependency-cruiser never reads a file it would
@@ -303,24 +306,72 @@ impl Package {
     }
 }
 
-/// A unique name in the system's temporary folder for one run's configuration.
-fn temporary_configuration() -> PathBuf {
-    static NEXT: AtomicU64 = AtomicU64::new(0);
-    std::env::temp_dir().join(format!(
-        "rulebearing-sidecar-{}-{}.json",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ))
-}
+/// A folder only this process can use, holding one run's configuration, removed with everything
+/// in it when dropped, however the run ended. It is created fresh (`create_dir` fails on any
+/// existing entry, a symbolic link included) with mode 0700 on Unix, and the file in it is
+/// created with `create_new` and mode 0600, so another user of a shared temporary folder can
+/// neither plant the file nor swap it for their own.
+struct Private(PathBuf);
 
-/// Removes the configuration file when the run is over, however it ended.
-struct Removed(PathBuf);
+impl Private {
+    /// A fresh private folder under `parent`, skipping names already taken.
+    fn create(parent: &Path) -> std::io::Result<Self> {
+        static NEXT: AtomicU64 = AtomicU64::new(0);
+        let mut last = None;
+        for _ in 0..64 {
+            let nanos = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |d| d.subsec_nanos());
+            let dir = parent.join(format!(
+                "rulebearing-sidecar-{}-{}-{nanos:08x}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            let mut builder = std::fs::DirBuilder::new();
+            #[cfg(unix)]
+            std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
+            match builder.create(&dir) {
+                Ok(()) => return Ok(Self(dir)),
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => last = Some(e),
+                Err(e) => return Err(e),
+            }
+        }
+        Err(last.unwrap_or_else(|| std::io::Error::other("no free name")))
+    }
 
-impl Drop for Removed {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_file(&self.0);
+    /// Writes `text` to a new file `name` in the folder; an existing entry is an error, never
+    /// followed or truncated.
+    fn write_new(&self, name: &str, text: &str) -> std::io::Result<PathBuf> {
+        use std::io::Write as _;
+        let path = self.0.join(name);
+        let mut options = std::fs::OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
+        options.open(&path)?.write_all(text.as_bytes())?;
+        Ok(path)
     }
 }
+
+impl Drop for Private {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+/// `file` as an argument dependency-cruiser's command line reads as a path: one that starts with
+/// `-` gets `./` in front, which dependency-cruiser normalises away, so the module keeps its name.
+/// The files also follow `--`; either alone stops a file named `--output-to=x` being an option.
+fn as_path_argument(file: &str) -> String {
+    if file.starts_with('-') {
+        format!("./{file}")
+    } else {
+        file.to_owned()
+    }
+}
+
+/// The configuration file's name inside its [`Private`] folder.
+const CONFIGURATION_FILE: &str = "dependency-cruiser.json";
 
 /// What dependency-cruiser's `json` output holds that the sidecar reads.
 #[derive(Deserialize)]
@@ -359,6 +410,8 @@ impl Sidecar {
             .arg("--input-type=module")
             .arg("-e")
             .arg(AVAILABILITY)
+            // The entry is a script argument, never a Node option, whatever its name.
+            .arg("--")
             .arg(&package.entry)
             .current_dir(&package.folder)
             .output()
@@ -425,22 +478,28 @@ impl Sidecar {
                 });
             }
         }
-        let path = temporary_configuration();
         let text = serde_json::to_string(configuration).map_err(|e| SidecarError::Output {
             reason: e.to_string(),
         })?;
-        std::fs::write(&path, text).map_err(|source| SidecarError::Io {
-            path: path.clone(),
+        let temporary = std::env::temp_dir();
+        let private = Private::create(&temporary).map_err(|source| SidecarError::Io {
+            path: temporary.clone(),
             source,
         })?;
-        let _removed = Removed(path.clone());
+        let path = private
+            .write_new(CONFIGURATION_FILE, &text)
+            .map_err(|source| SidecarError::Io {
+                path: private.0.join(CONFIGURATION_FILE),
+                source,
+            })?;
         let output = Command::new(&self.node)
             .arg(&self.bin)
             .arg("--config")
             .arg(&path)
             .arg("--output-type")
             .arg("json")
-            .args(files)
+            .arg("--")
+            .args(files.iter().map(|f| as_path_argument(f)))
             .current_dir(cwd)
             .output()
             .map_err(|e| SidecarError::NodeMissing {
@@ -483,9 +542,10 @@ pub struct Walked {
 
 /// An error of the sidecar, as the extraction reports it: on the first file it was asked about.
 fn failed(file: Option<&String>, error: &SidecarError) -> rb_model::ExtractError {
+    let file = file.map_or("", String::as_str);
     rb_model::ExtractError::UnsupportedFile {
-        path: PathBuf::from(file.map_or("", String::as_str)),
-        reason: format!("--sidecar node: {error}"),
+        path: PathBuf::from(file),
+        reason: format!("--sidecar node: {error}{}", crate::csx_note(file)),
     }
 }
 
@@ -859,13 +919,69 @@ mod tests {
     }
 
     #[test]
-    fn configuration_files_get_distinct_names() {
-        let (a, b) = (temporary_configuration(), temporary_configuration());
-        assert_ne!(a, b);
-        assert!(a.extension().is_some_and(|e| e == "json"));
-        let path = scratch("removed").join("c.json");
-        write(&path, "{}");
-        drop(Removed(path.clone()));
-        assert!(!path.exists());
+    fn the_configuration_lives_in_a_private_folder_that_is_removed() -> std::io::Result<()> {
+        let parent = scratch("private");
+        let (a, b) = (Private::create(&parent)?, Private::create(&parent)?);
+        assert_ne!(a.0, b.0);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt as _;
+            assert_eq!(std::fs::metadata(&a.0)?.permissions().mode() & 0o777, 0o700);
+        }
+        let path = a.write_new(CONFIGURATION_FILE, "{}")?;
+        assert_eq!(std::fs::read_to_string(&path)?, "{}");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt as _;
+            assert_eq!(
+                std::fs::metadata(&path)?.permissions().mode() & 0o777,
+                0o600
+            );
+        }
+        // An entry already at the path is never truncated or written through.
+        assert!(
+            a.write_new(CONFIGURATION_FILE, "{\"extends\": \"evil\"}")
+                .is_err()
+        );
+        assert_eq!(std::fs::read_to_string(&path)?, "{}");
+        let folder = a.0.clone();
+        drop(a);
+        assert!(!folder.exists());
+        drop(b);
+        let _ = std::fs::remove_dir_all(&parent);
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_planted_symbolic_link_is_never_followed() -> std::io::Result<()> {
+        let parent = scratch("planted");
+        let target = parent.join("victim.json");
+        write(&target, "untouched");
+        let private = Private::create(&parent)?;
+        std::os::unix::fs::symlink(&target, private.0.join(CONFIGURATION_FILE))?;
+        assert!(private.write_new(CONFIGURATION_FILE, "{}").is_err());
+        assert_eq!(std::fs::read_to_string(&target)?, "untouched");
+        // A folder name already taken, by a directory or a link, is skipped, never reused.
+        let taken = Private::create(&parent)?;
+        assert_ne!(taken.0, private.0);
+        drop(private);
+        assert_eq!(std::fs::read_to_string(&target)?, "untouched");
+        let _ = std::fs::remove_dir_all(&parent);
+        Ok(())
+    }
+
+    #[test]
+    fn a_file_that_looks_like_an_option_is_passed_as_a_path() {
+        assert_eq!(
+            as_path_argument("--output-to=x.coffee"),
+            "./--output-to=x.coffee"
+        );
+        assert_eq!(as_path_argument("-x.coffee"), "./-x.coffee");
+        assert_eq!(
+            as_path_argument("src/--output-to=x.coffee"),
+            "src/--output-to=x.coffee"
+        );
+        assert_eq!(as_path_argument("../a.coffee"), "../a.coffee");
     }
 }
