@@ -23,6 +23,10 @@ updates:
     ignore:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      # The packages declare engines node >=22 and CI runs Node 22; the types follow the runtime.
+      # Move this with the Node version in the workflows.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
