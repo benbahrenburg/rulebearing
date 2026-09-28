@@ -16,7 +16,7 @@
 //! | Section | What it holds |
 //! | --- | --- |
 //! | `addedEdges`, `removedEdges` | each edge (`from` = the module's `source`, `to` = the dependency's `resolved`) on one side only; the position is the first dependency of that pair in document order, from the new side for an added edge and the old side for a removed one |
-//! | `newViolations`, `resolvedViolations` | each violation whose stable id is on one side only; a result without ids (dependency-cruiser's) has them computed as the engine computes them. A violation at severity `ignore` (a known violation) is not a finding and is left out on both sides |
+//! | `newViolations`, `resolvedViolations` | each violation whose stable id is on one side only; a result without ids (dependency-cruiser's) has them computed as the engine computes them, and since such a result carries no `dependencyKind` either, when either side lacks ids both sides are matched on the id over the rule and the two ends with an empty kind (each finding still reports its own id). A violation at severity `ignore` (a known violation) is not a finding and is left out on both sides |
 //! | `ratchets` | each ratchet whose count differs, or that exists on one side only (its other count is then absent); an unchanged ratchet is not listed, since the section says what moved |
 //!
 //! Every list is sorted: edges by `from` then `to`, violations by rule, `from`, `to` and id,
@@ -247,7 +247,34 @@ fn fix_of(violation: &Violation, document: &GraphDocument) -> Option<String> {
 }
 
 /// Each finding of `document` by stable id, `ignore` left out.
-fn findings(document: &GraphDocument) -> BTreeMap<String, Finding> {
+/// Whether a live violation of `document` carries no id: a dependency-cruiser result, which also
+/// carries no `dependencyKind` to compute the engine's id from.
+fn lacks_ids(document: &GraphDocument) -> bool {
+    document
+        .summary
+        .violations
+        .iter()
+        .filter(|v| v.rule.severity != Severity::Ignore)
+        .any(|v| v.id.as_deref().is_none_or(str::is_empty))
+}
+
+/// The key a finding is matched on: its stable id, or, when `kindless`, the id over the rule and
+/// the two ends with an empty dependency kind, which both kinds of result can compute alike.
+fn match_key(
+    violation: &Violation,
+    kinds: &BTreeMap<(&str, &str), &'static str>,
+    kindless: bool,
+) -> String {
+    if kindless {
+        violation_id(&violation.rule.name, &violation.from, &violation.to, "")
+    } else {
+        id_of(violation, kinds)
+    }
+}
+
+/// Each finding of `document` by its match key ([`match_key`]), `ignore` left out. The finding
+/// reports its own stable id either way.
+fn findings(document: &GraphDocument, kindless: bool) -> BTreeMap<String, Finding> {
     let kinds = kinds(document);
     let positions = edges(document);
     let mut out = BTreeMap::new();
@@ -256,11 +283,12 @@ fn findings(document: &GraphDocument) -> BTreeMap<String, Finding> {
             continue;
         }
         let id = id_of(violation, &kinds);
+        let key = match_key(violation, &kinds, kindless);
         let (line, column) = positions
             .get(&(violation.from.clone(), violation.to.clone()))
             .copied()
             .unwrap_or_default();
-        out.entry(id.clone()).or_insert_with(|| Finding {
+        out.entry(key).or_insert_with(|| Finding {
             id,
             rule: violation.rule.name.clone(),
             severity: violation.rule.severity,
@@ -314,7 +342,11 @@ fn findings_only_in(
 /// What changed from `old` to `new`, with the sides their receipts record.
 pub fn compute(old: &GraphDocument, new: &GraphDocument) -> Diff {
     let (old_edges, new_edges) = (edges(old), edges(new));
-    let (old_findings, new_findings) = (findings(old), findings(new));
+    // A result without ids (dependency-cruiser's) has no dependency kinds either, so an id
+    // computed for it can never equal the engine's id for the same edge: when either side lacks
+    // ids, both sides are matched without the kind.
+    let kindless = lacks_ids(old) || lacks_ids(new);
+    let (old_findings, new_findings) = (findings(old, kindless), findings(new, kindless));
     let (before, after) = (ratchet_counts(old), ratchet_counts(new));
     let mut names: Vec<&String> = before.keys().chain(after.keys()).collect();
     names.sort();
@@ -783,6 +815,76 @@ mod tests {
             id_of(&own, &kinds),
             violation_id("no-db", "r/a.ts", "db/s.ts", "import")
         );
+    }
+
+    /// `document` as the engine writes it: every dependency an `import`, every violation with
+    /// its id.
+    fn with_engine_ids(mut document: GraphDocument) -> GraphDocument {
+        for module in &mut document.modules {
+            for dependency in &mut module.dependencies {
+                dependency.dependency_kind = Some(DependencyKind::Import);
+            }
+        }
+        let kinds: Vec<((String, String), &'static str)> = kinds(&document)
+            .into_iter()
+            .map(|((f, t), k)| ((f.to_owned(), t.to_owned()), k))
+            .collect();
+        let kinds: BTreeMap<(&str, &str), &'static str> = kinds
+            .iter()
+            .map(|((f, t), k)| ((f.as_str(), t.as_str()), *k))
+            .collect();
+        let ids: Vec<String> = document
+            .summary
+            .violations
+            .iter()
+            .map(|v| id_of(v, &kinds))
+            .collect();
+        for (violation, id) in document.summary.violations.iter_mut().zip(ids) {
+            violation.id = Some(id);
+        }
+        document
+    }
+
+    #[test]
+    fn a_result_without_ids_matches_the_engines_result_of_the_same_tree() {
+        let upstream = new();
+        let engine = with_engine_ids(new());
+        assert!(lacks_ids(&upstream));
+        assert!(!lacks_ids(&engine));
+        assert_ne!(
+            engine.summary.violations[0].id,
+            Some(violation_id("no-db", "r/a.ts", "db/s.ts", "")),
+            "the engine's id carries the kind"
+        );
+        for (a, b) in [(&upstream, &engine), (&engine, &upstream)] {
+            let diff = compute(a, b);
+            assert!(diff.new_violations.is_empty(), "{diff:?}");
+            assert!(diff.resolved_violations.is_empty(), "{diff:?}");
+            assert_eq!(diff.new_errors(), 0);
+        }
+        // Across the change, the finding keeps the id its own side gives it.
+        let diff = compute(&old(), &with_engine_ids(new()));
+        assert_eq!(diff.new_violations.len(), 1);
+        assert_eq!(
+            diff.new_violations[0].id,
+            violation_id("no-web", "r/b.ts", "web/v.ts", "import")
+        );
+        assert_eq!(
+            diff.resolved_violations[0].id,
+            violation_id("no-db", "r/b.ts", "db/s.ts", "")
+        );
+        // Two results with ids are matched on them, kind included.
+        let both = compute(&with_engine_ids(old()), &with_engine_ids(new()));
+        assert_eq!(both.new_violations.len(), 1);
+        assert_eq!(both.resolved_violations.len(), 1);
+        // An id-less violation at severity `ignore` is not a finding, so it does not switch the
+        // matching.
+        let mut softened = with_engine_ids(old());
+        softened.summary.violations[2].id = None;
+        assert!(!lacks_ids(&softened));
+        let mut empty = with_engine_ids(old());
+        empty.summary.violations[0].id = Some(String::new());
+        assert!(lacks_ids(&empty));
     }
 
     #[test]

@@ -533,7 +533,7 @@ fn base_compares_a_revision_with_the_working_tree() -> Result {
 }
 
 #[test]
-fn base_names_an_unknown_revision_and_a_base_that_cannot_be_cruised() -> Result {
+fn base_names_an_unknown_revision_and_an_empty_or_missing_base_adds_everything() -> Result {
     let (dir, _, _) = repository("unknown")?;
     for reference in ["no-such-branch", "-x"] {
         let out = run(&dir, &["diff", &format!("--base={reference}")])?;
@@ -545,22 +545,27 @@ fn base_names_an_unknown_revision_and_a_base_that_cannot_be_cruised() -> Result 
         );
     }
 
-    // A commit with no source at all: the base side cannot be cruised, and says which side.
+    // A commit with no source at all is an empty base: everything in the working tree is added.
     git(&dir, &["checkout", "--quiet", "--orphan", "empty"])?;
     git(&dir, &["rm", "-r", "--quiet", "--cached", "src"])?;
     git(&dir, &["commit", "--quiet", "-m", "no source"])?;
     let empty = git(&dir, &["rev-parse", "HEAD"])?;
     git(&dir, &["checkout", "--quiet", "--force", "main"])?;
-    let out = run(&dir, &["diff", "--base", "empty"])?;
-    assert_eq!(out.status.code(), Some(2), "{}", text(&out.stderr));
-    assert!(
-        text(&out.stderr).contains(&format!("the base `empty` ({empty}) cannot be cruised")),
-        "{}",
+    let out = run(&dir, &["diff", "--base", "empty", "-e"])?;
+    let value: Value = serde_json::from_slice(&out.stdout)?;
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "two new error violations: {}",
         text(&out.stderr)
     );
-    assert!(
-        entries(&dir).is_empty(),
-        "nothing is cached for a failed base"
+    assert_eq!(value["base"]["sha"], empty.as_str());
+    assert_eq!(value["addedEdges"].as_array().map(Vec::len), Some(4));
+    assert_eq!(value["removedEdges"], serde_json::json!([]));
+    assert_eq!(value["newViolations"].as_array().map(Vec::len), Some(2));
+    assert_eq!(
+        value["ratchets"],
+        serde_json::json!([{ "name": "routes-via-service", "before": 0, "after": 1 }])
     );
     assert_eq!(
         git(&dir, &["worktree", "list", "--porcelain"])?
@@ -569,10 +574,179 @@ fn base_names_an_unknown_revision_and_a_base_that_cannot_be_cruised() -> Result 
         1
     );
 
+    // A path the change adds is absent from the base: its edges are all added, not an error.
+    write(
+        &dir,
+        "src/jobs/nightly.ts",
+        "import { store } from \"../db/store\";\nexport const n = store;\n",
+    )?;
+    git(&dir, &["add", "src/jobs"])?;
+    git(&dir, &["commit", "--quiet", "-m", "a nightly job"])?;
+    let added = run(&dir, &["diff", "--base", "HEAD~1", "src/jobs"])?;
+    assert_eq!(added.status.code(), Some(0), "{}", text(&added.stderr));
+    let added: Value = serde_json::from_slice(&added.stdout)?;
+    assert_eq!(
+        added["addedEdges"],
+        serde_json::json!([{ "from": "src/jobs/nightly.ts", "to": "src/db/store.ts", "line": 1, "column": 1 }])
+    );
+    assert_eq!(added["removedEdges"], serde_json::json!([]));
+    // A path present on both sides next to it is still compared.
+    let both = run(
+        &dir,
+        &["diff", "--base", "HEAD~1", "src/jobs", "src/routes"],
+    )?;
+    assert_eq!(both.status.code(), Some(0), "{}", text(&both.stderr));
+    let both: Value = serde_json::from_slice(&both.stdout)?;
+    assert_eq!(both["addedEdges"], added["addedEdges"]);
+
     // An invalid configuration is exit 3 before anything is checked out.
     write(&dir, "broken.yaml", "forbidden: 7\n")?;
     let broken = run(&dir, &["diff", "--base", "HEAD", "-c", "broken.yaml"])?;
     assert_eq!(broken.status.code(), Some(3), "{}", text(&broken.stderr));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// `fixtures/diff/upstream-new.json` is dependency-cruiser 18.2.0's own result for the tree after
+/// the change, written by the pinned upstream binary
+/// (`node conformance/dependency-cruiser/upstream/dependency-cruiser/bin/dependency-cruise.mjs
+/// --config .dependency-cruiser.json -T json src`, with the two forbidden rules of [`CONFIG`] in
+/// that file and `baseDir` written as `.`). It carries no ids and no `dependencyKind`, so it must
+/// still match Rulebearing's result of the same tree finding for finding.
+#[test]
+fn a_dependency_cruiser_result_matches_rulebearings_of_the_same_tree() -> Result {
+    let dir = fixtures();
+    for (old, new) in [
+        ("upstream-new.json", "new.json"),
+        ("new.json", "upstream-new.json"),
+    ] {
+        let out = run(&dir, &["diff", old, new, "-e"])?;
+        assert_eq!(
+            out.status.code(),
+            Some(0),
+            "{old} {new}: {}",
+            text(&out.stdout)
+        );
+        let value: Value = serde_json::from_slice(&out.stdout)?;
+        for key in [
+            "addedEdges",
+            "removedEdges",
+            "newViolations",
+            "resolvedViolations",
+        ] {
+            assert_eq!(value[key], serde_json::json!([]), "{old} {new}: {key}");
+        }
+    }
+    // Across the change, the upstream result shows the same one new and one resolved violation.
+    let out = run(&dir, &["diff", "old.json", "upstream-new.json"])?;
+    let value: Value = serde_json::from_slice(&out.stdout)?;
+    let rules = |key: &str| -> Vec<String> {
+        value[key]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|f| f["rule"].as_str().unwrap_or_default().to_owned())
+            .collect()
+    };
+    assert_eq!(rules("newViolations"), ["routes-not-to-web"]);
+    assert_eq!(rules("resolvedViolations"), ["routes-not-to-db"]);
+    Ok(())
+}
+
+#[test]
+fn exit_code_mode_strict_shifts_the_count() -> Result {
+    let dir = fixtures();
+    let mode = |old: &str, new: &str, extra: &[&str]| -> Result<Option<i32>> {
+        let mut args = vec!["diff", old, new];
+        args.extend_from_slice(extra);
+        Ok(run(&dir, &args)?.status.code())
+    };
+    let strict = ["-e", "--exit-code-mode", "strict"];
+    assert_eq!(mode("old.json", "new.json", &strict)?, Some(11), "10 + one");
+    assert_eq!(
+        mode(
+            "old.json",
+            "new.json",
+            &["-e", "--exit-code-mode", "default"]
+        )?,
+        Some(1)
+    );
+    assert_eq!(mode("old.json", "old.json", &strict)?, Some(0));
+    let without = run(
+        &dir,
+        &["diff", "old.json", "new.json", "--exit-code-mode", "strict"],
+    )?;
+    assert_eq!(without.status.code(), Some(3), "the mode needs --exit-code");
+    assert!(
+        text(&without.stderr).contains("--exit-code"),
+        "{}",
+        text(&without.stderr)
+    );
+    Ok(())
+}
+
+/// A `post-checkout` planted where the first release pointed `core.hooksPath` (a fixed folder
+/// under the temporary directory), in the temporary directory itself and in the repository's own
+/// hooks never runs: `git worktree add` runs with an empty folder of the process's own.
+#[cfg(unix)]
+#[test]
+fn base_runs_no_git_hook() -> Result {
+    use std::os::unix::fs::PermissionsExt as _;
+    let (dir, _, _) = repository("hooks")?;
+    let tmp = std::env::temp_dir().join(format!("rb-cli-diff-hooks-tmp-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&tmp);
+    let markers = tmp.join("markers");
+    std::fs::create_dir_all(&markers)?;
+    let plant = |folder: &Path, name: &str| -> Result {
+        std::fs::create_dir_all(folder)?;
+        let hook = folder.join("post-checkout");
+        let marker = markers.join(name);
+        std::fs::write(
+            &hook,
+            format!("#!/bin/sh\necho ran > '{}'\n", marker.display()),
+        )?;
+        std::fs::set_permissions(&hook, std::fs::Permissions::from_mode(0o755))?;
+        Ok(())
+    };
+    plant(&tmp.join("rulebearing-no-git-hooks"), "old-path")?;
+    plant(&tmp, "tmpdir")?;
+    plant(&dir.join(".git/hooks"), "repository")?;
+
+    let out = isolated(BIN, &dir)
+        .env("TMPDIR", &tmp)
+        .args(["diff", "--base", "HEAD~1", "--no-cache"])
+        .output()?;
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    let ran: Vec<String> = std::fs::read_dir(&markers)?
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .collect();
+    assert!(ran.is_empty(), "hooks ran: {ran:?}");
+    let leftovers: Vec<String> = std::fs::read_dir(&tmp)?
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| n.starts_with("rulebearing-no-hooks-") || n.starts_with("rulebearing-diff-"))
+        .collect();
+    assert!(leftovers.is_empty(), "left behind: {leftovers:?}");
+
+    // The planted hook is live: git pointed at the old folder runs it, so the test can see one.
+    let probe = tmp.join("probe");
+    let probe_arg = probe.to_string_lossy().into_owned();
+    let hooks = format!(
+        "core.hooksPath={}",
+        tmp.join("rulebearing-no-git-hooks").display()
+    );
+    let status = isolated("git", &dir)
+        .args(["-c", &hooks, "worktree", "add", "--quiet", "--detach"])
+        .args([probe_arg.as_str(), "HEAD"])
+        .status()?;
+    assert!(status.success());
+    assert!(
+        markers.join("old-path").is_file(),
+        "the probe must trip the hook"
+    );
+    git(&dir, &["worktree", "remove", "--force", &probe_arg])?;
+    let _ = std::fs::remove_dir_all(&tmp);
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
