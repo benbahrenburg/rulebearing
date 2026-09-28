@@ -24,7 +24,7 @@
 use rb_rules::conformance::{ProtocolError, Request};
 use serde_json::{Map, Value, json};
 
-use crate::anon::{Anonymizer, WHITELIST_RE, random_string};
+use crate::anon::{Anonymizer, NO_DOCUMENT, WHITELIST_RE, random_string};
 use crate::dot::module_utl::{add_url, extract_first_transgression, flat_label, folderify};
 use crate::dot::theme::{apply_theme, attributize, normalize_theme, theme_attributes};
 use crate::err_html::{
@@ -114,7 +114,7 @@ pub fn dispatch(request: &Request) -> Result<Value, ProtocolError> {
             Value::String(determine_from_extras(first(0).unwrap_or(&empty)))
         }
         ("#report/anon/random-string.mjs", "default") => {
-            Value::String(random_string(&text(first(0))))
+            Value::String(random_string(&NO_DOCUMENT, &text(first(0))))
         }
         ("#report/anon/anonymize-path-element.mjs", "anonymizePathElement") => {
             let mut anonymizer = stateful(first(1), first(4));
@@ -342,7 +342,7 @@ mod tests {
             "default",
             json!([["ab-1"]]),
         )?;
-        assert_eq!(random, json!(random_string("ab-1")));
+        assert_eq!(random, json!(random_string(&NO_DOCUMENT, "ab-1")));
         Ok(())
     }
 }

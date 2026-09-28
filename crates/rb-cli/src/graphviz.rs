@@ -20,50 +20,69 @@ pub struct SystemDot;
 
 impl Graphviz for SystemDot {
     fn run(&self, args: &[&str], input: Option<&str>) -> Spawned {
-        let child = Command::new("dot")
-            .args(args)
-            .stdin(if input.is_some() {
-                Stdio::piped()
-            } else {
-                Stdio::null()
-            })
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn();
-        let mut child = match child {
-            Ok(child) => child,
-            Err(e) => {
-                return Spawned {
-                    error: Some(format!("spawnSync dot {e}")),
-                    ..Spawned::default()
-                };
-            }
-        };
-        // The program is written from a thread so a large SVG on stdout cannot block it.
-        let writer = match (child.stdin.take(), input) {
-            (Some(mut stdin), Some(text)) => {
-                let text = text.to_owned();
-                Some(std::thread::spawn(move || stdin.write_all(text.as_bytes())))
-            }
-            _ => None,
-        };
-        let output = child.wait_with_output();
-        let written = writer.map(std::thread::JoinHandle::join);
-        match output {
-            Ok(output) => Spawned {
-                status: output.status.code(),
-                stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
-                stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
-                error: match written {
-                    Some(Ok(Err(e))) => Some(format!("cannot write to dot: {e}")),
-                    _ => None,
-                },
-            },
-            Err(e) => Spawned {
-                error: Some(format!("dot: {e}")),
+        spawn_sync("dot", args, input)
+    }
+}
+
+/// The `code` Node's `spawnSync` puts in its error for `error` (`ENOENT`, `EPIPE`, ...), so the
+/// message is the one upstream's reporter throws: `spawnSync dot <code>`.
+fn node_code(error: &std::io::Error) -> String {
+    use std::io::ErrorKind;
+    match error.kind() {
+        ErrorKind::NotFound => "ENOENT".into(),
+        ErrorKind::PermissionDenied => "EACCES".into(),
+        ErrorKind::BrokenPipe => "EPIPE".into(),
+        _ => error.to_string(),
+    }
+}
+
+/// Node's `spawnSync(program, args, { input })`: the status, both streams, and the error that
+/// kept the program from running or from reading all of its input.
+fn spawn_sync(program: &str, args: &[&str], input: Option<&str>) -> Spawned {
+    let spawn_error = |e: &std::io::Error| format!("spawnSync {program} {}", node_code(e));
+    let child = Command::new(program)
+        .args(args)
+        .stdin(if input.is_some() {
+            Stdio::piped()
+        } else {
+            Stdio::null()
+        })
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn();
+    let mut child = match child {
+        Ok(child) => child,
+        Err(e) => {
+            return Spawned {
+                error: Some(spawn_error(&e)),
                 ..Spawned::default()
-            },
+            };
         }
+    };
+    // The program is written from a thread so a large SVG on stdout cannot block it.
+    let writer = match (child.stdin.take(), input) {
+        (Some(mut stdin), Some(text)) => {
+            let text = text.to_owned();
+            Some(std::thread::spawn(move || stdin.write_all(text.as_bytes())))
+        }
+        _ => None,
+    };
+    let output = child.wait_with_output();
+    let written = writer.map(std::thread::JoinHandle::join);
+    match output {
+        Ok(output) => Spawned {
+            status: output.status.code(),
+            stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+            stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+            error: match written {
+                Some(Ok(Err(e))) => Some(spawn_error(&e)),
+                _ => None,
+            },
+        },
+        Err(e) => Spawned {
+            error: Some(spawn_error(&e)),
+            ..Spawned::default()
+        },
     }
 }
 
@@ -173,5 +192,46 @@ mod tests {
         }
         let runner = system();
         assert_eq!(runner.clone(), runner);
+    }
+
+    /// Errors carry the code Node's `spawnSync` gives, so the message is upstream's.
+    #[cfg(unix)]
+    #[test]
+    fn spawn_errors_are_named_as_node_names_them() -> Result<(), Box<dyn std::error::Error>> {
+        use std::os::unix::fs::PermissionsExt as _;
+        let dir = std::env::temp_dir().join(format!("rb-cli-fake-dot-{}", std::process::id()));
+        std::fs::create_dir_all(&dir)?;
+        // A dot that exits at once without reading its input: writing a program larger than a
+        // pipe holds meets a closed pipe.
+        let early = dir.join("dot");
+        std::fs::write(&early, "#!/bin/sh\nexit 3\n")?;
+        std::fs::set_permissions(&early, std::fs::Permissions::from_mode(0o755))?;
+        let program = "digraph {}\n".repeat(200_000);
+        let spawned = spawn_sync(&early.to_string_lossy(), &["-Tsvg"], Some(&program));
+        assert_eq!(spawned.status, Some(3));
+        assert_eq!(
+            spawned.error,
+            Some(format!("spawnSync {} EPIPE", early.display()))
+        );
+        let missing = spawn_sync("rulebearing-no-such-program", &["-V"], None);
+        assert_eq!(
+            missing.error.as_deref(),
+            Some("spawnSync rulebearing-no-such-program ENOENT")
+        );
+        assert_eq!(missing.status, None);
+        let denied = dir.join("not-executable");
+        std::fs::write(&denied, "")?;
+        let refused = spawn_sync(&denied.to_string_lossy(), &[], None);
+        assert_eq!(
+            refused.error,
+            Some(format!("spawnSync {} EACCES", denied.display()))
+        );
+        assert_eq!(
+            node_code(&std::io::Error::other("odd")),
+            "odd",
+            "any other error as it prints"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+        Ok(())
     }
 }

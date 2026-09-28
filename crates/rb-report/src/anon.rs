@@ -19,14 +19,29 @@
 //! its shape: letters for letters with their case, digits for digits, separators kept.
 //!
 //! Upstream draws those strings from `crypto.randomInt`, so its output differs from run to run.
-//! Here the string is drawn from a generator seeded by the part itself, with upstream's ranges
-//! (`a` to `y`, `0` to `8`, because `randomInt`'s upper bound is exclusive), so the same input is
-//! anonymised byte for byte the same on every run; that is the one documented divergence. With a
+//! Here the string is drawn with upstream's ranges (`a` to `y`, `0` to `8`, because `randomInt`'s
+//! upper bound is exclusive) from a generator keyed by a SHA-256 digest of the whole document
+//! (after the strip below) and the part, so the same input is anonymised byte for byte the same on
+//! every run, while a name cannot be recovered by anonymising candidate names, nor linked across
+//! two documents, without the rest of the document. That is the one documented divergence. With a
 //! word list long enough for the document, as upstream's specs use, the output is upstream's.
+//!
+//! Rulebearing's additions to the document ([ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md))
+//! name modules, namespaces and types in fields upstream's anonymiser does not know (the code
+//! layer, `namespaces`, `project`, `summary.affected`, `fix`, ...), so they are stripped first, as
+//! `--strict-schema` strips them ([`crate::json::strip`]), and the output has upstream's shape.
+//! What the additions say about names is still used: every identifier of a namespace, a type, an
+//! assembly or a project in the code layer and on the modules is replaced wherever it appears in a
+//! path, not only before the first dot (`src/Acme.Billing/Gateway.cs` loses `Billing` too), and the
+//! object an element or slice violation names is replaced identifier by identifier. A document
+//! without those additions, which is every document dependency-cruiser writes, is anonymised as
+//! upstream anonymises it. The rule set, its comments, a violation's `unresolvedTo` and
+//! `optionsUsed` are printed as upstream prints them.
 
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use serde_json::{Map, Value};
+use sha2::{Digest, Sha256};
 
 use crate::Rendered;
 
@@ -56,16 +71,22 @@ fn classify(c: char) -> CharClass {
     }
 }
 
-/// splitmix64: a small, well-mixed generator; the stream for a part is seeded by the part.
+/// The key [`random_string`] draws with when there is no document: the protocol's unit calls.
+pub const NO_DOCUMENT: [u8; 32] = [0; 32];
+
+/// splitmix64: a small, well-mixed generator; the stream for a part is seeded by
+/// `SHA-256(key || part)`.
 struct Draw(u64);
 
 impl Draw {
-    fn seeded(text: &str) -> Self {
-        // FNV-1a over the UTF-8 bytes.
-        let seed = text.bytes().fold(0xcbf2_9ce4_8422_2325_u64, |hash, byte| {
-            (hash ^ u64::from(byte)).wrapping_mul(0x0000_0100_0000_01b3)
-        });
-        Self(seed)
+    fn seeded(key: &[u8; 32], text: &str) -> Self {
+        let digest = Sha256::new()
+            .chain_update(key)
+            .chain_update(text.as_bytes())
+            .finalize();
+        let mut seed = [0_u8; 8];
+        seed.copy_from_slice(&digest[..8]);
+        Self(u64::from_le_bytes(seed))
     }
 
     fn next(&mut self) -> u64 {
@@ -84,9 +105,10 @@ impl Draw {
 
 /// `getRandomString(text)`: a string of the same shape, one character per code point: a digit
 /// for a digit, a lower case letter for a lower case one, an upper case letter for an upper case
-/// one (or a character without case), and `-`, `_` and `.` kept.
-pub fn random_string(text: &str) -> String {
-    let mut draw = Draw::seeded(text);
+/// one (or a character without case), and `-`, `_` and `.` kept; drawn with `key`, the digest of
+/// the document being anonymised ([`document_key`]).
+pub fn random_string(key: &[u8; 32], text: &str) -> String {
+    let mut draw = Draw::seeded(key, text);
     text.chars()
         .map(|c| match classify(c) {
             CharClass::Separator => c,
@@ -105,23 +127,31 @@ pub struct Anonymizer {
     pub words: VecDeque<String>,
     /// Each part replaced so far, with what replaced it.
     pub cache: BTreeMap<String, String>,
+    /// The key random strings are drawn with ([`document_key`]).
+    pub key: [u8; 32],
+    /// Identifiers of namespaces, types, assemblies and projects, replaced wherever they appear
+    /// in a path ([`name_identifiers`]).
+    pub names: BTreeSet<String>,
 }
 
 impl Anonymizer {
-    /// An anonymiser drawing from `words`, used as given.
+    /// An anonymiser drawing from `words`, used as given, with no document key and no names.
     pub fn new(words: impl IntoIterator<Item = String>) -> Self {
         Self {
             words: words.into_iter().collect(),
             cache: BTreeMap::new(),
+            key: NO_DOCUMENT,
+            names: BTreeSet::new(),
         }
     }
 
     fn replace(&mut self, part: &str, index: usize) -> String {
         if index == 0 {
+            let key = self.key;
             self.words
                 .pop_front()
                 .filter(|w| !w.is_empty())
-                .unwrap_or_else(|| random_string(part))
+                .unwrap_or_else(|| random_string(&key, part))
         } else {
             part.to_owned()
         }
@@ -146,6 +176,8 @@ impl Anonymizer {
             .split('.')
             .enumerate()
             .map(|(index, part)| {
+                // A namespace, type or project identifier is replaced after a dot too.
+                let index = if self.names.contains(part) { 0 } else { index };
                 if cached {
                     self.replace_cached(part, index)
                 } else {
@@ -162,6 +194,33 @@ impl Anonymizer {
             .map(|element| self.path_element(element, whitelist, true))
             .collect::<Vec<_>>()
             .join("/")
+    }
+
+    /// A name that is not a path (the object an element or slice violation names, such as
+    /// `System.Void Acme.Billing.Gateway::Charge()`): each run of letters, digits and `_` replaced,
+    /// every other character kept.
+    pub fn name(&mut self, text: &str) -> String {
+        let mut out = String::with_capacity(text.len());
+        let mut run = String::new();
+        for c in text.chars().chain(std::iter::once('\0')) {
+            if c.is_alphanumeric() || c == '_' {
+                run.push(c);
+                continue;
+            }
+            if !run.is_empty() {
+                let replaced = if rb_rules::patterns::test(WHITELIST_RE, &run) {
+                    run.clone()
+                } else {
+                    self.replace_cached(&run, 0)
+                };
+                out.push_str(&replaced);
+                run.clear();
+            }
+            if c != '\0' {
+                out.push(c);
+            }
+        }
+        out
     }
 
     /// A string at `key` of `object` anonymised with [`WHITELIST_RE`]; any other value is left as
@@ -293,8 +352,26 @@ impl Anonymizer {
         let Value::Object(mut map) = violation else {
             return violation;
         };
-        self.field(&mut map, "from");
-        self.field(&mut map, "to");
+        let object = matches!(
+            map.get("type").and_then(Value::as_str),
+            Some("element" | "slice")
+        );
+        if object {
+            // An element or slice violation's ends are a file or an object's name.
+            for key in ["from", "to"] {
+                if let Some(Value::String(text)) = map.get(key).cloned() {
+                    let anonymised = if text.contains('/') {
+                        self.path(&text, WHITELIST_RE)
+                    } else {
+                        self.name(&text)
+                    };
+                    map.insert(key.into(), Value::String(anonymised));
+                }
+            }
+        } else {
+            self.field(&mut map, "from");
+            self.field(&mut map, "to");
+        }
         let cycle = self.mini_dependencies(map.get("cycle"));
         map.insert("cycle".into(), cycle);
         if crate::truthy(map.get("via")) {
@@ -366,11 +443,82 @@ pub fn word_list(result: &Value, options: Option<&Value>) -> Vec<Value> {
     list.and_then(Value::as_array).cloned().unwrap_or_default()
 }
 
+/// Each identifier (a run of letters, digits and `_`) of `text`.
+fn identifiers(text: &str) -> impl Iterator<Item = &str> {
+    text.split(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .filter(|s| !s.is_empty())
+}
+
+/// The identifiers of every namespace, type, assembly and project the document's additions name:
+/// the code layer's types, members and calls, and the modules' `namespaces` and `project`.
+pub fn name_identifiers(result: &Value) -> BTreeSet<String> {
+    fn strings<'a>(texts: &mut Vec<&'a str>, value: Option<&'a Value>) {
+        match value {
+            Some(Value::String(s)) => texts.push(s),
+            Some(Value::Array(items)) => texts.extend(items.iter().filter_map(Value::as_str)),
+            _ => {}
+        }
+    }
+    let mut texts: Vec<&str> = Vec::new();
+    let code = result.get("code");
+    for t in code.map_or(&[][..], |c| rb_rules::js::array(c, "types")) {
+        for key in [
+            "fullName",
+            "name",
+            "namespace",
+            "assembly",
+            "assemblyFullName",
+            "assemblyQualifiedName",
+            "baseType",
+            "baseTypes",
+            "interfaces",
+            "nestedIn",
+        ] {
+            strings(&mut texts, t.get(key));
+        }
+    }
+    for m in code.map_or(&[][..], |c| rb_rules::js::array(c, "members")) {
+        for key in ["declaringType", "name", "fullName", "returnType"] {
+            strings(&mut texts, m.get(key));
+        }
+    }
+    for c in code.map_or(&[][..], |c| rb_rules::js::array(c, "calls")) {
+        for key in ["from", "to"] {
+            strings(&mut texts, c.get(key));
+        }
+    }
+    for m in rb_rules::js::array(result, "modules") {
+        strings(&mut texts, m.get("namespaces"));
+        strings(&mut texts, m.get("project"));
+    }
+    texts
+        .into_iter()
+        .flat_map(identifiers)
+        .filter(|id| !rb_rules::patterns::test(WHITELIST_RE, id))
+        .map(str::to_owned)
+        .collect()
+}
+
+/// The key the document's random strings are drawn with: SHA-256 of the stripped document as
+/// JSON, so it depends on every name the document holds and on nothing else.
+pub fn document_key(stripped: &Value) -> [u8; 32] {
+    let mut key = [0_u8; 32];
+    key.copy_from_slice(&Sha256::digest(stripped.to_string().as_bytes()));
+    key
+}
+
 /// Renders `anon`, with `options` the `reporterOptions.anon` section. Always exits 0, as
-/// upstream's reporter does.
+/// upstream's reporter does. Rulebearing's additions are stripped first (see the module
+/// documentation).
 pub fn render(result: &Value, options: Option<&Value>) -> Rendered {
     let words = sanitize_word_list(&word_list(result, options));
-    let anonymised = Anonymizer::new(words).document(result);
+    let names = name_identifiers(result);
+    let mut stripped = result.clone();
+    crate::json::strip(&mut stripped);
+    let mut anonymizer = Anonymizer::new(words);
+    anonymizer.key = document_key(&stripped);
+    anonymizer.names = names;
+    let anonymised = anonymizer.document(&stripped);
     let mut output = serde_json::to_string_pretty(&anonymised).unwrap_or_default();
     output.push('\n');
     Rendered {
@@ -450,9 +598,9 @@ mod tests {
 
     #[test]
     fn random_strings_keep_the_shape() {
-        assert_eq!(random_string(""), "");
-        assert_eq!(random_string("-"), "-");
-        let s = random_string("better-someStuff_operator");
+        assert_eq!(random_string(&NO_DOCUMENT, ""), "");
+        assert_eq!(random_string(&NO_DOCUMENT, "-"), "-");
+        let s = random_string(&NO_DOCUMENT, "better-someStuff_operator");
         let shape: String = s
             .chars()
             .map(|c| match c {
@@ -462,11 +610,30 @@ mod tests {
             })
             .collect();
         assert_eq!(shape, "aaaaaa-aaaaAaaaa_aaaaaaaa");
-        assert!(random_string("ü").chars().all(|c| c.is_ascii_lowercase()));
-        assert!(random_string("Ü").chars().all(|c| c.is_ascii_uppercase()));
-        assert!(random_string("@").chars().all(|c| c.is_ascii_uppercase()));
-        assert!(random_string("1").chars().all(|c| c.is_ascii_digit()));
-        assert_eq!(random_string("pulp2slurp"), random_string("pulp2slurp"));
+        assert!(
+            random_string(&NO_DOCUMENT, "ü")
+                .chars()
+                .all(|c| c.is_ascii_lowercase())
+        );
+        assert!(
+            random_string(&NO_DOCUMENT, "Ü")
+                .chars()
+                .all(|c| c.is_ascii_uppercase())
+        );
+        assert!(
+            random_string(&NO_DOCUMENT, "@")
+                .chars()
+                .all(|c| c.is_ascii_uppercase())
+        );
+        assert!(
+            random_string(&NO_DOCUMENT, "1")
+                .chars()
+                .all(|c| c.is_ascii_digit())
+        );
+        assert_eq!(
+            random_string(&NO_DOCUMENT, "pulp2slurp"),
+            random_string(&NO_DOCUMENT, "pulp2slurp")
+        );
         assert_eq!(classify('ß'), CharClass::NothingSpecial);
     }
 
@@ -562,10 +729,248 @@ mod tests {
         assert!(!random.output.contains("secret"));
     }
 
+    /// Every string anywhere in `value`, keys included.
+    fn strings(value: &Value, out: &mut Vec<String>) {
+        match value {
+            Value::String(s) => out.push(s.clone()),
+            Value::Array(items) => items.iter().for_each(|v| strings(v, out)),
+            Value::Object(map) => {
+                for (k, v) in map {
+                    out.push(k.clone());
+                    strings(v, out);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// The names of `secret` that survive in the output, as whole identifiers or inside one.
+    fn survivors(output: &str, secret: &[&str]) -> Vec<String> {
+        let parsed: Value = serde_json::from_str(output).unwrap_or(Value::Null);
+        let mut all = Vec::new();
+        strings(&parsed, &mut all);
+        secret
+            .iter()
+            .filter(|name| {
+                let lower = name.to_lowercase();
+                all.iter().any(|s| s.to_lowercase().contains(&lower))
+            })
+            .map(|n| (*n).to_owned())
+            .collect()
+    }
+
+    /// A .NET-shaped result: modules with Rulebearing's additions, a code layer, an element
+    /// violation naming a member, the `--affected` receipt and a `fix` everywhere one can be.
+    fn dotnet() -> Value {
+        json!({
+            "modules": [
+                { "source": "src/Acme.Billing/Payments/Gateway.cs", "language": "dotnet",
+                  "project": "Acme.Billing.dll", "namespaces": ["Acme.Billing.Payments"], "attribution": "pdb",
+                  "dependencies": [
+                    { "module": "Acme.Billing.Ledger.Entry", "resolved": "src/Acme.Billing/Ledger/Entry.cs",
+                      "dependencyKind": "body", "member": "Acme.Billing.Ledger.Entry.Post", "line": 3, "column": 1,
+                      "valid": false, "rules": [{ "name": "no-cross", "severity": "error" }] },
+                    { "module": "System.Object", "resolved": "System.Runtime", "coreModule": true, "valid": true } ] },
+                { "source": "src/Acme.Billing/Ledger/Entry.cs", "language": "dotnet", "project": "Acme.Billing.dll",
+                  "namespaces": ["Acme.Billing.Ledger"], "dependencies": [] },
+                { "source": "System.Runtime", "language": "dotnet", "coreModule": true, "dependencies": [] },
+            ],
+            "code": {
+                "types": [
+                    { "fullName": "Acme.Billing.Payments.Gateway", "name": "Gateway", "namespace": "Acme.Billing.Payments",
+                      "assembly": "Acme.Billing", "file": "src/Acme.Billing/Payments/Gateway.cs", "baseType": "System.Object" },
+                    { "fullName": "Acme.Billing.Ledger.Entry", "name": "Entry", "namespace": "Acme.Billing.Ledger",
+                      "assembly": "Acme.Billing", "file": "src/Acme.Billing/Ledger/Entry.cs" },
+                    { "fullName": "System.Object", "name": "Object", "namespace": "System", "referenced": true },
+                    { "fullName": "System.Runtime.Remoting", "name": "Remoting", "namespace": "System.Runtime", "referenced": true },
+                ],
+                "members": [{ "declaringType": "Acme.Billing.Payments.Gateway", "name": "Charge()",
+                              "fullName": "System.Void Acme.Billing.Payments.Gateway::Charge()" }],
+                "calls": [{ "from": "System.Void Acme.Billing.Payments.Gateway::Charge()",
+                            "to": "System.Void Acme.Billing.Ledger.Entry::Post()" }],
+            },
+            "summary": {
+                "violations": [
+                    { "from": "src/Acme.Billing/Payments/Gateway.cs", "to": "src/Acme.Billing/Ledger/Entry.cs",
+                      "type": "dependency", "rule": { "name": "no-cross", "severity": "error" },
+                      "id": "RB-1", "fix": "Call Acme.Billing.Ledger through its service", "decision": "adr:0001" },
+                    { "from": "src/Acme.Billing/Payments/Gateway.cs",
+                      "to": "System.Void Acme.Billing.Payments.Gateway::Charge()", "type": "element",
+                      "rule": { "name": "sealed", "severity": "warn" }, "fix": "Seal Gateway" },
+                    { "from": "Payments", "to": "Ledger", "type": "slice", "rule": { "name": "slices", "severity": "error" } },
+                ],
+                "error": 2, "warn": 1, "info": 0, "totalCruised": 3,
+                "affected": { "revision": "HEAD", "changed": ["src/Acme.Billing/Payments/Gateway.cs"],
+                              "closure": ["src/Acme.Billing/Payments/Gateway.cs"] },
+                "plugins": ["reporters/Acme.Billing.cjs"],
+                "inspected": { "dotnet": { "assemblies": ["Acme.Billing.dll"] } },
+                "ruleSetUsed": {
+                    "forbidden": [{ "name": "no-cross", "severity": "error", "fix": "Leave Ledger to Acme.Billing",
+                                    "from": { "path": "^src/" }, "to": { "path": "\\.cs$" } }],
+                    "elements": [{ "name": "sealed", "select": { "namespace": "Acme.Billing.Payments" } }],
+                },
+                "optionsUsed": {},
+            }
+        })
+    }
+
+    const DOTNET_NAMES: &[&str] = &[
+        "Acme", "Billing", "Payments", "Gateway", "Ledger", "Entry", "Post", "Charge", "System",
+        "Object", "Runtime", "Remoting",
+    ];
+
+    #[test]
+    fn no_name_of_a_dotnet_document_survives() {
+        let rendered = render(&dotnet(), None);
+        assert_eq!(
+            survivors(&rendered.output, DOTNET_NAMES),
+            Vec::<String>::new(),
+            "{}",
+            rendered.output
+        );
+        // With a word list as well: every name is a word, none is left.
+        let words: Vec<String> = (0..40)
+            .map(|i| format!("word{}", char::from(b'a' + i % 26)))
+            .collect();
+        let listed = render(&dotnet(), Some(&json!({ "wordlist": words })));
+        assert_eq!(
+            survivors(&listed.output, DOTNET_NAMES),
+            Vec::<String>::new(),
+            "{}",
+            listed.output
+        );
+        // Upstream's shape: every addition is gone, `cycle` added where upstream adds it.
+        let parsed: Value = serde_json::from_str(&rendered.output).unwrap_or(Value::Null);
+        assert!(parsed.get("code").is_none());
+        for key in ["affected", "plugins", "inspected"] {
+            assert!(parsed["summary"].get(key).is_none(), "{key}");
+        }
+        assert!(parsed["modules"][0].get("namespaces").is_none());
+        assert!(
+            parsed["modules"][0]["dependencies"][0]
+                .get("member")
+                .is_none()
+        );
+        assert!(parsed["summary"]["violations"][0].get("fix").is_none());
+        assert!(parsed["summary"]["ruleSetUsed"].get("elements").is_none());
+        assert_eq!(parsed["summary"]["violations"][0]["cycle"], json!([]));
+        // The file keeps its extension; the member keeps its punctuation.
+        let element = parsed["summary"]["violations"][1]["to"]
+            .as_str()
+            .unwrap_or_default()
+            .to_owned();
+        assert!(
+            element.contains(' ') && element.ends_with("()") && element.contains("::"),
+            "{element}"
+        );
+        let file = parsed["modules"][0]["source"]
+            .as_str()
+            .unwrap_or_default()
+            .to_owned();
+        assert!(
+            file.starts_with("src/")
+                && std::path::Path::new(&file)
+                    .extension()
+                    .is_some_and(|e| e == "cs"),
+            "{file}"
+        );
+        // The same name gets the same replacement everywhere: the module and the violation agree.
+        assert_eq!(
+            parsed["summary"]["violations"][0]["from"].as_str(),
+            Some(file.as_str())
+        );
+    }
+
+    #[test]
+    fn the_affected_receipt_and_fix_of_a_typescript_run_do_not_leak() {
+        let result = json!({
+            "modules": [
+                { "source": "src/index.ts", "dependencies": [
+                    { "module": "./secretbilling/paymentgateway", "resolved": "src/secretbilling/paymentgateway.ts",
+                      "valid": false, "rules": [{ "name": "no-billing", "severity": "error" }] }] },
+                { "source": "src/secretbilling/paymentgateway.ts", "dependencies": [] },
+            ],
+            "summary": {
+                "violations": [{ "from": "src/index.ts", "to": "src/secretbilling/paymentgateway.ts",
+                                 "type": "dependency", "rule": { "name": "no-billing", "severity": "error" },
+                                 "fix": "Move the import of secretbilling/paymentgateway into src/secretbilling/api" }],
+                "affected": { "revision": "HEAD", "changed": ["src/secretbilling/paymentgateway.ts"],
+                              "closure": ["src/secretbilling/paymentgateway.ts", "src/index.ts"] },
+                "ruleSetUsed": { "forbidden": [{ "name": "no-billing", "severity": "error",
+                    "fix": "Move the import of secretbilling/paymentgateway into src/secretbilling/api",
+                    "from": {}, "to": { "path": "^src/[^/]+/" } }] },
+            }
+        });
+        let out = render(&result, None).output;
+        assert_eq!(
+            survivors(&out, &["secretbilling", "paymentgateway"]),
+            Vec::<String>::new(),
+            "{out}"
+        );
+    }
+
+    #[test]
+    fn random_strings_are_keyed_by_the_whole_document() {
+        let one = json!({ "modules": [{ "source": "secretbilling.ts", "dependencies": [] }], "summary": { "violations": [] } });
+        let two = json!({ "modules": [{ "source": "secretbilling.ts", "dependencies": [] },
+                                      { "source": "other.ts", "dependencies": [] }], "summary": { "violations": [] } });
+        let first = |r: &Value| -> String {
+            let parsed: Value =
+                serde_json::from_str(&render(r, None).output).unwrap_or(Value::Null);
+            parsed["modules"][0]["source"]
+                .as_str()
+                .unwrap_or_default()
+                .to_owned()
+        };
+        // Not a public function of the name: the unkeyed draw is not what the report prints, and
+        // the same name in another document gets another string.
+        assert_ne!(
+            first(&one),
+            format!("{}.ts", random_string(&NO_DOCUMENT, "secretbilling"))
+        );
+        assert_ne!(first(&one), first(&two));
+        // Two runs over the same input still agree.
+        assert_eq!(first(&one), first(&one));
+        assert_eq!(first(&one).len(), "secretbilling.ts".len());
+        // The key is the digest of the stripped document, so an addition does not move it.
+        let mut with_fix = one.clone();
+        with_fix["summary"]["plugins"] = json!(["x.cjs"]);
+        assert_eq!(first(&with_fix), first(&one));
+        assert_ne!(document_key(&one), document_key(&two));
+        assert_ne!(
+            random_string(&document_key(&one), "abc"),
+            random_string(&document_key(&two), "abc")
+        );
+    }
+
+    #[test]
+    fn names_come_from_the_code_layer_and_the_modules() {
+        let names = name_identifiers(&dotnet());
+        for name in DOTNET_NAMES {
+            assert!(names.contains(*name), "{name}");
+        }
+        assert!(!names.contains("src"), "whitelisted words are not names");
+        assert!(name_identifiers(&json!({ "modules": [{ "source": "a.ts" }] })).is_empty());
+        let mut a = Anonymizer::new(words(&["w1", "w2", "w3"]));
+        a.names = ["Books".to_owned()].into_iter().collect();
+        assert_eq!(
+            a.path("src/River.Books/x.cs", WHITELIST_RE),
+            "src/w1.w2/w3.cs"
+        );
+        assert_eq!(
+            a.name("System.Void River.Books::Go()"),
+            a.name("System.Void River.Books::Go()")
+        );
+        let mut b = Anonymizer::new(words(&["w1", "w2"]));
+        assert_eq!(b.name("test::Alpha()"), "test::w1()");
+        assert_eq!(b.name("Alpha.Beta"), "w1.w2");
+        assert_eq!(b.name(""), "");
+    }
+
     proptest! {
         #[test]
         fn random_strings_have_as_many_code_points(text in "\\PC{0,24}") {
-            let s = random_string(&text);
+            let s = random_string(&NO_DOCUMENT, &text);
             prop_assert_eq!(s.chars().count(), text.chars().count());
             for (a, b) in s.chars().zip(text.chars()) {
                 if matches!(b, '-' | '_' | '.') {

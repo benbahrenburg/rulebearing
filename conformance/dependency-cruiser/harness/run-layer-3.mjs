@@ -104,10 +104,11 @@ console.log(`layer3: specs=${specs.length} tests=${tests} failing-specs=${failed
 // identical (the err-html and markdown footers' run date aside, which is the clock's). The
 // markdown option sets toggle each of its keys at least once. `anon` is compared byte for byte
 // with word lists long enough for every mock; without one, upstream draws random strings from
-// `crypto.randomInt` and Rulebearing draws them from the part itself, so that comparison is of
-// the shape (every letter and digit folded to one) and the words used. `x-dot-webpage` runs the
-// same GraphViz `dot` on both sides; without one installed, upstream throws and the comparison
-// counts it as not renderable upstream. GraphViz' layout time grows fast with the graph (the
+// `crypto.randomInt` and Rulebearing draws them keyed by the document and the part, so that
+// comparison is of the shape (every letter and digit folded to one) and the words used.
+// `x-dot-webpage` runs the same GraphViz `dot` on both sides; without one installed, upstream
+// throws an Error (not a TypeError, which marks a mock the reporter cannot read) and Rulebearing
+// must refuse too; a reporter with no comparison at all fails the run. GraphViz' layout time grows fast with the graph (the
 // largest mocks take it tens of minutes), so `x-dot-webpage` is compared over the mocks of at most
 // DOT_WEBPAGE_MAX_MODULES modules and without orthogonal splines; the `dot` program it draws is
 // the `dot` reporter's, which is compared over every mock above.
@@ -256,6 +257,7 @@ function mocks(folder) {
 let compared = 0;
 let differing = 0;
 let skipped = 0;
+let refusedByBoth = 0;
 let tooLarge = 0;
 const onlySpecs = only.length > 0;
 if (!onlySpecs) {
@@ -270,6 +272,7 @@ if (!onlySpecs) {
     }
     for (const [outputType, module, optionSets, drawable = () => true] of ORACLE) {
         const upstreamReporter = (await import(pathToFileURL(join(upstream, module)).href)).default;
+        const comparedBefore = compared;
         for (const [name, result] of results) {
             if (!drawable(result)) {
                 tooLarge += 1;
@@ -278,10 +281,32 @@ if (!onlySpecs) {
             for (const options of optionSets) {
                 let expected;
                 try {
-                    expected = upstreamReporter(structuredClone(result), options);
-                } catch {
-                    // A mock upstream's reporter cannot render is not a comparison.
-                    skipped += 1;
+                    // As `reportWrap` calls a reporter: with an options object, never undefined
+                    // (upstream's x-dot-webpage reads `options.spawnFunction` unguarded).
+                    expected = upstreamReporter(structuredClone(result), options ?? {});
+                } catch (error) {
+                    // A TypeError is upstream's reporter reading a field a mock for another
+                    // reporter does not have: that mock is not a comparison. Any other error is
+                    // the reporter refusing on purpose (x-dot-webpage without GraphViz), and
+                    // Rulebearing's must refuse too, or the two differ.
+                    if (error instanceof TypeError) {
+                        skipped += 1;
+                        continue;
+                    }
+                    refusedByBoth += 1;
+                    let refused = false;
+                    try {
+                        report(outputType, result, options);
+                    } catch {
+                        refused = true;
+                    }
+                    if (!refused) {
+                        differing += 1;
+                        refusedByBoth -= 1;
+                        console.log(
+                            `layer3: ORACLE DIFF ${outputType} ${name} ${JSON.stringify(options ?? null)}: upstream refuses (${String(error)}), Rulebearing renders`,
+                        );
+                    }
                     continue;
                 }
                 const actual = report(outputType, result, options);
@@ -298,9 +323,14 @@ if (!onlySpecs) {
                 }
             }
         }
+        // A reporter that no mock was compared for is not proven, whatever the reason.
+        if (compared === comparedBefore) {
+            differing += 1;
+            console.log(`layer3: ORACLE NONE ${outputType}: no mock was compared`);
+        }
     }
     console.log(
-        `layer3: oracle comparisons=${compared} differing=${differing} not-renderable-upstream=${skipped} too-large-for-dot=${tooLarge}`,
+        `layer3: oracle comparisons=${compared} differing=${differing} not-renderable-upstream=${skipped} refused-by-both=${refusedByBoth} too-large-for-dot=${tooLarge}`,
     );
 }
 process.exit(failedSpecs.size > 0 || differing > 0 ? 1 : 0);

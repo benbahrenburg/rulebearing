@@ -39,7 +39,7 @@ The rest of wave 2 is the graph reporters (`dot`, `ddot`, `archi` / `cdot`, `fla
 | `anon` | `json` with every module name anonymised ([below](#anon)) | no |
 | `x-dot-webpage` | The `dot` graph drawn by GraphViz as SVG, in an HTML page with hover highlighting ([below](#x-dot-webpage)) | no |
 
-Each is byte for byte dependency-cruiser 18.2.0's: gate 1 layer 3 runs upstream's `test/report/{markdown,html,anon,dot-webpage}` specs and renders every `test/report` mock through both implementations. `plantuml` arrives later in wave 3; asking for it now exits 2 and names the wave.
+Each is byte for byte dependency-cruiser 18.2.0's: gate 1 layer 3 runs upstream's `test/report/{markdown,html,anon,dot-webpage}` specs and renders every `test/report` mock through both implementations.
 
 ### `markdown`
 
@@ -47,7 +47,9 @@ Each is byte for byte dependency-cruiser 18.2.0's: gate 1 layer 3 runs upstream'
 
 ### `anon`
 
-Each path element that is not a common folder or file name (`src`, `lib`, `test`, `index.ts` and the rest of upstream's list) has its part before the first dot replaced by the next word of `reporterOptions.anon.wordlist`, the same part by the same word throughout. dependency-cruiser bundles no word list; with none, or when the words run out, a part becomes a string of its shape (letters for letters with their case, digits for digits, `-`, `_` and `.` kept). Upstream draws that string at random on every run; Rulebearing draws it from the part itself, so two runs over the same result print the same bytes. That is the one difference, and a word list as long as the result needs removes it.
+Each path element that is not a common folder or file name (`src`, `lib`, `test`, `index.ts` and the rest of upstream's list) has its part before the first dot replaced by the next word of `reporterOptions.anon.wordlist`, the same part by the same word throughout. dependency-cruiser bundles no word list; with none, or when the words run out, a part becomes a string of its shape (letters for letters with their case, digits for digits, `-`, `_` and `.` kept). Upstream draws that string at random on every run; Rulebearing draws it from a generator keyed by a SHA-256 digest of the whole (stripped) result and the part, so two runs over the same result print the same bytes, while the string cannot be computed from the name alone: anonymising a list of candidate names does not reverse it, and the same name in two results gets two strings. That is the one difference, and a word list as long as the result needs removes it.
+
+The result is anonymised in dependency-cruiser's shape: every Rulebearing addition is removed first, as `--strict-schema` removes it ([The JSON document](#the-json-document)), so the code layer, `namespaces`, `project`, `summary.affected`, `summary.plugins`, the `fix` texts and the rest never reach the output. The identifiers of the namespaces, types, assemblies and projects those additions named are replaced wherever they occur in a path, after a dot too (`src/Acme.Billing/Gateway.cs` loses `Billing`, which upstream's rule would keep), and the object an element or slice violation names is replaced identifier by identifier. A result dependency-cruiser could have written is anonymised exactly as upstream anonymises it. As upstream, the rule set (rule names, comments, `path` patterns), a violation's `unresolvedTo` (the import as written) and `optionsUsed` (including the `reaches` expression `--affected` writes for a dependency-cruiser configuration) are printed as they are: name nothing secret in them, or leave them out before sharing.
 
 ### `x-dot-webpage`
 
