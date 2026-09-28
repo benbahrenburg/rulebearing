@@ -201,6 +201,46 @@ pub fn prepare(
     })
 }
 
+/// The installed environment a run at `base` resolves against, as text: the `site-packages`
+/// folder [`prepare`] would pick and the names of the `*.dist-info` folders in it (a name
+/// carries the distribution's version), or `none`. A cache compares it between runs, so
+/// installing, removing or upgrading a distribution, or an environment appearing, is seen even
+/// when version control ignores the environment
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// It reads folder listings only, no distribution's metadata.
+///
+/// # Errors
+/// As [`prepare`] fails to read the layout or choose the standard library.
+pub fn environment(
+    base: &Path,
+    options: &PythonOptions,
+    virtual_env: Option<&Path>,
+) -> Result<String, ExtractError> {
+    let layout = discover::discover(base, options.roots.as_deref()).map_err(|e| match e {
+        discover::DiscoverError::Io(io) => ExtractError::Io(io),
+        discover::DiscoverError::Toml { path, reason } => {
+            ExtractError::UnsupportedFile { path, reason }
+        }
+    })?;
+    let stdlib = choose_stdlib(
+        options.version.as_deref(),
+        layout.requires_python.as_deref(),
+        &mut Vec::new(),
+    )?;
+    let Some(site) = site::find(base, &layout.roots, virtual_env, stdlib.version()) else {
+        return Ok("none".to_owned());
+    };
+    let mut names: Vec<String> = std::fs::read_dir(&site)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| n.ends_with(".dist-info"))
+        .collect();
+    names.sort();
+    Ok(format!("{}\n{}", site.display(), names.join("\n")))
+}
+
 /// The `dependencyTypes` of an edge: its resolution, then `type-only` and `dynamic`.
 pub fn dependency_types(
     resolution: &Resolution,

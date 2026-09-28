@@ -178,7 +178,7 @@ pub fn dotnet_enabled(ctx: &Context<'_>, config: &Config) -> bool {
 /// Whether the Python extractor runs: `languages.python` is set or a `pyproject.toml`,
 /// `setup.cfg` or `setup.py` sits in the working directory.
 #[cfg(feature = "extract-python")]
-fn python_enabled(ctx: &Context<'_>, config: &Config) -> bool {
+pub fn python_enabled(ctx: &Context<'_>, config: &Config) -> bool {
     let project = |name: &str| matches!(name, "pyproject.toml" | "setup.cfg" | "setup.py");
     config.languages.python.is_some() || has_root_file(&ctx.cwd, project)
 }

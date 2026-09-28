@@ -29,7 +29,7 @@
 //! | the positional paths | `summary.optionsUsed.args` |
 //! | today's date | `expires` on a rule, a known violation or a baseline entry |
 //! | every ratchet budget file's bytes | the ceiling each ratchet is held to |
-//! | every diagram rule's `.puml` bytes | what `adhereTo` compares with |
+//! | every `.puml` a rule reads (a diagram rule's `adhereTo`, an element rule's `adhereToPlantUmlDiagram`) | what the architecture is compared with |
 //!
 //! Once a verdict has been served, the reporter's output is kept too (`rendered.json`), keyed on
 //! the verdict's key, the output type and every report option (the colour, `--strict-schema`,
@@ -180,7 +180,7 @@ pub fn render_key(verdict: &str, report: &str) -> String {
 /// A [`Miss`]: none stored, another key, or a file that does not parse or match its digest.
 pub fn load_rendered(folder: &Path, key: &str) -> Result<(String, Tail), Miss> {
     let path = folder.join(RENDERED_FILE);
-    let text = match std::fs::read(&path) {
+    let text = match manifest::read_limited(&path, manifest::PAYLOAD_LIMIT) {
         Ok(text) => text,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Err(Miss::Absent),
         Err(e) => return Err(Miss::Corrupt(format!("{}: {e}", path.display()))),
@@ -226,7 +226,7 @@ pub fn store_rendered(
 /// Whether `evaluated.json` in `folder` names a verdict under `key`: the cheap check before a
 /// run commits to the stored verdict.
 pub fn stored_under(folder: &Path, key: &str) -> bool {
-    std::fs::read(folder.join(EVALUATED_FILE))
+    manifest::read_limited(&folder.join(EVALUATED_FILE), manifest::PAYLOAD_LIMIT)
         .ok()
         .and_then(|text| serde_json::from_slice::<Pointer>(&text).ok())
         .is_some_and(|pointer| pointer.key == key)
@@ -279,9 +279,14 @@ pub fn partial_key(
         .first()
         .and_then(|f| f.parent())
         .unwrap_or_else(|| Path::new("."));
-    for diagram in &config.rules.diagrams {
-        let bytes = std::fs::read(base.join(&diagram.adhere_to)).unwrap_or_default();
-        parts.push((format!("diagram:{}", diagram.adhere_to), bytes));
+    // Every diagram an element rule's `adhereToPlantUmlDiagram` or a diagram rule reads; a missing
+    // one is keyed apart from an empty one.
+    for diagram in rb_rules::elements::diagram_files(config) {
+        let bytes = std::fs::read(base.join(&diagram)).map_or_else(
+            |_| b"absent".to_vec(),
+            |b| [b"present:".as_slice(), &b].concat(),
+        );
+        parts.push((format!("diagram:{diagram}"), bytes));
     }
     Some(crate::cmd::attest::hash_files(
         parts.iter().map(|(n, b)| (n.clone(), b.as_slice())),
@@ -309,7 +314,7 @@ fn verdict_file(digest: &str, compressed: bool) -> String {
 /// A [`Miss`]: none stored, another key, or a file that is damaged or does not parse.
 pub fn load(folder: &Path, key: &str, compressed: bool) -> Result<Verdict, Miss> {
     let path = folder.join(EVALUATED_FILE);
-    let text = match std::fs::read(&path) {
+    let text = match manifest::read_limited(&path, manifest::PAYLOAD_LIMIT) {
         Ok(text) => text,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Err(Miss::Absent),
         Err(e) => return Err(Miss::Corrupt(format!("{}: {e}", path.display()))),
@@ -383,6 +388,53 @@ mod tests {
             std::env::temp_dir().join(format!("rb-cache-evaluated-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         dir
+    }
+
+    #[test]
+    fn an_element_rules_diagram_is_part_of_the_key() -> Result<(), Box<dyn std::error::Error>> {
+        let dir = scratch("diagram-key");
+        std::fs::create_dir_all(&dir)?;
+        std::fs::write(dir.join("rulebearing.yaml"), "rules: {}\n")?;
+        std::fs::write(dir.join("arch.puml"), "@startuml\n[A]\n@enduml\n")?;
+        let elements = rb_config::elements::parse_elements(&serde_json::json!([
+            { "name": "layered", "select": { "kind": "class" },
+              "should": { "adhereToPlantUmlDiagram": "arch.puml" } }
+        ]))?;
+        let config = Config {
+            files: vec![dir.join("rulebearing.yaml")],
+            rules: rb_config::model::Rules {
+                elements,
+                ..rb_config::model::Rules::default()
+            },
+            ..Config::default()
+        };
+        let mut stdin: &[u8] = &[];
+        let ctx = Context {
+            cwd: dir.clone(),
+            stdin: &mut stdin,
+            today: chrono::NaiveDate::default(),
+            timestamp: String::new(),
+            color_terminal: false,
+        };
+        let options = RunOptions::default();
+        let key = || partial_key(&ctx, &config, &options, "Strict");
+        let first = key();
+        assert!(first.is_some());
+        assert_eq!(key(), first, "deterministic");
+        std::fs::write(dir.join("arch.puml"), "@startuml\n[A] --> [B]\n@enduml\n")?;
+        let edited = key();
+        assert_ne!(
+            edited, first,
+            "an edited diagram misses the evaluated layer"
+        );
+        std::fs::remove_file(dir.join("arch.puml"))?;
+        assert_ne!(key(), edited, "a missing diagram is keyed apart");
+        std::fs::write(dir.join("arch.puml"), "")?;
+        let empty = key();
+        std::fs::remove_file(dir.join("arch.puml"))?;
+        assert_ne!(key(), empty, "an empty diagram is not a missing one");
+        let _ = std::fs::remove_dir_all(&dir);
+        Ok(())
     }
 
     fn verdict() -> Verdict {

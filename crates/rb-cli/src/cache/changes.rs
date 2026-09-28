@@ -11,24 +11,41 @@
 //! - Decision: [ADR-0008](../../../../docs/adr/0008-exit-code-contract.md)
 //! - Requirement: [FR-CLI-05](../../../../docs/prd.md#fr-cli-05)
 //!
-//! An entry records its inputs: every file an extractor read (the parts' per-file states), the
-//! manifests the extractors read (the cache key's list, and every `package.json` above a
-//! TypeScript file), every assembly and PDB beside the analysed ones, and the *presence set*:
-//! the files whose appearance or disappearance could change what an unchanged file resolves to
-//! (a file with an extension an extractor reads or resolves to, or a manifest), which the
-//! `content` strategy lists by walking the working directory and the `metadata` strategy takes
-//! from git's untracked and added files. Paths are relative to the working directory, or absolute
-//! outside it; `.git`, `.graph`, `node_modules` and the cache folder are never listed.
+//! An entry records its inputs, each with a `sha256:` digest (and, for `metadata`, its size and
+//! modification time):
+//!
+//! | Input | Recorded as |
+//! | --- | --- |
+//! | every file an extractor read (the parts' per-file states) | its digest; a changed TypeScript or Python source is read again alone |
+//! | every other file the run read: the manifests of the cache key, every `package.json` above a TypeScript file, the tsconfig with its `extends` chain and references, the Babel configuration, the Plug'n'Play map, the solution and project files | its digest; any change is structural |
+//! | every assembly and PDB in an analysed project's output folder | its digest; a change reads the .NET graph again |
+//! | a file that may appear and change resolution (a manifest the key names, `node_modules/.package-lock.json`, `.modules.yaml`, `.yarn-state.yml`) | [`ABSENT`] while it does not exist; its appearance is structural |
+//! | the folder of every relative import's target, a resolved one's or an unresolved one's nearest existing folder | the digest of its entry names (a name ending `/`); an entry added or removed is structural, whether or not version control ignores it |
+//! | the presence set: files whose appearance could change what an unchanged file resolves to | as above; `content` lists them by walking the worktree (or the folder holding every input, when wider), `metadata` takes git's untracked and added files, or walks outside a repository |
+//!
+//! Beside the inputs an entry records *probes*, values computed from the environment before the
+//! extraction: the .NET assemblies discovery finds (so a project built since, whose output
+//! folder was never recorded, is seen) and the Python environment (the chosen `site-packages`
+//! and its distributions, so an installation into an ignored `.venv` is seen). A probe that
+//! differs is structural. Paths are relative to the working directory, or absolute outside it;
+//! `.git`, `.graph`, `node_modules`, virtual environments (a folder holding `pyvenv.cfg`) and the
+//! cache folder are never walked.
 //!
 //! [`detect`] answers with the recorded inputs whose content changed, and a *structural* reason
-//! when the change is one reuse cannot follow (a file added or deleted, a manifest changed, git
-//! unable to say what changed); the caller then extracts in full.
+//! when the change is one reuse cannot follow (a file added or deleted, any input other than a
+//! source changed, a probe changed, git unable to say what changed); the caller then extracts in
+//! full.
 //!
 //! | Strategy | Deleted | Added | Content |
 //! | --- | --- | --- | --- |
-//! | `metadata`, in a repository | a recorded input missing, or git listing a relevant file deleted since the recorded `HEAD` | git listing a relevant file added or untracked that is not recorded | hashed only when its size or modification time changed, or git lists it modified since the recorded `HEAD`; a manifest git lists modified is structural even when not recorded |
-//! | `metadata`, outside a repository | a recorded input missing | the walk finding a relevant file not recorded | hashed only when its size or modification time changed |
-//! | `content` | a recorded input missing | the walk finding a relevant file not recorded | every input hashed |
+//! | `metadata`, in a repository | a recorded input missing, or git listing a relevant file deleted since the recorded `HEAD` | git listing a relevant file added or untracked that is not recorded; a recorded folder's entries or a probe changing | hashed only when its size or modification time changed, or git lists it modified since the recorded `HEAD` |
+//! | `metadata`, outside a repository | a recorded input missing | the walk finding a relevant file not recorded; a recorded folder's entries or a probe changing | hashed only when its size or modification time changed |
+//! | `content` | a recorded input missing | the walk finding a relevant file not recorded; a recorded folder's entries or a probe changing | every input hashed |
+//!
+//! An input is recorded after the extraction that read it. One whose modification time is after
+//! the run started, or that changed while it was being recorded, or that could not be read, is
+//! recorded as [`UNSETTLED`], a digest nothing matches, so the next run reads it again rather than
+//! trusting an extraction of other bytes.
 //!
 //! Outside a repository dependency-cruiser's metadata strategy stops with an error; this one
 //! falls back to the walk and file metadata instead, so `--cache` works in any folder. A file
@@ -44,6 +61,12 @@ use rb_model::CacheStrategy;
 
 use super::key;
 use super::manifest::{Manifest, digest};
+
+/// The digest recorded for an input that must be read again next time: it matches no file.
+pub const UNSETTLED: &str = "sha256:unsettled";
+
+/// The digest recorded for an optional input that does not exist.
+pub const ABSENT: &str = "absent";
 
 /// The extensions an extractor reads or a resolution can land on: a file with one appearing or
 /// disappearing can change what an unchanged file resolves to.
@@ -176,18 +199,91 @@ pub fn stamp(path: &Path) -> Option<(u64, u64)> {
     let meta = std::fs::metadata(path)
         .ok()
         .filter(std::fs::Metadata::is_file)?;
-    let modified = meta
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map_or(0, |d| u64::try_from(d.as_nanos()).unwrap_or(u64::MAX));
-    Some((meta.len(), modified))
+    Some((meta.len(), nanos(meta.modified().ok())))
 }
 
-/// Every relevant file under the working directory, by recorded name, sorted.
-pub fn walk(scope: &Scope) -> BTreeSet<String> {
+/// Whether a recorded name is a folder's listing (it ends `/`).
+pub fn is_listing(name: &str) -> bool {
+    name.ends_with('/')
+}
+
+/// The digest of a folder's entry names (a folder's with `/` after it), sorted, or `None` when
+/// it is not a folder.
+pub fn listing(path: &Path) -> Option<String> {
+    let mut names: Vec<String> = std::fs::read_dir(path)
+        .ok()?
+        .flatten()
+        .map(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            if e.file_type().is_ok_and(|t| t.is_dir()) {
+                format!("{name}/")
+            } else {
+                name
+            }
+        })
+        .collect();
+    names.sort();
+    Some(digest(names.join("\n").as_bytes()))
+}
+
+/// A recorded input's size and modification time: a file's, or a folder's (its entry count and
+/// its modification time, which adding or removing an entry moves).
+pub fn observe(scope: &Scope, name: &str) -> Option<Stamp> {
+    let path = scope.on_disk(name.trim_end_matches('/'));
+    if is_listing(name) {
+        let meta = std::fs::metadata(&path)
+            .ok()
+            .filter(std::fs::Metadata::is_dir)?;
+        let count = std::fs::read_dir(&path).ok()?.count() as u64;
+        return Some((count, nanos(meta.modified().ok())));
+    }
+    stamp(&path)
+}
+
+/// A recorded input's digest now: a file's bytes, or a folder's entry names.
+pub fn content(scope: &Scope, name: &str) -> Option<String> {
+    let path = scope.on_disk(name.trim_end_matches('/'));
+    if is_listing(name) {
+        listing(&path)
+    } else {
+        hash_file(&path)
+    }
+}
+
+fn nanos(time: Option<std::time::SystemTime>) -> u64 {
+    time.and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map_or(0, |d| u64::try_from(d.as_nanos()).unwrap_or(u64::MAX))
+}
+
+/// The folder a walk starts from: the worktree root, or the deepest folder holding it and every
+/// recorded input when an input lies outside it, so a file created beside an input outside the
+/// working directory is seen.
+pub fn walk_root<'a>(scope: &Scope, names: impl Iterator<Item = &'a String>) -> PathBuf {
+    let mut root = scope.root.clone();
+    for name in names {
+        let path = scope.on_disk(name.trim_end_matches('/'));
+        let folder = if is_listing(name) {
+            path
+        } else {
+            path.parent()
+                .map_or_else(|| path.clone(), Path::to_path_buf)
+        };
+        while !folder.starts_with(&root) {
+            match root.parent() {
+                // Never the file system's root: a walk of everything is not a presence check.
+                Some(parent) if parent.parent().is_some() => root = parent.to_path_buf(),
+                _ => return scope.root.clone(),
+            }
+        }
+    }
+    root
+}
+
+/// Every relevant file under `from`, by recorded name, sorted. A virtual environment (a folder
+/// holding `pyvenv.cfg`) is not walked: the Python environment probe stands for it.
+pub fn walk(scope: &Scope, from: &Path) -> BTreeSet<String> {
     let mut found = BTreeSet::new();
-    let mut folders = vec![scope.base.clone()];
+    let mut folders = vec![from.to_path_buf()];
     while let Some(folder) = folders.pop() {
         let Ok(entries) = std::fs::read_dir(&folder) else {
             continue;
@@ -202,7 +298,9 @@ pub fn walk(scope: &Scope) -> BTreeSet<String> {
                 continue;
             }
             if kind.is_dir() {
-                folders.push(path);
+                if !path.join("pyvenv.cfg").is_file() {
+                    folders.push(path);
+                }
             } else if kind.is_file() && scope.is_relevant(&name) {
                 found.insert(name);
             }
@@ -339,23 +437,43 @@ type Recorded = (String, Option<String>, Option<Stamp>);
 /// A file's size and modification time in nanoseconds.
 pub type Stamp = (u64, u64);
 
-/// Compares the entry `manifest` records with the files as they are now, by `strategy`.
-pub fn detect(manifest: &Manifest, strategy: CacheStrategy, scope: &Scope) -> Changes {
+/// Compares the entry `manifest` records with the files as they are now, by `strategy`, and its
+/// probes with `probes`, the values this run computed.
+pub fn detect(
+    manifest: &Manifest,
+    strategy: CacheStrategy,
+    scope: &Scope,
+    probes: &BTreeMap<String, String>,
+) -> Changes {
     let mut changes = Changes::default();
+    for name in manifest.probes.keys().chain(probes.keys()) {
+        if manifest.probes.get(name) != probes.get(name) {
+            changes.structural(format!("the {name} changed"));
+        }
+    }
     let current: Vec<Observed<'_>> = manifest
         .inputs
         .par_iter()
-        .map(|(name, hash)| (name, hash, stamp(&scope.on_disk(name))))
+        .map(|(name, hash)| (name, hash, observe(scope, name)))
         .collect();
     let mut candidates: BTreeSet<String> = BTreeSet::new();
     for (name, hash, now) in &current {
+        if hash.as_str() == ABSENT {
+            if now.is_some() {
+                changes.structural(format!("{name} appeared"));
+            } else {
+                changes.hashes.insert((*name).clone(), ABSENT.to_owned());
+            }
+            continue;
+        }
         let Some(now) = now else {
             changes.structural(format!("{name} was deleted"));
             continue;
         };
         changes.stamps.insert((*name).clone(), *now);
-        let trusted =
-            strategy == CacheStrategy::Metadata && manifest.stamps.get(*name) == Some(now);
+        let trusted = strategy == CacheStrategy::Metadata
+            && hash.as_str() != UNSETTLED
+            && manifest.stamps.get(*name) == Some(now);
         if trusted {
             changes.hashes.insert((*name).clone(), (*hash).clone());
         } else {
@@ -396,7 +514,9 @@ pub fn detect(manifest: &Manifest, strategy: CacheStrategy, scope: &Scope) -> Ch
             changes.structural("the folder is no longer, or is now, in a git repository".into());
             None
         }
-        (CacheStrategy::Metadata, None, None) | (CacheStrategy::Content, _, _) => Some(walk(scope)),
+        (CacheStrategy::Metadata, None, None) | (CacheStrategy::Content, _, _) => {
+            Some(walk(scope, &walk_root(scope, manifest.inputs.keys())))
+        }
     };
     if let Some(present) = presence {
         for name in present.difference(&manifest.inputs.keys().cloned().collect()) {
@@ -406,7 +526,7 @@ pub fn detect(manifest: &Manifest, strategy: CacheStrategy, scope: &Scope) -> Ch
     let hashed: Vec<(String, Option<String>)> = candidates
         .into_par_iter()
         .map(|name| {
-            let hash = hash_file(&scope.on_disk(&name));
+            let hash = content(scope, &name);
             (name, hash)
         })
         .collect();
@@ -424,12 +544,72 @@ pub fn detect(manifest: &Manifest, strategy: CacheStrategy, scope: &Scope) -> Ch
     changes
 }
 
-/// The presence set an entry written now records, by `strategy`.
-pub fn presence(strategy: CacheStrategy, scope: &Scope) -> BTreeSet<String> {
+/// The presence set an entry written now records, by `strategy`: git's, or a walk from
+/// [`walk_root`] over `inputs`.
+pub fn presence(
+    strategy: CacheStrategy,
+    scope: &Scope,
+    inputs: &BTreeSet<String>,
+) -> BTreeSet<String> {
+    let walked = || walk(scope, &walk_root(scope, inputs.iter()));
     match (strategy, &scope.head) {
-        (CacheStrategy::Metadata, Some(_)) => git_presence(scope).unwrap_or_else(|| walk(scope)),
-        (CacheStrategy::Metadata, None) | (CacheStrategy::Content, _) => walk(scope),
+        (CacheStrategy::Metadata, Some(_)) => git_presence(scope).unwrap_or_else(walked),
+        (CacheStrategy::Metadata, None) | (CacheStrategy::Content, _) => walked(),
     }
+}
+
+/// The folders whose entries decide where relative imports land: for each `(importing file,
+/// specifier)`, the folder the specifier names, or its nearest existing ancestor, as a listing
+/// name. A file added there, ignored by version control or not, is then seen.
+pub fn target_folders<'a>(
+    scope: &Scope,
+    imports: impl Iterator<Item = (&'a str, &'a str)>,
+) -> BTreeSet<String> {
+    let mut folders = BTreeSet::new();
+    for (file, specifier) in imports {
+        let relative = specifier.starts_with("./")
+            || specifier.starts_with("../")
+            || specifier == "."
+            || specifier == "..";
+        if !relative {
+            continue;
+        }
+        let from = scope.on_disk(file);
+        let Some(dir) = from.parent() else {
+            continue;
+        };
+        let mut target = normalise(&dir.join(specifier));
+        // The folder the target file would sit in; a target that is a folder is listed itself.
+        if !target.is_dir() {
+            target.pop();
+        }
+        while !target.is_dir() {
+            if !target.pop() {
+                break;
+            }
+        }
+        // Never the file system's root: its listing is not a presence check.
+        if target.parent().is_none_or(|p| p.parent().is_none()) {
+            continue;
+        }
+        folders.insert(format!("{}/", scope.name(&target).trim_end_matches('/')));
+    }
+    folders
+}
+
+/// A path with `.` and `..` components resolved lexically.
+fn normalise(path: &Path) -> PathBuf {
+    let mut out = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                out.pop();
+            }
+            other => out.push(other),
+        }
+    }
+    out
 }
 
 /// Every `package.json` in the folders from each file's up to the worktree root, by recorded
@@ -456,36 +636,67 @@ pub fn package_manifests<'a>(
     found
 }
 
-/// The digests and stamps of `inputs`: taken from `known` (what [`detect`] verified this run)
-/// where it has them, hashed otherwise; an input that cannot be read is left out, so the next
-/// run finds it missing and extracts in full.
+/// The digests and stamps of `inputs`, recorded after the extraction that read them: taken from
+/// `known` (what [`detect`] verified before the run) where it has them, hashed otherwise. An
+/// input in `optional` that does not exist is recorded as [`ABSENT`]; any other input that cannot
+/// be read, or whose modification time is after `started` (nanoseconds since the epoch, taken
+/// before the run looked at anything), or whose size or time moved while it was being recorded,
+/// is recorded as [`UNSETTLED`], so the next run reads it again. On a file system that keeps
+/// whole seconds only, a time within two seconds of `started` counts as after it.
 pub fn record(
     scope: &Scope,
     inputs: &BTreeSet<String>,
+    optional: &BTreeSet<String>,
     known: &BTreeMap<String, String>,
     strategy: CacheStrategy,
+    started: u64,
 ) -> (BTreeMap<String, String>, BTreeMap<String, (u64, u64)>) {
     let recorded: Vec<Recorded> = inputs
+        .union(optional)
+        .collect::<Vec<_>>()
         .par_iter()
         .map(|name| {
-            let path = scope.on_disk(name);
-            let now = stamp(&path);
-            let hash = known.get(name).cloned().or_else(|| hash_file(&path));
-            (name.clone(), hash, now)
+            let before = observe(scope, name);
+            let Some(before) = before else {
+                let marker = if optional.contains(*name) && !inputs.contains(*name) {
+                    ABSENT
+                } else {
+                    UNSETTLED
+                };
+                return ((*name).clone(), Some(marker.to_owned()), None);
+            };
+            let hash = known.get(*name).cloned().or_else(|| content(scope, name));
+            let after = observe(scope, name);
+            let settled =
+                hash.is_some() && after == Some(before) && !after_start(before.1, started);
+            let hash = if settled {
+                hash
+            } else {
+                Some(UNSETTLED.to_owned())
+            };
+            ((*name).clone(), hash, Some(before))
         })
         .collect();
     let mut hashes = BTreeMap::new();
     let mut stamps = BTreeMap::new();
     for (name, hash, now) in recorded {
-        let (Some(hash), Some(now)) = (hash, now) else {
-            continue;
-        };
-        if strategy == CacheStrategy::Metadata {
+        if let (Some(now), CacheStrategy::Metadata) = (now, strategy) {
             stamps.insert(name.clone(), now);
         }
-        hashes.insert(name, hash);
+        hashes.insert(name, hash.unwrap_or_else(|| UNSETTLED.to_owned()));
     }
     (hashes, stamps)
+}
+
+/// Whether a modification time is after `started`: strictly after it, or, when the time has no
+/// fraction of a second (a file system that keeps whole seconds), within two seconds before it.
+fn after_start(modified: u64, started: u64) -> bool {
+    const SECOND: u64 = 1_000_000_000;
+    if modified.is_multiple_of(SECOND) {
+        modified.saturating_add(2 * SECOND) > started
+    } else {
+        modified > started
+    }
 }
 
 #[cfg(test)]
@@ -505,6 +716,16 @@ mod tests {
             let _ = std::fs::create_dir_all(parent);
         }
         let _ = std::fs::write(path, text);
+    }
+
+    /// Now, as `record` takes it.
+    fn now() -> u64 {
+        nanos(Some(std::time::SystemTime::now()))
+    }
+
+    /// No probes.
+    fn none() -> BTreeMap<String, String> {
+        BTreeMap::new()
     }
 
     fn scope(dir: &Path) -> Scope {
@@ -597,14 +818,31 @@ mod tests {
         ] {
             write(&dir.join(file), "x");
         }
-        let found: Vec<String> = walk(&scope(&dir)).into_iter().collect();
-        assert_eq!(found, ["docs/n.md", "package.json", "src/a.ts"]);
+        write(&dir.join(".venv/pyvenv.cfg"), "home = /usr");
+        write(
+            &dir.join(".venv/lib/python3.12/site-packages/x/__init__.py"),
+            "",
+        );
+        write(&dir.join("env/lib/y.py"), "");
+        let found: Vec<String> = walk(&scope(&dir), &dir).into_iter().collect();
+        assert_eq!(
+            found,
+            ["docs/n.md", "env/lib/y.py", "package.json", "src/a.ts"],
+            "a virtual environment is not walked; a folder without pyvenv.cfg is"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 
     fn recorded(scope: &Scope, strategy: CacheStrategy) -> Manifest {
-        let inputs: BTreeSet<String> = walk(scope);
-        let (hashes, stamps) = record(scope, &inputs, &BTreeMap::new(), strategy);
+        let inputs: BTreeSet<String> = walk(scope, &scope.root);
+        let (hashes, stamps) = record(
+            scope,
+            &inputs,
+            &BTreeSet::new(),
+            &BTreeMap::new(),
+            strategy,
+            now(),
+        );
         Manifest {
             tool_version: "v".into(),
             config_hash: "sha256:c".into(),
@@ -614,6 +852,8 @@ mod tests {
             inputs: hashes,
             stamps,
             extraction: String::new(),
+            probes: BTreeMap::new(),
+            watched: BTreeSet::new(),
         }
     }
 
@@ -630,12 +870,12 @@ mod tests {
                 manifest.stamps.is_empty(),
                 strategy == CacheStrategy::Content
             );
-            let quiet = detect(&manifest, strategy, &scope);
+            let quiet = detect(&manifest, strategy, &scope, &none());
             assert!(quiet.is_empty(), "{strategy:?} {quiet:?}");
             assert_eq!(quiet.hashes, manifest.inputs);
             // A longer file: a new size for metadata, a new digest for content.
             write(&dir.join("src/a.ts"), "export const a = 10;\n");
-            let edited = detect(&manifest, strategy, &scope);
+            let edited = detect(&manifest, strategy, &scope, &none());
             assert_eq!(edited.structural, None);
             assert_eq!(edited.modified.iter().collect::<Vec<_>>(), ["src/a.ts"]);
             assert_ne!(
@@ -643,16 +883,16 @@ mod tests {
                 manifest.inputs.get("src/a.ts")
             );
             write(&dir.join("src/c.ts"), "export const c = 1;\n");
-            let added = detect(&manifest, strategy, &scope);
+            let added = detect(&manifest, strategy, &scope, &none());
             assert_eq!(added.structural.as_deref(), Some("src/c.ts was added"));
             let _ = std::fs::remove_file(dir.join("src/c.ts"));
             let _ = std::fs::remove_file(dir.join("src/b.ts"));
-            let deleted = detect(&manifest, strategy, &scope);
+            let deleted = detect(&manifest, strategy, &scope, &none());
             assert_eq!(deleted.structural.as_deref(), Some("src/b.ts was deleted"));
             // An irrelevant file comes and goes unseen.
             write(&dir.join("src/b.ts"), "export const b = 1;\n");
             write(&dir.join("notes.txt"), "x");
-            let unseen = detect(&manifest, strategy, &scope);
+            let unseen = detect(&manifest, strategy, &scope, &none());
             assert_eq!(unseen.structural, None, "{strategy:?}");
             let _ = std::fs::remove_dir_all(&dir);
         }
@@ -675,7 +915,7 @@ mod tests {
                     .open(&path)
                     .and_then(|f| f.set_modified(time));
             }
-            let found = detect(&manifest, strategy, &scope);
+            let found = detect(&manifest, strategy, &scope, &none());
             assert_eq!(
                 found.modified.is_empty(),
                 strategy == CacheStrategy::Metadata,
@@ -697,7 +937,7 @@ mod tests {
             .write(true)
             .open(&path)
             .and_then(|f| f.set_modified(later));
-        let found = detect(&manifest, CacheStrategy::Metadata, &scope);
+        let found = detect(&manifest, CacheStrategy::Metadata, &scope, &none());
         assert!(found.is_empty(), "{found:?}");
         assert_ne!(found.stamps, manifest.stamps, "the new stamp is reported");
         let _ = std::fs::remove_dir_all(&dir);
@@ -710,7 +950,7 @@ mod tests {
         write(&dir.join("a.ts"), "x\n");
         let manifest = recorded(&scope, CacheStrategy::Metadata);
         scope.head = Some("0123".into());
-        let found = detect(&manifest, CacheStrategy::Metadata, &scope);
+        let found = detect(&manifest, CacheStrategy::Metadata, &scope, &none());
         assert!(
             found
                 .structural
@@ -721,7 +961,7 @@ mod tests {
             ..manifest
         };
         scope.head = None;
-        let found = detect(&recorded_in_git, CacheStrategy::Metadata, &scope);
+        let found = detect(&recorded_in_git, CacheStrategy::Metadata, &scope, &none());
         assert!(
             found
                 .structural
@@ -754,19 +994,250 @@ mod tests {
     }
 
     #[test]
-    fn an_unreadable_input_is_left_out_of_the_record() {
+    fn an_unreadable_input_is_recorded_unsettled_and_an_absent_optional_one_absent() {
         let dir = scratch("record");
         let scope = scope(&dir);
         write(&dir.join("a.ts"), "x\n");
+        let started = now();
         let inputs = BTreeSet::from(["a.ts".to_owned(), "gone.ts".to_owned()]);
+        let optional = BTreeSet::from(["tsconfig.json".to_owned(), "a.ts".to_owned()]);
         let known = BTreeMap::from([("a.ts".to_owned(), "sha256:known".to_owned())]);
-        let (hashes, stamps) = record(&scope, &inputs, &known, CacheStrategy::Metadata);
-        assert_eq!(hashes, known, "a known digest is not recomputed");
+        let (hashes, stamps) = record(
+            &scope,
+            &inputs,
+            &optional,
+            &known,
+            CacheStrategy::Metadata,
+            started,
+        );
+        assert_eq!(
+            hashes,
+            BTreeMap::from([
+                ("a.ts".to_owned(), "sha256:known".to_owned()),
+                ("gone.ts".to_owned(), UNSETTLED.to_owned()),
+                ("tsconfig.json".to_owned(), ABSENT.to_owned()),
+            ]),
+            "a known digest is not recomputed; an input that is also optional is required"
+        );
         assert_eq!(stamps.keys().collect::<Vec<_>>(), ["a.ts"]);
-        let (_, none) = record(&scope, &inputs, &BTreeMap::new(), CacheStrategy::Content);
-        assert!(none.is_empty(), "content keeps no stamps");
+        let (_, unstamped) = record(
+            &scope,
+            &inputs,
+            &optional,
+            &BTreeMap::new(),
+            CacheStrategy::Content,
+            started,
+        );
+        assert!(unstamped.is_empty(), "content keeps no stamps");
         assert_eq!(hash_file(&dir.join("gone.ts")), None);
-        assert_eq!(stamp(&dir), None, "a folder has no stamp");
+        assert_eq!(stamp(&dir), None, "a folder has no file stamp");
+        // The next run: the unreadable input is a deletion, the absent optional one is not.
+        let manifest = Manifest {
+            inputs: hashes,
+            stamps,
+            ..recorded(&scope, CacheStrategy::Metadata)
+        };
+        let found = detect(&manifest, CacheStrategy::Metadata, &scope, &none());
+        assert_eq!(found.structural.as_deref(), Some("gone.ts was deleted"));
+        write(&dir.join("gone.ts"), "back\n");
+        let found = detect(&manifest, CacheStrategy::Metadata, &scope, &none());
+        assert_eq!(found.structural, None);
+        assert!(
+            found.modified.contains("gone.ts"),
+            "back, it is read again: {found:?}"
+        );
+        write(&dir.join("tsconfig.json"), "{}");
+        let found = detect(&manifest, CacheStrategy::Metadata, &scope, &none());
+        assert_eq!(found.structural.as_deref(), Some("tsconfig.json appeared"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_input_modified_after_the_run_started_is_recorded_unsettled() {
+        for strategy in [CacheStrategy::Metadata, CacheStrategy::Content] {
+            let dir = scratch(&format!("unsettled-{}", strategy.as_str()));
+            let scope = scope(&dir);
+            write(&dir.join("a.ts"), "before\n");
+            write(&dir.join("b.ts"), "steady\n");
+            // Settled before the run starts.
+            let old = std::time::SystemTime::now() - std::time::Duration::from_secs(60);
+            for file in ["a.ts", "b.ts"] {
+                let _ = std::fs::File::options()
+                    .write(true)
+                    .open(dir.join(file))
+                    .and_then(|f| f.set_modified(old));
+            }
+            let started = now();
+            let known = BTreeMap::from([(
+                "a.ts".to_owned(),
+                hash_file(&dir.join("a.ts")).unwrap_or_default(),
+            )]);
+            // The edit lands while the run extracts: after it started, before it records.
+            write(&dir.join("a.ts"), "after!\n");
+            let inputs = BTreeSet::from(["a.ts".to_owned(), "b.ts".to_owned()]);
+            let (hashes, stamps) =
+                record(&scope, &inputs, &BTreeSet::new(), &known, strategy, started);
+            assert_eq!(hashes.get("a.ts").map(String::as_str), Some(UNSETTLED));
+            assert_ne!(hashes.get("b.ts").map(String::as_str), Some(UNSETTLED));
+            let manifest = Manifest {
+                inputs: hashes,
+                stamps,
+                ..recorded(&scope, strategy)
+            };
+            // Nothing moves after the record, and still the next run reads the file again.
+            let found = detect(&manifest, strategy, &scope, &none());
+            assert!(found.modified.contains("a.ts"), "{strategy:?}: {found:?}");
+            assert!(!found.modified.contains("b.ts"));
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+    }
+
+    #[test]
+    fn a_whole_second_time_counts_as_after_a_start_less_than_two_seconds_later() {
+        const SECOND: u64 = 1_000_000_000;
+        assert!(after_start(10 * SECOND + 1, 10 * SECOND));
+        assert!(!after_start(10 * SECOND - 1, 10 * SECOND));
+        assert!(!after_start(10 * SECOND + 1, 10 * SECOND + 1));
+        assert!(
+            after_start(10 * SECOND, 11 * SECOND),
+            "a coarse time a second before"
+        );
+        assert!(
+            !after_start(10 * SECOND, 12 * SECOND),
+            "two seconds before is settled"
+        );
+    }
+
+    #[test]
+    fn a_folder_listing_sees_any_entry_come_or_go() {
+        for strategy in [CacheStrategy::Metadata, CacheStrategy::Content] {
+            let dir = scratch(&format!("listing-{}", strategy.as_str()));
+            let scope = scope(&dir);
+            write(
+                &dir.join("web/src/a.ts"),
+                "import { x } from '../../shared/util';\n",
+            );
+            write(
+                &dir.join("web/src/b.ts"),
+                "import { y } from './missing/deep';\n",
+            );
+            std::fs::create_dir_all(dir.join("shared")).unwrap_or_default();
+            let folders = target_folders(
+                &scope,
+                [
+                    ("web/src/a.ts", "../../shared/util"),
+                    ("web/src/b.ts", "./missing/deep"),
+                    ("web/src/b.ts", "react"),
+                ]
+                .into_iter(),
+            );
+            assert_eq!(
+                folders.iter().collect::<Vec<_>>(),
+                ["shared/", "web/src/"],
+                "the target's folder, or its nearest existing one; a package is not relative"
+            );
+            let manifest = Manifest {
+                inputs: record(
+                    &scope,
+                    &folders.union(&walk(&scope, &dir)).cloned().collect(),
+                    &BTreeSet::new(),
+                    &BTreeMap::new(),
+                    strategy,
+                    now(),
+                )
+                .0,
+                ..recorded(&scope, strategy)
+            };
+            let quiet = detect(&manifest, strategy, &scope, &none());
+            assert_eq!(quiet.structural, None, "{strategy:?}");
+            // A file no walk would call relevant still changes the listing.
+            write(&dir.join("shared/util"), "");
+            let found = detect(&manifest, strategy, &scope, &none());
+            assert!(
+                found.modified.contains("shared/"),
+                "{strategy:?}: {found:?}"
+            );
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+        assert!(is_listing("a/") && !is_listing("a"));
+        assert_eq!(listing(Path::new("/definitely/not/here")), None);
+    }
+
+    #[test]
+    fn the_walk_widens_to_hold_an_input_outside_the_root() {
+        let dir = scratch("widen");
+        let web = dir.join("web");
+        write(&web.join("src/a.ts"), "");
+        write(&dir.join("shared/util.ts"), "");
+        let scope = Scope {
+            base: web.clone(),
+            root: web.clone(),
+            ..scope(&dir)
+        };
+        let outside = key::slashed(&dir.join("shared/util.ts"));
+        assert_eq!(walk_root(&scope, [outside.clone()].iter()), dir);
+        assert_eq!(walk_root(&scope, ["src/a.ts".to_owned()].iter()), web);
+        assert_eq!(
+            walk_root(&scope, ["/elsewhere/entirely/x.ts".to_owned()].iter()),
+            web,
+            "never the file system's root"
+        );
+        // A file created beside the outside input is seen by the content walk.
+        let manifest = Manifest {
+            inputs: record(
+                &scope,
+                &BTreeSet::from(["src/a.ts".to_owned(), outside]),
+                &BTreeSet::new(),
+                &BTreeMap::new(),
+                CacheStrategy::Content,
+                now(),
+            )
+            .0,
+            ..recorded(&scope, CacheStrategy::Content)
+        };
+        assert_eq!(
+            detect(&manifest, CacheStrategy::Content, &scope, &none()).structural,
+            None
+        );
+        write(&dir.join("shared/more.ts"), "");
+        let found = detect(&manifest, CacheStrategy::Content, &scope, &none());
+        assert!(
+            found
+                .structural
+                .as_ref()
+                .is_some_and(|r| r.ends_with("shared/more.ts was added")),
+            "{found:?}"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_probe_that_differs_is_structural() {
+        let dir = scratch("probes");
+        let scope = scope(&dir);
+        let manifest = Manifest {
+            probes: BTreeMap::from([("Python environment".to_owned(), "none".to_owned())]),
+            ..recorded(&scope, CacheStrategy::Metadata)
+        };
+        let same = BTreeMap::from([("Python environment".to_owned(), "none".to_owned())]);
+        assert!(detect(&manifest, CacheStrategy::Metadata, &scope, &same).is_empty());
+        let installed = BTreeMap::from([(
+            "Python environment".to_owned(),
+            ".venv/lib/python3.12/site-packages\nrequests-2.31.0.dist-info".to_owned(),
+        )]);
+        assert_eq!(
+            detect(&manifest, CacheStrategy::Metadata, &scope, &installed)
+                .structural
+                .as_deref(),
+            Some("the Python environment changed")
+        );
+        assert_eq!(
+            detect(&manifest, CacheStrategy::Metadata, &scope, &none())
+                .structural
+                .as_deref(),
+            Some("the Python environment changed"),
+            "a probe no longer computed"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

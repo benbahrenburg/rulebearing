@@ -27,7 +27,7 @@
 //! digest, and that they decompress and parse. Any failure is a [`Miss`] naming why; nothing in an
 //! entry is used before every check has passed, and nothing an entry holds can make a run panic.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use rb_model::{CacheOptions, CacheStrategy};
@@ -39,9 +39,29 @@ use crate::pipeline::Parts;
 /// The manifest's file name in the cache folder.
 pub const MANIFEST_FILE: &str = "manifest.json";
 
-/// The most bytes a compressed extraction may inflate to: a bound on memory against a crafted
-/// entry, far above any real graph.
-pub const INFLATE_LIMIT: usize = 1 << 31;
+/// The most bytes any file of an entry may hold, compressed or inflated: a bound on memory
+/// against a crafted or damaged entry, far above the stored extraction of the largest test bed
+/// (tens of megabytes). A larger file is a miss, never an allocation.
+pub const PAYLOAD_LIMIT: usize = 1 << 29;
+
+/// Reads `path` whole when it holds at most `limit` bytes.
+///
+/// # Errors
+/// The I/O error; `InvalidData` naming the limit when the file is larger.
+pub fn read_limited(path: &Path, limit: usize) -> std::io::Result<Vec<u8>> {
+    use std::io::Read as _;
+    let file = std::fs::File::open(path)?;
+    let mut bytes = Vec::new();
+    let cap = u64::try_from(limit).unwrap_or(u64::MAX);
+    file.take(cap.saturating_add(1)).read_to_end(&mut bytes)?;
+    if bytes.len() > limit {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            format!("larger than the {limit}-byte limit for a cache file"),
+        ));
+    }
+    Ok(bytes)
+}
 
 /// What an entry must match before it is used: plan § 1.5's `CacheKey`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -80,6 +100,16 @@ pub struct Manifest {
     pub stamps: BTreeMap<String, (u64, u64)>,
     /// Additive: `sha256:` and the digest of the stored extraction's bytes.
     pub extraction: String,
+    /// Additive: values computed from the environment before the extraction (the .NET
+    /// assemblies discovery finds, the Python environment), compared on the next run
+    /// ([`super::changes::detect`]).
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub probes: BTreeMap<String, String>,
+    /// Additive: the inputs recorded only for their presence (files of the presence set no
+    /// extractor or configuration reads): their appearing or disappearing is structural, a
+    /// change to their bytes changes nothing extracted.
+    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+    pub watched: BTreeSet<String>,
 }
 
 impl Manifest {
@@ -302,7 +332,7 @@ pub fn load(folder: &Path, key: &Key, options: &CacheOptions) -> Result<Entry, M
 /// A [`Miss`] naming why the manifest cannot be used.
 pub fn load_manifest(folder: &Path, key: &Key, options: &CacheOptions) -> Result<Manifest, Miss> {
     let manifest_path = folder.join(MANIFEST_FILE);
-    let text = match std::fs::read(&manifest_path) {
+    let text = match read_limited(&manifest_path, PAYLOAD_LIMIT) {
         Ok(text) => text,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Err(Miss::Absent),
         Err(e) => return Err(Miss::Corrupt(format!("{}: {e}", manifest_path.display()))),
@@ -336,8 +366,22 @@ pub fn read_payload(
     expected: &str,
     compressed: bool,
 ) -> Result<Vec<u8>, Miss> {
+    read_payload_limited(folder, name, expected, compressed, PAYLOAD_LIMIT)
+}
+
+/// [`read_payload`] with the size bound given: `limit` bytes stored, and `limit` inflated.
+///
+/// # Errors
+/// As [`read_payload`], and `Corrupt` for a file or an inflation over `limit`.
+pub fn read_payload_limited(
+    folder: &Path,
+    name: &str,
+    expected: &str,
+    compressed: bool,
+    limit: usize,
+) -> Result<Vec<u8>, Miss> {
     let path = folder.join(name);
-    let payload = std::fs::read(&path).map_err(|e| {
+    let payload = read_limited(&path, limit).map_err(|e| {
         if e.kind() == std::io::ErrorKind::NotFound {
             Miss::Stale("compress")
         } else {
@@ -351,7 +395,7 @@ pub fn read_payload(
         )));
     }
     if compressed {
-        miniz_oxide::inflate::decompress_to_vec_zlib_with_limit(&payload, INFLATE_LIMIT)
+        miniz_oxide::inflate::decompress_to_vec_zlib_with_limit(&payload, limit)
             .map_err(|e| Miss::Corrupt(format!("{}: {e:?}", path.display())))
     } else {
         Ok(payload)
@@ -488,6 +532,8 @@ mod tests {
             inputs: BTreeMap::from([("src/a.ts".to_owned(), digest(b"a"))]),
             stamps: BTreeMap::new(),
             extraction: String::new(),
+            probes: BTreeMap::new(),
+            watched: BTreeSet::new(),
         }
     }
 
@@ -785,6 +831,36 @@ mod tests {
         );
         assert!(error.is_err_and(|e| e.to_string().contains("--no-cache")));
         let _ = std::fs::remove_file(&dir);
+        Ok(())
+    }
+
+    #[test]
+    fn a_file_over_the_limit_is_a_miss_never_an_allocation()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let dir = scratch("limit");
+        std::fs::create_dir_all(&dir)?;
+        let big = vec![b'x'; 4096];
+        std::fs::write(dir.join("big"), &big)?;
+        assert_eq!(read_limited(&dir.join("big"), 4096)?.len(), 4096);
+        let over = read_limited(&dir.join("big"), 4095);
+        assert!(over.is_err_and(|e| e.kind() == std::io::ErrorKind::InvalidData));
+        assert!(matches!(
+            read_payload_limited(&dir, "big", &digest(&big), false, 100),
+            Err(Miss::Corrupt(m)) if m.contains("limit")
+        ));
+        // A small stream that inflates past the limit.
+        let bomb = miniz_oxide::deflate::compress_to_vec_zlib(&vec![0u8; 1 << 20], 9);
+        std::fs::write(dir.join("bomb"), &bomb)?;
+        assert!(bomb.len() < 4096);
+        assert!(matches!(
+            read_payload_limited(&dir, "bomb", &digest(&bomb), true, 4096),
+            Err(Miss::Corrupt(_))
+        ));
+        assert_eq!(
+            read_payload_limited(&dir, "bomb", &digest(&bomb), true, 1 << 21).map(|b| b.len()),
+            Ok(1 << 20)
+        );
+        let _ = std::fs::remove_dir_all(&dir);
         Ok(())
     }
 

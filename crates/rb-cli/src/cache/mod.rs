@@ -39,7 +39,7 @@
 //! | TypeScript or Python files only | those files are read again; the rest come from the stored parts and the walk replays over them (`rb_extract_ts::extract_incremental`, `rb_extract_python::extract_incremental`) |
 //! | a CoffeeScript or LiveScript file, under `--sidecar node` | the sidecar extracts the changed files again, the rest are reused as TypeScript files are (the flag is in the key, so an entry written without it is never reused with it, nor the reverse) |
 //! | an assembly or a PDB | the .NET graph is read again whole, so edges across assemblies stay exact; the other languages are reused |
-//! | a file added or deleted, a manifest, git unable to say | everything is read again |
+//! | anything else recorded: a file added or deleted, a manifest or any other configuration file the run read, a folder's entries, a probe (the .NET assemblies, the Python environment), an input recorded as unsettled because it moved during the run, git unable to say | everything is read again ([`changes`] lists the inputs) |
 //!
 //! Every path ends in [`pipeline::merge`], which a cold run goes through too, so the document is
 //! the cold run's byte for byte. On a full hit the entry can also hold the evaluated run
@@ -409,8 +409,8 @@ fn is_assembly(name: &str) -> bool {
 }
 
 /// What the stored parts (with their per-file states) and the changes call for: a partial
-/// extraction or a full one, or `None` for a hit. A change to a file no extractor read (a file of
-/// the presence set whose content alone changed) changes nothing extracted.
+/// extraction or a full one, or `None` for a hit. Only a changed source is read again alone and
+/// only an assembly reads the .NET graph again; any other changed input is structural.
 fn decide(
     config: &Config,
     scope: &changes::Scope,
@@ -433,16 +433,18 @@ fn decide(
         .map(|file| (scope.name(&scope.base.join(file)), file))
         .collect();
     let (mut ts_changed, mut py_changed, mut dotnet) = (Vec::new(), Vec::new(), false);
+    // A source is read again alone and an assembly reads the .NET graph again; any other input
+    // (a manifest, a tsconfig and its chain, a Babel configuration, a project file, a folder's
+    // entries, a file of the presence set) can move what an unchanged file resolves to.
     for name in &found.modified {
-        if changes::is_manifest(name) {
-            return Some(full(format!("{name} changed")));
-        }
         if is_assembly(name) {
             dotnet = true;
         } else if let Some(source) = typescript.get(name) {
             ts_changed.push(PathBuf::from(source.as_str()));
         } else if let Some(file) = python.get(name) {
             py_changed.push(PathBuf::from(file.as_str()));
+        } else {
+            return Some(full(format!("{name} changed")));
         }
     }
     if ts_changed.is_empty() && py_changed.is_empty() && !dotnet {
@@ -484,14 +486,35 @@ fn decide(
     ))
 }
 
-/// Every input an entry written for `parts` records (the module doc of [`changes`] lists them).
+/// The files that change nothing when absent and must be seen when they appear: the manifests
+/// the key names, and the package managers' records of an installation under `node_modules`,
+/// in the worktree root and the working directory.
+fn optional_inputs(cwd: &Path, config: &Config, scope: &changes::Scope) -> BTreeSet<String> {
+    let mut optional: BTreeSet<String> = key::manifest_paths(&scope.root, cwd, config)
+        .iter()
+        .map(|p| scope.name(p))
+        .collect();
+    for folder in [scope.root.as_path(), cwd] {
+        for marker in [
+            "node_modules/.package-lock.json",
+            "node_modules/.modules.yaml",
+            "node_modules/.yarn-state.yml",
+        ] {
+            optional.insert(scope.name(&folder.join(marker)));
+        }
+    }
+    optional
+}
+
+/// Every input an entry written for `parts` records (the module doc of [`changes`] lists them),
+/// and those of them recorded only for their presence.
 fn inputs(
     cwd: &Path,
     config: &Config,
     scope: &changes::Scope,
     parts: &Parts,
     strategy: CacheStrategy,
-) -> BTreeSet<String> {
+) -> (BTreeSet<String>, BTreeSet<String>) {
     let mut inputs: BTreeSet<String> = BTreeSet::new();
     let typescript: BTreeSet<String> = parts
         .typescript
@@ -503,7 +526,33 @@ fn inputs(
         scope,
         typescript.iter().map(String::as_str),
     ));
+    let imports: Vec<(String, &str)> = parts
+        .typescript
+        .iter()
+        .flat_map(|p| &p.modules)
+        .filter(|m| m.language.is_some())
+        .flat_map(|m| {
+            let name = typescript_name(scope, config, &m.source);
+            m.dependencies
+                .iter()
+                .map(move |d| (name.clone(), d.module.as_str()))
+        })
+        .collect();
+    inputs.extend(changes::target_folders(
+        scope,
+        imports
+            .iter()
+            .map(|(file, specifier)| (file.as_str(), *specifier)),
+    ));
     inputs.extend(typescript);
+    #[cfg(feature = "extract-ts")]
+    if parts.typescript.is_some() {
+        inputs.extend(
+            rb_extract_ts::configuration_files(&config.languages.typescript, cwd)
+                .iter()
+                .map(|p| scope.name(p)),
+        );
+    }
     inputs.extend(
         parts
             .python
@@ -517,6 +566,9 @@ fn inputs(
         if let Ok(assemblies) = rb_extract_dotnet::assembly_inputs(cwd, &options) {
             inputs.extend(assemblies.iter().map(|p| scope.name(p)));
         }
+        if let Ok(projects) = rb_extract_dotnet::project_files(cwd, &options) {
+            inputs.extend(projects.iter().map(|p| scope.name(p)));
+        }
     }
     inputs.extend(
         key::manifest_paths(&scope.root, cwd, config)
@@ -524,8 +576,51 @@ fn inputs(
             .filter(|p| p.is_file())
             .map(|p| scope.name(p)),
     );
-    inputs.extend(changes::presence(strategy, scope));
-    inputs
+    let present = changes::presence(strategy, scope, &inputs);
+    // A manifest by name is never only watched, wherever it sits.
+    let watched: BTreeSet<String> = present
+        .difference(&inputs)
+        .filter(|name| !changes::is_manifest(name))
+        .cloned()
+        .collect();
+    inputs.extend(present);
+    (inputs, watched)
+}
+
+/// The probes of a run ([`changes`]): computed before anything is extracted, so an environment
+/// that changes during the run is seen by the next one.
+#[cfg_attr(
+    not(any(feature = "extract-dotnet", feature = "extract-python")),
+    expect(
+        unused_variables,
+        unused_mut,
+        reason = "only the .NET and Python extractors have probes"
+    )
+)]
+pub fn probes(ctx: &Context<'_>, config: &Config) -> BTreeMap<String, String> {
+    let mut probes = BTreeMap::new();
+    #[cfg(feature = "extract-dotnet")]
+    if pipeline::dotnet_enabled(ctx, config) {
+        let options = config.languages.dotnet.clone().unwrap_or_default();
+        let value = match rb_extract_dotnet::assembly_inputs(&ctx.cwd, &options) {
+            Ok(found) => found
+                .iter()
+                .map(|p| key::slashed(p))
+                .collect::<Vec<_>>()
+                .join("\n"),
+            Err(e) => format!("error: {e}"),
+        };
+        probes.insert(".NET assemblies".to_owned(), value);
+    }
+    #[cfg(feature = "extract-python")]
+    if pipeline::python_enabled(ctx, config) {
+        let options = config.languages.python.clone().unwrap_or_default();
+        let virtual_env = std::env::var_os("VIRTUAL_ENV").map(PathBuf::from);
+        let value = rb_extract_python::environment(&ctx.cwd, &options, virtual_env.as_deref())
+            .unwrap_or_else(|e| format!("error: {e}"));
+        probes.insert("Python environment".to_owned(), value);
+    }
+    probes
 }
 
 /// Everything the background write of an entry needs, owned.
@@ -538,27 +633,36 @@ struct Pending {
     manifest: manifest::Manifest,
     verified: BTreeMap<String, String>,
     parts: Parts,
+    /// When the run started, nanoseconds since the epoch: an input modified after it is
+    /// recorded as unsettled.
+    started: u64,
 }
 
 impl Pending {
     /// Records the inputs and writes the entry.
     fn write(self) -> Result<String, String> {
-        let recorded = inputs(
+        let (recorded, watched) = inputs(
             &self.cwd,
             &self.config,
             &self.scope,
             &self.parts,
             self.options.strategy,
         );
+        let optional = optional_inputs(&self.cwd, &self.config, &self.scope);
+        #[cfg(test)]
+        tests::between_extraction_and_record(&self.folder);
         let (hashes, stamps) = changes::record(
             &self.scope,
             &recorded,
+            &optional,
             &self.verified,
             self.options.strategy,
+            self.started,
         );
         let manifest = manifest::Manifest {
             inputs: hashes,
             stamps,
+            watched,
             ..self.manifest
         };
         manifest::store(&self.folder, manifest, &self.parts, &self.options)
@@ -628,9 +732,14 @@ pub fn extract_cached(
     options: &CacheOptions,
     evaluation: Option<&str>,
 ) -> Result<Cached, ExtractError> {
+    // Before anything is looked at: an input modified after this is recorded as unsettled.
+    let started = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| u64::try_from(d.as_nanos()).unwrap_or(u64::MAX));
     let folder = ctx.resolve(&options.folder);
     let scope = scope_of(ctx, config, &folder);
     let (root, head) = (scope.root.clone(), scope.head.clone());
+    let probes = probes(ctx, config);
     let fresh = manifest::Manifest {
         tool_version: key::VERSION.to_owned(),
         config_hash: key::extraction_hash(config, &root, &ctx.cwd, paths),
@@ -640,6 +749,8 @@ pub fn extract_cached(
         inputs: BTreeMap::new(),
         stamps: BTreeMap::new(),
         extraction: String::new(),
+        probes: probes.clone(),
+        watched: BTreeSet::new(),
     };
     let summary = |served: &Served| CacheSummary {
         hit: *served == Served::Hit,
@@ -657,6 +768,7 @@ pub fn extract_cached(
             manifest: fresh.clone(),
             verified,
             parts,
+            started,
         };
         Ok(Cached {
             content: Content::Extracted(Box::new(document), warnings),
@@ -669,7 +781,11 @@ pub fn extract_cached(
         Ok(recorded) => recorded,
         Err(miss) => return extract(full(miss.to_string()), BTreeMap::new()),
     };
-    let found = changes::detect(&recorded, options.strategy, &scope);
+    let mut found = changes::detect(&recorded, options.strategy, &scope, &probes);
+    // A file recorded only for its presence changes nothing extracted when its bytes change.
+    found
+        .modified
+        .retain(|name| !recorded.watched.contains(name));
     let refreshed = manifest::Manifest {
         inputs: found.hashes.clone(),
         stamps: if options.strategy == CacheStrategy::Metadata {
@@ -678,6 +794,7 @@ pub fn extract_cached(
             BTreeMap::new()
         },
         extraction: recorded.extraction.clone(),
+        watched: recorded.watched.clone(),
         ..fresh.clone()
     };
     let refresh = |folder: PathBuf| refresh(folder, &recorded, &refreshed);
@@ -722,6 +839,23 @@ pub fn extract_cached(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A test's action between an extraction and the recording of its inputs, by cache folder.
+    type Hook = (PathBuf, Box<dyn Fn() + Send>);
+
+    static HOOKS: std::sync::Mutex<Vec<Hook>> = std::sync::Mutex::new(Vec::new());
+
+    /// Runs the action a test registered for `folder`, the moment the writer is about to record.
+    pub(super) fn between_extraction_and_record(folder: &Path) {
+        let hooks = HOOKS
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for (registered, action) in hooks.iter() {
+            if registered == folder {
+                action();
+            }
+        }
+    }
 
     fn context<'a>(dir: &std::path::Path, stdin: &'a mut &'static [u8]) -> Context<'a> {
         Context {
@@ -822,6 +956,87 @@ mod tests {
         }
     }
 
+    /// Review item 3: an input edited between the extraction and the recording of its digest is
+    /// not trusted by the next run, and one deleted then forces a full run.
+    #[test]
+    fn an_edit_during_the_run_is_read_again_on_the_next() -> Result<(), Box<dyn std::error::Error>>
+    {
+        for (strategy, deleted) in [
+            (CacheStrategy::Metadata, false),
+            (CacheStrategy::Content, false),
+            (CacheStrategy::Metadata, true),
+        ] {
+            let dir = std::env::temp_dir().join(format!(
+                "rb-cache-midrun-{}-{deleted}-{}",
+                strategy.as_str(),
+                std::process::id()
+            ));
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(dir.join("src"))?;
+            let dir = dir.canonicalize()?;
+            std::fs::write(
+                dir.join("src/a.ts"),
+                "import { b } from \"./b\";\nexport const a = b;\n",
+            )?;
+            std::fs::write(dir.join("src/b.ts"), "export const b = 1;\n")?;
+            std::fs::write(dir.join("src/c.ts"), "export const c = 1;\n")?;
+            let options = CacheOptions {
+                strategy,
+                ..CacheOptions::in_folder(".rbc")
+            };
+            let config = Config::default();
+            let paths = ["src".to_owned()];
+            let mut empty: &'static [u8] = &[];
+            let ctx = context(&dir, &mut empty);
+            // While the writer records the inputs, `b.ts` gains an import (or goes).
+            let folder = ctx.resolve(".rbc");
+            let target = dir.join("src/b.ts");
+            HOOKS
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push((
+                    folder.clone(),
+                    Box::new(move || {
+                        let _ = if deleted {
+                            std::fs::remove_file(&target)
+                        } else {
+                            std::fs::write(
+                                &target,
+                                "import { c } from \"./c\";\nexport const b = c;\n",
+                            )
+                        };
+                    }),
+                ));
+            let first = extract_cached(&ctx, &config, &paths, &options, None)?;
+            assert!(matches!(first.served, Served::Full(_)));
+            assert!(first.writing.wait()?.is_some(), "the entry is written");
+            HOOKS
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .retain(|(registered, _)| *registered != folder);
+            let second = extract_cached(&ctx, &config, &paths, &options, None)?;
+            match &second.served {
+                Served::Full(reason) if deleted => {
+                    assert_eq!(reason, "src/b.ts was deleted");
+                }
+                Served::Incremental { typescript: 1, .. } if !deleted => {}
+                other => unreachable!("{strategy:?} deleted={deleted}: {other:?}"),
+            }
+            let cold = pipeline::extract(&ctx, &config, &paths)?;
+            let Content::Extracted(document, _) = second.content else {
+                unreachable!("the second run extracts");
+            };
+            assert_eq!(
+                serde_json::to_string(&*document)?,
+                serde_json::to_string(&cold)?,
+                "{strategy:?} deleted={deleted}"
+            );
+            let _ = second.writing.wait();
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+        Ok(())
+    }
+
     #[test]
     fn the_changes_decide_what_is_read_again() {
         let dir = Path::new("/repo");
@@ -836,10 +1051,13 @@ mod tests {
             ..changes::Changes::default()
         };
         assert!(decide(&config, &scope(dir), &parts, &changed(&[])).is_none());
-        assert!(
-            decide(&config, &scope(dir), &parts, &changed(&["notes/x.json"])).is_none(),
-            "a file no extractor read"
-        );
+        for other in ["notes/x.json", ".babelrc", "configs/base.json", "src/"] {
+            assert_eq!(
+                decide(&config, &scope(dir), &parts, &changed(&[other])).map(|(_, s)| s),
+                Some(Served::Full(format!("{other} changed"))),
+                "any input other than a source or an assembly is structural"
+            );
+        }
         let structural = changes::Changes {
             structural: Some("src/c.ts was added".into()),
             ..changed(&["src/a.ts"])

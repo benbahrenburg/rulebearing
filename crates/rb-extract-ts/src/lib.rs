@@ -171,6 +171,78 @@ pub fn resolve_config(options: &TypeScriptOptions) -> ResolveConfig {
     config
 }
 
+/// Every configuration file an extraction with `options` from `cwd` reads besides the sources and
+/// `package.json` files: the tsconfig with the files its `extends` chains and project references
+/// name (each read as the resolver reads it), the Babel configuration, and the Plug'n'Play
+/// manifest. A cache keys a reused extraction on them
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// A file named but absent is listed too, so its appearance is seen.
+pub fn configuration_files(options: &TypeScriptOptions, cwd: &Path) -> Vec<PathBuf> {
+    let config = resolve_config(options);
+    let mut found = std::collections::BTreeSet::new();
+    if let Some(file) = &config.tsconfig {
+        let resolver = config.resolver(None);
+        let mut stack = vec![absolute(cwd, file)];
+        while let Some(file) = stack.pop() {
+            if !found.insert(file.clone()) {
+                continue;
+            }
+            let Ok(tsconfig) = resolver.resolve_tsconfig(&file) else {
+                continue;
+            };
+            let directory = file.parent().unwrap_or(Path::new("")).to_path_buf();
+            let specifiers: Vec<String> = match &tsconfig.extends {
+                Some(oxc_resolver::ExtendsField::Single(one)) => vec![one.clone()],
+                Some(oxc_resolver::ExtendsField::Multiple(many)) => many.clone(),
+                None => Vec::new(),
+            };
+            for specifier in specifiers {
+                stack.extend(extended_tsconfig(&resolver, &directory, &specifier));
+            }
+            stack.extend(tsconfig.references_resolved.iter().map(|r| r.path.clone()));
+        }
+    }
+    if let Some(file) = options
+        .babel_config
+        .as_ref()
+        .and_then(|b| b.file_name.as_ref())
+    {
+        found.insert(absolute(cwd, Path::new(file)));
+    }
+    if config.yarn_pnp
+        && let Ok(manifest) = pnp_manifest(cwd)
+    {
+        found.insert(manifest);
+    }
+    found.into_iter().collect()
+}
+
+/// The file a tsconfig `extends` specifier names, as TypeScript and the resolver find it: a path
+/// relative to the tsconfig's folder (with `.json` added when the name has none and the bare
+/// name is not a file), an absolute path, or a package's file.
+fn extended_tsconfig(
+    resolver: &oxc_resolver::Resolver,
+    directory: &Path,
+    specifier: &str,
+) -> Option<PathBuf> {
+    let path = match specifier.as_bytes().first()? {
+        b'/' => PathBuf::from(specifier),
+        b'.' => directory.join(specifier),
+        _ => {
+            return resolver
+                .resolve(directory, specifier)
+                .or_else(|_| resolver.resolve(directory, &format!("{specifier}/tsconfig.json")))
+                .ok()
+                .map(|r| r.full_path());
+        }
+    };
+    if path.is_file() || path.extension().is_some_and(|e| e == "json") {
+        Some(path)
+    } else {
+        Some(PathBuf::from(format!("{}.json", path.display())))
+    }
+}
+
 fn absolute(cwd: &Path, path: &Path) -> PathBuf {
     if path.is_absolute() {
         path.to_path_buf()

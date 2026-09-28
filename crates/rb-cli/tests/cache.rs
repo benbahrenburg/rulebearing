@@ -1495,3 +1495,324 @@ fn x_dot_webpage_is_never_served_from_the_rendered_layer() -> Result {
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
+
+/// A cached run of `roots` with `flags` (which name the cache), checked against a cold run of the
+/// same command; how it was served.
+fn checked(dir: &Path, roots: &[&str], flags: &[&str], folder: &str) -> Result<String> {
+    let warm = cruise(dir, roots, "json", flags)?;
+    let reference = cold(dir, roots, "json", flags, folder)?;
+    same_as_cold(&warm, &reference)?;
+    Ok(served(&warm))
+}
+
+/// A repository with `files` committed and `.gitignore` holding `ignored`.
+fn repository(name: &str, files: &[(&str, &str)], ignored: &str) -> Result<PathBuf> {
+    let dir = tree(name, files)?;
+    write(&dir, ".gitignore", &format!(".graph/\n{ignored}"))?;
+    git(&dir, &["init", "-q"])?;
+    git(&dir, &["add", "-A"])?;
+    git(&dir, &["commit", "-q", "-m", "one"])?;
+    Ok(dir)
+}
+
+const RESOLVING: &str = "forbidden:
+  - name: not-to-unresolvable
+    severity: error
+    comment: \"adr:0010\"
+    from: {}
+    to: { couldNotResolve: true }
+";
+
+/// A resolver case: its name, its options, its files, and the one edit that must be seen.
+type ResolverCase = (
+    &'static str,
+    &'static str,
+    &'static [(&'static str, &'static str)],
+    (&'static str, &'static str),
+);
+
+/// Review item 2: every file that decides resolution is an input, and its change is structural:
+/// a tsconfig's `extends` target, a tsConfig not named `tsconfig*`, the Babel configuration.
+#[test]
+fn a_configuration_file_the_resolver_reads_is_structural() -> Result {
+    let cases: [ResolverCase; 3] = [
+        (
+            "extends",
+            "options:\n  tsConfig: { fileName: tsconfig.json }\n",
+            &[
+                ("tsconfig.json", "{ \"extends\": \"./configs/base\" }\n"),
+                (
+                    "configs/base.json",
+                    "{ \"compilerOptions\": { \"baseUrl\": \"..\", \"paths\": { \"@lib/*\": [\"src/lib/*\"] } } }\n",
+                ),
+                ("src/lib/x.ts", "export const x = 1;\n"),
+                ("src/other/x.ts", "export const x = 2;\n"),
+                (
+                    "src/a.ts",
+                    "import { x } from \"@lib/x\";\nexport const a = x;\n",
+                ),
+            ],
+            (
+                "configs/base.json",
+                "{ \"compilerOptions\": { \"baseUrl\": \"..\", \"paths\": { \"@lib/*\": [\"src/other/*\"] } } }\n",
+            ),
+        ),
+        (
+            "named",
+            "options:\n  tsConfig: { fileName: build.json }\n",
+            &[
+                (
+                    "build.json",
+                    "{ \"compilerOptions\": { \"baseUrl\": \".\", \"paths\": { \"@lib/*\": [\"src/lib/*\"] } } }\n",
+                ),
+                ("src/lib/x.ts", "export const x = 1;\n"),
+                ("src/other/x.ts", "export const x = 2;\n"),
+                (
+                    "src/a.ts",
+                    "import { x } from \"@lib/x\";\nexport const a = x;\n",
+                ),
+            ],
+            (
+                "build.json",
+                "{ \"compilerOptions\": { \"baseUrl\": \".\", \"paths\": { \"@lib/*\": [\"src/other/*\"] } } }\n",
+            ),
+        ),
+        (
+            "babel",
+            "options:\n  babelConfig: { fileName: .babelrc }\n",
+            &[
+                (
+                    ".babelrc",
+                    "{ \"plugins\": [[\"module-resolver\", { \"alias\": { \"~\": \"./src/lib\" } }]] }\n",
+                ),
+                ("src/lib/x.js", "module.exports = 1;\n"),
+                ("src/other/x.js", "module.exports = 2;\n"),
+                (
+                    "src/a.js",
+                    "const x = require(\"~/x\");\nmodule.exports = x;\n",
+                ),
+            ],
+            (
+                ".babelrc",
+                "{ \"plugins\": [[\"module-resolver\", { \"alias\": { \"~\": \"./src/other\" } }]] }\n",
+            ),
+        ),
+    ];
+    for (name, options, files, (edited, text)) in cases {
+        for strategy in ["metadata", "content"] {
+            let mut all: Vec<(&str, &str)> = files.to_vec();
+            let config = format!("{RESOLVING}{options}");
+            all.push(("rulebearing.yaml", &config));
+            let dir = repository(&format!("resolver-{name}-{strategy}"), &all, "")?;
+            let flags = ["--cache-strategy", strategy, "--cache"];
+            assert_eq!(
+                checked(&dir, &["src"], &flags, ".graph/cache")?,
+                "in full: no entry"
+            );
+            assert_eq!(
+                checked(&dir, &["src"], &flags, ".graph/cache")?,
+                "from the cache"
+            );
+            write(&dir, edited, text)?;
+            assert_eq!(
+                checked(&dir, &["src"], &flags, ".graph/cache")?,
+                format!("in full: {edited} changed"),
+                "{name} {strategy}"
+            );
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+    }
+    Ok(())
+}
+
+/// Review item 4: installing packages into an ignored `node_modules` is seen under `metadata`.
+#[test]
+fn an_installation_into_an_ignored_node_modules_is_seen() -> Result {
+    let dir = repository(
+        "npm",
+        &[
+            ("rulebearing.yaml", RESOLVING),
+            (
+                "package.json",
+                "{ \"name\": \"x\", \"dependencies\": { \"left-pad\": \"1.0.0\" } }\n",
+            ),
+            (
+                "src/a.ts",
+                "import pad from \"left-pad\";\nexport const a = pad;\n",
+            ),
+        ],
+        "node_modules/\n",
+    )?;
+    let flags = ["--cache"];
+    checked(&dir, &["src"], &flags, ".graph/cache")?;
+    assert_eq!(
+        checked(&dir, &["src"], &flags, ".graph/cache")?,
+        "from the cache"
+    );
+    write(
+        &dir,
+        "node_modules/left-pad/package.json",
+        "{ \"name\": \"left-pad\", \"main\": \"index.js\" }\n",
+    )?;
+    write(
+        &dir,
+        "node_modules/left-pad/index.js",
+        "module.exports = 1;\n",
+    )?;
+    write(
+        &dir,
+        "node_modules/.package-lock.json",
+        "{ \"lockfileVersion\": 3 }\n",
+    )?;
+    assert_eq!(
+        checked(&dir, &["src"], &flags, ".graph/cache")?,
+        "in full: node_modules/.package-lock.json appeared"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// Review item 4: a distribution installed into an ignored `.venv` is seen under `metadata`.
+#[test]
+fn an_installation_into_an_ignored_environment_is_seen() -> Result {
+    let dir = repository(
+        "venv",
+        &[
+            ("pyproject.toml", "[project]\nname = \"app\"\n"),
+            ("app/__init__.py", ""),
+            ("app/main.py", "import requests\n"),
+            ("rulebearing.yaml", "forbidden: []\n"),
+        ],
+        ".venv/\n",
+    )?;
+    let flags = ["--cache"];
+    checked(&dir, &["."], &flags, ".graph/cache")?;
+    assert_eq!(
+        checked(&dir, &["."], &flags, ".graph/cache")?,
+        "from the cache"
+    );
+    let site = ".venv/lib/python3.12/site-packages";
+    write(&dir, ".venv/pyvenv.cfg", "home = /usr/bin\n")?;
+    write(&dir, &format!("{site}/requests/__init__.py"), "")?;
+    write(
+        &dir,
+        &format!("{site}/requests-2.31.0.dist-info/METADATA"),
+        "Name: requests\nLicense: Apache-2.0\n",
+    )?;
+    write(
+        &dir,
+        &format!("{site}/requests-2.31.0.dist-info/top_level.txt"),
+        "requests\n",
+    )?;
+    assert_eq!(
+        checked(&dir, &["."], &flags, ".graph/cache")?,
+        "in full: the Python environment changed"
+    );
+    assert_eq!(
+        checked(&dir, &["."], &flags, ".graph/cache")?,
+        "from the cache"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// Review item 4: an assembly built into an ignored output folder is seen under `metadata`.
+#[test]
+fn an_assembly_built_into_an_ignored_folder_is_seen() -> Result {
+    let dir = tree("dotnet-built", &[])?;
+    copy(
+        &Path::new(env!("CARGO_MANIFEST_DIR")).join("../rb-extract-dotnet/tests/fixtures/sample"),
+        &dir,
+    )?;
+    // Only Sample itself is built at first; its reference arrives with the next build.
+    let aside = dir.join("aside");
+    std::fs::create_dir_all(&aside)?;
+    for file in ["Sample.Core.dll", "Sample.Core.pdb"] {
+        std::fs::rename(dir.join("built").join(file), aside.join(file))?;
+    }
+    write(
+        &dir,
+        "rulebearing.yaml",
+        "languages:\n  dotnet:\n    assemblies: [\"built/*.dll\"]\nforbidden: []\n",
+    )?;
+    write(&dir, ".gitignore", ".graph/\nbuilt/\naside/\n")?;
+    git(&dir, &["init", "-q"])?;
+    git(&dir, &["add", "-A"])?;
+    git(&dir, &["commit", "-q", "-m", "one"])?;
+    let flags = ["--cache"];
+    checked(&dir, &[], &flags, ".graph/cache")?;
+    assert_eq!(
+        checked(&dir, &[], &flags, ".graph/cache")?,
+        "from the cache"
+    );
+    for file in ["Sample.Core.dll", "Sample.Core.pdb"] {
+        std::fs::rename(aside.join(file), dir.join("built").join(file))?;
+    }
+    assert_eq!(
+        checked(&dir, &[], &flags, ".graph/cache")?,
+        "in full: the .NET assemblies changed"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// Review item 5: a file created outside the working directory, where a relative import points,
+/// is seen outside a repository under both strategies.
+#[test]
+fn a_file_created_outside_the_working_directory_is_seen() -> Result {
+    for strategy in ["metadata", "content"] {
+        let root = tree(
+            &format!("outside-{strategy}"),
+            &[
+                ("web/rulebearing.yaml", RESOLVING),
+                (
+                    "web/src/a.ts",
+                    "import { u } from \"../../shared/util\";\nexport const a = u;\n",
+                ),
+                ("shared/readme.txt", "shared code\n"),
+            ],
+        )?;
+        let web = root.join("web");
+        let flags = ["--cache-strategy", strategy, "--cache"];
+        checked(&web, &["src"], &flags, ".graph/cache")?;
+        assert_eq!(
+            checked(&web, &["src"], &flags, ".graph/cache")?,
+            "from the cache"
+        );
+        write(&root, "shared/util.ts", "export const u = 1;\n")?;
+        let served = checked(&web, &["src"], &flags, ".graph/cache")?;
+        assert!(served.starts_with("in full: "), "{strategy}: {served}");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+    Ok(())
+}
+
+/// Review item 5 under `metadata` in a repository: a generated file git ignores, which an
+/// unresolved relative import names, is seen when it appears.
+#[test]
+fn an_ignored_generated_file_an_import_names_is_seen() -> Result {
+    let dir = repository(
+        "generated",
+        &[
+            ("rulebearing.yaml", RESOLVING),
+            (
+                "src/a.ts",
+                "import { g } from \"./generated/api\";\nexport const a = g;\n",
+            ),
+        ],
+        "src/generated/\n",
+    )?;
+    let flags = ["--cache"];
+    checked(&dir, &["src"], &flags, ".graph/cache")?;
+    assert_eq!(
+        checked(&dir, &["src"], &flags, ".graph/cache")?,
+        "from the cache"
+    );
+    write(&dir, "src/generated/api.ts", "export const g = 1;\n")?;
+    assert_eq!(
+        checked(&dir, &["src"], &flags, ".graph/cache")?,
+        "in full: src/ changed"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}

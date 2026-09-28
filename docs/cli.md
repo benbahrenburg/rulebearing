@@ -179,11 +179,15 @@ The folder holds `manifest.json` (the build's version, a `sha256:` hash of the c
 | What changed | What runs |
 | --- | --- |
 | nothing an extractor reads | nothing is read: the stored extraction is used |
-| TypeScript or Python files | those files are read again; the rest come from the cache |
+| TypeScript or Python sources | those files are read again; the rest come from the cache |
 | an assembly or a PDB | the .NET graph is read again whole, so edges between assemblies stay exact |
-| a file added or deleted, a manifest (`package.json` anywhere, `tsconfig*.json`, project and lock files), or git cannot say | everything is read again |
+| anything else the run read or looked for: a file added or deleted, a manifest (`package.json` anywhere, the tsconfig and every file its `extends` chain and references name, the Babel configuration, project, solution and lock files), an entry added to or removed from the folder a relative import points into, a package installed under `node_modules` (its `.package-lock.json`, `.modules.yaml` or `.yarn-state.yml`), a .NET project built since, the Python environment (its `site-packages` and distributions), or git unable to say | everything is read again |
+
+The inputs are recorded after the extraction that read them. A file modified after the run started (an editor saving mid-run, say) is recorded as unsettled and read again on the next run, rather than trusted as the bytes the extraction saw.
 
 When nothing an extractor reads changed, the entry can also answer with the evaluated run, as dependency-cruiser's cache does: `evaluated.json` names the run as the reporter receives it, keyed on the extraction and everything evaluation reads besides (the configuration, the options after the flags and `optionsUsed`, the known violations in force, the liveness mode, the paths, today's date, every ratchet budget and every diagram rule's `.puml`), and `rendered.json` with `rendered.out` keeps the reporter's output for the output type and report options last used (the timestamp counts only for `err-html`, `junit`, `trx` and `teamcity`, which print it). Either is used only when its key matches; a changed input misses it and the run evaluates again from the cached extraction. `--affected` does not use the evaluated layer, because its changed files come from version control rather than from the inputs the cache records.
+
+**The cache folder is trusted input.** A run that finds a matching entry reports from it, so an entry forged or carried from elsewhere can make a gate pass. Keep the folder private to the machine that wrote it: do not commit it, and do not restore it in CI from a cache another branch, fork or pull request could have written. `.graph/` belongs in `.gitignore`. A damaged entry is a miss, never a panic, and no file of an entry is read past 512 MiB, compressed or inflated ([SECURITY.md](../SECURITY.md#what-the-tool-does-and-does-not-do)).
 
 `summary.cache` records `{ "hit": true | false, "strategy": ... }`, so a JSON result from a warm run differs from a cold run's in that field alone; `--strict-schema` removes it. `--progress` names how the extract stage was served. Outside a git repository the `metadata` strategy lists files and compares their size and modification time instead of stopping as dependency-cruiser does. A file edited without changing its size or time, and not listed by git, is only seen by `content`.
 
