@@ -12,7 +12,11 @@
 //! everything else; and `__rb_read`, which returns the text of a target `__rb_resolve` produced.
 //! There is no `process`, no `fs`, no network and no timers. Evaluation is bounded in time and
 //! memory; exceeding either is a configuration error (exit 3), never a hang.
+//!
+//! The same sandbox runs `plugin:<path>` reporters ([`plugin`]; [Wave 3, Step 7](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)):
+//! one policy, one `require`, one set of refusals, and its own time and memory limits.
 
+pub mod plugin;
 pub mod via_node;
 
 use std::cell::RefCell;
@@ -191,20 +195,47 @@ pub enum Kind {
     Json5,
 }
 
+/// What the sandbox is evaluating, which decides how a refusal explains itself.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Purpose {
+    /// A configuration (or a webpack configuration): `--config-via-node` is the way out.
+    Config,
+    /// A `plugin:<path>` reporter: there is no way out; the plugin must do without.
+    Plugin,
+}
+
 /// The resolution policy shared by `require`, `import` and the loader.
 #[derive(Debug)]
 struct Policy {
     root: PathBuf,
+    purpose: Purpose,
     /// Every file read, for the attest receipt.
     read: RefCell<BTreeSet<PathBuf>>,
+    /// The first request the policy refused (a Node built-in, a path outside the repository), so
+    /// a failed run can name the sandbox as its cause even when the code caught the exception.
+    refused: RefCell<Option<String>>,
 }
 
 impl Policy {
     fn new(root: &Path) -> Self {
+        Self::for_purpose(root, Purpose::Config)
+    }
+
+    fn for_purpose(root: &Path, purpose: Purpose) -> Self {
         Self {
             root: canonical(root),
+            purpose,
             read: RefCell::new(BTreeSet::new()),
+            refused: RefCell::new(None),
         }
+    }
+
+    /// Records a refusal and returns its message.
+    fn refuse(&self, message: String) -> String {
+        self.refused
+            .borrow_mut()
+            .get_or_insert_with(|| message.clone());
+        message
     }
 
     /// Maps `specifier`, written in `from`, to a target, or explains the refusal.
@@ -216,9 +247,14 @@ impl Policy {
             _ => {}
         }
         if specifier.starts_with("node:") || NODE_BUILTINS.contains(&bare) {
-            return Err(format!(
-                "`{specifier}` is not available in the configuration sandbox (no filesystem, network or process access, ADR-0006); run with --config-via-node to evaluate this configuration with Node"
-            ));
+            return Err(self.refuse(match self.purpose {
+                Purpose::Config => format!(
+                    "`{specifier}` is not available in the configuration sandbox (no filesystem, network or process access, ADR-0006); run with --config-via-node to evaluate this configuration with Node"
+                ),
+                Purpose::Plugin => format!(
+                    "`{specifier}` is not available in the reporter sandbox (no filesystem, network or process access, ADR-0006)"
+                ),
+            }));
         }
         if let Some(preset) = specifier.strip_prefix("dependency-cruiser/configs/") {
             return preset_target(preset).ok_or_else(|| {
@@ -234,24 +270,61 @@ impl Policy {
             });
         }
         let from_dir = Path::new(from).parent().unwrap_or(&self.root).to_path_buf();
-        let candidates: Vec<PathBuf> = if specifier.starts_with('.') || specifier.starts_with('/') {
-            vec![normalise(&from_dir.join(specifier))]
+        let found = if specifier.starts_with('.') || specifier.starts_with('/') {
+            let candidate = normalise(&from_dir.join(specifier));
+            if !candidate.starts_with(&self.root) {
+                return Err(self.refuse(format!(
+                    "`{specifier}` from {from} is outside the repository; the {} sandbox reads only files inside the repository, {} (ADR-0006)",
+                    self.noun(),
+                    self.root.display()
+                )));
+            }
+            self.find(&candidate)
         } else {
-            // A package under a `node_modules` folder inside the repository.
-            from_dir
-                .ancestors()
-                .filter(|dir| dir.starts_with(&self.root))
-                .map(|dir| dir.join("node_modules").join(specifier))
-                .collect()
+            self.find_package(&from_dir, specifier)
         };
-        for candidate in candidates {
-            if let Some(found) = self.find(&candidate) {
-                return Ok(found.to_string_lossy().replace('\\', "/"));
+        found
+            .map(|path| path.to_string_lossy().replace('\\', "/"))
+            .ok_or_else(|| format!("cannot find `{specifier}` from {from} inside the repository"))
+    }
+
+    /// The word a refusal uses for this sandbox.
+    fn noun(&self) -> &'static str {
+        match self.purpose {
+            Purpose::Config => "configuration",
+            Purpose::Plugin => "reporter",
+        }
+    }
+
+    /// A bare specifier: a package under a `node_modules` folder inside the repository, or the
+    /// package `from_dir` belongs to (Node's self-reference), read through its `exports` when it
+    /// has them and its `main` or the path itself when it does not.
+    fn find_package(&self, from_dir: &Path, specifier: &str) -> Option<PathBuf> {
+        let (name, subpath) = split_package(specifier);
+        let inside = |dir: &&Path| dir.starts_with(&self.root);
+        for dir in from_dir.ancestors().filter(inside) {
+            let package = dir.join("node_modules").join(name);
+            let found = match package_json(&package).and_then(|m| m.get("exports").cloned()) {
+                Some(exports) => exports_target(&exports, &subpath)
+                    .and_then(|target| self.find(&normalise(&package.join(target)))),
+                None => self.find(&dir.join("node_modules").join(specifier)),
+            };
+            if found.is_some() {
+                return found;
             }
         }
-        Err(format!(
-            "cannot find `{specifier}` from {from} inside the repository"
-        ))
+        // Self-reference: the nearest package.json names this package and has `exports`.
+        let owner = from_dir
+            .ancestors()
+            .filter(inside)
+            .find_map(|dir| package_json(dir).map(|manifest| (dir, manifest)))?;
+        let (dir, manifest) = owner;
+        if manifest.get("name").and_then(serde_json::Value::as_str) != Some(name) {
+            return None;
+        }
+        let exports = manifest.get("exports")?;
+        exports_target(exports, &subpath)
+            .and_then(|target| self.find(&normalise(&dir.join(target))))
     }
 
     /// The first existing file for `candidate`, trying the extensions Node tries.
@@ -297,6 +370,72 @@ impl Policy {
         self.read.borrow_mut().insert(path);
         Ok(text)
     }
+}
+
+/// A bare specifier's package name and its subpath as `exports` keys it (`.` or `./rest`).
+fn split_package(specifier: &str) -> (&str, String) {
+    let slashes = if specifier.starts_with('@') { 2 } else { 1 };
+    let end = specifier
+        .match_indices('/')
+        .nth(slashes - 1)
+        .map_or(specifier.len(), |(i, _)| i);
+    let rest = specifier.get(end + 1..).unwrap_or("");
+    let subpath = if rest.is_empty() {
+        ".".to_owned()
+    } else {
+        format!("./{rest}")
+    };
+    (&specifier[..end], subpath)
+}
+
+/// The `package.json` in `dir`, parsed, when there is one.
+fn package_json(dir: &Path) -> Option<serde_json::Map<String, serde_json::Value>> {
+    let text = std::fs::read_to_string(dir.join("package.json")).ok()?;
+    match serde_json::from_str(&text).ok()? {
+        serde_json::Value::Object(map) => Some(map),
+        _ => None,
+    }
+}
+
+/// The conditions the sandbox answers to, in the order it prefers them. The sandbox both imports
+/// and requires, runs no browser, and reads no types; the order is fixed rather than the
+/// manifest's key order so a resolution does not depend on how the manifest was parsed.
+const CONDITIONS: &[&str] = &["import", "require", "node", "default"];
+
+/// The file `exports` maps `subpath` to (Node's `PACKAGE_EXPORTS_RESOLVE`, with the conditions
+/// of [`CONDITIONS`] and one `*` per pattern key), relative to the package, or `None`.
+fn exports_target(exports: &serde_json::Value, subpath: &str) -> Option<String> {
+    use serde_json::Value;
+    fn conditional(value: &Value) -> Option<String> {
+        match value {
+            Value::String(s) if s.starts_with("./") => Some(s.clone()),
+            Value::Array(items) => items.iter().find_map(conditional),
+            Value::Object(map) => CONDITIONS
+                .iter()
+                .find_map(|c| map.get(*c).and_then(conditional)),
+            _ => None,
+        }
+    }
+    let map = match exports {
+        Value::Object(map) if map.keys().any(|k| k.starts_with('.')) => map,
+        // Sugar: a string, an array or a conditions object is the `.` entry.
+        other => return (subpath == ".").then(|| conditional(other)).flatten(),
+    };
+    if let Some(value) = map.get(subpath) {
+        return conditional(value);
+    }
+    let (prefix, suffix, value) = map
+        .iter()
+        .filter_map(|(key, value)| {
+            let (prefix, suffix) = key.split_once('*')?;
+            (subpath.len() >= prefix.len() + suffix.len()
+                && subpath.starts_with(prefix)
+                && subpath.ends_with(suffix))
+            .then_some((prefix, suffix, value))
+        })
+        .max_by_key(|(prefix, _, _)| prefix.len())?;
+    let star = &subpath[prefix.len()..subpath.len() - suffix.len()];
+    conditional(value).map(|target| target.replace('*', star))
 }
 
 fn preset_target(name: &str) -> Option<String> {
