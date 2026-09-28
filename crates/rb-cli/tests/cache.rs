@@ -1459,11 +1459,19 @@ const RESOLVING: &str = "forbidden:
     to: { couldNotResolve: true }
 ";
 
+/// A resolver case: its name, its options, its files, and the one edit that must be seen.
+type ResolverCase = (
+    &'static str,
+    &'static str,
+    &'static [(&'static str, &'static str)],
+    (&'static str, &'static str),
+);
+
 /// Review item 2: every file that decides resolution is an input, and its change is structural:
 /// a tsconfig's `extends` target, a tsConfig not named `tsconfig*`, the Babel configuration.
 #[test]
 fn a_configuration_file_the_resolver_reads_is_structural() -> Result {
-    let cases: [(&str, &str, &[(&str, &str)], (&str, &str)); 3] = [
+    let cases: [ResolverCase; 3] = [
         (
             "extends",
             "options:\n  tsConfig: { fileName: tsconfig.json }\n",

@@ -857,8 +857,8 @@ mod tests {
             Err(Miss::Corrupt(_))
         ));
         assert_eq!(
-            read_payload_limited(&dir, "bomb", &digest(&bomb), true, 1 << 21)?.len(),
-            1 << 20
+            read_payload_limited(&dir, "bomb", &digest(&bomb), true, 1 << 21).map(|b| b.len()),
+            Ok(1 << 20)
         );
         let _ = std::fs::remove_dir_all(&dir);
         Ok(())

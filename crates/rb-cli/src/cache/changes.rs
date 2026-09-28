@@ -692,7 +692,7 @@ pub fn record(
 /// fraction of a second (a file system that keeps whole seconds), within two seconds before it.
 fn after_start(modified: u64, started: u64) -> bool {
     const SECOND: u64 = 1_000_000_000;
-    if modified % SECOND == 0 {
+    if modified.is_multiple_of(SECOND) {
         modified.saturating_add(2 * SECOND) > started
     } else {
         modified > started

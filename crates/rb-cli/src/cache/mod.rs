@@ -39,7 +39,7 @@
 //! | TypeScript or Python files only | those files are read again; the rest come from the stored parts and the walk replays over them (`rb_extract_ts::extract_incremental`, `rb_extract_python::extract_incremental`) |
 //! | a CoffeeScript or LiveScript file, under `--sidecar node` | the sidecar extracts the changed files again, the rest are reused as TypeScript files are (the flag is in the key, so an entry written without it is never reused with it, nor the reverse) |
 //! | an assembly or a PDB | the .NET graph is read again whole, so edges across assemblies stay exact; the other languages are reused |
-//! | a file added or deleted, a manifest, git unable to say | everything is read again |
+//! | anything else recorded: a file added or deleted, a manifest or any other configuration file the run read, a folder's entries, a probe (the .NET assemblies, the Python environment), an input recorded as unsettled because it moved during the run, git unable to say | everything is read again ([`changes`] lists the inputs) |
 //!
 //! Every path ends in [`pipeline::merge`], which a cold run goes through too, so the document is
 //! the cold run's byte for byte. On a full hit the entry can also hold the evaluated run
@@ -593,6 +593,7 @@ fn inputs(
     not(any(feature = "extract-dotnet", feature = "extract-python")),
     expect(
         unused_variables,
+        unused_mut,
         reason = "only the .NET and Python extractors have probes"
     )
 )]
@@ -953,6 +954,87 @@ mod tests {
         ] {
             assert_eq!(is_assembly(name), assembly, "{name}");
         }
+    }
+
+    /// Review item 3: an input edited between the extraction and the recording of its digest is
+    /// not trusted by the next run, and one deleted then forces a full run.
+    #[test]
+    fn an_edit_during_the_run_is_read_again_on_the_next() -> Result<(), Box<dyn std::error::Error>>
+    {
+        for (strategy, deleted) in [
+            (CacheStrategy::Metadata, false),
+            (CacheStrategy::Content, false),
+            (CacheStrategy::Metadata, true),
+        ] {
+            let dir = std::env::temp_dir().join(format!(
+                "rb-cache-midrun-{}-{deleted}-{}",
+                strategy.as_str(),
+                std::process::id()
+            ));
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(dir.join("src"))?;
+            let dir = dir.canonicalize()?;
+            std::fs::write(
+                dir.join("src/a.ts"),
+                "import { b } from \"./b\";\nexport const a = b;\n",
+            )?;
+            std::fs::write(dir.join("src/b.ts"), "export const b = 1;\n")?;
+            std::fs::write(dir.join("src/c.ts"), "export const c = 1;\n")?;
+            let options = CacheOptions {
+                strategy,
+                ..CacheOptions::in_folder(".rbc")
+            };
+            let config = Config::default();
+            let paths = ["src".to_owned()];
+            let mut empty: &'static [u8] = &[];
+            let ctx = context(&dir, &mut empty);
+            // While the writer records the inputs, `b.ts` gains an import (or goes).
+            let folder = ctx.resolve(".rbc");
+            let target = dir.join("src/b.ts");
+            HOOKS
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push((
+                    folder.clone(),
+                    Box::new(move || {
+                        let _ = if deleted {
+                            std::fs::remove_file(&target)
+                        } else {
+                            std::fs::write(
+                                &target,
+                                "import { c } from \"./c\";\nexport const b = c;\n",
+                            )
+                        };
+                    }),
+                ));
+            let first = extract_cached(&ctx, &config, &paths, &options, None)?;
+            assert!(matches!(first.served, Served::Full(_)));
+            assert!(first.writing.wait()?.is_some(), "the entry is written");
+            HOOKS
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .retain(|(registered, _)| *registered != folder);
+            let second = extract_cached(&ctx, &config, &paths, &options, None)?;
+            match &second.served {
+                Served::Full(reason) if deleted => {
+                    assert_eq!(reason, "src/b.ts was deleted");
+                }
+                Served::Incremental { typescript: 1, .. } if !deleted => {}
+                other => unreachable!("{strategy:?} deleted={deleted}: {other:?}"),
+            }
+            let cold = pipeline::extract(&ctx, &config, &paths)?;
+            let Content::Extracted(document, _) = second.content else {
+                unreachable!("the second run extracts");
+            };
+            assert_eq!(
+                serde_json::to_string(&*document)?,
+                serde_json::to_string(&cold)?,
+                "{strategy:?} deleted={deleted}"
+            );
+            let _ = second.writing.wait();
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+        Ok(())
     }
 
     #[test]

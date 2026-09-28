@@ -1671,9 +1671,10 @@ fn the_configuration_files_follow_extends_and_references() {
         );
     }
     assert!(
-        files
-            .iter()
-            .any(|f| f.starts_with("sub/") && f.ends_with(".json")),
+        files.iter().any(|f| f.starts_with("sub/")
+            && std::path::Path::new(f)
+                .extension()
+                .is_some_and(|e| e == "json")),
         "the referenced project's tsconfig: {files:?}"
     );
     assert!(rb_extract_ts::configuration_files(&TypeScriptOptions::default(), &root).is_empty());
