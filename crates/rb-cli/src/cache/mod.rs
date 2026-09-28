@@ -1,12 +1,19 @@
-//! The worktree-aware graph cache the query commands answer from.
+//! The worktree-aware graph cache the query commands answer from, and the `--cache` entry
+//! `cruise` extracts through.
 //!
-//! - Architecture: [Agent surface](../../../../docs/architecture.md#agent-surface)
+//! - Architecture: [Agent surface](../../../../docs/architecture.md#agent-surface),
+//!   [Performance model](../../../../docs/architecture.md#performance-model)
 //! - Plan: [Wave 2, Step 13](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)
 //!   (the key; `can-import`, `propose`, `place` and `impact` read it; a miss re-extracts),
 //!   [Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //!   ("`propose` and `place` read the worktree-aware cache ... so they answer in the same time
 //!   as `can-import`")
-//! - Decision: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md)
+//! - Plan: [Wave 3, Steps 1 and 2](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
+//!   (`--cache`, both strategies, `compress`; incremental extraction)
+//! - Decisions: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md),
+//!   [ADR-0008](../../../../docs/adr/0008-exit-code-contract.md) (the cache is only a speed-up: a
+//!   doubtful entry is a miss), [ADR-0010](../../../../docs/adr/0010-crate-layout-and-extractor-boundary.md)
+//!   (the extractors are asked for a subset through `rb_model::ExtractRequest`)
 //! - Requirement: [FR-CLI-05](../../../../docs/prd.md#fr-cli-05)
 //!
 //! An entry is `.graph/cache/<key>/graph.json`, the extracted graph document before evaluation,
@@ -17,20 +24,38 @@
 //! half an entry) and answers. An entry that does not read back as a graph document is a miss, so
 //! a truncated or foreign file is re-extracted rather than answered from. After a write, only the
 //! newest [`KEEP`] entries of each worktree root are kept, so `.graph/cache` does not grow with
-//! every edit. `--no-cache` extracts without reading or writing. The `--cache` option with a
-//! strategy and compression is wave 3 and builds on this key.
+//! every edit. `--no-cache` extracts without reading or writing.
+//!
+//! `cruise --cache` ([`extract_cached`]) keeps one entry per cache folder, `manifest.json` and
+//! the stored extraction ([`manifest`]), keyed on the build's version, the configuration and
+//! extraction settings ([`key::extraction_hash`]) and the worktree, which the query entries'
+//! key also hashes; the working-tree fingerprint is replaced by the manifest's per-file inputs,
+//! so an edit updates the entry instead of starting a new one. [`changes`] decides what changed
+//! by the strategy. Then:
+//!
+//! | What changed | What runs |
+//! | --- | --- |
+//! | nothing an extractor reads | nothing: the stored parts are merged (`summary.cache.hit: true`) |
+//! | TypeScript or Python files only | those files are read again; the rest come from the stored parts and the walk replays over them (`rb_extract_ts::extract_incremental`, `rb_extract_python::extract_incremental`) |
+//! | an assembly or a PDB | the .NET graph is read again whole, so edges across assemblies stay exact; the other languages are reused |
+//! | a file added or deleted, a manifest, git unable to say | everything is read again |
+//!
+//! Every path ends in [`pipeline::merge`], which a cold run goes through too, so the document is
+//! the cold run's byte for byte.
 
+pub mod changes;
 pub mod key;
+pub mod manifest;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use rb_config::Config;
-use rb_model::GraphDocument;
+use rb_model::{CacheOptions, CacheStrategy, CacheSummary, ExtractError, GraphDocument};
 
 use crate::context::Context;
-use crate::pipeline;
+use crate::pipeline::{self, Parts, Plan, Plans};
 
 pub use key::CacheKey;
 
@@ -183,6 +208,395 @@ pub fn document(
     })?;
     pipeline::reset(&mut document);
     Ok(document)
+}
+
+/// How `cruise --cache` got its extraction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Served {
+    /// Every input unchanged: the stored extraction, no file read.
+    Hit,
+    /// Only what changed was read: how many TypeScript and Python files, and whether the .NET
+    /// graph was read again (the assembly is the unit of change, and the graph is re-read whole
+    /// so edges across assemblies stay exact).
+    Incremental {
+        /// TypeScript and JavaScript files read again.
+        typescript: usize,
+        /// Python files read again.
+        python: usize,
+        /// Whether the .NET graph was read again.
+        dotnet: bool,
+    },
+    /// Everything read, and why.
+    Full(String),
+}
+
+impl std::fmt::Display for Served {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Hit => f.write_str("from the cache"),
+            Self::Incremental {
+                typescript,
+                python,
+                dotnet,
+            } => write!(
+                f,
+                "incremental: {typescript} TypeScript and {python} Python files read again, .NET {}",
+                if *dotnet { "read again" } else { "reused" }
+            ),
+            Self::Full(reason) => write!(f, "in full: {reason}"),
+        }
+    }
+}
+
+/// The entry being written while the run evaluates: the next run needs it, this one does not.
+/// Waited for by [`Writing::wait`], or when dropped, so a process never exits with it half done.
+#[derive(Debug, Default)]
+pub struct Writing(Option<std::thread::JoinHandle<Result<(), String>>>);
+
+impl Writing {
+    /// Waits for the write; the reason when it failed.
+    pub fn wait(mut self) -> Option<String> {
+        let handle = self.0.take()?;
+        match handle.join() {
+            Ok(result) => result.err(),
+            Err(_) => Some("the cache writer stopped".to_owned()),
+        }
+    }
+}
+
+impl Drop for Writing {
+    fn drop(&mut self) {
+        if let Some(handle) = self.0.take() {
+            let _ = handle.join();
+        }
+    }
+}
+
+/// The extraction `cruise --cache` evaluates, and what the cache did.
+#[derive(Debug)]
+pub struct Cached {
+    /// The document, before evaluation.
+    pub document: GraphDocument,
+    /// The extractors' warnings, as a cold run reports them.
+    pub warnings: Vec<rb_model::Warning>,
+    /// `summary.cache`.
+    pub summary: CacheSummary,
+    /// How it was served.
+    pub served: Served,
+    /// The entry being written for the next run.
+    pub writing: Writing,
+}
+
+/// A full extraction, keeping the per-file states, and why.
+fn full(reason: String) -> (Plans, Served) {
+    (
+        Plans {
+            keep_file_states: true,
+            ..Plans::default()
+        },
+        Served::Full(reason),
+    )
+}
+
+/// The name a TypeScript module's source is recorded under: relative to `baseDir` when set.
+fn typescript_name(scope: &changes::Scope, config: &Config, source: &str) -> String {
+    let mut path = scope.base.clone();
+    let base_dir = config
+        .languages
+        .typescript
+        .base_dir
+        .as_deref()
+        .unwrap_or("");
+    for component in Path::new(base_dir).join(source).components() {
+        match component {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                path.pop();
+            }
+            other => path.push(other),
+        }
+    }
+    scope.name(&path)
+}
+
+/// Whether a recorded input is an assembly or a PDB.
+fn is_assembly(name: &str) -> bool {
+    Path::new(name)
+        .extension()
+        .and_then(|x| x.to_str())
+        .is_some_and(|x| x.eq_ignore_ascii_case("dll") || x.eq_ignore_ascii_case("pdb"))
+}
+
+/// What the stored parts (with their per-file states) and the changes call for: a partial
+/// extraction or a full one, or `None` for a hit. A change to a file no extractor read (a file of
+/// the presence set whose content alone changed) changes nothing extracted.
+fn decide(
+    config: &Config,
+    scope: &changes::Scope,
+    parts: &Parts,
+    found: &changes::Changes,
+) -> Option<(Plans, Served)> {
+    if let Some(reason) = &found.structural {
+        return Some(full(reason.clone()));
+    }
+    let typescript: BTreeMap<String, &String> = parts
+        .typescript
+        .iter()
+        .flat_map(|p| p.files.keys())
+        .map(|source| (typescript_name(scope, config, source), source))
+        .collect();
+    let python: BTreeMap<String, &String> = parts
+        .python
+        .iter()
+        .flat_map(|p| p.files.keys())
+        .map(|file| (scope.name(&scope.base.join(file)), file))
+        .collect();
+    let (mut ts_changed, mut py_changed, mut dotnet) = (Vec::new(), Vec::new(), false);
+    for name in &found.modified {
+        if changes::is_manifest(name) {
+            return Some(full(format!("{name} changed")));
+        }
+        if is_assembly(name) {
+            dotnet = true;
+        } else if let Some(source) = typescript.get(name) {
+            ts_changed.push(PathBuf::from(source.as_str()));
+        } else if let Some(file) = python.get(name) {
+            py_changed.push(PathBuf::from(file.as_str()));
+        }
+    }
+    if ts_changed.is_empty() && py_changed.is_empty() && !dotnet {
+        return None;
+    }
+    let plan = |changed: &[PathBuf],
+                files: &BTreeMap<String, &String>,
+                part: &Option<rb_model::Extraction>| {
+        if changed.is_empty() {
+            return Plan::Reuse(part.clone());
+        }
+        Plan::Incremental(rb_model::ExtractRequest {
+            changed: changed.to_vec(),
+            unchanged: files
+                .values()
+                .map(|s| PathBuf::from(s.as_str()))
+                .filter(|s| !changed.contains(s))
+                .collect(),
+            previous: part.clone().unwrap_or_default(),
+        })
+    };
+    let plans = Plans {
+        typescript: plan(&ts_changed, &typescript, &parts.typescript),
+        python: plan(&py_changed, &python, &parts.python),
+        dotnet: if dotnet {
+            Plan::Full
+        } else {
+            Plan::Reuse(parts.dotnet.clone())
+        },
+        keep_file_states: true,
+    };
+    Some((
+        plans,
+        Served::Incremental {
+            typescript: ts_changed.len(),
+            python: py_changed.len(),
+            dotnet,
+        },
+    ))
+}
+
+/// Every input an entry written for `parts` records (the module doc of [`changes`] lists them).
+#[cfg_attr(
+    not(feature = "extract-dotnet"),
+    expect(unused_variables, reason = "only the .NET extractor reads assemblies")
+)]
+fn inputs(
+    cwd: &Path,
+    config: &Config,
+    scope: &changes::Scope,
+    parts: &Parts,
+    strategy: CacheStrategy,
+) -> BTreeSet<String> {
+    let mut inputs: BTreeSet<String> = BTreeSet::new();
+    let typescript: BTreeSet<String> = parts
+        .typescript
+        .iter()
+        .flat_map(|p| p.files.keys())
+        .map(|source| typescript_name(scope, config, source))
+        .collect();
+    inputs.extend(changes::package_manifests(
+        scope,
+        typescript.iter().map(String::as_str),
+    ));
+    inputs.extend(typescript);
+    inputs.extend(
+        parts
+            .python
+            .iter()
+            .flat_map(|p| p.files.keys())
+            .map(|file| scope.name(&scope.base.join(file))),
+    );
+    #[cfg(feature = "extract-dotnet")]
+    if parts.dotnet.is_some() {
+        let options = config.languages.dotnet.clone().unwrap_or_default();
+        if let Ok(assemblies) = rb_extract_dotnet::assembly_inputs(cwd, &options) {
+            inputs.extend(assemblies.iter().map(|p| scope.name(p)));
+        }
+    }
+    inputs.extend(
+        key::manifest_paths(&scope.root, cwd, config)
+            .iter()
+            .filter(|p| p.is_file())
+            .map(|p| scope.name(p)),
+    );
+    inputs.extend(changes::presence(strategy, scope));
+    inputs
+}
+
+/// Everything the background write of an entry needs, owned.
+struct Pending {
+    cwd: PathBuf,
+    config: Config,
+    scope: changes::Scope,
+    folder: PathBuf,
+    options: CacheOptions,
+    manifest: manifest::Manifest,
+    verified: BTreeMap<String, String>,
+    parts: Parts,
+}
+
+impl Pending {
+    /// Records the inputs and writes the entry.
+    fn write(self) -> Result<(), String> {
+        let recorded = inputs(
+            &self.cwd,
+            &self.config,
+            &self.scope,
+            &self.parts,
+            self.options.strategy,
+        );
+        let (hashes, stamps) = changes::record(
+            &self.scope,
+            &recorded,
+            &self.verified,
+            self.options.strategy,
+        );
+        let manifest = manifest::Manifest {
+            inputs: hashes,
+            stamps,
+            ..self.manifest
+        };
+        manifest::store(&self.folder, manifest, &self.parts, &self.options)
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
+}
+
+/// The extraction `cruise` evaluates under `--cache` or `options.cache`
+/// ([Wave 3, Steps 1 and 2](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// the entry in `options.folder` when every input is unchanged, a partial extraction when only
+/// files an extractor can re-read alone changed, a full one otherwise; then the entry is
+/// written again for the next run, on a thread of its own while this run evaluates
+/// ([`Cached::writing`]). The document is what a cold run extracts, byte for byte: the parts are
+/// the ones a cold run would produce and [`pipeline::merge`] joins them as it does for a cold
+/// run.
+///
+/// # Errors
+/// [`ExtractError`] from an extractor, as a cold run fails; never from the cache itself, whose
+/// every doubtful entry is a miss and whose write failure [`Writing::wait`] reports.
+pub fn extract_cached(
+    ctx: &Context<'_>,
+    config: &Config,
+    paths: &[String],
+    options: &CacheOptions,
+) -> Result<Cached, ExtractError> {
+    let root = key::worktree_root(&ctx.cwd);
+    let head = Some(key::head(&root)).filter(|h| !h.is_empty());
+    let folder = ctx.resolve(&options.folder);
+    let scope = changes::Scope {
+        base: ctx.cwd.canonicalize().unwrap_or_else(|_| ctx.cwd.clone()),
+        root: root.clone(),
+        head: head.clone(),
+        extra_extensions: config
+            .languages
+            .typescript
+            .extra_extensions_to_scan
+            .clone()
+            .unwrap_or_default(),
+        cache_folder: folder.canonicalize().unwrap_or_else(|_| folder.clone()),
+    };
+    let fresh = manifest::Manifest {
+        tool_version: key::VERSION.to_owned(),
+        config_hash: key::extraction_hash(config, &root, &ctx.cwd, paths),
+        worktree: key::slashed(&root),
+        head,
+        strategy: options.strategy,
+        inputs: BTreeMap::new(),
+        stamps: BTreeMap::new(),
+        extraction: String::new(),
+    };
+    let summary = |served: &Served| CacheSummary {
+        hit: *served == Served::Hit,
+        strategy: options.strategy,
+    };
+    let extract = |(plans, served): (Plans, Served), verified: BTreeMap<String, String>| {
+        let parts = pipeline::extract_parts(ctx, config, paths, &plans)?;
+        let (document, warnings) = pipeline::merge(config, &parts)?;
+        let pending = Pending {
+            cwd: ctx.cwd.clone(),
+            config: config.clone(),
+            scope: scope.clone(),
+            folder: folder.clone(),
+            options: options.clone(),
+            manifest: fresh.clone(),
+            verified,
+            parts,
+        };
+        Ok(Cached {
+            document,
+            warnings,
+            summary: summary(&served),
+            served,
+            writing: Writing(Some(std::thread::spawn(move || pending.write()))),
+        })
+    };
+    let entry = match manifest::load(&folder, &fresh.key(), options) {
+        Ok(entry) => entry,
+        Err(miss) => return extract(full(miss.to_string()), BTreeMap::new()),
+    };
+    let found = changes::detect(&entry.manifest, options.strategy, &scope);
+    if !found.is_empty() {
+        let decision = match entry.with_states() {
+            Ok(parts) => decide(config, &scope, &parts, &found),
+            Err(miss) => Some(full(miss.to_string())),
+        };
+        if let Some(decision) = decision {
+            return extract(decision, found.hashes);
+        }
+    }
+    let (document, warnings) = pipeline::merge(config, &entry.parts)?;
+    let refreshed = manifest::Manifest {
+        inputs: found.hashes,
+        stamps: if options.strategy == CacheStrategy::Metadata {
+            found.stamps
+        } else {
+            BTreeMap::new()
+        },
+        extraction: entry.manifest.extraction.clone(),
+        ..fresh.clone()
+    };
+    let writing = if refreshed == entry.manifest {
+        Writing::default()
+    } else {
+        Writing(Some(std::thread::spawn(move || {
+            manifest::store_manifest(&folder, &refreshed).map_err(|e| e.to_string())
+        })))
+    };
+    Ok(Cached {
+        document,
+        warnings,
+        summary: summary(&Served::Hit),
+        served: Served::Hit,
+        writing,
+    })
 }
 
 #[cfg(test)]

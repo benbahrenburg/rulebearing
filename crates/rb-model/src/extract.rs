@@ -11,28 +11,90 @@
 //! No language reaches past this trait: `rb-cli` holds a list of extractors and merges what
 //! each returns, and nothing after extraction knows which one produced a module.
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
+
+use serde::{Deserialize, Serialize};
 
 use crate::code::CodeLayer;
 use crate::document::{Module, Receipt};
 
-/// What one extractor produced.
-#[derive(Debug, Clone, Default, PartialEq)]
+/// What one extractor produced. It serialises, so a cache can keep it and a later run can
+/// reuse it ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Extraction {
     /// Module-layer nodes with their edges.
     pub modules: Vec<Module>,
     /// Code-layer elements, when the extractor fills them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub code: Option<CodeLayer>,
     /// The receipt: what was inspected.
     pub inspected: Receipt,
     /// Problems that did not stop the run.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub warnings: Vec<Warning>,
+    /// Per file, what a later incremental run needs that the modules do not carry, keyed by the
+    /// module's `source`. Empty for an extractor whose modules carry everything.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub files: BTreeMap<String, FileState>,
+}
+
+/// What an extractor keeps of one file so a later run can reuse the file's result without
+/// reading it again: the parts that cannot be recovered from the file's module.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileState {
+    /// The file's own code layer before anything graph-wide (linking, base chains) was applied,
+    /// in the shape the extractor that wrote it reads back; opaque to every other crate.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub code: Option<serde_json::Value>,
+    /// The warnings the file produced, in the order the extractor reported them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub warnings: Vec<Warning>,
 }
 
+/// A request to extract again after some files changed: which files changed, which did not, and
+/// the earlier extraction the unchanged files' results are taken from
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// Paths are relative to the working directory, as module sources are. A file in neither list
+/// is read, as a changed one is.
+///
+/// Reuse is sound only while nothing an unchanged file resolves against has changed: the caller
+/// sends a request only when no file was added, deleted or renamed and no manifest changed, and
+/// an extractor that cannot reproduce a file's result exactly from `previous` reads the file.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct ExtractRequest {
+    /// Files whose content changed since `previous`.
+    pub changed: Vec<PathBuf>,
+    /// Files whose content is the same as when `previous` was extracted.
+    pub unchanged: Vec<PathBuf>,
+    /// The earlier extraction.
+    pub previous: Extraction,
+}
+
+impl ExtractRequest {
+    /// The unchanged files as module sources: `/`-separated, without a leading `./`.
+    pub fn unchanged_sources(&self) -> BTreeSet<String> {
+        self.unchanged.iter().map(|p| source_name(p)).collect()
+    }
+}
+
+/// A path as a module `source` spells it: `/`-separated, without a leading `./`.
+pub fn source_name(path: &Path) -> String {
+    let text = path.to_string_lossy().replace('\\', "/");
+    let mut rest = text.as_str();
+    while let Some(stripped) = rest.strip_prefix("./") {
+        rest = stripped;
+    }
+    rest.to_owned()
+}
+
 /// A problem that did not stop extraction, reported with the file it concerns.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Warning {
     /// The file concerned, when there is one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub path: Option<PathBuf>,
     /// What happened and what to do about it.
     pub message: String,
@@ -163,5 +225,54 @@ mod tests {
         assert_eq!(io.to_string(), "disk");
         let warning = Warning::about("a.ts", "skipped");
         assert_eq!(warning.path, Some(PathBuf::from("a.ts")));
+    }
+
+    #[test]
+    fn an_extraction_round_trips_through_json() -> Result<(), serde_json::Error> {
+        let mut files = BTreeMap::new();
+        files.insert(
+            "a.py".to_owned(),
+            FileState {
+                code: Some(serde_json::json!({ "types": [] })),
+                warnings: vec![Warning::about("a.py", "cannot parse")],
+            },
+        );
+        let extraction = Extraction {
+            modules: vec![Module::new("a.py")],
+            code: None,
+            inspected: Receipt::counts(1, 0, 1),
+            warnings: vec![Warning {
+                path: None,
+                message: "general".to_owned(),
+            }],
+            files,
+        };
+        let text = serde_json::to_string(&extraction)?;
+        assert!(text.contains(r#""files":{"a.py""#), "{text}");
+        assert!(!text.contains(r#""code":null"#), "{text}");
+        assert_eq!(serde_json::from_str::<Extraction>(&text)?, extraction);
+        let empty = serde_json::to_string(&Extraction::default())?;
+        assert!(
+            !empty.contains(r#""files":{"#) && !empty.contains("warnings"),
+            "{empty}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn unchanged_files_are_named_as_module_sources() {
+        let request = ExtractRequest {
+            changed: vec![PathBuf::from("src/b.ts")],
+            unchanged: vec![
+                PathBuf::from("./src/a.ts"),
+                PathBuf::from("src\\c.ts"),
+                PathBuf::from("././d.ts"),
+            ],
+            previous: Extraction::default(),
+        };
+        let sources: Vec<String> = request.unchanged_sources().into_iter().collect();
+        assert_eq!(sources, ["d.ts", "src/a.ts", "src/c.ts"]);
+        assert_eq!(source_name(Path::new("x/y.py")), "x/y.py");
+        assert_eq!(source_name(Path::new("")), "");
     }
 }

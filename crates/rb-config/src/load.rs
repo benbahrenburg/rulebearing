@@ -292,6 +292,7 @@ fn filter_option(value: &Value) -> Option<Value> {
 /// Splits `options` into the TypeScript extractor's block, the rest, and `knownViolations`.
 fn split_options(
     canonical: &Map<String, Value>,
+    compat: CompatMode,
 ) -> Result<(TypeScriptOptions, Options, Vec<KnownViolation>), ConfigError> {
     let mut options_map = canonical
         .get("options")
@@ -317,6 +318,14 @@ fn split_options(
         if let Some(value) = options_map.get(key).and_then(filter_option) {
             options_map.insert(key.into(), value);
         }
+    }
+    // `cache` in every form dependency-cruiser takes, normalised against the front-end's default
+    // folder before the typed read (Wave 3, Step 1).
+    if let Some(value) = options_map.get("cache") {
+        let setting = crate::model::CacheSetting::normalise(value, compat)
+            .map_err(|e| ConfigError::Invalid(format!("`options.cache`: {e}")))?;
+        let written = serde_json::to_value(&setting).map_err(|e| invalid("options.cache", e))?;
+        options_map.insert("cache".into(), written);
     }
     let typescript: TypeScriptOptions = serde_json::from_value(Value::Object(typescript))
         .map_err(|e| invalid("options (TypeScript)", e))?;
@@ -360,7 +369,7 @@ fn assemble(
     let mut warnings = keys.warnings;
     warnings.extend(normalize::check_patterns(&rules, opts.strict_compat)?);
 
-    let (typescript, options, known_violations) = split_options(&canonical)?;
+    let (typescript, options, known_violations) = split_options(&canonical, compat)?;
     let invalid = |what: &str, e: serde_json::Error| ConfigError::Invalid(format!("`{what}`: {e}"));
     let languages = canonical
         .get("languages")
@@ -566,6 +575,56 @@ mod tests {
         fn drop(&mut self) {
             let _ = std::fs::remove_dir_all(&self.0);
         }
+    }
+
+    #[test]
+    fn the_cache_option_takes_the_front_end_default_folder() -> Result<(), Box<dyn Error>> {
+        use crate::model::CacheSetting;
+        let repo = Repo::new(
+            "cache",
+            &[
+                (
+                    ".dependency-cruiser.json",
+                    r#"{ "options": { "cache": true } }"#,
+                ),
+                ("rulebearing.yaml", "options:\n  cache: true\n"),
+                (
+                    "object.yaml",
+                    "options:\n  cache:\n    strategy: content\n    compress: true\n",
+                ),
+                ("wrong.yaml", "options:\n  cache: 7\n"),
+            ],
+        )?;
+        let folder = |c: &Config| {
+            c.options
+                .cache
+                .as_ref()
+                .and_then(CacheSetting::options)
+                .map(|o| o.folder.clone())
+        };
+        assert_eq!(
+            folder(&repo.load(".dependency-cruiser.json")?).as_deref(),
+            Some("node_modules/.cache/dependency-cruiser")
+        );
+        assert_eq!(
+            folder(&repo.load("rulebearing.yaml")?).as_deref(),
+            Some(".graph/cache")
+        );
+        let object = repo.load("object.yaml")?;
+        let options = object
+            .options
+            .cache
+            .as_ref()
+            .and_then(CacheSetting::options);
+        assert_eq!(
+            options.map(|o| (o.strategy, o.compressed())),
+            Some((rb_model::CacheStrategy::Content, true))
+        );
+        assert!(matches!(
+            repo.load("wrong.yaml"),
+            Err(ConfigError::Invalid(m)) if m.contains("options.cache")
+        ));
+        Ok(())
     }
 
     #[test]

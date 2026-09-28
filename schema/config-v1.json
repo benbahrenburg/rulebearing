@@ -27,6 +27,73 @@
       },
       "type": "object"
     },
+    "CacheObject": {
+      "additionalProperties": false,
+      "description": "The object form of `options.cache`.",
+      "properties": {
+        "compress": {
+          "default": null,
+          "description": "Compress the stored extraction. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "folder": {
+          "default": null,
+          "description": "The folder the entry is written to, relative to the working directory. Default:\n`.graph/cache` (`node_modules/.cache/dependency-cruiser` for a dependency-cruiser file).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "strategy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CacheStrategy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How changes are found: `metadata` (version control status and file metadata, the\ndefault) or `content` (every input hashed)."
+        }
+      },
+      "type": "object"
+    },
+    "CacheStrategy": {
+      "description": "How a cache decides what changed since the entry was written: dependency-cruiser's\n`cache.strategy` and `--cache-strategy`\n([coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),\n[Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).",
+      "oneOf": [
+        {
+          "const": "metadata",
+          "description": "`git` status and diff against the recorded commit plus file size and modification time;\nonly what they name is hashed. The default.",
+          "type": "string"
+        },
+        {
+          "const": "content",
+          "description": "Every input file hashed on every run.",
+          "type": "string"
+        }
+      ]
+    },
+    "CacheValue": {
+      "anyOf": [
+        {
+          "description": "`true`: on, in the default folder; `false`: off.",
+          "type": "boolean"
+        },
+        {
+          "description": "On, in this folder.",
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/CacheObject",
+          "description": "On, with each setting given."
+        }
+      ],
+      "description": "`options.cache` in any of its forms."
+    },
     "CachedInputFileSystem": {
       "additionalProperties": false,
       "description": "`enhancedResolveOptions.cachedInputFileSystem`.",
@@ -4446,8 +4513,16 @@
           "description": "Changes to the runtime's built-in module list."
         },
         "cache": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CacheValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
           "default": null,
-          "description": "Accepted and recorded; the content-addressed cache is wave 3."
+          "description": "The extraction cache (`--cache`): `true` for the default folder (`.graph/cache`), a\nfolder, `false` for off, or `{ folder, strategy, compress }`."
         },
         "collapse": {
           "default": null,

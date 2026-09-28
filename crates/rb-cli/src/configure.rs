@@ -296,8 +296,48 @@ pub fn apply_flags(
             &path.display().to_string(),
         )?);
     }
+    cache_flags(config, args);
     known_violations(config, &args.known, ctx)?;
     check_report_patterns(config)
+}
+
+/// The folder `--cache` without a value, or `cache: true`, means for this configuration:
+/// dependency-cruiser's for a dependency-cruiser file, Rulebearing's for a native one or none.
+pub fn default_cache_folder(config: &Config) -> &'static str {
+    let none = config.canonical.is_empty() && config.files.is_empty();
+    if none {
+        rb_model::CacheOptions::DEFAULT_FOLDER
+    } else {
+        rb_config::model::CacheSetting::default_folder(config.compat)
+    }
+}
+
+/// `--cache [folder]`, `--cache-strategy` and `--no-cache` over `options.cache`, as
+/// dependency-cruiser's `normalizeCache` and `normalizeCacheStrategy` lay them: either flag
+/// replaces the configuration's setting with `{ folder, strategy }` (the default folder when
+/// none is named); `--no-cache` turns the cache off, and here it wins over `--cache-strategy`
+/// ([Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+pub fn cache_flags(config: &mut Config, args: &CruiseArgs) {
+    use rb_config::model::CacheSetting;
+    if args.no_cache {
+        config.options.cache = Some(CacheSetting::Off);
+        return;
+    }
+    if args.cache.is_none() && args.cache_strategy.is_none() {
+        return;
+    }
+    let folder = args
+        .cache
+        .clone()
+        .filter(|f| !f.is_empty())
+        .unwrap_or_else(|| default_cache_folder(config).to_owned());
+    config.options.cache = Some(CacheSetting::On(rb_model::CacheOptions {
+        folder,
+        strategy: args
+            .cache_strategy
+            .map_or(rb_model::CacheStrategy::Metadata, |s| s.strategy()),
+        compress: None,
+    }));
 }
 
 /// `--ignore-known [file]` replaces `options.knownViolations` with the file's entries, as

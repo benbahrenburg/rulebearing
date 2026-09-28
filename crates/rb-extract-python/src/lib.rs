@@ -85,6 +85,10 @@ pub struct Settings {
     pub site: Option<SiteIndex>,
     /// Problems found while preparing, reported with the run.
     pub warnings: Vec<Warning>,
+    /// Whether the extraction keeps each file's state in [`Extraction::files`], so a later
+    /// incremental run can reuse the file ([`extract_incremental`]). Off by default; the cache
+    /// turns it on.
+    pub keep_file_states: bool,
 }
 
 fn version_tuple(version: &str) -> Option<(u32, u32)> {
@@ -193,6 +197,7 @@ pub fn prepare(
         stubs: options.stubs.unwrap_or(false),
         site,
         warnings,
+        keep_file_states: false,
     })
 }
 
@@ -248,9 +253,7 @@ fn fallback_identity(file: &str, unrooted: bool) -> Identity {
 }
 
 fn read_and_parse(settings: &Settings, index: &ModuleIndex, file: &str) -> Parsed {
-    let identity = index
-        .identity(file)
-        .unwrap_or_else(|| fallback_identity(file, index.is_unrooted(file)));
+    let identity = identity_of(index, file);
     let failed = |message: String| Parsed {
         identity: identity.clone(),
         specs: Vec::new(),
@@ -358,18 +361,128 @@ fn close_base_chains(layer: &mut CodeLayer) {
 
 /// For each file, whether it is a stub whose module also has a `.py` file. Such a stub adds no
 /// code-layer elements: the `.py` stands for the module, as it does for the resolver.
-fn shadowed_stubs(files: &[String], parsed: &[Parsed]) -> Vec<bool> {
+fn shadowed_stubs(files: &[String], dotted: &[String]) -> Vec<bool> {
     let implemented: BTreeSet<&str> = files
         .iter()
-        .zip(parsed)
+        .zip(dotted)
         .filter(|(file, _)| !resolve::is_stub(file))
-        .map(|(_, p)| p.identity.dotted.as_str())
+        .map(|(_, d)| d.as_str())
         .collect();
     files
         .iter()
-        .zip(parsed)
-        .map(|(file, p)| resolve::is_stub(file) && implemented.contains(p.identity.dotted.as_str()))
+        .zip(dotted)
+        .map(|(file, d)| resolve::is_stub(file) && implemented.contains(d.as_str()))
         .collect()
+}
+
+/// A file's module identity, from the index alone: no read, no parse.
+fn identity_of(index: &ModuleIndex, file: &str) -> Identity {
+    index
+        .identity(file)
+        .unwrap_or_else(|| fallback_identity(file, index.is_unrooted(file)))
+}
+
+/// What one file contributes to a run: its module, its own code layer, the warnings it raised
+/// (the read or parse failure, then each resolution note, in order) and the modules its edges
+/// lead to that are not files of the run, in the order it first reaches them.
+#[derive(Debug, Clone, PartialEq)]
+struct FileOutcome {
+    module: Module,
+    code: CodeLayer,
+    warnings: Vec<Warning>,
+    targets: Vec<Module>,
+}
+
+/// The part of a [`FileOutcome`] its module does not carry, as [`rb_model::FileState::code`]
+/// keeps it for this extractor.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+struct Kept {
+    code: CodeLayer,
+    targets: Vec<Module>,
+}
+
+fn extract_file(
+    settings: &Settings,
+    index: &ModuleIndex,
+    known: &BTreeSet<&str>,
+    file: &str,
+) -> FileOutcome {
+    let result = read_and_parse(settings, index, file);
+    let mut warnings: Vec<Warning> = result.warning.into_iter().collect();
+    let mut seen = BTreeSet::new();
+    let mut dependencies: Vec<Dependency> = Vec::new();
+    let mut targets: Vec<Module> = Vec::new();
+    let mut targeted: BTreeSet<String> = BTreeSet::new();
+    for spec in &result.specs {
+        let Some(resolved) = resolve::resolve(
+            &result.identity,
+            spec,
+            index,
+            &settings.stdlib,
+            settings.site.as_ref(),
+        ) else {
+            continue;
+        };
+        let key = (
+            resolved.module.clone(),
+            resolved.resolved.clone(),
+            spec.type_only,
+            spec.origin == Origin::Dynamic,
+        );
+        if !seen.insert(key) {
+            continue;
+        }
+        if let Some(note) = &resolved.note {
+            warnings.push(Warning::about(file, note.clone()));
+        }
+        let dependency = to_dependency(spec, resolved);
+        if !known.contains(dependency.resolved.as_str())
+            && targeted.insert(dependency.resolved.clone())
+        {
+            targets.push(target_module(&dependency));
+        }
+        dependencies.push(dependency);
+    }
+    dependencies.sort_by(|a, b| {
+        (&a.resolved, a.line, a.column, &a.module).cmp(&(&b.resolved, b.line, b.column, &b.module))
+    });
+    let mut module = Module::new(file.to_owned());
+    module.dependencies = dependencies;
+    module.language = Some(Language::Python);
+    module.project = result.identity.dotted.split('.').next().map(str::to_owned);
+    // The dotted module name, which a slice pattern (`app.(*)`) matches, as a .NET file's
+    // namespaces are.
+    module.namespaces =
+        (!result.identity.dotted.is_empty()).then(|| vec![result.identity.dotted.clone()]);
+    FileOutcome {
+        module,
+        code: result.code,
+        warnings,
+        targets,
+    }
+}
+
+/// The outcome of `file` from the earlier extraction, when `request` marks it unchanged and the
+/// earlier run kept its state.
+fn reused_outcome(
+    request: &rb_model::ExtractRequest,
+    previous: &BTreeMap<&str, &Module>,
+    unchanged: &BTreeSet<String>,
+    changed: &BTreeSet<String>,
+    file: &str,
+) -> Option<FileOutcome> {
+    if !unchanged.contains(file) || changed.contains(file) {
+        return None;
+    }
+    let module = previous.get(file)?;
+    let state = request.previous.files.get(file)?;
+    let kept: Kept = serde_json::from_value(state.code.clone()?).ok()?;
+    Some(FileOutcome {
+        module: (*module).clone(),
+        code: kept.code,
+        warnings: state.warnings.clone(),
+        targets: kept.targets,
+    })
 }
 
 /// Extracts every Python module under `inputs` (relative to `settings.base`) with
@@ -379,77 +492,86 @@ fn shadowed_stubs(files: &[String], parsed: &[Parsed]) -> Vec<bool> {
 /// An input that does not exist or a folder that cannot be listed, or no module at all. A file
 /// that cannot be read or parsed is a warning naming it, and the run continues.
 pub fn extract_with(inputs: &[PathBuf], settings: &Settings) -> Result<Extraction, ExtractError> {
+    extract_incremental(inputs, settings, &rb_model::ExtractRequest::default())
+}
+
+/// [`extract_with`] after some files changed: each file `request.unchanged` names is taken from
+/// `request.previous` (its module and the state the earlier run kept) instead of being read
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// The files, the index and the stub shadowing are recomputed from the tree, and every
+/// graph-wide step (the target modules, the base chains, the order) runs as in a full
+/// extraction, so the result equals [`extract_with`]'s when the caller's precondition holds: no
+/// file was added, deleted or renamed and no manifest or environment changed, so an unchanged
+/// file resolves as it did. A file whose state was not kept is read.
+///
+/// # Errors
+/// As [`extract_with`].
+pub fn extract_incremental(
+    inputs: &[PathBuf],
+    settings: &Settings,
+    request: &rb_model::ExtractRequest,
+) -> Result<Extraction, ExtractError> {
     let walked = discover::walk(&settings.base, inputs, settings.stubs)?;
     let files = walked.files;
     if files.is_empty() {
         return Err(ExtractError::NoModulesFound);
     }
     let index = ModuleIndex::build(&settings.layout.roots, &files);
-    let parsed: Vec<Parsed> = files
-        .par_iter()
-        .map(|file| read_and_parse(settings, &index, file))
-        .collect();
     let known: BTreeSet<&str> = files.iter().map(String::as_str).collect();
-    let shadowed = shadowed_stubs(&files, &parsed);
+    let unchanged = request.unchanged_sources();
+    let changed: BTreeSet<String> = request
+        .changed
+        .iter()
+        .map(|p| rb_model::source_name(p))
+        .collect();
+    let previous: BTreeMap<&str, &Module> = request
+        .previous
+        .modules
+        .iter()
+        .map(|m| (m.source.as_str(), m))
+        .collect();
+    let outcomes: Vec<FileOutcome> = files
+        .par_iter()
+        .map(|file| {
+            reused_outcome(request, &previous, &unchanged, &changed, file)
+                .unwrap_or_else(|| extract_file(settings, &index, &known, file))
+        })
+        .collect();
+    let dotted: Vec<String> = files
+        .iter()
+        .map(|f| identity_of(&index, f).dotted)
+        .collect();
+    let shadowed = shadowed_stubs(&files, &dotted);
     let mut warnings = settings.warnings.clone();
     warnings.extend(walked.warnings);
     let mut modules = Vec::with_capacity(files.len());
     let mut targets: BTreeMap<String, Module> = BTreeMap::new();
     let mut code = CodeLayer::default();
-    for ((file, result), shadowed) in files.iter().zip(parsed).zip(shadowed) {
-        warnings.extend(result.warning);
-        if !shadowed {
-            code.merge(result.code);
-        }
-        let mut seen = BTreeSet::new();
-        let mut dependencies: Vec<Dependency> = Vec::new();
-        for spec in &result.specs {
-            let Some(resolved) = resolve::resolve(
-                &result.identity,
-                spec,
-                &index,
-                &settings.stdlib,
-                settings.site.as_ref(),
-            ) else {
-                continue;
+    let mut states = BTreeMap::new();
+    for ((file, outcome), shadowed) in files.iter().zip(outcomes).zip(shadowed) {
+        warnings.extend(outcome.warnings.iter().cloned());
+        if settings.keep_file_states {
+            let kept = Kept {
+                code: outcome.code.clone(),
+                targets: outcome.targets.clone(),
             };
-            let key = (
-                resolved.module.clone(),
-                resolved.resolved.clone(),
-                spec.type_only,
-                spec.origin == Origin::Dynamic,
-            );
-            if !seen.insert(key) {
-                continue;
+            if let Ok(value) = serde_json::to_value(&kept) {
+                states.insert(
+                    file.clone(),
+                    rb_model::FileState {
+                        code: Some(value),
+                        warnings: outcome.warnings.clone(),
+                    },
+                );
             }
-            if let Some(note) = &resolved.note {
-                warnings.push(Warning::about(file, note.clone()));
-            }
-            let dependency = to_dependency(spec, resolved);
-            if !known.contains(dependency.resolved.as_str()) {
-                targets
-                    .entry(dependency.resolved.clone())
-                    .or_insert_with(|| target_module(&dependency));
-            }
-            dependencies.push(dependency);
         }
-        dependencies.sort_by(|a, b| {
-            (&a.resolved, a.line, a.column, &a.module).cmp(&(
-                &b.resolved,
-                b.line,
-                b.column,
-                &b.module,
-            ))
-        });
-        let mut module = Module::new(file.clone());
-        module.dependencies = dependencies;
-        module.language = Some(Language::Python);
-        module.project = result.identity.dotted.split('.').next().map(str::to_owned);
-        // The dotted module name, which a slice pattern (`app.(*)`) matches, as a .NET file's
-        // namespaces are.
-        module.namespaces =
-            (!result.identity.dotted.is_empty()).then(|| vec![result.identity.dotted.clone()]);
-        modules.push(module);
+        if !shadowed {
+            code.merge(outcome.code);
+        }
+        for target in outcome.targets {
+            targets.entry(target.source.clone()).or_insert(target);
+        }
+        modules.push(outcome.module);
     }
     modules.extend(targets.into_values());
     modules.sort_by(|a, b| a.source.cmp(&b.source));
@@ -471,6 +593,7 @@ pub fn extract_with(inputs: &[PathBuf], settings: &Settings) -> Result<Extractio
         code: Some(code),
         inspected: receipt,
         warnings,
+        files: states,
     })
 }
 

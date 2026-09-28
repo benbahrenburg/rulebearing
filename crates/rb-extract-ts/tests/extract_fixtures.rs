@@ -20,6 +20,13 @@
 //! `conformance/dependency-cruiser/threshold.json`. With `RB_UPDATE_LAYER1_OPEN=1` it rewrites
 //! `conformance/dependency-cruiser/layer1-open.json`, the list of failing cases with their class,
 //! which is wave 1's worklist.
+//!
+//! Every `extract` case is also run incrementally
+//! ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+//! with every file unchanged, every file changed, and each file changed on its own, the
+//! extraction [`rb_extract_ts::extract_incremental`] gives must equal the full one byte for
+//! byte, module order included. It prints `layer1-incremental: cases=<n> variants=<v>` and fails
+//! on any difference.
 
 use std::collections::BTreeMap;
 use std::error::Error;
@@ -554,6 +561,73 @@ fn classify(actual: &Value, expected: &Value) -> Class {
     }
 }
 
+/// Gate 1 layer 1 under incremental extraction: an `extract` case extracted in full, then again
+/// with each variant of changed and unchanged files taken from the full result. Returns how many
+/// variants were compared (none for a case that throws, which has nothing to reuse), or the first
+/// difference.
+fn incremental_variants(root: &Path, case: &Case) -> Result<usize, String> {
+    let input = rooted(&case.input, root);
+    let cwd = root.join(&case.cwd);
+    let null = Value::Null;
+    let field = |key: &str| input.get(key).unwrap_or(&null);
+    let fresh = || -> Result<(Settings, ResolveConfig), String> {
+        let settings = settings(field("cruiseOptions"), &cwd).map_err(|f| f.detail)?;
+        let config = resolve_config(
+            field("resolveOptions"),
+            &serde_json::json!({"tsConfig": field("tsConfig")}),
+            field("cruiseOptions"),
+        )
+        .map_err(|f| f.detail)?;
+        Ok((settings, config))
+    };
+    let files = strings(field("files"));
+    let roots: Vec<PathBuf> = files.iter().map(PathBuf::from).collect();
+    let (mut settings, config) = fresh()?;
+    settings.keep_file_states = true;
+    let Ok(modules) = pipeline::extract(&files, &settings, &config) else {
+        return Ok(0);
+    };
+    let Ok(full) = rb_extract_ts::to_extraction(modules, &settings) else {
+        return Ok(0);
+    };
+    let without_states = |e: &rb_model::Extraction| {
+        let mut e = e.clone();
+        e.files.clear();
+        serde_json::to_string(&e).map_err(|e| e.to_string())
+    };
+    let expected = without_states(&full)?;
+    let read: Vec<PathBuf> = full
+        .modules
+        .iter()
+        .filter(|m| m.language.is_some())
+        .map(|m| PathBuf::from(&m.source))
+        .collect();
+    let mut variants = vec![(Vec::new(), read.clone()), (read.clone(), Vec::new())];
+    for (index, file) in read.iter().enumerate() {
+        let mut others = read.clone();
+        others.remove(index);
+        variants.push((vec![file.clone()], others));
+    }
+    let count = variants.len();
+    for (changed, unchanged) in variants {
+        let (settings, config) = fresh()?;
+        let request = rb_model::ExtractRequest {
+            changed: changed.clone(),
+            unchanged,
+            previous: full.clone(),
+        };
+        let actual = rb_extract_ts::extract_incremental(&roots, &settings, &config, &request)
+            .map_err(|e| format!("changed {changed:?}: {e}"))?;
+        let actual = without_states(&actual)?;
+        if actual != expected {
+            return Err(format!(
+                "changed {changed:?}\nexpected {expected}\nactual   {actual}"
+            ));
+        }
+    }
+    Ok(count)
+}
+
 fn threshold() -> Result<f64, Box<dyn Error>> {
     let text = std::fs::read_to_string(conformance().join("threshold.json"))?;
     let value: Value = serde_json::from_str(&text)?;
@@ -630,9 +704,20 @@ fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
 
     let started = Instant::now();
     let mut failures: Vec<(&Case, Failure)> = Vec::new();
+    let (mut incremental_cases, mut incremental_variants_run) = (0usize, 0usize);
+    let mut incremental_failures: Vec<(String, String)> = Vec::new();
     for case in &cases {
         let tree = CacheBustingTree::for_case(&root, &case.id);
         let outcome = replay(&root, case);
+        if case.surface == "extract" {
+            match incremental_variants(&root, case) {
+                Ok(count) => {
+                    incremental_cases += 1;
+                    incremental_variants_run += count;
+                }
+                Err(detail) => incremental_failures.push((case.id.clone(), detail)),
+            }
+        }
         drop(tree);
         let failure = match (outcome, &case.expected, &case.throws) {
             (Ok(actual), Some(expected), _) if &actual == expected => None,
@@ -712,6 +797,18 @@ fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
     for (class, count) in &by_class {
         println!("layer1: failing class={} count={count}", class.name());
     }
+    println!(
+        "layer1-incremental: cases={incremental_cases} variants={incremental_variants_run} mismatches={}",
+        incremental_failures.len()
+    );
+    assert!(
+        incremental_failures.is_empty(),
+        "incremental extraction differs from full extraction: {incremental_failures:#?}"
+    );
+    assert!(
+        incremental_variants_run > incremental_cases,
+        "the incremental check compared nothing"
+    );
     let floor = threshold()?;
     assert!(
         ratio >= floor,

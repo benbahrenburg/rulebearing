@@ -132,12 +132,42 @@ pub struct OptionsSchema {
     /// Per-reporter settings.
     #[serde(default)]
     pub reporter_options: Option<Value>,
-    /// Accepted and recorded; the content-addressed cache is wave 3.
+    /// The extraction cache (`--cache`): `true` for the default folder (`.graph/cache`), a
+    /// folder, `false` for off, or `{ folder, strategy, compress }`.
     #[serde(default)]
-    pub cache: Option<Value>,
+    pub cache: Option<CacheValue>,
     /// Violations to report at a lower severity, keyed by stable id or by rule, from and to.
     #[serde(default)]
     pub known_violations: Option<Vec<KnownViolation>>,
+}
+
+/// `options.cache` in any of its forms.
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(untagged)]
+pub enum CacheValue {
+    /// `true`: on, in the default folder; `false`: off.
+    Switch(bool),
+    /// On, in this folder.
+    Folder(String),
+    /// On, with each setting given.
+    Object(CacheObject),
+}
+
+/// The object form of `options.cache`.
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CacheObject {
+    /// The folder the entry is written to, relative to the working directory. Default:
+    /// `.graph/cache` (`node_modules/.cache/dependency-cruiser` for a dependency-cruiser file).
+    #[serde(default)]
+    pub folder: Option<String>,
+    /// How changes are found: `metadata` (version control status and file metadata, the
+    /// default) or `content` (every input hashed).
+    #[serde(default)]
+    pub strategy: Option<rb_model::CacheStrategy>,
+    /// Compress the stored extraction. Default: `false`.
+    #[serde(default)]
+    pub compress: Option<bool>,
 }
 
 /// A filter in any of its three forms.

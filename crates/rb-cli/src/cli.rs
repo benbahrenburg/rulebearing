@@ -126,6 +126,26 @@ pub enum ProgressType {
     None,
 }
 
+/// `--cache-strategy` values
+/// ([Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum CacheStrategyArg {
+    /// git status and diff against the recorded commit, and file size and time.
+    Metadata,
+    /// Every input hashed.
+    Content,
+}
+
+impl CacheStrategyArg {
+    /// The strategy the options carry.
+    pub fn strategy(self) -> rb_model::CacheStrategy {
+        match self {
+            Self::Metadata => rb_model::CacheStrategy::Metadata,
+            Self::Content => rb_model::CacheStrategy::Content,
+        }
+    }
+}
+
 /// When to colour terminal output.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, ValueEnum)]
 pub enum ColorChoice {
@@ -292,6 +312,20 @@ pub struct CruiseArgs {
     /// Suffix for links in the reports
     #[arg(long, value_name = "SUFFIX")]
     pub suffix: Option<String>,
+    /// Keep the extraction in FOLDER and re-read only what changed since the last run (default
+    /// .graph/cache; node_modules/.cache/dependency-cruiser for a dependency-cruiser
+    /// configuration); replaces options.cache
+    #[arg(short = 'C', long, value_name = "FOLDER", num_args = 0..=1, default_missing_value = "",
+          overrides_with = "no_cache")]
+    pub cache: Option<String>,
+    /// How the cache finds what changed: metadata (git and file size and time, the default) or
+    /// content (every input hashed)
+    #[arg(long, value_enum, value_name = "STRATEGY")]
+    pub cache_strategy: Option<CacheStrategyArg>,
+    /// Do not use the cache, even when options.cache or --cache asks for it. Hidden, as
+    /// dependency-cruiser hides it
+    #[arg(long, hide = true, overrides_with = "cache")]
+    pub no_cache: bool,
     /// Keep TypeScript edges that vanish in compilation: true, false or specify
     #[arg(long, value_name = "VALUE", num_args = 0..=1, default_missing_value = "true")]
     pub ts_pre_compilation_deps: Option<String>,

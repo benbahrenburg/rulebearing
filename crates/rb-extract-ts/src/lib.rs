@@ -356,11 +356,127 @@ pub fn extract_with(
     settings: &Settings,
     config: &ResolveConfig,
 ) -> Result<Extraction, ExtractError> {
-    let inputs: Vec<String> = roots
+    let extracted = pipeline::extract(&inputs(roots), settings, config)?;
+    to_extraction(extracted, settings)
+}
+
+fn inputs(roots: &[PathBuf]) -> Vec<String> {
+    roots
         .iter()
         .map(|r| r.to_string_lossy().replace('\\', "/"))
-        .collect();
-    let mut extracted = pipeline::extract(&inputs, settings, config)?;
+        .collect()
+}
+
+/// A dependency of an earlier extraction back in the pipeline's form: the inverse of
+/// `to_dependency` for every field the pipeline reads after a file is extracted. The span is
+/// not kept in the document; nothing after the file's own extraction reads it.
+pub fn from_dependency(dependency: &Dependency) -> Extracted {
+    Extracted {
+        module: dependency.module.clone(),
+        module_system: dependency.module_system,
+        dynamic: dependency.dynamic,
+        exotically_required: dependency.exotically_required,
+        exotic_require: dependency.exotic_require.clone(),
+        dependency_types: dependency.dependency_types.clone(),
+        protocol: dependency.protocol,
+        mime_type: dependency.mime_type.clone(),
+        pre_compilation_only: dependency.pre_compilation_only,
+        resolved: dependency.resolved.clone(),
+        core_module: dependency.core_module,
+        followable: dependency.followable,
+        could_not_resolve: dependency.could_not_resolve,
+        matches_do_not_follow: dependency.matches_do_not_follow.unwrap_or(false),
+        license: dependency.license.clone(),
+        span: oxc_span::Span::default(),
+        line: dependency.line.unwrap_or(0),
+        column: dependency.column.unwrap_or(0),
+    }
+}
+
+/// Why an incremental extraction reads every file instead of reusing the unchanged ones, or
+/// `None` when reuse is exact: `exclude.dynamic` removes, after the walk, dependencies the walk
+/// followed, so the modules no longer carry each file's result. (A file whose code layer before
+/// linking was not kept, [`Settings::keep_file_states`], is read on its own account.)
+pub fn reuse_refused(settings: &Settings) -> Option<&'static str> {
+    if settings.exclude.as_ref().and_then(|f| f.dynamic).is_some() {
+        return Some(
+            "exclude.dynamic removed dependencies the walk followed, so the kept ones are not the file's result",
+        );
+    }
+    None
+}
+
+/// [`extract_with`] after some files changed: each file `request.unchanged` names is taken from
+/// `request.previous` instead of being read, and the walk replays over them
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// The result equals [`extract_with`]'s, module order included, when the caller's precondition
+/// holds: no file was added, deleted or renamed and no manifest changed since `previous`, so
+/// every unchanged file resolves as it did. When [`reuse_refused`] gives a reason, every file is
+/// read.
+///
+/// # Errors
+/// As [`extract_with`].
+pub fn extract_incremental(
+    roots: &[PathBuf],
+    settings: &Settings,
+    config: &ResolveConfig,
+    request: &rb_model::ExtractRequest,
+) -> Result<Extraction, ExtractError> {
+    let mut reused = std::collections::BTreeMap::new();
+    if reuse_refused(settings).is_none() {
+        let unchanged = request.unchanged_sources();
+        let changed: std::collections::BTreeSet<String> = request
+            .changed
+            .iter()
+            .map(|p| rb_model::source_name(p))
+            .collect();
+        for module in &request.previous.modules {
+            // A module with a language is a file the walk read; the rest stand for dependencies
+            // it did not follow and are rebuilt from those.
+            if module.language.is_none()
+                || !unchanged.contains(&module.source)
+                || changed.contains(&module.source)
+            {
+                continue;
+            }
+            // With the code layer on, a file is reused only with the code layer its earlier run
+            // kept; without one it is read.
+            let code = if settings.code_layer {
+                match request
+                    .previous
+                    .files
+                    .get(&module.source)
+                    .map(|state| state.code.clone().map(serde_json::from_value).transpose())
+                {
+                    Some(Ok(code)) => code,
+                    Some(Err(_)) | None => continue,
+                }
+            } else {
+                None
+            };
+            reused.insert(
+                module.source.clone(),
+                pipeline::Reused {
+                    dependencies: module.dependencies.iter().map(from_dependency).collect(),
+                    experimental_stats: module.experimental_stats,
+                    code,
+                },
+            );
+        }
+    }
+    let extracted = pipeline::extract_reusing(&inputs(roots), settings, config, &reused)?;
+    to_extraction(extracted, settings)
+}
+
+/// The modules of a walk as an [`Extraction`]: the sidecar check, the linked code layer and the
+/// document's modules in the walk's order.
+///
+/// # Errors
+/// A file only the sidecar reads, or no file at all.
+pub fn to_extraction(
+    mut extracted: Vec<pipeline::ExtractedModule>,
+    settings: &Settings,
+) -> Result<Extraction, ExtractError> {
     if let Some(sidecar) = extracted
         .iter()
         .find(|m| m.as_dependency.is_none() && needs_sidecar(&m.source))
@@ -370,6 +486,24 @@ pub fn extract_with(
             reason: SIDECAR_REASON.to_owned(),
         });
     }
+    let states = if settings.keep_file_states {
+        extracted
+            .iter()
+            .filter(|m| m.as_dependency.is_none())
+            .filter_map(|m| {
+                let code = m.code.as_ref().map(serde_json::to_value).transpose().ok()?;
+                Some((
+                    m.source.clone(),
+                    rb_model::FileState {
+                        code,
+                        warnings: Vec::new(),
+                    },
+                ))
+            })
+            .collect()
+    } else {
+        std::collections::BTreeMap::new()
+    };
     let code = settings.code_layer.then(|| {
         codelayer::link(
             extracted
@@ -409,6 +543,7 @@ pub fn extract_with(
         code,
         inspected: Receipt::counts(files, 0, count),
         warnings: Vec::new(),
+        files: states,
     })
 }
 

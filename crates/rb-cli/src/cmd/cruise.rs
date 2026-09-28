@@ -164,6 +164,7 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
         ),
         paths: args.paths.clone(),
     };
+    let mut writing = crate::cache::Writing::default();
     let result = match &args.graph {
         Some(file) => match pipeline::load_graph(ctx, file) {
             Ok(mut document) => {
@@ -178,7 +179,20 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
                 );
             }
         },
-        None => pipeline::run(ctx, &effective, &options, &mut progress),
+        None => match effective
+            .options
+            .cache
+            .as_ref()
+            .and_then(rb_config::model::CacheSetting::options)
+        {
+            Some(cache) => {
+                cached(ctx, &effective, cache, &options, &mut progress).map(|(run, pending)| {
+                    writing = pending;
+                    run
+                })
+            }
+            None => pipeline::run(ctx, &effective, &options, &mut progress),
+        },
     };
     let mut run = match result {
         Ok(run) => run,
@@ -189,7 +203,7 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
     }
     let ratchets = ratchets::evaluate(ctx, &effective, &run.evaluation.document, options.liveness);
     summarise(&mut run.document.summary, &ratchets, liveness);
-    report(
+    let mut outcome = report(
         ctx,
         &effective,
         &run,
@@ -199,7 +213,38 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
         &output_to,
         progress,
         stderr,
-    )
+    );
+    if let Some(reason) = writing.wait() {
+        let _ = writeln!(
+            outcome.stderr,
+            "warning: the cache was not written: {reason}"
+        );
+    }
+    outcome
+}
+
+/// The run through the `--cache` entry ([`crate::cache::extract_cached`]): the extraction from
+/// the cache where it is fresh, evaluated as a cold run's is, with `summary.cache` recorded; and
+/// the entry being written for the next run, which the caller waits for. A cache that cannot be
+/// written is a warning; the run is not less trustworthy for it.
+fn cached(
+    ctx: &Context<'_>,
+    config: &Config,
+    cache: &rb_model::CacheOptions,
+    options: &RunOptions,
+    progress: &mut Progress,
+) -> Result<(pipeline::Run, crate::cache::Writing), RunError> {
+    let extracted = crate::cache::extract_cached(ctx, config, &options.paths, cache)?;
+    progress.stage(&format!("extract ({})", extracted.served));
+    let mut run = pipeline::run_extracted(
+        ctx,
+        config,
+        (extracted.document, extracted.warnings),
+        options,
+        progress,
+    )?;
+    run.document.summary.cache = Some(extracted.summary);
+    Ok((run, extracted.writing))
 }
 
 #[expect(

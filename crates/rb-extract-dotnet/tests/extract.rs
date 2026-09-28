@@ -511,3 +511,38 @@ fn solution_mode_finds_referenced_assemblies_beside_the_built_output()
     );
     Ok(())
 }
+
+/// The assemblies and PDBs an incremental run keys the .NET graph on
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// the analysed assembly's folder, so the referenced `Sample.Core.dll` read beside it counts too.
+#[test]
+fn the_inputs_are_every_assembly_and_pdb_beside_the_analysed_ones()
+-> Result<(), Box<dyn std::error::Error>> {
+    let inputs = rb_extract_dotnet::assembly_inputs(&sample(), &loader("built/Sample.dll"))?;
+    let names: Vec<String> = inputs
+        .iter()
+        .filter_map(|p| p.file_name().map(|n| n.to_string_lossy().into_owned()))
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "Sample.Core.dll",
+            "Sample.Core.pdb",
+            "Sample.dll",
+            "Sample.pdb"
+        ]
+    );
+    assert!(inputs.iter().all(|p| p.is_file()));
+    let empty = Path::new(env!("CARGO_TARGET_TMPDIR")).join("no-dotnet-inputs");
+    std::fs::create_dir_all(&empty)?;
+    let nothing = rb_extract_dotnet::assembly_inputs(&empty, &DotnetOptions::default());
+    assert!(
+        matches!(nothing, Err(ExtractError::NoModulesFound)),
+        "{nothing:?}"
+    );
+    // Projects found but none built: nothing to key on, and the extraction says why.
+    let unbuilt =
+        rb_extract_dotnet::assembly_inputs(&manifest().join("tests"), &DotnetOptions::default())?;
+    assert!(unbuilt.is_empty(), "{unbuilt:?}");
+    Ok(())
+}

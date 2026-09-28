@@ -318,6 +318,47 @@ fn beside_assemblies(
     found
 }
 
+/// Every assembly and PDB an extraction under `root` with `options` can read, sorted: each
+/// `.dll` and `.pdb` in the output folder of every project whose assembly discovery finds. That
+/// folder holds the analysed assemblies, their PDBs, and the assemblies beside them that
+/// `includeDependencies` and the referenced-type descriptions read, so the list covers them all
+/// (and may name a few the run does not open). It is what an incremental run keys the .NET
+/// graph on ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// the assembly is the unit of change.
+///
+/// # Errors
+/// As discovery fails in [`DotnetExtractor`]'s `extract`; [`ExtractError::NoModulesFound`] when
+/// there is nothing .NET to read.
+pub fn assembly_inputs(root: &Path, options: &DotnetOptions) -> Result<Vec<PathBuf>, ExtractError> {
+    let workspace = discover::discover(root, options).map_err(|e| match e {
+        DiscoverError::NothingFound { .. } => ExtractError::NoModulesFound,
+        DiscoverError::Io { path, source } => read_error(&path, &source),
+        other => read_error(root, &other),
+    })?;
+    let folders: BTreeSet<PathBuf> = workspace
+        .projects
+        .iter()
+        .filter(|p| p.assembly.is_some())
+        .map(output_folder)
+        .collect();
+    let mut inputs = BTreeSet::new();
+    for folder in folders {
+        let Ok(entries) = std::fs::read_dir(&folder) else {
+            continue;
+        };
+        for path in entries.flatten().map(|e| e.path()) {
+            let binary = path
+                .extension()
+                .and_then(|x| x.to_str())
+                .is_some_and(|x| x.eq_ignore_ascii_case("dll") || x.eq_ignore_ascii_case("pdb"));
+            if binary && path.is_file() {
+                inputs.insert(path);
+            }
+        }
+    }
+    Ok(inputs.into_iter().collect())
+}
+
 /// Whether a dependency target names a generic parameter (`Declarer+<T>`, or `!!0` when the
 /// declarer is unknown) rather than a type.
 fn is_generic_parameter(name: &str) -> bool {
@@ -589,6 +630,7 @@ impl Extractor for DotnetExtractor {
                 ..Receipt::counts(file_count, reads.len() as u64, module_count)
             },
             warnings,
+            files: BTreeMap::new(),
         })
     }
 }

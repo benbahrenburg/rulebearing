@@ -213,6 +213,10 @@ pub struct Settings {
     /// Whether each extracted file's code layer is read from the same parse
     /// ([`codelayer`]); on by default.
     pub code_layer: bool,
+    /// Whether the extraction keeps each file's code layer before linking in
+    /// [`rb_model::Extraction::files`], so a later incremental run can reuse the file
+    /// ([`crate::extract_incremental`]). Off by default; the cache turns it on.
+    pub keep_file_states: bool,
     /// Whether a `.md` file that `extraExtensionsToScan` lists has its JavaScript and TypeScript
     /// fences read ([`md`]). Off by default, which is dependency-cruiser's behaviour (a listed
     /// extension is never read); the command line turns it on for a native configuration
@@ -254,6 +258,7 @@ impl Settings {
             experimental_stats: options.experimental_stats.unwrap_or(false),
             babel: None,
             code_layer: true,
+            keep_file_states: false,
             markdown_fences: false,
             compiler_options: TsCompilerOptions::default(),
         })
@@ -1317,6 +1322,19 @@ pub struct ExtractedModule {
     pub code: Option<FileCode>,
 }
 
+/// One file's result carried over from an earlier extraction instead of reading the file again
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// its resolved, filtered, sorted dependencies and its statistics.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Reused {
+    /// The dependencies, as the file's own extraction returned them.
+    pub dependencies: Vec<Extracted>,
+    /// Its `experimentalStats`, when the earlier run computed them.
+    pub experimental_stats: Option<ExperimentalStats>,
+    /// Its code layer before linking, when the code layer is on.
+    pub code: Option<FileCode>,
+}
+
 /// Whether a dependency leads to a file the walk extracts in turn.
 fn followed(dependency: &Extracted) -> bool {
     dependency.followable && !dependency.matches_do_not_follow
@@ -1331,6 +1349,7 @@ fn reachable_dependencies(
     initial: &[String],
     settings: &Settings,
     config: &ResolveConfig,
+    reused: &BTreeMap<String, Reused>,
 ) -> BTreeMap<String, FileResult> {
     let mut done: BTreeMap<String, FileResult> = BTreeMap::new();
     let mut seen: BTreeSet<&str> = BTreeSet::new();
@@ -1344,7 +1363,10 @@ fn reachable_dependencies(
         let results: Vec<(String, FileResult)> = frontier
             .into_par_iter()
             .map(|file| {
-                let result = extract_file(&file, settings, config);
+                let result = match reused.get(&file) {
+                    Some(earlier) => Ok((earlier.dependencies.clone(), earlier.code.clone())),
+                    None => extract_file(&file, settings, config),
+                };
                 (file, result)
             })
             .collect();
@@ -1442,14 +1464,36 @@ pub fn extract(
     settings: &Settings,
     config: &ResolveConfig,
 ) -> Result<Vec<ExtractedModule>, PipelineError> {
+    extract_reusing(inputs, settings, config, &BTreeMap::new())
+}
+
+/// [`extract`], taking each file in `reused` from there instead of reading it. Phase one is seeded
+/// with the reused results and phase two replays as it always does, so the modules, their order
+/// and the depth `maxDepth` counts are the ones a full extraction gives, provided each reused
+/// result is what reading its file would give (the caller's soundness rule:
+/// [`crate::extract_incremental`]).
+///
+/// # Errors
+/// As [`extract`].
+pub fn extract_reusing(
+    inputs: &[String],
+    settings: &Settings,
+    config: &ResolveConfig,
+    reused: &BTreeMap<String, Reused>,
+) -> Result<Vec<ExtractedModule>, PipelineError> {
     let initial = gather_initial_sources(inputs, settings)?;
     settle_followable(&initial, settings, config);
-    let found = reachable_dependencies(&initial, settings, config);
+    let found = reachable_dependencies(&initial, settings, config, reused);
     let mut modules = replay(&initial, settings, config, found)?;
     if settings.experimental_stats {
         let all: Vec<Result<ExperimentalStats, PipelineError>> = modules
             .par_iter()
-            .map(|m| stats(&m.source, settings))
+            .map(
+                |m| match reused.get(&m.source).and_then(|r| r.experimental_stats) {
+                    Some(earlier) => Ok(earlier),
+                    None => stats(&m.source, settings),
+                },
+            )
             .collect();
         for (module, result) in modules.iter_mut().zip(all) {
             module.experimental_stats = Some(result?);
