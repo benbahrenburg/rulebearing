@@ -132,9 +132,9 @@ fn a_solution_proposes_the_layers_its_namespaces_name() -> Result<(), Box<dyn Er
         "{proposal}"
     );
     assert!(
-        proposal.contains(r#"from: { language: dotnet, namespace: "^Shop\\.Domain(\\.|$)" }"#)
+        proposal.contains(r#"from: { language: dotnet, namespace: "^Shop\\.Domain(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }"#)
             && proposal.contains(
-                r#"to: { namespace: "^Shop\\.(Application|Infrastructure|Web)(\\.|$)" }"#
+                r#"to: { namespace: "^Shop\\.(Application|Infrastructure|Web)(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }"#
             ),
         "{proposal}"
     );

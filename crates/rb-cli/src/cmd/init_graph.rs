@@ -547,6 +547,7 @@ mod tests {
 
     #[test]
     fn a_test_project_is_no_layer() -> Result<(), regex::Error> {
+        let pattern = regex::Regex::new(TEST_NAMESPACE)?;
         for (name, test) in [
             ("Clean.Application.FunctionalTests", true),
             ("Clean.Domain.UnitTests.Entities", true),
@@ -559,7 +560,6 @@ mod tests {
             ("Clean.Domain.Attestation", false),
         ] {
             assert_eq!(is_test_name(name), test, "{name}");
-            let pattern = regex::Regex::new(TEST_NAMESPACE)?;
             assert_eq!(pattern.is_match(name), test, "{name}");
         }
         // Test namespaces and test projects name no layer: this solution's tests alone have
