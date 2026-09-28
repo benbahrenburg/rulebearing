@@ -3,8 +3,9 @@
 # pinned SHA, build it with the manifest's `build` command, regenerate its init fixture and compare
 # it with the committed testbeds/init/<owner>__<name>/rulebearing.yaml, then write the full
 # proposal with `rulebearing init` and cruise it back. A row's framework-preset fixtures
-# (testbeds/init/<owner>__<name>/preset-<name>.yaml) are regenerated and compared too. The row passes when the fixture is unchanged
-# and the cruise exits 0: every rule live, every finding at error severity baselined.
+# (testbeds/init/<owner>__<name>/preset-<name>.yaml) are regenerated beside it, before init
+# writes anything into the checkout, and compared too. The row passes when every fixture is
+# unchanged and the cruise exits 0: every rule live, every finding at error severity baselined.
 #
 # Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 15.
 # Source: docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against.
@@ -48,12 +49,30 @@ if ! build_row "$out/build.log"; then
 fi
 
 # The fixture first, while the checkout has no configuration of init's writing.
+rm -f "$out/fixture/$slug/rulebearing.yaml"
 RB_INIT_FIXTURES="$out/fixture" RULEBEARING_BIN="$bin" "$here/init/run.sh" "$checkout" "$repo" > "$out/fixture.log" 2>&1
 regenerated="$out/fixture/$slug/rulebearing.yaml"
 if [ ! -s "$regenerated" ]; then
   row_result failed "init --dry-run did not produce a proposal (see fixture.log)"
   exit 0
 fi
+
+# Each framework-preset fixture the row carries (plan 0003, Step 11), regenerated the same way
+# and at the same point, before init writes a configuration or a cruise fills .graph/. Each file
+# is removed first, so a run.sh that fails leaves nothing from an earlier run to compare.
+preset_changed=""
+for committed in "$here/init/$slug"/preset-*.yaml; do
+  [ -f "$committed" ] || continue
+  name="${committed##*/preset-}"
+  name="${name%.yaml}"
+  rm -f "$out/fixture/$slug/preset-$name.yaml"
+  RB_INIT_FIXTURES="$out/fixture" RULEBEARING_BIN="$bin" "$here/init/run.sh" --preset "$name" "$checkout" "$repo" >> "$out/fixture.log" 2>&1
+  if ! diff -u "$committed" "$out/fixture/$slug/preset-$name.yaml" > "$out/preset-$name.diff" 2>&1; then
+    preset_changed="$preset_changed preset-$name.yaml"
+  else
+    rm -f "$out/preset-$name.diff"
+  fi
+done
 
 # The full proposal, baseline entries and all, written where a user would have it.
 if ! (cd "$checkout" && SOURCE_DATE_EPOCH=1790000000 "$bin" init --owner testbed --force) > "$out/init.log" 2>&1; then
@@ -65,20 +84,6 @@ paths=()
 while IFS= read -r path; do paths+=("$path"); done < <(init_paths)
 median_cruise "${paths[@]}"
 status=$?
-
-# Each framework-preset fixture the row carries (plan 0003, Step 11), regenerated the same way.
-preset_changed=""
-for committed in "$here/init/$slug"/preset-*.yaml; do
-  [ -f "$committed" ] || continue
-  name="${committed##*/preset-}"
-  name="${name%.yaml}"
-  RB_INIT_FIXTURES="$out/fixture" RULEBEARING_BIN="$bin" "$here/init/run.sh" --preset "$name" "$checkout" "$repo" >> "$out/fixture.log" 2>&1
-  if ! diff -u "$committed" "$out/fixture/$slug/preset-$name.yaml" > "$out/preset-$name.diff"; then
-    preset_changed="$preset_changed preset-$name.yaml"
-  else
-    rm -f "$out/preset-$name.diff"
-  fi
-done
 
 if ! diff -u "$fixture" "$regenerated" > "$out/fixture.diff"; then
   row_result failed "the init fixture changed; fixture.diff is the review (regenerate with testbeds/init/run.sh)"

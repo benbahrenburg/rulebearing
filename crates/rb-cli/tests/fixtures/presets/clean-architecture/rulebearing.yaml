@@ -19,20 +19,20 @@ rules:
         comment: "Domain is an inner layer: it never depends on Application, Infrastructure, Web, which depend on it."
         fix: "Declare what Domain needs as an abstraction in Domain and implement it in the outer layer; never add a ProjectReference from Domain to Application, Infrastructure, Web."
         severity: error
-        from: { language: dotnet, namespace: "^Shop\\.Domain(\\.|$)" }
-        to: { namespace: "^Shop\\.(Application|Infrastructure|Web)(\\.|$)" }
+        from: { language: dotnet, namespace: "^Shop\\.Domain(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+        to: { namespace: "^Shop\\.(Application|Infrastructure|Web)(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
       - name: application-not-to-outer-layers
         comment: "Application is an inner layer: it never depends on Infrastructure, Web, which depend on it."
         fix: "Declare what Application needs as an abstraction in Application and implement it in the outer layer; never add a ProjectReference from Application to Infrastructure, Web."
         severity: error
-        from: { language: dotnet, namespace: "^Shop\\.Application(\\.|$)" }
-        to: { namespace: "^Shop\\.(Infrastructure|Web)(\\.|$)" }
+        from: { language: dotnet, namespace: "^Shop\\.Application(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+        to: { namespace: "^Shop\\.(Infrastructure|Web)(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
       - name: infrastructure-not-to-outer-layers
         comment: "Infrastructure is an inner layer: it never depends on Web, which depend on it."
         fix: "Declare what Infrastructure needs as an abstraction in Infrastructure and implement it in the outer layer; never add a ProjectReference from Infrastructure to Web."
         severity: error
-        from: { language: dotnet, namespace: "^Shop\\.Infrastructure(\\.|$)" }
-        to: { namespace: "^Shop\\.Web(\\.|$)" }
+        from: { language: dotnet, namespace: "^Shop\\.Infrastructure(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+        to: { namespace: "^Shop\\.Web(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
 options:
   # Findings present when this file was written. Each expires; fix it before then.
   knownViolations:

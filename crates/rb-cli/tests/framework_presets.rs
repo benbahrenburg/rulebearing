@@ -27,7 +27,7 @@ const BIN: &str = env!("CARGO_BIN_EXE_rulebearing");
 
 /// Each framework preset and the number of rules it declares.
 const PRESETS: &[(&str, usize)] = &[
-    ("nextjs", 4),
+    ("nextjs", 3),
     ("clean-architecture", 3),
     ("django", 3),
     ("fastapi", 4),
@@ -254,10 +254,30 @@ fn init_preset_nextjs_extends_it_beside_the_language() -> Result<(), Box<dyn Err
         ),
         "{proposal}"
     );
-    assert!(
-        proposal.contains("\"rule\":{\"name\":\"nextjs-components-not-to-server\""),
-        "the component that imports server/ is baselined: {proposal}"
-    );
+    // src/lib/links.ts calls the route handler: the three rules each find it.
+    for rule in [
+        "nextjs-no-import-of-api-routes",
+        "nextjs-no-import-of-route-entries",
+        "nextjs-shared-code-not-to-routes",
+    ] {
+        let edge = format!(
+            "\"from\":\"src/lib/links.ts\",\"to\":\"src/app/api/items/route.ts\",\"rule\":{{\"name\":\"{rule}\""
+        );
+        assert!(proposal.contains(&edge), "{rule}: {proposal}");
+    }
+    // Not findings: the component's `import type` of the handler (erased), its import of
+    // server/ (a Server Component under the App Router), and the dashboard route's colocated
+    // components/ and lib/ importing each other.
+    for from in [
+        "src/components/ItemCount.tsx",
+        "src/app/dashboard/components/Chart.tsx",
+        "src/app/dashboard/lib/data.ts",
+    ] {
+        assert!(
+            !proposal.contains(&format!("\"type\":\"dependency\",\"from\":\"{from}\"")),
+            "{from}: {proposal}"
+        );
+    }
     Ok(())
 }
 

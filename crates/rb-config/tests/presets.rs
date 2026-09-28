@@ -342,3 +342,36 @@ fn every_framework_preset_has_its_readme_section() -> Result<(), Box<dyn Error>>
     }
     Ok(())
 }
+
+/// No framework preset carries a warning into the run of a repository that extends it: no pattern
+/// nests a quantifier, which dependency-cruiser's safe-regex would refuse and the loader would
+/// report on every run.
+#[test]
+fn framework_presets_load_without_warnings() -> Result<(), Box<dyn Error>> {
+    for name in FRAMEWORK_PRESETS {
+        let config = load_text(
+            &format!("extends: rulebearing:{name}\n"),
+            Syntax::Yaml,
+            Path::new(env!("CARGO_MANIFEST_DIR")),
+            &LoadOptions {
+                format: Some(rb_config::ConfigFormat::Native),
+                ..LoadOptions::default()
+            },
+        )?;
+        let messages: Vec<&str> = config.warnings.iter().map(|w| w.message.as_str()).collect();
+        assert!(messages.is_empty(), "{name}: {messages:?}");
+    }
+    // The control: the check does see a nested quantifier in a rule written beside a preset.
+    let nested = load_text(
+        "extends: rulebearing:nextjs\nrules:\n  dependencies:\n    forbidden:\n      - name: nested\n        from: { path: \"^(a/)?(b.+/)?c\" }\n        to: {}\n",
+        Syntax::Yaml,
+        Path::new(env!("CARGO_MANIFEST_DIR")),
+        &LoadOptions {
+            format: Some(rb_config::ConfigFormat::Native),
+            ..LoadOptions::default()
+        },
+    )?;
+    assert_eq!(nested.warnings.len(), 1, "{:?}", nested.warnings);
+    assert_eq!(nested.warnings[0].rule.as_deref(), Some("nested"));
+    Ok(())
+}
