@@ -6,24 +6,29 @@
         "allowed": [
           "src/Application/TodoItems/Commands/CreateTodoItem.cs -> src/Domain/Entities/TodoItem.cs",
           "src/Domain/Entities/TodoItem.cs -> src/Domain/Common/BaseEntity.cs",
-          "src/Domain/Entities/TodoItem.cs -> src/Domain/Api/TodoItemContract.cs"
+          "apps/api/src/domain/order.ts -> apps/api/src/domain/money.ts",
+          "src/domain/clock.ts -> node_modules/@opentelemetry/api/build/src/index.js"
         ],
         "forbidden": [
           "src/Domain/Entities/TodoItem.cs -> src/Application/TodoItems/Commands/CreateTodoItem.cs",
           "src/Shop.Domain/Order.cs -> src/Shop.Infrastructure/OrderStore.cs",
-          "src/domain/order.ts -> src/presentation/orderView.ts"
+          "src/domain/order.ts -> src/presentation/orderView.ts",
+          "apps/api/src/domain/order.ts -> apps/api/src/infrastructure/db.ts"
         ]
       },
       "fix": "Move the code into the layer that owns it, or declare what the domain needs as an interface in Domain and implement it in an outer layer.",
       "from": {
-        "path": "(^|/)([^/]+\\.)?(Domain|domain)/",
-        "pathNot": "(^|/)([^/]+\\.)?(Application|application|Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/(.+/)?([^/]+\\.)?(Domain|domain)/"
+        "path": "(^|[/.])(Domain|domain)/",
+        "pathNot": "(^|[/.])(Domain|domain)(/|/.*[/.])(Application|application|Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/"
       },
       "name": "clean-domain-depends-on-nothing-outer",
       "severity": "error",
       "to": {
-        "path": "(^|/)([^/]+\\.)?(Application|application|Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/",
-        "pathNot": "(^|/)([^/]+\\.)?(Domain|domain)/(.+/)?([^/]+\\.)?(Application|application|Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/"
+        "path": "(^|[/.])(Application|application|Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/",
+        "pathNot": [
+          "(^|[/.])(Application|application|Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)(/|/.*[/.])(Domain|domain)/",
+          "(^|/)node_modules/"
+        ]
       }
     },
     {
@@ -32,23 +37,28 @@
         "allowed": [
           "src/Application/TodoItems/Commands/CreateTodoItem.cs -> src/Domain/Entities/TodoItem.cs",
           "src/Infrastructure/Data/ApplicationDbContext.cs -> src/Application/Common/Interfaces/IApplicationDbContext.cs",
-          "src/Web/Application/Endpoints.cs -> src/Web/Infrastructure/IEndpointGroup.cs"
+          "apps/web/src/application/placeOrder.ts -> apps/web/src/domain/order.ts",
+          "src/application/tracing.ts -> node_modules/undici/lib/web/fetch/index.js"
         ],
         "forbidden": [
           "src/Application/TodoItems/Commands/CreateTodoItem.cs -> src/Infrastructure/Data/ApplicationDbContext.cs",
-          "src/application/placeOrder.ts -> src/web/routes.ts"
+          "src/application/placeOrder.ts -> src/web/routes.ts",
+          "apps/web/src/application/placeOrder.ts -> apps/web/src/infrastructure/api.ts"
         ]
       },
       "fix": "Declare an interface in Application (for example IApplicationDbContext), implement it in Infrastructure, and register it in the composition root.",
       "from": {
-        "path": "(^|/)([^/]+\\.)?(Application|application)/",
-        "pathNot": "(^|/)([^/]+\\.)?(Domain|domain|Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/(.+/)?([^/]+\\.)?(Application|application)/"
+        "path": "(^|[/.])(Application|application)/",
+        "pathNot": "(^|[/.])(Application|application)(/|/.*[/.])(Domain|domain|Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/"
       },
       "name": "clean-application-not-to-outer-layers",
       "severity": "error",
       "to": {
-        "path": "(^|/)([^/]+\\.)?(Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/",
-        "pathNot": "(^|/)([^/]+\\.)?(Domain|domain|Application|application)/(.+/)?([^/]+\\.)?(Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/"
+        "path": "(^|[/.])(Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/",
+        "pathNot": [
+          "(^|[/.])(Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)(/|/.*[/.])(Domain|domain|Application|application)/",
+          "(^|/)node_modules/"
+        ]
       }
     },
     {
@@ -57,7 +67,8 @@
         "allowed": [
           "src/Web/Program.cs -> src/Infrastructure/DependencyInjection.cs",
           "src/Infrastructure/Data/ApplicationDbContext.cs -> src/Domain/Entities/TodoItem.cs",
-          "src/Web/Infrastructure/EndpointRouteBuilderExtensions.cs -> src/Web/Infrastructure/IEndpointGroup.cs"
+          "src/Web/Infrastructure/EndpointRouteBuilderExtensions.cs -> src/Web/Infrastructure/IEndpointGroup.cs",
+          "src/infrastructure/trpc.ts -> node_modules/@trpc/server/dist/index.js"
         ],
         "forbidden": [
           "src/Infrastructure/Identity/IdentityService.cs -> src/Web/Endpoints/Users.cs",
@@ -66,14 +77,17 @@
       },
       "fix": "Move the shared type into Application (or Domain), or pass the value in through the interface Infrastructure implements.",
       "from": {
-        "path": "(^|/)([^/]+\\.)?(Infrastructure|infrastructure)/",
-        "pathNot": "(^|/)([^/]+\\.)?(Domain|domain|Application|application|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/(.+/)?([^/]+\\.)?(Infrastructure|infrastructure)/"
+        "path": "(^|[/.])(Infrastructure|infrastructure)/",
+        "pathNot": "(^|[/.])(Infrastructure|infrastructure)(/|/.*[/.])(Domain|domain|Application|application|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/"
       },
       "name": "clean-infrastructure-not-to-presentation",
       "severity": "error",
       "to": {
-        "path": "(^|/)([^/]+\\.)?(Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/",
-        "pathNot": "(^|/)([^/]+\\.)?(Domain|domain|Application|application|Infrastructure|infrastructure)/(.+/)?([^/]+\\.)?(Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/"
+        "path": "(^|[/.])(Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/",
+        "pathNot": [
+          "(^|[/.])(Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)(/|/.*[/.])(Domain|domain|Application|application|Infrastructure|infrastructure)/",
+          "(^|/)node_modules/"
+        ]
       }
     }
   ],

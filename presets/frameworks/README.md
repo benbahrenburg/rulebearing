@@ -2,7 +2,7 @@
 
 Five bundled rule sets, one per framework or architecture style, that a configuration can `extends` ([design § The developer relations hat](../../docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo): "off by default, each a documented opinion"; [plan 0003, Step 11](../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog); [FR-REACH-04](../../docs/prd.md#fr-reach-04), [FR-CLI-08](../../docs/prd.md#fr-cli-08)).
 
-Each is an opinion, not a default. Nothing extends one unless a configuration names it, `rulebearing init` proposes one only when `--preset` names it, and none is part of `rulebearing:recommended`. A preset states the architecture its framework is usually written in, conservatively: every rule reads module paths only, so it holds for any language whose folders follow the convention, and a boundary the graph cannot see (a `"use client"` directive, a runtime import) is left out rather than guessed.
+Each is an opinion, not a default. Nothing extends one unless a configuration names it, `rulebearing init` proposes one only when `--preset` names it, and none is part of `rulebearing:recommended`. A preset states the architecture its framework is usually written in, conservatively: every rule reads module paths only, so it holds for any language whose folders follow the convention, and a boundary the graph cannot see (a `"use client"` directive, a runtime import) is left out rather than guessed. No pattern nests a quantifier, so extending a preset adds no safe-regex warning to a run.
 
 ```yaml
 extends: [rulebearing:typescript, rulebearing:recommended, rulebearing:nextjs]
@@ -20,7 +20,7 @@ Every rule carries a `comment` with the decision token `plan:rulebearing-<preset
 
 | Preset | Rules | For |
 | --- | --- | --- |
-| [`rulebearing:nextjs`](nextjs.yaml) | 4 | Next.js, App Router and Pages Router |
+| [`rulebearing:nextjs`](nextjs.yaml) | 3 | Next.js, App Router and Pages Router |
 | [`rulebearing:clean-architecture`](clean-architecture.yaml) | 3 | a .NET solution or a TypeScript or Python tree in Domain, Application, Infrastructure and Presentation layers |
 | [`rulebearing:django`](django.yaml) | 3 | Django projects |
 | [`rulebearing:fastapi`](fastapi.yaml) | 4 | FastAPI services in routers, services and repositories |
@@ -28,20 +28,19 @@ Every rule carries a `comment` with the decision token `plan:rulebearing-<preset
 
 ## `rulebearing:nextjs`
 
-Next.js loads route files by their path, and bundles components for the browser. The opinion: a route is an entry, not a library, and shared code never depends on a route.
+Next.js loads route files by their path. The opinion: a route is an entry, not a library, and shared code never depends on a route. A type-only import (`import type`) is erased at build time and is never a finding.
 
 | Rule | Severity | Forbids |
 | --- | --- | --- |
 | `nextjs-no-import-of-route-entries` | error | importing an App Router special file (`page`, `layout`, `route`, `template`, `default`, `loading`, `error`, `global-error`, `not-found`) from any module but a test or a story |
 | `nextjs-no-import-of-api-routes` | error | importing a handler under `pages/api/` or `app/api/` from outside those folders |
-| `nextjs-shared-code-not-to-routes` | error | `components/`, `hooks/` and `lib/` importing from `app/` or `pages/` |
-| `nextjs-components-not-to-server` | error | `components/` importing from a `server/` folder |
+| `nextjs-shared-code-not-to-routes` | error | `components/`, `hooks/` and `lib/` outside `app/` and `pages/` importing from `app/` or `pages/`; the same folders inside a route folder are colocated with the route and are part of it (`app/lib/data.ts -> app/lib/definitions.ts` is allowed) |
 
-Not checked: whether a client component imports server-only code. The `"use client"` directive and the `server-only` and `client-only` packages are not recorded in the graph, so a path rule would guess; the preset leaves it to Next.js's own build error.
+Not checked: whether a component imports server code. Under the App Router a component is a Server Component unless it or a parent says `"use client"`, and a Server Component importing the database module is the recommended pattern; under the Pages Router every component is bundled for the browser. Which one a component is depends on the directive, which the graph does not record, so a path rule would be wrong for one router or the other. The preset leaves it to Next.js's own build error and to the `server-only` package.
 
 ## `rulebearing:clean-architecture`
 
-The dependency rule: source code depends only inwards, Domain <- Application <- Infrastructure and Presentation. A layer is a path segment named for it, alone (`src/Domain/`, `src/domain/`) or as the last dotted part of a project folder (`src/Shop.Domain/`), so the preset reads a .NET solution and a TypeScript or Python tree alike. A test project (`tests/Domain.UnitTests/`) is not a layer. Presentation is `Web`, `WebUI`, `WebApi`, `Api`, `API`, `Presentation` or `UI`; it may depend on Infrastructure, which it composes at start-up.
+The dependency rule: source code depends only inwards, Domain <- Application <- Infrastructure and Presentation. A layer is a path segment named for it, alone (`src/Domain/`, `src/domain/`) or as the last dotted part of a project folder (`src/Shop.Domain/`), so the preset reads a .NET solution and a TypeScript or Python tree alike. A test project (`tests/Domain.UnitTests/`) is not a layer. Presentation is `Web`, `WebUI`, `WebApi`, `Api`, `API`, `Presentation` or `UI` (or with a lower-case first letter); it may depend on Infrastructure, which it composes at start-up. An npm package under `node_modules/` is never a layer, whatever its path (`@opentelemetry/api`, `undici/lib/web/`).
 
 | Rule | Severity | Forbids |
 | --- | --- | --- |
@@ -49,7 +48,7 @@ The dependency rule: source code depends only inwards, Domain <- Application <- 
 | `clean-application-not-to-outer-layers` | error | Application importing Infrastructure or Presentation |
 | `clean-infrastructure-not-to-presentation` | error | Infrastructure importing Presentation |
 
-A module's layer is the first layer segment of its path: `src/Web/Infrastructure/` (jasontaylordev/CleanArchitecture's endpoint plumbing) is Presentation, not Infrastructure, and each rule's `pathNot` leaves out a path whose layer segment comes after another's. On .NET, `rulebearing init` also proposes namespace-based layer rules from the built assemblies ([cli.md § Commands](../../docs/cli.md#commands)); the two agree on a solution whose folders and namespaces name the same layers.
+A module's layer is the last layer segment of its path: `apps/api/src/domain/` is Domain, since the app folder `apps/api/` comes first (a Turborepo or Nx layout), and `src/Web/Infrastructure/` (jasontaylordev/CleanArchitecture's endpoint plumbing) is Infrastructure, whose files import each other freely. Each rule's `pathNot` leaves out a path with a later layer segment of another kind. The cost: a folder named for a layer inside another layer (`src/Domain/Api/`) is that layer; rename it, or override the rule's `pathNot`. On .NET, `rulebearing init` also proposes namespace-based layer rules from the built assemblies ([cli.md § Commands](../../docs/cli.md#commands)); the two agree on a solution whose folders and namespaces name the same layers.
 
 ## `rulebearing:django`
 
@@ -78,7 +77,7 @@ The layering most FastAPI services use: routers (`routers/`, `router.py`, `route
 
 ## `rulebearing:vertical-slices`
 
-A feature, or slice, owns its request, handler, validation and data access, and is added, changed and deleted on its own. A slice is a folder directly under `features/`, `Features/`, `slices/` or `Slices/`, anywhere in the tree; the shared kernel is `shared/`, `Shared/`, `common/`, `Common/`, `kernel/`, `Kernel/`, `SharedKernel/` or `shared-kernel/`.
+A feature, or slice, owns its request, handler, validation and data access, and is added, changed and deleted on its own. A slice is a folder directly under `features/`, `Features/`, `slices/` or `Slices/`, anywhere in the tree; the shared kernel is `shared/`, `Shared/`, `common/`, `Common/`, `kernel/`, `Kernel/`, `SharedKernel/` or `shared-kernel/` outside the slices. A slice's own `shared/` or `common/` folder is part of the slice (`src/features/cart/shared/util.ts -> src/features/cart/cart.ts` is allowed).
 
 | Rule | Severity | Forbids |
 | --- | --- | --- |

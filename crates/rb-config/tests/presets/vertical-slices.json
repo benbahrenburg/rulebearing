@@ -5,29 +5,35 @@
       "examples": {
         "allowed": [
           "src/features/cart/CartView.tsx -> src/features/cart/useCart.ts",
-          "src/features/cart/CartView.tsx -> src/shared/Button.tsx"
+          "src/features/cart/CartView.tsx -> src/shared/Button.tsx",
+          "features/cart/index.ts -> features/cart/model.ts"
         ],
         "forbidden": [
           "src/features/cart/CartView.tsx -> src/features/checkout/pay.ts",
-          "src/Web/Features/Orders/CreateOrder.cs -> src/Web/Features/Customers/GetCustomer.cs"
+          "src/Web/Features/Orders/CreateOrder.cs -> src/Web/Features/Customers/GetCustomer.cs",
+          "features/cart/index.ts -> features/checkout/index.ts"
         ]
       },
       "fix": "Move what both slices need into the shared kernel, or have one slice publish an event or call the other through its public request rather than its internals.",
       "from": {
-        "path": "^((?:.*/)?(?:Features|features|Slices|slices)/[^/]+)/"
+        "path": "^((|.*/)(Features|features|Slices|slices)/[^/]+)/"
       },
       "name": "slices-are-independent",
       "severity": "error",
       "to": {
         "path": "(^|/)(Features|features|Slices|slices)/[^/]+/",
-        "pathNot": "^$1/"
+        "pathNot": [
+          "^$1/",
+          "(^|/)node_modules/"
+        ]
       }
     },
     {
       "comment": "The shared kernel is what every slice may use; one that imports a slice makes every slice depend on it. plan:rulebearing-vertical-slices",
       "examples": {
         "allowed": [
-          "src/features/cart/cartApi.ts -> src/shared/api.ts"
+          "src/features/cart/cartApi.ts -> src/shared/api.ts",
+          "src/features/cart/shared/util.ts -> src/features/cart/cart.ts"
         ],
         "forbidden": [
           "src/shared/api.ts -> src/features/cart/cartApi.ts",
@@ -36,12 +42,14 @@
       },
       "fix": "Move the code the shared kernel needs out of the slice into the shared kernel, or invert the dependency behind an interface the slice implements.",
       "from": {
-        "path": "(^|/)(Shared|shared|Common|common|Kernel|kernel|SharedKernel|shared-kernel)/"
+        "path": "(^|/)(Shared|shared|Common|common|Kernel|kernel|SharedKernel|shared-kernel)/",
+        "pathNot": "(^|/)(Features|features|Slices|slices)/[^/]+/"
       },
       "name": "slices-shared-kernel-not-to-slices",
       "severity": "error",
       "to": {
-        "path": "(^|/)(Features|features|Slices|slices)/[^/]+/"
+        "path": "(^|/)(Features|features|Slices|slices)/[^/]+/",
+        "pathNot": "(^|/)node_modules/"
       }
     }
   ],
