@@ -52,8 +52,14 @@ const WAVE_2 = [
     'test/report/error-html/error-html.spec.mjs',
     'test/report/error-html/utl.spec.mjs',
 ];
+// `plugin:<path>` (plan 0003, Step 7): upstream's plugin specs, each fixture loaded and run by
+// Rulebearing's sandbox through `rulebearing validate` and `rulebearing report`.
+const PLUGINS = [
+    'test/report/plugins/index.get-external-plugin-reporter.spec.mjs',
+    'test/report/plugins/index.is-valid-plugin.spec.mjs',
+];
 const only = args.filter((arg) => arg.endsWith('.spec.mjs'));
-const specs = only.length > 0 ? only : [...WAVE_1, ...WAVE_2];
+const specs = only.length > 0 ? only : [...WAVE_1, ...WAVE_2, ...PLUGINS];
 
 const Mocha = createRequire(join(upstream, 'package.json'))('mocha');
 const mocha = new Mocha({ timeout: 20_000, reporter: 'base' });

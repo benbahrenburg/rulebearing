@@ -39,10 +39,26 @@ const INTERNALS = [
     '#report/error-html/utl.mjs',
 ];
 const SHIM = new URL('./shim.mjs', import.meta.url).href;
+// `plugin:<path>` (plan 0003, Step 7): `#report/plugins.mjs` is answered by the binary, and a
+// plugin fixture a spec imports becomes a handle naming its file, so every fixture is loaded and
+// run by Rulebearing's sandbox, never by Node.
+const PLUGINS_MODULE = '#report/plugins.mjs';
+const FORWARD_PLUGINS = 'rb-plugins:module';
+const PLUGIN_FIXTURE = 'rb-plugin-fixture:';
 
 export async function resolve(specifier, context, nextResolve) {
     if (!context.parentURL?.endsWith('.spec.mjs')) {
         return nextResolve(specifier, context);
+    }
+    if (specifier === PLUGINS_MODULE) {
+        return { url: FORWARD_PLUGINS, shortCircuit: true };
+    }
+    if (
+        context.parentURL.includes('/test/report/plugins/') &&
+        specifier.startsWith('./__fixtures__/')
+    ) {
+        const original = await nextResolve(specifier, context);
+        return { url: `${PLUGIN_FIXTURE}${encodeURIComponent(original.url)}`, shortCircuit: true };
     }
     const outputType = REPORTERS.get(specifier);
     if (outputType) {
@@ -81,6 +97,20 @@ async function forwardedModule(url) {
 }
 
 export async function load(url, context, nextLoad) {
+    if (url === FORWARD_PLUGINS) {
+        const source = `export { isValidPlugin, getExternalPluginReporter } from ${JSON.stringify(SHIM)};`;
+        return { format: 'module', shortCircuit: true, source };
+    }
+    if (url.startsWith(PLUGIN_FIXTURE)) {
+        const file = decodeURIComponent(url.slice(PLUGIN_FIXTURE.length));
+        const source = [
+            `import { PLUGIN_HANDLE } from ${JSON.stringify(SHIM)};`,
+            `const handle = () => { throw new Error('this plugin runs in the Rulebearing sandbox only'); };`,
+            `handle[PLUGIN_HANDLE] = ${JSON.stringify(file)};`,
+            'export default handle;',
+        ].join('\n');
+        return { format: 'module', shortCircuit: true, source };
+    }
     if (url === FORWARD_DOT) {
         const source = [
             `import { report } from ${JSON.stringify(SHIM)};`,

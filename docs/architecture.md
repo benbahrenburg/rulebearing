@@ -305,7 +305,7 @@ Release is one tag: `cargo-dist` builds the binaries, and the three wrappers are
 ## Security posture
 
 - **No network, ever.** The binary makes no outbound connection; opt-in usage counts (wave 4) are printed before sending and off by default.
-- **No code execution outside the sandbox.** The QuickJS evaluator has no filesystem access beyond the repository, no `process`, no timers ([ADR-0006](adr/0006-embedded-quickjs-config-evaluator.md)). Escaping it is a test case that must fail.
+- **No code execution outside the sandbox.** The QuickJS evaluator has no filesystem access beyond the repository, no `process`, no timers ([ADR-0006](adr/0006-embedded-quickjs-config-evaluator.md)). It runs JavaScript configurations and `plugin:<path>` reporters alike ([reporters § Plugin reporters](reporters.md#plugin-reporters)). Escaping it is a test case that must fail.
 - **The sidecar is explicit.** Node is spawned only with `--sidecar node` or `--config-via-node`, and the report records that it was.
 - **Inputs are untrusted.** Assemblies, PDBs and source files are parsed defensively; a malformed input produces exit 2 with a named reason, never a panic. Fuzz targets exist for the metadata reader and the config parsers.
 - **Hermetic runs.** Deterministic ordering, no ambient state, so `attest` can hash config, inputs and results and CI can verify the hash against `HEAD`.

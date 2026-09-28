@@ -30,6 +30,36 @@
 
 `dot`, `ddot`, `archi`, `flat`, `mermaid`, `d2` and `metrics` arrive later in wave 2; `html`, `markdown`, `anon` and `plantuml` in wave 3. Asking for one now exits 2 and names the wave.
 
+## Plugin reporters
+
+`-T plugin:<path>` renders through a reporter written in JavaScript, as dependency-cruiser's plugin reporters do ([coverage § Output types](artifacts/dependency-cruiser-18.2.0-coverage.md#output-types), [plan 0003, Step 7](plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)). The module's default export (`module.exports` for CommonJS, `export default` for an ES module) is called with the cruise result and returns `{ output, exitCode }`:
+
+```js
+// reporters/count.cjs, used as: rulebearing cruise src -T plugin:./reporters/count.cjs
+module.exports = (result) => ({
+  output: `${result.summary.totalCruised} modules, ${result.summary.error} errors\n`,
+  exitCode: result.summary.error,
+});
+```
+
+| What | How |
+| --- | --- |
+| Naming the module | A path from the working directory (`./reporters/count.cjs`), a `file://` URL or an absolute path, or a package under `node_modules` (`plugin:my-reporter`, `plugin:@scope/pkg/reporter`), read through its `exports` or `main`. A package can name its own `exports` (`plugin:dependency-cruiser/sample-reporter-plugin` inside dependency-cruiser's repository) |
+| Validity | As upstream's `isValidPlugin`: called first with a minimal cruise result, the function must return an own `output` and an own numeric `exitCode`, or the run stops with `<path> is not a valid plugin`. For the real result, `output` must be a string and `exitCode` a whole number of zero or more |
+| Exit code | The plugin's `exitCode`, as dependency-cruiser's command line exits with it ([ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)); `--exit-code-mode strict` shifts it to `10 + n`, and `fmt` uses it only with `--exit-code`. A run that cannot be trusted still exits 2 |
+| Errors | Exit 3, naming the plugin and the fix: a missing module (`Could not find reporter plugin '<name>' (or it isn't valid)`), an invalid one, a sandbox refusal, a time or memory overrun, or an exception the plugin throws |
+| Receipt | The result the plugin receives carries `summary.plugins: ["reporters/count.cjs"]`, the module relative to the repository root. With `--strict-schema` the plugin receives dependency-cruiser's shape instead, every addition stripped |
+
+The plugin runs in the same QuickJS sandbox as a JavaScript configuration ([ADR-0006](adr/0006-embedded-quickjs-config-evaluator.md)), never in Node:
+
+| The sandbox gives | The sandbox refuses |
+| --- | --- |
+| `require` and `import` of JavaScript and JSON files inside the repository, and of packages under its `node_modules` | Any file outside the repository, by path, by `../`, by `file://` URL or by a symbolic link |
+| The pure `path` and `url` modules ([ADR-0027](adr/0027-pure-path-and-url-modules-in-the-config-sandbox.md)), `JSON`, `Math` and the rest of the ECMAScript standard library | Every Node built-in (`fs`, `http`, `child_process`, ...), `process`, `Buffer`, `fetch`, `XMLHttpRequest`, `WebSocket` and timers |
+| 30 seconds and 512 MiB per report | Running past either |
+
+A refusal stops the run with `<path> is not a valid plugin: the reporter sandbox refused it: <what it reached for>`. A package that imports a Node built-in at load time, as `watskeburt` imports `child_process`, is therefore not a valid plugin here, where under Node it would load and fail later. A plugin that needs the network or the filesystem is not portable to Rulebearing; render its input with `-T json` and run it with Node instead.
+
 ## `diff` renderings
 
 `rulebearing diff` renders its own document, not a cruise result, and takes its own three output types ([cli.md § diff](cli.md#diff)):
@@ -47,7 +77,7 @@
 | `reporterOptions.err.showExternalModulesUnresolved`, `showAliasedModulesUnresolved` | `err`, `err-long` | Print the specifier rather than the resolved path for an unresolved import |
 | `reporterOptions.text.highlightFocused` | `text` | Mark the modules `--focus` selected |
 | `--prefix`, `--suffix` | all that link | Around each module path in a link |
-| `--strict-schema` | `json` | Strip every Rulebearing addition |
+| `--strict-schema` | `json`, `plugin:<path>` | Strip every Rulebearing addition |
 | `--max-findings N` | `agent` | Show at most N violations per rule |
 | `--color auto\|always\|never` | `err`, `err-long`, `text` | Colour; `auto` honours `NO_COLOR` |
 
@@ -60,7 +90,7 @@
 | module | `language` |
 | dependency | `line`, `column`, `dependencyKind` |
 | violation | `id` (stable, [ADR-0015](adr/0015-stable-violation-id.md)), `fix`, `decision` |
-| `summary` | `inspected` (files and modules read per language), `vacuousRules` (each with `"severity": "warn"` when the run only warned, [ADR-0032](adr/0032-liveness-follows-the-configuration-format.md)), `ratchets` ([ADR-0029](adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)), `expired` (rules and known violations past their date, [ADR-0031](adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)) |
+| `summary` | `inspected` (files and modules read per language), `vacuousRules` (each with `"severity": "warn"` when the run only warned, [ADR-0032](adr/0032-liveness-follows-the-configuration-format.md)), `ratchets` ([ADR-0029](adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)), `expired` (rules and known violations past their date, [ADR-0031](adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)), `plugins` (the [plugin reporter](#plugin-reporters) the result was handed to) |
 
 `--strict-schema` removes all of them, and the output then validates against dependency-cruiser 18.2.0's schema ([layer 4](../conformance/README.md#gate-1-layer-by-layer)). The graph document's own schema is [`schema/v1.json`](../schema/v1.json), generated from the types. Two runs over the same inputs serialise byte for byte. `optionsUsed.baseDir` is the working folder, as upstream writes it, and `teamcity` stamps each message with the time, which `SOURCE_DATE_EPOCH` pins.
 
