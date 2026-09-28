@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 use crate::code::CodeLayer;
-use crate::document::{Module, Receipt};
+use crate::document::{Module, Receipt, SidecarReceipt};
 
 /// What one extractor produced. It serialises, so a cache can keep it and a later run can
 /// reuse it ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
@@ -38,6 +38,11 @@ pub struct Extraction {
     /// module's `source`. Empty for an extractor whose modules carry everything.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub files: BTreeMap<String, FileState>,
+    /// The Node sidecar's part in this extraction, when it extracted any file
+    /// ([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)); the run's
+    /// `summary.sidecar`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sidecar: Option<SidecarReceipt>,
 }
 
 /// What an extractor keeps of one file so a later run can reuse the file's result without
@@ -246,14 +251,27 @@ mod tests {
                 message: "general".to_owned(),
             }],
             files,
+            sidecar: Some(SidecarReceipt {
+                tool: "dependency-cruiser".to_owned(),
+                version: "18.2.0".to_owned(),
+                files: 1,
+            }),
         };
         let text = serde_json::to_string(&extraction)?;
         assert!(text.contains(r#""files":{"a.py""#), "{text}");
+        assert!(
+            text.contains(
+                r#""sidecar":{"tool":"dependency-cruiser","version":"18.2.0","files":1}"#
+            ),
+            "{text}"
+        );
         assert!(!text.contains(r#""code":null"#), "{text}");
         assert_eq!(serde_json::from_str::<Extraction>(&text)?, extraction);
         let empty = serde_json::to_string(&Extraction::default())?;
         assert!(
-            !empty.contains(r#""files":{"#) && !empty.contains("warnings"),
+            !empty.contains(r#""files":{"#)
+                && !empty.contains("warnings")
+                && !empty.contains("sidecar"),
             "{empty}"
         );
         Ok(())

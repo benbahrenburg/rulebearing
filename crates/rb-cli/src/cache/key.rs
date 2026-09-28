@@ -311,7 +311,7 @@ pub const FORMAT: &str = "1";
 /// laid its flags over them, the front-end (it decides whether Markdown fences are read), the
 /// evaluated webpack `resolve` block, whether a rule reads licences or deprecations, the
 /// positional paths, the working directory inside the worktree, `$VIRTUAL_ENV`, the extractors
-/// this build has, and [`FORMAT`]. The rules themselves change it only through the files: the
+/// this build has, `--sidecar` when set, and [`FORMAT`]. The rules themselves change it only through the files: the
 /// entry holds the extraction, which every run evaluates afresh.
 pub fn extraction_hash(config: &Config, root: &Path, cwd: &Path, paths: &[String]) -> String {
     fn json<T: serde::Serialize + ?Sized>(value: &T) -> Vec<u8> {
@@ -334,7 +334,7 @@ pub fn extraction_hash(config: &Config, root: &Path, cwd: &Path, paths: &[String
         rb_config::CompatMode::Native => "native",
         rb_config::CompatMode::DependencyCruiser => "dependency-cruiser",
     };
-    let parts: Vec<(&str, Vec<u8>)> = vec![
+    let mut parts: Vec<(&str, Vec<u8>)> = vec![
         ("format", FORMAT.as_bytes().to_vec()),
         ("files", config_hash(config, root).into_bytes()),
         ("typescript", json(&config.languages.typescript)),
@@ -365,6 +365,12 @@ pub fn extraction_hash(config: &Config, root: &Path, cwd: &Path, paths: &[String
         ),
         ("features", features.join(",").into_bytes()),
     ];
+    // `--sidecar node` is kept out of the options' serialisation (it is not a dependency-cruiser
+    // option), so it is hashed on its own: an entry written with the sidecar holds CoffeeScript
+    // results a run without it must refuse. Absent, the hash is what it was before the flag.
+    if let Some(sidecar) = config.languages.typescript.sidecar {
+        parts.push(("sidecar", sidecar.as_str().as_bytes().to_vec()));
+    }
     format!(
         "sha256:{}",
         hash_files(parts.iter().map(|(n, b)| ((*n).to_owned(), b.as_slice())))
@@ -529,6 +535,19 @@ mod tests {
             let _ = std::fs::create_dir_all(parent);
         }
         let _ = std::fs::write(path, text);
+    }
+
+    #[test]
+    fn the_sidecar_flag_changes_the_extraction_hash() {
+        let dir = scratch("sidecar");
+        let plain = Config::default();
+        let mut with = Config::default();
+        with.languages.typescript.sidecar = Some(rb_model::SidecarRuntime::Node);
+        let hash = |config: &Config| extraction_hash(config, &dir, &dir, &[]);
+        assert_ne!(hash(&plain), hash(&with));
+        assert_eq!(hash(&with), hash(&with.clone()));
+        assert!(hash(&with).starts_with("sha256:"));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

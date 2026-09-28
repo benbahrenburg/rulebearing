@@ -135,6 +135,30 @@ rulebearing cruise --cache -T err src                    # .graph/cache, metadat
 rulebearing cruise --cache /tmp/rb --cache-strategy content -T json src
 ```
 
+Under `--sidecar node` a CoffeeScript or LiveScript file is one of the files read again when it changes: the sidecar is run for the changed ones only, and the rest are reused. The flag is part of the entry's key, so an entry written with it is never used without it, nor the reverse.
+
+## CoffeeScript and LiveScript: `--sidecar node`
+
+`cruise --sidecar node` extracts `.coffee`, `.litcoffee`, `.coffee.md`, `.ls`, `.cjsx` and `.csx` files by running the repository's own dependency-cruiser with Node, and merges what it finds into the graph ([coverage § Extraction and resolution](artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution), row "CoffeeScript, LiveScript"; [ADR-0017](adr/0017-coffeescript-livescript-sidecar.md); [Wave 3, Step 10](plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)). It is, with `--config-via-node`, the only way the binary starts Node, and it never does without the flag.
+
+| Situation | Result |
+| --- | --- |
+| No flag, and the walk reaches such a file | exit 2: `<file>: unsupported-file-needs-sidecar: ...`, naming `--sidecar node` or excluding the file as the fix |
+| No flag, and the file is only an unfollowed dependency | nothing: the file is never read |
+| The flag, no `node_modules/dependency-cruiser` in the repository or above it | exit 2, naming the `npm install --save-dev dependency-cruiser@18.2.0 coffeescript` that fixes it |
+| The flag, no Node (`node` on the path, or `$RULEBEARING_NODE`) | exit 2, naming Node 22 or later and `RULEBEARING_NODE` |
+| The flag, and dependency-cruiser cannot load `coffeescript` or `livescript` | exit 2, naming the package to install; dependency-cruiser would otherwise read the file as JavaScript without saying so |
+| The flag, and a dependency-cruiser other than 18.2.0 | the run goes on with a warning; the edges are proven against 18.2.0 only |
+
+dependency-cruiser is found as Node would find it from the working directory: `node_modules/dependency-cruiser` there or in a folder above, or the folder itself when it is a dependency-cruiser checkout. It runs its own command line with `--output-type json` over the files the walk reached, and a configuration written to the system's temporary folder: the run's TypeScript options, whether the configuration was a dependency-cruiser file or a `rulebearing.yaml` (whose `languages.typescript` block uses dependency-cruiser's names), with `maxDepth` `0` and none of the run's rules. The run's rules are evaluated by Rulebearing over the merged graph, as for every other file.
+
+The walk stays Rulebearing's: each CoffeeScript or LiveScript file is extracted by dependency-cruiser, and the walk continues natively from its dependencies, so a JavaScript file a CoffeeScript file imports is read once, by `oxc`. Every dependency of a sidecar file carries `sidecar: true` and no `line` or `column`; no other dependency has the field. `summary.sidecar` records `{ "tool": "dependency-cruiser", "version": "18.2.0", "files": N }`, N being the files of the graph the sidecar extracted. `--strict-schema` removes both. The flag is not a dependency-cruiser option, so it is not in `optionsUsed`, and a configuration file cannot set it.
+
+```sh
+npm install --save-dev dependency-cruiser@18.2.0 coffeescript   # livescript for .ls
+rulebearing cruise --sidecar node -T err src
+```
+
 ## Flags the query commands share
 
 | Flag | Meaning |

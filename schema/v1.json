@@ -1692,6 +1692,32 @@
       ],
       "type": "string"
     },
+    "SidecarReceipt": {
+      "additionalProperties": false,
+      "description": "`summary.sidecar`: the tool that extracted the CoffeeScript and LiveScript files, its version,\nand how many files it extracted\n([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).",
+      "properties": {
+        "files": {
+          "description": "The files in the graph whose dependencies it extracted.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "tool": {
+          "description": "The package the sidecar ran: always `dependency-cruiser`.",
+          "type": "string"
+        },
+        "version": {
+          "description": "Its version, as its `package.json` gives it.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool",
+        "version",
+        "files"
+      ],
+      "type": "object"
+    },
     "Summary": {
       "additionalProperties": false,
       "description": "`summary`: violations, counts, the options and rule set used, the environment, plus the\nadditive receipt and vacuous-rule list.",
@@ -1804,6 +1830,17 @@
             "object",
             "null"
           ]
+        },
+        "sidecar": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SidecarReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Additive: the Node sidecar's part in the graph, when `--sidecar node` extracted any file\n([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md),\n[Wave 3 § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes))."
         },
         "totalCruised": {
           "description": "Modules cruised.",

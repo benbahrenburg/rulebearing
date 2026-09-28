@@ -116,6 +116,15 @@ Options:
           A webpack configuration, or its `resolve` block, already evaluated to JSON; wins over
           --webpack-config and webpackConfig
 
+      --sidecar <RUNTIME>
+          Extract CoffeeScript and LiveScript files (.coffee, .litcoffee, .coffee.md, .ls, .cjsx,
+          .csx) by running the repository's own dependency-cruiser with Node; their edges are marked
+          sidecar: true. Without it such a file stops the run (exit 2)
+
+          Possible values:
+          - node: The repository's dependency-cruiser, run by the node on the path (or
+            `$RULEBEARING_NODE`)
+
   -p, --progress [<TYPE>]
           Show progress on stderr
 

@@ -594,6 +594,7 @@ pub fn extract_incremental(
         inspected: receipt,
         warnings,
         files: states,
+        sidecar: None,
     })
 }
 

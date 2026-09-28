@@ -235,6 +235,9 @@ pub fn apply_flags(
     if args.preserve_symlinks {
         ts.preserve_symlinks = Some(true);
     }
+    if let Some(sidecar) = args.sidecar {
+        ts.sidecar = Some(sidecar.runtime());
+    }
     let options = &mut config.options;
     if let Some(p) = &args.focus {
         options.focus = Some(FilterOption {
@@ -610,10 +613,15 @@ mod tests {
             suffix: Some("s".into()),
             metrics: true,
             webpack_config_json: Some("webpack.json".into()),
+            sidecar: Some(crate::cli::SidecarArg::Node),
             ..CruiseArgs::default()
         };
         apply_flags(&mut config, &args, &c)?;
         assert_eq!(config.languages.typescript.max_depth(), 2);
+        assert_eq!(
+            config.languages.typescript.sidecar,
+            Some(rb_model::SidecarRuntime::Node)
+        );
         assert!(config.languages.typescript.keeps_pre_compilation_deps());
         assert_eq!(config.options.focus.as_ref().and_then(|f| f.depth), Some(2));
         assert!(config.options.webpack_config_json.is_some());
@@ -627,6 +635,8 @@ mod tests {
         assert_eq!(used["outputType"], "json");
         assert_eq!(used["rulesFile"], ".dependency-cruiser.json");
         assert_eq!(used["moduleSystems"], json!(["es6"]));
+        // Not a dependency-cruiser option: the receipt records the sidecar, optionsUsed does not.
+        assert!(used.get("sidecar").is_none());
         let wrong = CruiseArgs {
             ts_pre_compilation_deps: Some("maybe".into()),
             ..CruiseArgs::default()

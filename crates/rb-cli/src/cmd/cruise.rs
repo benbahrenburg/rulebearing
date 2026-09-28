@@ -50,7 +50,7 @@ pub fn info() -> String {
         for ext in rb_extract_ts::SIDECAR_EXTENSIONS {
             let _ = writeln!(
                 out,
-                "  .{ext:<9} the Node sidecar (wave 3); without it the run exits 2 (ADR-0017)"
+                "  .{ext:<9} --sidecar node: the repository's dependency-cruiser, run by Node; without it the run exits 2 (ADR-0017)"
             );
         }
     }

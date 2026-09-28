@@ -259,6 +259,31 @@ pub struct TypeScriptOptions {
     /// Whether to record size and statement counts. Default: `false`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experimental_stats: Option<bool>,
+    /// `--sidecar node`: the runtime that extracts CoffeeScript and LiveScript files
+    /// ([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)). Set by the command
+    /// line only: it is not a dependency-cruiser option, so it never serialises into a
+    /// configuration, `optionsUsed` or the options the sidecar is given, and a configuration file
+    /// cannot set it. Absent, a file only the sidecar reads stops the run.
+    #[serde(skip)]
+    pub sidecar: Option<SidecarRuntime>,
+}
+
+/// The runtime `--sidecar` names
+/// ([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum SidecarRuntime {
+    /// The repository's own dependency-cruiser, run by the `node` on the path.
+    Node,
+}
+
+impl SidecarRuntime {
+    /// The name on the command line.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Node => "node",
+        }
+    }
 }
 
 impl TypeScriptOptions {
@@ -463,6 +488,29 @@ impl CacheOptions {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_sidecar_is_a_command_line_setting_that_never_serialises() {
+        assert_eq!(SidecarRuntime::Node.as_str(), "node");
+        assert_eq!(
+            serde_json::to_string(&SidecarRuntime::Node).unwrap_or_default(),
+            "\"node\""
+        );
+        let options = TypeScriptOptions {
+            sidecar: Some(SidecarRuntime::Node),
+            max_depth: Some(2),
+            ..TypeScriptOptions::default()
+        };
+        assert_eq!(
+            serde_json::to_string(&options).unwrap_or_default(),
+            r#"{"maxDepth":2}"#
+        );
+        // A configuration cannot set it: the key is not one the block accepts.
+        assert!(serde_json::from_str::<TypeScriptOptions>(r#"{"sidecar":"node"}"#).is_err());
+        let schema =
+            serde_json::to_string(&schemars::schema_for!(TypeScriptOptions)).unwrap_or_default();
+        assert!(!schema.contains("sidecar"), "{schema}");
+    }
 
     #[test]
     fn a_flat_dependency_cruiser_options_block_deserialises() {

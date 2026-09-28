@@ -37,6 +37,7 @@
 //! | --- | --- |
 //! | nothing an extractor reads | nothing: the stored parts are merged (`summary.cache.hit: true`) |
 //! | TypeScript or Python files only | those files are read again; the rest come from the stored parts and the walk replays over them (`rb_extract_ts::extract_incremental`, `rb_extract_python::extract_incremental`) |
+//! | a CoffeeScript or LiveScript file, under `--sidecar node` | the sidecar extracts the changed files again, the rest are reused as TypeScript files are (the flag is in the key, so an entry written without it is never reused with it, nor the reverse) |
 //! | an assembly or a PDB | the .NET graph is read again whole, so edges across assemblies stay exact; the other languages are reused |
 //! | a file added or deleted, a manifest, git unable to say | everything is read again |
 //!

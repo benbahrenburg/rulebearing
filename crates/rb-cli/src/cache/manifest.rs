@@ -192,6 +192,8 @@ struct LeanPart<'a> {
     inspected: &'a rb_model::Receipt,
     #[serde(skip_serializing_if = "<[rb_model::Warning]>::is_empty")]
     warnings: &'a [rb_model::Warning],
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sidecar: Option<&'a rb_model::SidecarReceipt>,
 }
 
 impl<'a> LeanPart<'a> {
@@ -201,6 +203,7 @@ impl<'a> LeanPart<'a> {
             code: extraction.code.as_ref(),
             inspected: &extraction.inspected,
             warnings: &extraction.warnings,
+            sidecar: extraction.sidecar.as_ref(),
         }
     }
 }
@@ -492,6 +495,12 @@ mod tests {
         Parts {
             typescript: Some(rb_model::Extraction {
                 modules: vec![rb_model::Module::new("src/a.ts")],
+                // The sidecar's receipt is part of what a hit must give back.
+                sidecar: Some(rb_model::SidecarReceipt {
+                    tool: "dependency-cruiser".to_owned(),
+                    version: "18.2.0".to_owned(),
+                    files: 1,
+                }),
                 ..rb_model::Extraction::default()
             }),
             ..Parts::default()

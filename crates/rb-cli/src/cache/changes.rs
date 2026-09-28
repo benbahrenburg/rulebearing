@@ -139,6 +139,10 @@ impl Scope {
             return true;
         }
         let file = name.rsplit('/').next().unwrap_or(name);
+        // Literate CoffeeScript under its double extension, which the sidecar reads.
+        if file.ends_with(".coffee.md") {
+            return true;
+        }
         file.rsplit_once('.').is_some_and(|(_, extension)| {
             RELEVANT_EXTENSIONS.contains(&extension)
                 || self
@@ -551,6 +555,21 @@ mod tests {
         for other in ["README", "a.txt", "image.png", "Makefile"] {
             assert!(!scope.is_relevant(other), "{other}");
         }
+        // The sidecar's files are relevant; literate CoffeeScript even where `.md` is not listed.
+        let plain = Scope {
+            extra_extensions: Vec::new(),
+            ..scope.clone()
+        };
+        for relevant in [
+            "a.coffee",
+            "a.litcoffee",
+            "a.ls",
+            "a.cjsx",
+            "src/b.coffee.md",
+        ] {
+            assert!(plain.is_relevant(relevant), "{relevant}");
+        }
+        assert!(!plain.is_relevant("notes.md"));
         assert_eq!(scope.name(&dir.join("src/a.ts")), "src/a.ts");
         assert_eq!(scope.on_disk("src/a.ts"), dir.join("src/a.ts"));
         let outside = Path::new("/definitely/not/here.ts");
