@@ -27,6 +27,12 @@ crates/rb-report/src/err_html.html
 crates/rb-report/src/html.html
 crates/rb-report/src/svg_in_html/
 crates/rb-cli/tests/fixtures/wrap-html/
+# Inputs and outputs of the wave 3 commands, compared byte for byte (plan 0003): the diff pair and
+# the lifecycle graphs are `cruise -T json` output their tests regenerate; the framework-preset
+# fixture repositories are inputs to `init --preset`.
+crates/rb-cli/tests/fixtures/diff/
+crates/rb-cli/tests/fixtures/lifecycle/
+crates/rb-cli/tests/fixtures/presets/
 # Extractor option fixtures: mini-repositories kept byte for byte, since line and column are asserted.
 crates/rb-extract-ts/tests/options/
 # The code-layer fixture tree and its expectation, compared byte for byte (plan 0002, 2C).
