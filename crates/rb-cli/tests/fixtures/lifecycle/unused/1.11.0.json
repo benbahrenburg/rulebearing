@@ -1,0 +1,40 @@
+{
+  "version": "1.11.0",
+  "sha": "cccccccccccccccccccccccccccccccccccccccc",
+  "counts": {
+    "modules": 6,
+    "dependencies": 5,
+    "violations": {
+      "error": 0,
+      "warn": 1,
+      "info": 0
+    }
+  },
+  "instability": {
+    "src": 0.5,
+    "src/db": 0
+  },
+  "rules": {
+    "added-later": {
+      "fromMatches": 0,
+      "toMatches": 0,
+      "violations": 0
+    },
+    "busy": {
+      "fromMatches": 2,
+      "toMatches": 1,
+      "violations": 1
+    },
+    "idle": {
+      "fromMatches": 0,
+      "toMatches": 0,
+      "violations": 0
+    },
+    "idle-lately": {
+      "fromMatches": 0,
+      "toMatches": 0,
+      "violations": 0
+    }
+  },
+  "ratchets": {}
+}

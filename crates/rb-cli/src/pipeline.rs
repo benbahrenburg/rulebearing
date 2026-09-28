@@ -48,6 +48,21 @@ pub enum RunError {
     Plugin(#[from] crate::plugin::Failure),
 }
 
+impl RunError {
+    /// The exit code a run that stopped for this reason gives
+    /// ([ADR-0008](../../../docs/adr/0008-exit-code-contract.md)): 3 for an invalid
+    /// configuration (a malformed element rule and a plugin that cannot run included), 2 when
+    /// the run cannot be trusted.
+    pub fn exit(&self) -> crate::RunExit {
+        match self {
+            Self::Config(_) | Self::Plugin(_) | Self::Engine(EngineError::Element(_)) => {
+                crate::RunExit::InvalidConfig
+            }
+            Self::Extract(_) | Self::Engine(_) | Self::Report(_) => crate::RunExit::Untrustworthy,
+        }
+    }
+}
+
 /// What a run needs besides the configuration.
 #[derive(Debug, Clone, Default)]
 pub struct RunOptions {
@@ -654,4 +669,51 @@ pub fn query_graph(
     };
     reset(&mut document);
     Ok(document)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::RunExit;
+
+    #[test]
+    fn a_stopped_run_exits_as_adr_0008_says() -> Result<(), Box<dyn std::error::Error>> {
+        let Err(json) = serde_json::from_str::<u8>("x") else {
+            return Err("`x` is not a number".into());
+        };
+        let element = rb_rules::elements::ElementError::Pattern {
+            rule: "r".into(),
+            pattern: "(".into(),
+        };
+        let table = [
+            (
+                RunError::Config(ConfigError::Invalid("bad".into())),
+                RunExit::InvalidConfig,
+            ),
+            (
+                RunError::Engine(EngineError::Element(element)),
+                RunExit::InvalidConfig,
+            ),
+            (
+                RunError::Plugin(crate::plugin::Failure::ExitCode {
+                    name: "p".into(),
+                    code: 0.5,
+                }),
+                RunExit::InvalidConfig,
+            ),
+            (
+                RunError::Extract(ExtractError::NoModulesFound),
+                RunExit::Untrustworthy,
+            ),
+            (
+                RunError::Engine(EngineError::Document(json)),
+                RunExit::Untrustworthy,
+            ),
+            (RunError::Report("no dot".into()), RunExit::Untrustworthy),
+        ];
+        for (error, exit) in table {
+            assert_eq!(error.exit(), exit, "{error}");
+        }
+        Ok(())
+    }
 }

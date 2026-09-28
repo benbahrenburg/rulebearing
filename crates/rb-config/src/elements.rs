@@ -720,6 +720,19 @@ pub struct Selector {
     pub include_referenced: bool,
 }
 
+/// `since`, `deprecated` and `replacedBy` on an element, slice or diagram rule: the fields a
+/// dependency rule carries in [`crate::model::RuleMeta`]. None changes how the rule is
+/// evaluated ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Lifecycle {
+    /// The release the rule arrived in.
+    pub since: Option<String>,
+    /// The release the rule was deprecated in.
+    pub deprecated: Option<String>,
+    /// The rule that takes over from this one.
+    pub replaced_by: Option<String>,
+}
+
 /// One element rule.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ElementRule {
@@ -737,6 +750,8 @@ pub struct ElementRule {
     pub owner: Option<String>,
     /// The last day the rule applies; the run fails the day after, as a dependency rule's does.
     pub expires: Option<NaiveDate>,
+    /// The lifecycle fields, as a dependency rule's.
+    pub lifecycle: Lifecycle,
     /// `WithoutRequiringPositiveResults()`: an empty selection is not vacuous.
     pub allow_empty: bool,
     /// What is selected.
@@ -769,6 +784,8 @@ pub struct SliceRule {
     pub owner: Option<String>,
     /// The last day the rule applies; the run fails the day after, as a dependency rule's does.
     pub expires: Option<NaiveDate>,
+    /// The lifecycle fields, as a dependency rule's.
+    pub lifecycle: Lifecycle,
     /// `Matching("X.(*)")`, or `MatchingWithPackages` with `(**)`.
     pub matching: String,
     /// The conditions, every one of which must hold.
@@ -804,6 +821,8 @@ pub struct DiagramRule {
     pub owner: Option<String>,
     /// The last day the rule applies; the run fails the day after, as a dependency rule's does.
     pub expires: Option<NaiveDate>,
+    /// The lifecycle fields, as a dependency rule's.
+    pub lifecycle: Lifecycle,
     /// An empty selection is not vacuous.
     pub allow_empty: bool,
     /// The objects the diagram's components are matched against.
@@ -824,6 +843,7 @@ impl DiagramRule {
             because: None,
             owner: self.owner.clone(),
             expires: self.expires,
+            lifecycle: self.lifecycle.clone(),
             allow_empty: self.allow_empty,
             select: self.select.clone(),
             should: Expr::Test(Test {
@@ -1313,6 +1333,7 @@ struct Meta {
     severity: Severity,
     owner: Option<String>,
     expires: Option<NaiveDate>,
+    lifecycle: Lifecycle,
     allow_empty: bool,
 }
 
@@ -1338,6 +1359,11 @@ impl Meta {
             severity: severity(map, context)?,
             owner: opt_text(map, "owner", context)?,
             expires,
+            lifecycle: Lifecycle {
+                since: opt_text(map, "since", context)?,
+                deprecated: opt_text(map, "deprecated", context)?,
+                replaced_by: opt_text(map, "replacedBy", context)?,
+            },
             allow_empty: opt_bool(map, "allowEmpty", context)?,
         })
     }
@@ -1379,13 +1405,16 @@ fn check_keys(
 }
 
 /// The keys every family shares.
-const META_KEYS: [&str; 7] = [
+const META_KEYS: [&str; 10] = [
     "name",
     "comment",
     "fix",
     "severity",
     "expires",
     "owner",
+    "since",
+    "deprecated",
+    "replacedBy",
     "allowEmpty",
 ];
 
@@ -1442,6 +1471,7 @@ pub fn parse_elements(value: &Value) -> Result<Vec<ElementRule>, ConfigError> {
             severity: meta.severity,
             owner: meta.owner,
             expires: meta.expires,
+            lifecycle: meta.lifecycle,
             allow_empty: meta.allow_empty,
             name,
             select,
@@ -1545,6 +1575,7 @@ pub fn parse_slices(value: &Value) -> Result<Vec<SliceRule>, ConfigError> {
             severity: meta.severity,
             owner: meta.owner,
             expires: meta.expires,
+            lifecycle: meta.lifecycle,
             allow_empty: meta.allow_empty,
             where_: opt_text(map, "where", &context)?,
             name,
@@ -1585,6 +1616,7 @@ pub fn parse_diagrams(value: &Value) -> Result<Vec<DiagramRule>, ConfigError> {
             severity: meta.severity,
             owner: meta.owner,
             expires: meta.expires,
+            lifecycle: meta.lifecycle,
             allow_empty: meta.allow_empty,
             name,
             select,
@@ -1862,6 +1894,53 @@ mod tests {
         for empty in [json!({}), json!([])] {
             let selector = parse_selector(&json!({ "kind": "class", "where": empty }), "t")?;
             assert_eq!(selector.where_, None);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn lifecycle_fields_are_kept_on_every_family() -> Result<(), ConfigError> {
+        let lifecycle = json!({ "since": "1.2.0", "deprecated": "2.0.0", "replacedBy": "other" });
+        let with = |rule: Value| -> Value {
+            let mut rule = rule;
+            if let (Value::Object(r), Value::Object(m)) = (&mut rule, &lifecycle) {
+                r.extend(m.clone());
+            }
+            json!([rule])
+        };
+        let expected = Lifecycle {
+            since: Some("1.2.0".into()),
+            deprecated: Some("2.0.0".into()),
+            replaced_by: Some("other".into()),
+        };
+        let element = parse_elements(&with(
+            json!({ "name": "e", "select": { "kind": "class" }, "should": { "beSealed": true } }),
+        ))?;
+        assert_eq!(element[0].lifecycle, expected);
+        let slice = parse_slices(&with(
+            json!({ "name": "s", "matching": "A.(*)", "should": "beFreeOfCycles" }),
+        ))?;
+        assert_eq!(slice[0].lifecycle, expected);
+        let diagram = parse_diagrams(&with(
+            json!({ "name": "d", "select": { "kind": "type" }, "adhereTo": "d.puml" }),
+        ))?;
+        assert_eq!(diagram[0].lifecycle, expected);
+        assert_eq!(diagram[0].as_element_rule().lifecycle, expected);
+        let plain = parse_slices(
+            &json!([{ "name": "s", "matching": "A.(*)", "should": "beFreeOfCycles" }]),
+        )?;
+        assert_eq!(plain[0].lifecycle, Lifecycle::default());
+        for key in ["since", "deprecated", "replacedBy"] {
+            let message = parse_slices(
+                &json!([{ "name": "s", "matching": "A.(*)", "should": "beFreeOfCycles", key: 2 }]),
+            )
+            .err()
+            .map(|e| e.to_string())
+            .unwrap_or_default();
+            assert!(
+                message.contains(&format!("`{key}` must be a string")),
+                "{message}"
+            );
         }
         Ok(())
     }

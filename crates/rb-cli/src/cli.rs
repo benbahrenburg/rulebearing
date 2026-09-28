@@ -89,6 +89,12 @@ pub enum Command {
     /// Added and removed edges, new and resolved violations and moved ratchets between two
     /// results, or between a revision and the working tree
     Diff(crate::cmd::diff::DiffArgs),
+    /// Summarise the architecture at a release into .graph/snapshots, for changelog and
+    /// rules --unused
+    Snapshot(crate::cmd::snapshot::SnapshotArgs),
+    /// The architecture between two snapshots in words: new edges across boundaries, retired
+    /// rules, ratchets that fell
+    Changelog(crate::cmd::changelog::ChangelogArgs),
     /// Translate ArchUnitNET, NetArchTest, import-linter or eslint rules into a rulebearing.yaml
     #[command(subcommand)]
     Import(crate::cmd::import::ImportCommand),

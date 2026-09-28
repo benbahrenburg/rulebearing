@@ -436,6 +436,68 @@ pub fn slicing(
     Ok(found)
 }
 
+/// The slice `text` falls in under `rule`: [`Assignment::slice`], then `segments`, `ignore` and
+/// `where`. `Ok(None)` when it falls in none; `key` names the object in an error.
+fn assign(
+    assignment: &Assignment,
+    rule: &SliceRule,
+    text: &str,
+    key: &str,
+) -> Result<Option<String>, ElementError> {
+    let assigned = assignment.slice(text).map_err(|()| ElementError::Slice {
+        rule: rule.name.clone(),
+        object: key.to_owned(),
+        pattern: assignment.pattern.clone(),
+    })?;
+    let Some(mut slice) = assigned else {
+        return Ok(None);
+    };
+    if let Some(n) = rule.segments {
+        let separator = assignment.separator.to_string();
+        slice = slice
+            .split(assignment.separator)
+            .take(n)
+            .collect::<Vec<_>>()
+            .join(&separator);
+    }
+    if rule.ignore.contains(&slice) {
+        return Ok(None);
+    }
+    if let Some(where_) = &rule.where_ {
+        if crate::patterns::get(where_).is_none() {
+            return Err(ElementError::Pattern {
+                rule: rule.name.clone(),
+                pattern: where_.clone(),
+            });
+        }
+        if !crate::patterns::test(where_, &slice) {
+            return Ok(None);
+        }
+    }
+    Ok(Some(slice))
+}
+
+/// Whether `rule` slices by path (its `matching` has a `/`), so a module's path is what it
+/// cuts; otherwise it cuts namespaces and dotted module names.
+pub fn by_path(rule: &SliceRule) -> bool {
+    parse(&rule.matching).is_ok_and(|a| a.separator == '/')
+}
+
+/// The slice `name` (a module path, a namespace or a dotted module name) falls in under `rule`,
+/// exactly as [`evaluate`] assigns a member: `Ok(None)` when it falls in none. `changelog` uses it
+/// to tell an edge between two slices ([Wave 3, Step 13](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
+///
+/// # Errors
+/// [`ElementError::Pattern`] for a pattern `ArchUnitNET` would refuse, [`ElementError::Slice`]
+/// for a name the pattern cannot cut.
+pub fn slice_name(rule: &SliceRule, name: &str) -> Result<Option<String>, ElementError> {
+    let assignment = parse(&rule.matching).map_err(|_| ElementError::Pattern {
+        rule: rule.name.clone(),
+        pattern: rule.matching.clone(),
+    })?;
+    assign(&assignment, rule, name, name)
+}
+
 /// Evaluates one slice rule.
 ///
 /// # Errors
@@ -454,38 +516,9 @@ pub fn evaluate(
     let view = rule.graph.as_ref().map(View::new);
     let members = members(architecture, assignment.separator, view.as_ref());
     for member in &members {
-        let assigned = assignment
-            .slice(member.text)
-            .map_err(|()| ElementError::Slice {
-                rule: rule.name.clone(),
-                object: member.key.to_owned(),
-                pattern: assignment.pattern.clone(),
-            })?;
-        let Some(mut slice) = assigned else {
+        let Some(slice) = assign(&assignment, rule, member.text, member.key)? else {
             continue;
         };
-        if let Some(n) = rule.segments {
-            let separator = assignment.separator.to_string();
-            slice = slice
-                .split(assignment.separator)
-                .take(n)
-                .collect::<Vec<_>>()
-                .join(&separator);
-        }
-        if rule.ignore.contains(&slice) {
-            continue;
-        }
-        if let Some(where_) = &rule.where_ {
-            if crate::patterns::get(where_).is_none() {
-                return Err(ElementError::Pattern {
-                    rule: rule.name.clone(),
-                    pattern: where_.clone(),
-                });
-            }
-            if !crate::patterns::test(where_, &slice) {
-                continue;
-            }
-        }
         if member.is_type && view.is_some() {
             return Err(ElementError::SliceGraph {
                 rule: rule.name.clone(),
@@ -665,6 +698,52 @@ mod tests {
         assert!(matches!(
             slicing(&architecture, "S(**).A", false, "r"),
             Err(ElementError::Slice { object, .. }) if object == "S.A.X"
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn a_name_is_sliced_as_evaluate_slices_a_member() -> Result<(), Box<dyn std::error::Error>> {
+        let rules = rb_config::elements::parse_slices(&serde_json::json!([
+            { "name": "features", "matching": "src/features/(**)//", "should": "beFreeOfCycles",
+              "ignore": ["shared"] },
+            { "name": "namespaces", "matching": "App.(*)", "segments": 1, "should": "beFreeOfCycles",
+              "where": "^Orders$" },
+            { "name": "bad", "matching": "App.X", "should": "beFreeOfCycles" },
+            { "name": "bad-where", "matching": "App.(*)", "where": "(", "should": "beFreeOfCycles" },
+        ]))?;
+        let [features, namespaces, bad, bad_where] = rules.as_slice() else {
+            return Err("four rules".into());
+        };
+        assert!(by_path(features));
+        assert!(!by_path(namespaces));
+        assert!(!by_path(bad), "an invalid pattern slices nothing");
+        assert_eq!(
+            slice_name(features, "src/features/billing/api/x.ts")?.as_deref(),
+            Some("billing")
+        );
+        assert_eq!(
+            slice_name(features, "src/features/shared/x.ts")?,
+            None,
+            "ignored"
+        );
+        assert_eq!(
+            slice_name(features, "src/other/x.ts")?,
+            None,
+            "outside the prefix"
+        );
+        assert_eq!(
+            slice_name(namespaces, "App.Orders.Api")?.as_deref(),
+            Some("Orders")
+        );
+        assert_eq!(slice_name(namespaces, "App.Billing.Api")?, None, "where");
+        assert!(matches!(
+            slice_name(bad, "App.X"),
+            Err(ElementError::Pattern { .. })
+        ));
+        assert!(matches!(
+            slice_name(bad_where, "App.Orders"),
+            Err(ElementError::Pattern { .. })
         ));
         Ok(())
     }

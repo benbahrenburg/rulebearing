@@ -1,0 +1,370 @@
+{
+  "modules": [
+    {
+      "source": "src/db/store.ts",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/ui/list.ts",
+        "src/ui/view.ts"
+      ],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/domain/model.ts",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/ui/view.ts"
+      ],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/features/a/x.ts",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/main.ts"
+      ],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/features/b/y.ts",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/main.ts"
+      ],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/legacy/http.ts",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/ui/list.ts"
+      ],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/main.ts",
+      "dependencies": [
+        {
+          "module": "./features/a/x",
+          "resolved": "src/features/a/x.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 3,
+          "column": 1,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "./features/b/y",
+          "resolved": "src/features/b/y.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 4,
+          "column": 1,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "./ui/list",
+          "resolved": "src/ui/list.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 2,
+          "column": 1,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "./ui/view",
+          "resolved": "src/ui/view.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/ui/list.ts",
+      "dependencies": [
+        {
+          "module": "../db/store",
+          "resolved": "src/db/store.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "../legacy/http",
+          "resolved": "src/legacy/http.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-legacy-http",
+              "severity": "warn"
+            }
+          ],
+          "line": 2,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "src/main.ts"
+      ],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/ui/view.ts",
+      "dependencies": [
+        {
+          "module": "../db/store",
+          "resolved": "src/db/store.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "../domain/model",
+          "resolved": "src/domain/model.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 2,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "src/main.ts"
+      ],
+      "orphan": false,
+      "language": "typescript"
+    }
+  ],
+  "summary": {
+    "violations": [
+      {
+        "from": "src/ui/list.ts",
+        "to": "src/legacy/http.ts",
+        "unresolvedTo": "../legacy/http",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ],
+        "type": "dependency",
+        "rule": {
+          "name": "no-legacy-http",
+          "severity": "warn"
+        },
+        "id": "RB-0a2c566b",
+        "decision": "adr:0012"
+      }
+    ],
+    "error": 0,
+    "warn": 1,
+    "info": 0,
+    "ignore": 0,
+    "totalCruised": 8,
+    "totalDependenciesCruised": 8,
+    "ruleSetUsed": {
+      "forbidden": [
+        {
+          "name": "no-legacy-http",
+          "comment": "adr:0012",
+          "severity": "warn",
+          "since": "1.0.0",
+          "allowEmpty": true,
+          "scope": "module",
+          "from": {
+            "path": "^src/"
+          },
+          "to": {
+            "path": "^src/legacy/"
+          }
+        },
+        {
+          "name": "old-rule",
+          "severity": "info",
+          "allowEmpty": true,
+          "scope": "module",
+          "from": {
+            "path": "^src/"
+          },
+          "to": {
+            "path": "^src/old/"
+          }
+        },
+        {
+          "name": "app-layers:2-to-1",
+          "comment": "adr:0010",
+          "severity": "error",
+          "fix": "Depend downwards only, the ui on the domain and never the reverse",
+          "allowEmpty": true,
+          "scope": "module",
+          "from": {
+            "path": "^src/domain/"
+          },
+          "to": {
+            "path": "^src/ui/"
+          }
+        }
+      ]
+    },
+    "optionsUsed": {
+      "baseDir": ".",
+      "combinedDependencies": false,
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false,
+      "exoticRequireStrings": [],
+      "externalModuleResolutionStrategy": "node_modules",
+      "metrics": false,
+      "moduleSystems": [
+        "es6",
+        "cjs",
+        "tsd",
+        "amd"
+      ],
+      "outputTo": "-",
+      "outputType": "json",
+      "preserveSymlinks": false,
+      "rulesFile": "rulebearing.yaml",
+      "skipAnalysisNotInRules": false,
+      "tsPreCompilationDeps": false,
+      "args": ""
+    },
+    "inspected": {
+      "typescript": {
+        "files": 8,
+        "assemblies": 0,
+        "modules": 8
+      }
+    },
+    "ratchets": [
+      {
+        "name": "ui-to-db",
+        "budget": "budgets/ui-to-db.json",
+        "count": 2,
+        "ceiling": 2,
+        "status": "held"
+      }
+    ]
+  },
+  "code": {
+    "types": [],
+    "members": [],
+    "attributes": [],
+    "calls": []
+  },
+  "revisionData": {
+    "SHA1": "1111111111111111111111111111111111111111",
+    "changes": []
+  }
+}

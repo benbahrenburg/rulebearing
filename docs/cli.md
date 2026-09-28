@@ -8,7 +8,8 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | --- | --- | --- |
 | `cruise [paths]` | Extract, evaluate, report | `depcruise`, with the same flags and short forms (`-T`, `-f`, `-c`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-X`, `-P`, `-p`, `-m`, `-i`, `-A`), `--webpack-config`, `--affected [revision]` and `--init [oneshot]` |
 | `fmt <result.json>` | Re-report a saved result without extracting | `depcruise-fmt`, with its short forms (`-T`, `-f`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-e`, `-p`) |
-| `rules [--json]` | Every rule with its family, severity and match counts | |
+| `rules [--json]` | Every rule with its family, severity, lifecycle fields and match counts | |
+| `rules --unused [--releases N]` | The rules that matched nothing on either side in each of the last `N` snapshots; [below](#snapshots-changelog-and-unused-rules) | |
 | `explain <rule> [--plain]` | One rule in a sentence, with its reason, `fix` and first edges | |
 | `test` | Each rule's `examples` checked against the rule | |
 | `can-import <from> <to>` | Would this import be allowed, from the saved graph | |
@@ -24,13 +25,15 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | `adopt` | A dependency-cruiser repository behind a green gate with a baseline, in one pull request | |
 | `baseline [paths] [--baseline-mode full\|shrink-only\|format] [--expires DATE --owner NAME --reason TEXT]` | Write the current violations to a known-violations file (default `.dependency-cruiser-known-violations.json`, `-f` to change it); [below](#baselines) | `depcruise-baseline`, which has one behaviour: `full` |
 | `diff <old.json> <new.json>`, `diff --base <ref> [paths]` | Added and removed edges, new and resolved violations and moved ratchets, as `json`, `markdown` or `agent`; [below](#diff) | |
+| `snapshot [--version V]` | A summary of the architecture at a release, under `.graph/snapshots/`; [below](#snapshots-changelog-and-unused-rules) | |
+| `changelog --since V [--to V]` | New edges across boundaries, retired rules and ratchets that fell between two snapshots, as `markdown` or `json`; [below](#snapshots-changelog-and-unused-rules) | |
 | `wrap-html` | An SVG read from stdin, written between the header and the footer of the page `x-dot-webpage` writes; [below](#wrap-html) | `depcruise-wrap-stream-in-html` |
 
 `cruise --init [oneshot]` is `depcruise --init` without the questions: it writes what `init` writes, to `--config FILE` or `rulebearing.yaml`, with `--preset typescript,dotnet,python` naming the languages instead of detecting them. `yes`, a bare `--init` and any other name write the configuration; `x-scripts` also adds `rulebearing`, `rulebearing:text` and `rulebearing:focus` run scripts to `package.json` after the existing ones and, as dependency-cruiser does, leaves an existing configuration be. dependency-cruiser's graph and HTML scripts need the `dot`, `archi` and `err-html` reporters and `wrap-html`, and are not written until those exist. One language extends its own preset first, `[rulebearing:python, rulebearing:recommended]`, so its exclusions win; several extend `rulebearing:recommended` ([config.md](config.md#presets)).
 
 `--preset` also takes the framework presets, which are opinions and off unless named ([presets/frameworks](../presets/frameworks/README.md)): `init --preset nextjs` keeps the languages found and adds `rulebearing:nextjs` after them, `init --preset python,django` names both. A framework preset's rules get init's usual treatment: a rule whose `from` side matches nothing in the repository is left out with a `severity: ignore` entry that names it (delete the entry to turn it on), and every current finding is baselined, so the configuration passes on its first run.
 
-`guard`, `snapshot`, `changelog` and `serve` arrive later in wave 3. Each exits 2 now and names its wave.
+`guard` and `serve` arrive later in wave 3. Each exits 2 now and names its wave.
 
 ## Baselines
 
@@ -81,6 +84,57 @@ With `--base`, both sides run the whole cruise (extraction, evaluation, ratchets
 A checkout holds what git tracks and nothing else. Edges into installed packages (`node_modules`) resolve differently there than in a working tree where the packages are installed, and a .NET solution has no assemblies to read until it is built (the base side then exits 2 with the extractor's reason). For those repositories, cruise each revision where it is installed and built, and compare the two results.
 
 `diff` is a report and exits 0, as the reporters that do not gate do ([ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). `--exit-code` (`-e`) makes it gate on what the change introduced: the exit code is the number of new error-severity violations, capped at 255. An input that cannot be read or is not a cruise result, an unknown revision, a folder outside a git repository with `--base`, and a side that cannot be cruised exit 2 with the reason; an invalid configuration, an output type other than the three, or a wrong number of results exit 3.
+
+## Snapshots, changelog and unused rules
+
+A rule file grows and never shrinks unless something shows which rules stopped earning their place; a pull request shows one change, and drift shows only across releases ([design § The architect's hat](artifacts/design.md#the-architects-hat-across-repos-and-across-time)). Three commands read the history a repository keeps under `.graph/snapshots/`, one snapshot per release ([plan 0003, Steps 12 and 13](plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)):
+
+```sh
+rulebearing snapshot --version 1.3.0                 # at the release; commit .graph/snapshots/1.3.0.json
+rulebearing changelog --since 1.2.0                  # 1.2.0 to the newest snapshot, as Markdown
+rulebearing changelog --since 1.2.0 --to 1.3.0 -T json
+rulebearing rules --unused --releases 3              # rules that matched nothing in each of the last 3
+```
+
+**`snapshot [--version V]`** cruises as the query commands do (`--graph FILE`, else `.graph/cruise.json` when it exists, else a fresh extraction of the paths) with the configuration the flags find, liveness off and the folder metrics on, and writes two files:
+
+| File | Holds |
+| --- | --- |
+| `.graph/snapshots/<V>.json` | The snapshot below |
+| `.graph/snapshots/<V>.cruise.json` | The cruise result, as `cruise -T json` writes it; `changelog` takes the edges from it |
+
+```json
+{ "version": "1.3.0", "sha": "...", "counts": { "modules": 5574, "dependencies": 21930, "violations": { "error": 0, "warn": 3, "info": 0 } },
+  "instability": { "apps/web": 0.42, "src/Domain": 0.05 },
+  "rules": { "no-cross-app-imports": { "fromMatches": 412, "toMatches": 412, "violations": 0 } },
+  "ratchets": { "routes-via-service": 11 } }
+```
+
+`rules` holds the dependency rules with the statistics `rules --json` prints; element, slice and diagram rules have no match counts and are not in it. `instability` is each folder's from `folders[]`; `ratchets` is each ratchet's edge count. `sha` is the commit the graph records (`revisionData.SHA1`), else `HEAD`, else `null`. The version is `--version`, or else the git tag at `HEAD` (the latest when there are several, so `v1.3.0` wins over `v1.3.0-rc.1`); with neither the command exits 3. The version names the files, so it is 1 to 128 letters, digits, `.`, `_`, `+` and `-`, does not start with `.` or `-` and does not end in `.cruise`. Every map is sorted and a metric prints as JavaScript prints it, so the same graph writes the same bytes; writing a version again replaces its files. `snapshot` exits 0, 2 when the graph cannot be read or extracted, and 3 for an invalid version or configuration.
+
+**Versions and their order.** A version is any string. When every version in play is semver (`1.2.0`, `v1.2.0`, `1.3.0-rc.1`), they are ordered as semver: a prerelease before its release, build metadata ignored. Otherwise they are ordered naturally, numbers by value, so `2026.10` follows `2026.9` ([`rb_config::version`](../crates/rb-config/src/version.rs)). "The newest" and "the last N" mean in that order, never by file name.
+
+**`changelog --since V [--to V]`** reads the snapshot of `--since` and that of `--to`, by default the newest. It does not cruise: to compare a release with the working tree, snapshot the working tree first. The Markdown has four sections, and `-T json` the same content:
+
+| Section | Holds |
+| --- | --- |
+| Counts | Modules, dependencies and violations by severity at each release, and the change |
+| New edges across boundaries | The edges [`diff`](#diff) finds added between the two cruise results whose ends fall in different layers of a `layers` entry, or in different slices of a slice rule that slices paths (a `matching` with `/`). A slice rule over namespaces or dotted module names is not applied, since a cruise result's edge joins two files. When either `<V>.cruise.json` is missing the section says which, and the JSON has `newEdgesAcrossBoundaries: null` |
+| Retired rules | Rules the older snapshot records and the newer does not, and rules of the configuration whose `deprecated` release is after `--since` and not after `--to`, with their `replacedBy` |
+| Ratchets that fell | Ratchets both snapshots record whose count is lower at `--to` |
+
+The layers, slices and lifecycle fields come from the configuration in the working tree. A committed example is [crates/rb-cli/tests/fixtures/lifecycle/expected-changelog.md](../crates/rb-cli/tests/fixtures/lifecycle/expected-changelog.md). `changelog` is a report and exits 0; a missing snapshot or an unreadable cruise result exits 2 naming the file, and an invalid configuration or output type exits 3.
+
+**`rules --unused [--releases N]`** reads the last `N` snapshots (default 3) and lists the dependency rules of the current configuration that each of them records with zero `fromMatches` and zero `toMatches`. A rule a snapshot does not record did not exist at that release and is not listed. With fewer than `N` snapshots it prints `insufficient history` and exits 0 rather than guess. `--json` prints `releases`, `insufficientHistory` and the `unused` rules as `rules --json` prints them. Listing a rule changes nothing about it: a rule that matches nothing still fails `cruise` as vacuous unless it has `allowEmpty` ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)). Delete it, or mark it `deprecated` with a `replacedBy` ([config.md § Rule metadata](config.md#rule-metadata)) so the next changelog says so. `--graph` and paths are refused with `--unused` (exit 3), since it reads no graph.
+
+**Committing the snapshots.** The snapshots are the history, so they belong in version control, while the rest of `.graph/` (the cache, `cruise.json`) does not. A repository that ignores `.graph/` keeps the snapshots with an exception; the cruise results are larger, and committing them is what lets a later `changelog` list the new edges:
+
+```gitignore
+/.graph/*
+!/.graph/snapshots/
+# Leave this line out to keep the edges for changelog:
+/.graph/snapshots/*.cruise.json
+```
 
 ## wrap-html
 

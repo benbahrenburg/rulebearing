@@ -2,7 +2,8 @@
 # The greenfield init proof for one row (design § Test beds, item 2): clone the repository at its
 # pinned SHA, build it with the manifest's `build` command, regenerate its init fixture and compare
 # it with the committed testbeds/init/<owner>__<name>/rulebearing.yaml, then write the full
-# proposal with `rulebearing init` and cruise it back. The row passes when the fixture is unchanged
+# proposal with `rulebearing init` and cruise it back. A row's framework-preset fixtures
+# (testbeds/init/<owner>__<name>/preset-<name>.yaml) are regenerated and compared too. The row passes when the fixture is unchanged
 # and the cruise exits 0: every rule live, every finding at error severity baselined.
 #
 # Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 15.
@@ -65,8 +66,24 @@ while IFS= read -r path; do paths+=("$path"); done < <(init_paths)
 median_cruise "${paths[@]}"
 status=$?
 
+# Each framework-preset fixture the row carries (plan 0003, Step 11), regenerated the same way.
+preset_changed=""
+for committed in "$here/init/$slug"/preset-*.yaml; do
+  [ -f "$committed" ] || continue
+  name="${committed##*/preset-}"
+  name="${name%.yaml}"
+  RB_INIT_FIXTURES="$out/fixture" RULEBEARING_BIN="$bin" "$here/init/run.sh" --preset "$name" "$checkout" "$repo" >> "$out/fixture.log" 2>&1
+  if ! diff -u "$committed" "$out/fixture/$slug/preset-$name.yaml" > "$out/preset-$name.diff"; then
+    preset_changed="$preset_changed preset-$name.yaml"
+  else
+    rm -f "$out/preset-$name.diff"
+  fi
+done
+
 if ! diff -u "$fixture" "$regenerated" > "$out/fixture.diff"; then
   row_result failed "the init fixture changed; fixture.diff is the review (regenerate with testbeds/init/run.sh)"
+elif [ -n "$preset_changed" ]; then
+  row_result failed "the framework-preset fixture changed:$preset_changed; preset-<name>.diff is the review (regenerate with testbeds/init/run.sh --preset <name>)"
 elif [ "$status" -ne 0 ]; then
   row_result failed "the cruise with init's proposal exits $status (see cruise.out)"
 else

@@ -261,7 +261,7 @@ mod tests {
             "extends": ["rulebearing:recommended"],
             "languages": { "dotnet": { "solution": "a.sln" } },
             "rules": {
-                "dependencies": { "forbidden": [{ "name": "a", "fix": "f", "examples": { "allowed": [] }, "owner": "o", "expires": "2030-01-01", "allowEmpty": true, "from": {}, "to": {} }] },
+                "dependencies": { "forbidden": [{ "name": "a", "fix": "f", "examples": { "allowed": [] }, "owner": "o", "expires": "2030-01-01", "since": "1.0.0", "allowEmpty": true, "from": {}, "to": {} }] },
                 "ratchets": [{ "name": "r", "from": {}, "to": {}, "budget": "b.json" }],
                 "layers": [{ "name": "l", "layers": ["^a/", "^b/"] }]
             }
@@ -277,6 +277,7 @@ mod tests {
             "forbidden[a].examples",
             "forbidden[a].owner",
             "forbidden[a].expires",
+            "forbidden[a].since",
             "forbidden[a].allowEmpty",
             "rules.layers, rules.independence",
         ] {
@@ -284,7 +285,7 @@ mod tests {
         }
         assert_eq!(dc["forbidden"].as_array().map(Vec::len), Some(2));
         assert!(!dc.contains_key("extends"));
-        assert!(describe(&dropped).contains("dropped 10"));
+        assert!(describe(&dropped).contains("dropped 11"));
         assert_eq!(describe(&[]), "nothing dropped\n");
         Ok(())
     }

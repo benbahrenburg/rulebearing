@@ -190,7 +190,7 @@ fn saved(ctx: &Context<'_>, args: &DiffArgs) -> Result<Diff, Outcome> {
 }
 
 /// `git` in `dir`, with hooks off; its trimmed stdout, or its stderr as the error.
-fn git(dir: &Path, arguments: &[&str]) -> Result<String, String> {
+pub(crate) fn git(dir: &Path, arguments: &[&str]) -> Result<String, String> {
     let no_hooks = std::env::temp_dir().join("rulebearing-no-git-hooks");
     let output = Command::new("git")
         .arg("-c")
@@ -334,12 +334,7 @@ fn cached(directory: &Path) -> Option<GraphDocument> {
 
 /// The exit code and message for a side that cannot be cruised.
 fn side_failed(side: &str, error: &RunError) -> Outcome {
-    let code = match error {
-        RunError::Config(_)
-        | RunError::Plugin(_)
-        | RunError::Engine(rb_rules::EngineError::Element(_)) => RunExit::InvalidConfig,
-        RunError::Extract(_) | RunError::Engine(_) | RunError::Report(_) => RunExit::Untrustworthy,
-    };
+    let code = error.exit();
     failed(code, &format!("{side} cannot be cruised: {error}"))
 }
 

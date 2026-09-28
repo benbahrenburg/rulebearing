@@ -18,6 +18,14 @@
 //! | `fix-restates-name` | a `fix` that says nothing the name does not | no |
 //! | `missing-decision-token` | a comment without `adr:NNNN` or `plan:<slug>`, under `--require-comment-token` | no |
 //! | `type-only-on-dotnet` | a rule limited to .NET by `language` that names `type-only`, which no .NET edge carries ([design § Dependency rules](../../../docs/artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820)) | no |
+//! | `replaced-by-unknown` | a `replacedBy` that names no rule or ratchet of the configuration | no |
+//! | `replaced-by-self` | a `replacedBy` that names the rule itself | no |
+//! | `since-after-deprecated` | a `since` later than the rule's `deprecated`, both semver ([`crate::version`]) | no |
+//!
+//! The lifecycle checks ([Wave 3, Step 12](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog))
+//! cover every family: dependency, element, slice and diagram rules. A `deprecated` without a
+//! `replacedBy` is not a finding, since a rule may be retired with nothing in its place; nor is a
+//! version that is not semver, which is compared with nothing.
 
 use std::collections::BTreeSet;
 use std::fmt::Write as _;
@@ -220,6 +228,116 @@ pub fn lint(config: &Config, graph: Option<&GraphDocument>, options: LintOptions
             }
         }
     }
+    out.extend(lifecycle_findings(config));
+    out
+}
+
+/// One rule's lifecycle fields, with the name a finding reports and the name `replacedBy`
+/// would use for it.
+struct Lifecycle<'a> {
+    label: String,
+    name: &'a str,
+    since: Option<&'a str>,
+    deprecated: Option<&'a str>,
+    replaced_by: Option<&'a str>,
+}
+
+impl<'a> Lifecycle<'a> {
+    fn of(label: String, name: &'a str, lifecycle: &'a crate::elements::Lifecycle) -> Self {
+        Self {
+            label,
+            name,
+            since: lifecycle.since.as_deref(),
+            deprecated: lifecycle.deprecated.as_deref(),
+            replaced_by: lifecycle.replaced_by.as_deref(),
+        }
+    }
+}
+
+/// The lifecycle fields of every rule of every family: dependency rules in evaluation order,
+/// then element, slice and diagram rules.
+fn lifecycles(config: &Config) -> Vec<Lifecycle<'_>> {
+    let rules = &config.rules;
+    let forbidden = rules.dependencies.forbidden.len();
+    let mut out: Vec<Lifecycle<'_>> = rules
+        .all_dependency_rules()
+        .enumerate()
+        .map(|(index, (family, rule))| Lifecycle {
+            label: if family == Family::Allowed {
+                format!("allowed[{}]", index - forbidden)
+            } else {
+                rule.name().to_owned()
+            },
+            name: rule.name(),
+            since: rule.meta.since.as_deref(),
+            deprecated: rule.meta.deprecated.as_deref(),
+            replaced_by: rule.meta.replaced_by.as_deref(),
+        })
+        .collect();
+    out.extend(
+        rules
+            .elements
+            .iter()
+            .map(|r| Lifecycle::of(r.name.clone(), &r.name, &r.lifecycle)),
+    );
+    out.extend(
+        rules
+            .slices
+            .iter()
+            .map(|r| Lifecycle::of(r.name.clone(), &r.name, &r.lifecycle)),
+    );
+    out.extend(
+        rules
+            .diagrams
+            .iter()
+            .map(|r| Lifecycle::of(r.name.clone(), &r.name, &r.lifecycle)),
+    );
+    out
+}
+
+/// `replaced-by-unknown`, `replaced-by-self` and `since-after-deprecated` over every family.
+pub fn lifecycle_findings(config: &Config) -> Vec<Finding> {
+    let all = lifecycles(config);
+    let known: BTreeSet<&str> = all
+        .iter()
+        .map(|l| l.name)
+        .chain(config.rules.ratchets.iter().map(|r| r.name.as_str()))
+        .collect();
+    let mut out = Vec::new();
+    for rule in &all {
+        let finding = |code: &'static str, message: String| Finding {
+            rule: rule.label.clone(),
+            code,
+            message,
+        };
+        match rule.replaced_by {
+            Some(next) if next == rule.name => out.push(finding(
+                "replaced-by-self",
+                "`replacedBy` names the rule itself; name the rule that takes over, or remove the key".into(),
+            )),
+            Some(next) if !known.contains(next) => out.push(finding(
+                "replaced-by-unknown",
+                format!(
+                    "`replacedBy` names `{next}`, which is no rule or ratchet of this configuration; add that rule or correct the name"
+                ),
+            )),
+            _ => {}
+        }
+        if let (Some(since), Some(deprecated)) = (rule.since, rule.deprecated)
+            && let (Some(a), Some(b)) = (
+                crate::version::parse(since),
+                crate::version::parse(deprecated),
+            )
+            && a > b
+        {
+            out.push(finding(
+                "since-after-deprecated",
+                format!(
+                    "`since` {since} is later than `deprecated` {deprecated}; a rule is deprecated after it arrives, so correct one of the two"
+                ),
+            ));
+        }
+    }
     out
 }
 
@@ -252,6 +370,102 @@ mod tests {
             "Move the shared type into a third module."
         ));
         assert!(!restates("x", ""));
+    }
+
+    fn dependency(name: &str, lifecycle: [Option<&str>; 3]) -> Rule {
+        let [since, deprecated, replaced_by] = lifecycle.map(|v| v.map(str::to_owned));
+        Rule {
+            meta: crate::RuleMeta {
+                name: Some(name.into()),
+                fix: Some("Move the import behind the gateway.".into()),
+                since,
+                deprecated,
+                replaced_by,
+                ..crate::RuleMeta::default()
+            },
+            ..Rule::default()
+        }
+    }
+
+    fn codes(findings: &[Finding]) -> Vec<(String, &'static str)> {
+        findings.iter().map(|f| (f.rule.clone(), f.code)).collect()
+    }
+
+    #[test]
+    fn lifecycle_fields_are_linted_on_every_family() -> Result<(), crate::ConfigError> {
+        let mut config = Config::default();
+        let forbidden = &mut config.rules.dependencies.forbidden;
+        forbidden.push(dependency(
+            "old",
+            [Some("1.2.0"), Some("2.0.0"), Some("new")],
+        ));
+        forbidden.push(dependency("new", [Some("2.0.0"), None, None]));
+        forbidden.push(dependency("dangling", [None, Some("2.0.0"), Some("gone")]));
+        forbidden.push(dependency("self", [None, None, Some("self")]));
+        forbidden.push(dependency(
+            "backwards",
+            [Some("3.0.0"), Some("v2.9.9"), None],
+        ));
+        forbidden.push(dependency("retired", [None, Some("2.0.0"), None]));
+        forbidden.push(dependency("calver", [Some("2027.1"), Some("2026.9"), None]));
+        forbidden.push(dependency(
+            "to-ratchet",
+            [None, Some("2.0.0"), Some("budget")],
+        ));
+        forbidden.push(dependency("to-slice", [None, None, Some("slices-acyclic")]));
+        config
+            .rules
+            .dependencies
+            .allowed
+            .push(dependency("not-in-allowed", [None, None, Some("nope")]));
+        config.rules.ratchets.push(crate::model::Ratchet {
+            name: "budget".into(),
+            ..crate::model::Ratchet::default()
+        });
+        config.rules.slices = crate::elements::parse_slices(&serde_json::json!([
+            { "name": "slices-acyclic", "matching": "A.(*)", "should": "beFreeOfCycles", "replacedBy": "missing" }
+        ]))?;
+        config.rules.elements = crate::elements::parse_elements(&serde_json::json!([
+            { "name": "sealed", "select": { "kind": "class" }, "should": { "beSealed": true }, "since": "2.0.0", "deprecated": "1.0.0" }
+        ]))?;
+        config.rules.diagrams = crate::elements::parse_diagrams(&serde_json::json!([
+            { "name": "diagram", "select": { "kind": "type" }, "adhereTo": "d.puml", "replacedBy": "old" }
+        ]))?;
+        let findings = lifecycle_findings(&config);
+        assert_eq!(
+            codes(&findings),
+            [
+                ("dangling".to_owned(), "replaced-by-unknown"),
+                ("self".to_owned(), "replaced-by-self"),
+                ("backwards".to_owned(), "since-after-deprecated"),
+                ("allowed[0]".to_owned(), "replaced-by-unknown"),
+                ("sealed".to_owned(), "since-after-deprecated"),
+                ("slices-acyclic".to_owned(), "replaced-by-unknown"),
+            ]
+        );
+        assert!(
+            findings[0].message.contains("`gone`"),
+            "{}",
+            findings[0].message
+        );
+        assert!(findings[2].message.contains("3.0.0") && findings[2].message.contains("v2.9.9"));
+        let all = lint(&config, None, LintOptions::default());
+        assert!(
+            codes(&all).ends_with(&codes(&findings)),
+            "lint reports the lifecycle findings last"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn equal_versions_are_not_backwards() {
+        let mut config = Config::default();
+        config
+            .rules
+            .dependencies
+            .forbidden
+            .push(dependency("same", [Some("2.0.0"), Some("2.0.0"), None]));
+        assert!(lifecycle_findings(&config).is_empty());
     }
 
     #[test]

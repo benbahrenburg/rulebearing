@@ -132,7 +132,7 @@ options:
 
 ## Rule metadata
 
-Every rule, in either format, may carry five fields dependency-cruiser does not have. They are what `explain`, `err-long` and the `agent` reporter print ([design § Rule metadata](artifacts/design.md#rule-metadata-that-says-what-to-do)).
+Every rule, in either format, may carry these fields dependency-cruiser does not have. They are what `explain`, `err-long` and the `agent` reporter print ([design § Rule metadata](artifacts/design.md#rule-metadata-that-says-what-to-do)).
 
 | Field | Meaning |
 | --- | --- |
@@ -140,7 +140,29 @@ Every rule, in either format, may carry five fields dependency-cruiser does not 
 | `examples` | `forbidden` and `allowed` edges, `from -> to`, that `rulebearing test` checks against the rule |
 | `owner` | Who answers for the rule |
 | `expires` | A date after which the rule fails the run: for a temporary exception |
+| `since` | The release the rule arrived in |
+| `deprecated` | The release the rule was deprecated in; `changelog` lists it as retired |
+| `replacedBy` | The rule that takes over from this one |
 | `allowEmpty` | Opt the rule out of liveness: it may match nothing without failing the run ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)). dependency-cruiser's schema refuses it on a rule, so a rule in a `.dependency-cruiser.*` file is named in the native file's top-level `allowEmpty` list instead ([ADR-0032](adr/0032-liveness-follows-the-configuration-format.md)) |
+
+**Lifecycle fields.** `since`, `deprecated` and `replacedBy` are how a rule file shrinks honestly ([design § The architect's hat](artifacts/design.md#the-architects-hat-across-repos-and-across-time)). They are legal on dependency, element, slice and diagram rules, not on the `layers` and `independence` shorthands or on ratchets. They change nothing about how a rule is evaluated: a deprecated rule still reports its violations, and one that matches nothing still fails the run unless it has `allowEmpty` ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)). The versions are strings and are not validated, since a repository may release as `1.2.0`, `v1.2.0` or `2026.09`; they are compared as semver when they are semver ([cli.md § Snapshots](cli.md#snapshots-changelog-and-unused-rules)). `rules --json` prints all three, `changelog` reports the deprecations, and `config lint` checks them:
+
+| Finding | When |
+| --- | --- |
+| `replaced-by-unknown` | `replacedBy` names no rule or ratchet of the configuration |
+| `replaced-by-self` | `replacedBy` names the rule itself |
+| `since-after-deprecated` | `since` is later than `deprecated`, both semver |
+
+A `deprecated` without a `replacedBy` is not a finding: a rule may be retired with nothing in its place.
+
+```yaml
+- name: no-legacy-http-client
+  comment: "adr:0012"
+  since: "1.2.0"
+  deprecated: "2.0.0"
+  replacedBy: no-http-client-outside-gateway
+  severity: warn
+```
 
 A decision token in `comment`, `adr:NNNN` or `plan:<slug>`, links the rule to the decision behind it. `--require-comment-token` makes a rule without one a configuration error (exit 3).
 

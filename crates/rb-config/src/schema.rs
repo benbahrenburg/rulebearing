@@ -242,6 +242,9 @@ fn rule_metadata() -> serde_json::Map<String, Value> {
         "severity": { "enum": severity, "description": "Default `error`." },
         "owner": { "type": "string", "description": "Who answers for the rule." },
         "expires": { "type": "string", "format": "date", "description": "The last day the rule applies, YYYY-MM-DD; the run fails the day after, as for a dependency rule." },
+        "since": { "type": "string", "description": "The release the rule arrived in. A version string; compared as semver when it is one. Informational: it does not change how the rule is evaluated." },
+        "deprecated": { "type": "string", "description": "The release the rule was deprecated in. The rule is still evaluated and a rule that matches nothing still fails unless `allowEmpty` (ADR-0007); `changelog` lists it as retired." },
+        "replacedBy": { "type": "string", "description": "The rule that takes over from this one; `config lint` warns when no rule has that name." },
     })
     .as_object()
     .cloned()
