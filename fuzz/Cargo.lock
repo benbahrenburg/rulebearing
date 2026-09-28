@@ -413,6 +413,7 @@ dependencies = [
  "libfuzzer-sys",
  "rb-config",
  "rb-extract-dotnet",
+ "rb-rules",
 ]
 
 [[package]]
@@ -425,6 +426,19 @@ dependencies = [
  "sha2",
  "thiserror",
  "xtask",
+]
+
+[[package]]
+name = "rb-rules"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "rb-config",
+ "rb-model",
+ "regex",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

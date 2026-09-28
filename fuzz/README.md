@@ -5,6 +5,7 @@
 | Target | Parser | Seed corpus | Added by |
 | --- | --- | --- | --- |
 | `metadata_reader` | the ECMA-335 assembly reader and the portable PDB reader (`rb-extract-dotnet`) | ArchUnitNET's `TestAssembly.dll` and `.pdb` | [Wave 0, Step 9](../docs/plans/pending/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d) |
+| `plantuml_parser` | the PlantUML diagram parser and component association `adhereTo` reads (`rb-rules`) | the gate 2 diagrams and the `plantuml` reporter's fixtures | [Wave 3, Step 9](../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes) |
 
 The configuration front-ends (`rb-config`) and the `cruise-result` reader (`rb-ingest`) get targets with the plans that build their parsers.
 
