@@ -230,9 +230,18 @@ fn report(
         baseline: rb_report::baseline::Lifecycle::default(),
         // The same collapse the cruise applied to its modules (pipeline.rs), as upstream passes it.
         collapse_pattern: crate::pipeline::cruise_collapse(config),
+        graphviz: Some(crate::graphviz::system()),
     };
     let rendered = match rb_report::render(output_type, &value, &options) {
         Ok(r) => r,
+        // `x-dot-webpage` without a working `dot`: the report could not be made (ADR-0053).
+        Err(rb_report::ReportError::Graphviz(message)) => {
+            return Outcome {
+                stdout: String::new(),
+                stderr: format!("{stderr}rulebearing cruise: {message}\n"),
+                code: RunExit::Untrustworthy.code(),
+            };
+        }
         Err(e) => {
             return failed(
                 &RunError::Config(rb_config::ConfigError::Invalid(e.to_string())),
