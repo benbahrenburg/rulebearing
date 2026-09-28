@@ -21,6 +21,7 @@ cases:
     # the interfaces an enum or a delegate inherits from its runtime base type, which the graph
     # does not: an extractor difference, not the builder's. The check proves these lines, and
     # only these, are the difference.
+    # Both are recorded in conformance/divergences.md, "Gate 2: .NET extractor divergences".
     graphDiffers:
       extra:
       - '[ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions] --|> [!!0]'
