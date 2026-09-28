@@ -17,9 +17,11 @@
 //! extra field renders the way it would upstream. The reporters of [`OUTPUT_TYPES`] up to the
 //! current wave are delivered; asking for a later one is a named error. Wave 2 adds `baseline`,
 //! `sarif`, `junit` and `trx`, the graph reporters ([`dot`], [`mermaid`], [`d2`]), [`metrics`] and
-//! [`err_html`].
+//! [`err_html`]. Wave 3 adds [`markdown`], [`html`] (the matrix), [`anon`] and
+//! [`dot_webpage`] (`x-dot-webpage`, whose page `rulebearing wrap-html` also writes).
 
 pub mod agent;
+pub mod anon;
 pub mod azure_devops;
 pub mod baseline;
 pub mod catalog;
@@ -28,12 +30,16 @@ pub mod csv;
 pub mod d2;
 pub mod diff;
 pub mod dot;
+pub mod dot_webpage;
 pub mod err;
 pub mod err_html;
 pub mod github_annotations;
+pub mod html;
 pub(crate) mod js;
+pub(crate) mod js_sort;
 pub mod json;
 pub mod junit;
+pub mod markdown;
 pub mod mermaid;
 pub mod metrics;
 pub mod sarif;
@@ -122,7 +128,7 @@ pub enum ReportError {
     Unknown(String),
     /// An output type a later wave delivers.
     #[error(
-        "the `{name}` reporter arrives in wave {wave}; use err, err-long, err-html, json, text, csv, teamcity, azure-devops, github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot, mermaid, d2, metrics or null"
+        "the `{name}` reporter arrives in wave {wave}; use err, err-long, err-html, json, text, csv, teamcity, azure-devops, github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon or null"
     )]
     NotYet {
         /// The type.
@@ -130,6 +136,10 @@ pub enum ReportError {
         /// The wave.
         wave: u8,
     },
+    /// `x-dot-webpage` could not draw the graph: GraphViz' `dot` is missing, is not GraphViz', or
+    /// failed. The message is upstream's.
+    #[error("{0}")]
+    Graphviz(String),
 }
 
 /// What a report needs besides the result.
@@ -152,6 +162,9 @@ pub struct ReportOptions {
     /// `collapse` given to `fmt` (or `cruise`): passed to the reporter as `collapsePattern` over its
     /// own section, as dependency-cruiser's `reportWrap` does.
     pub collapse_pattern: Option<String>,
+    /// `x-dot-webpage`: what runs GraphViz' `dot`. Without one, the reporter reports `dot` as
+    /// unavailable, as upstream does on a system without it.
+    pub graphviz: Option<dot_webpage::GraphvizRunner>,
 }
 
 /// Renders `result` as `output_type`.
@@ -245,6 +258,14 @@ pub fn render_with(
             reporter_options("err-html").as_ref(),
             &options.timestamp,
         ),
+        "markdown" => markdown::render(
+            result,
+            reporter_options("markdown").as_ref(),
+            &options.timestamp,
+        ),
+        "html" => html::render(result),
+        "anon" => anon::render(result, reporter_options("anon").as_ref()),
+        "x-dot-webpage" => web_page(result, reporter_options("dot").as_ref(), options)?,
         "null" => Rendered {
             output: String::new(),
             exit_code: result
@@ -263,6 +284,18 @@ pub fn render_with(
             });
         }
     })
+}
+
+/// `x-dot-webpage` with the runner in `options`; without one, `dot` is unavailable.
+fn web_page(
+    result: &Value,
+    section: Option<&Value>,
+    options: &ReportOptions,
+) -> Result<Rendered, ReportError> {
+    match &options.graphviz {
+        Some(runner) => dot_webpage::render(result, section, runner.0.as_ref()),
+        None => Err(ReportError::Graphviz(dot_webpage::NOT_AVAILABLE.into())),
+    }
 }
 
 /// A string field as JavaScript's template literal would print it (`undefined` when absent).
@@ -365,6 +398,24 @@ mod tests {
     use super::*;
     use serde_json::json;
 
+    /// A GraphViz that is there and draws every program as `<svg/>`.
+    struct Svg;
+
+    impl dot_webpage::Graphviz for Svg {
+        fn run(&self, args: &[&str], _input: Option<&str>) -> dot_webpage::Spawned {
+            dot_webpage::Spawned {
+                status: Some(0),
+                stdout: "<svg/>".into(),
+                stderr: if args == ["-V"] {
+                    "dot - graphviz version 2.43.0".into()
+                } else {
+                    String::new()
+                },
+                error: None,
+            }
+        }
+    }
+
     #[test]
     fn knows_every_dependency_cruiser_output_type() {
         for name in [
@@ -444,10 +495,33 @@ mod tests {
             Ok(1),
             "no folders"
         );
+        // The wave 3B reporters render and exit 0, as each of upstream's does.
+        for t in ["markdown", "html", "anon"] {
+            assert_eq!(render(t, &result, &o).map(|r| r.exit_code), Ok(0), "{t}");
+            assert!(!gates(t), "{t}");
+        }
+        let markdown = render("markdown", &result, &o).map(|r| r.output);
+        assert!(markdown.is_ok_and(|m| m.starts_with("## Forbidden dependency check")));
+        // `x-dot-webpage` without a way to run `dot` says what upstream says without `dot`.
         assert_eq!(
             render("x-dot-webpage", &result, &o),
+            Err(ReportError::Graphviz(dot_webpage::NOT_AVAILABLE.into()))
+        );
+        let svg = ReportOptions {
+            graphviz: Some(dot_webpage::GraphvizRunner(std::sync::Arc::new(Svg))),
+            ..ReportOptions::default()
+        };
+        let page = render("x-dot-webpage", &result, &svg);
+        assert_eq!(page.as_ref().map(|r| r.exit_code), Ok(0), "{page:?}");
+        assert!(!gates("x-dot-webpage"));
+        assert_eq!(
+            page.map(|r| r.output),
+            Ok(dot_webpage::wrap_in_html("<svg/>"))
+        );
+        assert_eq!(
+            render("plantuml", &result, &o),
             Err(ReportError::NotYet {
-                name: "x-dot-webpage".into(),
+                name: "plantuml".into(),
                 wave: 3
             })
         );
