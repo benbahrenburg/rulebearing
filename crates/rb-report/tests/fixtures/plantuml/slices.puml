@@ -2,22 +2,22 @@
 
 hide stereotype
 
-[Addresses] <<^TestAssembly\.PlantUml\.Addresses(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[Catalog] <<^TestAssembly\.PlantUml\.Catalog(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[Customers] <<^TestAssembly\.PlantUml\.Customers(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[Importer] <<^TestAssembly\.PlantUml\.Importer(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[Orders] <<^TestAssembly\.PlantUml\.Orders(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[Products] <<^TestAssembly\.PlantUml\.Products(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[Addresses] --> [Catalog]
-[Catalog] --> [Orders]
-[Catalog] --> [Products]
-[Customers] --> [Addresses]
-[Customers] --> [Orders]
-[Orders] --> [Customers]
-[Importer] --> [Catalog]
-[Importer] --> [Customers]
-[Orders] --> [Addresses]
-[Orders] --> [Products]
-[Products] --> [Orders]
-[Products] --> [Customers]
+[Addresses] <<^TestAssembly\.PlantUml\.Addresses(?:\.(?:[^\x2E][^\x2E]*))?$>> as C1
+[Catalog] <<^TestAssembly\.PlantUml\.Catalog(?:\.(?:[^\x2E][^\x2E]*))?$>> as C2
+[Customers] <<^TestAssembly\.PlantUml\.Customers(?:\.(?:[^\x2E][^\x2E]*))?$>> as C3
+[Importer] <<^TestAssembly\.PlantUml\.Importer(?:\.(?:[^\x2E][^\x2E]*))?$>> as C4
+[Orders] <<^TestAssembly\.PlantUml\.Orders(?:\.(?:[^\x2E][^\x2E]*))?$>> as C5
+[Products] <<^TestAssembly\.PlantUml\.Products(?:\.(?:[^\x2E][^\x2E]*))?$>> as C6
+C1 --> C2
+C2 --> C5
+C2 --> C6
+C3 --> C1
+C3 --> C5
+C5 --> C3
+C4 --> C2
+C4 --> C3
+C5 --> C1
+C5 --> C6
+C6 --> C5
+C6 --> C3
 @enduml

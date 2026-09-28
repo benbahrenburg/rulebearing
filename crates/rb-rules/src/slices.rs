@@ -376,6 +376,8 @@ pub struct Slicing {
     pub texts: BTreeMap<String, String>,
     /// Each member's key with its dependency targets, in document order.
     pub dependencies: BTreeMap<String, Vec<String>>,
+    /// The separator of the pattern's segments: `/` for a path pattern, `.` otherwise.
+    pub separator: char,
 }
 
 /// Slices the architecture's members by `pattern` as [`evaluate`] does, naming each slice as
@@ -402,6 +404,7 @@ pub fn slicing(
     let mut found = Slicing {
         asterisks,
         namespace: with_packages.then(|| prefix.to_owned()),
+        separator: assignment.separator,
         ..Slicing::default()
     };
     for member in members(architecture, assignment.separator, None) {
@@ -663,6 +666,7 @@ mod tests {
         let architecture = Architecture::new(&document);
         let plain = slicing(&architecture, "S.(*)", false, "r")?;
         assert_eq!(plain.asterisks, Some(1));
+        assert_eq!(plain.separator, '.');
         assert_eq!(plain.namespace, None);
         assert_eq!(
             plain.slices,
@@ -683,6 +687,7 @@ mod tests {
         let double = slicing(&architecture, "S.(**)", false, "r")?;
         assert_eq!(double.asterisks, None);
         let paths = slicing(&architecture, "src/(*)/", false, "r")?;
+        assert_eq!(paths.separator, '/');
         assert_eq!(
             paths.slices.keys().collect::<Vec<_>>(),
             ["a/x.ts", "b/y.ts"]

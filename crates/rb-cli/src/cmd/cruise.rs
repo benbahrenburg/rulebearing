@@ -105,6 +105,19 @@ pub fn run(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
     Outcome { code: 0, ..outcome }
 }
 
+/// `--from` says what a plantuml diagram draws; with any other reporter it would be ignored, so
+/// it is refused.
+fn from_applies(args: &CruiseArgs, output_type: &str) -> Result<(), RunError> {
+    match args.from.as_deref() {
+        Some(from) if output_type != "plantuml" => {
+            Err(RunError::Config(rb_config::ConfigError::Invalid(format!(
+                "--from {from} applies to --output-type plantuml, not {output_type}"
+            ))))
+        }
+        _ => Ok(()),
+    }
+}
+
 fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
     if args.info {
         return Outcome {
@@ -146,6 +159,9 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
         let _ = writeln!(stderr, "warning: {rule}{}", warning.message);
     }
     let (output_type, output_to) = outputs(args, &effective);
+    if let Err(e) = from_applies(args, &output_type) {
+        return failed(&e, &stderr);
+    }
     effective.options.metrics = Some(configure::wants_metrics(
         &effective,
         args.metrics && !args.no_metrics,

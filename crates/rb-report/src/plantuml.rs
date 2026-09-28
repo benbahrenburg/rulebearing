@@ -23,11 +23,15 @@
 //! | Form | Written as |
 //! | --- | --- |
 //! | `from: types`; `from: slices` with `MatchingWithPackages` | `ArchUnitNET`'s text, byte for byte: classes and `--\|>` arrows, or packages (C4 boundaries with `C4Style`). A picture, not an `adhereTo` diagram: a stereotype matches a namespace, so types cannot be components, and the C4 `!include` is refused by the parser |
-//! | `from: slices` with `Matching`, `from: namespaces`, `from: folders` | an `adhereTo` diagram: `hide stereotype` in place of the C4 include, one `[Name] <<pattern>>` component per node ([`stereotype`]), one `[A] --> [B]` line per arrow, a circle as two lines (`ArchUnitNET`'s `<-[#red]>` and `--\|>` are not arrows its parser reads) |
+//! | `from: slices` with `Matching`, `from: namespaces`, `from: folders` | an `adhereTo` diagram: `hide stereotype` in place of the C4 include, one `[Name] <<pattern>> as Cn` component per node ([`stereotype`]), one `Ci --> Cj` line per arrow by alias, a circle as two lines (`ArchUnitNET`'s `<-[#red]>` and `--\|>` are not arrows its parser reads) |
+//! | the same, with `LimitDependencies`, `FocusOn` or `DependencyFilters` | a partial picture: those options leave arrows out, so a comment says the file is not for `adhereTo` and the components carry no stereotype (`adhereTo` refuses it) |
 //!
-//! A dependency target is placed in the node holding its namespace (folder), loaded or only
-//! referenced, since `adhereTo` places it that way; a type in the global namespace lies in the
-//! component [`GLOBAL`].
+//! A dependency target is placed in the node holding its namespace (folder, module path),
+//! loaded or only referenced, since `adhereTo` places it that way; a type in the global namespace
+//! lies in the component [`GLOBAL`]. A path pattern (`src/(*)`) slices modules by `/`. Arrows
+//! name components by alias, so any name reads back; `[` and `]` in a name are drawn as `(` and
+//! `)` (the stereotype keeps the exact text), and a node `IncludeDependenciesToOther` adds whose
+//! name a slice already has is marked ` (other)`.
 //!
 //! `FocusOn` and `DependencyFilters` filter dependencies before they are drawn, as
 //! `GenerationOptions.DependencyFilter` does: `FocusOn` is a regular expression over full names
@@ -36,10 +40,10 @@
 //! `IgnoreDependenciesToChildren`, `IgnoreDependenciesToChildrenAndParents` (the upstream filters)
 //! or a regular expression whose matching targets are left out. `IncludeDependenciesToOther`
 //! draws, in the component forms, a node for each namespace (folder) outside the grouping that is
-//! depended on. An option `ArchUnitNET` ignores for the chosen form (`LimitDependencies` and
-//! `C4Style` from types, `IncludeDependenciesToOther` with packages, `C4Style` without them) is
-//! refused rather than ignored. `from: folders` is Rulebearing's, for TypeScript and Python
-//! modules: a node per folder of the local modules.
+//! depended on. An option that does not apply to the chosen form (a slice pattern without
+//! `from: slices`, `LimitDependencies` and `C4Style` from types, `IncludeDependenciesToOther` with
+//! packages, `C4Style` without them) is refused rather than ignored. `from: folders` is
+//! Rulebearing's, for TypeScript and Python modules: a node per folder of the local modules.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -291,6 +295,13 @@ pub fn render(result: &Value, options: &PlantUmlOptions) -> Result<Rendered, Pla
             From::Folders
         },
     );
+    if from != From::Slices
+        && (options.matching.is_some() || options.matching_with_packages.is_some())
+    {
+        return invalid(
+            "Matching and MatchingWithPackages are the slice pattern of from: slices; drop the pattern, or draw from slices",
+        );
+    }
     if options.c4_style && !(from == From::Slices && options.matching_with_packages.is_some()) {
         return invalid(
             "C4Style draws each slice inside the package MatchingWithPackages keeps; use from: slices with MatchingWithPackages",
@@ -319,21 +330,8 @@ pub fn render(result: &Value, options: &PlantUmlOptions) -> Result<Rendered, Pla
                     .with_slices(&export_slices(&slicing), &generation)?
                     .render()?
             } else if let Some(pattern) = &options.matching {
-                let slicing = slicing(&architecture, pattern, false)?;
-                let mut nodes = export_slices(&slicing);
-                remove_pattern_inappropriate(&mut nodes);
-                let nodes = nodes
-                    .into_iter()
-                    .map(|slice| {
-                        let texts = slice
-                            .types
-                            .iter()
-                            .filter_map(|member| slicing.texts.get(member).cloned())
-                            .collect();
-                        Node { slice, texts }
-                    })
-                    .collect();
-                components(&architecture, nodes, &generation, '.', options)?
+                let (nodes, texts) = matching_nodes(&slicing(&architecture, pattern, false)?);
+                components(&architecture, nodes, &generation, texts, options)?
             } else {
                 return invalid(
                     "from: slices needs the slice pattern: Matching (for example \"RiverBooks.(*)\") or MatchingWithPackages",
@@ -344,15 +342,52 @@ pub fn render(result: &Value, options: &PlantUmlOptions) -> Result<Rendered, Pla
             &architecture,
             namespaces(&architecture),
             &generation,
-            '.',
+            Texts::Namespaces,
             options,
         )?,
-        From::Folders => components(&architecture, folders(&document), &generation, '/', options)?,
+        From::Folders => components(
+            &architecture,
+            folders(&document),
+            &generation,
+            Texts::Folders,
+            options,
+        )?,
     };
     Ok(Rendered {
         output,
         exit_code: 0,
     })
+}
+
+/// The nodes of a `Matching` slicing: each slice the pattern keeps (a slice deeper than its
+/// `(*)`, counted by the pattern's own separator, is dropped), with the texts its members were
+/// matched against.
+fn matching_nodes(slicing: &rb_rules::slices::Slicing) -> (Vec<Node>, Texts) {
+    let mut slices = export_slices(slicing);
+    remove_pattern_inappropriate(&mut slices, slicing.separator);
+    let nodes = slices
+        .into_iter()
+        .map(|mut slice| {
+            let texts = slice
+                .types
+                .iter()
+                .filter_map(|member| slicing.texts.get(member).cloned())
+                .collect();
+            // Dropped already, so the builder, which counts `.`, does not drop again.
+            slice.asterisks = None;
+            Node {
+                slice,
+                texts,
+                other: false,
+            }
+        })
+        .collect();
+    let texts = if slicing.separator == '/' {
+        Texts::Paths
+    } else {
+        Texts::Namespaces
+    };
+    (nodes, texts)
 }
 
 fn slicing(
@@ -364,10 +399,12 @@ fn slicing(
         .map_err(|e| PlantUmlError::Slicing(e.to_string()))
 }
 
-/// A component to draw: the slice the builder reads, and the namespaces (folders) it holds.
+/// A component to draw: the slice the builder reads, the namespaces (folders, paths) it holds,
+/// and whether `IncludeDependenciesToOther` added it.
 struct Node {
     slice: ExportSlice,
     texts: BTreeSet<String>,
+    other: bool,
 }
 
 fn node(name: &str, text: &str) -> Node {
@@ -381,6 +418,28 @@ fn node(name: &str, text: &str) -> Node {
             dependencies: Vec::new(),
         },
         texts: BTreeSet::from([text.to_owned()]),
+        other: false,
+    }
+}
+
+/// What a node's texts are, which says how a dependency target is placed and what separates
+/// segments.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Texts {
+    /// .NET namespaces (and dotted Python module names): `.`.
+    Namespaces,
+    /// Folders of modules: `/`.
+    Folders,
+    /// Module paths, the texts of a path pattern's slices: `/`.
+    Paths,
+}
+
+impl Texts {
+    fn separator(self) -> char {
+        match self {
+            Self::Namespaces => '.',
+            Self::Folders | Self::Paths => '/',
+        }
     }
 }
 
@@ -489,13 +548,20 @@ fn segment_not_in(excluded: &BTreeSet<&str>, separator: char) -> String {
     node(&suffixes, true, separator)
 }
 
-/// The stereotype of a component holding the namespaces (folders) `texts`: a regular expression
-/// that matches each text, and each full name one segment below it (the name of a type or module
-/// it holds), but no namespace of `known` below it. So the components never intersect, and a
-/// namespace the diagram leaves out lies in no component. `adhereTo` matches a stereotype against
-/// a type's namespace to place it, and against a dependency's full name to allow it.
+/// The stereotype of a component holding the namespaces (folders, paths) `texts`: a regular
+/// expression that matches each text, each full name one segment below it (the name of a type
+/// or module it holds), each full name a `connectors` character joins to it (`src/a.ts#Widget`),
+/// but no namespace of `known` below it. So the components never intersect, and a namespace the
+/// diagram leaves out lies in no component. `adhereTo` matches a stereotype against a type's
+/// namespace to place it, and against a dependency's full name to allow it.
 #[must_use]
-pub fn stereotype(texts: &BTreeSet<String>, known: &BTreeSet<String>, separator: char) -> String {
+pub fn stereotype(
+    texts: &BTreeSet<String>,
+    known: &BTreeSet<String>,
+    separator: char,
+    connectors: &BTreeSet<char>,
+) -> String {
+    let rest = format!("[^{}]*", escaped(separator, true));
     let patterns: Vec<String> = texts
         .iter()
         .map(|text| {
@@ -513,11 +579,20 @@ pub fn stereotype(texts: &BTreeSet<String>, known: &BTreeSet<String>, separator:
                 })
                 .collect();
             let segment = segment_not_in(&children, separator);
+            let joined: Vec<String> = connectors
+                .iter()
+                .filter(|c| **c != separator)
+                .map(|c| format!("|{}{rest}", escaped(*c, false)))
+                .collect();
             if text.is_empty() {
                 format!("{segment}?")
             } else {
                 let literal: String = text.chars().map(|c| escaped(c, false)).collect();
-                format!("{literal}(?:{}{segment})?", escaped(separator, false))
+                format!(
+                    "{literal}(?:{}{segment}{})?",
+                    escaped(separator, false),
+                    joined.concat()
+                )
             }
         })
         .collect();
@@ -527,29 +602,117 @@ pub fn stereotype(texts: &BTreeSet<String>, known: &BTreeSet<String>, separator:
     }
 }
 
+/// A component's name as `PlantUML` and `adhereTo` read it: `[` and `]` cannot stand between the
+/// brackets, so they are drawn as `(` and `)`; the stereotype keeps the exact text.
+fn display_name(name: &str) -> String {
+    name.replace('[', "(").replace(']', ")")
+}
+
+/// The options that leave arrows out, so the diagram is a partial picture.
+fn partial(options: &PlantUmlOptions) -> Vec<&'static str> {
+    let mut set = Vec::new();
+    if options.limit_dependencies {
+        set.push("LimitDependencies");
+    }
+    if options.focus_on.is_some() {
+        set.push("FocusOn");
+    }
+    if !options.dependency_filters.is_empty() {
+        set.push("DependencyFilters");
+    }
+    set
+}
+
 /// The component forms: each dependency target is placed in the node holding its namespace
-/// (folder), or, with `IncludeDependenciesToOther`, in a node of its own namespace; then the
-/// builder selects the arrows and they are written as an `adhereTo` diagram.
+/// (folder, path), or, with `IncludeDependenciesToOther`, in a node of its own; then the builder
+/// selects the arrows. Each component gets an alias (`C1`, `C2`, ...), which the arrows use, so
+/// any name reads back; two components never share a name (an added node whose name a slice
+/// already has is marked ` (other)`). With an option that leaves arrows out the diagram is a
+/// picture: a comment says so, and its components carry no stereotype, so `adhereTo` refuses it.
 fn components(
     architecture: &Architecture<'_>,
     mut nodes: Vec<Node>,
     generation: &GenerationOptions<'_>,
-    separator: char,
+    texts: Texts,
     options: &PlantUmlOptions,
 ) -> Result<String, PlantUmlError> {
+    let separator = texts.separator();
     let text_of = |target: &str| -> String {
-        if separator == '/' {
+        match texts {
+            Texts::Namespaces => rb_rules::plantuml::namespace_of(architecture, target),
             // A module outside the folders with no path (a core module, a bare package) is a
             // node of its own rather than one of the root folder.
-            if target.contains('/') {
-                folder_of(target).to_owned()
-            } else {
-                target.to_owned()
-            }
-        } else {
-            rb_rules::plantuml::namespace_of(architecture, target)
+            Texts::Folders if target.contains('/') => folder_of(target).to_owned(),
+            Texts::Folders | Texts::Paths => target.to_owned(),
         }
     };
+    place_targets(&mut nodes, &text_of, options);
+    let known = known_texts(architecture, &nodes, &text_of, texts);
+    // The builder reads each node under its alias, so a name it would refuse still draws.
+    let aliases: Vec<String> = (1..=nodes.len()).map(|i| format!("C{i}")).collect();
+    let slices: Vec<ExportSlice> = nodes
+        .iter()
+        .zip(&aliases)
+        .map(|(n, alias)| ExportSlice {
+            description: alias.clone(),
+            ..n.slice.clone()
+        })
+        .collect();
+    let builder = Builder::new().with_slices(&slices, generation)?;
+    let name_of: BTreeMap<&str, &str> = aliases
+        .iter()
+        .map(String::as_str)
+        .zip(nodes.iter().map(|n| n.slice.description.as_str()))
+        .collect();
+    let depth = |alias: &str| {
+        name_of
+            .get(alias)
+            .map_or(0, |name| name.matches(separator).count())
+    };
+    let picture = partial(options);
+    let mut lines = component_lines(architecture, &nodes, &aliases, &known, separator, &picture)?;
+    for Dependency {
+        origin,
+        target,
+        kind,
+    } in builder.dependencies()
+    {
+        match kind {
+            DependencyType::Circle => {
+                lines.push(format!("{origin} --> {target}"));
+                lines.push(format!("{target} --> {origin}"));
+            }
+            DependencyType::OneToOneCompact if depth(origin) != depth(target) => {}
+            // Without packages the builder draws only these three kinds.
+            _ => lines.push(format!("{origin} --> {target}")),
+        }
+    }
+    let mut body = lines.join("\n");
+    if !body.is_empty() {
+        body.push('\n');
+    }
+    let header = if picture.is_empty() {
+        ADHERE_HEADER.to_owned()
+    } else {
+        format!(
+            "@startuml\n\n' A partial picture, not a diagram for adhereTo: {} leave(s) arrows out.\n\n",
+            picture.join(", ")
+        )
+    };
+    Ok(format!(
+        "{header}{body}{}",
+        rb_rules::plantuml_export::FOOTER
+    ))
+}
+
+/// Places each dependency target outside the nodes in the node holding its text, or, with
+/// `IncludeDependenciesToOther`, in a node of its own, marked ` (other)` when a slice already
+/// has its name; the nodes end sorted by name.
+fn place_targets(
+    nodes: &mut Vec<Node>,
+    text_of: &dyn Fn(&str) -> String,
+    options: &PlantUmlOptions,
+) {
     let mut others: BTreeMap<String, Node> = BTreeMap::new();
     let members: BTreeSet<String> = nodes
         .iter()
@@ -567,16 +730,36 @@ fn components(
         if let Some(home) = nodes.iter_mut().find(|n| n.texts.contains(&text)) {
             home.slice.types.insert(target);
         } else if options.include_dependencies_to_other {
-            others
-                .entry(text.clone())
-                .or_insert_with(|| node(namespace_name(&text), &text))
-                .slice
-                .types
-                .insert(target);
+            let other = others.entry(text.clone()).or_insert_with(|| {
+                let mut other = node(namespace_name(&text), &text);
+                other.other = true;
+                other
+            });
+            other.slice.types.insert(target);
         }
     }
-    nodes.extend(others.into_values());
-    // Every namespace (folder) the graph knows, with its ancestors: what a stereotype excludes.
+    nodes.sort_by(|a, b| a.slice.description.cmp(&b.slice.description));
+    let taken: BTreeSet<String> = nodes
+        .iter()
+        .map(|n| display_name(&n.slice.description))
+        .collect();
+    for mut other in others.into_values() {
+        if taken.contains(&display_name(&other.slice.description)) {
+            other.slice.description.push_str(" (other)");
+        }
+        nodes.push(other);
+    }
+    nodes.sort_by(|a, b| a.slice.description.cmp(&b.slice.description));
+}
+
+/// Every namespace (folder, path) the graph knows, with its ancestors: what a stereotype excludes.
+fn known_texts(
+    architecture: &Architecture<'_>,
+    nodes: &[Node],
+    text_of: &dyn Fn(&str) -> String,
+    texts: Texts,
+) -> BTreeSet<String> {
+    let separator = texts.separator();
     let mut known: BTreeSet<String> = BTreeSet::new();
     let mut know = |text: &str| {
         let mut current = text;
@@ -587,7 +770,7 @@ fn components(
             }
         }
     };
-    for node in &nodes {
+    for node in nodes {
         for text in &node.texts {
             know(text);
         }
@@ -595,49 +778,57 @@ fn components(
             know(&text_of(target));
         }
     }
-    if separator == '.' {
+    if texts == Texts::Namespaces {
         for name in architecture.types.keys() {
             know(&text_of(name));
         }
     }
-    nodes.sort_by(|a, b| a.slice.description.cmp(&b.slice.description));
-    let slices: Vec<ExportSlice> = nodes.iter().map(|n| n.slice.clone()).collect();
-    let builder = Builder::new().with_slices(&slices, generation)?;
-    let depth = |name: &str| name.matches(separator).count();
-    let mut lines: Vec<String> = Vec::new();
-    for node in &nodes {
-        // The builder's check on the name, then the stereotype after it.
-        SliceNode::new(&node.slice.description, None, None)?;
-        lines.push(format!(
-            "[{}] <<{}>>",
-            node.slice.description,
-            stereotype(&node.texts, &known, separator)
-        ));
-    }
-    for Dependency {
-        origin,
-        target,
-        kind,
-    } in builder.dependencies()
-    {
-        match kind {
-            DependencyType::Circle => {
-                lines.push(format!("[{origin}] --> [{target}]"));
-                lines.push(format!("[{target}] --> [{origin}]"));
-            }
-            DependencyType::OneToOneCompact if depth(origin) != depth(target) => {}
-            // Without packages the builder draws only these three kinds.
-            _ => lines.push(format!("[{origin}] --> [{target}]")),
+    known
+}
+
+/// One line per component: `[name] <<stereotype>> as Cn`, or `[name] as Cn` in a picture.
+fn component_lines(
+    architecture: &Architecture<'_>,
+    nodes: &[Node],
+    aliases: &[String],
+    known: &BTreeSet<String>,
+    separator: char,
+    picture: &[&str],
+) -> Result<Vec<String>, PlantUmlError> {
+    // What joins a type's name to its namespace: `.` in .NET, `#` after a module's path.
+    let mut joins: BTreeMap<&str, BTreeSet<char>> = BTreeMap::new();
+    for ty in architecture.types.values() {
+        if let Some(namespace) = ty.namespace.as_deref()
+            && let Some(join) = ty
+                .full_name
+                .strip_prefix(namespace)
+                .and_then(|rest| rest.chars().next())
+        {
+            joins.entry(namespace).or_default().insert(join);
         }
     }
-    let mut body = lines.join("\n");
-    if !body.is_empty() {
-        body.push('\n');
+    let mut lines: Vec<String> = Vec::new();
+    for (node, alias) in nodes.iter().zip(aliases) {
+        let name = display_name(&node.slice.description);
+        // The builder's check on the name: no line break or other control character.
+        SliceNode::new(&name, None, None)?;
+        if picture.is_empty() {
+            let connectors: BTreeSet<char> = node
+                .texts
+                .iter()
+                .filter_map(|text| joins.get(text.as_str()))
+                .flatten()
+                .copied()
+                .collect();
+            lines.push(format!(
+                "[{name}] <<{}>> as {alias}",
+                stereotype(&node.texts, known, separator, &connectors)
+            ));
+        } else {
+            lines.push(format!("[{name}] as {alias}"));
+        }
     }
-    Ok(format!(
-        "{ADHERE_HEADER}{body}{}",
-        rb_rules::plantuml_export::FOOTER
-    ))
+    Ok(lines)
 }
 
 #[cfg(test)]
@@ -711,8 +902,26 @@ mod tests {
         Ok(render(&shop(), &options(section)?)?.output)
     }
 
-    fn arrows(text: &str) -> Vec<&str> {
-        text.lines().filter(|l| l.contains(" --> ")).collect()
+    /// The arrows with each alias read back as its component's name: `[A] --> [B]`.
+    fn arrows(text: &str) -> Vec<String> {
+        let names: BTreeMap<&str, &str> = text
+            .lines()
+            .filter_map(|l| {
+                let (name, alias) = l.rsplit_once(" as ")?;
+                let name = name.strip_prefix('[')?;
+                Some((alias, name.split_once(']')?.0))
+            })
+            .collect();
+        text.lines()
+            .filter_map(|l| l.split_once(" --> "))
+            .map(|(a, b)| {
+                format!(
+                    "[{}] --> [{}]",
+                    names.get(a).unwrap_or(&a),
+                    names.get(b).unwrap_or(&b)
+                )
+            })
+            .collect()
     }
 
     #[test]
@@ -826,20 +1035,50 @@ mod tests {
     #[test]
     fn a_stereotype_holds_its_namespaces_and_their_types_only() {
         assert_eq!(
-            stereotype(&set(&["A.Orders"]), &set(&["A", "A.Orders"]), '.'),
+            stereotype(
+                &set(&["A.Orders"]),
+                &set(&["A", "A.Orders"]),
+                '.',
+                &BTreeSet::new()
+            ),
             "^A\\.Orders(?:\\.(?:[^\\x2E][^\\x2E]*))?$"
         );
         assert_eq!(
-            stereotype(&set(&["A.B"]), &set(&["A.B", "A.B.C"]), '.'),
+            stereotype(
+                &set(&["A.B"]),
+                &set(&["A.B", "A.B.C"]),
+                '.',
+                &BTreeSet::new()
+            ),
             "^A\\.B(?:\\.(?:[^\\x2EC][^\\x2E]*|C(?:[^\\x2E][^\\x2E]*)))?$"
         );
         assert_eq!(
-            stereotype(&set(&["x<y", "z"]), &BTreeSet::new(), '/'),
+            stereotype(&set(&["x<y", "z"]), &BTreeSet::new(), '/', &BTreeSet::new()),
             "^(?:x\\x3Cy(?:/(?:[^\\x2F][^\\x2F]*))?|z(?:/(?:[^\\x2F][^\\x2F]*))?)$"
         );
+        // A module path's types join with `#`: the whole name after it is allowed.
+        let module = stereotype(
+            &set(&["src/a.ts"]),
+            &BTreeSet::new(),
+            '/',
+            &BTreeSet::from(['#']),
+        );
+        for (text, want) in [
+            ("src/a.ts", true),
+            ("src/a.ts#Widget", true),
+            ("src/a.ts#Outer.Inner", true),
+            ("src/a.tsx", false),
+            ("src/a.ts#x/y", false),
+        ] {
+            assert_eq!(
+                rb_rules::patterns::test(&module, text),
+                want,
+                "{module} {text}"
+            );
+        }
         let known = set(&["A", "A.Orders", "A.Orders.Internal", "A.Ordersx", "System"]);
-        let orders = stereotype(&set(&["A.Orders"]), &known, '.');
-        let global = stereotype(&set(&[""]), &known, '.');
+        let orders = stereotype(&set(&["A.Orders"]), &known, '.', &BTreeSet::from(['.']));
+        let global = stereotype(&set(&[""]), &known, '.', &BTreeSet::new());
         for (pattern, text, want) in [
             (&orders, "A.Orders", true),
             (&orders, "A.Orders.Order", true),
@@ -963,7 +1202,37 @@ mod tests {
         assert!(slices.contains("[Orders] <<^A\\.Orders(?:"), "{slices}");
         let other = draw(&json!({ "Matching": "A.(*)", "IncludeDependenciesToOther": true }))?;
         assert!(other.contains("\n[System] <<^System(?:"), "{other}");
-        assert!(other.contains("\n[Orders] --> [System]\n"), "{other}");
+        assert!(
+            arrows(&other).contains(&"[Orders] --> [System]".to_owned()),
+            "{other}"
+        );
+        // An option that leaves arrows out writes a picture: said in a comment, no stereotypes,
+        // so `adhereTo` refuses it rather than passing what the picture left out.
+        for (section, named) in [
+            (json!({ "LimitDependencies": true }), "LimitDependencies"),
+            (json!({ "FocusOn": "^A\\.Billing" }), "FocusOn"),
+            (
+                json!({ "DependencyFilters": ["^A\\.Shared\\."] }),
+                "DependencyFilters",
+            ),
+        ] {
+            let picture = draw(&section)?;
+            assert!(
+                picture.starts_with(&format!(
+                    "@startuml\n\n' A partial picture, not a diagram for adhereTo: {named} leave(s) arrows out.\n\n"
+                )),
+                "{picture}"
+            );
+            assert!(!picture.contains("<<") && !picture.contains("hide stereotype"));
+            assert!(picture.contains("\n[A.Billing] as C2\n"), "{picture}");
+            assert_eq!(
+                rb_rules::plantuml::parse(&picture).map_err(|e| e.exception),
+                Err(rb_rules::plantuml::Exception::IllegalDiagram),
+                "{section}"
+            );
+        }
+        let both = draw(&json!({ "LimitDependencies": true, "FocusOn": "^A" }))?;
+        assert!(both.contains("adhereTo: LimitDependencies, FocusOn leave(s)"));
         assert!(
             !other.contains("\n[A.Orders.Internal] <<"),
             "only depended-on namespaces"
@@ -1001,6 +1270,18 @@ mod tests {
         for (section, message) in [
             (json!({ "C4Style": true }), "C4Style"),
             (json!({ "Matching": "A.(*)", "C4Style": true }), "C4Style"),
+            (
+                json!({ "from": "namespaces", "Matching": "A.(*)" }),
+                "slice pattern",
+            ),
+            (
+                json!({ "from": "types", "MatchingWithPackages": "A.(*)" }),
+                "slice pattern",
+            ),
+            (
+                json!({ "from": "folders", "Matching": "src/(*)" }),
+                "slice pattern",
+            ),
             (
                 json!({ "from": "types", "LimitDependencies": true }),
                 "LimitDependencies",
@@ -1047,7 +1328,7 @@ mod tests {
         let value = serde_json::to_value(&document).unwrap_or(Value::Null);
         let text = render(&value, &PlantUmlOptions::default())?.output;
         assert!(
-            text.contains("\n[src/a] <<^src/a(?:/(?:[^\\x2F][^\\x2F]*))?$>>\n"),
+            text.contains("\n[src/a] <<^src/a(?:/(?:[^\\x2F][^\\x2F]*))?$>> as C2\n"),
             "{text}"
         );
         assert_eq!(
@@ -1064,29 +1345,60 @@ mod tests {
         };
         let with_core = render(&value, &other)?.output;
         assert!(with_core.contains("\n[fs] <<^fs(?:"), "{with_core}");
+        assert!(arrows(&with_core).contains(&"[src/a] --> [fs]".to_owned()));
         assert!(
-            with_core.contains("\n[src/a] --> [fs]\n"),
-            "a core module is its own node: {with_core}"
+            !with_core.contains("[src/a] --> [fs]"),
+            "arrows are drawn by alias: {with_core}"
         );
         Ok(())
     }
 
     #[test]
-    fn illegal_names_are_refused() {
-        let module = Module::new("app/[slug]/page.tsx");
+    fn any_folder_name_is_drawn_and_reads_back() -> Result<(), PlantUmlError> {
+        let module = |source: &str, targets: &[&str]| {
+            let mut m = Module::new(source);
+            m.language = Some(Language::Typescript);
+            m.dependencies = targets
+                .iter()
+                .map(|t| Edge::new("x", *t, ModuleSystem::Es6))
+                .collect();
+            m
+        };
         let document = GraphDocument {
-            modules: vec![module],
+            modules: vec![
+                module("app/[slug]/page.tsx", &["app/my lib/x.ts"]),
+                module("app/my lib/x.ts", &[]),
+            ],
             ..GraphDocument::default()
         };
         let value = serde_json::to_value(&document).unwrap_or(Value::Null);
-        let error = render(&value, &PlantUmlOptions::default())
-            .err()
-            .map(|e| e.to_string());
+        let text = render(&value, &PlantUmlOptions::default())?.output;
+        assert!(
+            text.contains("\n[app/(slug)] <<^app/\\[slug\\](?:"),
+            "{text}"
+        );
+        assert!(text.contains("\n[app/my lib] <<^app/my lib(?:"), "{text}");
+        let parsed =
+            rb_rules::plantuml::parse(&text).map_err(|e| PlantUmlError::Slicing(e.to_string()))?;
+        assert_eq!(parsed.components.len(), 2);
+        assert_eq!(parsed.dependencies_of(0), [1]);
+        let line = Module::new("app/a\nb/x.ts");
+        let broken = GraphDocument {
+            modules: vec![line],
+            ..GraphDocument::default()
+        };
+        let error = render(
+            &serde_json::to_value(&broken).unwrap_or(Value::Null),
+            &PlantUmlOptions::default(),
+        )
+        .err()
+        .map(|e| e.to_string());
         assert!(
             error
                 .as_deref()
                 .is_some_and(|e| e.contains("IllegalComponentNameException")),
-            "{error:?}"
+            "a line break is refused, named: {error:?}"
         );
+        Ok(())
     }
 }

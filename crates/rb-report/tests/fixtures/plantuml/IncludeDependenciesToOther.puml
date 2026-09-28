@@ -2,38 +2,38 @@
 
 hide stereotype
 
-[Addresses] <<^TestAssembly\.PlantUml\.Addresses(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[Catalog] <<^TestAssembly\.PlantUml\.Catalog(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[Customers] <<^TestAssembly\.PlantUml\.Customers(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[Importer] <<^TestAssembly\.PlantUml\.Importer(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[Orders] <<^TestAssembly\.PlantUml\.Orders(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[Products] <<^TestAssembly\.PlantUml\.Products(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[System] <<^System(?:\.(?:[^\x2ECRT][^\x2E]*|C(?:|[^\x2Eo][^\x2E]*|o(?:|[^\x2El][^\x2E]*|l(?:|[^\x2El][^\x2E]*|l(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2Ec][^\x2E]*|c(?:|[^\x2Et][^\x2E]*|t(?:|[^\x2Ei][^\x2E]*|i(?:|[^\x2Eo][^\x2E]*|o(?:|[^\x2En][^\x2E]*|n(?:|[^\x2Es][^\x2E]*|s(?:[^\x2E][^\x2E]*)))))))))))|R(?:|[^\x2Eu][^\x2E]*|u(?:|[^\x2En][^\x2E]*|n(?:|[^\x2Et][^\x2E]*|t(?:|[^\x2Ei][^\x2E]*|i(?:|[^\x2Em][^\x2E]*|m(?:|[^\x2Ee][^\x2E]*|e(?:[^\x2E][^\x2E]*)))))))|T(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2Ex][^\x2E]*|x(?:|[^\x2Et][^\x2E]*|t(?:[^\x2E][^\x2E]*))))))?$>>
-[System.Collections.Generic] <<^System\.Collections\.Generic(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[System.Runtime.CompilerServices] <<^System\.Runtime\.CompilerServices(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.PlantUml.Xml.Processor] <<^TestAssembly\.PlantUml\.Xml\.Processor(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[TestAssembly.PlantUml.Xml.Types] <<^TestAssembly\.PlantUml\.Xml\.Types(?:\.(?:[^\x2E][^\x2E]*))?$>>
-[Addresses] --> [Catalog]
-[Addresses] --> [System]
-[Catalog] --> [Orders]
-[Catalog] --> [Products]
-[Catalog] --> [System]
-[Catalog] --> [System.Collections.Generic]
-[Customers] --> [Addresses]
-[Customers] --> [Orders]
-[Orders] --> [Customers]
-[Customers] --> [System]
-[Customers] --> [System.Runtime.CompilerServices]
-[Importer] --> [Catalog]
-[Importer] --> [Customers]
-[Importer] --> [System]
-[Importer] --> [TestAssembly.PlantUml.Xml.Processor]
-[Importer] --> [TestAssembly.PlantUml.Xml.Types]
-[Orders] --> [Addresses]
-[Orders] --> [Products]
-[Products] --> [Orders]
-[Orders] --> [System]
-[Orders] --> [System.Collections.Generic]
-[Products] --> [Customers]
-[Products] --> [System]
+[Addresses] <<^TestAssembly\.PlantUml\.Addresses(?:\.(?:[^\x2E][^\x2E]*))?$>> as C1
+[Catalog] <<^TestAssembly\.PlantUml\.Catalog(?:\.(?:[^\x2E][^\x2E]*))?$>> as C2
+[Customers] <<^TestAssembly\.PlantUml\.Customers(?:\.(?:[^\x2E][^\x2E]*))?$>> as C3
+[Importer] <<^TestAssembly\.PlantUml\.Importer(?:\.(?:[^\x2E][^\x2E]*))?$>> as C4
+[Orders] <<^TestAssembly\.PlantUml\.Orders(?:\.(?:[^\x2E][^\x2E]*))?$>> as C5
+[Products] <<^TestAssembly\.PlantUml\.Products(?:\.(?:[^\x2E][^\x2E]*))?$>> as C6
+[System] <<^System(?:\.(?:[^\x2ECRT][^\x2E]*|C(?:|[^\x2Eo][^\x2E]*|o(?:|[^\x2El][^\x2E]*|l(?:|[^\x2El][^\x2E]*|l(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2Ec][^\x2E]*|c(?:|[^\x2Et][^\x2E]*|t(?:|[^\x2Ei][^\x2E]*|i(?:|[^\x2Eo][^\x2E]*|o(?:|[^\x2En][^\x2E]*|n(?:|[^\x2Es][^\x2E]*|s(?:[^\x2E][^\x2E]*)))))))))))|R(?:|[^\x2Eu][^\x2E]*|u(?:|[^\x2En][^\x2E]*|n(?:|[^\x2Et][^\x2E]*|t(?:|[^\x2Ei][^\x2E]*|i(?:|[^\x2Em][^\x2E]*|m(?:|[^\x2Ee][^\x2E]*|e(?:[^\x2E][^\x2E]*)))))))|T(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2Ex][^\x2E]*|x(?:|[^\x2Et][^\x2E]*|t(?:[^\x2E][^\x2E]*))))))?$>> as C7
+[System.Collections.Generic] <<^System\.Collections\.Generic(?:\.(?:[^\x2E][^\x2E]*))?$>> as C8
+[System.Runtime.CompilerServices] <<^System\.Runtime\.CompilerServices(?:\.(?:[^\x2E][^\x2E]*))?$>> as C9
+[TestAssembly.PlantUml.Xml.Processor] <<^TestAssembly\.PlantUml\.Xml\.Processor(?:\.(?:[^\x2E][^\x2E]*))?$>> as C10
+[TestAssembly.PlantUml.Xml.Types] <<^TestAssembly\.PlantUml\.Xml\.Types(?:\.(?:[^\x2E][^\x2E]*))?$>> as C11
+C1 --> C2
+C1 --> C7
+C2 --> C5
+C2 --> C6
+C2 --> C7
+C2 --> C8
+C3 --> C1
+C3 --> C5
+C5 --> C3
+C3 --> C7
+C3 --> C9
+C4 --> C2
+C4 --> C3
+C4 --> C7
+C4 --> C10
+C4 --> C11
+C5 --> C1
+C5 --> C6
+C6 --> C5
+C5 --> C7
+C5 --> C8
+C6 --> C3
+C6 --> C7
 @enduml

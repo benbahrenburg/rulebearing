@@ -650,7 +650,7 @@ impl Builder {
                 list.push(slice);
             }
         }
-        remove_pattern_inappropriate(&mut list);
+        remove_pattern_inappropriate(&mut list, '.');
         let mut nodes: Vec<(&ExportSlice, Element)> = Vec::new();
         for slice in &list {
             let package = is_package(&list, slice);
@@ -838,17 +838,22 @@ impl Builder {
 }
 
 /// `RemovePatternInappropriateSlices()`: with every slice's pattern counting its `(*)`, a slice
-/// whose name (beyond its namespace) holds as many `.` as the pattern has `(*)` is dropped.
-pub fn remove_pattern_inappropriate<S: std::borrow::Borrow<ExportSlice>>(list: &mut Vec<S>) {
+/// whose name (beyond its namespace) holds as many separators as the pattern has `(*)` is
+/// dropped. `ArchUnitNET` counts `.`; a path pattern's slices count `/`.
+pub fn remove_pattern_inappropriate<S: std::borrow::Borrow<ExportSlice>>(
+    list: &mut Vec<S>,
+    separator: char,
+) {
+    let count = |name: &str| name.matches(separator).count();
     if list.iter().any(|s| s.borrow().asterisks.is_none()) {
         return;
     }
     // Upstream drops a slice when `dots(name) - dots(namespace) >= asterisks`.
     list.retain(|s| {
         let s = s.borrow();
-        let namespace = s.namespace.as_deref().map_or(0, dots);
+        let namespace = s.namespace.as_deref().map_or(0, count);
         s.asterisks
-            .is_none_or(|n| dots(&s.description) < namespace + n)
+            .is_none_or(|n| count(&s.description) < namespace + n)
     });
 }
 
@@ -1318,14 +1323,25 @@ mod tests {
             slice("N.A.B", Some("N."), Some(2), &[]),
             slice("N.A.B.C", Some("N."), Some(2), &[]),
         ];
-        remove_pattern_inappropriate(&mut list);
+        remove_pattern_inappropriate(&mut list, '.');
         let names: Vec<&str> = list.iter().map(|s| s.description.as_str()).collect();
         assert_eq!(names, ["A", "N.A.B"]);
         let mut mixed = vec![
             slice("A.B", None, Some(1), &[]),
             slice("C", None, None, &[]),
         ];
-        remove_pattern_inappropriate(&mut mixed);
+        remove_pattern_inappropriate(&mut mixed, '.');
+        let mut paths = vec![
+            slice("lib/x.ts", None, Some(1), &[]),
+            slice("index.ts", None, Some(1), &[]),
+        ];
+        remove_pattern_inappropriate(&mut paths, '/');
+        let names: Vec<&str> = paths.iter().map(|s| s.description.as_str()).collect();
+        assert_eq!(
+            names,
+            ["index.ts"],
+            "a path counts `/`, not the extension's `.`"
+        );
         assert_eq!(mixed.len(), 2, "a (**) slice keeps every slice");
     }
 

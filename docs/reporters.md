@@ -158,29 +158,41 @@ options:
 | Key | Effect |
 | --- | --- |
 | `from` | What the nodes are: `slices` of a pattern, `types`, `namespaces`, or `folders` of modules (Rulebearing's, for TypeScript and Python). Without it: `slices` when a pattern is given, else `namespaces` for a graph with .NET types, else `folders` |
-| `Matching`, `MatchingWithPackages` | The slice pattern, the argument of ArchUnitNET's `SliceRuleDefinition.Slices().Matching(...)` or `MatchingWithPackages(...)`, grouped as a [slice rule](rules.md) groups. As in ArchUnitNET, a slice deeper than the pattern's number of `(*)` is not drawn |
+| `Matching`, `MatchingWithPackages` | The slice pattern, the argument of ArchUnitNET's `SliceRuleDefinition.Slices().Matching(...)` or `MatchingWithPackages(...)`, grouped as a [slice rule](rules.md) groups: a namespace pattern (`RiverBooks.(*)`) by `.`, a path pattern (`src/(*)`, `src/(**)`) by `/`. As in ArchUnitNET, a slice deeper than the pattern's number of `(*)` is not drawn. Only with `from: slices` |
 | `LimitDependencies` | Draw only arrows between nodes at the same depth (and, with packages, under the same parent) |
 | `C4Style` | Draw C4 containers inside boundaries; needs `MatchingWithPackages` |
 | `FocusOn` | A regular expression over full names (a type's, or a module's path): keep a dependency when exactly one end matches, ArchUnitNET's `DependencyFilters.FocusOn` |
 | `IncludeDependenciesToOther` | Also draw dependencies on what lies outside the selection: from types, the other types; in the component forms, a node for each namespace (folder) depended on |
 | `DependencyFilters` | Each entry is ArchUnitNET's `IgnoreDependenciesToParents`, `IgnoreDependenciesToChildren` or `IgnoreDependenciesToChildrenAndParents`, or a regular expression whose matching targets are left out |
 
-An unknown key, or an option ArchUnitNET would ignore for the chosen form (`LimitDependencies` or `C4Style` from types, `IncludeDependenciesToOther` with packages, `C4Style` without them), is refused with exit 3 rather than ignored. `fmt --from` takes the same four values beside its `rulebearing` and `dependency-cruiser`.
+An unknown key, or an option that does not apply to the chosen form (a slice pattern without `from: slices`, `LimitDependencies` or `C4Style` from types, `IncludeDependenciesToOther` with packages, `C4Style` without them), is refused with exit 3 rather than ignored. `--from` with any output type but `plantuml` is refused the same way; `fmt --from` also keeps its older values `rulebearing` and `dependency-cruiser`.
 
 The nodes and arrows are the ones ArchUnitNET's `PlantUmlFileBuilder` selects; gate 2 proves the builder against ArchUnitNET's own output over the committed fixtures ([conformance/README.md](../conformance/README.md)). How they are written depends on the form:
 
 | Form | Written as |
 | --- | --- |
 | `from: types`; `from: slices` with `MatchingWithPackages` | ArchUnitNET's text byte for byte, header (the C4 `!include` and `HIDE_STEREOTYPE()`) included. A picture, not an `adhereTo` diagram: a stereotype places a type by its namespace, so types cannot be components, and `adhereTo` refuses an `!include` |
-| `from: slices` with `Matching`, `from: namespaces`, `from: folders` | An `adhereTo` diagram: `hide stereotype` in place of the C4 include, one `[Name] <<pattern>>` component per node and one `[A] --> [B]` line per arrow (a circle as two lines, where ArchUnitNET draws `<-[#red]>`, which the parser does not read as a dependency) |
+| `from: slices` with `Matching`, `from: namespaces`, `from: folders` | An `adhereTo` diagram: `hide stereotype` in place of the C4 include, one `[Name] <<pattern>> as C1` component per node and one `C1 --> C2` line per arrow, by alias (a circle as two lines, where ArchUnitNET draws `<-[#red]>`, which the parser does not read as a dependency) |
+| the same with `LimitDependencies`, `FocusOn` or `DependencyFilters` | A partial picture. These options leave arrows out, so the file could never pass its own round trip: its first comment line says it is not for `adhereTo`, and its components carry no stereotype, so `adhereTo` refuses it rather than enforcing a partial diagram |
 
-A component's stereotype is generated, not meant to be edited: a regular expression that matches the namespaces the node holds and the full name of every type one segment below them, and no other namespace the graph knows, so no two components intersect and a namespace the diagram leaves out lies in none. A type in the global namespace lies in the component `(global)`. With `IncludeDependenciesToOther`, the extra components are targets: adhere the types of the slices, not theirs.
+A component's stereotype is generated, not meant to be edited: a regular expression that matches the namespaces the node holds and the full name of every type one segment below them, and no other namespace the graph knows, so no two components intersect and a namespace the diagram leaves out lies in none. A type in the global namespace lies in the component `(global)`. Arrows name components by alias, so any folder name reads back: a space stays, and `[` and `]` (a Next.js `app/[slug]` folder) are drawn as `(` and `)` in the name while the stereotype keeps the exact path. With `IncludeDependenciesToOther`, the extra components are targets: adhere the types of the slices, not theirs; one whose name a slice already has (`System` beside a slice `App.System`) is named `System (other)`, so no two components share a name.
 
 **The round trip** is the reporter's acceptance test: write the diagram, then enforce it, and the same graph reports nothing.
 
 ```sh
-rulebearing cruise -T plantuml --from slices -f architecture.puml
+rulebearing cruise -T plantuml -f architecture.puml
 ```
+
+with the pattern in the configuration (`--from slices` is the default once a pattern is given):
+
+```yaml
+options:
+  reporterOptions:
+    plantuml:
+      Matching: "RiverBooks.(*)"
+```
+
+and the diagram rule over it:
 
 ```yaml
 rules:
@@ -191,4 +203,4 @@ rules:
       adhereTo: architecture.puml
 ```
 
-It is proven over every committed .NET graph, from namespaces and from slices ([crates/rb-cli/tests/plantuml.rs](../crates/rb-cli/tests/plantuml.rs)), and nightly over each .NET oracle ([testbeds/oracles/dotnet.sh](../testbeds/oracles/dotnet.sh)). A dependency the diagram does not draw is a violation, which is the point: a new edge between two modules fails until the diagram is regenerated and the change reviewed.
+It is proven over every committed .NET graph, from namespaces and from slices, and over a TypeScript tree for `src/(*)`, `src/(*)/` and `src/(**)` ([crates/rb-cli/tests/plantuml.rs](../crates/rb-cli/tests/plantuml.rs)), and nightly over each .NET oracle ([testbeds/oracles/dotnet.sh](../testbeds/oracles/dotnet.sh)). A dependency the diagram does not draw is a violation, which is the point: a new edge between two modules fails until the diagram is regenerated and the change reviewed.

@@ -84,18 +84,33 @@ fn known_violations(
     result.map_err(|e| failed(RunExit::Untrustworthy, &e.to_string()))
 }
 
+/// `--from`: where the result came from (`rulebearing`, `dependency-cruiser`), or, for
+/// `plantuml` only, what the diagram's nodes are.
+fn from_applies(args: &FmtArgs) -> Result<(), String> {
+    let Some(from) = args.from.as_deref() else {
+        return Ok(());
+    };
+    if matches!(from, "rulebearing" | "dependency-cruiser") {
+        return Ok(());
+    }
+    if rb_report::plantuml::From::parse(from).is_none() {
+        return Err(format!(
+            "--from `{from}`: use rulebearing or dependency-cruiser (where the result came from), or slices, types, namespaces or folders (the plantuml diagram's nodes)"
+        ));
+    }
+    if args.output_type != "plantuml" {
+        return Err(format!(
+            "--from {from} applies to --output-type plantuml, not {}",
+            args.output_type
+        ));
+    }
+    Ok(())
+}
+
 /// Runs `fmt`.
 pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
-    if let Some(from) = args.from.as_deref().filter(|f| {
-        !matches!(*f, "rulebearing" | "dependency-cruiser")
-            && rb_report::plantuml::From::parse(f).is_none()
-    }) {
-        return failed(
-            RunExit::InvalidConfig,
-            &format!(
-                "--from `{from}`: use rulebearing or dependency-cruiser (where the result came from), or slices, types, namespaces or folders (the plantuml diagram's nodes)"
-            ),
-        );
+    if let Err(message) = from_applies(args) {
+        return failed(RunExit::InvalidConfig, &message);
     }
     let text = if args.input == "-" {
         ctx.read_stdin().map_err(|e| e.to_string())
