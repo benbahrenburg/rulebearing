@@ -11,6 +11,8 @@
 //! 0 unless `--exit-code` asks for the error count; an input that is not a result exits 2.
 //! `--exit-code-mode strict` shifts the count to `10 + n`
 //! ([Wave 3, Step 5](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+//! `-T plugin:<path>` renders in the sandbox, and with `--exit-code` the plugin's `exitCode` is the
+//! count ([`crate::plugin`]; [Wave 3, Step 7](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
 
 use rb_report::ReportOptions;
 use rb_rules::graph::filters::{Filter, Filters};
@@ -121,7 +123,7 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         Ok(d) => d,
         Err(e) => return failed(RunExit::Untrustworthy, &e.to_string()),
     };
-    let value = serde_json::to_value(&document).unwrap_or(Value::Null);
+    let mut value = serde_json::to_value(&document).unwrap_or(Value::Null);
     let options = ReportOptions {
         color: color(args.color, ctx.color_terminal) && args.output_to == "-",
         strict_schema: args.strict_schema,
@@ -135,9 +137,16 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         baseline: rb_report::baseline::Lifecycle::default(),
         collapse_pattern: format.collapse.clone(),
     };
-    let rendered = match rb_report::render(&args.output_type, &value, &options) {
+    let plugin = rb_config::js::plugin::plugin_name(&args.output_type);
+    let rendered = match plugin {
+        // A plugin reporter, in the sandbox (crate::plugin); its failures are exit 3.
+        Some(name) => crate::plugin::render(&ctx.cwd, name, &mut value, args.strict_schema)
+            .map_err(|e| e.to_string()),
+        None => rb_report::render(&args.output_type, &value, &options).map_err(|e| e.to_string()),
+    };
+    let rendered = match rendered {
         Ok(r) => r,
-        Err(e) => return failed(RunExit::InvalidConfig, &e.to_string()),
+        Err(e) => return failed(RunExit::InvalidConfig, &e),
     };
     let mut stdout = String::new();
     if let Err(message) = write_output(ctx, &args.output_to, &rendered.output, &mut stdout) {
@@ -160,6 +169,9 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         RunExit::Untrustworthy
     } else if rb_report::gates(&args.output_type) {
         RunExit::Violations(document.summary.error + exceeded + expired)
+    } else if plugin.is_some() {
+        // A plugin decides its own count (ADR-0030).
+        RunExit::Violations(rendered.exit_code)
     } else {
         RunExit::Violations(0)
     };

@@ -18,6 +18,7 @@
 //! | [`cli`] | every flag, declared once |
 //! | [`cmd`] | one module per subcommand |
 //! | [`pipeline`] | the five stages as one call |
+//! | [`plugin`] | `-T plugin:<path>`, a reporter run in the sandbox |
 //! | [`configure`] | the configuration and the flags laid over it |
 //! | [`context`] | the working directory, the clock, the terminal |
 //! | [`exit`] | the exit-code table |
@@ -32,6 +33,7 @@ pub mod configure;
 pub mod context;
 pub mod exit;
 pub mod pipeline;
+pub mod plugin;
 pub mod progress;
 pub mod protocol;
 pub mod ratchets;
@@ -159,14 +161,16 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         Command::Diff(a) => cmd::diff::run(ctx, &a),
         Command::Import(c) => cmd::import::run(ctx, &c),
         Command::Validate(a) => match protocol_input(ctx, &a) {
-            Ok(text) => protocol::validate(&text),
+            Ok(text) => protocol::validate(&ctx.cwd, &text),
             Err(e) => Outcome::failed(
                 RunExit::Untrustworthy,
                 format!("rulebearing validate: cannot read the request: {e}\n"),
             ),
         },
         Command::Report(a) => match protocol_input(ctx, &a) {
-            Ok(text) => protocol::report(a.output_type.as_deref().unwrap_or("err"), &text),
+            Ok(text) => {
+                protocol::report(&ctx.cwd, a.output_type.as_deref().unwrap_or("err"), &text)
+            }
             Err(e) => Outcome::failed(
                 RunExit::Untrustworthy,
                 format!("rulebearing report: cannot read the request: {e}\n"),

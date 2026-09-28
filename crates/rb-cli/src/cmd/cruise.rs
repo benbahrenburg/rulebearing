@@ -16,7 +16,8 @@
 //! A gating reporter exits with the error count ([ADR-0030](../../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)),
 //! every reporter exits 2 when the run cannot be trusted (an empty cruise, an unsupported file,
 //! a vacuous rule) and 3 for an invalid configuration. The report is still written for a vacuous
-//! run, so the reader sees which rules matched nothing.
+//! run, so the reader sees which rules matched nothing. A `plugin:<path>` reporter runs in the
+//! sandbox and its `exitCode` is the count ([`crate::plugin`]).
 //!
 //! `--from-hook` answers as a Claude Code `Stop` hook ([docs/agents.md](../../../../docs/agents.md#the-hooks)):
 //! with error findings it prints `{"decision": "block", "reason": <the agent report>}`, which
@@ -213,7 +214,7 @@ fn report(
     mut progress: Progress,
     mut stderr: String,
 ) -> Outcome {
-    let value = match serde_json::to_value(&run.document) {
+    let mut value = match serde_json::to_value(&run.document) {
         Ok(v) => v,
         Err(e) => return failed(&RunError::Engine(e.into()), &stderr),
     };
@@ -231,14 +232,26 @@ fn report(
         // The same collapse the cruise applied to its modules (pipeline.rs), as upstream passes it.
         collapse_pattern: crate::pipeline::cruise_collapse(config),
     };
-    let rendered = match rb_report::render(output_type, &value, &options) {
-        Ok(r) => r,
-        Err(e) => {
-            return failed(
-                &RunError::Config(rb_config::ConfigError::Invalid(e.to_string())),
-                &stderr,
-            );
-        }
+    let rendered = match rb_config::js::plugin::plugin_name(output_type) {
+        // A plugin reporter, in the sandbox (crate::plugin); its failures are exit 3.
+        Some(name) => match crate::plugin::render(&ctx.cwd, name, &mut value, args.strict_schema) {
+            Ok(r) => r,
+            Err(e) => {
+                return Outcome::failed(
+                    RunExit::InvalidConfig,
+                    format!("{stderr}rulebearing cruise: {e}\n"),
+                );
+            }
+        },
+        None => match rb_report::render(output_type, &value, &options) {
+            Ok(r) => r,
+            Err(e) => {
+                return failed(
+                    &RunError::Config(rb_config::ConfigError::Invalid(e.to_string())),
+                    &stderr,
+                );
+            }
+        },
     };
     progress.stage("report");
     let mut stdout = String::new();
@@ -274,6 +287,9 @@ fn report(
         RunExit::Violations(
             run.document.summary.error + run.evaluation.expired.len() as u64 + ratchets.exceeded(),
         )
+    } else if rb_config::js::plugin::plugin_name(output_type).is_some() {
+        // A plugin decides its own count, as upstream's command line exits with it (ADR-0030).
+        RunExit::Violations(rendered.exit_code)
     } else {
         RunExit::Violations(0)
     };
