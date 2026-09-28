@@ -1,0 +1,34 @@
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: TypeScript, src/features.
+# Framework presets named with --preset, each an opinion that is off unless named: rulebearing:vertical-slices.
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: [rulebearing:typescript, rulebearing:recommended, rulebearing:vertical-slices]
+languages:
+  typescript:
+    tsConfig: { fileName: tsconfig.json }
+    tsPreCompilationDeps: true
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+      - name: features-are-independent
+        comment: "A feature is changed and removed on its own; it never imports another feature."
+        fix: "Move what both features need into a shared module outside the features folder, or pass it in from the page that composes them."
+        severity: error
+        from: { path: "^(src/features/[^/]+)/" }
+        to: { path: "^src/features/[^/]+/", pathNot: "^$1/" }
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    - {"id":"RB-c7261af5","type":"dependency","from":"src/features/cart/index.ts","to":"src/features/checkout/pay.ts","rule":{"name":"features-are-independent","severity":"error"},"expires":"2026-12-20","owner":"@fixture"}
+    - {"id":"RB-528a33ab","type":"dependency","from":"src/features/cart/index.ts","to":"src/features/checkout/pay.ts","rule":{"name":"slices-are-independent","severity":"error"},"expires":"2026-12-20","owner":"@fixture"}

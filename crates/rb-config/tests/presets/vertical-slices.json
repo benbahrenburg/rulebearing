@@ -1,0 +1,49 @@
+{
+  "forbidden": [
+    {
+      "comment": "A slice owns its request, handler, validation and data access; one that imports another slice cannot be changed or deleted on its own. plan:rulebearing-vertical-slices",
+      "examples": {
+        "allowed": [
+          "src/features/cart/CartView.tsx -> src/features/cart/useCart.ts",
+          "src/features/cart/CartView.tsx -> src/shared/Button.tsx"
+        ],
+        "forbidden": [
+          "src/features/cart/CartView.tsx -> src/features/checkout/pay.ts",
+          "src/Web/Features/Orders/CreateOrder.cs -> src/Web/Features/Customers/GetCustomer.cs"
+        ]
+      },
+      "fix": "Move what both slices need into the shared kernel, or have one slice publish an event or call the other through its public request rather than its internals.",
+      "from": {
+        "path": "^((?:.*/)?(?:Features|features|Slices|slices)/[^/]+)/"
+      },
+      "name": "slices-are-independent",
+      "severity": "error",
+      "to": {
+        "path": "(^|/)(Features|features|Slices|slices)/[^/]+/",
+        "pathNot": "^$1/"
+      }
+    },
+    {
+      "comment": "The shared kernel is what every slice may use; one that imports a slice makes every slice depend on it. plan:rulebearing-vertical-slices",
+      "examples": {
+        "allowed": [
+          "src/features/cart/cartApi.ts -> src/shared/api.ts"
+        ],
+        "forbidden": [
+          "src/shared/api.ts -> src/features/cart/cartApi.ts",
+          "src/SharedKernel/Result.cs -> src/Features/Orders/Order.cs"
+        ]
+      },
+      "fix": "Move the code the shared kernel needs out of the slice into the shared kernel, or invert the dependency behind an interface the slice implements.",
+      "from": {
+        "path": "(^|/)(Shared|shared|Common|common|Kernel|kernel|SharedKernel|shared-kernel)/"
+      },
+      "name": "slices-shared-kernel-not-to-slices",
+      "severity": "error",
+      "to": {
+        "path": "(^|/)(Features|features|Slices|slices)/[^/]+/"
+      }
+    }
+  ],
+  "options": {}
+}

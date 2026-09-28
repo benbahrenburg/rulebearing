@@ -189,13 +189,16 @@ fn global_json_folder(project: &Path, root: &Path) -> Option<PathBuf> {
 }
 
 /// The .NET 8 `artifacts/` folder, when a `Directory.Build.props` turns `UseArtifactsOutput`
-/// on: its `ArtifactsPath` expanded (`$(MSBuildThisFileDirectory)` is the props file's folder),
-/// else `artifacts/` beside it.
+/// on, or sets `ArtifactsPath` without saying `UseArtifactsOutput`, which the SDK reads as on (as
+/// jasontaylordev/CleanArchitecture does): its `ArtifactsPath` expanded
+/// (`$(MSBuildThisFileDirectory)` is the props file's folder), else `artifacts/` beside it.
 fn artifacts_output(props: &[(PathBuf, Properties)]) -> Option<PathBuf> {
-    let (dir, p) = props.iter().find(|(_, p)| {
-        p.get("UseArtifactsOutput")
-            .is_some_and(|v| v.eq_ignore_ascii_case("true"))
-    })?;
+    let (dir, p) = props
+        .iter()
+        .find(|(_, p)| match p.get("UseArtifactsOutput") {
+            Some(v) => v.eq_ignore_ascii_case("true"),
+            None => p.get("ArtifactsPath").is_some(),
+        })?;
     let this_file_directory = format!("{}/", dir.display());
     let path = p
         .get("ArtifactsPath")
@@ -630,6 +633,28 @@ mod tests {
                 Some(normalise(&expected)),
                 "{path}"
             );
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_artifacts_path_alone_turns_the_artifacts_layout_on() {
+        let dir = scratch("artifacts-implied");
+        write(&dir.join("A/A.csproj"), "<Project/>");
+        for (props, expected) in [
+            (
+                "<Project><PropertyGroup><ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath></PropertyGroup></Project>",
+                Some(normalise(&dir.join("artifacts"))),
+            ),
+            (
+                "<Project><PropertyGroup><UseArtifactsOutput>false</UseArtifactsOutput><ArtifactsPath>out</ArtifactsPath></PropertyGroup></Project>",
+                None,
+            ),
+            ("<Project><PropertyGroup /></Project>", None),
+        ] {
+            write(&dir.join("Directory.Build.props"), props);
+            let project = ProjectFile::read(&dir.join("A/A.csproj"), "Debug", &dir).ok();
+            assert_eq!(project.and_then(|p| p.artifacts), expected, "{props}");
         }
         let _ = std::fs::remove_dir_all(&dir);
     }

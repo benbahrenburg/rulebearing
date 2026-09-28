@@ -1,0 +1,89 @@
+{
+  "forbidden": [
+    {
+      "comment": "A service holds the logic a router, a worker or a test calls; one that imports a router depends on HTTP and cannot be called from anything else. plan:rulebearing-fastapi",
+      "examples": {
+        "allowed": [
+          "app/routers/orders.py -> app/services/orders.py",
+          "app/services/orders.py -> app/repositories/orders.py"
+        ],
+        "forbidden": [
+          "app/services/orders.py -> app/routers/orders.py"
+        ]
+      },
+      "fix": "Raise a domain exception in the service and translate it to an HTTPException in the router; move shared request types into schemas/.",
+      "from": {
+        "path": "(^|/)services?(\\.py$|/)"
+      },
+      "name": "fastapi-services-not-to-routers",
+      "severity": "error",
+      "to": {
+        "path": "(^|/)(routers?|routes|endpoints)(\\.py$|/)"
+      }
+    },
+    {
+      "comment": "A repository is the lowest layer: it knows the database and the models, not the logic or the HTTP layer that calls it. plan:rulebearing-fastapi",
+      "examples": {
+        "allowed": [
+          "app/repositories/orders.py -> app/models/order.py"
+        ],
+        "forbidden": [
+          "app/repositories/orders.py -> app/services/orders.py",
+          "app/crud.py -> app/api/routes/items.py"
+        ]
+      },
+      "fix": "Return data from the repository and let the service decide what to do with it; move the shared type into models/ or schemas/.",
+      "from": {
+        "path": "(^|/)(repositories|repository|crud)(\\.py$|/)"
+      },
+      "name": "fastapi-repositories-not-to-services-or-routers",
+      "severity": "error",
+      "to": {
+        "path": "(^|/)(services?|routers?|routes|endpoints)(\\.py$|/)"
+      }
+    },
+    {
+      "comment": "A router that calls a repository directly puts business logic in the HTTP layer, where a worker or a test cannot reach it. plan:rulebearing-fastapi",
+      "examples": {
+        "allowed": [
+          "app/routers/orders.py -> app/services/orders.py",
+          "app/routers/orders.py -> app/schemas/order.py"
+        ],
+        "forbidden": [
+          "app/routers/orders.py -> app/repositories/orders.py"
+        ]
+      },
+      "fix": "Add a service function that calls the repository and call it from the router; inject it with Depends().",
+      "from": {
+        "path": "(^|/)(routers?|routes|endpoints)(\\.py$|/)"
+      },
+      "name": "fastapi-routers-through-services",
+      "severity": "warn",
+      "to": {
+        "path": "(^|/)(repositories|repository|crud)(\\.py$|/)"
+      }
+    },
+    {
+      "comment": "Models and schemas are data every layer shares; one that imports a router, a service or a repository makes that a cycle. plan:rulebearing-fastapi",
+      "examples": {
+        "allowed": [
+          "app/schemas/order.py -> app/models/order.py"
+        ],
+        "forbidden": [
+          "app/schemas/order.py -> app/services/orders.py",
+          "app/models.py -> app/crud.py"
+        ]
+      },
+      "fix": "Move the behaviour into a service and keep the model or schema a plain declaration; a validator that needs a lookup belongs in the service.",
+      "from": {
+        "path": "(^|/)(models|schemas)(\\.py$|/)"
+      },
+      "name": "fastapi-models-and-schemas-are-innermost",
+      "severity": "error",
+      "to": {
+        "path": "(^|/)(services?|routers?|routes|endpoints|repositories|repository|crud)(\\.py$|/)"
+      }
+    }
+  ],
+  "options": {}
+}

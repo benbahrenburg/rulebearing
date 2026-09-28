@@ -18,7 +18,10 @@
 //! - **.NET layers.** A namespace segment `Domain`, `Application`, `Infrastructure` or `Web` marks a
 //!   layer, and the segments before it the application it belongs to. Where one application has
 //!   two or more layers, each layer but the outermost is forbidden to depend on the layers outside
-//!   it, in that order. The findings the code has today are baselined, as any other.
+//!   it, in that order. Each rule's `from` names `language: dotnet`, since namespaces and project
+//!   files are .NET's and a TypeScript front-end beside the solution (a `ClientApp/` under
+//!   `src/Web/`) records neither ([ADR-0014](../../../../docs/adr/0014-no-invented-cross-language-edges.md)).
+//!   The findings the code has today are baselined, as any other.
 //! - **Python packages.** A folder directly under an import root is a top-level package. A package
 //!   that others import today sits below them, so it is forbidden to import them back (that edge
 //!   would be a cycle between packages). When no top-level package imports another, they are
@@ -181,7 +184,7 @@ pub fn layer_rules(layerings: &[Layering]) -> Vec<Proposed> {
             let _ = writeln!(yaml, "        severity: error");
             let _ = writeln!(
                 yaml,
-                "        from: {{ {key}: {} }}",
+                "        from: {{ language: dotnet, {key}: {} }}",
                 quoted(&layer_pattern(layering, &[layer]))
             );
             let _ = writeln!(
@@ -503,9 +506,9 @@ mod tests {
         let rules = layer_rules(&found);
         assert_eq!(rules.len(), 1);
         assert!(
-            rules[0]
-                .yaml
-                .contains(r#"from: { project: "(^|/)Shop\\.Domain\\.[a-z]+proj$" }"#),
+            rules[0].yaml.contains(
+                r#"from: { language: dotnet, project: "(^|/)Shop\\.Domain\\.[a-z]+proj$" }"#
+            ),
             "{}",
             rules[0].yaml
         );

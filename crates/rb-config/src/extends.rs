@@ -2,9 +2,11 @@
 //!
 //! - Source: [design § The dependency-cruiser format](../../../docs/artifacts/design.md#the-dependency-cruiser-format)
 //!   ("`extends` resolves files, npm packages, and the bundled presets, exactly as today")
-//! - Plan: [Wave 1, Step 3](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-3-extends-presets-defines-captures-regex-1a)
+//! - Plans: [Wave 1, Step 3](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-3-extends-presets-defines-captures-regex-1a);
+//!   [Wave 3, Step 11](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
+//!   (the framework presets, `rulebearing:nextjs` and the rest)
 //! - Coverage: [coverage § Rules](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#rules), row `extends`
-//! - Requirement: [FR-CFG-01](../../../docs/prd.md#fr-cfg-01)
+//! - Requirements: [FR-CFG-01](../../../docs/prd.md#fr-cfg-01), [FR-REACH-04](../../../docs/prd.md#fr-reach-04)
 //!
 //! [`merge`] is dependency-cruiser 18.2.0's `mergeConfigs`, ported: named `forbidden` and
 //! `required` rules are unique by name with the extending file's keys winning over the base's,
@@ -19,7 +21,8 @@ use serde_json::{Map, Value};
 
 use crate::ConfigError;
 
-/// Rulebearing's own presets, `rulebearing:<name>`.
+/// Rulebearing's own presets, `rulebearing:<name>`: the language defaults and their composition
+/// (`presets/rulebearing/`), then the framework presets (`presets/frameworks/`).
 pub const NATIVE_PRESETS: &[(&str, &str)] = &[
     (
         "recommended",
@@ -37,7 +40,43 @@ pub const NATIVE_PRESETS: &[(&str, &str)] = &[
         "python",
         include_str!("../../../presets/rulebearing/python.yaml"),
     ),
+    (
+        "nextjs",
+        include_str!("../../../presets/frameworks/nextjs.yaml"),
+    ),
+    (
+        "clean-architecture",
+        include_str!("../../../presets/frameworks/clean-architecture.yaml"),
+    ),
+    (
+        "django",
+        include_str!("../../../presets/frameworks/django.yaml"),
+    ),
+    (
+        "fastapi",
+        include_str!("../../../presets/frameworks/fastapi.yaml"),
+    ),
+    (
+        "vertical-slices",
+        include_str!("../../../presets/frameworks/vertical-slices.yaml"),
+    ),
 ];
+
+/// The framework presets among [`NATIVE_PRESETS`]: opinions, off by default, which nothing
+/// extends unless a configuration names them
+/// ([plan 0003, Step 11](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
+pub const FRAMEWORK_PRESETS: &[&str] = &[
+    "nextjs",
+    "clean-architecture",
+    "django",
+    "fastapi",
+    "vertical-slices",
+];
+
+/// Whether `name` (without `rulebearing:`) is a framework preset rather than a language default.
+pub fn is_framework_preset(name: &str) -> bool {
+    FRAMEWORK_PRESETS.contains(&name)
+}
 
 /// What an `extends` entry names.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -473,7 +512,25 @@ mod tests {
             resolve("rulebearing:python", here)?.key(),
             "rulebearing:python"
         );
+        for name in FRAMEWORK_PRESETS {
+            let target = resolve(&format!("rulebearing:{name}"), here)?;
+            assert_eq!(target.key(), format!("rulebearing:{name}"));
+            assert!(matches!(target, Target::NativePreset(n, _) if n == *name));
+            assert!(is_framework_preset(name));
+        }
+        for language in ["recommended", "typescript", "dotnet", "python", "nope"] {
+            assert!(!is_framework_preset(language), "{language}");
+        }
         assert!(resolve("rulebearing:nope", here).is_err());
+        let listed = resolve("rulebearing:nope", here)
+            .err()
+            .map(|e| e.to_string())
+            .unwrap_or_default();
+        assert!(
+            listed
+                .contains("rulebearing:python, rulebearing:nextjs, rulebearing:clean-architecture"),
+            "{listed}"
+        );
         assert!(resolve("dependency-cruiser/configs/nope", here).is_err());
         assert!(resolve("./missing", here).is_err());
         assert!(resolve("some-package-that-is-not-installed", here).is_err());

@@ -1,0 +1,78 @@
+# rulebearing:nextjs. Original to Rulebearing. An opinion, off by default: the boundaries a
+# Next.js application's folders imply, for the App Router (app/) and the Pages Router (pages/),
+# read from paths alone. A route entry is Next.js's to load, so nothing imports one; shared code
+# (components, hooks, lib) never reaches into a route; and a component, which the Pages Router
+# bundles for the browser, never imports a server/ folder. The "use client" directive and the
+# server-only and client-only packages are not visible in the graph, so this preset does not claim
+# to check them. Documented, rule by rule, in presets/frameworks/README.md#rulebearingnextjs.
+# Named with `init --preset nextjs` or `extends: rulebearing:nextjs`, beside the TypeScript preset.
+# Source: docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo.
+# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 11. Requirements:
+# FR-CLI-08, FR-REACH-04.
+rules:
+  dependencies:
+    forbidden:
+      - name: nextjs-no-import-of-route-entries
+        comment: "An App Router page, layout, route handler, template or boundary file is an entry Next.js loads by its path; importing one from another module runs it outside its route and couples two routes. plan:rulebearing-nextjs"
+        fix: "Move what both need into a module outside app/ (components/ or lib/) and import that from the route file and from here."
+        severity: error
+        from:
+          pathNot:
+            - "\\.(spec|test|stories)\\.[cm]?[jt]sx?$"
+            - "(^|/)__tests__/"
+        to:
+          path: "(^|/)app/(.+/)?(page|layout|route|template|default|loading|error|global-error|not-found)\\.[cm]?[jt]sx?$"
+        examples:
+          forbidden:
+            - "src/components/Header.tsx -> src/app/dashboard/page.tsx"
+            - "src/app/settings/page.tsx -> src/app/layout.tsx"
+          allowed:
+            - "src/app/dashboard/page.tsx -> src/components/Header.tsx"
+            - "src/app/dashboard/page.test.tsx -> src/app/dashboard/page.tsx"
+      - name: nextjs-no-import-of-api-routes
+        comment: "A file under pages/api/ or app/api/ is an HTTP handler; importing it from a page or a component calls the handler's module in the wrong runtime and ties the UI to the transport. plan:rulebearing-nextjs"
+        fix: "Move the logic the handler and the caller share into a server module (server/ or lib/), import that from both, and call the API over HTTP from the browser."
+        severity: error
+        from:
+          pathNot:
+            - "(^|/)(app|pages)/api/"
+            - "\\.(spec|test)\\.[cm]?[jt]sx?$"
+            - "(^|/)__tests__/"
+        to:
+          path: "(^|/)(app|pages)/api/"
+        examples:
+          forbidden:
+            - "src/pages/index.tsx -> src/pages/api/users.ts"
+            - "src/components/List.tsx -> src/app/api/items/route.ts"
+          allowed:
+            - "src/pages/api/users.ts -> src/pages/api/_helpers.ts"
+            - "src/pages/api/users.ts -> src/server/users.ts"
+      - name: nextjs-shared-code-not-to-routes
+        comment: "components/, hooks/ and lib/ are shared by every route; one that imports from app/ or pages/ makes every route depend on that one. plan:rulebearing-nextjs"
+        fix: "Move the code the shared module needs out of the route folder into components/, hooks/ or lib/, or pass it in as a prop or an argument."
+        severity: error
+        from:
+          path: "(^|/)(components|hooks|lib)/"
+        to:
+          path: "(^|/)(app|pages)/"
+        examples:
+          forbidden:
+            - "src/components/Nav.tsx -> src/pages/index.tsx"
+            - "lib/format.ts -> app/(marketing)/copy.ts"
+          allowed:
+            - "src/pages/index.tsx -> src/components/Nav.tsx"
+            - "src/components/Nav.tsx -> src/lib/format.ts"
+      - name: nextjs-components-not-to-server
+        comment: "A component can be bundled for the browser; importing from server/ ships server code (database clients, secrets) to it or fails the build. plan:rulebearing-nextjs"
+        fix: "Fetch the data in a server component, getServerSideProps or a route handler and pass it to the component as props; move types the component needs out of server/."
+        severity: error
+        from:
+          path: "(^|/)components/"
+        to:
+          path: "(^|/)server/"
+        examples:
+          forbidden:
+            - "src/components/UserCard.tsx -> src/server/db.ts"
+          allowed:
+            - "src/pages/users.tsx -> src/server/db.ts"
+            - "src/server/users.ts -> src/components/types.ts"

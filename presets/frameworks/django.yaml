@@ -1,0 +1,61 @@
+# rulebearing:django. Original to Rulebearing. An opinion, off by default: the layering a Django
+# project's file names imply. Models are the innermost layer and import no view, form, admin,
+# serializer or URL configuration; views are reached through URL configurations, so nothing else
+# imports them; and migrations are Django's to run, so no application code imports one. A module
+# is a file named for its role (models.py) or a package of that name (models/). Which app may use
+# another app's models is a project's own decision, so this preset does not fence apps from each
+# other. Documented, rule by rule, in presets/frameworks/README.md#rulebearingdjango. Named with
+# `init --preset django` or `extends: rulebearing:django`, beside the Python preset.
+# Source: docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo.
+# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 11. Requirements:
+# FR-CLI-08, FR-REACH-04.
+rules:
+  dependencies:
+    forbidden:
+      - name: django-models-are-innermost
+        comment: "Models are imported by every other layer of an app; a model that imports a view, form, admin, serializer or URL configuration makes that a cycle and loads the web layer with the ORM. plan:rulebearing-django"
+        fix: "Move the logic the model needs into the model or a service module that both sides import, or connect it with a signal in the app's apps.py ready()."
+        severity: error
+        from:
+          path: "(^|/)models(\\.py$|/)"
+        to:
+          path: "(^|/)(views|forms|admin|serializers|urls)(\\.py$|/)"
+        examples:
+          forbidden:
+            - "shop/models.py -> shop/views.py"
+            - "shop/models/order.py -> shop/serializers.py"
+          allowed:
+            - "shop/views.py -> shop/models.py"
+            - "shop/models.py -> accounts/models.py"
+      - name: django-views-only-from-urls
+        comment: "A view is an entry Django reaches through a URL configuration; any other module that imports one ties itself to the request cycle. plan:rulebearing-django"
+        fix: "Move the shared logic out of the view into a service or a model method and import that; reverse() a URL name instead of importing the view."
+        severity: error
+        from:
+          pathNot:
+            - "(^|/)(urls|views)(\\.py$|/)"
+            - "(^|/)(tests?|test_[^/]*|[^/]*_tests?)(\\.py$|/)"
+            - "(^|/)conftest\\.py$"
+        to:
+          path: "(^|/)views(\\.py$|/)"
+        examples:
+          forbidden:
+            - "shop/forms.py -> shop/views.py"
+            - "shop/services/checkout.py -> shop/views/cart.py"
+          allowed:
+            - "shop/urls.py -> shop/views.py"
+            - "shop/tests/test_views.py -> shop/views.py"
+      - name: django-no-import-of-migrations
+        comment: "A migration is a frozen snapshot Django runs in order; code that imports one breaks when the migration is squashed or renamed. plan:rulebearing-django"
+        fix: "Import the model or the function from the app itself; a data migration that needs shared code imports it from the app, not the other way round."
+        severity: error
+        from:
+          pathNot: "(^|/)migrations/"
+        to:
+          path: "(^|/)migrations/"
+        examples:
+          forbidden:
+            - "shop/models.py -> shop/migrations/0001_initial.py"
+          allowed:
+            - "shop/migrations/0002_data.py -> shop/migrations/0001_initial.py"
+            - "shop/migrations/0002_data.py -> shop/utils.py"
