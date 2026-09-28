@@ -80,6 +80,9 @@ The plugin runs in the same QuickJS sandbox as a JavaScript configuration ([ADR-
 | `require` and `import` of JavaScript and JSON files inside the repository, and of packages under its `node_modules` | Any file outside the repository, by path, by `../`, by `file://` URL or by a symbolic link |
 | The pure `path` and `url` modules ([ADR-0027](adr/0027-pure-path-and-url-modules-in-the-config-sandbox.md)), `JSON`, `Math` and the rest of the ECMAScript standard library | Every Node built-in (`fs`, `http`, `child_process`, ...), `process`, `Buffer`, `fetch`, `XMLHttpRequest`, `WebSocket` and timers |
 | 30 seconds and 512 MiB per report | Running past either |
+| Package `exports` targets inside their package | A target or a `*` match with a `.`, `..`, empty or `node_modules` segment, as Node refuses them |
+
+The repository is the nearest folder above the working directory that holds a `.git`, or the working directory itself outside a work tree. A sandbox that would be rooted at the filesystem root or the home directory is refused with exit 3, for a plugin and a JavaScript configuration alike: run from inside the project, or `git init` it first.
 
 A refusal stops the run with `<path> is not a valid plugin: the reporter sandbox refused it: <what it reached for>`. A package that imports a Node built-in at load time, as `watskeburt` imports `child_process`, is therefore not a valid plugin here, where under Node it would load and fail later. A plugin that needs the network or the filesystem is not portable to Rulebearing; render its input with `-T json` and run it with Node instead.
 

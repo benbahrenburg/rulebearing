@@ -81,18 +81,25 @@ const CALL: &str = r"(function rbPlugin(plugin, result, checkOnly) {
   if (!Object.hasOwn(probe, 'exitCode')) {
     return { valid: false, reason: 'called with a minimal cruise result, it returned no own `exitCode`' };
   }
-  if (typeof probe.exitCode !== 'number') {
-    return { valid: false, reason: 'called with a minimal cruise result, it returned an `exitCode` that is a ' + typeof probe.exitCode + ', not a number' };
+  // Each field is read once, so a getter answers each question once and the verdict is coherent.
+  const probeCode = probe.exitCode;
+  if (typeof probeCode !== 'number') {
+    return { valid: false, reason: 'called with a minimal cruise result, it returned an `exitCode` that is a ' + typeof probeCode + ', not a number' };
   }
   if (checkOnly) return { valid: true };
   const report = plugin(result);
   const shape = report === null || typeof report !== 'object' ? {} : report;
+  const output = shape.output;
+  const exitCode = shape.exitCode;
   return {
     valid: true,
-    outputType: typeof shape.output,
-    output: typeof shape.output === 'string' ? shape.output : undefined,
-    exitCodeType: typeof shape.exitCode,
-    exitCode: typeof shape.exitCode === 'number' ? shape.exitCode : undefined,
+    outputType: typeof output,
+    // A lone surrogate becomes U+FFFD, as Node writes it to a stream.
+    output: typeof output === 'string'
+      ? output.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '�')
+      : undefined,
+    exitCodeType: typeof exitCode,
+    exitCode: typeof exitCode === 'number' ? exitCode : undefined,
   };
 })";
 
@@ -189,6 +196,8 @@ pub struct Sandbox {
     root: PathBuf,
     cwd: PathBuf,
     limits: Limits,
+    /// The user's home directory, which the sandbox may not be rooted at.
+    home: Option<PathBuf>,
 }
 
 /// Where a failure happened: loading the module is upstream's `import()`; checking and calling
@@ -213,6 +222,17 @@ impl Sandbox {
             root: canonical(root),
             cwd: canonical(cwd),
             limits,
+            home: super::home_dir(),
+        }
+    }
+
+    /// The same sandbox, judging its root against `home` rather than the environment's home
+    /// directory ([`super::root_refusal`]).
+    #[must_use]
+    pub fn with_home(self, home: Option<&Path>) -> Self {
+        Self {
+            home: home.map(Path::to_path_buf),
+            ..self
         }
     }
 
@@ -229,6 +249,7 @@ impl Sandbox {
     /// [`PluginError::Sandbox`] for a path outside the repository or a Node built-in;
     /// [`PluginError::NotFound`] when no module is there.
     pub fn resolve(&self, name: &str) -> Result<Plugin, PluginError> {
+        self.confined(name)?;
         let policy = Policy::for_purpose(&self.root, Purpose::Plugin);
         let path_like = name.strip_prefix("file://").map(percent_decode);
         let from = self.cwd.join("plugin");
@@ -277,7 +298,7 @@ impl Sandbox {
     }
 
     fn refusal_or(&self, policy: &Policy, name: &str, reason: &str) -> PluginError {
-        match policy.refused.borrow().clone() {
+        match policy.refusal_in(reason) {
             Some(refusal) => PluginError::Sandbox {
                 name: name.to_owned(),
                 reason: refusal,
@@ -341,11 +362,24 @@ impl Sandbox {
     }
 
     /// One fresh runtime: load the module, run [`CALL`].
+    /// Refuses a sandbox rooted at the filesystem root or the home directory
+    /// ([`super::root_refusal`]), before anything is resolved or read.
+    fn confined(&self, name: &str) -> Result<(), PluginError> {
+        match super::root_refusal(&self.root, self.home.as_deref()) {
+            Some(reason) => Err(PluginError::Sandbox {
+                name: name.to_owned(),
+                reason,
+            }),
+            None => Ok(()),
+        }
+    }
+
     fn run(
         &self,
         plugin: &Plugin,
         result: Option<&serde_json::Value>,
     ) -> Result<Called, PluginError> {
+        self.confined(&plugin.name)?;
         let setup = |e: rquickjs::Error| PluginError::Thrown {
             name: plugin.name.clone(),
             message: e.to_string(),
@@ -494,7 +528,9 @@ impl Failure<'_> {
                 self.limits.memory / (1024 * 1024)
             ));
         }
-        if let Some(refusal) = self.policy.refused.borrow().clone() {
+        // Only when the uncaught exception is the refusal: one the plugin caught and handled is
+        // not the cause of a later error of its own.
+        if let Some(refusal) = self.policy.refusal_in(&message) {
             return sandbox(refusal);
         }
         if let Some(global) = host_global(&message) {
@@ -567,5 +603,7 @@ impl Limits {
     }
 }
 
+#[cfg(test)]
+mod review;
 #[cfg(test)]
 mod tests;

@@ -174,6 +174,14 @@ pub enum JsError {
         /// What it was instead.
         reason: String,
     },
+    /// The sandbox's root would be the filesystem root or the home directory ([`root_refusal`]).
+    #[error("{file}: {reason}")]
+    Root {
+        /// The configuration file.
+        file: PathBuf,
+        /// Why, and what to do.
+        reason: String,
+    },
     /// The configuration file could not be read.
     #[error("{file}: {reason}")]
     Read {
@@ -211,9 +219,10 @@ struct Policy {
     purpose: Purpose,
     /// Every file read, for the attest receipt.
     read: RefCell<BTreeSet<PathBuf>>,
-    /// The first request the policy refused (a Node built-in, a path outside the repository), so
-    /// a failed run can name the sandbox as its cause even when the code caught the exception.
-    refused: RefCell<Option<String>>,
+    /// Every refusal the policy made (a Node built-in, a path outside the repository), in order,
+    /// so a failure whose uncaught exception is one of them is named as the sandbox's, and a
+    /// refusal the code caught and handled is not blamed for a later, unrelated error.
+    refused: RefCell<BTreeSet<String>>,
 }
 
 impl Policy {
@@ -226,16 +235,23 @@ impl Policy {
             root: canonical(root),
             purpose,
             read: RefCell::new(BTreeSet::new()),
-            refused: RefCell::new(None),
+            refused: RefCell::new(BTreeSet::new()),
         }
     }
 
     /// Records a refusal and returns its message.
     fn refuse(&self, message: String) -> String {
-        self.refused
-            .borrow_mut()
-            .get_or_insert_with(|| message.clone());
+        self.refused.borrow_mut().insert(message.clone());
         message
+    }
+
+    /// The refusal an uncaught exception's `message` carries, when it carries one.
+    fn refusal_in(&self, message: &str) -> Option<String> {
+        self.refused
+            .borrow()
+            .iter()
+            .find(|refusal| message.contains(refusal.as_str()))
+            .cloned()
     }
 
     /// Maps `specifier`, written in `from`, to a target, or explains the refusal.
@@ -269,7 +285,16 @@ impl Policy {
                 format!("`{specifier}` is not a bundled dependency-cruiser preset")
             });
         }
-        let from_dir = Path::new(from).parent().unwrap_or(&self.root).to_path_buf();
+        // `from` comes from the sandbox's code: normalised and canonical before any lookup, and
+        // refused outside the repository, so no manifest or directory outside it is ever read.
+        let from_dir = canonical(&normalise(Path::new(from).parent().unwrap_or(&self.root)));
+        if !from_dir.starts_with(&self.root) {
+            return Err(self.refuse(format!(
+                "`{specifier}` was asked for from {from}, which is outside the repository; the {} sandbox reads only files inside the repository, {} (ADR-0006)",
+                self.noun(),
+                self.root.display()
+            )));
+        }
         let found = if specifier.starts_with('.') || specifier.starts_with('/') {
             let candidate = normalise(&from_dir.join(specifier));
             if !candidate.starts_with(&self.root) {
@@ -301,10 +326,14 @@ impl Policy {
     /// has them and its `main` or the path itself when it does not.
     fn find_package(&self, from_dir: &Path, specifier: &str) -> Option<PathBuf> {
         let (name, subpath) = split_package(specifier);
+        // `from_dir` is canonical (Policy::resolve), so its ancestors are too.
         let inside = |dir: &&Path| dir.starts_with(&self.root);
         for dir in from_dir.ancestors().filter(inside) {
             let package = dir.join("node_modules").join(name);
-            let found = match package_json(&package).and_then(|m| m.get("exports").cloned()) {
+            let found = match self
+                .package_json(&package)
+                .and_then(|m| m.get("exports").cloned())
+            {
                 Some(exports) => exports_target(&exports, &subpath)
                     .and_then(|target| self.find(&normalise(&package.join(target)))),
                 None => self.find(&dir.join("node_modules").join(specifier)),
@@ -317,7 +346,7 @@ impl Policy {
         let owner = from_dir
             .ancestors()
             .filter(inside)
-            .find_map(|dir| package_json(dir).map(|manifest| (dir, manifest)))?;
+            .find_map(|dir| self.package_json(dir).map(|manifest| (dir, manifest)))?;
         let (dir, manifest) = owner;
         if manifest.get("name").and_then(serde_json::Value::as_str) != Some(name) {
             return None;
@@ -337,10 +366,8 @@ impl Policy {
         for index in ["index.js", "index.cjs", "index.json"] {
             tries.push(candidate.join(index));
         }
-        let package_main = candidate.join("package.json");
-        if let Ok(text) = std::fs::read_to_string(&package_main)
-            && let Ok(json) = serde_json::from_str::<serde_json::Value>(&text)
-            && let Some(main) = json.get("main").and_then(serde_json::Value::as_str)
+        if let Some(manifest) = self.package_json(candidate)
+            && let Some(main) = manifest.get("main").and_then(serde_json::Value::as_str)
         {
             tries.insert(1, normalise(&candidate.join(main)));
         }
@@ -351,6 +378,16 @@ impl Policy {
             let real = canonical(&path);
             real.starts_with(&self.root).then_some(real)
         })
+    }
+
+    /// The `package.json` in `dir`, parsed, when there is one and `dir` is, canonically, inside
+    /// the repository: a manifest outside it is never read, even to be ignored.
+    fn package_json(&self, dir: &Path) -> Option<serde_json::Map<String, serde_json::Value>> {
+        let dir = canonical(dir);
+        if !dir.starts_with(&self.root) || !dir.is_dir() {
+            return None;
+        }
+        package_json(&dir)
     }
 
     /// The text of a target produced by [`Policy::resolve`].
@@ -388,7 +425,8 @@ fn split_package(specifier: &str) -> (&str, String) {
     (&specifier[..end], subpath)
 }
 
-/// The `package.json` in `dir`, parsed, when there is one.
+/// The `package.json` in `dir`, parsed, when there is one. Only [`Policy::package_json`] calls
+/// it, after confining `dir` to the repository.
 fn package_json(dir: &Path) -> Option<serde_json::Map<String, serde_json::Value>> {
     let text = std::fs::read_to_string(dir.join("package.json")).ok()?;
     match serde_json::from_str(&text).ok()? {
@@ -408,7 +446,11 @@ fn exports_target(exports: &serde_json::Value, subpath: &str) -> Option<String> 
     use serde_json::Value;
     fn conditional(value: &Value) -> Option<String> {
         match value {
-            Value::String(s) if s.starts_with("./") => Some(s.clone()),
+            // Node's PACKAGE_TARGET_RESOLVE: `./` then no `.`, `..`, empty or `node_modules`
+            // segment, so a target cannot leave its package.
+            Value::String(s) if s.starts_with("./") && !has_invalid_segment(&s[2..]) => {
+                Some(s.clone())
+            }
             Value::Array(items) => items.iter().find_map(conditional),
             Value::Object(map) => CONDITIONS
                 .iter()
@@ -435,7 +477,48 @@ fn exports_target(exports: &serde_json::Value, subpath: &str) -> Option<String> 
         })
         .max_by_key(|(prefix, _, _)| prefix.len())?;
     let star = &subpath[prefix.len()..subpath.len() - suffix.len()];
+    // As Node, the text a `*` stands for may not step out of the package either.
+    if has_invalid_segment(star) {
+        return None;
+    }
     conditional(value).map(|target| target.replace('*', star))
+}
+
+/// Whether `path` has a segment Node's `invalidSegmentRegEx` refuses in an `exports` target or
+/// a pattern match: empty, `.`, `..` or `node_modules`, in any case and percent-encoded or not,
+/// split on `/` and `\`.
+fn has_invalid_segment(path: &str) -> bool {
+    path.split(['/', '\\']).any(|segment| {
+        let decoded = decode_letters(
+            &segment
+                .to_ascii_lowercase()
+                .replace("%2e", ".")
+                .replace("%5f", "_"),
+        );
+        decoded.is_empty() || decoded == "." || decoded == ".." || decoded == "node_modules"
+    })
+}
+
+/// `%XX` escapes of ASCII letters decoded, lowercase, so `%6Eode_modules` reads as a word.
+fn decode_letters(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(i) = rest.find('%') {
+        out.push_str(&rest[..i]);
+        let escape = rest
+            .get(i + 1..i + 3)
+            .and_then(|hex| u8::from_str_radix(hex, 16).ok())
+            .filter(u8::is_ascii_alphabetic);
+        if let Some(byte) = escape {
+            out.push(char::from(byte.to_ascii_lowercase()));
+            rest = &rest[i + 3..];
+        } else {
+            out.push('%');
+            rest = &rest[i + 1..];
+        }
+    }
+    out.push_str(rest);
+    out
 }
 
 fn preset_target(name: &str) -> Option<String> {
@@ -448,6 +531,45 @@ fn preset_target(name: &str) -> Option<String> {
                 .any(|(preset, _)| preset == candidate)
         })
         .map(|found| format!("{PRESET_PREFIX}{found}"))
+}
+
+/// Why `root` cannot be a sandbox's repository, or `None` when it can. The repository is the
+/// nearest folder with `.git` above the working directory, else the working directory itself
+/// ([`crate::load::repository_root`]); run from the filesystem root or the home directory outside
+/// a work tree, that would let the sandbox read the whole disk or every project the user has.
+/// `home` is the user's home directory, passed in so the rule is testable.
+pub fn root_refusal(root: &Path, home: Option<&Path>) -> Option<String> {
+    let root = canonical(root);
+    let what = if root.parent().is_none() {
+        "the filesystem root"
+    } else if home.is_some_and(|home| canonical(home) == root) {
+        "your home directory"
+    } else {
+        return None;
+    };
+    Some(format!(
+        "the JavaScript sandbox would be rooted at {}, {what}, because no folder above the working directory has a .git; it reads only files inside its root, so a root that wide is refused (ADR-0006). Run from inside the project, or `git init` the project folder first",
+        root.display()
+    ))
+}
+
+/// [`root_refusal`] for the evaluation of `entry`, against the environment's home directory.
+fn confined(entry: &Path, root: &Path) -> Result<(), JsError> {
+    match root_refusal(root, home_dir().as_deref()) {
+        Some(reason) => Err(JsError::Root {
+            file: entry.to_path_buf(),
+            reason,
+        }),
+        None => Ok(()),
+    }
+}
+
+/// The user's home directory: `HOME`, else `USERPROFILE` on Windows.
+pub fn home_dir() -> Option<PathBuf> {
+    std::env::var_os("HOME")
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .filter(|h| !h.is_empty())
+        .map(PathBuf::from)
 }
 
 /// Resolves `.` and `..` without touching the filesystem.
@@ -692,6 +814,7 @@ fn run(
         file: entry.to_path_buf(),
         message,
     };
+    confined(entry, root)?;
     let runtime = Runtime::new().map_err(|e| thrown(e.to_string()))?;
     runtime.set_memory_limit(limits.memory);
     runtime.set_max_stack_size(1024 * 1024);
@@ -1232,6 +1355,65 @@ export default { extends: path.basename(base), forbidden: [] };"#,
         )?;
         assert!(refused(&dir, "cfg.cjs").contains("inside the repository"));
         Ok(())
+    }
+
+    #[test]
+    fn a_config_cannot_resolve_from_outside_the_repository() -> Result<(), Box<dyn Error>> {
+        // The repository is `repo/`; a package that names itself `leakname` sits beside it.
+        let dir = repo(&[
+            (
+                "outside/pkgdir/package.json",
+                r#"{ "name": "leakname", "exports": { ".": "./x.js" } }"#,
+            ),
+            ("outside/pkgdir/x.js", "module.exports = {};"),
+            (
+                "repo/.dependency-cruiser.cjs",
+                r"const r = {};
+for (const [k, from, spec] of [
+  ['lexical', __rb_cwd + '/../outside/pkgdir/x.js', 'leakname'],
+  ['relative', __rb_cwd + '/../outside/pkgdir/x.js', './x.js'],
+  ['guess', __rb_cwd + '/../outside/pkgdir/x.js', 'othername'],
+]) { try { r[k] = __rb_resolve(from, spec); } catch (e) { r[k] = e.message; } }
+module.exports = { options: r };",
+            ),
+        ])?;
+        let root = dir.path().join("repo");
+        let value = evaluate(
+            &root.join(".dependency-cruiser.cjs"),
+            &root,
+            Limits::default(),
+        )?
+        .value;
+        for key in ["lexical", "relative", "guess"] {
+            let answer = value["options"][key].as_str().unwrap_or_default();
+            assert!(
+                answer.contains("is outside the repository") && !answer.contains("pkgdir/x.js`"),
+                "{key}: {answer}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn a_config_is_not_evaluated_with_the_filesystem_root_or_home_as_its_root() {
+        let refused = evaluate_text(
+            Path::new("/cfg.cjs"),
+            "module.exports = {};",
+            Kind::CommonJs,
+            Path::new("/"),
+            Limits::default(),
+        );
+        assert!(
+            matches!(&refused, Err(JsError::Root { reason, .. }) if reason.contains("the filesystem root")),
+            "{refused:?}"
+        );
+        let home = std::env::temp_dir();
+        let reason = root_refusal(&home, Some(&home)).unwrap_or_default();
+        assert!(reason.contains("your home directory"), "{reason}");
+        assert!(reason.contains("`git init`"), "{reason}");
+        assert_eq!(root_refusal(&home.join("project"), Some(&home)), None);
+        assert_eq!(root_refusal(&home, None), None);
+        assert!(root_refusal(Path::new("/"), None).is_some());
     }
 
     #[test]
