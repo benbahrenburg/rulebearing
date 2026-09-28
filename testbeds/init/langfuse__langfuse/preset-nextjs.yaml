@@ -1,5 +1,5 @@
 # testbeds/init: `rulebearing init --dry-run --preset nextjs` on langfuse/langfuse at 17c3e9d97ca93603fe448436083e20c44ac1822a
-# (a cruise of src with this configuration exits 0 (4153 findings baselined)). Regenerate with testbeds/init/run.sh.
+# (a cruise of src with this configuration exits 0 (4138 findings baselined)). Regenerate with testbeds/init/run.sh.
 # rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
 # Found: TypeScript, src/features, next, vitest, storybook.
 # Framework presets named with --preset, each an opinion that is off unless named: rulebearing:nextjs.
@@ -38,4 +38,4 @@ rules:
 options:
   # Findings present when this file was written. Each expires; fix it before then.
   knownViolations:
-    # features-are-independent: 1485, nextjs-components-not-to-server: 15, nextjs-no-import-of-api-routes: 2, no-circular: 450, no-non-package-json: 9, not-to-unresolvable: 2192 (entries elided)
+    # features-are-independent: 1485, nextjs-no-import-of-api-routes: 2, no-circular: 450, no-non-package-json: 9, not-to-unresolvable: 2192 (entries elided)

@@ -4,7 +4,7 @@ One small repository per framework preset under `<name>/repo/`, and the proposal
 
 | Fixture | What it holds | What the proposal shows |
 | --- | --- | --- |
-| `nextjs` | an App Router tree with `app/api/`, `components/`, `lib/` and `server/` | `src/components/ItemCount.tsx` importing `src/server/db.ts`, baselined under `nextjs-components-not-to-server` |
+| `nextjs` | an App Router tree with `app/api/`, a `dashboard` route with its own `components/` and `lib/`, and shared `components/`, `lib/` and `server/` | `src/lib/links.ts` calling the route handler, baselined under `nextjs-no-import-of-api-routes`, `nextjs-no-import-of-route-entries` (a `route.ts` is an entry) and `nextjs-shared-code-not-to-routes`; no finding for `src/components/ItemCount.tsx` (an `import type` of the handler and an import of `server/`) or for the route's colocated folders |
 | `clean-architecture` | none of its own: the [`init-layers`](../init-layers/PROVENANCE.md) solution, whose built assemblies the .NET extractor reads (the source paths are the ones its PDBs record, `crates/rb-cli/tests/fixtures/init-layers/src/...`) | `Shop.Application` using `Shop.Infrastructure`, baselined under the namespace rule init proposes and the preset's path rule alike |
 | `django` | one app with models, views, URLs, a form and a migration, run with `--preset python,django` | `shop/forms.py` importing a view, baselined under `django-views-only-from-urls` |
 | `fastapi` | routers, services and schemas, and no repository layer | `fastapi-repositories-not-to-services-or-routers` left out with `severity: ignore`; `app/services/audit.py` importing a router, baselined |
