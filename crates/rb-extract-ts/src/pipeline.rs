@@ -73,7 +73,7 @@ pub enum PipelineError {
     /// A CoffeeScript or LiveScript file, which only the Node sidecar reads
     /// ([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)); it is never parsed
     /// as JavaScript.
-    #[error("{path}: {reason}", path = path.display(), reason = crate::SIDECAR_REASON)]
+    #[error("{path}: {reason}", path = path.display(), reason = crate::sidecar_reason(path))]
     NeedsSidecar {
         /// The file, as the walk names it.
         path: PathBuf,

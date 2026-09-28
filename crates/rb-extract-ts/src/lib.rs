@@ -90,6 +90,27 @@ pub const SIDECAR_REASON: &str = "unsupported-file-needs-sidecar: CoffeeScript a
      extracted by the Node sidecar (ADR-0017), which is not enabled; run with `--sidecar node`, or \
      exclude the file";
 
+/// What a `.csx` file adds to a sidecar reason: `.csx` is also the extension of C# scripts
+/// (dotnet-script), which are not CoffeeScript, so the fix may be to exclude the file rather than
+/// to run the sidecar. Empty for every other file.
+pub fn csx_note(file: &str) -> &'static str {
+    if extension(file) == Some("csx") {
+        "; a .csx file may be a C# script (dotnet-script) rather than CoffeeScript JSX: if it is, \
+         exclude it with options.exclude (for example `exclude: {path: \"\\\\.csx$\"}`) or \
+         --exclude \"\\.csx$\""
+    } else {
+        ""
+    }
+}
+
+/// [`SIDECAR_REASON`] for `file`, with [`csx_note`] for a `.csx` file.
+pub fn sidecar_reason(file: &Path) -> String {
+    format!(
+        "{SIDECAR_REASON}{}",
+        csx_note(&file.to_string_lossy().replace('\\', "/"))
+    )
+}
+
 /// The TypeScript and JavaScript extractor.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TypeScriptExtractor;
@@ -104,8 +125,8 @@ impl From<PipelineError> for ExtractError {
             },
             PipelineError::Parse { path, reason } => Self::UnsupportedFile { path, reason },
             PipelineError::NeedsSidecar { path } => Self::UnsupportedFile {
+                reason: sidecar_reason(&path),
                 path,
-                reason: SIDECAR_REASON.to_owned(),
             },
             PipelineError::Pattern { pattern, reason } => Self::UnsupportedFile {
                 path: PathBuf::from(pattern),
@@ -526,7 +547,7 @@ pub fn to_extraction(
     }) {
         return Err(ExtractError::UnsupportedFile {
             path: PathBuf::from(&sidecar.source),
-            reason: SIDECAR_REASON.to_owned(),
+            reason: sidecar_reason(Path::new(&sidecar.source)),
         });
     }
     let states = if settings.keep_file_states {
@@ -648,6 +669,18 @@ mod tests {
         assert!(!needs_sidecar("lib/x.ts"));
         assert!(!needs_sidecar("README.md"));
         assert!(SIDECAR_REASON.contains("ADR-0017"));
+        assert_eq!(sidecar_reason(Path::new("a.coffee")), SIDECAR_REASON);
+        let csx = sidecar_reason(Path::new("scripts/build.csx"));
+        assert!(csx.starts_with(SIDECAR_REASON), "{csx}");
+        assert!(
+            csx.contains("C# script")
+                && csx.contains("options.exclude")
+                && csx.contains("--exclude"),
+            "{csx}"
+        );
+        for file in ["a.cjsx", "a.coffee", "csx", "a.csx.js"] {
+            assert_eq!(csx_note(file), "", "{file}");
+        }
     }
 
     #[test]
