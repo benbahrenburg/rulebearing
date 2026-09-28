@@ -6,7 +6,7 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 
 | Command | For | dependency-cruiser |
 | --- | --- | --- |
-| `cruise [paths]` | Extract, evaluate, report | `depcruise`, with the same flags and short forms (`-T`, `-f`, `-c`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-X`, `-P`, `-p`, `-m`, `-i`), `--webpack-config` and `--init [oneshot]` |
+| `cruise [paths]` | Extract, evaluate, report | `depcruise`, with the same flags and short forms (`-T`, `-f`, `-c`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-X`, `-P`, `-p`, `-m`, `-i`, `-A`), `--webpack-config`, `--affected [revision]` and `--init [oneshot]` |
 | `fmt <result.json>` | Re-report a saved result without extracting | `depcruise-fmt`, with its short forms (`-T`, `-f`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-e`, `-p`) |
 | `rules [--json]` | Every rule with its family, severity and match counts | |
 | `explain <rule> [--plain]` | One rule in a sentence, with its reason, `fix` and first edges | |
@@ -40,6 +40,19 @@ A known-violations file is a JSON array of `knownViolations` entries, each keyed
 
 `shrink-only` is import-linter's unmatched-ignore alerting ([design § import-linter contracts](artifacts/design.md#import-linter-contracts-for-the-python-teams-who-know-them)): run it in CI and a fixed finding fails the build until its entry leaves the baseline. `--expires`, `--owner` and `--reason` fill those fields on each entry written that lacks them; an entry past its `expires` date stops applying the day after and fails the run ([ADR-0031](adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)).
 
+## Affected runs
+
+`cruise --affected [revision]` (`-A`) reports only the modules changed since `revision` (default `main`) and every module that reaches them, as dependency-cruiser does ([coverage § Command line](artifacts/dependency-cruiser-18.2.0-coverage.md#command-line), row `--affected [revision]`). The changes are what `git diff <revision> --name-status` and the untracked files of `git status --porcelain` list, with the extensions dependency-cruiser lists; they become the `reaches` expression, so `summary.optionsUsed.reaches` and the report are dependency-cruiser's. That has three consequences worth knowing: an edge from a changed module to an unchanged one that does not reach a changed module is not in the report, so neither is a violation on it; a deleted file is not in the expression; and a new file in a new, untracked folder counts once it is staged, because `git status` reports the folder rather than the file.
+
+| Addition | What it does |
+| --- | --- |
+| .NET and Python | A changed Python module, a changed .NET module, and a changed file the PDB attributes a type to (either file of a partial class) add their modules to the expression |
+| `--affected-depth N` | Only the modules that reach a changed one in at most `N` steps; `0`, the default, keeps them all |
+| `summary.affected` | The receipt: `revision`, every `changed` path (deleted files included), the `closure` the report kept, and `depth` when given; `--strict-schema` strips it |
+| Paths | Relative to the directory the cruise runs in, as module names are; dependency-cruiser keeps git's repository-relative paths, so its cruise from a subdirectory matches nothing |
+
+A gating reporter exits with the error count of what the report kept. A revision git does not know, or a directory outside a git repository, exits 2. `options.affected` in a `rulebearing.*` configuration applies as the flag would; in a dependency-cruiser configuration it is ignored with a warning, as dependency-cruiser ignores it.
+
 ## Flags the query commands share
 
 | Flag | Meaning |
@@ -64,7 +77,14 @@ A known-violations file is a JSON array of `knownViolations` entries, each keyed
 | 2 | The run cannot be trusted: no modules found, an unsupported file, a vacuous rule under `strict` liveness, a ratchet budget that cannot be read |
 | 3 | The configuration is invalid |
 
-A run with exactly two or three error violations also exits 2 or 3; the report says which it was ([ADR-0008](adr/0008-exit-code-contract.md), [ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). `fmt` exits 0 unless `--exit-code` is given, as `depcruise-fmt` does; with it, the code comes from the saved result alone (`summary.error`, `summary.expired`, the exceeded ratchets, and 2 for `vacuousRules` or a ratchet without a budget), so a saved result gates as the cruise would have ([ADR-0031](adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)). `can-import` exits 1 for "no" and 2 when the target is unknown. `attest --verify` exits 1 when a hash differs. The `--from-hook` forms of `cruise` and `impact` always exit 0 ([agents.md](agents.md#the-hooks)).
+A run with exactly two or three error violations also exits 2 or 3; the report says which it was ([ADR-0008](adr/0008-exit-code-contract.md), [ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). `--exit-code-mode strict`, on `cruise` and on `fmt --exit-code`, removes the ambiguity for a pipeline that needs it:
+
+| Outcome | `default` | `strict` |
+| --- | --- | --- |
+| no error-severity violation | 0 | 0 |
+| `n` error-severity violations | `n`, capped at 255 | `10 + n`, capped at 255 |
+| the run cannot be trusted | 2 | 2 |
+| the configuration is invalid | 3 | 3 | `fmt` exits 0 unless `--exit-code` is given, as `depcruise-fmt` does; with it, the code comes from the saved result alone (`summary.error`, `summary.expired`, the exceeded ratchets, and 2 for `vacuousRules` or a ratchet without a budget), so a saved result gates as the cruise would have ([ADR-0031](adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)). `can-import` exits 1 for "no" and 2 when the target is unknown. `attest --verify` exits 1 when a hash differs. The `--from-hook` forms of `cruise` and `impact` always exit 0 ([agents.md](agents.md#the-hooks)).
 
 ## Pipelines
 

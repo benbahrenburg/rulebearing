@@ -1,0 +1,37 @@
+[
+  {
+    "rule": "m03-fence",
+    "from": "src/mutation/03-fence/alpha/a.mjs",
+    "to": "src/mutation/03-fence/beta/b.mjs"
+  },
+  {
+    "rule": "m04-circular",
+    "from": "src/mutation/04-circular/a.mjs",
+    "to": "src/mutation/04-circular/b.mjs"
+  },
+  {
+    "rule": "m05-orphan",
+    "from": "src/mutation/05-orphan/lonely.mjs",
+    "to": "src/mutation/05-orphan/lonely.mjs"
+  },
+  {
+    "rule": "m07-reachable",
+    "from": "src/mutation/07-reachable/entry.mjs",
+    "to": "src/mutation/07-reachable/forbidden.mjs"
+  },
+  {
+    "rule": "m08-required",
+    "from": "src/mutation/08-required/skips-the-bus.mjs",
+    "to": "src/mutation/08-required/skips-the-bus.mjs"
+  },
+  {
+    "rule": "m09-dependents",
+    "from": "src/mutation/09-dependents/shared.mjs",
+    "to": "src/mutation/09-dependents/shared.mjs"
+  },
+  {
+    "rule": "m11-via",
+    "from": "src/mutation/11-via/a.mjs",
+    "to": "src/mutation/11-via/hub.mjs"
+  }
+]

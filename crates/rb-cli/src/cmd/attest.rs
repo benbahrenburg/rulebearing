@@ -144,6 +144,7 @@ pub fn compute(ctx: &mut Context<'_>, args: &AttestArgs) -> Result<Receipt, Outc
         liveness: false,
         options_used: serde_json::Map::new(),
         paths: args.paths.clone(),
+        affected: None,
     };
     let mut progress = Progress::new(None);
     let document = match &args.graph {

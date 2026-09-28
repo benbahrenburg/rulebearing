@@ -9,6 +9,10 @@
 //! - Requirements: [FR-CORE-02](../../../../docs/prd.md#fr-core-02), [FR-CORE-06](../../../../docs/prd.md#fr-core-06),
 //!   [FR-CLI-08](../../../../docs/prd.md#fr-cli-08)
 //!
+//! `--affected [revision]` narrows the report to the changed modules and the modules that reach
+//! them ([`crate::affected`]); `--exit-code-mode strict` shifts the count to `10 + n`
+//! ([Wave 3, Step 5](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+//!
 //! A gating reporter exits with the error count ([ADR-0030](../../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)),
 //! every reporter exits 2 when the run cannot be trusted (an empty cruise, an unsupported file,
 //! a vacuous rule) and 3 for an invalid configuration. The report is still written for a vacuous
@@ -125,6 +129,10 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
     if let Err(e) = configure::apply_flags(&mut effective, args, ctx) {
         return failed(&RunError::Config(e), "");
     }
+    let affected = match affected(ctx, args, &mut effective) {
+        Ok(selection) => selection,
+        Err(outcome) => return *outcome,
+    };
     progress.stage("configuration");
     let mut stderr = String::new();
     for warning in &effective.warnings {
@@ -135,20 +143,7 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
             .unwrap_or_default();
         let _ = writeln!(stderr, "warning: {rule}{}", warning.message);
     }
-    let (output_type, output_to) = if args.from_hook {
-        ("agent".to_owned(), "-".to_owned())
-    } else {
-        (
-            args.output_type
-                .clone()
-                .or_else(|| effective.options.output_type.clone())
-                .unwrap_or_else(|| "err".into()),
-            args.output_to
-                .clone()
-                .or_else(|| effective.options.output_to.clone())
-                .unwrap_or_else(|| "-".into()),
-        )
-    };
+    let (output_type, output_to) = outputs(args, &effective);
     effective.options.metrics = Some(configure::wants_metrics(
         &effective,
         args.metrics && !args.no_metrics,
@@ -163,6 +158,7 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
             &output_to,
         ),
         paths: args.paths.clone(),
+        affected,
     };
     let result = match &args.graph {
         Some(file) => match pipeline::load_graph(ctx, file) {
@@ -269,11 +265,15 @@ fn report(
     }
     let vacuous = !run.evaluation.vacuous.is_empty() || !ratchets.vacuous.is_empty();
     // 2 whatever the reporter; the error count only for a reporter that gates (ADR-0030). A rule
-    // that matches nothing counts under strict liveness only (ADR-0032).
+    // that matches nothing counts under strict liveness only (ADR-0032). The count is the
+    // report's, after `reaches` and `--affected` kept their modules, as upstream's reporter
+    // counts the re-summarised result.
     let code = if (strict && vacuous) || ratchets.no_budget() {
         RunExit::Untrustworthy
     } else if rb_report::gates(output_type) {
-        RunExit::Violations(run.evaluation.error_count() + ratchets.exceeded())
+        RunExit::Violations(
+            run.document.summary.error + run.evaluation.expired.len() as u64 + ratchets.exceeded(),
+        )
     } else {
         RunExit::Violations(0)
     };
@@ -283,8 +283,56 @@ fn report(
     Outcome {
         stdout,
         stderr,
-        code: code.code(),
+        code: code.code_in(args.exit_code_mode),
     }
+}
+
+/// The reporter and where it writes: the flags, else the configuration, else `err` to stdout;
+/// always `agent` to stdout for `--from-hook`.
+fn outputs(args: &CruiseArgs, config: &Config) -> (String, String) {
+    if args.from_hook {
+        return ("agent".to_owned(), "-".to_owned());
+    }
+    (
+        args.output_type
+            .clone()
+            .or_else(|| config.options.output_type.clone())
+            .unwrap_or_else(|| "err".into()),
+        args.output_to
+            .clone()
+            .or_else(|| config.options.output_to.clone())
+            .unwrap_or_else(|| "-".into()),
+    )
+}
+
+/// `--affected [revision]` (or a native configuration's `options.affected`): the changes since
+/// the revision, with `reaches` set to dependency-cruiser's expression for them
+/// ([`crate::affected`]). A revision git does not know, or a directory outside a repository,
+/// exits 2; `--affected-depth` without either exits 3.
+fn affected(
+    ctx: &Context<'_>,
+    args: &CruiseArgs,
+    config: &mut Config,
+) -> Result<Option<crate::affected::Selection>, Box<Outcome>> {
+    let Some(request) =
+        crate::affected::request(args.affected.as_deref(), args.affected_depth, config)
+    else {
+        return match args.affected_depth {
+            Some(_) => Err(Box::new(Outcome::failed(
+                RunExit::InvalidConfig,
+                "rulebearing cruise: --affected-depth needs --affected [revision], or options.affected in a rulebearing.* configuration\n",
+            ))),
+            None => Ok(None),
+        };
+    };
+    crate::affected::select(&ctx.cwd, request, config)
+        .map(Some)
+        .map_err(|e| {
+            Box::new(Outcome::failed(
+                RunExit::Untrustworthy,
+                format!("rulebearing cruise: {e}\n"),
+            ))
+        })
 }
 
 /// Adds the ratchets and their vacuous entries to the summary. Under `warn` every vacuous entry

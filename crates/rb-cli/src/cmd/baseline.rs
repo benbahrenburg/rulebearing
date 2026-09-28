@@ -314,6 +314,7 @@ fn cruise(ctx: &mut Context<'_>, args: &BaselineArgs, lifecycle: &Lifecycle) -> 
             &args.output_to,
         ),
         paths: args.paths.clone(),
+        affected: None,
     };
     let mut progress = Progress::new(None);
     let result = match &args.graph {

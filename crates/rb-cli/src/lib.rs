@@ -13,6 +13,7 @@
 //!
 //! | Module | Does |
 //! | --- | --- |
+//! | [`affected`] | `--affected`: the changed files and the modules that reach them |
 //! | [`cache`] | the worktree-aware graph cache the query commands read |
 //! | [`cli`] | every flag, declared once |
 //! | [`cmd`] | one module per subcommand |
@@ -23,6 +24,7 @@
 //! | [`progress`] | `--progress` |
 //! | [`protocol`] | the conformance harness's `validate` and `report` |
 
+pub mod affected;
 pub mod cache;
 pub mod cli;
 pub mod cmd;

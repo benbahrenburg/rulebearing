@@ -9,6 +9,8 @@
 //!
 //! `fmt` never reads the source tree: its only input is the result. As `depcruise-fmt`, it exits
 //! 0 unless `--exit-code` asks for the error count; an input that is not a result exits 2.
+//! `--exit-code-mode strict` shifts the count to `10 + n`
+//! ([Wave 3, Step 5](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 
 use rb_report::ReportOptions;
 use rb_rules::graph::filters::{Filter, Filters};
@@ -164,6 +166,6 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
     Outcome {
         stdout,
         stderr: String::new(),
-        code: code.code(),
+        code: code.code_in(args.exit_code_mode),
     }
 }
