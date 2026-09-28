@@ -18,6 +18,11 @@ updates:
     groups:
       linters:
         patterns: ["eslint*", "@eslint/*", "typescript-eslint", "prettier*", "typescript"]
+    # typescript-eslint 8.70 accepts typescript <6.1, so a TypeScript major breaks npm ci for the
+    # whole group. Remove this when a typescript-eslint release supports TypeScript 7.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
