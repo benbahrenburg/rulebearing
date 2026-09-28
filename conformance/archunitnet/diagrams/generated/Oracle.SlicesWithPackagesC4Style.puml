@@ -1,0 +1,64 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+HIDE_STEREOTYPE()
+
+Boundary(ArchUnitNETTests, ArchUnitNETTests)  {
+Container(ArchUnitNETTests.ArchitectureTests, ArchitectureTests)
+}
+
+Boundary(ArchUnitNETTests, ArchUnitNETTests)  {
+Container(ArchUnitNETTests.AssemblyTestHelper, AssemblyTestHelper)
+}
+
+Boundary(ArchUnitNETTests, ArchUnitNETTests)  {
+Container(ArchUnitNETTests.Dependencies, Dependencies)
+}
+
+Boundary(ArchUnitNETTests, ArchUnitNETTests)  {
+Boundary(Domain, Domain)  {
+Container(ArchUnitNETTests.Domain.Extensions, Extensions)
+}
+}
+
+Boundary(ArchUnitNETTests, ArchUnitNETTests)  {
+Boundary(Domain, Domain)  {
+Container(ArchUnitNETTests.Domain.PlantUml, PlantUml)
+}
+}
+
+Boundary(ArchUnitNETTests, ArchUnitNETTests)  {
+Boundary(Fluent, Fluent)  {
+Container(ArchUnitNETTests.Fluent.Extensions, Extensions)
+}
+}
+
+Boundary(ArchUnitNETTests, ArchUnitNETTests)  {
+Boundary(Fluent, Fluent)  {
+Container(ArchUnitNETTests.Fluent.PlantUml, PlantUml)
+}
+}
+
+Boundary(ArchUnitNETTests, ArchUnitNETTests)  {
+Boundary(Fluent, Fluent)  {
+Container(ArchUnitNETTests.Fluent.Slices, Slices)
+}
+}
+
+Boundary(ArchUnitNETTests, ArchUnitNETTests)  {
+Boundary(Fluent, Fluent)  {
+Container(ArchUnitNETTests.Fluent.Syntax, Syntax)
+}
+}
+
+Boundary(ArchUnitNETTests, ArchUnitNETTests)  {
+Container(ArchUnitNETTests.Loader, Loader)
+}
+
+[ArchUnitNETTests.Dependencies] --|> [ArchUnitNETTests.Domain.PlantUml]
+[ArchUnitNETTests.Domain.Extensions] --|> [ArchUnitNETTests.Fluent.Extensions]
+[ArchUnitNETTests.Domain.Extensions] --|> [ArchUnitNETTests.Loader]
+Fluent -[#green]> Domain
+[ArchUnitNETTests.Loader] --|> [ArchUnitNETTests.Fluent.Extensions]
+@enduml

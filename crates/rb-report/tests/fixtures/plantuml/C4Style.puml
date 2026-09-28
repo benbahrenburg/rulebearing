@@ -1,0 +1,106 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+HIDE_STEREOTYPE()
+
+Boundary(TestAssembly, TestAssembly)  {
+Container(TestAssembly.DependencyTargets, DependencyTargets)
+}
+
+Boundary(TestAssembly, TestAssembly)  {
+Boundary(Domain, Domain)  {
+Container(TestAssembly.Domain.Entities, Entities)
+}
+}
+
+Boundary(TestAssembly, TestAssembly)  {
+Boundary(Domain, Domain)  {
+Container(TestAssembly.Domain.Marker, Marker)
+}
+}
+
+Boundary(TestAssembly, TestAssembly)  {
+Boundary(Domain, Domain)  {
+Container(TestAssembly.Domain.Repository, Repository)
+}
+}
+
+Boundary(TestAssembly, TestAssembly)  {
+Boundary(Domain, Domain)  {
+Container(TestAssembly.Domain.Services, Services)
+}
+}
+
+Boundary(TestAssembly, TestAssembly)  {
+Boundary(PlantUml, PlantUml)  {
+Container(TestAssembly.PlantUml.Addresses, Addresses)
+}
+}
+
+Boundary(TestAssembly, TestAssembly)  {
+Boundary(PlantUml, PlantUml)  {
+Container(TestAssembly.PlantUml.Catalog, Catalog)
+}
+}
+
+Boundary(TestAssembly, TestAssembly)  {
+Boundary(PlantUml, PlantUml)  {
+Container(TestAssembly.PlantUml.Customers, Customers)
+}
+}
+
+Boundary(TestAssembly, TestAssembly)  {
+Boundary(PlantUml, PlantUml)  {
+Container(TestAssembly.PlantUml.Importer, Importer)
+}
+}
+
+Boundary(TestAssembly, TestAssembly)  {
+Boundary(PlantUml, PlantUml)  {
+Container(TestAssembly.PlantUml.Orders, Orders)
+}
+}
+
+Boundary(TestAssembly, TestAssembly)  {
+Boundary(PlantUml, PlantUml)  {
+Container(TestAssembly.PlantUml.Products, Products)
+}
+}
+
+Boundary(TestAssembly, TestAssembly)  {
+Boundary(Slices, Slices)  {
+Container(TestAssembly.Slices.Slice1, Slice1)
+}
+}
+
+Boundary(TestAssembly, TestAssembly)  {
+Boundary(Slices, Slices)  {
+Container(TestAssembly.Slices.Slice2, Slice2)
+}
+}
+
+Boundary(TestAssembly, TestAssembly)  {
+Boundary(Slices, Slices)  {
+Container(TestAssembly.Slices.Slice3, Slice3)
+}
+}
+
+[TestAssembly.Domain.Entities] --|> [TestAssembly.Domain.Marker]
+[TestAssembly.Domain.Repository] --|> [TestAssembly.Domain.Marker]
+[TestAssembly.Domain.Repository] --|> [TestAssembly.Domain.Services]
+[TestAssembly.Domain.Services] --|> [TestAssembly.Domain.Marker]
+[TestAssembly.PlantUml.Addresses] --|> [TestAssembly.PlantUml.Catalog]
+[TestAssembly.PlantUml.Catalog] --|> [TestAssembly.PlantUml.Orders]
+[TestAssembly.PlantUml.Catalog] --|> [TestAssembly.PlantUml.Products]
+[TestAssembly.PlantUml.Customers] --|> [TestAssembly.PlantUml.Addresses]
+[TestAssembly.PlantUml.Customers] <-[#red]> [TestAssembly.PlantUml.Orders]
+[TestAssembly.PlantUml.Importer] --|> [TestAssembly.PlantUml.Catalog]
+[TestAssembly.PlantUml.Importer] --|> [TestAssembly.PlantUml.Customers]
+[TestAssembly.PlantUml.Orders] --|> [TestAssembly.PlantUml.Addresses]
+[TestAssembly.PlantUml.Orders] <-[#red]> [TestAssembly.PlantUml.Products]
+[TestAssembly.PlantUml.Products] --|> [TestAssembly.PlantUml.Customers]
+[TestAssembly.Slices.Slice1] --|> [TestAssembly.Slices.Slice2]
+[TestAssembly.Slices.Slice2] --|> [TestAssembly.Slices.Slice3]
+[TestAssembly.Slices.Slice3] --|> [TestAssembly.Slices.Slice1]
+@enduml

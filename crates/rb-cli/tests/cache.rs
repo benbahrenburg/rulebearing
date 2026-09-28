@@ -1397,3 +1397,37 @@ fn a_report_option_misses_the_rendered_output_and_keeps_the_evaluated_run() -> R
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
+
+/// `--from` is part of the rendered layer's key: a warm `-T plantuml --from types` after a run
+/// `--from folders` is drawn from types, never the cached folders diagram
+/// ([plan 0003, Step 9](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
+#[test]
+fn plantuml_from_is_part_of_the_rendered_key() -> Result {
+    let dir = tree("plantuml-from", TREE)?;
+    let folders = |dir: &Path| cruise(dir, &["src"], "plantuml", &["--from", "folders", "--cache"]);
+    let types = |dir: &Path| cruise(dir, &["src"], "plantuml", &["--from", "types", "--cache"]);
+    let first = folders(&dir)?;
+    assert_eq!(
+        first.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&first.stderr)
+    );
+    let warm = folders(&dir)?;
+    assert_eq!(served(&warm), "from the cache");
+    assert_eq!(warm.stdout, first.stdout);
+    assert!(String::from_utf8_lossy(&warm.stdout).contains("[src] <<"));
+    let drawn = types(&dir)?;
+    assert_eq!(served(&drawn), "from the cache", "the graph is reused");
+    assert_ne!(drawn.stdout, warm.stdout, "not the stale folders diagram");
+    let cold = cruise(&dir, &["src"], "plantuml", &["--from", "types"])?;
+    assert_eq!(
+        drawn.stdout, cold.stdout,
+        "the diagram a run without the cache draws"
+    );
+    assert!(String::from_utf8_lossy(&drawn.stdout).contains("!include "));
+    // And back: the folders diagram again, not the types one.
+    assert_eq!(folders(&dir)?.stdout, first.stdout);
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}

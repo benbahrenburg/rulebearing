@@ -6,6 +6,7 @@
 | --- | --- | --- | --- |
 | `metadata_reader` | the ECMA-335 assembly reader and the portable PDB reader (`rb-extract-dotnet`) | ArchUnitNET's `TestAssembly.dll` and `.pdb` | [Wave 0, Step 9](../docs/plans/pending/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d) |
 | `cache_manifest` | the `cruise --cache` entry: `manifest.json` and the stored extraction, plain and zlib-compressed (`rb-cli`) | none; the input is split into a manifest and an extraction | [Wave 3, Step 1](../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict) |
+| `plantuml_parser` | the PlantUML diagram parser and component association `adhereTo` reads (`rb-rules`) | the gate 2 diagrams and the `plantuml` reporter's fixtures | [Wave 3, Step 9](../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes) |
 
 The configuration front-ends (`rb-config`) and the `cruise-result` reader (`rb-ingest`) get targets with the plans that build their parsers.
 

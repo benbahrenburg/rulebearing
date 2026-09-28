@@ -1634,6 +1634,7 @@ dependencies = [
  "rb-config",
  "rb-extract-dotnet",
  "rb-model",
+ "rb-rules",
 ]
 
 [[package]]

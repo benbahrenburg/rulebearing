@@ -96,8 +96,10 @@ fn every_wave_1_reporter_reports_and_the_gating_ones_exit_with_the_count()
     }
     let unknown = run(&dir, &["cruise", "-T", "pdf", "src"])?;
     assert_eq!(unknown.status.code(), Some(3));
-    let later = run(&dir, &["cruise", "-T", "plantuml", "src"])?;
-    assert_ne!(later.status.code(), Some(0), "a wave 3 reporter is refused");
+    // `plantuml` (wave 3B) is a drawing reporter: it exits 0 whatever the run found.
+    let diagram = run(&dir, &["cruise", "-T", "plantuml", "src"])?;
+    assert_eq!(diagram.status.code(), Some(0), "{}", text(&diagram));
+    assert!(text(&diagram).starts_with("@startuml\n"));
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }

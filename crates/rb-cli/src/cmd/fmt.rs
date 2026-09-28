@@ -86,14 +86,15 @@ fn known_violations(
 
 /// Runs `fmt`.
 pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
-    if let Some(from) = args
-        .from
-        .as_deref()
-        .filter(|f| !matches!(*f, "rulebearing" | "dependency-cruiser"))
-    {
+    if let Some(from) = args.from.as_deref().filter(|f| {
+        !matches!(*f, "rulebearing" | "dependency-cruiser")
+            && rb_report::plantuml::From::parse(f).is_none()
+    }) {
         return failed(
             RunExit::InvalidConfig,
-            &format!("--from `{from}`: use rulebearing or dependency-cruiser"),
+            &format!(
+                "--from `{from}`: use rulebearing or dependency-cruiser (where the result came from), or slices, types, namespaces or folders (the plantuml diagram's nodes)"
+            ),
         );
     }
     let text = if args.input == "-" {
@@ -136,6 +137,10 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         },
         baseline: rb_report::baseline::Lifecycle::default(),
         collapse_pattern: format.collapse.clone(),
+        plantuml_from: args
+            .from
+            .clone()
+            .filter(|f| rb_report::plantuml::From::parse(f).is_some()),
         graphviz: Some(crate::graphviz::system()),
     };
     let plugin = rb_config::js::plugin::plugin_name(&args.output_type);

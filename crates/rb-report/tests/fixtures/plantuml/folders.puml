@@ -1,0 +1,57 @@
+@startuml
+
+hide stereotype
+
+[TestAssembly] <<^TestAssembly(?:/(?:[^\x2FDPS][^\x2F]*|D(?:|[^\x2Feio][^\x2F]*|e(?:|[^\x2Fp][^\x2F]*|p(?:|[^\x2Fe][^\x2F]*|e(?:|[^\x2Fn][^\x2F]*|n(?:|[^\x2Fd][^\x2F]*|d(?:|[^\x2Fe][^\x2F]*|e(?:|[^\x2Fn][^\x2F]*|n(?:|[^\x2Fc][^\x2F]*|c(?:|[^\x2Fy][^\x2F]*|y(?:|[^\x2FT][^\x2F]*|T(?:|[^\x2Fa][^\x2F]*|a(?:|[^\x2Fr][^\x2F]*|r(?:|[^\x2Fg][^\x2F]*|g(?:|[^\x2Fe][^\x2F]*|e(?:|[^\x2Ft][^\x2F]*|t(?:|[^\x2Fs][^\x2F]*|s(?:[^\x2F][^\x2F]*))))))))))))))))|i(?:|[^\x2Fa][^\x2F]*|a(?:|[^\x2Fg][^\x2F]*|g(?:|[^\x2Fr][^\x2F]*|r(?:|[^\x2Fa][^\x2F]*|a(?:|[^\x2Fm][^\x2F]*|m(?:[^\x2F][^\x2F]*))))))|o(?:|[^\x2Fm][^\x2F]*|m(?:|[^\x2Fa][^\x2F]*|a(?:|[^\x2Fi][^\x2F]*|i(?:|[^\x2Fn][^\x2F]*|n(?:[^\x2F][^\x2F]*))))))|P(?:|[^\x2Fl][^\x2F]*|l(?:|[^\x2Fa][^\x2F]*|a(?:|[^\x2Fn][^\x2F]*|n(?:|[^\x2Ft][^\x2F]*|t(?:|[^\x2FU][^\x2F]*|U(?:|[^\x2Fm][^\x2F]*|m(?:|[^\x2Fl][^\x2F]*|l(?:[^\x2F][^\x2F]*))))))))|S(?:|[^\x2Fl][^\x2F]*|l(?:|[^\x2Fi][^\x2F]*|i(?:|[^\x2Fc][^\x2F]*|c(?:|[^\x2Fe][^\x2F]*|e(?:|[^\x2Fs][^\x2F]*|s(?:[^\x2F][^\x2F]*))))))))?$>>
+[TestAssembly/DependencyTargets] <<^TestAssembly/DependencyTargets(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Diagram/ConfusingNamespaceNames/FooNamespace/BarNamespace] <<^TestAssembly/Diagram/ConfusingNamespaceNames/FooNamespace/BarNamespace(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Diagram/NoDependencies/Independent] <<^TestAssembly/Diagram/NoDependencies/Independent(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Diagram/NoDependencies/SomeNamespace] <<^TestAssembly/Diagram/NoDependencies/SomeNamespace(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Diagram/SimpleDependency/Origin] <<^TestAssembly/Diagram/SimpleDependency/Origin(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Diagram/SimpleDependency/Target] <<^TestAssembly/Diagram/SimpleDependency/Target(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Domain/Entities] <<^TestAssembly/Domain/Entities(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Domain/Marker] <<^TestAssembly/Domain/Marker(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Domain/Repository] <<^TestAssembly/Domain/Repository(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Domain/Services] <<^TestAssembly/Domain/Services(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/PlantUml/Addresses] <<^TestAssembly/PlantUml/Addresses(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/PlantUml/Catalog] <<^TestAssembly/PlantUml/Catalog(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/PlantUml/Customers] <<^TestAssembly/PlantUml/Customers(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/PlantUml/Importer] <<^TestAssembly/PlantUml/Importer(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/PlantUml/Orders] <<^TestAssembly/PlantUml/Orders(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/PlantUml/Products] <<^TestAssembly/PlantUml/Products(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/PlantUml/Xml/Processor] <<^TestAssembly/PlantUml/Xml/Processor(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/PlantUml/Xml/Types] <<^TestAssembly/PlantUml/Xml/Types(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/PlantUml/Xml/Utils] <<^TestAssembly/PlantUml/Xml/Utils(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Slices/Slice1] <<^TestAssembly/Slices/Slice1(?:/(?:[^\x2FS][^\x2F]*|S(?:|[^\x2Fe][^\x2F]*|e(?:|[^\x2Fr][^\x2F]*|r(?:|[^\x2Fv][^\x2F]*|v(?:|[^\x2Fi][^\x2F]*|i(?:|[^\x2Fc][^\x2F]*|c(?:|[^\x2Fe][^\x2F]*|e(?:[^\x2F][^\x2F]*)))))))))?$>>
+[TestAssembly/Slices/Slice1/Service] <<^TestAssembly/Slices/Slice1/Service(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Slices/Slice2] <<^TestAssembly/Slices/Slice2(?:/(?:[^\x2FS][^\x2F]*|S(?:|[^\x2Fe][^\x2F]*|e(?:|[^\x2Fr][^\x2F]*|r(?:|[^\x2Fv][^\x2F]*|v(?:|[^\x2Fi][^\x2F]*|i(?:|[^\x2Fc][^\x2F]*|c(?:|[^\x2Fe][^\x2F]*|e(?:[^\x2F][^\x2F]*)))))))))?$>>
+[TestAssembly/Slices/Slice2/Service] <<^TestAssembly/Slices/Slice2/Service(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Slices/Slice3] <<^TestAssembly/Slices/Slice3(?:/(?:[^\x2FG][^\x2F]*|G(?:|[^\x2Fr][^\x2F]*|r(?:|[^\x2Fo][^\x2F]*|o(?:|[^\x2Fu][^\x2F]*|u(?:|[^\x2Fp][^\x2F]*|p(?:|[^\x2F12][^\x2F]*|1(?:[^\x2F][^\x2F]*)|2(?:[^\x2F][^\x2F]*))))))))?$>>
+[TestAssembly/Slices/Slice3/Group1] <<^TestAssembly/Slices/Slice3/Group1(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Slices/Slice3/Group2] <<^TestAssembly/Slices/Slice3/Group2(?:/(?:[^\x2F][^\x2F]*))?$>>
+[TestAssembly/Diagram/SimpleDependency/Origin] --> [TestAssembly/Diagram/SimpleDependency/Target]
+[TestAssembly/Domain/Entities] --> [TestAssembly/Domain/Marker]
+[TestAssembly/Domain/Repository] --> [TestAssembly/Domain/Marker]
+[TestAssembly/Domain/Repository] --> [TestAssembly/Domain/Services]
+[TestAssembly/Domain/Services] --> [TestAssembly/Domain/Marker]
+[TestAssembly/PlantUml/Addresses] --> [TestAssembly/PlantUml/Catalog]
+[TestAssembly/PlantUml/Catalog] --> [TestAssembly/PlantUml/Orders]
+[TestAssembly/PlantUml/Catalog] --> [TestAssembly/PlantUml/Products]
+[TestAssembly/PlantUml/Customers] --> [TestAssembly/PlantUml/Addresses]
+[TestAssembly/PlantUml/Customers] --> [TestAssembly/PlantUml/Orders]
+[TestAssembly/PlantUml/Orders] --> [TestAssembly/PlantUml/Customers]
+[TestAssembly/PlantUml/Importer] --> [TestAssembly/PlantUml/Catalog]
+[TestAssembly/PlantUml/Importer] --> [TestAssembly/PlantUml/Customers]
+[TestAssembly/PlantUml/Importer] --> [TestAssembly/PlantUml/Xml/Processor]
+[TestAssembly/PlantUml/Importer] --> [TestAssembly/PlantUml/Xml/Types]
+[TestAssembly/PlantUml/Orders] --> [TestAssembly/PlantUml/Addresses]
+[TestAssembly/PlantUml/Orders] --> [TestAssembly/PlantUml/Products]
+[TestAssembly/PlantUml/Products] --> [TestAssembly/PlantUml/Orders]
+[TestAssembly/PlantUml/Products] --> [TestAssembly/PlantUml/Customers]
+[TestAssembly/Slices/Slice1] --> [TestAssembly/Slices/Slice2]
+[TestAssembly/Slices/Slice1/Service] --> [TestAssembly/Slices/Slice2/Service]
+[TestAssembly/Slices/Slice2] --> [TestAssembly/Slices/Slice3]
+[TestAssembly/Slices/Slice2/Service] --> [TestAssembly/Slices/Slice3]
+[TestAssembly/Slices/Slice3] --> [TestAssembly/Slices/Slice1]
+[TestAssembly/Slices/Slice3/Group1] --> [TestAssembly/Slices/Slice3]
+@enduml

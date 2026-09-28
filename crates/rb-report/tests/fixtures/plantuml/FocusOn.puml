@@ -1,0 +1,32 @@
+@startuml
+
+hide stereotype
+
+[TestAssembly] <<^TestAssembly(?:\.(?:[^\x2EDPS][^\x2E]*|D(?:|[^\x2Eeio][^\x2E]*|e(?:|[^\x2Ep][^\x2E]*|p(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2En][^\x2E]*|n(?:|[^\x2Ed][^\x2E]*|d(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2En][^\x2E]*|n(?:|[^\x2Ec][^\x2E]*|c(?:|[^\x2Ey][^\x2E]*|y(?:|[^\x2ET][^\x2E]*|T(?:|[^\x2Ea][^\x2E]*|a(?:|[^\x2Er][^\x2E]*|r(?:|[^\x2Eg][^\x2E]*|g(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2Et][^\x2E]*|t(?:|[^\x2Es][^\x2E]*|s(?:[^\x2E][^\x2E]*))))))))))))))))|i(?:|[^\x2Ea][^\x2E]*|a(?:|[^\x2Eg][^\x2E]*|g(?:|[^\x2Er][^\x2E]*|r(?:|[^\x2Ea][^\x2E]*|a(?:|[^\x2Em][^\x2E]*|m(?:[^\x2E][^\x2E]*))))))|o(?:|[^\x2Em][^\x2E]*|m(?:|[^\x2Ea][^\x2E]*|a(?:|[^\x2Ei][^\x2E]*|i(?:|[^\x2En][^\x2E]*|n(?:[^\x2E][^\x2E]*))))))|P(?:|[^\x2El][^\x2E]*|l(?:|[^\x2Ea][^\x2E]*|a(?:|[^\x2En][^\x2E]*|n(?:|[^\x2Et][^\x2E]*|t(?:|[^\x2EU][^\x2E]*|U(?:|[^\x2Em][^\x2E]*|m(?:|[^\x2El][^\x2E]*|l(?:[^\x2E][^\x2E]*))))))))|S(?:|[^\x2El][^\x2E]*|l(?:|[^\x2Ei][^\x2E]*|i(?:|[^\x2Ec][^\x2E]*|c(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2Es][^\x2E]*|s(?:[^\x2E][^\x2E]*))))))))?$>>
+[TestAssembly.DependencyTargets] <<^TestAssembly\.DependencyTargets(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.Diagram.ConfusingNamespaceNames.FooNamespace.BarNamespace] <<^TestAssembly\.Diagram\.ConfusingNamespaceNames\.FooNamespace\.BarNamespace(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.Diagram.NoDependencies.Independent] <<^TestAssembly\.Diagram\.NoDependencies\.Independent(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.Diagram.NoDependencies.SomeNamespace] <<^TestAssembly\.Diagram\.NoDependencies\.SomeNamespace(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.Diagram.SimpleDependency.Origin] <<^TestAssembly\.Diagram\.SimpleDependency\.Origin(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.Diagram.SimpleDependency.Target] <<^TestAssembly\.Diagram\.SimpleDependency\.Target(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.Domain.Entities] <<^TestAssembly\.Domain\.Entities(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.Domain.Marker] <<^TestAssembly\.Domain\.Marker(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.Domain.Repository] <<^TestAssembly\.Domain\.Repository(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.Domain.Services] <<^TestAssembly\.Domain\.Services(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.PlantUml.Addresses] <<^TestAssembly\.PlantUml\.Addresses(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.PlantUml.Catalog] <<^TestAssembly\.PlantUml\.Catalog(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.PlantUml.Customers] <<^TestAssembly\.PlantUml\.Customers(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.PlantUml.Importer] <<^TestAssembly\.PlantUml\.Importer(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.PlantUml.Orders] <<^TestAssembly\.PlantUml\.Orders(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.PlantUml.Products] <<^TestAssembly\.PlantUml\.Products(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.PlantUml.Xml.Processor] <<^TestAssembly\.PlantUml\.Xml\.Processor(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.PlantUml.Xml.Types] <<^TestAssembly\.PlantUml\.Xml\.Types(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.PlantUml.Xml.Utils] <<^TestAssembly\.PlantUml\.Xml\.Utils(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.Slices.Slice1] <<^TestAssembly\.Slices\.Slice1(?:\.(?:[^\x2ES][^\x2E]*|S(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2Er][^\x2E]*|r(?:|[^\x2Ev][^\x2E]*|v(?:|[^\x2Ei][^\x2E]*|i(?:|[^\x2Ec][^\x2E]*|c(?:|[^\x2Ee][^\x2E]*|e(?:[^\x2E][^\x2E]*)))))))))?$>>
+[TestAssembly.Slices.Slice1.Service] <<^TestAssembly\.Slices\.Slice1\.Service(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.Slices.Slice2] <<^TestAssembly\.Slices\.Slice2(?:\.(?:[^\x2ES][^\x2E]*|S(?:|[^\x2Ee][^\x2E]*|e(?:|[^\x2Er][^\x2E]*|r(?:|[^\x2Ev][^\x2E]*|v(?:|[^\x2Ei][^\x2E]*|i(?:|[^\x2Ec][^\x2E]*|c(?:|[^\x2Ee][^\x2E]*|e(?:[^\x2E][^\x2E]*)))))))))?$>>
+[TestAssembly.Slices.Slice2.Service] <<^TestAssembly\.Slices\.Slice2\.Service(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.Slices.Slice3] <<^TestAssembly\.Slices\.Slice3(?:\.(?:[^\x2EG][^\x2E]*|G(?:|[^\x2Er][^\x2E]*|r(?:|[^\x2Eo][^\x2E]*|o(?:|[^\x2Eu][^\x2E]*|u(?:|[^\x2Ep][^\x2E]*|p(?:|[^\x2E12][^\x2E]*|1(?:[^\x2E][^\x2E]*)|2(?:[^\x2E][^\x2E]*))))))))?$>>
+[TestAssembly.Slices.Slice3.Group1] <<^TestAssembly\.Slices\.Slice3\.Group1(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[TestAssembly.Slices.Slice3.Group2] <<^TestAssembly\.Slices\.Slice3\.Group2(?:\.(?:[^\x2E][^\x2E]*))?$>>
+@enduml

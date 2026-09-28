@@ -360,6 +360,82 @@ fn members<'a>(
     members
 }
 
+/// The slices a pattern makes, for drawing them (the `plantuml` reporter,
+/// [Wave 3, Step 9](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)):
+/// what `ArchUnitNET`'s `Matching` or `MatchingWithPackages` gives `PlantUmlFileBuilder`.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Slicing {
+    /// `CountOfAsteriskInPattern`: the number of `(*)`, none for a `(**)` pattern.
+    pub asterisks: Option<usize>,
+    /// `NameSpace`: with packages, the prefix each slice's name starts with.
+    pub namespace: Option<String>,
+    /// Each slice, by name, with the keys of its members (type full names, module sources).
+    pub slices: BTreeMap<String, BTreeSet<String>>,
+    /// Each member's key with the text the pattern was matched against: a type's namespace, a
+    /// module's path or dotted name.
+    pub texts: BTreeMap<String, String>,
+    /// Each member's key with its dependency targets, in document order.
+    pub dependencies: BTreeMap<String, Vec<String>>,
+}
+
+/// Slices the architecture's members by `pattern` as [`evaluate`] does, naming each slice as
+/// `MatchingWithPackages` does (the prefix kept before the name) when `with_packages`.
+///
+/// # Errors
+/// [`ElementError::Pattern`] for a pattern `ArchUnitNET` refuses, [`ElementError::Slice`] for a
+/// member that matches but cannot be cut; both name `rule`.
+pub fn slicing(
+    architecture: &Architecture<'_>,
+    pattern: &str,
+    with_packages: bool,
+    rule: &str,
+) -> Result<Slicing, ElementError> {
+    let assignment = parse(pattern).map_err(|_| ElementError::Pattern {
+        rule: rule.to_owned(),
+        pattern: pattern.to_owned(),
+    })?;
+    let asterisks = (!pattern.contains("(**)")).then(|| pattern.matches("(*)").count());
+    let prefix = assignment
+        .prefix
+        .strip_prefix(assignment.separator)
+        .unwrap_or(&assignment.prefix);
+    let mut found = Slicing {
+        asterisks,
+        namespace: with_packages.then(|| prefix.to_owned()),
+        ..Slicing::default()
+    };
+    for member in members(architecture, assignment.separator, None) {
+        let assigned = assignment
+            .slice(member.text)
+            .map_err(|()| ElementError::Slice {
+                rule: rule.to_owned(),
+                object: member.key.to_owned(),
+                pattern: assignment.pattern.clone(),
+            })?;
+        let Some(slice) = assigned else {
+            continue;
+        };
+        let name = if with_packages {
+            format!("{prefix}{slice}")
+        } else {
+            slice
+        };
+        found
+            .slices
+            .entry(name)
+            .or_default()
+            .insert(member.key.to_owned());
+        found
+            .texts
+            .insert(member.key.to_owned(), member.text.to_owned());
+        found.dependencies.insert(
+            member.key.to_owned(),
+            member.targets.iter().map(|t| (*t).to_owned()).collect(),
+        );
+    }
+    Ok(found)
+}
+
 /// Evaluates one slice rule.
 ///
 /// # Errors
@@ -536,6 +612,61 @@ mod tests {
         let architecture = Architecture::new(&document);
         let rules = rb_config::elements::parse_slices(&serde_json::json!([rule]))?;
         Ok(evaluate(&architecture, &rules[0])?)
+    }
+
+    #[test]
+    fn slicing_names_slices_as_matching_and_matching_with_packages_do() -> Result<(), ElementError>
+    {
+        let mut document = slicing_document();
+        if let Some(code) = document.code.as_mut() {
+            code.types[0].dependencies = vec![rb_model::ElementDependency {
+                target: "S.B.Y".into(),
+                kind: "field".into(),
+                member: None,
+                line: None,
+                form: None,
+            }];
+        }
+        let architecture = Architecture::new(&document);
+        let plain = slicing(&architecture, "S.(*)", false, "r")?;
+        assert_eq!(plain.asterisks, Some(1));
+        assert_eq!(plain.namespace, None);
+        assert_eq!(
+            plain.slices,
+            BTreeMap::from([("A".to_owned(), BTreeSet::from(["S.A.X".to_owned()]))])
+        );
+        assert_eq!(
+            plain.texts,
+            BTreeMap::from([("S.A.X".into(), "S.A".into())])
+        );
+        assert_eq!(
+            plain.dependencies,
+            BTreeMap::from([("S.A.X".into(), vec!["S.B.Y".to_owned()])])
+        );
+        let packages = slicing(&architecture, ".S.(*).(*)", true, "r")?;
+        assert_eq!(packages.asterisks, Some(2));
+        assert_eq!(packages.namespace.as_deref(), Some("S."));
+        assert_eq!(packages.slices.keys().collect::<Vec<_>>(), ["S.A"]);
+        let double = slicing(&architecture, "S.(**)", false, "r")?;
+        assert_eq!(double.asterisks, None);
+        let paths = slicing(&architecture, "src/(*)/", false, "r")?;
+        assert_eq!(
+            paths.slices.keys().collect::<Vec<_>>(),
+            ["a/x.ts", "b/y.ts"]
+        );
+        assert_eq!(
+            paths.texts.get("src/a/x.ts").map(String::as_str),
+            Some("src/a/x.ts")
+        );
+        assert!(matches!(
+            slicing(&architecture, "S.A", false, "r"),
+            Err(ElementError::Pattern { rule, .. }) if rule == "r"
+        ));
+        assert!(matches!(
+            slicing(&architecture, "S(**).A", false, "r"),
+            Err(ElementError::Slice { object, .. }) if object == "S.A.X"
+        ));
+        Ok(())
     }
 
     #[test]

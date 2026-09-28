@@ -16,6 +16,7 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 rb-extract-dotnet = { path = "../crates/rb-extract-dotnet" }
 rb-config = { path = "../crates/rb-config" }
+rb-rules = { path = "../crates/rb-rules" }
 rb-cli = { path = "../crates/rb-cli" }
 rb-model = { path = "../crates/rb-model" }
 
@@ -57,6 +58,13 @@ bench = false
 [[bin]]
 name = "cache_manifest"
 path = "fuzz_targets/cache_manifest.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "plantuml_parser"
+path = "fuzz_targets/plantuml_parser.rs"
 test = false
 doc = false
 bench = false

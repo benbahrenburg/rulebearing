@@ -34,7 +34,13 @@ Options:
   -T, --output-type <TYPE>
           Output type: err, err-long, err-html, json, text, csv, teamcity, azure-devops,
           github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat,
-          fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, null
+          fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, plantuml, null
+
+      --from <NODES>
+          plantuml: what the diagram's nodes are (slices, types, namespaces or folders); wins over
+          reporterOptions.plantuml.from
+          
+          [possible values: slices, types, namespaces, folders]
 
   -f, --output-to <FILE>
           File to write output to; - for stdout

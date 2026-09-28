@@ -19,6 +19,7 @@
 //! `sarif`, `junit` and `trx`, the graph reporters ([`dot`], [`mermaid`], [`d2`]), [`metrics`] and
 //! [`err_html`]. Wave 3 adds [`markdown`], [`html`] (the matrix), [`anon`] and
 //! [`dot_webpage`] (`x-dot-webpage`, whose page `rulebearing wrap-html` also writes).
+//! Wave 3 also adds [`plantuml`], the diagram an `adhereTo` rule enforces.
 
 pub mod agent;
 pub mod anon;
@@ -42,6 +43,7 @@ pub mod junit;
 pub mod markdown;
 pub mod mermaid;
 pub mod metrics;
+pub mod plantuml;
 pub mod sarif;
 pub mod style;
 pub mod teamcity;
@@ -137,9 +139,12 @@ pub enum ReportError {
     /// Not an output type.
     #[error("`{0}` is not a valid output type")]
     Unknown(String),
+    /// `plantuml` cannot draw the result with the options given.
+    #[error(transparent)]
+    PlantUml(#[from] plantuml::PlantUmlError),
     /// An output type a later wave delivers.
     #[error(
-        "the `{name}` reporter arrives in wave {wave}; use err, err-long, err-html, json, text, csv, teamcity, azure-devops, github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon or null"
+        "the `{name}` reporter arrives in wave {wave}; use err, err-long, err-html, json, text, csv, teamcity, azure-devops, github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, plantuml or null"
     )]
     NotYet {
         /// The type.
@@ -173,6 +178,8 @@ pub struct ReportOptions {
     /// `collapse` given to `fmt` (or `cruise`): passed to the reporter as `collapsePattern` over its
     /// own section, as dependency-cruiser's `reportWrap` does.
     pub collapse_pattern: Option<String>,
+    /// `--from` for `plantuml`: what the diagram's nodes are, over `reporterOptions.plantuml.from`.
+    pub plantuml_from: Option<String>,
     /// `x-dot-webpage`: what runs GraphViz' `dot`. Without one, the reporter reports `dot` as
     /// unavailable, as upstream does on a system without it.
     pub graphviz: Option<dot_webpage::GraphvizRunner>,
@@ -263,6 +270,7 @@ pub fn render_with(
         }
         "mermaid" => mermaid::render(result, reporter_options("mermaid").as_ref()),
         "d2" => d2::render(result),
+        "plantuml" => render_plantuml(result, options, reporter_options("plantuml"))?,
         "metrics" => metrics::render(result, reporter_options("metrics").as_ref(), options.color),
         "err-html" => err_html::render(
             result,
@@ -307,6 +315,23 @@ fn web_page(
         Some(runner) => dot_webpage::render(result, section, runner.0.as_ref()),
         None => Err(ReportError::Graphviz(dot_webpage::NOT_AVAILABLE.into())),
     }
+}
+
+/// `plantuml` with its section: `collapse` has already shaped the modules and is not one of the
+/// diagram's options, so the `collapsePattern` the wrapper adds is taken out again.
+fn render_plantuml(
+    result: &Value,
+    options: &ReportOptions,
+    mut section: Option<Value>,
+) -> Result<Rendered, ReportError> {
+    if let (Some(_), Some(Value::Object(map))) = (&options.collapse_pattern, &mut section) {
+        map.remove("collapsePattern");
+    }
+    let diagram = plantuml::PlantUmlOptions::from_reporter_options(
+        section.as_ref(),
+        options.plantuml_from.as_deref(),
+    )?;
+    Ok(plantuml::render(result, &diagram)?)
 }
 
 /// A string field as JavaScript's template literal would print it (`undefined` when absent).
@@ -488,6 +513,7 @@ mod tests {
             "html",
             "markdown",
             "anon",
+            "plantuml",
             "baseline",
             "metrics",
             "null",
@@ -567,13 +593,13 @@ mod tests {
             page.map(|r| r.output),
             Ok(dot_webpage::wrap_in_html("<svg/>"))
         );
-        assert_eq!(
-            render("plantuml", &result, &o),
-            Err(ReportError::NotYet {
-                name: "plantuml".into(),
-                wave: 3
-            })
-        );
+        // Every output type up to wave 3 is delivered: none is still a named later-wave error.
+        for (t, _) in OUTPUT_TYPES {
+            assert!(
+                !matches!(render(t, &result, &o), Err(ReportError::NotYet { .. })),
+                "{t}"
+            );
+        }
         // `collapse` reaches the reporter as `collapsePattern` over its own section.
         let modules =
             json!({ "modules": [{ "source": "src/a/b.js", "dependencies": [] }], "summary": {} });
@@ -597,6 +623,35 @@ mod tests {
             .to_string()
             .contains("wave 2")
         );
+    }
+
+    #[test]
+    fn plantuml_draws_and_names_what_it_cannot_draw() {
+        let result = json!({ "modules": [], "summary": { "violations": [], "error": 0, "warn": 0, "info": 0, "totalCruised": 0, "totalDependenciesCruised": 0, "optionsUsed": {} } });
+        let o = ReportOptions::default();
+        assert_eq!(
+            render("plantuml", &result, &o).map(|r| r.output),
+            Ok("@startuml\n\nhide stereotype\n\n@enduml\n".into())
+        );
+        let from_types = ReportOptions {
+            plantuml_from: Some("types".into()),
+            ..ReportOptions::default()
+        };
+        assert!(
+            render("plantuml", &result, &from_types)
+                .is_ok_and(|r| r.output.starts_with("@startuml\n\n!include "))
+        );
+        let refused = render_with("plantuml", &result, &o, Some(&json!({ "Typo": true })));
+        assert!(
+            matches!(&refused, Err(ReportError::PlantUml(e)) if e.to_string().contains("`Typo`")),
+            "{refused:?}"
+        );
+        // `collapse` is not one of the diagram's options and does not reach it.
+        let collapsing = ReportOptions {
+            collapse_pattern: Some("^src/[^/]+".into()),
+            ..ReportOptions::default()
+        };
+        assert!(render("plantuml", &result, &collapsing).is_ok());
     }
 
     #[test]

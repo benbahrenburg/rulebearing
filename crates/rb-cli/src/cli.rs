@@ -288,9 +288,13 @@ pub struct CruiseArgs {
     pub graph: Option<String>,
     /// Output type: err, err-long, err-html, json, text, csv, teamcity, azure-devops,
     /// github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot,
-    /// x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, null
+    /// x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, plantuml, null
     #[arg(short = 'T', long, value_name = "TYPE")]
     pub output_type: Option<String>,
+    /// plantuml: what the diagram's nodes are (slices, types, namespaces or folders); wins over
+    /// reporterOptions.plantuml.from
+    #[arg(long, value_name = "NODES", value_parser = ["slices", "types", "namespaces", "folders"])]
+    pub from: Option<String>,
     /// File to write output to; - for stdout
     #[arg(short = 'f', long, value_name = "FILE")]
     pub output_to: Option<String>,
@@ -485,8 +489,10 @@ pub struct FmtArgs {
     /// Prefix for links in the reports
     #[arg(short = 'p', long, value_name = "PREFIX")]
     pub prefix: Option<String>,
-    /// Where the result came from: rulebearing or dependency-cruiser
-    #[arg(long, value_name = "TOOL")]
+    /// Where the result came from (rulebearing or dependency-cruiser), or, for plantuml, what the
+    /// diagram's nodes are (slices, types, namespaces or folders; wins over
+    /// reporterOptions.plantuml.from)
+    #[arg(long, value_name = "TOOL-OR-NODES")]
     pub from: Option<String>,
     /// json: strip every Rulebearing addition
     #[arg(long)]

@@ -1,0 +1,54 @@
+# Ported from ArchUnitNET 0.13.4 ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs by hand: PlantUmlDefinition.ComponentDiagram() is a thin front on PlantUmlFileBuilder, so each case draws with the builder and compares with upstream's expected text, or with ArchUnitNET's own output (diagrams/generated/, written by tools/PlantUmlOracle) where the test asserts only a non-empty diagram
+source: ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs
+architecture: [ArchUnitNETTests]
+cases:
+- id: ComponentDiagramFromSlicesTest#1
+  query: 'ComponentDiagram().WithDependenciesFromSlices(Slices().Matching("ArchUnitNETTests.(*).")): the same diagram as the builder''s'
+  csharp: Assert.NotEmpty(ComponentDiagram().WithDependenciesFromSlices(sliceRule, Architecture).AsString())
+  family: plantuml-export
+  rule: {from: slices, Matching: ArchUnitNETTests.(*).}
+  expect: {file: PlantUmlFileBuilderTest.BuildUmlBySlicesTest.puml}
+- id: ComponentDiagramFromSlicesTest#2
+  query: 'WithDependenciesFromSlices(MatchingWithPackages("<assembly>.(*).(*).(*)"), C4Style, LimitDependencies): C4 boundaries per package, arrows only under a shared parent; upstream draws ArchUnitNET''s own assembly, which is not a committed fixture, so the case draws ArchUnitNETTests with a pattern of the same shape'
+  csharp: ComponentDiagram().WithDependenciesFromSlices(sliceRule1.GetObjects(arch1), new GenerationOptions { C4Style = true, LimitDependencies = true }).WriteToFile(path)
+  family: plantuml-export
+  rule: {from: slices, MatchingWithPackages: ArchUnitNETTests.(*).(*).(*), C4Style: true, LimitDependencies: true}
+  expect: {file: PlantUmlFluentComponentDiagramTests.ComponentDiagramFromSlicesTest.puml}
+- id: ComponentDiagramFromTypesTest#1
+  query: 'WithDependenciesFromTypes(Types().That().Are(PlantUmlFluentComponentDiagramTests)): one class and no arrow, since the type depends on no other selected type'
+  csharp: Assert.Equal(expectedUml, ComponentDiagram().WithDependenciesFromTypes(typeRule, Architecture).AsString(new RenderOptions { OmitClassFields = true }))
+  family: plantuml-export
+  rule: {from: types, only: [ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests]}
+  expect:
+    text: "@startuml\n\n!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml\n\nHIDE_STEREOTYPE()\n\nclass \"ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests\" {\n}\n@enduml\n"
+- id: ComponentDiagramFromTypesTest#2
+  query: 'the same type with IncludeDependenciesToOther: an arrow to each type it depends on'
+  csharp: Assert.NotEmpty(ComponentDiagram().WithDependenciesFromTypes(typeRule, Architecture, new GenerationOptions { IncludeDependenciesToOther = true }).AsString())
+  family: plantuml-export
+  rule: {from: types, only: [ArchUnitNETTests.Fluent.PlantUml.PlantUmlFluentComponentDiagramTests], IncludeDependenciesToOther: true}
+  expect: {file: PlantUmlFluentComponentDiagramTests.ComponentDiagramFromTypesTest.puml}
+- id: ComponentDiagramFromCustomDependenciesTest#1
+  query: 'WithElements(one dependency of each DependencyType, and a class): each type draws its own arrow'
+  csharp: Assert.Equal(expectedUml, ComponentDiagram().WithElements(Dependencies.Concat(classesWithoutDependencies)).AsString())
+  family: plantuml-export
+  rule: &custom
+    from: elements
+    elements:
+    - {dependency: [a, b, OneToOne]}
+    - {dependency: [b, c, Circle]}
+    - {dependency: [c, d, PackageToPackageIfSameParentNamespace]}
+    - {dependency: [d, e, OneToMany]}
+    - {dependency: [e, f, OneToPackage]}
+    - {dependency: [f, g, PackageToOne]}
+    - {dependency: [g, h, PackageToPackage]}
+    - {dependency: [h, i, OneToOneCompact]}
+    - {dependency: [i, a, OneToOneIfSameParentNamespace]}
+    - {class: X}
+  expect: &customText
+    text: "@startuml\n\n!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml\n\nHIDE_STEREOTYPE()\n\nclass \"X\" {\n}\n[a] --|> [b]\n[b] <-[#red]> [c]\nc ..> d\n[d] \"1\" --|> \"many\" [e]\n[e] -[#red]> f\nf -[#blue]> [g]\ng -[#green]> h\n[h] --> [i]\ni --|> a\n@enduml\n"
+- id: ComponentDiagramWriteToFileTest#1
+  query: 'WriteToFile writes AsString''s text; the file''s lines are the expected lines'
+  csharp: ComponentDiagram().WithElements(Dependencies.Concat(classesWithoutDependencies)).WriteToFile("temp/testUml.puml"); Assert.Equal(expectedUml[i], line)
+  family: plantuml-export
+  rule: *custom
+  expect: *customText

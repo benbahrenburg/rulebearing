@@ -1,0 +1,99 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+HIDE_STEREOTYPE()
+
+package ArchUnitNETTests {
+[ArchitectureTests] as ArchUnitNETTests.ArchitectureTests
+}
+
+package ArchUnitNETTests {
+[AssemblyTestHelper] as ArchUnitNETTests.AssemblyTestHelper
+}
+
+package ArchUnitNETTests {
+[Dependencies] as ArchUnitNETTests.Dependencies
+}
+
+package ArchUnitNETTests {
+package Domain {
+package Dependencies {
+[Attributes] as ArchUnitNETTests.Domain.Dependencies.Attributes
+}
+}
+}
+
+package ArchUnitNETTests {
+package Domain {
+package Dependencies {
+[Members] as ArchUnitNETTests.Domain.Dependencies.Members
+}
+}
+}
+
+package ArchUnitNETTests {
+package Domain {
+package Dependencies {
+[Types] as ArchUnitNETTests.Domain.Dependencies.Types
+}
+}
+}
+
+package ArchUnitNETTests {
+package Domain {
+[Extensions] as ArchUnitNETTests.Domain.Extensions
+}
+}
+
+package ArchUnitNETTests {
+package Domain {
+[PlantUml] as ArchUnitNETTests.Domain.PlantUml
+}
+}
+
+package ArchUnitNETTests {
+package Fluent {
+[Extensions] as ArchUnitNETTests.Fluent.Extensions
+}
+}
+
+package ArchUnitNETTests {
+package Fluent {
+[PlantUml] as ArchUnitNETTests.Fluent.PlantUml
+}
+}
+
+package ArchUnitNETTests {
+package Fluent {
+[Slices] as ArchUnitNETTests.Fluent.Slices
+}
+}
+
+package ArchUnitNETTests {
+package Fluent {
+package Syntax {
+[Elements] as ArchUnitNETTests.Fluent.Syntax.Elements
+}
+}
+}
+
+package ArchUnitNETTests {
+[Loader] as ArchUnitNETTests.Loader
+}
+
+[ArchUnitNETTests.Dependencies] --|> [ArchUnitNETTests.Domain.PlantUml]
+[ArchUnitNETTests.Domain.Dependencies.Attributes] --|> [ArchUnitNETTests.Domain.Dependencies.Members]
+[ArchUnitNETTests.Domain.Dependencies.Attributes] --|> [ArchUnitNETTests.Fluent.Extensions]
+[ArchUnitNETTests.Domain.Dependencies.Members] --|> [ArchUnitNETTests.Dependencies]
+[ArchUnitNETTests.Domain.Dependencies.Members] --|> [ArchUnitNETTests.Fluent.Extensions]
+[ArchUnitNETTests.Domain.Extensions] --|> [ArchUnitNETTests.Domain.Dependencies.Attributes]
+[ArchUnitNETTests.Domain.Extensions] --|> [ArchUnitNETTests.Domain.Dependencies.Members]
+[ArchUnitNETTests.Domain.Extensions] --|> [ArchUnitNETTests.Fluent.Extensions]
+[ArchUnitNETTests.Domain.Extensions] --|> [ArchUnitNETTests.Loader]
+[ArchUnitNETTests.Fluent.Syntax.Elements] --|> [ArchUnitNETTests.AssemblyTestHelper]
+[ArchUnitNETTests.Fluent.Syntax.Elements] --|> [ArchUnitNETTests.Domain.PlantUml]
+[ArchUnitNETTests.Loader] --|> [ArchUnitNETTests.Domain.Dependencies.Attributes]
+[ArchUnitNETTests.Loader] --|> [ArchUnitNETTests.Domain.Dependencies.Members]
+[ArchUnitNETTests.Loader] --|> [ArchUnitNETTests.Fluent.Extensions]
+@enduml
