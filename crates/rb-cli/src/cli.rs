@@ -82,6 +82,9 @@ pub enum Command {
     Adopt(crate::cmd::adopt::AdoptArgs),
     /// Write the current violations to a known-violations file, as depcruise-baseline does
     Baseline(crate::cmd::baseline::BaselineArgs),
+    /// Added and removed edges, new and resolved violations and moved ratchets between two
+    /// results, or between a revision and the working tree
+    Diff(crate::cmd::diff::DiffArgs),
     /// Translate ArchUnitNET, NetArchTest, import-linter or eslint rules into a rulebearing.yaml
     #[command(subcommand)]
     Import(crate::cmd::import::ImportCommand),

@@ -1,0 +1,264 @@
+{
+  "modules": [
+    {
+      "source": "src/db/store.ts",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/routes/a.ts",
+        "src/routes/b.ts"
+      ],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/main.ts",
+      "dependencies": [
+        {
+          "module": "./routes/a",
+          "resolved": "src/routes/a.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "./routes/b",
+          "resolved": "src/routes/b.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 2,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/routes/a.ts",
+      "dependencies": [
+        {
+          "module": "../db/store",
+          "resolved": "src/db/store.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "routes-not-to-db",
+              "severity": "error"
+            }
+          ],
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "src/main.ts"
+      ],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/routes/b.ts",
+      "dependencies": [
+        {
+          "module": "../db/store",
+          "resolved": "src/db/store.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "routes-not-to-db",
+              "severity": "error"
+            }
+          ],
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "src/main.ts"
+      ],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/web/view.ts",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [],
+      "orphan": true,
+      "language": "typescript"
+    }
+  ],
+  "summary": {
+    "violations": [
+      {
+        "from": "src/routes/a.ts",
+        "to": "src/db/store.ts",
+        "unresolvedTo": "../db/store",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ],
+        "type": "dependency",
+        "rule": {
+          "name": "routes-not-to-db",
+          "severity": "error"
+        },
+        "id": "RB-08139a40",
+        "fix": "Call the store through src/services instead of importing src/db",
+        "decision": "adr:0010"
+      },
+      {
+        "from": "src/routes/b.ts",
+        "to": "src/db/store.ts",
+        "unresolvedTo": "../db/store",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ],
+        "type": "dependency",
+        "rule": {
+          "name": "routes-not-to-db",
+          "severity": "error"
+        },
+        "id": "RB-e37cce41",
+        "fix": "Call the store through src/services instead of importing src/db",
+        "decision": "adr:0010"
+      }
+    ],
+    "error": 2,
+    "warn": 0,
+    "info": 0,
+    "ignore": 0,
+    "totalCruised": 5,
+    "totalDependenciesCruised": 4,
+    "ruleSetUsed": {
+      "forbidden": [
+        {
+          "name": "routes-not-to-db",
+          "comment": "Routes reach the store through a service (adr:0010)",
+          "severity": "error",
+          "fix": "Call the store through src/services instead of importing src/db",
+          "scope": "module",
+          "from": {
+            "path": "^src/routes/"
+          },
+          "to": {
+            "path": "^src/db/"
+          }
+        },
+        {
+          "name": "routes-not-to-web",
+          "comment": "Routes return data; the web layer renders it (adr:0010)",
+          "severity": "error",
+          "fix": "Return data from the route and render it in src/web",
+          "scope": "module",
+          "from": {
+            "path": "^src/routes/"
+          },
+          "to": {
+            "path": "^src/web/"
+          }
+        }
+      ]
+    },
+    "optionsUsed": {
+      "baseDir": ".",
+      "combinedDependencies": false,
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false,
+      "exoticRequireStrings": [],
+      "externalModuleResolutionStrategy": "node_modules",
+      "metrics": false,
+      "moduleSystems": [
+        "es6",
+        "cjs",
+        "tsd",
+        "amd"
+      ],
+      "outputTo": "-",
+      "outputType": "json",
+      "preserveSymlinks": false,
+      "rulesFile": "rulebearing.yaml",
+      "skipAnalysisNotInRules": false,
+      "tsPreCompilationDeps": false,
+      "args": ""
+    },
+    "inspected": {
+      "typescript": {
+        "files": 5,
+        "assemblies": 0,
+        "modules": 5
+      }
+    },
+    "ratchets": [
+      {
+        "name": "routes-via-service",
+        "budget": "budgets/routes-via-service.json",
+        "count": 2,
+        "ceiling": 2,
+        "status": "held"
+      }
+    ]
+  },
+  "code": {
+    "types": [],
+    "members": [],
+    "attributes": [],
+    "calls": []
+  }
+}
