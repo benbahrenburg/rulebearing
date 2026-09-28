@@ -212,7 +212,6 @@ Rows: 52; error 2, failed 4, idle 19, ok 27. Zero-diff and the Rulebearing timin
 | [aws/aws-toolkit-vscode](https://github.com/aws/aws-toolkit-vscode/tree/36ad9035f4b921e12a9135f07a5f5134b71f704b) | oracle | dependency-cruiser | ok | 0.69 s | 91 MB |  |  |
 | [BenMorris/NetArchTest](https://github.com/BenMorris/NetArchTest/tree/a761f63b694a6facd4be01fbc8fe2ae26579572e) | oracle | netarchtest | failed | 1.32 s | 123 MB |  |  |
 | [bridgecrewio/checkov](https://github.com/bridgecrewio/checkov/tree/92ca0101e39e7f575c8182b5b1fd7c89b04e136b) | oracle | import-linter | ok | 0.3 s | 46 MB |  |  |
-| [dennisdoomen/packageguard](https://github.com/dennisdoomen/packageguard/tree/f1fdbca94ccdbd0d18c99cb49f4a2a427aea903f) | oracle | netarchtest | failed | 52.01 s | 290 MB |  |  |
 | [DrJohnMelville/Pdf](https://github.com/DrJohnMelville/Pdf/tree/2e9eef3d4af15391809d9a79253e6fff0058d668) | oracle | netarchtest | error |  |  |  |  |
 | [evolutionary-architecture/evolutionary-architecture-by-example](https://github.com/evolutionary-architecture/evolutionary-architecture-by-example/tree/441a7cd94d3acfbac7d210a95ea8e78429fc9f47) | oracle | netarchtest | ok | 1.61 s | 124 MB |  |  |
 | [google/langextract](https://github.com/google/langextract/tree/62b933a2c757fd2bbb100498571b8d1692db4344) | oracle | import-linter | ok | 0.2 s | 31 MB |  |  |
@@ -261,7 +260,6 @@ For the .NET and Python oracles the question is sharper than whether the tools a
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | [ardalis/RiverBooks](testbeds/results/ardalis__RiverBooks.json) | archunitnet | 2 | 0 | 0 | 0 | 2 | 0 |  | nothing compared: every row stays or is not imported |
 | [bridgecrewio/checkov](testbeds/results/bridgecrewio__checkov.json) | import-linter | 6 | 6 | 0 | 0 | 0 | 0 | 5499 = 5499 | agrees |
-| [dennisdoomen/packageguard](testbeds/results/dennisdoomen__packageguard.json) | netarchtest | 0 | 0 | 0 | 0 | 0 | 0 |  | error: no test dotnet test ran is in a file under Src/PackageGuard.Specs that uses ArchUnitNET or NetArchTest: nothing to compare |
 | [DrJohnMelville/Pdf](testbeds/results/DrJohnMelville__Pdf.json) | netarchtest |  |  |  |  |  |  |  | error: dotnet build Src/Melville.Pdf.DataModelTests/Melville.Pdf.DataModelTests.csproj failed (see build.log) |
 | [evolutionary-architecture/evolutionary-architecture-by-example](testbeds/results/evolutionary-architecture__evolutionary-architecture-by-example.json) | netarchtest | 16 | 2 | 0 | 0 | 14 | 0 |  | agrees |
 | [google/langextract](testbeds/results/google__langextract.json) | import-linter | 3 | 3 | 0 | 0 | 0 | 0 | 127 vs 154, 0 unexplained | agrees |
