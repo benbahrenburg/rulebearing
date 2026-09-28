@@ -89,6 +89,9 @@ fn run(
         .arg("--input-type=module")
         .arg("-e")
         .arg(script)
+        // Everything after `--` is the script's argument, never Node's option: a configuration
+        // whose path starts with `-` is read as a path.
+        .arg("--")
         .arg(entry)
         .args(extra)
         .current_dir(dir)
@@ -180,6 +183,25 @@ mod tests {
         let value = evaluate(&file)?;
         let _ = std::fs::remove_dir_all(&dir);
         assert_eq!(value["options"]["n"], true);
+        Ok(())
+    }
+
+    #[test]
+    fn a_config_named_like_a_node_option_is_read_as_a_path()
+    -> Result<(), Box<dyn std::error::Error>> {
+        if Command::new("node").arg("--version").output().is_err() {
+            return Ok(());
+        }
+        let dir = std::env::temp_dir().join(format!("rb-via-node-dash-{}", std::process::id()));
+        std::fs::create_dir_all(&dir)?;
+        let file = dir.join("--inspect.cjs");
+        std::fs::write(
+            &file,
+            "module.exports = { forbidden: [], options: { dash: true } };",
+        )?;
+        let value = evaluate(&file);
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(value?["options"]["dash"], true);
         Ok(())
     }
 }
