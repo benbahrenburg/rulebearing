@@ -27,6 +27,7 @@
 //! | `typeof(X)`, `GetClassOfType(typeof(X))` | the full name |
 //! | a provider (`Types().That()...`, held in a field) | a nested selector |
 //! | `Because(...)`, `WithoutRequiringPositiveResults()` | `because`, `allowEmpty: true` |
+//! | any NetArchTest chain | `allowEmpty: true`: NetArchTest's `GetResult()` passes a rule whose selection is empty, so the imported rule keeps that verdict; delete the key to have Rulebearing report the selection as vacuous ([ADR-0007](../../../../../docs/adr/0007-vacuous-rules-fail-by-default.md)), as gate 2 records it |
 //! | `Slices().Matching(p)` ... | a slice rule |
 //! | `Types.InAssembly(typeof(X).Assembly)` (NetArchTest) | `resideInAssembly` on X's assembly, then the README table; the assembly also joins `languages.dotnet.assemblies` |
 //! | `new ArchLoader().LoadAssemblies(...)` | `languages.dotnet` |
@@ -1544,7 +1545,8 @@ impl Program {
         if let Some(b) = builder.because {
             body.push(("because".to_owned(), Node::str(b)));
         }
-        if builder.allow_empty {
+        // NetArchTest passes an empty selection; the import keeps its verdict.
+        if builder.allow_empty || builder.netarchtest {
             body.push(("allowEmpty".to_owned(), Node::Bool(true)));
         }
         body.push(("select".to_owned(), select));

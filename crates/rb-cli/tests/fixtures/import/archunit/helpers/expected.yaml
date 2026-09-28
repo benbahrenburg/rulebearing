@@ -39,6 +39,7 @@ rules:
     #   .GetResult()   [FixtureTests.cs:21]
     - name: services-are-sealed
       comment: "imported from tests/Shop.ArchitectureTests/FixtureTests.cs:21"
+      allowEmpty: true
       select:
         kind: type
         language: dotnet
@@ -59,6 +60,7 @@ rules:
     #   with [InlineData("Shop.Core.Billing")]
     - name: domain-does-not-use-module
       comment: "imported from tests/Shop.ArchitectureTests/FixtureTests.cs:39"
+      allowEmpty: true
       select:
         kind: type
         language: dotnet
@@ -88,6 +90,7 @@ rules:
     #   .GetResult()   [FixtureTests.cs:45]
     - name: domain-does-not-use-web
       comment: "imported from tests/Shop.ArchitectureTests/FixtureTests.cs:45"
+      allowEmpty: true
       select:
         kind: type
         language: dotnet
