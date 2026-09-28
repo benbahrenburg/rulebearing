@@ -153,6 +153,24 @@ impl CacheStrategyArg {
     }
 }
 
+/// `--sidecar` values
+/// ([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
+/// [ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum SidecarArg {
+    /// The repository's dependency-cruiser, run by the node on the path (or `$RULEBEARING_NODE`).
+    Node,
+}
+
+impl SidecarArg {
+    /// The runtime the extractor's options carry.
+    pub fn runtime(self) -> rb_model::SidecarRuntime {
+        match self {
+            Self::Node => rb_model::SidecarRuntime::Node,
+        }
+    }
+}
+
 /// When to colour terminal output.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, ValueEnum)]
 pub enum ColorChoice {
@@ -350,6 +368,11 @@ pub struct CruiseArgs {
     /// --webpack-config and webpackConfig
     #[arg(long, value_name = "FILE")]
     pub webpack_config_json: Option<String>,
+    /// Extract CoffeeScript and LiveScript files (.coffee, .litcoffee, .coffee.md, .ls, .cjsx,
+    /// .csx) by running the repository's own dependency-cruiser with Node; their edges are
+    /// marked sidecar: true. Without it such a file stops the run (exit 2)
+    #[arg(long, value_enum, value_name = "RUNTIME")]
+    pub sidecar: Option<SidecarArg>,
     /// Show progress on stderr
     #[arg(short = 'p', long, value_name = "TYPE", num_args = 0..=1, default_missing_value = "cli-feedback")]
     pub progress: Option<ProgressType>,

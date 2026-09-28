@@ -395,7 +395,8 @@ fn python_part(
 /// Joins the parts into the run's document: the TypeScript modules in dependency-cruiser's
 /// visiting order, then the .NET and the Python modules, each already sorted by source and
 /// passed through the path filters; the code layers merged and normalised; the .NET and Python
-/// receipts; the warnings in the same order.
+/// receipts and the sidecar's (`summary.sidecar`, [ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md));
+/// the warnings in the same order.
 ///
 /// # Errors
 /// [`ExtractError::NoModulesFound`] when no part has a module.
@@ -446,6 +447,7 @@ pub fn merge(
     if !inspected.is_empty() {
         document.summary.inspected = Some(inspected);
     }
+    document.summary.sidecar = parts.typescript.as_ref().and_then(|t| t.sidecar.clone());
     Ok((document, warnings))
 }
 
@@ -523,6 +525,7 @@ pub fn evaluate_document(
     progress: &mut Progress,
 ) -> Result<Run, RunError> {
     let inspected = receipt(&document);
+    let sidecar = document.summary.sidecar.clone();
     let mut filters = cruise_filters(config);
     let mut options_used = options.options_used.clone();
     // `--affected` with a dependency-cruiser configuration: the other languages' changed modules
@@ -570,6 +573,7 @@ pub fn evaluate_document(
     };
     let mut document = rewrap(evaluated, &format, Some(&config.rules.dependencies))?;
     document.summary.inspected = Some(inspected);
+    document.summary.sidecar = sidecar;
     document
         .summary
         .vacuous_rules
