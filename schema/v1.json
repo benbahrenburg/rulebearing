@@ -163,6 +163,44 @@
       ],
       "type": "object"
     },
+    "CacheStrategy": {
+      "description": "How a cache decides what changed since the entry was written: dependency-cruiser's\n`cache.strategy` and `--cache-strategy`\n([coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),\n[Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).",
+      "oneOf": [
+        {
+          "const": "metadata",
+          "description": "`git` status and diff against the recorded commit plus file size and modification time;\nonly what they name is hashed. The default.",
+          "type": "string"
+        },
+        {
+          "const": "content",
+          "description": "Every input file hashed on every run.",
+          "type": "string"
+        }
+      ]
+    },
+    "CacheSummary": {
+      "additionalProperties": false,
+      "description": "`summary.cache`: what the cache did for this run.",
+      "properties": {
+        "hit": {
+          "description": "`true` when every input was unchanged and the cached extraction was used as it was;\n`false` when anything was extracted, in full or for the changed files only.",
+          "type": "boolean"
+        },
+        "strategy": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/CacheStrategy"
+            }
+          ],
+          "description": "The strategy that decided it."
+        }
+      },
+      "required": [
+        "hit",
+        "strategy"
+      ],
+      "type": "object"
+    },
     "CallElement": {
       "description": "A call from one member to another.",
       "properties": {
@@ -1654,6 +1692,32 @@
       ],
       "type": "string"
     },
+    "SidecarReceipt": {
+      "additionalProperties": false,
+      "description": "`summary.sidecar`: the tool that extracted the CoffeeScript and LiveScript files, its version,\nand how many files it extracted\n([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).",
+      "properties": {
+        "files": {
+          "description": "The files in the graph whose dependencies it extracted.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "tool": {
+          "description": "The package the sidecar ran: always `dependency-cruiser`.",
+          "type": "string"
+        },
+        "version": {
+          "description": "Its version, as its `package.json` gives it.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool",
+        "version",
+        "files"
+      ],
+      "type": "object"
+    },
     "Summary": {
       "additionalProperties": false,
       "description": "`summary`: violations, counts, the options and rule set used, the environment, plus the\nadditive receipt and vacuous-rule list.",
@@ -1668,6 +1732,17 @@
             }
           ],
           "description": "Additive: what `--affected` compared and which modules it kept\n([Wave 3 plan § 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes))."
+        },
+        "cache": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CacheSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Additive: whether the extraction came from the `--cache` entry, and how its freshness was\nchecked; absent when the run did not use the cache\n([Wave 3 § 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes))."
         },
         "environment": {
           "anyOf": [
@@ -1765,6 +1840,17 @@
             "object",
             "null"
           ]
+        },
+        "sidecar": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SidecarReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Additive: the Node sidecar's part in the graph, when `--sidecar node` extracted any file\n([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md),\n[Wave 3 § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes))."
         },
         "totalCruised": {
           "description": "Modules cruised.",

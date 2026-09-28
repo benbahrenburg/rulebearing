@@ -177,7 +177,7 @@ From [design § What each extractor has to get right](artifacts/design.md#what-e
 | `dynamic` | `import()` | literal `Assembly.Load`, `Type.GetType`, `Activator.CreateInstance` | literal `importlib.import_module`, `__import__` |
 | Default excludes | `node_modules/`, `.next/`, `dist/`, `coverage/` | `obj/`, `bin/`, `*.g.cs`, `*.Designer.cs`, `GlobalUsings.g.cs` | `.venv/`, `site-packages/`, `__pycache__/`, `*.pyi` unless `--stubs` |
 | Default orphan exclusions | framework entry files (Next.js `page.tsx`, `route.ts`, config files) | `Program.cs`, `Startup.cs`, `AssemblyInfo.cs`, migrations | `__main__.py`, `conftest.py`, console-script targets |
-| Not native | CoffeeScript, LiveScript: Node sidecar ([ADR-0017](adr/0017-coffeescript-livescript-sidecar.md)) | source mode is approximate and never the gate | none |
+| Not native | CoffeeScript, LiveScript: `--sidecar node` runs the repository's dependency-cruiser for those files and the walk continues from their edges, marked `sidecar: true` ([ADR-0017](adr/0017-coffeescript-livescript-sidecar.md)) | source mode is approximate and never the gate | none |
 
 **The .NET reader.** Eight ECMA-335 tables are needed for the edge set (`TypeDef`, `TypeRef`, `MemberRef`, `MethodDef`, `Field`, `InterfaceImpl`, `CustomAttribute`, `TypeSpec`, plus the blob and string heaps), and the portable PDB's `Document` and `MethodDebugInformation` tables for attribution. IL is scanned for `call`, `callvirt`, `newobj`, `ldfld`, `stfld`, `ldtoken`, `box`, `castclass`, `isinst` operands. The reader is about 3,000 lines against two stable specifications and lives entirely in `rb-extract-dotnet`; the fallback in [ADR-0003](adr/0003-dotnet-extractor-fallback.md) replaces it with a C# program writing the same document.
 

@@ -89,8 +89,15 @@ pub fn report(cwd: &Path, output_type: &str, stdin: &str) -> Outcome {
         };
     }
     let section = request.get("options").filter(|o| !o.is_null());
+    // `x-dot-webpage`: the answers of the spec's `spawnFunction` when it passes one, else the
+    // `dot` on PATH, as upstream's reporter uses (ADR-0053).
+    let graphviz = match crate::graphviz::Answers::from_options(section) {
+        Some(answers) => rb_report::dot_webpage::GraphvizRunner(std::sync::Arc::new(answers)),
+        None => crate::graphviz::system(),
+    };
     let options = rb_report::ReportOptions {
         timestamp: "1970-01-01T00:00:00.000".into(),
+        graphviz: Some(graphviz),
         ..rb_report::ReportOptions::default()
     };
     match rb_report::render_with(output_type, &result, &options, section) {
@@ -118,7 +125,28 @@ mod tests {
         let rendered = report(&cwd, "null", r#"{"result":{"summary":{"error":4}}}"#);
         let parsed: Value = serde_json::from_str(&rendered.stdout).unwrap_or(Value::Null);
         assert_eq!(parsed, serde_json::json!({ "exitCode": 4, "output": "" }));
-        assert_eq!(report(&cwd, "x-dot-webpage", r#"{"result":{}}"#).code, 3);
+        // `x-dot-webpage` with the answers of a spec's `spawnFunction`: no GraphViz.
+        let missing = report(
+            &cwd,
+            "x-dot-webpage",
+            r#"{"result":{},"options":{"spawnFunction":{"version":{"status":1,"stderr":"not found"},"convert":{}}}}"#,
+        );
+        assert_eq!(missing.code, 3);
+        assert!(
+            missing.stderr.contains("GraphViz dot, which is required"),
+            "{}",
+            missing.stderr
+        );
+        let drawn = report(
+            &cwd,
+            "x-dot-webpage",
+            r#"{"result":{},"options":{"spawnFunction":{"version":{"status":0,"stderr":"dot - graphviz version 9"},"convert":{"status":0,"stdout":"<svg/>"}}}}"#,
+        );
+        let page: Value = serde_json::from_str(&drawn.stdout).unwrap_or(Value::Null);
+        assert_eq!(
+            page["output"],
+            serde_json::json!(rb_report::dot_webpage::wrap_in_html("<svg/>"))
+        );
         let reporter = validate(
             &cwd,
             r##"{"module":"#report/dot/module-utl.mjs","export":"attributizeObject","calls":[[{"a":1}]]}"##,

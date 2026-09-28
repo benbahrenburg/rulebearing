@@ -43,6 +43,9 @@ clap = { workspace = true }
 thiserror = { workspace = true }
 chrono = { workspace = true }
 sha2 = { workspace = true }
+# The --cache entry: compress (zlib, pure Rust) and hash the inputs in parallel (plan 0003, Step 1).
+miniz_oxide = { workspace = true }
+rayon = { workspace = true }
 regex = { workspace = true }
 toml = { workspace = true }
 tree-sitter = { workspace = true }

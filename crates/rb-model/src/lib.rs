@@ -39,14 +39,19 @@ pub use code::{
     NamedArgument, TypeElement,
 };
 pub use document::{
-    Affected, AttributionCounts, Change, Dependency, Environment, EnvironmentIssue,
+    Affected, AttributionCounts, CacheSummary, Change, Dependency, Environment, EnvironmentIssue,
     ExperimentalStats, ExpiredEntry, ExtensionFound, Folder, FolderDependency, FolderDependent,
     GraphDocument, Inspected, InstabilityMetric, MiniDependency, Module, RatchetResult,
-    RatchetStatus, Reachable, ReachedModule, Reaches, Receipt, RevisionData, RuleSummary, Summary,
-    TranspilerFound, VacuousRule, Violation, ViolationMetrics,
+    RatchetStatus, Reachable, ReachedModule, Reaches, Receipt, RevisionData, RuleSummary,
+    SidecarReceipt, Summary, TranspilerFound, VacuousRule, Violation, ViolationMetrics,
 };
-pub use extract::{ExtractError, Extraction, Extractor, Warning};
-pub use options::{DirectoryFilter, DotnetOptions, PythonOptions, TypeScriptOptions};
+pub use extract::{
+    ExtractError, ExtractRequest, Extraction, Extractor, FileState, Warning, source_name,
+};
+pub use options::{
+    CacheOptions, CacheStrategy, DirectoryFilter, DotnetOptions, PythonOptions, SidecarRuntime,
+    TypeScriptOptions,
+};
 pub use vocab::{
     Attribution, ChangeType, DependencyKind, DependencyType, ExternalModuleResolutionStrategy,
     Language, ModuleSystem, Parser, Protocol, Severity, UnknownValue, ViolationType,

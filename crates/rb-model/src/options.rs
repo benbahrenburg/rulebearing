@@ -259,6 +259,31 @@ pub struct TypeScriptOptions {
     /// Whether to record size and statement counts. Default: `false`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experimental_stats: Option<bool>,
+    /// `--sidecar node`: the runtime that extracts CoffeeScript and LiveScript files
+    /// ([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)). Set by the command
+    /// line only: it is not a dependency-cruiser option, so it never serialises into a
+    /// configuration, `optionsUsed` or the options the sidecar is given, and a configuration file
+    /// cannot set it. Absent, a file only the sidecar reads stops the run.
+    #[serde(skip)]
+    pub sidecar: Option<SidecarRuntime>,
+}
+
+/// The runtime `--sidecar` names
+/// ([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum SidecarRuntime {
+    /// The repository's own dependency-cruiser, run by the `node` on the path.
+    Node,
+}
+
+impl SidecarRuntime {
+    /// The name on the command line.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Node => "node",
+        }
+    }
 }
 
 impl TypeScriptOptions {
@@ -375,9 +400,117 @@ impl PythonOptions {
     }
 }
 
+/// How a cache decides what changed since the entry was written: dependency-cruiser's
+/// `cache.strategy` and `--cache-strategy`
+/// ([coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),
+/// [Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+)]
+#[serde(rename_all = "lowercase")]
+pub enum CacheStrategy {
+    /// `git` status and diff against the recorded commit plus file size and modification time;
+    /// only what they name is hashed. The default.
+    #[default]
+    Metadata,
+    /// Every input file hashed on every run.
+    Content,
+}
+
+impl CacheStrategy {
+    /// The name as the option spells it.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Metadata => "metadata",
+            Self::Content => "content",
+        }
+    }
+
+    /// Parses `metadata` or `content`.
+    pub fn parse(text: &str) -> Option<Self> {
+        match text {
+            "metadata" => Some(Self::Metadata),
+            "content" => Some(Self::Content),
+            _ => None,
+        }
+    }
+}
+
+/// `options.cache` once normalised, as dependency-cruiser's `normalizeCacheOptions` leaves it:
+/// the folder, the strategy and, when it was given, `compress`. The folder is relative to the
+/// working directory.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CacheOptions {
+    /// The folder the entry is written to.
+    pub folder: String,
+    /// How changes are found.
+    #[serde(default)]
+    pub strategy: CacheStrategy,
+    /// Whether the stored extraction is compressed. Default: `false`. Kept absent when not given,
+    /// so `optionsUsed` records what dependency-cruiser records.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub compress: Option<bool>,
+}
+
+impl CacheOptions {
+    /// Rulebearing's default folder, beside the query commands' cache.
+    pub const DEFAULT_FOLDER: &'static str = ".graph/cache";
+    /// dependency-cruiser's default folder, used for a dependency-cruiser configuration.
+    pub const DEPENDENCY_CRUISER_FOLDER: &'static str = "node_modules/.cache/dependency-cruiser";
+
+    /// Options with `folder` and the default strategy.
+    pub fn in_folder(folder: impl Into<String>) -> Self {
+        Self {
+            folder: folder.into(),
+            strategy: CacheStrategy::Metadata,
+            compress: None,
+        }
+    }
+
+    /// Whether to compress, with the default (`false`) applied.
+    pub fn compressed(&self) -> bool {
+        self.compress.unwrap_or(false)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_sidecar_is_a_command_line_setting_that_never_serialises() {
+        assert_eq!(SidecarRuntime::Node.as_str(), "node");
+        assert_eq!(
+            serde_json::to_string(&SidecarRuntime::Node).unwrap_or_default(),
+            "\"node\""
+        );
+        let options = TypeScriptOptions {
+            sidecar: Some(SidecarRuntime::Node),
+            max_depth: Some(2),
+            ..TypeScriptOptions::default()
+        };
+        assert_eq!(
+            serde_json::to_string(&options).unwrap_or_default(),
+            r#"{"maxDepth":2}"#
+        );
+        // A configuration cannot set it: the key is not one the block accepts.
+        assert!(serde_json::from_str::<TypeScriptOptions>(r#"{"sidecar":"node"}"#).is_err());
+        let schema =
+            serde_json::to_string(&schemars::schema_for!(TypeScriptOptions)).unwrap_or_default();
+        assert!(!schema.contains("sidecar"), "{schema}");
+    }
 
     #[test]
     fn a_flat_dependency_cruiser_options_block_deserialises() {
@@ -506,5 +639,53 @@ mod tests {
             serde_json::from_str(r#"{"version": "3.12", "roots": ["src"]}"#).unwrap_or_default();
         assert_eq!(python.version(), "3.12");
         assert_eq!(python.roots, Some(vec!["src".to_owned()]));
+    }
+
+    #[test]
+    fn cache_strategies_spell_and_parse_as_the_option_does() {
+        for (strategy, name) in [
+            (CacheStrategy::Metadata, "metadata"),
+            (CacheStrategy::Content, "content"),
+        ] {
+            assert_eq!(strategy.as_str(), name);
+            assert_eq!(CacheStrategy::parse(name), Some(strategy));
+            assert_eq!(
+                serde_json::to_value(strategy).ok(),
+                Some(serde_json::Value::String(name.to_owned()))
+            );
+        }
+        assert_eq!(CacheStrategy::parse("Metadata"), None);
+        assert_eq!(CacheStrategy::parse(""), None);
+        assert_eq!(CacheStrategy::default(), CacheStrategy::Metadata);
+    }
+
+    #[test]
+    fn cache_options_keep_compress_absent_unless_given() {
+        let options = CacheOptions::in_folder(".graph/cache");
+        assert!(!options.compressed());
+        assert_eq!(
+            serde_json::to_string(&options).unwrap_or_default(),
+            r#"{"folder":".graph/cache","strategy":"metadata"}"#
+        );
+        let given: CacheOptions =
+            serde_json::from_str(r#"{"folder":"x","strategy":"content","compress":false}"#)
+                .unwrap_or_else(|_| CacheOptions::in_folder("wrong"));
+        assert_eq!(given.strategy, CacheStrategy::Content);
+        assert_eq!(given.compress, Some(false));
+        assert!(!given.compressed());
+        assert_eq!(
+            serde_json::to_string(&given).unwrap_or_default(),
+            r#"{"folder":"x","strategy":"content","compress":false}"#
+        );
+        let compressed = CacheOptions {
+            compress: Some(true),
+            ..CacheOptions::in_folder("y")
+        };
+        assert!(compressed.compressed());
+        assert!(serde_json::from_str::<CacheOptions>(r#"{"folder":"x","nope":1}"#).is_err());
+        assert_ne!(
+            CacheOptions::DEFAULT_FOLDER,
+            CacheOptions::DEPENDENCY_CRUISER_FOLDER
+        );
     }
 }

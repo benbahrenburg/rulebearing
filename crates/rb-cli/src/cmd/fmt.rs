@@ -136,17 +136,22 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         },
         baseline: rb_report::baseline::Lifecycle::default(),
         collapse_pattern: format.collapse.clone(),
+        graphviz: Some(crate::graphviz::system()),
     };
     let plugin = rb_config::js::plugin::plugin_name(&args.output_type);
     let rendered = match plugin {
         // A plugin reporter, in the sandbox (crate::plugin); its failures are exit 3.
         Some(name) => crate::plugin::render(&ctx.cwd, name, &mut value, args.strict_schema)
-            .map_err(|e| e.to_string()),
-        None => rb_report::render(&args.output_type, &value, &options).map_err(|e| e.to_string()),
+            .map_err(|e| (RunExit::InvalidConfig, e.to_string())),
+        None => rb_report::render(&args.output_type, &value, &options).map_err(|e| match e {
+            // `x-dot-webpage` without a working `dot`: the report could not be made (ADR-0053).
+            rb_report::ReportError::Graphviz(_) => (RunExit::Untrustworthy, e.to_string()),
+            other => (RunExit::InvalidConfig, other.to_string()),
+        }),
     };
     let rendered = match rendered {
         Ok(r) => r,
-        Err(e) => return failed(RunExit::InvalidConfig, &e),
+        Err((code, message)) => return failed(code, &message),
     };
     let mut stdout = String::new();
     if let Err(message) = write_output(ctx, &args.output_to, &rendered.output, &mut stdout) {

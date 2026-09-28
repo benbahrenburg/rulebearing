@@ -176,6 +176,71 @@ fn cruise_renders_through_a_plugin_and_exits_with_its_count() -> Result {
     Ok(())
 }
 
+/// The cache: the evaluated layer serves a plugin (the verdict does not depend on the reporter),
+/// the rendered layer never serves or stores one (the output depends on the plugin's code and
+/// what it requires, which the key does not cover).
+#[test]
+fn a_plugins_output_is_never_cached_and_its_verdict_is() -> Result {
+    let dir = tree("cache")?;
+    let plugin = |version: &str| {
+        format!(
+            "module.exports = (r) => ({{ output: '{version} ' + JSON.stringify(r.summary.cache) + ' ' + r.summary.error + '\\n', exitCode: r.summary.error }});\n"
+        )
+    };
+    write(&dir, "reporters/cached.cjs", &plugin("v1"))?;
+    let args = [
+        "cruise",
+        "src",
+        "--cache",
+        "-T",
+        "plugin:./reporters/cached.cjs",
+    ];
+    let cache = dir.join(".graph/cache");
+    let first = run(&dir, &args)?;
+    assert_eq!(first.status.code(), Some(1), "{}", stderr(&first));
+    assert!(
+        stdout(&first).starts_with("v1 {\"hit\":false"),
+        "{}",
+        stdout(&first)
+    );
+    let stored = |prefix: &str| -> std::io::Result<bool> {
+        Ok(std::fs::read_dir(&cache)?
+            .flatten()
+            .any(|e| e.file_name().to_string_lossy().starts_with(prefix)))
+    };
+    assert!(stored("evaluated")?, "the verdict is kept for the next run");
+    assert!(!stored("rendered")?, "a plugin's output is not kept");
+    // The same run again: the verdict comes from the cache, the plugin runs again.
+    let second = run(&dir, &args)?;
+    assert_eq!(second.status.code(), Some(1));
+    assert!(
+        stdout(&second).starts_with("v1 {\"hit\":true"),
+        "{}",
+        stdout(&second)
+    );
+    assert!(!stored("rendered")?);
+    // A change to the plugin alone (no source, no configuration) shows at once.
+    write(&dir, "reporters/cached.cjs", &plugin("v2"))?;
+    let third = run(&dir, &args)?;
+    assert!(
+        stdout(&third).starts_with("v2 {\"hit\":true"),
+        "{}",
+        stdout(&third)
+    );
+    assert!(stdout(&third).ends_with(" 1\n"));
+    // A built-in reporter over the same cache still uses the rendered layer: its second run
+    // renders from the stored verdict and keeps the output.
+    for _ in 0..2 {
+        let err = run(&dir, &["cruise", "src", "--cache", "-T", "err"])?;
+        assert_eq!(err.status.code(), Some(1));
+    }
+    assert!(stored("rendered")?, "a built-in reporter's output is kept");
+    let again = run(&dir, &args)?;
+    assert!(stdout(&again).starts_with("v2 "), "{}", stdout(&again));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
 #[test]
 fn fmt_renders_a_saved_result_through_a_plugin() -> Result {
     let dir = tree("fmt")?;

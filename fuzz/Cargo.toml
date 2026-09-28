@@ -16,6 +16,8 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 rb-extract-dotnet = { path = "../crates/rb-extract-dotnet" }
 rb-config = { path = "../crates/rb-config" }
+rb-cli = { path = "../crates/rb-cli" }
+rb-model = { path = "../crates/rb-model" }
 
 [[bin]]
 name = "metadata_reader"
@@ -48,6 +50,13 @@ bench = false
 [[bin]]
 name = "pdb"
 path = "fuzz_targets/pdb.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cache_manifest"
+path = "fuzz_targets/cache_manifest.rs"
 test = false
 doc = false
 bench = false

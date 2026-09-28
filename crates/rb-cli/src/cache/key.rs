@@ -56,7 +56,7 @@ pub const CACHE_DIR: &str = ".graph/cache";
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// The manifests the extractors read, by file name, hashed whether or not git tracks them.
-const MANIFESTS: &[&str] = &[
+pub const MANIFESTS: &[&str] = &[
     "package.json",
     "package-lock.json",
     "npm-shrinkwrap.json",
@@ -75,7 +75,7 @@ const MANIFESTS: &[&str] = &[
 ];
 
 /// The manifests the extractors read, by extension.
-const MANIFEST_EXTENSIONS: &[&str] = &["csproj", "sln", "slnx"];
+pub const MANIFEST_EXTENSIONS: &[&str] = &["csproj", "sln", "slnx"];
 
 /// The inputs of a cache entry's name.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -146,7 +146,8 @@ impl CacheKey {
     }
 }
 
-fn slashed(path: &Path) -> String {
+/// A path with `/` as the separator on every platform.
+pub fn slashed(path: &Path) -> String {
     path.to_string_lossy().replace('\\', "/")
 }
 
@@ -299,9 +300,86 @@ pub fn config_hash(config: &Config, root: &Path) -> String {
     hash_files(files.iter().map(|(n, b)| (n.clone(), b.as_slice())))
 }
 
+/// The layout of a `--cache` entry, hashed into its `configHash` so an entry another layout
+/// wrote is a miss rather than a misreading.
+pub const FORMAT: &str = "1";
+
+/// The `configHash` of a `--cache` entry
+/// ([Wave 3, Step 1](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// `sha256:` and the hex digest over the configuration files ([`config_hash`]) and everything else
+/// that decides what the extractors produce: the per-language options after the command line
+/// laid its flags over them, the front-end (it decides whether Markdown fences are read), the
+/// evaluated webpack `resolve` block, whether a rule reads licences or deprecations, the
+/// positional paths, the working directory inside the worktree, `$VIRTUAL_ENV`, the extractors
+/// this build has, `--sidecar` when set, and [`FORMAT`]. The rules themselves change it only through the files: the
+/// entry holds the extraction, which every run evaluates afresh.
+pub fn extraction_hash(config: &Config, root: &Path, cwd: &Path, paths: &[String]) -> String {
+    fn json<T: serde::Serialize + ?Sized>(value: &T) -> Vec<u8> {
+        // Every option type serialises; an empty value would only make the entry a miss.
+        serde_json::to_vec(value).unwrap_or_default()
+    }
+    let canonical = cwd.canonicalize().unwrap_or_else(|_| cwd.to_path_buf());
+    let within = canonical
+        .strip_prefix(root)
+        .map_or_else(|_| slashed(cwd), slashed);
+    let features: Vec<&str> = [
+        ("extract-ts", cfg!(feature = "extract-ts")),
+        ("extract-dotnet", cfg!(feature = "extract-dotnet")),
+        ("extract-python", cfg!(feature = "extract-python")),
+    ]
+    .into_iter()
+    .filter_map(|(name, on)| on.then_some(name))
+    .collect();
+    let compat = match config.compat {
+        rb_config::CompatMode::Native => "native",
+        rb_config::CompatMode::DependencyCruiser => "dependency-cruiser",
+    };
+    let mut parts: Vec<(&str, Vec<u8>)> = vec![
+        ("format", FORMAT.as_bytes().to_vec()),
+        ("files", config_hash(config, root).into_bytes()),
+        ("typescript", json(&config.languages.typescript)),
+        ("dotnet", json(&config.languages.dotnet)),
+        ("python", json(&config.languages.python)),
+        ("compat", compat.as_bytes().to_vec()),
+        ("webpack", json(&config.options.webpack_config_json)),
+        (
+            "licenses",
+            json(&rb_rules::derive::has_license_rule(
+                &config.rules.dependencies,
+            )),
+        ),
+        (
+            "deprecations",
+            json(&rb_rules::derive::has_deprecation_rule(
+                &config.rules.dependencies,
+            )),
+        ),
+        ("paths", json(&paths)),
+        ("cwd", within.into_bytes()),
+        (
+            "virtualEnv",
+            std::env::var_os("VIRTUAL_ENV")
+                .map(|v| v.to_string_lossy().into_owned())
+                .unwrap_or_default()
+                .into_bytes(),
+        ),
+        ("features", features.join(",").into_bytes()),
+    ];
+    // `--sidecar node` is kept out of the options' serialisation (it is not a dependency-cruiser
+    // option), so it is hashed on its own: an entry written with the sidecar holds CoffeeScript
+    // results a run without it must refuse. Absent, the hash is what it was before the flag.
+    if let Some(sidecar) = config.languages.typescript.sidecar {
+        parts.push(("sidecar", sidecar.as_str().as_bytes().to_vec()));
+    }
+    format!(
+        "sha256:{}",
+        hash_files(parts.iter().map(|(n, b)| ((*n).to_owned(), b.as_slice())))
+    )
+}
+
 /// Whether a path, relative to the root, is inside a `.graph` folder: the cache and saved
 /// results, which the fingerprint leaves out so writing an entry does not change its own key.
-fn under_graph(path: &str) -> bool {
+pub fn under_graph(path: &str) -> bool {
     path.split('/').any(|part| part == ".graph")
 }
 
@@ -400,6 +478,19 @@ pub fn walk(root: &Path) -> Vec<(String, Vec<u8>)> {
 /// `webpackConfig` and `babelConfig` options name, each with its bytes (empty when absent, so
 /// creating one changes the key too).
 fn manifests(root: &Path, cwd: &Path, config: &Config) -> Vec<(String, Vec<u8>)> {
+    let mut out: Vec<(String, Vec<u8>)> = manifest_paths(root, cwd, config)
+        .iter()
+        .map(|p| (config_name(p, root), std::fs::read(p).unwrap_or_default()))
+        .collect();
+    out.sort();
+    out.dedup();
+    out
+}
+
+/// The files [`manifests`] reads, whether or not they exist: the manifests the extractors read
+/// in `root` and `cwd`, and the files the configuration's `tsConfig`, `webpackConfig` and
+/// `babelConfig` options name.
+pub fn manifest_paths(root: &Path, cwd: &Path, config: &Config) -> Vec<PathBuf> {
     let mut paths: Vec<PathBuf> = Vec::new();
     for folder in [root, cwd] {
         paths.extend(MANIFESTS.iter().map(|n| folder.join(n)));
@@ -422,13 +513,7 @@ fn manifests(root: &Path, cwd: &Path, config: &Config) -> Vec<(String, Vec<u8>)>
             paths.push(cwd.join(file));
         }
     }
-    let mut out: Vec<(String, Vec<u8>)> = paths
-        .iter()
-        .map(|p| (config_name(p, root), std::fs::read(p).unwrap_or_default()))
-        .collect();
-    out.sort();
-    out.dedup();
-    out
+    paths
 }
 
 #[cfg(test)]
@@ -450,6 +535,19 @@ mod tests {
             let _ = std::fs::create_dir_all(parent);
         }
         let _ = std::fs::write(path, text);
+    }
+
+    #[test]
+    fn the_sidecar_flag_changes_the_extraction_hash() {
+        let dir = scratch("sidecar");
+        let plain = Config::default();
+        let mut with = Config::default();
+        with.languages.typescript.sidecar = Some(rb_model::SidecarRuntime::Node);
+        let hash = |config: &Config| extraction_hash(config, &dir, &dir, &[]);
+        assert_ne!(hash(&plain), hash(&with));
+        assert_eq!(hash(&with), hash(&with.clone()));
+        assert!(hash(&with).starts_with("sha256:"));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

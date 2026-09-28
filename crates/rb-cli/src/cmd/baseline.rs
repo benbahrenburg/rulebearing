@@ -87,10 +87,10 @@ fn failed(code: RunExit, message: &str) -> Outcome {
 
 fn run_failed(error: &RunError) -> Outcome {
     let code = match error {
-        RunError::Config(_) | RunError::Engine(rb_rules::EngineError::Element(_)) => {
-            RunExit::InvalidConfig
-        }
-        RunError::Extract(_) | RunError::Engine(_) => RunExit::Untrustworthy,
+        RunError::Config(_)
+        | RunError::Plugin(_)
+        | RunError::Engine(rb_rules::EngineError::Element(_)) => RunExit::InvalidConfig,
+        RunError::Extract(_) | RunError::Engine(_) | RunError::Report(_) => RunExit::Untrustworthy,
     };
     failed(code, &error.to_string())
 }

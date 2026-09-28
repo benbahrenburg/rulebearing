@@ -13,11 +13,76 @@
 //!
 //! Each fixture is extracted with its own folder as the working directory, passed to
 //! [`rb_extract_ts::prepare`] rather than set on the process, so the tests run in parallel.
+//!
+//! Every extraction through [`run`], [`run_in`] and [`run_native`] is repeated incrementally
+//! ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+//! every file unchanged, every file changed, and each file changed on its own must give the same
+//! extraction byte for byte, so each option fixture is also a fixture of incremental extraction.
 
 use std::path::{Path, PathBuf};
 
-use rb_extract_ts::{TypeScriptExtractor, extract_with, prepare};
-use rb_model::{ExtractError, Extraction, Extractor, Module, TypeScriptOptions};
+use rb_extract_ts::pipeline::Settings;
+use rb_extract_ts::resolve::ResolveConfig;
+use rb_extract_ts::{TypeScriptExtractor, extract_incremental, extract_with, prepare};
+use rb_model::{ExtractError, ExtractRequest, Extraction, Extractor, Module, TypeScriptOptions};
+
+/// Extracts in full with `setup`'s settings, then asserts every incremental variant over the
+/// files read gives the same extraction, and returns the full one.
+fn with_incremental(
+    setup: &dyn Fn() -> Result<(Settings, ResolveConfig), ExtractError>,
+    roots: &[PathBuf],
+) -> Result<Extraction, ExtractError> {
+    let (settings, config) = setup()?;
+    let plain = extract_with(roots, &settings, &config)?;
+    let (mut settings, config) = setup()?;
+    settings.keep_file_states = true;
+    let full = extract_with(roots, &settings, &config)?;
+    let without_states = |e: &Extraction| {
+        let mut e = e.clone();
+        e.files.clear();
+        serde_json::to_string(&e).unwrap_or_default()
+    };
+    let expected = without_states(&full);
+    assert_eq!(
+        expected,
+        without_states(&plain),
+        "keeping the file states changes the extraction"
+    );
+    if settings.code_layer {
+        assert_eq!(
+            full.files.len(),
+            full.modules.iter().filter(|m| m.language.is_some()).count(),
+            "every file read keeps its state"
+        );
+    }
+    let read: Vec<PathBuf> = full
+        .modules
+        .iter()
+        .filter(|m| m.language.is_some())
+        .map(|m| PathBuf::from(&m.source))
+        .collect();
+    let mut variants = vec![(Vec::new(), read.clone()), (read.clone(), Vec::new())];
+    for (index, file) in read.iter().enumerate() {
+        let mut others = read.clone();
+        others.remove(index);
+        variants.push((vec![file.clone()], others));
+    }
+    for (changed, unchanged) in variants {
+        let (settings, config) = setup()?;
+        let request = ExtractRequest {
+            changed: changed.clone(),
+            unchanged,
+            previous: full.clone(),
+        };
+        let again = extract_incremental(roots, &settings, &config, &request)?;
+        assert_eq!(
+            without_states(&again),
+            expected,
+            "incremental extraction with {changed:?} changed differs from the full one"
+        );
+    }
+    Ok(plain)
+}
 
 fn fixture(name: &str) -> PathBuf {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -32,9 +97,8 @@ fn run_in(cwd: &Path, options: &str, roots: &[&str]) -> Result<Extraction, Extra
             path: PathBuf::from("options"),
             reason: e.to_string(),
         })?;
-    let (settings, config) = prepare(&options, cwd)?;
     let roots: Vec<PathBuf> = roots.iter().map(PathBuf::from).collect();
-    extract_with(&roots, &settings, &config)
+    with_incremental(&|| prepare(&options, cwd), &roots)
 }
 
 fn run(name: &str, options: &str, roots: &[&str]) -> Result<Extraction, ExtractError> {
@@ -49,10 +113,15 @@ fn run_native(name: &str, options: &str, roots: &[&str]) -> Result<Extraction, E
             path: PathBuf::from("options"),
             reason: e.to_string(),
         })?;
-    let (mut settings, config) = prepare(&options, &fixture(name))?;
-    settings.markdown_fences = true;
     let roots: Vec<PathBuf> = roots.iter().map(PathBuf::from).collect();
-    extract_with(&roots, &settings, &config)
+    with_incremental(
+        &|| {
+            let (mut settings, config) = prepare(&options, &fixture(name))?;
+            settings.markdown_fences = true;
+            Ok((settings, config))
+        },
+        &roots,
+    )
 }
 
 /// `(module, line, column)` of every edge leaving `source`.
@@ -1450,4 +1519,130 @@ fn a_typescript_component_script_is_typescript_to_the_code_layer()
         Some(rb_model::Language::Javascript)
     );
     Ok(())
+}
+
+/// The earlier extraction of the `exclude` fixture with `src/index.js`'s dependencies emptied
+/// and every file marked unchanged: what an incremental run reuses shows in its result.
+fn tampered(options: &str, keep: bool) -> Result<(Extraction, Extraction), ExtractError> {
+    let options: TypeScriptOptions =
+        serde_json::from_str(options).map_err(|e| ExtractError::UnsupportedFile {
+            path: PathBuf::from("options"),
+            reason: e.to_string(),
+        })?;
+    let roots = [PathBuf::from("src/index.js")];
+    let (mut settings, config) = prepare(&options, &fixture("exclude"))?;
+    settings.keep_file_states = keep;
+    let full = extract_with(&roots, &settings, &config)?;
+    let mut previous = full.clone();
+    for module in &mut previous.modules {
+        if module.source == "src/index.js" {
+            module.dependencies.clear();
+            module.experimental_stats = Some(rb_model::ExperimentalStats {
+                top_level_statement_count: 99,
+                size: 1,
+            });
+        }
+    }
+    let unchanged = full
+        .modules
+        .iter()
+        .filter(|m| m.language.is_some())
+        .map(|m| PathBuf::from(&m.source))
+        .collect();
+    let (settings, config) = prepare(&options, &fixture("exclude"))?;
+    let request = ExtractRequest {
+        changed: Vec::new(),
+        unchanged,
+        previous,
+    };
+    Ok((
+        full,
+        extract_incremental(&roots, &settings, &config, &request)?,
+    ))
+}
+
+#[test]
+fn an_unchanged_file_is_taken_from_the_earlier_extraction_not_read() -> Result<(), ExtractError> {
+    let (full, reused) = tampered(r#"{"experimentalStats": true}"#, true)?;
+    assert_eq!(
+        sources(&full),
+        [
+            "src/index.js",
+            "src/excluded/x.js",
+            "src/kept.js",
+            "src/lazy.js"
+        ]
+    );
+    // The emptied list is what the walk replays over, so nothing below the root is reached, and
+    // the statistics are the earlier run's.
+    assert_eq!(sources(&reused), ["src/index.js"]);
+    let root = module(&reused, "src/index.js");
+    assert_eq!(
+        root.and_then(|m| m.experimental_stats)
+            .map(|s| s.top_level_statement_count),
+        Some(99)
+    );
+    Ok(())
+}
+
+#[test]
+fn a_filter_the_document_cannot_undo_reads_every_file() -> Result<(), ExtractError> {
+    // `exclude.dynamic` removed an edge the walk followed, so the kept list is not the file's
+    // result: the tampered earlier result is ignored and the file is read.
+    let options = r#"{"exclude": {"path": "excluded", "dynamic": true}}"#;
+    let (full, again) = tampered(options, true)?;
+    assert_eq!(again.modules, full.modules);
+    assert_eq!(
+        sources(&again),
+        ["src/index.js", "src/kept.js", "src/lazy.js"]
+    );
+    let parsed: TypeScriptOptions = serde_json::from_str(options).unwrap_or_default();
+    let (settings, _) = prepare(&parsed, &fixture("exclude"))?;
+    assert!(rb_extract_ts::reuse_refused(&settings).is_some_and(|r| r.contains("exclude.dynamic")));
+    let (plain, _) = prepare(&TypeScriptOptions::default(), &fixture("exclude"))?;
+    assert_eq!(rb_extract_ts::reuse_refused(&plain), None);
+    Ok(())
+}
+
+#[test]
+fn a_file_whose_code_layer_was_not_kept_is_read() -> Result<(), ExtractError> {
+    // The earlier run kept no file states, and the code layer is on: nothing can be reused, so
+    // the tampered list is ignored.
+    let (full, again) = tampered("{}", false)?;
+    assert!(full.files.is_empty());
+    assert_eq!(again.modules, full.modules);
+    assert_eq!(again.code, full.code);
+    Ok(())
+}
+
+#[test]
+fn a_dependency_survives_the_trip_through_the_document() {
+    let json = r#"{"module":"./a","protocol":"node:","mimeType":"text/x","resolved":"a.js",
+        "coreModule":true,"dependencyTypes":["local","type-only"],"license":"MIT",
+        "followable":true,"dynamic":true,"exoticallyRequired":true,"exoticRequire":"need",
+        "matchesDoNotFollow":true,"couldNotResolve":true,"preCompilationOnly":true,
+        "moduleSystem":"cjs","valid":true,"circular":false,"line":3,"column":7}"#;
+    let dependency: rb_model::Dependency = serde_json::from_str(json).unwrap_or_else(|e| {
+        unreachable!("{e}");
+    });
+    let back = rb_extract_ts::from_dependency(&dependency);
+    assert_eq!(back.module, "./a");
+    assert_eq!(back.resolved, "a.js");
+    assert_eq!(back.protocol, dependency.protocol);
+    assert_eq!(back.mime_type.as_deref(), Some("text/x"));
+    assert!(back.core_module && back.followable && back.dynamic && back.exotically_required);
+    assert!(back.matches_do_not_follow && back.could_not_resolve);
+    assert_eq!(back.exotic_require.as_deref(), Some("need"));
+    assert_eq!(back.pre_compilation_only, Some(true));
+    assert_eq!(back.license.as_deref(), Some("MIT"));
+    assert_eq!(back.dependency_types, dependency.dependency_types);
+    assert_eq!(back.module_system, rb_model::ModuleSystem::Cjs);
+    assert_eq!((back.line, back.column), (3, 7));
+    let bare = rb_extract_ts::from_dependency(&rb_model::Dependency::new(
+        "b",
+        "b",
+        rb_model::ModuleSystem::Es6,
+    ));
+    assert!(!bare.matches_do_not_follow);
+    assert_eq!((bare.line, bare.column), (0, 0));
 }

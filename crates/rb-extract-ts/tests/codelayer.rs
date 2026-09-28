@@ -123,3 +123,44 @@ fn the_layer_can_be_switched_off() -> Result<(), Box<dyn Error>> {
     );
     Ok(())
 }
+
+/// Incremental extraction over the code-layer tree
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// every file unchanged, and each file changed on its own, gives the same modules and the same
+/// linked code layer as the full run, the reused files' layers coming from the kept states.
+#[test]
+fn an_incremental_run_links_the_same_code_layer() -> Result<(), Box<dyn Error>> {
+    let (mut settings, config) = prepare(&TypeScriptOptions::default(), &fixture())?;
+    settings.keep_file_states = true;
+    let roots = [PathBuf::from("src")];
+    let full = extract_with(&roots, &settings, &config)?;
+    let expected = serialise(&full)?;
+    assert_eq!(expected, serialise(&run(true)?)?);
+    let read: Vec<PathBuf> = full
+        .modules
+        .iter()
+        .filter(|m| m.language.is_some())
+        .map(|m| PathBuf::from(&m.source))
+        .collect();
+    assert!(read.len() > 5 && full.files.len() == read.len());
+    let mut variants = vec![Vec::new()];
+    variants.extend(read.iter().map(|f| vec![f.clone()]));
+    for changed in variants {
+        let unchanged = read
+            .iter()
+            .filter(|f| !changed.contains(f))
+            .cloned()
+            .collect();
+        let (mut settings, config) = prepare(&TypeScriptOptions::default(), &fixture())?;
+        settings.keep_file_states = true;
+        let request = rb_model::ExtractRequest {
+            changed: changed.clone(),
+            unchanged,
+            previous: full.clone(),
+        };
+        let again = rb_extract_ts::extract_incremental(&roots, &settings, &config, &request)?;
+        assert_eq!(serialise(&again)?, expected, "{changed:?} changed");
+        assert_eq!(again.files, full.files, "{changed:?} changed");
+    }
+    Ok(())
+}

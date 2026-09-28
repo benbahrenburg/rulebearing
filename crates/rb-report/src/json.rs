@@ -30,6 +30,8 @@ pub const SUMMARY_ADDITIONS: &[&str] = &[
     "ratchets",
     "expired",
     "affected",
+    "cache",
+    "sidecar",
     "plugins",
 ];
 /// Rule-set keys Rulebearing adds (inside `summary.ruleSetUsed`): the element, slice and diagram
@@ -97,8 +99,8 @@ mod tests {
     #[test]
     fn strict_schema_strips_every_addition() {
         let result = json!({
-            "modules": [{ "source": "a", "language": "typescript", "valid": true, "dependencies": [{ "resolved": "b", "line": 1, "column": 2, "dependencyKind": "import" }] }],
-            "summary": { "violations": [{ "from": "a", "to": "b", "id": "RB-1", "fix": "f", "decision": "adr:1" }], "inspected": {}, "vacuousRules": [], "affected": { "revision": "main", "changed": ["affectedFile"], "closure": [] }, "plugins": ["pluginFile.mjs"],
+            "modules": [{ "source": "a", "language": "typescript", "valid": true, "dependencies": [{ "resolved": "b", "line": 1, "column": 2, "dependencyKind": "import", "sidecar": true }] }],
+            "summary": { "violations": [{ "from": "a", "to": "b", "id": "RB-1", "fix": "f", "decision": "adr:1" }], "inspected": {}, "vacuousRules": [], "cache": { "hit": true, "strategy": "metadata" }, "sidecar": { "tool": "dependency-cruiser", "version": "18.2.0", "files": 2 }, "affected": { "revision": "main", "changed": ["affectedFile"], "closure": [] }, "plugins": ["pluginFile.mjs"],
                          "ruleSetUsed": { "forbidden": [{ "name": "r", "fix": "f", "allowEmpty": true }],
                                           "elements": [{ "name": "sealedElement" }], "slices": [{ "name": "apartSlice" }],
                                           "diagrams": [{ "name": "drawnDiagram" }] } },
@@ -119,6 +121,9 @@ mod tests {
             "sealedElement",
             "apartSlice",
             "drawnDiagram",
+            "\"hit\"",
+            "dependency-cruiser",
+            "\"sidecar\"",
         ] {
             assert!(!stripped.contains(gone), "{gone}");
         }

@@ -92,6 +92,9 @@ pub enum Command {
     /// Translate ArchUnitNET, NetArchTest, import-linter or eslint rules into a rulebearing.yaml
     #[command(subcommand)]
     Import(crate::cmd::import::ImportCommand),
+    /// Wrap an SVG read from stdin in the page x-dot-webpage writes: dependency-cruiser's
+    /// depcruise-wrap-stream-in-html
+    WrapHtml(crate::cmd::wrap_html::WrapHtmlArgs),
     /// Conformance gate 1 layer 2's protocol (hidden).
     #[command(hide = true)]
     Validate(ProtocolArgs),
@@ -131,6 +134,44 @@ pub enum ProgressType {
     Ndjson,
     /// Nothing.
     None,
+}
+
+/// `--cache-strategy` values
+/// ([Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum CacheStrategyArg {
+    /// git status and diff against the recorded commit, and file size and time.
+    Metadata,
+    /// Every input hashed.
+    Content,
+}
+
+impl CacheStrategyArg {
+    /// The strategy the options carry.
+    pub fn strategy(self) -> rb_model::CacheStrategy {
+        match self {
+            Self::Metadata => rb_model::CacheStrategy::Metadata,
+            Self::Content => rb_model::CacheStrategy::Content,
+        }
+    }
+}
+
+/// `--sidecar` values
+/// ([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
+/// [ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum SidecarArg {
+    /// The repository's dependency-cruiser, run by the node on the path (or `$RULEBEARING_NODE`).
+    Node,
+}
+
+impl SidecarArg {
+    /// The runtime the extractor's options carry.
+    pub fn runtime(self) -> rb_model::SidecarRuntime {
+        match self {
+            Self::Node => rb_model::SidecarRuntime::Node,
+        }
+    }
 }
 
 /// When to colour terminal output.
@@ -247,7 +288,7 @@ pub struct CruiseArgs {
     pub graph: Option<String>,
     /// Output type: err, err-long, err-html, json, text, csv, teamcity, azure-devops,
     /// github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot,
-    /// mermaid, d2, metrics, null
+    /// x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, null
     #[arg(short = 'T', long, value_name = "TYPE")]
     pub output_type: Option<String>,
     /// File to write output to; - for stdout
@@ -299,6 +340,20 @@ pub struct CruiseArgs {
     /// Suffix for links in the reports
     #[arg(long, value_name = "SUFFIX")]
     pub suffix: Option<String>,
+    /// Keep the extraction in FOLDER and re-read only what changed since the last run (default
+    /// .graph/cache; node_modules/.cache/dependency-cruiser for a dependency-cruiser
+    /// configuration); replaces options.cache
+    #[arg(short = 'C', long, value_name = "FOLDER", num_args = 0..=1, default_missing_value = "",
+          overrides_with = "no_cache")]
+    pub cache: Option<String>,
+    /// How the cache finds what changed: metadata (git and file size and time, the default) or
+    /// content (every input hashed)
+    #[arg(long, value_enum, value_name = "STRATEGY")]
+    pub cache_strategy: Option<CacheStrategyArg>,
+    /// Do not use the cache, even when options.cache or --cache asks for it. Hidden, as
+    /// dependency-cruiser hides it
+    #[arg(long, hide = true, overrides_with = "cache")]
+    pub no_cache: bool,
     /// Keep TypeScript edges that vanish in compilation: true, false or specify
     #[arg(long, value_name = "VALUE", num_args = 0..=1, default_missing_value = "true")]
     pub ts_pre_compilation_deps: Option<String>,
@@ -316,6 +371,11 @@ pub struct CruiseArgs {
     /// --webpack-config and webpackConfig
     #[arg(long, value_name = "FILE")]
     pub webpack_config_json: Option<String>,
+    /// Extract CoffeeScript and LiveScript files (.coffee, .litcoffee, .coffee.md, .ls, .cjsx,
+    /// .csx) by running the repository's own dependency-cruiser with Node; their edges are
+    /// marked sidecar: true. Without it such a file stops the run (exit 2)
+    #[arg(long, value_enum, value_name = "RUNTIME")]
+    pub sidecar: Option<SidecarArg>,
     /// Show progress on stderr
     #[arg(short = 'p', long, value_name = "TYPE", num_args = 0..=1, default_missing_value = "cli-feedback")]
     pub progress: Option<ProgressType>,
@@ -383,7 +443,9 @@ pub struct FmtArgs {
     /// The result to re-report; - for stdin
     #[arg(value_name = "RESULT-JSON")]
     pub input: String,
-    /// Output type
+    /// Output type: any of cruise's (err, err-long, err-html, json, text, csv, teamcity,
+    /// azure-devops, github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi,
+    /// cdot, flat, fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, null)
     #[arg(short = 'T', long, value_name = "TYPE", default_value = "err")]
     pub output_type: String,
     /// File to write output to; - for stdout

@@ -335,10 +335,10 @@ fn cached(directory: &Path) -> Option<GraphDocument> {
 /// The exit code and message for a side that cannot be cruised.
 fn side_failed(side: &str, error: &RunError) -> Outcome {
     let code = match error {
-        RunError::Config(_) | RunError::Engine(rb_rules::EngineError::Element(_)) => {
-            RunExit::InvalidConfig
-        }
-        RunError::Extract(_) | RunError::Engine(_) => RunExit::Untrustworthy,
+        RunError::Config(_)
+        | RunError::Plugin(_)
+        | RunError::Engine(rb_rules::EngineError::Element(_)) => RunExit::InvalidConfig,
+        RunError::Extract(_) | RunError::Engine(_) | RunError::Report(_) => RunExit::Untrustworthy,
     };
     failed(code, &format!("{side} cannot be cruised: {error}"))
 }
