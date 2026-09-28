@@ -168,9 +168,12 @@ pub struct Options {
     /// `baseline` (`mode`, `staleEntriesSeverity`), accepted and recorded (wave 2).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub baseline: Option<Value>,
-    /// `affected`, accepted and recorded (wave 3).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub affected: Option<Value>,
+    /// `affected`: `true` for the changes since `main`, a revision, or `false`. dependency-cruiser
+    /// reads it from the command line only and ignores it in a configuration; a native
+    /// configuration applies it as `--affected` would (`rb-cli`'s `affected` module). Never in
+    /// `optionsUsed`, where dependency-cruiser does not share it either.
+    #[serde(default, skip_serializing)]
+    pub affected: Option<AffectedOption>,
     /// The `resolve` block of the webpack configuration, evaluated: from `--webpack-config-json`,
     /// or from `webpackConfig.fileName` in the sandbox ([`crate::webpack`]). The TypeScript
     /// extractor lays it over its resolver. Never read from or written to a file: `optionsUsed`
@@ -178,6 +181,31 @@ pub struct Options {
     #[serde(skip)]
     pub webpack_config_json: Option<Value>,
 }
+
+/// `options.affected`, in dependency-cruiser's shape (`string | boolean`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(untagged)]
+pub enum AffectedOption {
+    /// `true`: the changes since `main`; `false`: off.
+    Enabled(bool),
+    /// The changes since this revision.
+    Revision(String),
+}
+
+impl AffectedOption {
+    /// The revision to compare with, or `None` when the option is off.
+    pub fn revision(&self) -> Option<&str> {
+        match self {
+            Self::Enabled(true) => Some(DEFAULT_AFFECTED_REVISION),
+            Self::Enabled(false) => None,
+            Self::Revision(revision) => Some(revision),
+        }
+    }
+}
+
+/// The revision `--affected` compares with when given no value, as dependency-cruiser's
+/// command line does.
+pub const DEFAULT_AFFECTED_REVISION: &str = "main";
 
 /// `focus`, `reaches`, `highlight`: the pattern form or the compound form.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -952,6 +980,34 @@ pub struct KnownRule {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn affected_takes_dependency_cruisers_string_or_boolean() {
+        for (text, option, revision) in [
+            ("true", AffectedOption::Enabled(true), Some("main")),
+            ("false", AffectedOption::Enabled(false), None),
+            (
+                r#""origin/dev""#,
+                AffectedOption::Revision("origin/dev".into()),
+                Some("origin/dev"),
+            ),
+        ] {
+            let parsed: Option<AffectedOption> = serde_json::from_str(text).ok();
+            assert_eq!(parsed.as_ref(), Some(&option), "{text}");
+            assert_eq!(option.revision(), revision, "{text}");
+        }
+        assert!(serde_json::from_str::<AffectedOption>("3").is_err());
+        let options: Options = serde_json::from_str(r#"{"affected":"HEAD"}"#).unwrap_or_default();
+        assert_eq!(
+            options.affected,
+            Some(AffectedOption::Revision("HEAD".into()))
+        );
+        let written = serde_json::to_value(&options).unwrap_or_default();
+        assert!(
+            written.get("affected").is_none(),
+            "never reaches optionsUsed: {written}"
+        );
+    }
 
     #[test]
     fn a_dependency_cruiser_rule_deserialises_key_for_key() {
