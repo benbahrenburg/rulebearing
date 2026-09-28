@@ -10,15 +10,18 @@
 # For a manifest row whose tool is netarchtest or archunitnet:
 #   1. clone at the SHA (the checkout testbeds/run.sh and spike-b-attribution.sh use);
 #   2. `dotnet build <test> -c Release -p:DebugType=portable`, with Windows targeting on and NuGet
-#      signature checks off for the throwaway clone, as testbeds/run.sh does;
-#   3. `dotnet test <test> --no-build --logger trx`, with the row's `filter` when it has one;
+#      signature checks off for the throwaway clone, as testbeds/run.sh does, and the row's
+#      `msbuild` arguments when it has them;
+#   3. `dotnet test <test> --no-build --logger trx`, with the row's `filter` and `msbuild`
+#      arguments when it has them;
 #   4. `rulebearing import archunit <tests>` in the checkout (`tests`: the folder of the
 #      architecture tests, default the test project's folder), imported again with `--graph` over
 #      a cruise of the assemblies the first import names, so that types from packages resolve;
 #      then `rulebearing cruise -T junit` with the imported configuration;
 #   5. compare.py joins each TRX result with the JUnit cases of the rules named from its method.
-# A test the importer writes commented out is recorded as `stays` (custom predicate) or
-# `not-imported` with the importer's reason; it is never counted as a disagreement.
+# A test the importer writes commented out is recorded as `stays` (a custom predicate, or a test
+# that runs no rule and checks the architecture in C#) or `not-imported` with the importer's
+# reason; it is never counted as a disagreement.
 #
 # Writes testbeds/results/<owner>__<repo>.json (or under $RB_ORACLE_RESULTS), which
 # testbeds/oracles/table.py renders, and keeps every intermediate file in <out-dir>/<owner>__<repo>.
@@ -50,12 +53,17 @@ test_project="$(oracle_field "$manifest" "$repo" test)"
 tests="$(oracle_field "$manifest" "$repo" tests)"
 tests="${tests:-$(dirname "$test_project")}"
 filter="$(oracle_field "$manifest" "$repo" filter)"
+# `msbuild`: extra MSBuild arguments, separated by spaces, for a repository that builds on Linux
+# only with them (testbeds/README.md, "Adding or bumping a row").
+msbuild_args=()
+read -r -a msbuild_args <<< "$(oracle_field "$manifest" "$repo" msbuild)"
 
 oracle_clone "$repo" "$sha" "$checkout" "$out/clone.log" ||
   { oracle_error "$result" "$repo" "$sha" "$tool" "clone failed at $sha"; exit 2; }
 
 if ! (cd "$checkout" && DOTNET_NUGET_SIGNATURE_VERIFICATION=false \
-      dotnet build "$test_project" -c Release -p:DebugType=portable -p:EnableWindowsTargeting=true) > "$out/build.log" 2>&1; then
+      dotnet build "$test_project" -c Release -p:DebugType=portable -p:EnableWindowsTargeting=true \
+        ${msbuild_args[@]+"${msbuild_args[@]}"}) > "$out/build.log" 2>&1; then
   oracle_error "$result" "$repo" "$sha" "$tool" "dotnet build $test_project failed (see build.log)"
   exit 2
 fi
@@ -64,7 +72,7 @@ filter_args=()
 [ -n "$filter" ] && filter_args=(--filter "$filter")
 rm -f "$out/incumbent.trx"
 (cd "$checkout" && dotnet test "$test_project" -c Release --no-build ${filter_args[@]+"${filter_args[@]}"} \
-  --logger "trx;LogFileName=incumbent.trx" --results-directory "$out") > "$out/incumbent.log" 2>&1
+  ${msbuild_args[@]+"${msbuild_args[@]}"} --logger "trx;LogFileName=incumbent.trx" --results-directory "$out") > "$out/incumbent.log" 2>&1
 test_status=$?
 if [ ! -f "$out/incumbent.trx" ]; then
   oracle_error "$result" "$repo" "$sha" "$tool" "dotnet test wrote no TRX file (exit $test_status, see incumbent.log)"

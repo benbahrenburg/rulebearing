@@ -410,10 +410,14 @@ const IMPORTED_FLOOR: usize = 727;
 /// The NetArchTest chains the importer reads today (a ratchet).
 const NETARCHTEST_FLOOR: usize = 70;
 
-/// My `select.where` with NetArchTest's root term (`resideInAssembly`) taken off, as the ported
-/// rules leave it out: each case's graph is its one assembly.
+/// An imported body with NetArchTest's root term (`resideInAssembly`) taken off `select.where`, as
+/// the ported rules leave it out (each case's graph is its one assembly), and without `allowEmpty`.
 fn without_root(body: &[(String, Node)]) -> Vec<(String, Node)> {
     body.iter()
+        // The import writes NetArchTest's verdict on an empty selection (`allowEmpty`); gate 2
+        // records Rulebearing's, vacuous (conformance/netarchtest/README.md), so the key is not
+        // part of the comparison.
+        .filter(|(key, _)| key != "allowEmpty")
         .map(|(key, value)| {
             if key != "select" {
                 return (key.clone(), value.clone());

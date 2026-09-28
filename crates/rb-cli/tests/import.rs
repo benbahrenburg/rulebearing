@@ -241,6 +241,7 @@ fn archunit_fixtures_match_their_expected_yaml() -> Result<(), Box<dyn Error>> {
     for (case, tests) in [
         ("fluent", "tests/RiverBooks.ArchitectureTests"),
         ("netarchtest", "tests/Shop.ArchitectureTests"),
+        ("helpers", "tests/Shop.ArchitectureTests"),
     ] {
         let dir = fixtures().join("archunit").join(case);
         snapshot(
@@ -610,7 +611,7 @@ fn a_graph_names_the_types_no_source_declares() -> Result<(), Box<dyn Error>> {
         text.contains("are: [RiverBooks.Books.UnknownType]"),
         "{text}"
     );
-    assert!(text.contains("7 imported"), "{text}");
+    assert!(text.contains("8 imported"), "{text}");
     std::fs::write(&graph, "not json")?;
     let broken = run(
         &dir,

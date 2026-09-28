@@ -509,6 +509,7 @@ fn cruise(ctx: &Context<'_>, config: &Config, paths: &[String]) -> Result<pipeli
         liveness: true,
         options_used: serde_json::Map::new(),
         paths: paths.to_vec(),
+        affected: None,
     };
     pipeline::run(ctx, config, &options, &mut Progress::new(None))
         .map_err(|e| Outcome::failed(RunExit::Untrustworthy, format!("rulebearing adopt: {e}\n")))

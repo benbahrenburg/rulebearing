@@ -1,7 +1,7 @@
 # Imported from pyproject.toml by `rulebearing import import-linter`.
 # Each rule's comment names its import-linter contract; the contract's options are written above its first rule.
 # ignore_imports: each rule's `graph.ignore` removes those imports from the graph the rule sees, chains included; an entry that matches no import makes the rule vacuous, which is import-linter's unmatched-ignore alerting.
-# import-linter does not read app/ns, folders without `__init__.py` below a root package: each rule's `graph.modulesNot` leaves them out as the tree stood when imported, so run the import again when one gains an `__init__.py`.
+# import-linter does not read app/ns, folders without `__init__.py` below a root package: each rule's `graph.modulesNot` leaves their imports out and `graph.redirect` gives an import of one of their modules to the root package holding the folder, as grimp does, as the tree stood when imported, so run the import again when one gains an `__init__.py`.
 $schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
 languages:
   python:
@@ -26,6 +26,9 @@ rules:
               to: "^app/high/c(/__init__\\.py|\\.py)$"
           dependencyTypesNot: [type-only]
           modulesNot: "^app/ns(/|$)"
+          redirect:
+            - to: "^app/ns(/|$)"
+              into: app/__init__.py
           chainsThrough: "^app(/.*)?\\.py$"
     allowed:
       # import-linter contract `guarded` (protected): Only mid imports high

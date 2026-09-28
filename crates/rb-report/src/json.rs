@@ -24,8 +24,14 @@ pub const DEPENDENCY_ADDITIONS: &[&str] = &[
 /// Violation keys Rulebearing adds.
 pub const VIOLATION_ADDITIONS: &[&str] = &["id", "fix", "decision"];
 /// Summary keys Rulebearing adds.
-pub const SUMMARY_ADDITIONS: &[&str] =
-    &["inspected", "vacuousRules", "ratchets", "expired", "cache"];
+pub const SUMMARY_ADDITIONS: &[&str] = &[
+    "inspected",
+    "vacuousRules",
+    "ratchets",
+    "expired",
+    "affected",
+    "cache",
+];
 /// Rule-set keys Rulebearing adds (inside `summary.ruleSetUsed`): the element, slice and diagram
 /// rules.
 pub const RULE_SET_ADDITIONS: &[&str] = &["elements", "slices", "diagrams"];
@@ -92,8 +98,7 @@ mod tests {
     fn strict_schema_strips_every_addition() {
         let result = json!({
             "modules": [{ "source": "a", "language": "typescript", "valid": true, "dependencies": [{ "resolved": "b", "line": 1, "column": 2, "dependencyKind": "import" }] }],
-            "summary": { "violations": [{ "from": "a", "to": "b", "id": "RB-1", "fix": "f", "decision": "adr:1" }], "inspected": {}, "vacuousRules": [],
-                         "cache": { "hit": true, "strategy": "metadata" },
+            "summary": { "violations": [{ "from": "a", "to": "b", "id": "RB-1", "fix": "f", "decision": "adr:1" }], "inspected": {}, "vacuousRules": [], "cache": { "hit": true, "strategy": "metadata" }, "affected": { "revision": "main", "changed": ["affectedFile"], "closure": [] },
                          "ruleSetUsed": { "forbidden": [{ "name": "r", "fix": "f", "allowEmpty": true }],
                                           "elements": [{ "name": "sealedElement" }], "slices": [{ "name": "apartSlice" }],
                                           "diagrams": [{ "name": "drawnDiagram" }] } },
@@ -107,6 +112,7 @@ mod tests {
             "RB-1",
             "inspected",
             "vacuousRules",
+            "affectedFile",
             "allowEmpty",
             "\"code\"",
             "sealedElement",

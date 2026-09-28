@@ -472,11 +472,33 @@ pub struct Summary {
     /// ([ADR-0031](../../../docs/adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub expired: Option<Vec<ExpiredEntry>>,
+    /// Additive: what `--affected` compared and which modules it kept
+    /// ([Wave 3 plan § 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub affected: Option<Affected>,
     /// Additive: whether the extraction came from the `--cache` entry, and how its freshness was
     /// checked; absent when the run did not use the cache
     /// ([Wave 3 § 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cache: Option<CacheSummary>,
+}
+
+/// `summary.affected`: the receipt of an `--affected` run
+/// ([Wave 3, Step 3](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Affected {
+    /// The revision the working tree was compared with (`main` when `--affected` had no value).
+    pub revision: String,
+    /// Every file the version control reports as changed since the revision (committed,
+    /// staged, unstaged or untracked, deleted files included), relative to the cruise's base
+    /// directory, sorted.
+    pub changed: Vec<String>,
+    /// The modules the report kept: the changed modules and the modules that reach them, sorted.
+    pub closure: Vec<String>,
+    /// How many steps of dependents were followed, when `--affected-depth` limited them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub depth: Option<u32>,
 }
 
 /// `summary.cache`: what the cache did for this run.
@@ -1103,6 +1125,36 @@ mod tests {
         let mut again = first.clone();
         again.normalise();
         assert_eq!(serde_json::to_vec(&again).unwrap_or_default(), left);
+    }
+
+    #[test]
+    fn the_affected_receipt_has_its_contract_shape() {
+        let mut summary = Summary::default();
+        let plain = serde_json::to_value(&summary).unwrap_or_default();
+        assert!(plain.get("affected").is_none(), "absent when not asked for");
+        summary.affected = Some(Affected {
+            revision: "main".into(),
+            changed: vec!["src/a.ts".into(), "src/gone.ts".into()],
+            closure: vec!["src/a.ts".into(), "src/b.ts".into()],
+            depth: None,
+        });
+        let text = serde_json::to_string(&summary.affected).unwrap_or_default();
+        assert_eq!(
+            text,
+            r#"{"revision":"main","changed":["src/a.ts","src/gone.ts"],"closure":["src/a.ts","src/b.ts"]}"#
+        );
+        let limited = Affected {
+            depth: Some(1),
+            ..Affected::default()
+        };
+        assert_eq!(
+            serde_json::to_string(&limited).unwrap_or_default(),
+            r#"{"revision":"","changed":[],"closure":[],"depth":1}"#
+        );
+        let back: Summary =
+            serde_json::from_value(serde_json::to_value(&summary).unwrap_or_default())
+                .unwrap_or_default();
+        assert_eq!(back, summary);
     }
 
     #[test]

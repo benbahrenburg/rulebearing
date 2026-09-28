@@ -13,6 +13,7 @@
 //!
 //! | Module | Does |
 //! | --- | --- |
+//! | [`affected`] | `--affected`: the changed files and the modules that reach them |
 //! | [`cache`] | the worktree-aware graph cache the query commands read, and `cruise --cache` |
 //! | [`cli`] | every flag, declared once |
 //! | [`cmd`] | one module per subcommand |
@@ -23,6 +24,7 @@
 //! | [`progress`] | `--progress` |
 //! | [`protocol`] | the conformance harness's `validate` and `report` |
 
+pub mod affected;
 pub mod cache;
 pub mod cli;
 pub mod cmd;
@@ -45,7 +47,6 @@ pub use crate::exit::RunExit;
 /// Subcommands later waves deliver, with the wave. Asking for one says so and exits 2, so no
 /// pipeline mistakes a missing command for a passing gate.
 pub const LATER: &[(&str, u8)] = &[
-    ("diff", 3),
     ("guard", 3),
     ("snapshot", 3),
     ("changelog", 3),
@@ -155,6 +156,7 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         Command::Init(a) => cmd::init::run(ctx, &a),
         Command::Adopt(a) => cmd::adopt::run(ctx, &a),
         Command::Baseline(a) => cmd::baseline::run(ctx, &a),
+        Command::Diff(a) => cmd::diff::run(ctx, &a),
         Command::Import(c) => cmd::import::run(ctx, &c),
         Command::Validate(a) => match protocol_input(ctx, &a) {
             Ok(text) => protocol::validate(&text),
@@ -273,7 +275,7 @@ mod tests {
 
     #[test]
     fn later_subcommands_name_their_wave() {
-        let o = run(&args(&["diff", "a.json", "b.json"]));
+        let o = run(&args(&["serve", "--mcp"]));
         assert_eq!(o.code, 2);
         assert!(o.stderr.contains("wave 3"));
         assert!(subcommands().contains(&"cruise".to_owned()));

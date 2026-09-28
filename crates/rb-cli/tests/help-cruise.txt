@@ -180,6 +180,27 @@ Options:
           Answer as a Claude Code Stop hook: the agent report as the reason to keep going when there
           are errors, exit 0 always
 
+  -A, --affected [<REVISION>]
+          Only report the modules changed since REVISION (default main), committed or not, and every
+          module that reaches them, as dependency-cruiser does; with a rulebearing.* configuration,
+          also every violation on their edges that leave them. .NET source files map to their types'
+          modules
+
+      --affected-depth <NUMBER>
+          With --affected or options.affected: how many steps of dependents to include; 0 (the
+          default) for all
+
+      --exit-code-mode <MODE>
+          How the error count becomes the exit code: default (the count) or strict (10 + the count,
+          so 2 and 3 are never a count)
+
+          Possible values:
+          - default: The error count, capped at 255, as dependency-cruiser exits
+          - strict:  10 plus the error count when there is one, capped at 255, so 2 and 3 only ever
+            mean an untrustworthy run and an invalid configuration
+          
+          [default: default]
+
   -h, --help
           Print help (see a summary with '-h')
 
@@ -191,3 +212,5 @@ Exit codes:
   2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule
   3       the configuration is invalid
 A run with exactly 2 or 3 error violations also exits 2 or 3; the report says which it was.
+--exit-code-mode strict exits 10 + n for n error violations instead (capped at 255), so 2 and 3
+only ever mean an untrustworthy run and an invalid configuration.

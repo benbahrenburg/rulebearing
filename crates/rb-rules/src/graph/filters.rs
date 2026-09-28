@@ -21,12 +21,13 @@ use crate::graph::indexed::IndexedGraph;
 use crate::js;
 use crate::patterns;
 
-/// One filter: a pattern and, for `focus`, a depth.
+/// One filter: a pattern and, for `focus` and `reaches`, a depth.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Filter {
     /// The pattern; a filter without one does nothing.
     pub path: Option<String>,
-    /// `focus.depth`. Default 1.
+    /// `focus.depth`, default 1. For `reaches`, how many steps of dependents to keep, default 0
+    /// (all, as upstream's `filterReaches`); only `--affected-depth` sets it.
     pub depth: Option<u32>,
 }
 
@@ -167,11 +168,13 @@ pub fn add_focus(modules: Vec<Value>, filter: &Filter) -> Vec<Value> {
         .collect()
 }
 
-/// `filterReaches`: the modules that reach a matching module, tagged `matchesReaches`.
+/// `filterReaches`: the modules that reach a matching module, tagged `matchesReaches`. With a
+/// `depth`, only the modules that reach one in at most that many steps.
 pub fn reaches(modules: Vec<Value>, filter: &Filter) -> Vec<Value> {
     let Some(pattern) = filter.pattern() else {
         return modules;
     };
+    let depth = filter.depth.unwrap_or(0);
     let to_reach: Vec<String> = modules
         .iter()
         .filter(|m| module_matches(m, pattern))
@@ -180,7 +183,7 @@ pub fn reaches(modules: Vec<Value>, filter: &Filter) -> Vec<Value> {
     let graph = IndexedGraph::new(&modules, "source");
     let mut reaching: HashSet<String> = HashSet::new();
     for name in &to_reach {
-        reaching.extend(graph.transitive_dependents(name, 0));
+        reaching.extend(graph.transitive_dependents(name, depth));
     }
     let to_reach: HashSet<String> = to_reach.into_iter().collect();
     modules
@@ -297,6 +300,27 @@ mod tests {
         assert_eq!(lit[1]["matchesHighlight"], true);
         assert_eq!(lit[0]["matchesHighlight"], false);
         assert_eq!(reaches(graph(), &Filter::default()).len(), 4);
+    }
+
+    #[test]
+    fn reaches_stops_at_its_depth() {
+        let all = reaches(graph(), &filter("^src/b", Some(0)));
+        assert_eq!(sources(&all), ["src/main.ts", "src/a.ts", "src/b.ts"]);
+        let one = reaches(graph(), &filter("^src/b", Some(1)));
+        assert_eq!(sources(&one), ["src/a.ts", "src/b.ts"]);
+        assert_eq!(one[0]["matchesReaches"], false);
+        assert_eq!(one[1]["matchesReaches"], true);
+        assert_eq!(
+            one[0]["dependencies"][0]["resolved"], "src/b.ts",
+            "an edge inside the closure stays"
+        );
+        let two = reaches(graph(), &filter("^src/b", Some(2)));
+        assert_eq!(sources(&two), ["src/main.ts", "src/a.ts", "src/b.ts"]);
+        assert_eq!(
+            two[0]["dependencies"].as_array().map(Vec::len),
+            Some(1),
+            "the edge to node_modules/x leaves the closure"
+        );
     }
 
     #[test]

@@ -189,6 +189,43 @@ fn fmt_rereports_a_saved_result() -> Result<(), Box<dyn Error>> {
     assert!(text(&quiet).contains("domain-not-to-web"));
     let gate = run(&dir, &["fmt", "-e", "-T", "err", "result.json"])?;
     assert_eq!(gate.status.code(), Some(1));
+    // `--exit-code-mode strict` (ADR-0008, wave 3): 10 + the count, on fmt as on cruise.
+    let strict = ["--exit-code-mode", "strict"];
+    let shifted = run(
+        &dir,
+        &[&["fmt", "-e", "-T", "err"][..], &strict, &["result.json"]].concat(),
+    )?;
+    assert_eq!(shifted.status.code(), Some(11));
+    let cruised = run(
+        &dir,
+        &[&["cruise", "-T", "err"][..], &strict, &["src"]].concat(),
+    )?;
+    assert_eq!(cruised.status.code(), Some(11));
+    let quiet_strict = run(&dir, &[&["fmt"][..], &strict, &["result.json"]].concat())?;
+    assert_eq!(
+        quiet_strict.status.code(),
+        Some(0),
+        "without --exit-code, fmt still exits 0"
+    );
+    let clean = run(
+        &dir,
+        &[
+            &["fmt", "-e", "-T", "err", "-x", "^src/domain"][..],
+            &strict,
+            &["result.json"],
+        ]
+        .concat(),
+    )?;
+    assert_eq!(
+        clean.status.code(),
+        Some(0),
+        "no violation stays 0 in strict mode"
+    );
+    let broken = run(
+        &dir,
+        &[&["fmt", "-e"][..], &strict, &["missing.json"]].concat(),
+    )?;
+    assert_eq!(broken.status.code(), Some(2), "2 keeps its meaning");
     let excluded = run(
         &dir,
         &["fmt", "-e", "-T", "err", "-x", "^src/domain", "result.json"],

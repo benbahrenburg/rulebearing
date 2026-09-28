@@ -16,6 +16,45 @@
       ],
       "type": "object"
     },
+    "Affected": {
+      "additionalProperties": false,
+      "description": "`summary.affected`: the receipt of an `--affected` run\n([Wave 3, Step 3](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).",
+      "properties": {
+        "changed": {
+          "description": "Every file the version control reports as changed since the revision (committed,\nstaged, unstaged or untracked, deleted files included), relative to the cruise's base\ndirectory, sorted.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "closure": {
+          "description": "The modules the report kept: the changed modules and the modules that reach them, sorted.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "depth": {
+          "description": "How many steps of dependents were followed, when `--affected-depth` limited them.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "revision": {
+          "description": "The revision the working tree was compared with (`main` when `--affected` had no value).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "revision",
+        "changed",
+        "closure"
+      ],
+      "type": "object"
+    },
     "AttributeElement": {
       "description": "An attribute or decorator applied to a type or member.",
       "properties": {
@@ -1657,6 +1696,17 @@
       "additionalProperties": false,
       "description": "`summary`: violations, counts, the options and rule set used, the environment, plus the\nadditive receipt and vacuous-rule list.",
       "properties": {
+        "affected": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Affected"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Additive: what `--affected` compared and which modules it kept\n([Wave 3 plan § 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes))."
+        },
         "cache": {
           "anyOf": [
             {

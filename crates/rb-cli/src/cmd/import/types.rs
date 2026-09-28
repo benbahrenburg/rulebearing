@@ -330,19 +330,7 @@ pub fn solution_root(dir: &Path) -> PathBuf {
 /// The project file above `file`: its assembly name and folder.
 pub fn project_of(file: &Path, stop: &Path) -> Option<(String, PathBuf)> {
     for dir in file.ancestors().skip(1) {
-        let mut projects: Vec<PathBuf> = std::fs::read_dir(dir)
-            .map(|entries| {
-                entries
-                    .flatten()
-                    .map(|e| e.path())
-                    .filter(|p| {
-                        p.extension()
-                            .is_some_and(|x| x.eq_ignore_ascii_case("csproj"))
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
-        projects.sort();
+        let projects = projects_in(dir);
         if let Some(project) = projects.first() {
             let stem = project
                 .file_stem()
@@ -359,6 +347,62 @@ pub fn project_of(file: &Path, stop: &Path) -> Option<(String, PathBuf)> {
         }
     }
     None
+}
+
+/// The package id of NetArchTest's fork, which is not backwards compatible with NetArchTest 1.3.2.
+pub const NETARCHTEST_ENHANCED: &str = "NetArchTest.eNhancedEdition";
+
+/// Whether a project file references NetArchTest.eNhancedEdition: as a `PackageReference`, or as
+/// a `ProjectReference` to the project whose `<PackageId>` it is (the fork's own tests).
+pub fn references_enhanced(project: &Path) -> bool {
+    let Ok(text) = std::fs::read_to_string(project) else {
+        return false;
+    };
+    let included = |element: &str| -> Vec<String> {
+        text.split(&format!("<{element} "))
+            .skip(1)
+            .filter_map(|rest| {
+                let start = rest.find("Include=\"")? + "Include=\"".len();
+                let end = rest[start..].find('"')? + start;
+                Some(rest[start..end].trim().to_owned())
+            })
+            .collect()
+    };
+    if included("PackageReference")
+        .iter()
+        .any(|p| p.eq_ignore_ascii_case(NETARCHTEST_ENHANCED))
+    {
+        return true;
+    }
+    let dir = project.parent().unwrap_or(Path::new(""));
+    included("ProjectReference").iter().any(|reference| {
+        let referenced = dir.join(reference.replace('\\', "/"));
+        std::fs::read_to_string(referenced).is_ok_and(|other| {
+            other.split("<PackageId>").nth(1).is_some_and(|rest| {
+                rest.split("</PackageId>")
+                    .next()
+                    .is_some_and(|id| id.trim().eq_ignore_ascii_case(NETARCHTEST_ENHANCED))
+            })
+        })
+    })
+}
+
+/// The project files in a folder, sorted.
+pub fn projects_in(dir: &Path) -> Vec<PathBuf> {
+    let mut projects: Vec<PathBuf> = std::fs::read_dir(dir)
+        .map(|entries| {
+            entries
+                .flatten()
+                .map(|e| e.path())
+                .filter(|p| {
+                    p.extension()
+                        .is_some_and(|x| x.eq_ignore_ascii_case("csproj"))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    projects.sort();
+    projects
 }
 
 /// `<AssemblyName>` in a project or props file, when it is a literal once
@@ -572,6 +616,40 @@ mod tests {
         )?;
         let found = project_of(&project.join("Order.cs"), &root);
         assert_eq!(found.map(|(name, _)| name), Some("Shop.Core".to_owned()));
+        std::fs::remove_dir_all(&root)
+    }
+
+    #[test]
+    fn the_enhanced_edition_is_found_by_package_or_project_reference() -> std::io::Result<()> {
+        let root = std::env::temp_dir().join(format!("rb-types-enhanced-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("sources/Lib"))?;
+        std::fs::create_dir_all(root.join("tests/T"))?;
+        let tests = root.join("tests/T/T.csproj");
+        std::fs::write(
+            &tests,
+            "<Project><ItemGroup><PackageReference Include=\"NetArchTest.Rules\" Version=\"1.3.2\" /></ItemGroup></Project>",
+        )?;
+        assert!(!references_enhanced(&tests));
+        std::fs::write(
+            &tests,
+            "<Project><ItemGroup><PackageReference Include=\"NetArchTest.eNhancedEdition\" Version=\"1.4.5\" /></ItemGroup></Project>",
+        )?;
+        assert!(references_enhanced(&tests));
+        std::fs::write(
+            root.join("sources/Lib/Lib.csproj"),
+            "<Project><PropertyGroup><PackageId>NetArchTest.eNhancedEdition </PackageId></PropertyGroup></Project>",
+        )?;
+        std::fs::write(
+            &tests,
+            "<Project><ItemGroup><ProjectReference Include=\"..\\..\\sources\\Lib\\Lib.csproj\" /></ItemGroup></Project>",
+        )?;
+        assert!(references_enhanced(&tests));
+        assert_eq!(
+            projects_in(&root.join("tests/T")),
+            std::slice::from_ref(&tests)
+        );
+        assert!(!references_enhanced(&root.join("missing.csproj")));
         std::fs::remove_dir_all(&root)
     }
 }

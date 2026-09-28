@@ -30,6 +30,16 @@
 
 `dot`, `ddot`, `archi`, `flat`, `mermaid`, `d2` and `metrics` arrive later in wave 2; `html`, `markdown`, `anon` and `plantuml` in wave 3. Asking for one now exits 2 and names the wave.
 
+## `diff` renderings
+
+`rulebearing diff` renders its own document, not a cruise result, and takes its own three output types ([cli.md § diff](cli.md#diff)):
+
+| Output type | Writes |
+| --- | --- |
+| `json` | The diff document: `base`, `head`, `addedEdges`, `removedEdges`, `newViolations`, `resolvedViolations`, `ratchets`, pretty-printed |
+| `markdown` | A heading, the two sides when known, a line of counts, then one table per section and one line for an empty section; the body of the pull-request comment |
+| `agent` | One line per new violation (`new <id> <severity> <rule>: <from:line:column> -> <to>. Fix: <fix>`), then one line of counts |
+
 ## Options
 
 | Option | Reporter | Effect |

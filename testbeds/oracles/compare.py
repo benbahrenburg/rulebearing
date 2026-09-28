@@ -34,7 +34,11 @@ a file under the imported folder that uses ArchUnitNET or NetArchTest) beside th
 rules `rulebearing import archunit` named from its method (`kebab(method)`, then `-2`, `-3` for more
 chains in the same method), read from the JUnit report where each rule is one test case. A
 test whose chains the importer wrote commented out is `stays` (custom predicate) or
-`not-imported` (with the importer's reason), recorded and not counted as a disagreement.
+`not-imported` (with the importer's reason), recorded and not counted as a disagreement. A test
+that runs no rule at all (it queries the architecture with `GetTypes()` or LINQ and asserts in
+C#) is written by the importer as a commented-out entry whose reason begins "stays in", so it is
+`stays` too, as a custom predicate is. A test the importer wrote nothing for is `not-imported`:
+it runs a rule the importer did not find.
 
 A rule Rulebearing reports as a JUnit `<error>` (vacuous, expired, a ratchet without a budget)
 could not be checked, so a contract or test with one has the verdict `error`, never a pass or a
@@ -921,7 +925,10 @@ def dotnet_row(
         row.update(
             rulebearing=None,
             verdict="not-imported",
-            reason="no fluent rule the importer reads (the test queries the architecture in C#)",
+            reason=(
+                "the importer wrote no entry for this test: it runs a rule through code the "
+                "importer does not follow"
+            ),
         )
         return row
     if not active:

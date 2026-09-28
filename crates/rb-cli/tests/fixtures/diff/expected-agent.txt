@@ -1,0 +1,2 @@
+new RB-915449e6 error routes-not-to-web: src/routes/b.ts:1:1 -> src/web/view.ts. Fix: Return data from the route and render it in src/web
+diff: 1 new violation, 1 resolved; 1 edge added, 1 removed; 1 ratchet changed

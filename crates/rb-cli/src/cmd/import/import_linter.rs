@@ -32,7 +32,7 @@
 //! | `unmatched_ignore_imports_alerting = none` or `warn` | `allowEmpty: true`, so an entry that matches nothing is not vacuous |
 //! | `exclude_type_checking_imports = True` | `dependencyTypesNot: [type-only]`; `protected` allows `type-only` imports of its modules |
 //! | the root packages | `chainsThrough`, on a rule that follows chains: grimp's graph holds the root packages only |
-//! | a folder without `__init__.py` below a root package | `modulesNot`, the topmost such folder, read from the tree when imported |
+//! | a folder without `__init__.py` below a root package | `modulesNot`, the topmost such folder, read from the tree when imported, and `redirect` from that folder into the root package's `__init__.py`: grimp reads none of the folder's imports and gives an import of one of its modules to the root package that holds it ([ADR-0051](../../../../../docs/adr/0051-a-rule-redirects-the-imports-it-sees.md)) |
 //!
 //! `layers` is written expanded rather than as the `layers` shorthand because the shorthand has
 //! neither `reachable` nor sibling layers, and import-linter checks chains; the expansion is the
@@ -420,6 +420,16 @@ impl Layout {
         layout
     }
 
+    /// The folder of the root package holding `path` (repository-relative), the deepest when
+    /// roots nest.
+    fn root_folder(&self, path: &str) -> Option<String> {
+        self.homes
+            .iter()
+            .map(|(root, home)| pattern::join(home, &root.replace('.', "/")))
+            .filter(|base| path.starts_with(&format!("{base}/")))
+            .max_by_key(String::len)
+    }
+
     /// The Python files under each root package's folder, as path patterns: the modules a chain
     /// may pass through in grimp's graph.
     fn root_patterns(&self) -> Vec<String> {
@@ -619,6 +629,10 @@ struct Narrowing {
     type_only: bool,
     /// The folders grimp does not walk.
     portions: Vec<String>,
+    /// Each folder grimp does not walk as a `redirect` entry: its path prefix, and the
+    /// `__init__.py` of the root package holding it, to which grimp gives an import of its
+    /// modules.
+    redirect: Vec<(String, String)>,
     /// The root packages' files, for a rule that follows chains.
     roots: Vec<String>,
     /// `unmatched_ignore_imports_alerting` is `none` or `warn`.
@@ -639,6 +653,14 @@ impl Narrowing {
                 .iter()
                 .map(|p| pattern::path_prefix(p))
                 .collect(),
+            redirect: layout
+                .portions
+                .iter()
+                .filter_map(|p| {
+                    let root = layout.root_folder(p)?;
+                    Some((pattern::path_prefix(p), pattern::join(&root, "__init__.py")))
+                })
+                .collect(),
             roots: layout.root_patterns(),
             quiet: matches!(alerting.as_deref(), Some("none" | "warn")),
         }
@@ -658,6 +680,22 @@ impl Narrowing {
         }
         if !self.portions.is_empty() {
             pairs.push(("modulesNot", path_value(&self.portions)));
+        }
+        if !self.redirect.is_empty() {
+            pairs.push((
+                "redirect",
+                Node::List(
+                    self.redirect
+                        .iter()
+                        .map(|(to, into)| {
+                            Item::plain(Node::map(vec![
+                                ("to", Node::str(to.clone())),
+                                ("into", Node::str(into.clone())),
+                            ]))
+                        })
+                        .collect(),
+                ),
+            ));
         }
         if chains && !self.roots.is_empty() {
             pairs.push(("chainsThrough", path_value(&self.roots)));
@@ -1311,7 +1349,7 @@ fn document(settings: &Settings, layout: &Layout, display: &str) -> Document {
     }
     if !layout.portions.is_empty() {
         header.push(format!(
-            "import-linter does not read {}, folders without `__init__.py` below a root package: each rule's `graph.modulesNot` leaves them out as the tree stood when imported, so run the import again when one gains an `__init__.py`.",
+            "import-linter does not read {}, folders without `__init__.py` below a root package: each rule's `graph.modulesNot` leaves their imports out and `graph.redirect` gives an import of one of their modules to the root package holding the folder, as grimp does, as the tree stood when imported, so run the import again when one gains an `__init__.py`.",
             layout.portions.join(", ")
         ));
     }
@@ -1504,13 +1542,42 @@ mod tests {
                 "ignore",
                 "dependencyTypesNot",
                 "modulesNot",
+                "redirect",
                 "chainsThrough"
             ]
         );
         assert_eq!(
             keys(full.node(false)),
-            ["ignore", "dependencyTypesNot", "modulesNot"]
+            ["ignore", "dependencyTypesNot", "modulesNot", "redirect"]
         );
+        // An import of a module in the unwalked folder leads to the root package holding it,
+        // however deep the folder, as grimp attributes it; nested roots take the deepest.
+        assert_eq!(
+            full.redirect,
+            [("^app/ns(/|$)".to_owned(), "app/__init__.py".to_owned())]
+        );
+        let deep = Layout {
+            homes: BTreeMap::from([
+                ("app".to_owned(), "src".to_owned()),
+                ("app.plugins".to_owned(), "src".to_owned()),
+            ]),
+            portions: vec!["src/app/sub/ns".into(), "src/app/plugins/loose".into()],
+            ..Layout::default()
+        };
+        assert_eq!(
+            Narrowing::new(&contract(&[]), &deep, false, &mut out).redirect,
+            [
+                (
+                    "^src/app/sub/ns(/|$)".to_owned(),
+                    "src/app/__init__.py".to_owned()
+                ),
+                (
+                    "^src/app/plugins/loose(/|$)".to_owned(),
+                    "src/app/plugins/__init__.py".to_owned()
+                )
+            ]
+        );
+        assert_eq!(deep.root_folder("elsewhere/x"), None);
         let loud = Narrowing::new(
             &contract(&[("ignore_imports", "app.a -> app.b")]),
             &layout,

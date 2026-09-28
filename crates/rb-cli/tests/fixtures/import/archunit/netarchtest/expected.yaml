@@ -1,6 +1,6 @@
 # Imported from tests/Shop.ArchitectureTests by `rulebearing import archunit`.
 # Each rule is preceded by the C# chain it came from; a chain that cannot be translated is kept, commented out, with the reason.
-# 12 rule chains read: 6 imported, 6 commented out.
+# 12 rule chains read: 7 imported, 5 commented out.
 $schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
 # NetArchTest's Types.InAssembly(...) loads the assemblies its tests name
 languages:
@@ -13,6 +13,7 @@ rules:
     #   .GetResult()   [DomainTests.cs:16]
     - name: domain-should-not-depend-on-infrastructure
       comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:16"
+      allowEmpty: true
       select:
         kind: type
         language: dotnet
@@ -31,6 +32,7 @@ rules:
     #   .GetResult()   [DomainTests.cs:27]
     - name: aggregates-are-named-and-abstract-or-sealed
       comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:27"
+      allowEmpty: true
       select:
         kind: type
         language: dotnet
@@ -51,6 +53,7 @@ rules:
     #   .GetResult()   [DomainTests.cs:40]
     - name: or-starts-a-new-group
       comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:40"
+      allowEmpty: true
       select:
         kind: type
         language: dotnet
@@ -77,6 +80,7 @@ rules:
     #   .GetResult()   [DomainTests.cs:51]
     - name: repositories-are-interfaces
       comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:51"
+      allowEmpty: true
       select:
         kind: type
         language: dotnet
@@ -118,6 +122,7 @@ rules:
     # not imported: the test expects this rule to be broken (Assert.False, Assert.Throws, AssertOnlyViolations), so it is not a rule to enforce
     # - name: not-imported-3
     #   comment: "imported from tests/Shop.ArchitectureTests/DomainTests.cs:66"
+    #   allowEmpty: true
     #   select:
     #     kind: type
     #     language: dotnet
@@ -137,6 +142,7 @@ rules:
     #   with [InlineData(Modules.Domain, "Shop.Infrastructure")]
     - name: module-does-not-depend-on
       comment: "imported from tests/Shop.ArchitectureTests/ModuleTests.cs:12"
+      allowEmpty: true
       select:
         kind: type
         language: dotnet
@@ -155,6 +161,7 @@ rules:
     #   with [InlineData(Modules.Billing, "Shop.Web")]
     - name: module-does-not-depend-on-2
       comment: "imported from tests/Shop.ArchitectureTests/ModuleTests.cs:12"
+      allowEmpty: true
       select:
         kind: type
         language: dotnet
@@ -176,6 +183,29 @@ rules:
     # Types.InAssembly(Core).That().ResideInNamespace(Modules.Domain)
     #   .Should().NotHaveDependencyOnAny(names)
     #   .ShouldSucceed()   [ModuleTests.cs:29]
-    # not imported: `Solution.Types.That().ResideInNamespace(Modules.Billing).Names()` calls `Names`, an extension method the sources declare, whose result the importer does not evaluate
-    # - name: helper-results-are-not-read
-    #   comment: "imported from tests/Shop.ArchitectureTests/ModuleTests.cs:29"
+    - name: helper-results-are-not-read
+      comment: "imported from tests/Shop.ArchitectureTests/ModuleTests.cs:29"
+      allowEmpty: true
+      select:
+        kind: type
+        language: dotnet
+        where:
+          all:
+            - resideInAssembly: Shop.Core
+            - haveFullNameStartingWith: Shop.Core.Domain
+      should:
+        notDependOnAny:
+          kind: type
+          language: dotnet
+          where:
+            any:
+              - all:
+                  - resideInAssembly: Shop.Core
+                  - haveFullNameStartingWith: Shop.Core.Billing
+              - areNestedIn:
+                  kind: type
+                  language: dotnet
+                  where:
+                    all:
+                      - resideInAssembly: Shop.Core
+                      - haveFullNameStartingWith: Shop.Core.Billing
