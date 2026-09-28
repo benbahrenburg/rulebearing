@@ -1433,6 +1433,33 @@ mod tests {
             ])?,
             [("N.A.X".into(), "N.B".into(), OneToOne)]
         );
+        // A package's arrow to an unrelated slice stays a package arrow.
+        assert_eq!(
+            draw(&[
+                packaged("N.A", &[("N.A.T", "N.B.T")]),
+                packaged("N.A.X", &[]),
+                packaged("N.B", &[]),
+            ])?,
+            [("N.A".into(), "N.B".into(), PackageToOne)]
+        );
+        // A slice's arrow to a slice whose name contains its own (not as a prefix) is dropped.
+        assert!(
+            draw(&[
+                packaged("N.B", &[("N.B.T", "N.AN.B.T")]),
+                packaged("N.AN.B", &[]),
+            ])?
+            .is_empty()
+        );
+        // Upstream drops such an arrow only in its second pass, so it still takes a package
+        // arrow into a part of its target down with it first.
+        assert!(
+            draw(&[
+                packaged("N.BQ", &[("N.BQ.T", "N.AN.BQ.T"), ("N.BQ.T", "N.AN.T")]),
+                packaged("N.AN.BQ", &[]),
+                packaged("N.AN", &[]),
+            ])?
+            .is_empty()
+        );
         // Without a namespace on every slice nothing is rewritten.
         assert_eq!(
             draw(&[
