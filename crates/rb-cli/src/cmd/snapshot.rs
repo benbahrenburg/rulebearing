@@ -265,9 +265,10 @@ pub fn read_all(directory: &Path) -> Result<Vec<Snapshot>, String> {
         .map(|e| e.path())
         .filter(|p| {
             p.is_file()
-                && p.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
-                    n.ends_with(".json") && !n.ends_with(CRUISE_SUFFIX) && !n.starts_with('.')
-                })
+                && p.extension().is_some_and(|e| e == "json")
+                && p.file_name()
+                    .and_then(|n| n.to_str())
+                    .is_some_and(|n| !n.ends_with(CRUISE_SUFFIX) && !n.starts_with('.'))
         })
         .collect();
     files.sort();
@@ -283,21 +284,20 @@ pub fn read_all(directory: &Path) -> Result<Vec<Snapshot>, String> {
 
 /// The version to record: `--version`, else the git tag at `HEAD`.
 fn version(ctx: &Context<'_>, given: Option<&str>) -> Result<String, String> {
-    let version = match given {
-        Some(v) => v.to_owned(),
-        None => {
-            let tags = crate::cmd::diff::git(&ctx.cwd, &["tag", "--points-at", "HEAD"])
-                .unwrap_or_default();
-            let mut tags: Vec<&str> = tags
-                .lines()
-                .map(str::trim)
-                .filter(|t| !t.is_empty())
-                .collect();
-            rb_config::version::sort(&mut tags);
-            tags.last().map(|t| (*t).to_owned()).ok_or_else(|| {
-                "no --version was given and HEAD carries no git tag; pass --version with the release this snapshot records".to_owned()
-            })?
-        }
+    let version = if let Some(v) = given {
+        v.to_owned()
+    } else {
+        let tags =
+            crate::cmd::diff::git(&ctx.cwd, &["tag", "--points-at", "HEAD"]).unwrap_or_default();
+        let mut tags: Vec<&str> = tags
+            .lines()
+            .map(str::trim)
+            .filter(|t| !t.is_empty())
+            .collect();
+        rb_config::version::sort(&mut tags);
+        tags.last().map(|t| (*t).to_owned()).ok_or_else(|| {
+            "no --version was given and HEAD carries no git tag; pass --version with the release this snapshot records".to_owned()
+        })?
     };
     invalid_version(&version).map_or(Ok(version), Err)
 }
@@ -427,7 +427,7 @@ pub fn run(ctx: &mut Context<'_>, args: &SnapshotArgs) -> Outcome {
 
 #[cfg(test)]
 mod tests {
-    use rb_model::{Folder, Module, RatchetResult, RatchetStatus, RevisionData};
+    use rb_model::{Folder, Module, RatchetResult, RatchetStatus, RevisionData, Summary};
 
     use super::*;
 
@@ -442,8 +442,7 @@ mod tests {
     }
 
     fn document() -> Result<GraphDocument, serde_json::Error> {
-        let mut document = GraphDocument::default();
-        document.modules = serde_json::from_value::<Vec<Module>>(serde_json::json!([
+        let modules = serde_json::from_value::<Vec<Module>>(serde_json::json!([
             {
                 "source": "src/a.ts",
                 "dependencies": [
@@ -453,7 +452,7 @@ mod tests {
             },
             { "source": "src/b.ts", "dependencies": [], "valid": true }
         ]))?;
-        document.folders = Some(vec![
+        let folders = Some(vec![
             Folder {
                 name: "src/b".into(),
                 instability: Some(1.0),
@@ -470,20 +469,28 @@ mod tests {
                 ..Folder::default()
             },
         ]);
-        document.summary.error = 2;
-        document.summary.warn = 1;
-        document.summary.ratchets = Some(vec![RatchetResult {
-            name: "via-service".into(),
-            budget: "b.json".into(),
-            count: 4,
-            ceiling: Some(5),
-            status: RatchetStatus::Held,
-        }]);
-        document.revision_data = Some(RevisionData {
-            sha1: "abc".into(),
-            ..RevisionData::default()
-        });
-        Ok(document)
+        let summary = Summary {
+            error: 2,
+            warn: 1,
+            ratchets: Some(vec![RatchetResult {
+                name: "via-service".into(),
+                budget: "b.json".into(),
+                count: 4,
+                ceiling: Some(5),
+                status: RatchetStatus::Held,
+            }]),
+            ..Summary::default()
+        };
+        Ok(GraphDocument {
+            modules,
+            folders,
+            summary,
+            revision_data: Some(RevisionData {
+                sha1: "abc".into(),
+                ..RevisionData::default()
+            }),
+            ..GraphDocument::default()
+        })
     }
 
     #[test]

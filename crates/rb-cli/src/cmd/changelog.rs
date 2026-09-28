@@ -163,11 +163,9 @@ pub struct Changelog {
 
 /// The index of the first of `patterns` that matches `path`.
 fn layer(patterns: &[String], path: &str) -> Option<usize> {
-    patterns.iter().position(|p| {
-        pattern::matcher(p)
-            .map(|m| m.is_match(path))
-            .unwrap_or(false)
-    })
+    patterns
+        .iter()
+        .position(|p| pattern::matcher(p).is_ok_and(|m| m.is_match(path)))
 }
 
 /// Every boundary of `config` the edge `from -> to` crosses: the `layers` entries in order, then
@@ -304,7 +302,7 @@ pub fn compute(
                 .into_iter()
                 .filter_map(|e| {
                     let boundaries = boundaries(config, &e.from, &e.to);
-                    (!boundaries.is_empty()).then(|| BoundaryEdge {
+                    (!boundaries.is_empty()).then_some(BoundaryEdge {
                         from: e.from,
                         to: e.to,
                         boundaries,
@@ -352,6 +350,43 @@ fn boundary_text(b: &Boundary) -> String {
     }
 }
 
+/// The "New edges across boundaries" section.
+fn edges_section(log: &Changelog, out: &mut String) {
+    out.push_str("\n## New edges across boundaries\n\n");
+    match &log.new_edges_across_boundaries {
+        None => {
+            let _ = writeln!(
+                out,
+                "Not available: the edges need the cruise results `rulebearing snapshot` writes beside both snapshots, and {} missing.",
+                log.missing_cruise_results
+                    .iter()
+                    .map(|m| format!("`{m}`"))
+                    .collect::<Vec<_>>()
+                    .join(" and ")
+                    + if log.missing_cruise_results.len() == 1 {
+                        " is"
+                    } else {
+                        " are"
+                    }
+            );
+        }
+        Some(edges) if edges.is_empty() => out.push_str("None.\n"),
+        Some(edges) => {
+            out.push_str("| From | To | Boundary |\n| --- | --- | --- |\n");
+            for e in edges {
+                let crossed: Vec<String> = e.boundaries.iter().map(boundary_text).collect();
+                let _ = writeln!(
+                    out,
+                    "| `{}` | `{}` | {} |",
+                    cell(&e.from),
+                    cell(&e.to),
+                    crossed.join("; ")
+                );
+            }
+        }
+    }
+}
+
 /// The `markdown` rendering.
 pub fn markdown(log: &Changelog) -> String {
     let (a, b) = (&log.since, &log.to);
@@ -390,39 +425,7 @@ pub fn markdown(log: &Changelog) -> String {
     ] {
         let _ = writeln!(out, "| {label} | {x} | {y} | {} |", change(x, y));
     }
-    out.push_str("\n## New edges across boundaries\n\n");
-    match &log.new_edges_across_boundaries {
-        None => {
-            let _ = writeln!(
-                out,
-                "Not available: the edges need the cruise results `rulebearing snapshot` writes beside both snapshots, and {} missing.",
-                log.missing_cruise_results
-                    .iter()
-                    .map(|m| format!("`{m}`"))
-                    .collect::<Vec<_>>()
-                    .join(" and ")
-                    + if log.missing_cruise_results.len() == 1 {
-                        " is"
-                    } else {
-                        " are"
-                    }
-            );
-        }
-        Some(edges) if edges.is_empty() => out.push_str("None.\n"),
-        Some(edges) => {
-            out.push_str("| From | To | Boundary |\n| --- | --- | --- |\n");
-            for e in edges {
-                let crossed: Vec<String> = e.boundaries.iter().map(boundary_text).collect();
-                let _ = writeln!(
-                    out,
-                    "| `{}` | `{}` | {} |",
-                    cell(&e.from),
-                    cell(&e.to),
-                    crossed.join("; ")
-                );
-            }
-        }
-    }
+    edges_section(log, &mut out);
     out.push_str("\n## Retired rules\n\n");
     if log.retired_rules.is_empty() {
         out.push_str("None.\n");

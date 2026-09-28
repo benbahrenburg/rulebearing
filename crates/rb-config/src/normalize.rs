@@ -934,13 +934,11 @@ mod tests {
                 "{}",
                 check.warnings[0].message
             );
-            match check_keys(&config, CompatMode::DependencyCruiser, true) {
-                Err(ConfigError::Strict { rule, message }) => {
-                    assert_eq!(rule, "r");
-                    assert!(message.contains(key), "{message}");
-                }
-                other => panic!("{key}: {other:?}"),
-            }
+            let strict = check_keys(&config, CompatMode::DependencyCruiser, true);
+            assert!(
+                matches!(&strict, Err(ConfigError::Strict { rule, message }) if rule == "r" && message.contains(key)),
+                "{key}: {strict:?}"
+            );
         }
         Ok(())
     }
