@@ -24,6 +24,10 @@ Commands:
   baseline    Write the current violations to a known-violations file, as depcruise-baseline does
   diff        Added and removed edges, new and resolved violations and moved ratchets between two
               results, or between a revision and the working tree
+  snapshot    Summarise the architecture at a release into .graph/snapshots, for changelog and rules
+              --unused
+  changelog   The architecture between two snapshots in words: new edges across boundaries, retired
+              rules, ratchets that fell
   import      Translate ArchUnitNET, NetArchTest, import-linter or eslint rules into a
               rulebearing.yaml
   wrap-html   Wrap an SVG read from stdin in the page x-dot-webpage writes: dependency-cruiser's
