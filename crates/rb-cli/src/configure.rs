@@ -333,9 +333,10 @@ pub fn cache_flags(config: &mut Config, args: &CruiseArgs) {
         .unwrap_or_else(|| default_cache_folder(config).to_owned());
     config.options.cache = Some(CacheSetting::On(rb_model::CacheOptions {
         folder,
-        strategy: args
-            .cache_strategy
-            .map_or(rb_model::CacheStrategy::Metadata, |s| s.strategy()),
+        strategy: args.cache_strategy.map_or(
+            rb_model::CacheStrategy::Metadata,
+            crate::cli::CacheStrategyArg::strategy,
+        ),
         compress: None,
     }));
 }
@@ -694,5 +695,81 @@ mod tests {
         let mut mixed = json!({ "ddot": { "collapsePattern": ["a", null, 1] } });
         normalize_reporter_options(&mut mixed);
         assert_eq!(mixed["ddot"]["collapsePattern"], json!("a||1"));
+    }
+
+    #[test]
+    fn the_cache_flags_lay_over_options_cache_as_dependency_cruiser_lays_them() {
+        use crate::cli::CacheStrategyArg;
+        use rb_config::model::CacheSetting;
+        use rb_model::{CacheOptions, CacheStrategy};
+        let native = Config {
+            compat: rb_config::CompatMode::Native,
+            files: vec![PathBuf::from("rulebearing.yaml")],
+            ..Config::default()
+        };
+        let cruiser = Config {
+            compat: rb_config::CompatMode::DependencyCruiser,
+            files: vec![PathBuf::from(".dependency-cruiser.json")],
+            ..Config::default()
+        };
+        assert_eq!(default_cache_folder(&native), ".graph/cache");
+        assert_eq!(
+            default_cache_folder(&cruiser),
+            "node_modules/.cache/dependency-cruiser"
+        );
+        assert_eq!(default_cache_folder(&Config::default()), ".graph/cache");
+        let configured = Some(CacheSetting::On(CacheOptions {
+            compress: Some(true),
+            ..CacheOptions::in_folder("from-config")
+        }));
+        let args =
+            |cache: Option<&str>, strategy: Option<CacheStrategyArg>, off: bool| CruiseArgs {
+                cache: cache.map(str::to_owned),
+                cache_strategy: strategy,
+                no_cache: off,
+                ..CruiseArgs::default()
+            };
+        let table = [
+            (args(None, None, false), configured.clone()),
+            (
+                args(Some(""), None, false),
+                Some(CacheSetting::On(CacheOptions::in_folder(
+                    "node_modules/.cache/dependency-cruiser",
+                ))),
+            ),
+            (
+                args(Some("f"), Some(CacheStrategyArg::Content), false),
+                Some(CacheSetting::On(CacheOptions {
+                    strategy: CacheStrategy::Content,
+                    ..CacheOptions::in_folder("f")
+                })),
+            ),
+            (
+                args(None, Some(CacheStrategyArg::Metadata), false),
+                Some(CacheSetting::On(CacheOptions::in_folder(
+                    "node_modules/.cache/dependency-cruiser",
+                ))),
+            ),
+            (
+                args(Some("f"), Some(CacheStrategyArg::Content), true),
+                Some(CacheSetting::Off),
+            ),
+        ];
+        for (flags, expected) in table {
+            let mut config = Config {
+                options: rb_config::model::Options {
+                    cache: configured.clone(),
+                    ..rb_config::model::Options::default()
+                },
+                ..cruiser.clone()
+            };
+            cache_flags(&mut config, &flags);
+            assert_eq!(config.options.cache, expected, "{flags:?}");
+        }
+        assert_eq!(CacheStrategyArg::Content.strategy(), CacheStrategy::Content);
+        assert_eq!(
+            CacheStrategyArg::Metadata.strategy(),
+            CacheStrategy::Metadata
+        );
     }
 }

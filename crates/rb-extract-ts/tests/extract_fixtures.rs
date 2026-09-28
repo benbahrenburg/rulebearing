@@ -684,18 +684,67 @@ impl Drop for CacheBustingTree {
     }
 }
 
-#[test]
-fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
-    let root = fixtures();
-    let index: Index = serde_json::from_str(&std::fs::read_to_string(root.join("INDEX.json"))?)?;
-    prepare(&root);
+/// Held by each test that replays the cases: both rename the cache-busting trees, so they take
+/// turns rather than race.
+static FIXTURE_TREE: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+/// Every recorded case, with the index they were recorded under.
+fn recorded_cases(root: &Path) -> Result<(Index, Vec<Case>), Box<dyn Error>> {
+    let index: Index = serde_json::from_str(&std::fs::read_to_string(root.join("INDEX.json"))?)?;
+    prepare(root);
     let mut cases = Vec::new();
     for spec in &index.specs {
         let text = std::fs::read_to_string(root.join(&spec.file))?;
         let recorded: Vec<Case> = serde_json::from_str(&text)?;
         cases.extend(recorded);
     }
+    Ok((index, cases))
+}
+
+/// Layer 1 under incremental extraction (see the module doc).
+#[test]
+fn layer1_extract_cases_incrementally() -> Result<(), Box<dyn Error>> {
+    let _turn = FIXTURE_TREE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let root = fixtures();
+    let (_, cases) = recorded_cases(&root)?;
+    let (mut compared, mut variants) = (0usize, 0usize);
+    let mut failures: Vec<(String, String)> = Vec::new();
+    for case in cases.iter().filter(|c| c.surface == "extract") {
+        let tree = CacheBustingTree::for_case(&root, &case.id);
+        let outcome = incremental_variants(&root, case);
+        drop(tree);
+        match outcome {
+            Ok(count) => {
+                compared += 1;
+                variants += count;
+            }
+            Err(detail) => failures.push((case.id.clone(), detail)),
+        }
+    }
+    println!(
+        "layer1-incremental: cases={compared} variants={variants} mismatches={}",
+        failures.len()
+    );
+    assert!(
+        failures.is_empty(),
+        "incremental extraction differs from full extraction: {failures:#?}"
+    );
+    assert!(
+        variants > compared,
+        "the incremental check compared nothing"
+    );
+    Ok(())
+}
+
+#[test]
+fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
+    let _turn = FIXTURE_TREE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let root = fixtures();
+    let (index, cases) = recorded_cases(&root)?;
     assert_eq!(
         cases.len(),
         index.cases,
@@ -704,20 +753,9 @@ fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
 
     let started = Instant::now();
     let mut failures: Vec<(&Case, Failure)> = Vec::new();
-    let (mut incremental_cases, mut incremental_variants_run) = (0usize, 0usize);
-    let mut incremental_failures: Vec<(String, String)> = Vec::new();
     for case in &cases {
         let tree = CacheBustingTree::for_case(&root, &case.id);
         let outcome = replay(&root, case);
-        if case.surface == "extract" {
-            match incremental_variants(&root, case) {
-                Ok(count) => {
-                    incremental_cases += 1;
-                    incremental_variants_run += count;
-                }
-                Err(detail) => incremental_failures.push((case.id.clone(), detail)),
-            }
-        }
         drop(tree);
         let failure = match (outcome, &case.expected, &case.throws) {
             (Ok(actual), Some(expected), _) if &actual == expected => None,
@@ -797,18 +835,6 @@ fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
     for (class, count) in &by_class {
         println!("layer1: failing class={} count={count}", class.name());
     }
-    println!(
-        "layer1-incremental: cases={incremental_cases} variants={incremental_variants_run} mismatches={}",
-        incremental_failures.len()
-    );
-    assert!(
-        incremental_failures.is_empty(),
-        "incremental extraction differs from full extraction: {incremental_failures:#?}"
-    );
-    assert!(
-        incremental_variants_run > incremental_cases,
-        "the incremental check compared nothing"
-    );
     let floor = threshold()?;
     assert!(
         ratio >= floor,

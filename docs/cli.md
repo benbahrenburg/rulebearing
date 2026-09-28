@@ -40,6 +40,32 @@ A known-violations file is a JSON array of `knownViolations` entries, each keyed
 
 `shrink-only` is import-linter's unmatched-ignore alerting ([design § import-linter contracts](artifacts/design.md#import-linter-contracts-for-the-python-teams-who-know-them)): run it in CI and a fixed finding fails the build until its entry leaves the baseline. `--expires`, `--owner` and `--reason` fill those fields on each entry written that lacks them; an entry past its `expires` date stops applying the day after and fails the run ([ADR-0031](adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)).
 
+## The cache
+
+`cruise --cache [folder]` keeps the extraction and, on the next run, reads again only what changed ([coverage § Command line](artifacts/dependency-cruiser-18.2.0-coverage.md#command-line) rows `--cache [folder]`, `--cache-strategy`, `--no-cache`; [Wave 3, Steps 1 and 2](plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)). The rules are evaluated afresh on every run, so a cached run reports exactly what a cold run reports.
+
+| Flag | Meaning |
+| --- | --- |
+| `-C, --cache [FOLDER]` | Use the cache in `FOLDER`, relative to the working directory. Without a value: `.graph/cache`, or `node_modules/.cache/dependency-cruiser` under a dependency-cruiser configuration, as dependency-cruiser does. Replaces `options.cache` ([config.md](config.md#the-cache)) |
+| `--cache-strategy metadata\|content` | How a change is found. `metadata` (the default): `git` lists what changed since the recorded commit, and only files whose size or modification time moved are hashed. `content`: every input is hashed. Turns the cache on by itself |
+| `--no-cache` | No cache, whatever `options.cache` or `--cache` say |
+
+The folder holds `manifest.json` (the build's version, a `sha256:` hash of the configuration and the extraction settings, the worktree, `HEAD`, the strategy, and a `sha256:` hash per input) and the extraction it names. Before anything is reused the manifest must match this build, this configuration, this worktree and this strategy, and the extraction must match its recorded hash; otherwise the entry is ignored and rewritten, never trusted, and a folder that cannot be written is a warning. What happens next depends on what changed:
+
+| What changed | What runs |
+| --- | --- |
+| nothing an extractor reads | nothing is read: the stored extraction is used |
+| TypeScript or Python files | those files are read again; the rest come from the cache |
+| an assembly or a PDB | the .NET graph is read again whole, so edges between assemblies stay exact |
+| a file added or deleted, a manifest (`package.json` anywhere, `tsconfig*.json`, project and lock files), or git cannot say | everything is read again |
+
+`summary.cache` records `{ "hit": true | false, "strategy": ... }`, so a JSON result from a warm run differs from a cold run's in that field alone; `--strict-schema` removes it. `--progress` names how the extract stage was served. Outside a git repository the `metadata` strategy lists files and compares their size and modification time instead of stopping as dependency-cruiser does. A file edited without changing its size or time, and not listed by git, is only seen by `content`.
+
+```sh
+rulebearing cruise --cache -T err src                    # .graph/cache, metadata strategy
+rulebearing cruise --cache /tmp/rb --cache-strategy content -T json src
+```
+
 ## Flags the query commands share
 
 | Flag | Meaning |

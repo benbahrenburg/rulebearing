@@ -86,6 +86,19 @@ Options:
       --suffix <SUFFIX>
           Suffix for links in the reports
 
+  -C, --cache [<FOLDER>]
+          Keep the extraction in FOLDER and re-read only what changed since the last run (default
+          .graph/cache; node_modules/.cache/dependency-cruiser for a dependency-cruiser
+          configuration); replaces options.cache
+
+      --cache-strategy <STRATEGY>
+          How the cache finds what changed: metadata (git and file size and time, the default) or
+          content (every input hashed)
+
+          Possible values:
+          - metadata: git status and diff against the recorded commit, and file size and time
+          - content:  Every input hashed
+
       --ts-pre-compilation-deps [<VALUE>]
           Keep TypeScript edges that vanish in compilation: true, false or specify
 

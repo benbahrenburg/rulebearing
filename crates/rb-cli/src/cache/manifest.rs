@@ -285,6 +285,9 @@ fn is_extraction_file(name: &str) -> bool {
 }
 
 /// Reads the entry in `folder` and checks it against `key` and `options`, as the module doc lists.
+///
+/// # Errors
+/// A [`Miss`] naming why the entry cannot be used; the caller extracts afresh.
 pub fn load(folder: &Path, key: &Key, options: &CacheOptions) -> Result<Entry, Miss> {
     let manifest_path = folder.join(MANIFEST_FILE);
     let text = match std::fs::read(&manifest_path) {

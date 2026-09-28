@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs a fuzz target for a time budget, seeded with the committed fixtures.
 # Plan: docs/plans/pending/0000-wave-0-spike.md, Step 9. Workflow: .github/workflows/fuzz.yml.
-# Usage: fuzz/run.sh [target] [seconds]   (targets: metadata_reader, ecma335, pdb, config_js, config_data; default metadata_reader, 600)
+# Usage: fuzz/run.sh [target] [seconds]   (targets: metadata_reader, ecma335, pdb, config_js, config_data, cache_manifest; default metadata_reader, 600)
 # Needs a nightly toolchain and cargo-fuzz (`cargo install cargo-fuzz`).
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"

@@ -318,12 +318,10 @@ pub fn extraction_hash(config: &Config, root: &Path, cwd: &Path, paths: &[String
         // Every option type serialises; an empty value would only make the entry a miss.
         serde_json::to_vec(value).unwrap_or_default()
     }
-    let within = cwd
-        .canonicalize()
-        .unwrap_or_else(|_| cwd.to_path_buf())
+    let canonical = cwd.canonicalize().unwrap_or_else(|_| cwd.to_path_buf());
+    let within = canonical
         .strip_prefix(root)
-        .map(slashed)
-        .unwrap_or_else(|_| slashed(cwd));
+        .map_or_else(|_| slashed(cwd), slashed);
     let features: Vec<&str> = [
         ("extract-ts", cfg!(feature = "extract-ts")),
         ("extract-dotnet", cfg!(feature = "extract-dotnet")),

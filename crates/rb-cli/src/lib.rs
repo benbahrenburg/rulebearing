@@ -13,7 +13,7 @@
 //!
 //! | Module | Does |
 //! | --- | --- |
-//! | [`cache`] | the worktree-aware graph cache the query commands read |
+//! | [`cache`] | the worktree-aware graph cache the query commands read, and `cruise --cache` |
 //! | [`cli`] | every flag, declared once |
 //! | [`cmd`] | one module per subcommand |
 //! | [`pipeline`] | the five stages as one call |

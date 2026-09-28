@@ -404,10 +404,6 @@ fn decide(
 }
 
 /// Every input an entry written for `parts` records (the module doc of [`changes`] lists them).
-#[cfg_attr(
-    not(feature = "extract-dotnet"),
-    expect(unused_variables, reason = "only the .NET extractor reads assemblies")
-)]
 fn inputs(
     cwd: &Path,
     config: &Config,
@@ -611,6 +607,156 @@ mod tests {
             timestamp: String::new(),
             color_terminal: false,
         }
+    }
+
+    fn scope(dir: &Path) -> changes::Scope {
+        changes::Scope {
+            base: dir.to_path_buf(),
+            root: dir.to_path_buf(),
+            head: None,
+            extra_extensions: Vec::new(),
+            cache_folder: dir.join(".graph/cache"),
+        }
+    }
+
+    fn part(sources: &[&str]) -> rb_model::Extraction {
+        rb_model::Extraction {
+            modules: sources.iter().map(|s| rb_model::Module::new(*s)).collect(),
+            files: sources
+                .iter()
+                .map(|s| ((*s).to_owned(), rb_model::FileState::default()))
+                .collect(),
+            ..rb_model::Extraction::default()
+        }
+    }
+
+    #[test]
+    fn how_a_run_was_served_reads_as_a_sentence() {
+        assert_eq!(Served::Hit.to_string(), "from the cache");
+        assert_eq!(
+            Served::Incremental {
+                typescript: 2,
+                python: 1,
+                dotnet: true
+            }
+            .to_string(),
+            "incremental: 2 TypeScript and 1 Python files read again, .NET read again"
+        );
+        assert_eq!(
+            Served::Full("no entry".into()).to_string(),
+            "in full: no entry"
+        );
+        assert_eq!(Writing::default().wait(), None);
+        let failed = Writing(Some(std::thread::spawn(|| Err("disk full".to_owned()))));
+        assert_eq!(failed.wait().as_deref(), Some("disk full"));
+        drop(Writing(Some(std::thread::spawn(|| Ok(())))));
+    }
+
+    #[test]
+    fn names_follow_base_dir_and_assemblies_are_told_by_extension() {
+        let dir = Path::new("/repo");
+        let config = Config::default();
+        assert_eq!(
+            typescript_name(&scope(dir), &config, "src/a.ts"),
+            "src/a.ts"
+        );
+        let mut based = Config::default();
+        based.languages.typescript.base_dir = Some("web/./app".into());
+        assert_eq!(
+            typescript_name(&scope(dir), &based, "src/a.ts"),
+            "web/app/src/a.ts"
+        );
+        based.languages.typescript.base_dir = Some("web".into());
+        assert_eq!(
+            typescript_name(&scope(dir), &based, "../lib/b.ts"),
+            "lib/b.ts"
+        );
+        for (name, assembly) in [
+            ("bin/A.dll", true),
+            ("bin/A.PDB", true),
+            ("src/a.ts", false),
+            ("dll", false),
+        ] {
+            assert_eq!(is_assembly(name), assembly, "{name}");
+        }
+    }
+
+    #[test]
+    fn the_changes_decide_what_is_read_again() {
+        let dir = Path::new("/repo");
+        let config = Config::default();
+        let parts = Parts {
+            typescript: Some(part(&["src/a.ts", "src/b.ts"])),
+            dotnet: Some(rb_model::Extraction::default()),
+            python: Some(part(&["app/m.py"])),
+        };
+        let changed = |names: &[&str]| changes::Changes {
+            modified: names.iter().map(|n| (*n).to_owned()).collect(),
+            ..changes::Changes::default()
+        };
+        assert!(decide(&config, &scope(dir), &parts, &changed(&[])).is_none());
+        assert!(
+            decide(&config, &scope(dir), &parts, &changed(&["notes/x.json"])).is_none(),
+            "a file no extractor read"
+        );
+        let structural = changes::Changes {
+            structural: Some("src/c.ts was added".into()),
+            ..changed(&["src/a.ts"])
+        };
+        let Some((plans, served)) = decide(&config, &scope(dir), &parts, &structural) else {
+            unreachable!("a structural change extracts");
+        };
+        assert_eq!(served, Served::Full("src/c.ts was added".into()));
+        assert_eq!(plans.typescript, Plan::Full);
+        assert!(plans.keep_file_states);
+        let manifest = decide(
+            &config,
+            &scope(dir),
+            &parts,
+            &changed(&["web/package.json"]),
+        );
+        assert_eq!(
+            manifest.map(|(_, s)| s),
+            Some(Served::Full("web/package.json changed".into()))
+        );
+        let Some((plans, served)) = decide(&config, &scope(dir), &parts, &changed(&["src/b.ts"]))
+        else {
+            unreachable!("an edit extracts");
+        };
+        assert_eq!(
+            served,
+            Served::Incremental {
+                typescript: 1,
+                python: 0,
+                dotnet: false
+            }
+        );
+        let Plan::Incremental(request) = &plans.typescript else {
+            unreachable!("{:?}", plans.typescript);
+        };
+        assert_eq!(request.changed, [PathBuf::from("src/b.ts")]);
+        assert_eq!(request.unchanged, [PathBuf::from("src/a.ts")]);
+        assert_eq!(plans.python, Plan::Reuse(parts.python.clone()));
+        assert_eq!(plans.dotnet, Plan::Reuse(parts.dotnet.clone()));
+        let Some((plans, served)) = decide(
+            &config,
+            &scope(dir),
+            &parts,
+            &changed(&["app/m.py", "bin/A.dll"]),
+        ) else {
+            unreachable!("an edit extracts");
+        };
+        assert_eq!(
+            served,
+            Served::Incremental {
+                typescript: 0,
+                python: 1,
+                dotnet: true
+            }
+        );
+        assert!(matches!(plans.python, Plan::Incremental(_)));
+        assert_eq!(plans.dotnet, Plan::Full);
+        assert_eq!(plans.typescript, Plan::Reuse(parts.typescript.clone()));
     }
 
     #[test]

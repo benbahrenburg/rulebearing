@@ -326,10 +326,19 @@ impl Changes {
     }
 }
 
+/// A recorded input with its recorded digest and its size and time now.
+type Observed<'a> = (&'a String, &'a String, Option<Stamp>);
+
+/// An input with its digest and its size and time now, either missing when unreadable.
+type Recorded = (String, Option<String>, Option<Stamp>);
+
+/// A file's size and modification time in nanoseconds.
+pub type Stamp = (u64, u64);
+
 /// Compares the entry `manifest` records with the files as they are now, by `strategy`.
 pub fn detect(manifest: &Manifest, strategy: CacheStrategy, scope: &Scope) -> Changes {
     let mut changes = Changes::default();
-    let current: Vec<(&String, &String, Option<(u64, u64)>)> = manifest
+    let current: Vec<Observed<'_>> = manifest
         .inputs
         .par_iter()
         .map(|(name, hash)| (name, hash, stamp(&scope.on_disk(name))))
@@ -452,7 +461,7 @@ pub fn record(
     known: &BTreeMap<String, String>,
     strategy: CacheStrategy,
 ) -> (BTreeMap<String, String>, BTreeMap<String, (u64, u64)>) {
-    let recorded: Vec<(String, Option<String>, Option<(u64, u64)>)> = inputs
+    let recorded: Vec<Recorded> = inputs
         .par_iter()
         .map(|name| {
             let path = scope.on_disk(name);

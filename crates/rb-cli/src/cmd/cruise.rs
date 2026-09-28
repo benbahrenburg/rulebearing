@@ -164,39 +164,15 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
         ),
         paths: args.paths.clone(),
     };
-    let mut writing = crate::cache::Writing::default();
-    let result = match &args.graph {
-        Some(file) => match pipeline::load_graph(ctx, file) {
-            Ok(mut document) => {
-                pipeline::reset(&mut document);
-                progress.stage("read graph");
-                pipeline::evaluate_document(ctx, &effective, document, &options, &mut progress)
-            }
-            Err(message) => {
-                return Outcome::failed(
-                    RunExit::Untrustworthy,
-                    format!("{stderr}rulebearing cruise: {message}\n"),
-                );
-            }
-        },
-        None => match effective
-            .options
-            .cache
-            .as_ref()
-            .and_then(rb_config::model::CacheSetting::options)
-        {
-            Some(cache) => {
-                cached(ctx, &effective, cache, &options, &mut progress).map(|(run, pending)| {
-                    writing = pending;
-                    run
-                })
-            }
-            None => pipeline::run(ctx, &effective, &options, &mut progress),
-        },
-    };
-    let mut run = match result {
-        Ok(run) => run,
-        Err(e) => return failed(&e, &stderr),
+    let (mut run, writing) = match produce(ctx, &effective, args, &options, &mut progress) {
+        Ok(produced) => produced,
+        Err(Produced::Graph(message)) => {
+            return Outcome::failed(
+                RunExit::Untrustworthy,
+                format!("{stderr}rulebearing cruise: {message}\n"),
+            );
+        }
+        Err(Produced::Run(e)) => return failed(&e, &stderr),
     };
     for warning in &run.warnings {
         let _ = writeln!(stderr, "warning: {warning}");
@@ -221,6 +197,44 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
         );
     }
     outcome
+}
+
+/// Why [`produce`] made no run.
+enum Produced {
+    /// `--graph FILE` cannot be read.
+    Graph(String),
+    /// The run stopped.
+    Run(RunError),
+}
+
+/// The evaluated run: over `--graph FILE`, through the cache when `--cache` or `options.cache`
+/// asks, else extracted afresh; with the cache entry still being written, when there is one.
+fn produce(
+    ctx: &Context<'_>,
+    config: &Config,
+    args: &CruiseArgs,
+    options: &RunOptions,
+    progress: &mut Progress,
+) -> Result<(pipeline::Run, crate::cache::Writing), Produced> {
+    if let Some(file) = &args.graph {
+        let mut document = pipeline::load_graph(ctx, file).map_err(Produced::Graph)?;
+        pipeline::reset(&mut document);
+        progress.stage("read graph");
+        return pipeline::evaluate_document(ctx, config, document, options, progress)
+            .map(|run| (run, crate::cache::Writing::default()))
+            .map_err(Produced::Run);
+    }
+    match config
+        .options
+        .cache
+        .as_ref()
+        .and_then(rb_config::model::CacheSetting::options)
+    {
+        Some(cache) => cached(ctx, config, cache, options, progress).map_err(Produced::Run),
+        None => pipeline::run(ctx, config, options, progress)
+            .map(|run| (run, crate::cache::Writing::default()))
+            .map_err(Produced::Run),
+    }
 }
 
 /// The run through the `--cache` entry ([`crate::cache::extract_cached`]): the extraction from
