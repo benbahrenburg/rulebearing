@@ -1431,3 +1431,67 @@ fn plantuml_from_is_part_of_the_rendered_key() -> Result {
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
+
+/// A `dot` in `bin` that answers as GraphViz does (`-V` on stderr, an SVG for `-Tsvg`) when
+/// `graphviz`, and as a different program (exit 1) when not.
+#[cfg(unix)]
+fn fake_dot(bin: &Path, graphviz: bool) -> Result {
+    use std::os::unix::fs::PermissionsExt as _;
+    let script = if graphviz {
+        "#!/bin/sh\nif [ \"$1\" = \"-V\" ]; then echo 'dot - graphviz version 99.0.0' >&2; exit 0; fi\ncat >/dev/null\necho '<svg>fake</svg>'\n"
+    } else {
+        "#!/bin/sh\necho 'dot: command not found' >&2\nexit 1\n"
+    };
+    write(bin, "dot", script)?;
+    std::fs::set_permissions(bin.join("dot"), std::fs::Permissions::from_mode(0o755))?;
+    Ok(())
+}
+
+/// `x-dot-webpage` depends on the GraphViz of the run, which no cache key holds, so the rendered
+/// layer never serves it: with no working `dot` a cached run exits 2 as a cold one does
+/// (ADR-0053), rather than printing the page of an earlier run.
+#[cfg(unix)]
+#[test]
+fn x_dot_webpage_is_never_served_from_the_rendered_layer() -> Result {
+    let dir = tree("webpage", TREE)?;
+    let system = std::env::var("PATH").unwrap_or_default();
+    let with = |bin: &str| format!("{}:{system}", dir.join(bin).display());
+    fake_dot(&dir.join("graphviz"), true)?;
+    fake_dot(&dir.join("broken"), false)?;
+    let run = |path: String| -> Result<Output> {
+        Ok(isolated(BIN, &dir)
+            .args([
+                "cruise",
+                "src",
+                "-T",
+                "x-dot-webpage",
+                "--no-liveness",
+                "--cache",
+            ])
+            .env("PATH", path)
+            .output()?)
+    };
+    let first = run(with("graphviz"))?;
+    assert_eq!(
+        first.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&first.stderr)
+    );
+    assert!(String::from_utf8_lossy(&first.stdout).contains("<svg>fake</svg>"));
+    let again = run(with("graphviz"))?;
+    assert_eq!(
+        again.stdout, first.stdout,
+        "the page is drawn again, the same"
+    );
+    let without = run(with("broken"))?;
+    let stderr = String::from_utf8_lossy(&without.stderr);
+    assert_eq!(without.status.code(), Some(2), "{stderr}");
+    assert!(without.stdout.is_empty());
+    assert!(
+        stderr.contains("GraphViz dot, which is required"),
+        "{stderr}"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}

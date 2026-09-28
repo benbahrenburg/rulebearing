@@ -165,8 +165,11 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
     let (cache, evaluation) = cache_of(ctx, &effective, args, &options, liveness);
     let report_options = report_options(ctx, &effective, args, &output_type, &output_to);
     let report_part = report_key(&output_type, &output_to, &report_options);
-    // A plugin's output is never served from, or stored in, the rendered layer.
-    let renders_cached = rb_config::js::plugin::plugin_name(&output_type).is_none();
+    // A plugin's output is never served from, or stored in, the rendered layer; nor is
+    // `x-dot-webpage`'s, which depends on the GraphViz installed at the time of the run, not on
+    // the key (ADR-0053): without `dot` it must exit 2, never serve an old page.
+    let renders_cached = rb_config::js::plugin::plugin_name(&output_type).is_none()
+        && output_type != "x-dot-webpage";
     let mode = Mode {
         cache: cache.as_ref(),
         evaluation: evaluation.as_deref(),
@@ -360,7 +363,8 @@ enum Evaluated {
 }
 
 /// The cache settings of a run: the options, the evaluated layer's partial key, and the report's
-/// part of the rendered layer's key (none for a `plugin:` report, which that layer never serves).
+/// part of the rendered layer's key (none for a `plugin:` or `x-dot-webpage` report, which that
+/// layer never serves).
 #[derive(Clone, Copy)]
 struct Mode<'a> {
     cache: Option<&'a rb_model::CacheOptions>,
