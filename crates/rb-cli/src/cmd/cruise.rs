@@ -230,6 +230,7 @@ fn report(
         baseline: rb_report::baseline::Lifecycle::default(),
         // The same collapse the cruise applied to its modules (pipeline.rs), as upstream passes it.
         collapse_pattern: crate::pipeline::cruise_collapse(config),
+        plantuml_from: args.from.clone(),
     };
     let rendered = match rb_report::render(output_type, &value, &options) {
         Ok(r) => r,

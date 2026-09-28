@@ -50,6 +50,7 @@
 | `--strict-schema` | `json` | Strip every Rulebearing addition |
 | `--max-findings N` | `agent` | Show at most N violations per rule |
 | `--color auto\|always\|never` | `err`, `err-long`, `text` | Colour; `auto` honours `NO_COLOR` |
+| `reporterOptions.plantuml.*`, `--from` | `plantuml` | What the diagram draws ([below](#plantuml)) |
 
 ## The JSON document
 
@@ -83,3 +84,58 @@ One test case per rule of every family, and one per ratchet. An error-severity v
 ## `agent`
 
 Each violation carries a `cost`: `edgesToMove` (one for a dependency, the steps of a cycle or a reachability path, none for a module finding) and `targetFanIn` (how many modules depend on the target), summed into `score`. Violations are ordered by `score`, then `from` and `to`; rules by their cheapest violation. Each rule group carries its `fix` and decision token, `count` keeps the total, and `budget.truncated` says whether `--max-findings` cut anything. With the hooks from [agents.md](agents.md), this is what an agent reads when a turn ends.
+
+## `plantuml`
+
+`plantuml` (wave 3) writes the graph as a PlantUML diagram, generated the way ArchUnitNET's `PlantUmlDefinition.ComponentDiagram()` generates one, so a diagram can be written once, committed, and then enforced with an `adhereTo` diagram rule ([rules.md](rules.md), [design § Diagram rules](artifacts/design.md#diagram-rules), [coverage § PlantUML](artifacts/archunitnet-0.13.4-coverage.md#plantuml)). It exits 0, as every drawing reporter does. The options take ArchUnitNET's names ([plan 0003 § 1.5](plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)):
+
+```yaml
+options:
+  reporterOptions:
+    plantuml:
+      from: slices               # slices | types | namespaces | folders; --from on the command line wins
+      Matching: "RiverBooks.(*)" # the slice pattern (or MatchingWithPackages)
+      LimitDependencies: false
+      C4Style: false
+      FocusOn: "^RiverBooks\\.Books\\."
+      IncludeDependenciesToOther: false
+      DependencyFilters: ["IgnoreDependenciesToChildrenAndParents", "^System\\."]
+```
+
+| Key | Effect |
+| --- | --- |
+| `from` | What the nodes are: `slices` of a pattern, `types`, `namespaces`, or `folders` of modules (Rulebearing's, for TypeScript and Python). Without it: `slices` when a pattern is given, else `namespaces` for a graph with .NET types, else `folders` |
+| `Matching`, `MatchingWithPackages` | The slice pattern, the argument of ArchUnitNET's `SliceRuleDefinition.Slices().Matching(...)` or `MatchingWithPackages(...)`, grouped as a [slice rule](rules.md) groups. As in ArchUnitNET, a slice deeper than the pattern's number of `(*)` is not drawn |
+| `LimitDependencies` | Draw only arrows between nodes at the same depth (and, with packages, under the same parent) |
+| `C4Style` | Draw C4 containers inside boundaries; needs `MatchingWithPackages` |
+| `FocusOn` | A regular expression over full names (a type's, or a module's path): keep a dependency when exactly one end matches, ArchUnitNET's `DependencyFilters.FocusOn` |
+| `IncludeDependenciesToOther` | Also draw dependencies on what lies outside the selection: from types, the other types; in the component forms, a node for each namespace (folder) depended on |
+| `DependencyFilters` | Each entry is ArchUnitNET's `IgnoreDependenciesToParents`, `IgnoreDependenciesToChildren` or `IgnoreDependenciesToChildrenAndParents`, or a regular expression whose matching targets are left out |
+
+An unknown key, or an option ArchUnitNET would ignore for the chosen form (`LimitDependencies` or `C4Style` from types, `IncludeDependenciesToOther` with packages, `C4Style` without them), is refused with exit 3 rather than ignored. `fmt --from` takes the same four values beside its `rulebearing` and `dependency-cruiser`.
+
+The nodes and arrows are the ones ArchUnitNET's `PlantUmlFileBuilder` selects; gate 2 proves the builder against ArchUnitNET's own output over the committed fixtures ([conformance/README.md](../conformance/README.md)). How they are written depends on the form:
+
+| Form | Written as |
+| --- | --- |
+| `from: types`; `from: slices` with `MatchingWithPackages` | ArchUnitNET's text byte for byte, header (the C4 `!include` and `HIDE_STEREOTYPE()`) included. A picture, not an `adhereTo` diagram: a stereotype places a type by its namespace, so types cannot be components, and `adhereTo` refuses an `!include` |
+| `from: slices` with `Matching`, `from: namespaces`, `from: folders` | An `adhereTo` diagram: `hide stereotype` in place of the C4 include, one `[Name] <<pattern>>` component per node and one `[A] --> [B]` line per arrow (a circle as two lines, where ArchUnitNET draws `<-[#red]>`, which the parser does not read as a dependency) |
+
+A component's stereotype is generated, not meant to be edited: a regular expression that matches the namespaces the node holds and the full name of every type one segment below them, and no other namespace the graph knows, so no two components intersect and a namespace the diagram leaves out lies in none. A type in the global namespace lies in the component `(global)`. With `IncludeDependenciesToOther`, the extra components are targets: adhere the types of the slices, not theirs.
+
+**The round trip** is the reporter's acceptance test: write the diagram, then enforce it, and the same graph reports nothing.
+
+```sh
+rulebearing cruise -T plantuml --from slices -f architecture.puml
+```
+
+```yaml
+rules:
+  diagrams:
+    - name: modules-follow-the-diagram
+      comment: "The committed component diagram. adr:0009"
+      select: { kind: type, where: { resideInNamespaceMatching: "^RiverBooks\\.[^.]+$" } }
+      adhereTo: architecture.puml
+```
+
+It is proven over every committed .NET graph, from namespaces and from slices ([crates/rb-cli/tests/plantuml.rs](../crates/rb-cli/tests/plantuml.rs)), and nightly over each .NET oracle ([testbeds/oracles/dotnet.sh](../testbeds/oracles/dotnet.sh)). A dependency the diagram does not draw is a violation, which is the point: a new edge between two modules fails until the diagram is regenerated and the change reviewed.

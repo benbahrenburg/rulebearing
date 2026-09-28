@@ -17,7 +17,7 @@
 //! extra field renders the way it would upstream. The reporters of [`OUTPUT_TYPES`] up to the
 //! current wave are delivered; asking for a later one is a named error. Wave 2 adds `baseline`,
 //! `sarif`, `junit` and `trx`, the graph reporters ([`dot`], [`mermaid`], [`d2`]), [`metrics`] and
-//! [`err_html`].
+//! [`err_html`]. Wave 3 adds [`plantuml`], the diagram an `adhereTo` rule enforces.
 
 pub mod agent;
 pub mod azure_devops;
@@ -36,6 +36,7 @@ pub mod json;
 pub mod junit;
 pub mod mermaid;
 pub mod metrics;
+pub mod plantuml;
 pub mod sarif;
 pub mod style;
 pub mod teamcity;
@@ -120,9 +121,12 @@ pub enum ReportError {
     /// Not an output type.
     #[error("`{0}` is not a valid output type")]
     Unknown(String),
+    /// `plantuml` cannot draw the result with the options given.
+    #[error(transparent)]
+    PlantUml(#[from] plantuml::PlantUmlError),
     /// An output type a later wave delivers.
     #[error(
-        "the `{name}` reporter arrives in wave {wave}; use err, err-long, err-html, json, text, csv, teamcity, azure-devops, github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot, mermaid, d2, metrics or null"
+        "the `{name}` reporter arrives in wave {wave}; use err, err-long, err-html, json, text, csv, teamcity, azure-devops, github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot, mermaid, d2, metrics, plantuml or null"
     )]
     NotYet {
         /// The type.
@@ -152,6 +156,8 @@ pub struct ReportOptions {
     /// `collapse` given to `fmt` (or `cruise`): passed to the reporter as `collapsePattern` over its
     /// own section, as dependency-cruiser's `reportWrap` does.
     pub collapse_pattern: Option<String>,
+    /// `--from` for `plantuml`: what the diagram's nodes are, over `reporterOptions.plantuml.from`.
+    pub plantuml_from: Option<String>,
 }
 
 /// Renders `result` as `output_type`.
@@ -239,6 +245,20 @@ pub fn render_with(
         }
         "mermaid" => mermaid::render(result, reporter_options("mermaid").as_ref()),
         "d2" => d2::render(result),
+        "plantuml" => {
+            // `collapse` has already shaped the modules; it is not one of the diagram's options.
+            let mut section = reporter_options("plantuml");
+            if let (Some(_), Some(Value::Object(map))) = (&options.collapse_pattern, &mut section) {
+                map.remove("collapsePattern");
+            }
+            plantuml::render(
+                result,
+                &plantuml::PlantUmlOptions::from_reporter_options(
+                    section.as_ref(),
+                    options.plantuml_from.as_deref(),
+                )?,
+            )?
+        }
         "metrics" => metrics::render(result, reporter_options("metrics").as_ref(), options.color),
         "err-html" => err_html::render(
             result,
@@ -388,6 +408,7 @@ mod tests {
             "html",
             "markdown",
             "anon",
+            "plantuml",
             "baseline",
             "metrics",
             "null",
@@ -444,6 +465,30 @@ mod tests {
             Ok(1),
             "no folders"
         );
+        // `plantuml` (wave 3B) draws, and names what it cannot draw.
+        assert_eq!(
+            render("plantuml", &result, &o).map(|r| r.output),
+            Ok("@startuml\n\nhide stereotype\n\n@enduml\n".into())
+        );
+        let from_types = ReportOptions {
+            plantuml_from: Some("types".into()),
+            ..ReportOptions::default()
+        };
+        assert!(
+            render("plantuml", &result, &from_types)
+                .is_ok_and(|r| r.output.starts_with("@startuml\n\n!include "))
+        );
+        let refused = render_with("plantuml", &result, &o, Some(&json!({ "Typo": true })));
+        assert!(
+            matches!(&refused, Err(ReportError::PlantUml(e)) if e.to_string().contains("`Typo`")),
+            "{refused:?}"
+        );
+        // `collapse` is not one of the diagram's options and does not reach it.
+        let collapsing = ReportOptions {
+            collapse_pattern: Some("^src/[^/]+".into()),
+            ..ReportOptions::default()
+        };
+        assert!(render("plantuml", &result, &collapsing).is_ok());
         assert_eq!(
             render("x-dot-webpage", &result, &o),
             Err(ReportError::NotYet {

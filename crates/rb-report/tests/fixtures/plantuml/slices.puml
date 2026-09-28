@@ -1,0 +1,23 @@
+@startuml
+
+hide stereotype
+
+[Addresses] <<^TestAssembly\.PlantUml\.Addresses(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[Catalog] <<^TestAssembly\.PlantUml\.Catalog(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[Customers] <<^TestAssembly\.PlantUml\.Customers(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[Importer] <<^TestAssembly\.PlantUml\.Importer(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[Orders] <<^TestAssembly\.PlantUml\.Orders(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[Products] <<^TestAssembly\.PlantUml\.Products(?:\.(?:[^\x2E][^\x2E]*))?$>>
+[Addresses] --> [Catalog]
+[Catalog] --> [Orders]
+[Catalog] --> [Products]
+[Customers] --> [Addresses]
+[Customers] --> [Orders]
+[Orders] --> [Customers]
+[Importer] --> [Catalog]
+[Importer] --> [Customers]
+[Orders] --> [Addresses]
+[Orders] --> [Products]
+[Products] --> [Orders]
+[Products] --> [Customers]
+@enduml
