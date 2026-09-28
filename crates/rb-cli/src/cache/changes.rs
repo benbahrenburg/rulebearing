@@ -853,6 +853,7 @@ mod tests {
             stamps,
             extraction: String::new(),
             probes: BTreeMap::new(),
+            watched: BTreeSet::new(),
         }
     }
 

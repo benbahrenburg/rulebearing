@@ -506,14 +506,15 @@ fn optional_inputs(cwd: &Path, config: &Config, scope: &changes::Scope) -> BTree
     optional
 }
 
-/// Every input an entry written for `parts` records (the module doc of [`changes`] lists them).
+/// Every input an entry written for `parts` records (the module doc of [`changes`] lists them),
+/// and those of them recorded only for their presence.
 fn inputs(
     cwd: &Path,
     config: &Config,
     scope: &changes::Scope,
     parts: &Parts,
     strategy: CacheStrategy,
-) -> BTreeSet<String> {
+) -> (BTreeSet<String>, BTreeSet<String>) {
     let mut inputs: BTreeSet<String> = BTreeSet::new();
     let typescript: BTreeSet<String> = parts
         .typescript
@@ -576,8 +577,14 @@ fn inputs(
             .map(|p| scope.name(p)),
     );
     let present = changes::presence(strategy, scope, &inputs);
+    // A manifest by name is never only watched, wherever it sits.
+    let watched: BTreeSet<String> = present
+        .difference(&inputs)
+        .filter(|name| !changes::is_manifest(name))
+        .cloned()
+        .collect();
     inputs.extend(present);
-    inputs
+    (inputs, watched)
 }
 
 /// The probes of a run ([`changes`]): computed before anything is extracted, so an environment
@@ -633,7 +640,7 @@ struct Pending {
 impl Pending {
     /// Records the inputs and writes the entry.
     fn write(self) -> Result<String, String> {
-        let recorded = inputs(
+        let (recorded, watched) = inputs(
             &self.cwd,
             &self.config,
             &self.scope,
@@ -654,6 +661,7 @@ impl Pending {
         let manifest = manifest::Manifest {
             inputs: hashes,
             stamps,
+            watched,
             ..self.manifest
         };
         manifest::store(&self.folder, manifest, &self.parts, &self.options)
@@ -741,6 +749,7 @@ pub fn extract_cached(
         stamps: BTreeMap::new(),
         extraction: String::new(),
         probes: probes.clone(),
+        watched: BTreeSet::new(),
     };
     let summary = |served: &Served| CacheSummary {
         hit: *served == Served::Hit,
@@ -771,7 +780,11 @@ pub fn extract_cached(
         Ok(recorded) => recorded,
         Err(miss) => return extract(full(miss.to_string()), BTreeMap::new()),
     };
-    let found = changes::detect(&recorded, options.strategy, &scope, &probes);
+    let mut found = changes::detect(&recorded, options.strategy, &scope, &probes);
+    // A file recorded only for its presence changes nothing extracted when its bytes change.
+    found
+        .modified
+        .retain(|name| !recorded.watched.contains(name));
     let refreshed = manifest::Manifest {
         inputs: found.hashes.clone(),
         stamps: if options.strategy == CacheStrategy::Metadata {
@@ -780,6 +793,7 @@ pub fn extract_cached(
             BTreeMap::new()
         },
         extraction: recorded.extraction.clone(),
+        watched: recorded.watched.clone(),
         ..fresh.clone()
     };
     let refresh = |folder: PathBuf| refresh(folder, &recorded, &refreshed);

@@ -180,7 +180,7 @@ pub fn render_key(verdict: &str, report: &str) -> String {
 /// A [`Miss`]: none stored, another key, or a file that does not parse or match its digest.
 pub fn load_rendered(folder: &Path, key: &str) -> Result<(String, Tail), Miss> {
     let path = folder.join(RENDERED_FILE);
-    let text = match std::fs::read(&path) {
+    let text = match manifest::read_limited(&path, manifest::PAYLOAD_LIMIT) {
         Ok(text) => text,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Err(Miss::Absent),
         Err(e) => return Err(Miss::Corrupt(format!("{}: {e}", path.display()))),
@@ -226,7 +226,7 @@ pub fn store_rendered(
 /// Whether `evaluated.json` in `folder` names a verdict under `key`: the cheap check before a
 /// run commits to the stored verdict.
 pub fn stored_under(folder: &Path, key: &str) -> bool {
-    std::fs::read(folder.join(EVALUATED_FILE))
+    manifest::read_limited(&folder.join(EVALUATED_FILE), manifest::PAYLOAD_LIMIT)
         .ok()
         .and_then(|text| serde_json::from_slice::<Pointer>(&text).ok())
         .is_some_and(|pointer| pointer.key == key)
@@ -314,7 +314,7 @@ fn verdict_file(digest: &str, compressed: bool) -> String {
 /// A [`Miss`]: none stored, another key, or a file that is damaged or does not parse.
 pub fn load(folder: &Path, key: &str, compressed: bool) -> Result<Verdict, Miss> {
     let path = folder.join(EVALUATED_FILE);
-    let text = match std::fs::read(&path) {
+    let text = match manifest::read_limited(&path, manifest::PAYLOAD_LIMIT) {
         Ok(text) => text,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Err(Miss::Absent),
         Err(e) => return Err(Miss::Corrupt(format!("{}: {e}", path.display()))),
@@ -388,6 +388,53 @@ mod tests {
             std::env::temp_dir().join(format!("rb-cache-evaluated-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         dir
+    }
+
+    #[test]
+    fn an_element_rules_diagram_is_part_of_the_key() -> Result<(), Box<dyn std::error::Error>> {
+        let dir = scratch("diagram-key");
+        std::fs::create_dir_all(&dir)?;
+        std::fs::write(dir.join("rulebearing.yaml"), "rules: {}\n")?;
+        std::fs::write(dir.join("arch.puml"), "@startuml\n[A]\n@enduml\n")?;
+        let elements = rb_config::elements::parse_elements(&serde_json::json!([
+            { "name": "layered", "select": { "kind": "class" },
+              "should": { "adhereToPlantUmlDiagram": "arch.puml" } }
+        ]))?;
+        let config = Config {
+            files: vec![dir.join("rulebearing.yaml")],
+            rules: rb_config::model::Rules {
+                elements,
+                ..rb_config::model::Rules::default()
+            },
+            ..Config::default()
+        };
+        let mut stdin: &[u8] = &[];
+        let ctx = Context {
+            cwd: dir.clone(),
+            stdin: &mut stdin,
+            today: chrono::NaiveDate::default(),
+            timestamp: String::new(),
+            color_terminal: false,
+        };
+        let options = RunOptions::default();
+        let key = || partial_key(&ctx, &config, &options, "Strict");
+        let first = key();
+        assert!(first.is_some());
+        assert_eq!(key(), first, "deterministic");
+        std::fs::write(dir.join("arch.puml"), "@startuml\n[A] --> [B]\n@enduml\n")?;
+        let edited = key();
+        assert_ne!(
+            edited, first,
+            "an edited diagram misses the evaluated layer"
+        );
+        std::fs::remove_file(dir.join("arch.puml"))?;
+        assert_ne!(key(), edited, "a missing diagram is keyed apart");
+        std::fs::write(dir.join("arch.puml"), "")?;
+        let empty = key();
+        std::fs::remove_file(dir.join("arch.puml"))?;
+        assert_ne!(key(), empty, "an empty diagram is not a missing one");
+        let _ = std::fs::remove_dir_all(&dir);
+        Ok(())
     }
 
     fn verdict() -> Verdict {
