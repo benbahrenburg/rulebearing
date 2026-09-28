@@ -80,6 +80,11 @@ pub struct Manifest {
     pub stamps: BTreeMap<String, (u64, u64)>,
     /// Additive: `sha256:` and the digest of the stored extraction's bytes.
     pub extraction: String,
+    /// Additive: values computed from the environment before the extraction (the .NET
+    /// assemblies discovery finds, the Python environment), compared on the next run
+    /// ([`super::changes::detect`]).
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub probes: BTreeMap<String, String>,
 }
 
 impl Manifest {
@@ -488,6 +493,7 @@ mod tests {
             inputs: BTreeMap::from([("src/a.ts".to_owned(), digest(b"a"))]),
             stamps: BTreeMap::new(),
             extraction: String::new(),
+            probes: BTreeMap::new(),
         }
     }
 

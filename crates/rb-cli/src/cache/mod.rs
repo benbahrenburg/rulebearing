@@ -409,8 +409,8 @@ fn is_assembly(name: &str) -> bool {
 }
 
 /// What the stored parts (with their per-file states) and the changes call for: a partial
-/// extraction or a full one, or `None` for a hit. A change to a file no extractor read (a file of
-/// the presence set whose content alone changed) changes nothing extracted.
+/// extraction or a full one, or `None` for a hit. Only a changed source is read again alone and
+/// only an assembly reads the .NET graph again; any other changed input is structural.
 fn decide(
     config: &Config,
     scope: &changes::Scope,
@@ -433,16 +433,18 @@ fn decide(
         .map(|file| (scope.name(&scope.base.join(file)), file))
         .collect();
     let (mut ts_changed, mut py_changed, mut dotnet) = (Vec::new(), Vec::new(), false);
+    // A source is read again alone and an assembly reads the .NET graph again; any other input
+    // (a manifest, a tsconfig and its chain, a Babel configuration, a project file, a folder's
+    // entries, a file of the presence set) can move what an unchanged file resolves to.
     for name in &found.modified {
-        if changes::is_manifest(name) {
-            return Some(full(format!("{name} changed")));
-        }
         if is_assembly(name) {
             dotnet = true;
         } else if let Some(source) = typescript.get(name) {
             ts_changed.push(PathBuf::from(source.as_str()));
         } else if let Some(file) = python.get(name) {
             py_changed.push(PathBuf::from(file.as_str()));
+        } else {
+            return Some(full(format!("{name} changed")));
         }
     }
     if ts_changed.is_empty() && py_changed.is_empty() && !dotnet {
@@ -484,6 +486,26 @@ fn decide(
     ))
 }
 
+/// The files that change nothing when absent and must be seen when they appear: the manifests
+/// the key names, and the package managers' records of an installation under `node_modules`,
+/// in the worktree root and the working directory.
+fn optional_inputs(cwd: &Path, config: &Config, scope: &changes::Scope) -> BTreeSet<String> {
+    let mut optional: BTreeSet<String> = key::manifest_paths(&scope.root, cwd, config)
+        .iter()
+        .map(|p| scope.name(p))
+        .collect();
+    for folder in [scope.root.as_path(), cwd] {
+        for marker in [
+            "node_modules/.package-lock.json",
+            "node_modules/.modules.yaml",
+            "node_modules/.yarn-state.yml",
+        ] {
+            optional.insert(scope.name(&folder.join(marker)));
+        }
+    }
+    optional
+}
+
 /// Every input an entry written for `parts` records (the module doc of [`changes`] lists them).
 fn inputs(
     cwd: &Path,
@@ -503,7 +525,33 @@ fn inputs(
         scope,
         typescript.iter().map(String::as_str),
     ));
+    let imports: Vec<(String, &str)> = parts
+        .typescript
+        .iter()
+        .flat_map(|p| &p.modules)
+        .filter(|m| m.language.is_some())
+        .flat_map(|m| {
+            let name = typescript_name(scope, config, &m.source);
+            m.dependencies
+                .iter()
+                .map(move |d| (name.clone(), d.module.as_str()))
+        })
+        .collect();
+    inputs.extend(changes::target_folders(
+        scope,
+        imports
+            .iter()
+            .map(|(file, specifier)| (file.as_str(), *specifier)),
+    ));
     inputs.extend(typescript);
+    #[cfg(feature = "extract-ts")]
+    if parts.typescript.is_some() {
+        inputs.extend(
+            rb_extract_ts::configuration_files(&config.languages.typescript, cwd)
+                .iter()
+                .map(|p| scope.name(p)),
+        );
+    }
     inputs.extend(
         parts
             .python
@@ -517,6 +565,9 @@ fn inputs(
         if let Ok(assemblies) = rb_extract_dotnet::assembly_inputs(cwd, &options) {
             inputs.extend(assemblies.iter().map(|p| scope.name(p)));
         }
+        if let Ok(projects) = rb_extract_dotnet::project_files(cwd, &options) {
+            inputs.extend(projects.iter().map(|p| scope.name(p)));
+        }
     }
     inputs.extend(
         key::manifest_paths(&scope.root, cwd, config)
@@ -524,8 +575,44 @@ fn inputs(
             .filter(|p| p.is_file())
             .map(|p| scope.name(p)),
     );
-    inputs.extend(changes::presence(strategy, scope));
+    let present = changes::presence(strategy, scope, &inputs);
+    inputs.extend(present);
     inputs
+}
+
+/// The probes of a run ([`changes`]): computed before anything is extracted, so an environment
+/// that changes during the run is seen by the next one.
+#[cfg_attr(
+    not(any(feature = "extract-dotnet", feature = "extract-python")),
+    expect(
+        unused_variables,
+        reason = "only the .NET and Python extractors have probes"
+    )
+)]
+pub fn probes(ctx: &Context<'_>, config: &Config) -> BTreeMap<String, String> {
+    let mut probes = BTreeMap::new();
+    #[cfg(feature = "extract-dotnet")]
+    if pipeline::dotnet_enabled(ctx, config) {
+        let options = config.languages.dotnet.clone().unwrap_or_default();
+        let value = match rb_extract_dotnet::assembly_inputs(&ctx.cwd, &options) {
+            Ok(found) => found
+                .iter()
+                .map(|p| key::slashed(p))
+                .collect::<Vec<_>>()
+                .join("\n"),
+            Err(e) => format!("error: {e}"),
+        };
+        probes.insert(".NET assemblies".to_owned(), value);
+    }
+    #[cfg(feature = "extract-python")]
+    if pipeline::python_enabled(ctx, config) {
+        let options = config.languages.python.clone().unwrap_or_default();
+        let virtual_env = std::env::var_os("VIRTUAL_ENV").map(PathBuf::from);
+        let value = rb_extract_python::environment(&ctx.cwd, &options, virtual_env.as_deref())
+            .unwrap_or_else(|e| format!("error: {e}"));
+        probes.insert("Python environment".to_owned(), value);
+    }
+    probes
 }
 
 /// Everything the background write of an entry needs, owned.
@@ -538,6 +625,9 @@ struct Pending {
     manifest: manifest::Manifest,
     verified: BTreeMap<String, String>,
     parts: Parts,
+    /// When the run started, nanoseconds since the epoch: an input modified after it is
+    /// recorded as unsettled.
+    started: u64,
 }
 
 impl Pending {
@@ -550,11 +640,16 @@ impl Pending {
             &self.parts,
             self.options.strategy,
         );
+        let optional = optional_inputs(&self.cwd, &self.config, &self.scope);
+        #[cfg(test)]
+        tests::between_extraction_and_record(&self.folder);
         let (hashes, stamps) = changes::record(
             &self.scope,
             &recorded,
+            &optional,
             &self.verified,
             self.options.strategy,
+            self.started,
         );
         let manifest = manifest::Manifest {
             inputs: hashes,
@@ -628,9 +723,14 @@ pub fn extract_cached(
     options: &CacheOptions,
     evaluation: Option<&str>,
 ) -> Result<Cached, ExtractError> {
+    // Before anything is looked at: an input modified after this is recorded as unsettled.
+    let started = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| u64::try_from(d.as_nanos()).unwrap_or(u64::MAX));
     let folder = ctx.resolve(&options.folder);
     let scope = scope_of(ctx, config, &folder);
     let (root, head) = (scope.root.clone(), scope.head.clone());
+    let probes = probes(ctx, config);
     let fresh = manifest::Manifest {
         tool_version: key::VERSION.to_owned(),
         config_hash: key::extraction_hash(config, &root, &ctx.cwd, paths),
@@ -640,6 +740,7 @@ pub fn extract_cached(
         inputs: BTreeMap::new(),
         stamps: BTreeMap::new(),
         extraction: String::new(),
+        probes: probes.clone(),
     };
     let summary = |served: &Served| CacheSummary {
         hit: *served == Served::Hit,
@@ -657,6 +758,7 @@ pub fn extract_cached(
             manifest: fresh.clone(),
             verified,
             parts,
+            started,
         };
         Ok(Cached {
             content: Content::Extracted(Box::new(document), warnings),
@@ -669,7 +771,7 @@ pub fn extract_cached(
         Ok(recorded) => recorded,
         Err(miss) => return extract(full(miss.to_string()), BTreeMap::new()),
     };
-    let found = changes::detect(&recorded, options.strategy, &scope);
+    let found = changes::detect(&recorded, options.strategy, &scope, &probes);
     let refreshed = manifest::Manifest {
         inputs: found.hashes.clone(),
         stamps: if options.strategy == CacheStrategy::Metadata {
@@ -722,6 +824,23 @@ pub fn extract_cached(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A test's action between an extraction and the recording of its inputs, by cache folder.
+    type Hook = (PathBuf, Box<dyn Fn() + Send>);
+
+    static HOOKS: std::sync::Mutex<Vec<Hook>> = std::sync::Mutex::new(Vec::new());
+
+    /// Runs the action a test registered for `folder`, the moment the writer is about to record.
+    pub(super) fn between_extraction_and_record(folder: &Path) {
+        let hooks = HOOKS
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for (registered, action) in hooks.iter() {
+            if registered == folder {
+                action();
+            }
+        }
+    }
 
     fn context<'a>(dir: &std::path::Path, stdin: &'a mut &'static [u8]) -> Context<'a> {
         Context {
@@ -836,10 +955,13 @@ mod tests {
             ..changes::Changes::default()
         };
         assert!(decide(&config, &scope(dir), &parts, &changed(&[])).is_none());
-        assert!(
-            decide(&config, &scope(dir), &parts, &changed(&["notes/x.json"])).is_none(),
-            "a file no extractor read"
-        );
+        for other in ["notes/x.json", ".babelrc", "configs/base.json", "src/"] {
+            assert_eq!(
+                decide(&config, &scope(dir), &parts, &changed(&[other])).map(|(_, s)| s),
+                Some(Served::Full(format!("{other} changed"))),
+                "any input other than a source or an assembly is structural"
+            );
+        }
         let structural = changes::Changes {
             structural: Some("src/c.ts was added".into()),
             ..changed(&["src/a.ts"])

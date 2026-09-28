@@ -415,3 +415,33 @@ fn an_unchanged_file_comes_from_the_earlier_state_not_the_disk() -> Result<(), B
     }
     Ok(())
 }
+
+/// The environment a cache compares between runs: the chosen `site-packages` and its
+/// distributions, so an installation into an ignored `.venv` is seen.
+#[test]
+fn the_environment_names_the_site_and_its_distributions() -> Result<(), Box<dyn Error>> {
+    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join("py-environment");
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("app"))?;
+    std::fs::write(dir.join("pyproject.toml"), "[project]\nname = \"x\"\n")?;
+    std::fs::write(dir.join("app/__init__.py"), "")?;
+    let options = PythonOptions::default();
+    assert_eq!(
+        rb_extract_python::environment(&dir, &options, None)?,
+        "none"
+    );
+    let site = dir.join(".venv/lib/python3.12/site-packages");
+    std::fs::create_dir_all(site.join("fancylib-1.0.dist-info"))?;
+    std::fs::create_dir_all(site.join("fancylib"))?;
+    let one = rb_extract_python::environment(&dir, &options, None)?;
+    assert!(
+        one.ends_with("site-packages\nfancylib-1.0.dist-info"),
+        "{one}"
+    );
+    std::fs::create_dir_all(site.join("requests-2.31.0.dist-info"))?;
+    let two = rb_extract_python::environment(&dir, &options, None)?;
+    assert_ne!(one, two);
+    assert!(two.contains("requests-2.31.0.dist-info"));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}

@@ -596,6 +596,22 @@ fn diagram_paths<'x>(expr: &'x Expr, out: &mut Vec<&'x str>) {
     }
 }
 
+/// Every `.puml` path the rules of `config` read, as written (relative to the configuration's
+/// folder), sorted and each once: every `adhereToPlantUmlDiagram` in an element rule's `should`
+/// (a condition, never allowed in `select.where`), and every diagram rule's `adhereTo`. A cache keys an evaluation on these
+/// files ([Wave 3, Step 1](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+pub fn diagram_files(config: &rb_config::Config) -> Vec<String> {
+    let mut paths: Vec<&str> = Vec::new();
+    for rule in &config.rules.elements {
+        diagram_paths(&rule.should, &mut paths);
+    }
+    paths.extend(config.rules.diagrams.iter().map(|d| d.adhere_to.as_str()));
+    let mut owned: Vec<String> = paths.into_iter().map(str::to_owned).collect();
+    owned.sort();
+    owned.dedup();
+    owned
+}
+
 /// Evaluates one element rule.
 ///
 /// An empty selection is vacuous ([ADR-0007](../../../../docs/adr/0007-vacuous-rules-fail-by-default.md),
@@ -695,6 +711,36 @@ mod tests {
             }),
             ..GraphDocument::default()
         }
+    }
+
+    #[test]
+    fn every_diagram_a_rule_reads_is_listed_once() -> Result<(), Box<dyn std::error::Error>> {
+        let elements = parse_elements(&json!([
+            { "name": "a", "select": { "kind": "class" },
+              "should": { "all": [{ "adhereToPlantUmlDiagram": "arch.puml" },
+                                  { "not": { "adhereToPlantUmlDiagram": "z.puml" } },
+                                  { "beSealed": true }] } },
+            { "name": "b", "select": { "kind": "class" },
+              "should": { "any": [{ "adhereToPlantUmlDiagram": "w.puml" }, { "adhereToPlantUmlDiagram": "arch.puml" }] } },
+            { "name": "c", "select": { "kind": "class" }, "should": { "beSealed": true } }
+        ]))?;
+        let diagrams = rb_config::elements::parse_diagrams(&json!([
+            { "name": "d", "select": { "kind": "class" }, "adhereTo": "b.puml" }
+        ]))?;
+        let config = rb_config::Config {
+            rules: rb_config::model::Rules {
+                elements,
+                diagrams,
+                ..rb_config::model::Rules::default()
+            },
+            ..rb_config::Config::default()
+        };
+        assert_eq!(
+            diagram_files(&config),
+            ["arch.puml", "b.puml", "w.puml", "z.puml"]
+        );
+        assert!(diagram_files(&rb_config::Config::default()).is_empty());
+        Ok(())
     }
 
     fn outcome(rule: serde_json::Value) -> Result<Outcome, Box<dyn std::error::Error>> {

@@ -544,5 +544,28 @@ fn the_inputs_are_every_assembly_and_pdb_beside_the_analysed_ones()
     let unbuilt =
         rb_extract_dotnet::assembly_inputs(&manifest().join("tests"), &DotnetOptions::default())?;
     assert!(unbuilt.is_empty(), "{unbuilt:?}");
+    // The project files are listed whether or not anything was built.
+    let projects =
+        rb_extract_dotnet::project_files(&manifest().join("tests"), &DotnetOptions::default())?;
+    assert!(
+        !projects.is_empty()
+            && projects
+                .iter()
+                .all(|p| p.extension().is_some_and(|e| e == "csproj"
+                    || e == "sln"
+                    || e == "slnx"
+                    || e == "fsproj"
+                    || e == "vbproj")),
+        "{projects:?}"
+    );
+    let loose = rb_extract_dotnet::project_files(&sample(), &loader("built/Sample.dll"))?;
+    assert!(
+        loose.is_empty(),
+        "a directly loaded assembly has no project file: {loose:?}"
+    );
+    assert!(matches!(
+        rb_extract_dotnet::project_files(&empty, &DotnetOptions::default()),
+        Err(ExtractError::NoModulesFound)
+    ));
     Ok(())
 }

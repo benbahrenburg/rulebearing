@@ -359,6 +359,35 @@ pub fn assembly_inputs(root: &Path, options: &DotnetOptions) -> Result<Vec<PathB
     Ok(inputs.into_iter().collect())
 }
 
+/// The solution and every project file discovery under `root` reads, sorted: a change to one
+/// can move an assembly or rename it, so a cache treats each as structural
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// A directly loaded assembly (`assemblies`, `directories`) has no project file and is not
+/// listed.
+///
+/// # Errors
+/// As [`assembly_inputs`].
+pub fn project_files(root: &Path, options: &DotnetOptions) -> Result<Vec<PathBuf>, ExtractError> {
+    let workspace = discover::discover(root, options).map_err(|e| match e {
+        DiscoverError::NothingFound { .. } => ExtractError::NoModulesFound,
+        DiscoverError::Io { path, source } => read_error(&path, &source),
+        other => read_error(root, &other),
+    })?;
+    let mut files: BTreeSet<PathBuf> = workspace
+        .projects
+        .iter()
+        .filter(|p| {
+            !p.path
+                .extension()
+                .is_some_and(|e| e.eq_ignore_ascii_case("dll"))
+        })
+        .map(|p| p.path.clone())
+        .collect();
+    files.extend(workspace.solution);
+    files.extend(workspace.errors.into_iter().map(|(path, _)| path));
+    Ok(files.into_iter().collect())
+}
+
 /// Whether a dependency target names a generic parameter (`Declarer+<T>`, or `!!0` when the
 /// declarer is unknown) rather than a type.
 fn is_generic_parameter(name: &str) -> bool {

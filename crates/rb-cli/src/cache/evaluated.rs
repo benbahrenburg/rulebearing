@@ -29,7 +29,7 @@
 //! | the positional paths | `summary.optionsUsed.args` |
 //! | today's date | `expires` on a rule, a known violation or a baseline entry |
 //! | every ratchet budget file's bytes | the ceiling each ratchet is held to |
-//! | every diagram rule's `.puml` bytes | what `adhereTo` compares with |
+//! | every `.puml` a rule reads (a diagram rule's `adhereTo`, an element rule's `adhereToPlantUmlDiagram`) | what the architecture is compared with |
 //!
 //! Once a verdict has been served, the reporter's output is kept too (`rendered.json`), keyed on
 //! the verdict's key, the output type and every report option (the colour, `--strict-schema`,
@@ -279,9 +279,14 @@ pub fn partial_key(
         .first()
         .and_then(|f| f.parent())
         .unwrap_or_else(|| Path::new("."));
-    for diagram in &config.rules.diagrams {
-        let bytes = std::fs::read(base.join(&diagram.adhere_to)).unwrap_or_default();
-        parts.push((format!("diagram:{}", diagram.adhere_to), bytes));
+    // Every diagram an element rule's `adhereToPlantUmlDiagram` or a diagram rule reads; a missing
+    // one is keyed apart from an empty one.
+    for diagram in rb_rules::elements::diagram_files(config) {
+        let bytes = std::fs::read(base.join(&diagram)).map_or_else(
+            |_| b"absent".to_vec(),
+            |b| [b"present:".as_slice(), &b].concat(),
+        );
+        parts.push((format!("diagram:{diagram}"), bytes));
     }
     Some(crate::cmd::attest::hash_files(
         parts.iter().map(|(n, b)| (n.clone(), b.as_slice())),

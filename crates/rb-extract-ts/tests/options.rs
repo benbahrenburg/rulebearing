@@ -1646,3 +1646,35 @@ fn a_dependency_survives_the_trip_through_the_document() {
     assert!(!bare.matches_do_not_follow);
     assert_eq!((bare.line, bare.column), (0, 0));
 }
+
+/// The configuration files a cache keys a reused TypeScript extraction on: the tsconfig, its
+/// `extends` chain, its project references (with their own chains), and a Babel configuration.
+#[test]
+fn the_configuration_files_follow_extends_and_references() {
+    let root = fixture("ts-config");
+    let options: TypeScriptOptions = serde_json::from_str(
+        r#"{"tsConfig": {"fileName": "tsconfig.json"}, "babelConfig": {"fileName": ".babelrc"}}"#,
+    )
+    .unwrap_or_default();
+    let files: Vec<String> = rb_extract_ts::configuration_files(&options, &root)
+        .iter()
+        .map(|p| {
+            p.strip_prefix(&root)
+                .map_or_else(|_| p.display().to_string(), |r| r.display().to_string())
+                .replace('\\', "/")
+        })
+        .collect();
+    for expected in [".babelrc", "tsconfig.base.json", "tsconfig.json"] {
+        assert!(
+            files.contains(&expected.to_owned()),
+            "{expected}: {files:?}"
+        );
+    }
+    assert!(
+        files
+            .iter()
+            .any(|f| f.starts_with("sub/") && f.ends_with(".json")),
+        "the referenced project's tsconfig: {files:?}"
+    );
+    assert!(rb_extract_ts::configuration_files(&TypeScriptOptions::default(), &root).is_empty());
+}
