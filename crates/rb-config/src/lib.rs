@@ -26,6 +26,7 @@
 //! | [`convert`] | `config convert` and `config expand` |
 //! | [`lint`] | `config lint` |
 //! | [`schema`] | the native format's JSON schema, `schema/config-v1.json` |
+//! | [`version`] | release versions of the lifecycle fields and snapshots, and their order |
 //! | [`webpack`] | `webpackConfig`'s `resolve` block, evaluated in the sandbox |
 
 pub mod capability;
@@ -43,6 +44,7 @@ pub mod pattern;
 pub mod read;
 pub mod schema;
 pub mod shorthands;
+pub mod version;
 pub mod webpack;
 
 use std::path::PathBuf;

@@ -413,6 +413,16 @@ pub struct RuleMeta {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(with = "Option<String>")]
     pub expires: Option<NaiveDate>,
+    /// The release the rule arrived in ([`crate::version`]); informational.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub since: Option<String>,
+    /// The release the rule was deprecated in; the rule is still evaluated and still live
+    /// ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deprecated: Option<String>,
+    /// The rule that takes over from this one; `config lint` checks it exists.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub replaced_by: Option<String>,
     /// Opt out of liveness ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub allow_empty: bool,
@@ -1247,6 +1257,23 @@ mod tests {
         let back = serde_json::to_value(&rule).unwrap_or_default();
         assert_eq!(back["expires"], "2026-12-31");
         assert_eq!(back["examples"]["allowed"][0], "a -> b");
+    }
+
+    #[test]
+    fn lifecycle_fields_round_trip() {
+        let text = r#"{"name":"r","since":"1.2.0","deprecated":"2.0.0","replacedBy":"s","from":{},"to":{}}"#;
+        let rule: Rule = serde_json::from_str(text).unwrap_or_default();
+        assert_eq!(rule.meta.since.as_deref(), Some("1.2.0"));
+        assert_eq!(rule.meta.deprecated.as_deref(), Some("2.0.0"));
+        assert_eq!(rule.meta.replaced_by.as_deref(), Some("s"));
+        let back = serde_json::to_value(&rule).unwrap_or_default();
+        assert_eq!(back["since"], "1.2.0");
+        assert_eq!(back["deprecated"], "2.0.0");
+        assert_eq!(back["replacedBy"], "s");
+        let plain = serde_json::to_value(Rule::default()).unwrap_or_default();
+        for key in ["since", "deprecated", "replacedBy"] {
+            assert!(plain.get(key).is_none(), "{key} is left out when absent");
+        }
     }
 
     #[test]
