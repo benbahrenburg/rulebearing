@@ -227,14 +227,25 @@ jobs:
         env:
           REPO: ${{ matrix.repo }}
         run: echo "slug=${REPO//\//__}" >> "$GITHUB_OUTPUT"
+      # aspnetcore's managed build outgrows the runner's free disk: the hosted image's Android,
+      # GHC, CodeQL and Boost toolchains, which no row uses, are removed first, and the disk and
+      # memory are logged before and after the build so a runner that still stops says why.
+      - if: matrix.repo == 'dotnet/aspnetcore'
+        run: |
+          df -h / && free -m
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
       - env:
           REPO: ${{ matrix.repo }}
         run: testbeds/scale.sh "$REPO" testbeds/out
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - if: always() && matrix.repo == 'dotnet/aspnetcore'
+        run: df -h / && free -m
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: testbed-${{ steps.slug.outputs.slug }}
           path: testbeds/out
-          if-no-files-found: error
+          if-no-files-found: warn
 
   # Conformance gate 1, layer 5 (docs/plans/pending/0001-wave-1-typescript-parity.md, Step 18):
   # dependency-cruiser and Rulebearing over the three named oracles at their pinned SHAs, diffed,
