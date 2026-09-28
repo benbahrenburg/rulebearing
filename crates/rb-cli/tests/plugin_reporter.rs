@@ -337,3 +337,80 @@ fn a_plugin_that_cannot_run_exits_three_naming_it_and_the_fix() -> Result {
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
+
+/// Outside a git work tree the sandbox's root is the working directory; run from the home
+/// directory or the filesystem root, a JavaScript configuration and a plugin are refused (exit 3)
+/// rather than given the whole of either.
+#[test]
+fn a_sandbox_rooted_at_home_or_the_filesystem_root_is_refused() -> Result {
+    let home = std::env::temp_dir().join(format!("rb-cli-plugin-home-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&home);
+    std::fs::create_dir_all(&home)?;
+    let home = home.canonicalize()?;
+    write(&home, "src/a.js", "export const a = 1;\n")?;
+    write(
+        &home,
+        ".dependency-cruiser.cjs",
+        "module.exports = { forbidden: [] };\n",
+    )?;
+    write(
+        &home,
+        "count.cjs",
+        "module.exports = (r) => ({ output: 'n=' + r.modules.length, exitCode: 0 });\n",
+    )?;
+    let as_home = |args: &[&str]| -> Result<Output> {
+        Ok(Command::new(BIN)
+            .args(args)
+            .current_dir(&home)
+            .env("HOME", &home)
+            .env("USERPROFILE", &home)
+            .env("NO_COLOR", "1")
+            .output()?)
+    };
+    let config = as_home(&["cruise", "--config", ".dependency-cruiser.cjs", "src"])?;
+    assert_eq!(config.status.code(), Some(3), "{}", stderr(&config));
+    assert!(
+        stderr(&config).contains("your home directory"),
+        "{}",
+        stderr(&config)
+    );
+    assert!(
+        stderr(&config).contains("`git init`"),
+        "{}",
+        stderr(&config)
+    );
+    let plugin = as_home(&["cruise", "src", "-T", "plugin:./count.cjs"])?;
+    assert_eq!(plugin.status.code(), Some(3), "{}", stderr(&plugin));
+    assert!(
+        stderr(&plugin).contains("your home directory"),
+        "{}",
+        stderr(&plugin)
+    );
+    // The same folder as a project (a .git in it) under another home is fine.
+    std::fs::create_dir_all(home.join(".git"))?;
+    let project = run(&home, &["cruise", "src", "-T", "plugin:./count.cjs"])?;
+    assert_eq!(project.status.code(), Some(0), "{}", stderr(&project));
+    assert_eq!(stdout(&project), "n=1");
+    // From the filesystem root, a plugin named by its absolute path.
+    let saved = run(&home, &["cruise", "src", "-T", "json", "-f", "cruise.json"])?;
+    assert_eq!(saved.status.code(), Some(0));
+    let plugin_file = home.join("count.cjs");
+    let saved_file = home.join("cruise.json");
+    let at_root = Command::new(BIN)
+        .args([
+            "fmt",
+            "-T",
+            &format!("plugin:{}", plugin_file.display()),
+            &saved_file.to_string_lossy(),
+        ])
+        .current_dir("/")
+        .output()?;
+    assert_eq!(at_root.status.code(), Some(3), "{}", stderr(&at_root));
+    assert!(
+        stderr(&at_root).contains("the filesystem root"),
+        "{}",
+        stderr(&at_root)
+    );
+    let _ = std::fs::remove_dir_all(&home);
+    Ok(())
+}
