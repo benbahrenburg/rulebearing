@@ -3,14 +3,21 @@ Write a first configuration from what the repository holds, passing on its first
 Usage: rulebearing init [OPTIONS]
 
 Options:
-      --preset <LANGUAGE>
-          Use these languages' presets instead of the ones found: typescript, dotnet, python
-          (repeat, or separate with commas)
+      --preset <PRESET>
+          Presets to use: languages (typescript, dotnet, python) replace the ones found; frameworks
+          (nextjs, clean-architecture, django, fastapi, vertical-slices), opinions that are off
+          unless named, are added (repeat, or separate with commas)
 
           Possible values:
-          - typescript: TypeScript and JavaScript: `rulebearing:typescript`
-          - dotnet:     .NET: `rulebearing:dotnet`
-          - python:     Python: `rulebearing:python`
+          - typescript:         TypeScript and JavaScript: `rulebearing:typescript`
+          - dotnet:             .NET: `rulebearing:dotnet`
+          - python:             Python: `rulebearing:python`
+          - nextjs:             Next.js route and server boundaries: `rulebearing:nextjs`
+          - clean-architecture: Domain, Application, Infrastructure and Presentation:
+            `rulebearing:clean-architecture`
+          - django:             Django's models, views, URLs and migrations: `rulebearing:django`
+          - fastapi:            FastAPI's routers, services and repositories: `rulebearing:fastapi`
+          - vertical-slices:    Features independent of each other: `rulebearing:vertical-slices`
 
       --dry-run
           Print the proposal and do not write it

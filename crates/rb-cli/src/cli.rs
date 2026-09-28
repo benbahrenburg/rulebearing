@@ -389,13 +389,14 @@ pub struct CruiseArgs {
     /// (the default), or `x-scripts` to also add run scripts to package.json
     #[arg(long, value_name = "ONESHOT", num_args = 0..=1, default_missing_value = "yes")]
     pub init: Option<String>,
-    /// With --init: the languages whose presets to use instead of the ones found: typescript,
-    /// dotnet, python
+    /// With --init: presets to use, as `init --preset` takes them: languages (typescript,
+    /// dotnet, python) instead of the ones found, and frameworks (nextjs, clean-architecture,
+    /// django, fastapi, vertical-slices), opinions that are off unless named
     #[arg(
         long,
         value_enum,
         value_delimiter = ',',
-        value_name = "LANGUAGE",
+        value_name = "PRESET",
         requires = "init"
     )]
     pub preset: Vec<crate::cmd::init::Preset>,

@@ -20,13 +20,15 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | `summary [--format agent\|text]` | The session brief: open violations, ratchet headroom, vacuous rules | |
 | `impact <file> [--depth N] [--from-hook]` | What a file is subject to, before an edit | |
 | `attest [--verify]` | Write or check a receipt of the configuration, inputs and results | |
-| `init [--preset LANGUAGE]` | A first configuration that passes on its first run, read from the repository rather than asked for; the languages found (or named) choose the presets | `depcruise --init`, as `cruise --init` (below) |
+| `init [--preset PRESET]` | A first configuration that passes on its first run, read from the repository rather than asked for; the languages found (or named) choose the presets, and a framework preset (`nextjs`, `clean-architecture`, `django`, `fastapi`, `vertical-slices`) is added only when named | `depcruise --init`, as `cruise --init` (below) |
 | `adopt` | A dependency-cruiser repository behind a green gate with a baseline, in one pull request | |
 | `baseline [paths] [--baseline-mode full\|shrink-only\|format] [--expires DATE --owner NAME --reason TEXT]` | Write the current violations to a known-violations file (default `.dependency-cruiser-known-violations.json`, `-f` to change it); [below](#baselines) | `depcruise-baseline`, which has one behaviour: `full` |
 | `diff <old.json> <new.json>`, `diff --base <ref> [paths]` | Added and removed edges, new and resolved violations and moved ratchets, as `json`, `markdown` or `agent`; [below](#diff) | |
 | `wrap-html` | An SVG read from stdin, written between the header and the footer of the page `x-dot-webpage` writes; [below](#wrap-html) | `depcruise-wrap-stream-in-html` |
 
 `cruise --init [oneshot]` is `depcruise --init` without the questions: it writes what `init` writes, to `--config FILE` or `rulebearing.yaml`, with `--preset typescript,dotnet,python` naming the languages instead of detecting them. `yes`, a bare `--init` and any other name write the configuration; `x-scripts` also adds `rulebearing`, `rulebearing:text` and `rulebearing:focus` run scripts to `package.json` after the existing ones and, as dependency-cruiser does, leaves an existing configuration be. dependency-cruiser's graph and HTML scripts need the `dot`, `archi` and `err-html` reporters and `wrap-html`, and are not written until those exist. One language extends its own preset first, `[rulebearing:python, rulebearing:recommended]`, so its exclusions win; several extend `rulebearing:recommended` ([config.md](config.md#presets)).
+
+`--preset` also takes the framework presets, which are opinions and off unless named ([presets/frameworks](../presets/frameworks/README.md)): `init --preset nextjs` keeps the languages found and adds `rulebearing:nextjs` after them, `init --preset python,django` names both. A framework preset's rules get init's usual treatment: a rule whose `from` side matches nothing in the repository is left out with a `severity: ignore` entry that names it (delete the entry to turn it on), and every current finding is baselined, so the configuration passes on its first run.
 
 `guard`, `snapshot`, `changelog` and `serve` arrive later in wave 3. Each exits 2 now and names its wave.
 

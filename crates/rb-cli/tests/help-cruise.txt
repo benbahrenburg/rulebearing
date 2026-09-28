@@ -144,14 +144,21 @@ Options:
           Write a first configuration instead of cruising, as `init` does, never asking: `yes` (the
           default), or `x-scripts` to also add run scripts to package.json
 
-      --preset <LANGUAGE>
-          With --init: the languages whose presets to use instead of the ones found: typescript,
-          dotnet, python
+      --preset <PRESET>
+          With --init: presets to use, as `init --preset` takes them: languages (typescript, dotnet,
+          python) instead of the ones found, and frameworks (nextjs, clean-architecture, django,
+          fastapi, vertical-slices), opinions that are off unless named
 
           Possible values:
-          - typescript: TypeScript and JavaScript: `rulebearing:typescript`
-          - dotnet:     .NET: `rulebearing:dotnet`
-          - python:     Python: `rulebearing:python`
+          - typescript:         TypeScript and JavaScript: `rulebearing:typescript`
+          - dotnet:             .NET: `rulebearing:dotnet`
+          - python:             Python: `rulebearing:python`
+          - nextjs:             Next.js route and server boundaries: `rulebearing:nextjs`
+          - clean-architecture: Domain, Application, Infrastructure and Presentation:
+            `rulebearing:clean-architecture`
+          - django:             Django's models, views, URLs and migrations: `rulebearing:django`
+          - fastapi:            FastAPI's routers, services and repositories: `rulebearing:fastapi`
+          - vertical-slices:    Features independent of each other: `rulebearing:vertical-slices`
 
       --no-liveness
           Do not check whether rules match anything; the same as --liveness off
