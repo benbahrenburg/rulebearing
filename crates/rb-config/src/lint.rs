@@ -18,12 +18,14 @@
 //! | `fix-restates-name` | a `fix` that says nothing the name does not | no |
 //! | `missing-decision-token` | a comment without `adr:NNNN` or `plan:<slug>`, under `--require-comment-token` | no |
 //! | `type-only-on-dotnet` | a rule limited to .NET by `language` that names `type-only`, which no .NET edge carries ([design § Dependency rules](../../../docs/artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820)) | no |
-//! | `replaced-by-unknown` | a `replacedBy` that names no rule or ratchet of the configuration | no |
+//! | `replaced-by-unknown` | a `replacedBy` that names no rule, `layers` or `independence` entry, or ratchet of the configuration | no |
 //! | `replaced-by-self` | a `replacedBy` that names the rule itself | no |
 //! | `since-after-deprecated` | a `since` later than the rule's `deprecated`, both semver ([`crate::version`]) | no |
 //!
 //! The lifecycle checks ([Wave 3, Step 12](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog))
-//! cover every family: dependency, element, slice and diagram rules. A `deprecated` without a
+//! cover every family: dependency, element, slice and diagram rules, the `layers` and
+//! `independence` shorthands (a `layers` entry once, not once per rule it expands to) and
+//! ratchets. A `deprecated` without a
 //! `replacedBy` is not a finding, since a rule may be retired with nothing in its place; nor is a
 //! version that is not semver, which is compared with nothing.
 
@@ -232,37 +234,69 @@ pub fn lint(config: &Config, graph: Option<&GraphDocument>, options: LintOptions
     out
 }
 
-/// One rule's lifecycle fields, with the name a finding reports and the name `replacedBy`
-/// would use for it.
-struct Lifecycle<'a> {
-    label: String,
-    name: &'a str,
-    since: Option<&'a str>,
-    deprecated: Option<&'a str>,
-    replaced_by: Option<&'a str>,
+/// The lifecycle fields of one rule, shorthand entry or ratchet
+/// ([Wave 3, Step 12](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LifecycleEntry<'a> {
+    /// The name a finding reports: the rule's, or `allowed[n]` for an `allowed` entry.
+    pub label: String,
+    /// The name `replacedBy` would use for it.
+    pub name: &'a str,
+    /// `since`.
+    pub since: Option<&'a str>,
+    /// `deprecated`.
+    pub deprecated: Option<&'a str>,
+    /// `replacedBy`.
+    pub replaced_by: Option<&'a str>,
 }
 
-impl<'a> Lifecycle<'a> {
-    fn of(label: String, name: &'a str, lifecycle: &'a crate::elements::Lifecycle) -> Self {
+impl<'a> LifecycleEntry<'a> {
+    fn new(name: &'a str, fields: [&'a Option<String>; 3]) -> Self {
+        let [since, deprecated, replaced_by] = fields.map(Option::as_deref);
         Self {
-            label,
+            label: name.to_owned(),
             name,
-            since: lifecycle.since.as_deref(),
-            deprecated: lifecycle.deprecated.as_deref(),
-            replaced_by: lifecycle.replaced_by.as_deref(),
+            since,
+            deprecated,
+            replaced_by,
         }
+    }
+
+    fn of(name: &'a str, lifecycle: &'a crate::elements::Lifecycle) -> Self {
+        Self::new(
+            name,
+            [
+                &lifecycle.since,
+                &lifecycle.deprecated,
+                &lifecycle.replaced_by,
+            ],
+        )
     }
 }
 
-/// The lifecycle fields of every rule of every family: dependency rules in evaluation order,
-/// then element, slice and diagram rules.
-fn lifecycles(config: &Config) -> Vec<Lifecycle<'_>> {
+/// The names of the rules the `layers` entries expanded to: each entry speaks for its rules.
+fn expanded_layer_rules(config: &Config) -> BTreeSet<String> {
+    config
+        .rules
+        .layers
+        .iter()
+        .flat_map(crate::shorthands::layer_rule_names)
+        .collect()
+}
+
+/// The lifecycle fields of everything that carries them, once each: dependency rules in
+/// evaluation order (less those a `layers` entry expanded to), then the `layers` entries, then
+/// element, slice and diagram rules, then ratchets. An `independence` entry expands to one rule
+/// of its own name, which stands for it.
+pub fn lifecycle_entries(config: &Config) -> Vec<LifecycleEntry<'_>> {
     let rules = &config.rules;
     let forbidden = rules.dependencies.forbidden.len();
-    let mut out: Vec<Lifecycle<'_>> = rules
+    let layered = expanded_layer_rules(config);
+    let mut out: Vec<LifecycleEntry<'_>> = rules
         .all_dependency_rules()
         .enumerate()
-        .map(|(index, (family, rule))| Lifecycle {
+        .filter(|(_, (_, rule))| !layered.contains(rule.name()))
+        .map(|(index, (family, rule))| LifecycleEntry {
             label: if family == Family::Allowed {
                 format!("allowed[{}]", index - forbidden)
             } else {
@@ -276,32 +310,46 @@ fn lifecycles(config: &Config) -> Vec<Lifecycle<'_>> {
         .collect();
     out.extend(
         rules
+            .layers
+            .iter()
+            .map(|l| LifecycleEntry::new(&l.name, [&l.since, &l.deprecated, &l.replaced_by])),
+    );
+    out.extend(
+        rules
             .elements
             .iter()
-            .map(|r| Lifecycle::of(r.name.clone(), &r.name, &r.lifecycle)),
+            .map(|r| LifecycleEntry::of(&r.name, &r.lifecycle)),
     );
     out.extend(
         rules
             .slices
             .iter()
-            .map(|r| Lifecycle::of(r.name.clone(), &r.name, &r.lifecycle)),
+            .map(|r| LifecycleEntry::of(&r.name, &r.lifecycle)),
     );
     out.extend(
         rules
             .diagrams
             .iter()
-            .map(|r| Lifecycle::of(r.name.clone(), &r.name, &r.lifecycle)),
+            .map(|r| LifecycleEntry::of(&r.name, &r.lifecycle)),
+    );
+    out.extend(
+        rules
+            .ratchets
+            .iter()
+            .map(|r| LifecycleEntry::new(&r.name, [&r.since, &r.deprecated, &r.replaced_by])),
     );
     out
 }
 
 /// `replaced-by-unknown`, `replaced-by-self` and `since-after-deprecated` over every family.
 pub fn lifecycle_findings(config: &Config) -> Vec<Finding> {
-    let all = lifecycles(config);
+    let all = lifecycle_entries(config);
+    let layered = expanded_layer_rules(config);
     let known: BTreeSet<&str> = all
         .iter()
         .map(|l| l.name)
-        .chain(config.rules.ratchets.iter().map(|r| r.name.as_str()))
+        .chain(layered.iter().map(String::as_str))
+        .chain(config.rules.independence.iter().map(|i| i.name.as_str()))
         .collect();
     let mut out = Vec::new();
     for rule in &all {
@@ -318,7 +366,7 @@ pub fn lifecycle_findings(config: &Config) -> Vec<Finding> {
             Some(next) if !known.contains(next) => out.push(finding(
                 "replaced-by-unknown",
                 format!(
-                    "`replacedBy` names `{next}`, which is no rule or ratchet of this configuration; add that rule or correct the name"
+                    "`replacedBy` names `{next}`, which is no rule, shorthand or ratchet of this configuration; add that rule or correct the name"
                 ),
             )),
             _ => {}
@@ -453,6 +501,52 @@ mod tests {
         assert!(
             codes(&all).ends_with(&codes(&findings)),
             "lint reports the lifecycle findings last"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn shorthands_and_ratchets_are_linted_once_each() -> Result<(), crate::ConfigError> {
+        let text = r#"
+rules:
+  layers:
+    - { name: app-layers, layers: ["^ui/", "^domain/", "^db/"], since: "2.0.0", deprecated: "1.0.0", replacedBy: gone }
+  independence:
+    - { name: apart, pattern: "^src/([^/]+)/", replacedBy: app-layers }
+  ratchets:
+    - { name: budget, from: {}, to: {}, budget: b.json, replacedBy: "app-layers:2-to-1" }
+    - { name: old-budget, from: {}, to: {}, budget: b.json, replacedBy: missing }
+  dependencies:
+    forbidden:
+      - { name: r, fix: "Move it.", from: {}, to: {}, replacedBy: apart }
+"#;
+        let config = crate::load_text(
+            text,
+            crate::read::Syntax::Yaml,
+            &std::env::temp_dir(),
+            &crate::LoadOptions::default(),
+        )?;
+        let entries: Vec<(&str, Option<&str>)> = lifecycle_entries(&config)
+            .iter()
+            .map(|e| (e.name, e.deprecated))
+            .collect();
+        assert_eq!(
+            entries,
+            [
+                ("r", None),
+                ("apart", None),
+                ("app-layers", Some("1.0.0")),
+                ("budget", None),
+                ("old-budget", None),
+            ]
+        );
+        assert_eq!(
+            codes(&lifecycle_findings(&config)),
+            [
+                ("app-layers".to_owned(), "replaced-by-unknown"),
+                ("app-layers".to_owned(), "since-after-deprecated"),
+                ("old-budget".to_owned(), "replaced-by-unknown"),
+            ]
         );
         Ok(())
     }

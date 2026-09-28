@@ -3874,6 +3874,13 @@
             "null"
           ]
         },
+        "deprecated": {
+          "description": "The release it was deprecated in; it is still evaluated\n([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "fix": {
           "description": "The fix.",
           "type": [
@@ -3900,6 +3907,13 @@
           "description": "A path pattern with exactly one capturing group naming the module, for example\n`^apps/web/src/features/([^/]+)/`.",
           "type": "string"
         },
+        "replacedBy": {
+          "description": "The rule, shorthand or ratchet that takes over; `config lint` checks it exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "severity": {
           "anyOf": [
             {
@@ -3910,6 +3924,13 @@
             }
           ],
           "description": "Severity. Default `error`."
+        },
+        "since": {
+          "description": "The release it arrived in ([`crate::version`]); informational.",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "required": [
@@ -4041,6 +4062,13 @@
             "null"
           ]
         },
+        "deprecated": {
+          "description": "The release it was deprecated in; it is still evaluated\n([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "fix": {
           "description": "The fix shared by every expanded rule.",
           "type": [
@@ -4070,6 +4098,13 @@
           "description": "The rule name; each expanded rule is `<name>:<lower>-to-<higher>`.",
           "type": "string"
         },
+        "replacedBy": {
+          "description": "The rule, shorthand or ratchet that takes over; `config lint` checks it exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "severity": {
           "anyOf": [
             {
@@ -4080,6 +4115,13 @@
             }
           ],
           "description": "Severity of every expanded rule. Default `error`."
+        },
+        "since": {
+          "description": "The release it arrived in ([`crate::version`]); informational.",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "required": [
@@ -4926,6 +4968,13 @@
             "null"
           ]
         },
+        "deprecated": {
+          "description": "The release it was deprecated in; it is still evaluated\n([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "fix": {
           "description": "The imperative to follow when the count rises.",
           "type": [
@@ -4943,6 +4992,20 @@
         },
         "owner": {
           "description": "Who answers for it.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "replacedBy": {
+          "description": "The rule, shorthand or ratchet that takes over; `config lint` checks it exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "since": {
+          "description": "The release it arrived in ([`crate::version`]); informational.",
           "type": [
             "string",
             "null"

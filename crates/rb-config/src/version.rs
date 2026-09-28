@@ -160,6 +160,17 @@ pub fn natural(a: &str, b: &str) -> Ordering {
     a_runs.len().cmp(&b_runs.len())
 }
 
+/// Whether `a` and `b` name the same release, and which is later: semver precedence when both
+/// are semver (so `v1.1.0`, `1.1.0` and `1.1.0+build` are equal), else the natural order. Unlike
+/// [`compare`] it breaks no tie by the text, so it is the comparison for "is this release in a
+/// range"; [`compare`] and [`sort`] are for ordering a list.
+pub fn precedence(a: &str, b: &str) -> Ordering {
+    match (parse(a), parse(b)) {
+        (Some(x), Some(y)) => x.cmp(&y),
+        _ => natural(a, b),
+    }
+}
+
 /// Orders `a` and `b` as semver when both are, else naturally; ties by the text.
 ///
 /// Use [`sort`] for a list: this comparison mixes two orders and is not transitive across a
@@ -248,6 +259,21 @@ mod tests {
             compare("v1.0.0", "1.0.0"),
             Ordering::Greater,
             "ties by text"
+        );
+    }
+
+    #[test]
+    fn precedence_ignores_the_spelling_of_a_release() {
+        assert_eq!(precedence("v1.1.0", "1.1.0"), Ordering::Equal);
+        assert_eq!(precedence("1.1.0+b", "V1.1.0"), Ordering::Equal);
+        assert_eq!(precedence("v1.1.0", "1.0.0"), Ordering::Greater);
+        assert_eq!(precedence("1.1.0-rc.1", "v1.1.0"), Ordering::Less);
+        assert_eq!(precedence("2026.9", "2026.10"), Ordering::Less);
+        assert_eq!(precedence("r7", "r007"), Ordering::Equal);
+        assert_ne!(
+            compare("v1.1.0", "1.1.0"),
+            Ordering::Equal,
+            "compare still ties by text"
         );
     }
 

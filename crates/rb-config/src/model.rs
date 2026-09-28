@@ -954,6 +954,16 @@ pub struct Ratchet {
     /// Who answers for it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub owner: Option<String>,
+    /// The release it arrived in ([`crate::version`]); informational.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub since: Option<String>,
+    /// The release it was deprecated in; it is still evaluated
+    /// ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deprecated: Option<String>,
+    /// The rule, shorthand or ratchet that takes over; `config lint` checks it exists.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub replaced_by: Option<String>,
 }
 
 /// `rules.layers[]`: one `forbidden` rule per lower-to-higher pair
@@ -982,6 +992,16 @@ pub struct LayersShorthand {
     /// ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub graph: Option<GraphFilter>,
+    /// The release it arrived in ([`crate::version`]); informational.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub since: Option<String>,
+    /// The release it was deprecated in; it is still evaluated
+    /// ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deprecated: Option<String>,
+    /// The rule, shorthand or ratchet that takes over; `config lint` checks it exists.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub replaced_by: Option<String>,
 }
 
 /// `rules.independence[]`: one `$1` fence
@@ -1010,6 +1030,16 @@ pub struct IndependenceShorthand {
     /// ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub graph: Option<GraphFilter>,
+    /// The release it arrived in ([`crate::version`]); informational.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub since: Option<String>,
+    /// The release it was deprecated in; it is still evaluated
+    /// ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deprecated: Option<String>,
+    /// The rule, shorthand or ratchet that takes over; `config lint` checks it exists.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub replaced_by: Option<String>,
 }
 
 /// `defines.<name>`: a value read from a JSON file
