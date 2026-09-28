@@ -834,3 +834,229 @@ fn a_changed_source_file_maps_through_the_pdb() -> Result {
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
+
+/// A repository in a scratch folder with `files` committed.
+fn committed(tag: &str, files: &[(&str, &str)]) -> Result<PathBuf> {
+    let dir = scratch(tag)?;
+    git(&dir, &["init", "-q"])?;
+    for (file, text) in files {
+        write(&dir, file, text)?;
+    }
+    git(&dir, &["add", "-A"])?;
+    git(&dir, &["commit", "-qm", "base"])?;
+    Ok(dir)
+}
+
+/// A native configuration holding `rules` (YAML list items under `forbidden`), outside the
+/// repository.
+fn native_rules(tag: &str, rules: &str) -> Result<String> {
+    let dir = scratch(&format!("{tag}-config"))?;
+    let file = dir.join("rulebearing.yaml");
+    std::fs::write(
+        &file,
+        format!("rules:\n  dependencies:\n    forbidden:\n{rules}"),
+    )?;
+    Ok(file.to_string_lossy().into_owned())
+}
+
+fn sorted(mut list: Vec<String>) -> Vec<String> {
+    list.sort();
+    list
+}
+
+/// Review finding 1: a depth measured by the shortest path. `x` reaches `t` in one step and
+/// through `a` in two, so `y` is two steps from `t` whichever path a walk finds first.
+#[test]
+fn the_depth_is_the_shortest_path_to_a_change() -> Result {
+    let dir = committed(
+        "shortest",
+        &[
+            (
+                ".dependency-cruiser.json",
+                r#"{"forbidden":[{"name":"no-y-to-x","severity":"error","from":{"path":"y"},"to":{"path":"x"}}]}"#,
+            ),
+            ("src/t.ts", "export const t = 1;\n"),
+            (
+                "src/a.ts",
+                "import { t } from \"./t\";\nexport const a = t;\n",
+            ),
+            (
+                "src/x.ts",
+                "import { a } from \"./a\";\nimport { t } from \"./t\";\nexport const x = a + t;\n",
+            ),
+            (
+                "src/y.ts",
+                "import { x } from \"./x\";\nexport const y = x;\n",
+            ),
+        ],
+    )?;
+    write(&dir, "src/t.ts", "export const t = 2;\n")?;
+    let output = cruise(
+        &dir,
+        &["-A", "HEAD", "--affected-depth", "2", "-T", "json", "src"],
+    )?;
+    let result: Value = serde_json::from_slice(&output.stdout)?;
+    let expected = ["src/a.ts", "src/t.ts", "src/x.ts", "src/y.ts"];
+    assert_eq!(sorted(sources(&result)), expected);
+    assert_eq!(result["summary"]["affected"]["closure"], json!(expected));
+    assert!(violations(&result).contains(&triple("no-y-to-x", "src/y.ts", "src/x.ts")));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// Review finding 2: a rename leaves the old name's importers unresolved, and the saved graph
+/// names them.
+#[test]
+fn a_native_rename_reaches_the_old_names_importers() -> Result {
+    let dir = committed(
+        "rename",
+        &[
+            ("src/a.ts", "export const a = 1;\n"),
+            (
+                "src/b.ts",
+                "import { a } from \"./a\";\nexport const b = a;\n",
+            ),
+        ],
+    )?;
+    let config = native_rules(
+        "rename",
+        "      - { name: no-unresolvable, comment: t, severity: error, from: {}, to: { couldNotResolve: true } }\n",
+    )?;
+    let base = ["--config", config.as_str(), "--no-liveness"];
+    let saved = cruise(
+        &dir,
+        &[
+            &base[..],
+            &["-T", "json", "-f", ".graph/cruise.json", "src"],
+        ]
+        .concat(),
+    )?;
+    assert_eq!(saved.status.code(), Some(0));
+    git(&dir, &["mv", "src/a.ts", "src/c.ts"])?;
+    let full = cruise(&dir, &[&base[..], &["-T", "err", "src"]].concat())?;
+    assert_eq!(full.status.code(), Some(1), "the full cruise finds it");
+    let affected = cruise(
+        &dir,
+        &[&base[..], &["-A", "HEAD", "-T", "err", "src"]].concat(),
+    )?;
+    assert_eq!(
+        affected.status.code(),
+        Some(1),
+        "and so does the affected one: {}",
+        String::from_utf8_lossy(&affected.stdout)
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// Review finding 3: dropping a module's last importer makes it an orphan and unreachable, which
+/// the affected run reports because the saved graph names the dropped edge's target.
+#[test]
+fn a_native_run_reports_what_a_dropped_import_leaves_behind() -> Result {
+    let dir = committed(
+        "dropped",
+        &[
+            (
+                "src/entry.ts",
+                "import { a } from \"./a\";\nexport const e = a;\n",
+            ),
+            (
+                "src/a.ts",
+                "import { m } from \"./m\";\nexport const a = m;\n",
+            ),
+            ("src/m.ts", "export const m = 1;\n"),
+        ],
+    )?;
+    let config = native_rules(
+        "dropped",
+        "      - { name: no-orphans, comment: t, severity: error, from: { orphan: true }, to: {} }\n      - { name: m-reached, comment: t, severity: error, from: { path: '^src/entry' }, to: { path: '^src/m', reachable: false } }\n",
+    )?;
+    let base = ["--config", config.as_str(), "--no-liveness"];
+    let saved = cruise(
+        &dir,
+        &[
+            &base[..],
+            &["-T", "json", "-f", ".graph/cruise.json", "src"],
+        ]
+        .concat(),
+    )?;
+    assert_eq!(saved.status.code(), Some(0));
+    write(&dir, "src/a.ts", "export const a = 1;\n")?;
+    let output = cruise(
+        &dir,
+        &[&base[..], &["-A", "HEAD", "-T", "json", "src"]].concat(),
+    )?;
+    let result: Value = serde_json::from_slice(&output.stdout)?;
+    let found = violations(&result);
+    assert!(
+        found.contains(&triple("no-orphans", "src/m.ts", "src/m.ts")),
+        "{found:?}"
+    );
+    assert!(
+        found
+            .iter()
+            .any(|(rule, from, _)| rule == "m-reached" && from == "src/m.ts"),
+        "{found:?}"
+    );
+    assert!(
+        result["summary"]["affected"]["closure"]
+            .as_array()
+            .is_some_and(|c| c.contains(&json!("src/m.ts")))
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// Review finding 5: a non-ASCII path, a `diff.relative` setting and a directory named as the
+/// revision.
+#[test]
+fn git_settings_and_pathspecs_do_not_change_what_counts() -> Result {
+    let dir = committed(
+        "git-paths",
+        &[
+            (".dependency-cruiser.json", "{}\n"),
+            ("src/\u{e9}t\u{e9}.ts", "export const e = 1;\n"),
+            ("src/a.ts", "export const a = 1;\n"),
+        ],
+    )?;
+    write(&dir, "src/\u{e9}t\u{e9}.ts", "export const e = 2;\n")?;
+    write(&dir, "src/a.ts", "export const a = 2;\n")?;
+    let output = cruise(&dir, &["-A", "HEAD", "-T", "json", "src"])?;
+    let result: Value = serde_json::from_slice(&output.stdout)?;
+    assert_eq!(
+        sorted(sources(&result)),
+        ["src/a.ts", "src/\u{e9}t\u{e9}.ts"],
+        "core.quotePath would have quoted the accented name"
+    );
+
+    git(&dir, &["config", "diff.relative", "true"])?;
+    let sub = isolated(BIN, &dir.join("src"))
+        .args([
+            "cruise",
+            "--no-progress",
+            "--config",
+            "../.dependency-cruiser.json",
+            "-A",
+            "HEAD",
+            "-T",
+            "json",
+            ".",
+        ])
+        .output()?;
+    let sub: Value = serde_json::from_slice(&sub.stdout)?;
+    assert_eq!(
+        sorted(sources(&sub)),
+        ["a.ts", "\u{e9}t\u{e9}.ts"],
+        "diff.relative does not empty the report"
+    );
+
+    let pathspec = cruise(&dir, &["-A", "src", "src"])?;
+    assert_eq!(pathspec.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&pathspec.stderr).contains("revision 'src' unknown"),
+        "{}",
+        String::from_utf8_lossy(&pathspec.stderr)
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}

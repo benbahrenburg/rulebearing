@@ -13,7 +13,7 @@
 //! `highlight`. `fmt` applies them to a saved result; `cruise` applies `focus`, `reaches` and
 //! `highlight` after analysis (the extractor applies `exclude` and `includeOnly` while it walks).
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use serde_json::Value;
 
@@ -168,6 +168,38 @@ pub fn add_focus(modules: Vec<Value>, filter: &Filter) -> Vec<Value> {
         .collect()
 }
 
+/// The modules in `seeds` and those that reach one of them in at most `depth` steps, by a
+/// breadth-first walk over the dependents, so each module is measured by its shortest path.
+/// (Upstream's depth-first `findTransitiveDependents` shares one `seen` set across branches, so
+/// with a depth it can miss a module whose first-found path is the long one; `reaches` has no
+/// depth upstream, so only the unbounded case keeps upstream's walk.)
+fn dependents_within(modules: &[Value], seeds: &[String], depth: u32) -> HashSet<String> {
+    let mut dependents: HashMap<String, Vec<String>> = HashMap::new();
+    for module in modules {
+        let source = js::text(module, "source").into_owned();
+        for dependency in js::array(module, "dependencies") {
+            dependents
+                .entry(js::text(dependency, "resolved").into_owned())
+                .or_default()
+                .push(source.clone());
+        }
+    }
+    let mut seen: HashSet<String> = seeds.iter().cloned().collect();
+    let mut frontier: Vec<String> = seeds.to_vec();
+    for _ in 0..depth {
+        let mut next = Vec::new();
+        for name in &frontier {
+            for dependent in dependents.get(name).into_iter().flatten() {
+                if seen.insert(dependent.clone()) {
+                    next.push(dependent.clone());
+                }
+            }
+        }
+        frontier = next;
+    }
+    seen
+}
+
 /// `filterReaches`: the modules that reach a matching module, tagged `matchesReaches`. With a
 /// `depth`, only the modules that reach one in at most that many steps.
 pub fn reaches(modules: Vec<Value>, filter: &Filter) -> Vec<Value> {
@@ -180,11 +212,15 @@ pub fn reaches(modules: Vec<Value>, filter: &Filter) -> Vec<Value> {
         .filter(|m| module_matches(m, pattern))
         .map(|m| js::text(m, "source").into_owned())
         .collect();
-    let graph = IndexedGraph::new(&modules, "source");
-    let mut reaching: HashSet<String> = HashSet::new();
-    for name in &to_reach {
-        reaching.extend(graph.transitive_dependents(name, depth));
-    }
+    let reaching: HashSet<String> = if depth == 0 {
+        let graph = IndexedGraph::new(&modules, "source");
+        to_reach
+            .iter()
+            .flat_map(|name| graph.transitive_dependents(name, 0))
+            .collect()
+    } else {
+        dependents_within(&modules, &to_reach, depth)
+    };
     let to_reach: HashSet<String> = to_reach.into_iter().collect();
     modules
         .into_iter()
@@ -300,6 +336,34 @@ mod tests {
         assert_eq!(lit[1]["matchesHighlight"], true);
         assert_eq!(lit[0]["matchesHighlight"], false);
         assert_eq!(reaches(graph(), &Filter::default()).len(), 4);
+    }
+
+    #[test]
+    fn reaches_measures_the_depth_by_the_shortest_path() {
+        // t; a -> t; x -> a, t; y -> x. From t: a and x are one step away, y two.
+        let edge = |to: &str| json!({ "resolved": to });
+        let modules = vec![
+            json!({ "source": "t", "dependencies": [], "dependents": ["a", "x"] }),
+            json!({ "source": "a", "dependencies": [edge("t")], "dependents": ["x"] }),
+            json!({ "source": "x", "dependencies": [edge("a"), edge("t")], "dependents": ["y"] }),
+            json!({ "source": "y", "dependencies": [edge("x")], "dependents": ["z"] }),
+            json!({ "source": "z", "dependencies": [edge("y")], "dependents": [] }),
+        ];
+        let two = reaches(modules.clone(), &filter("^t$", Some(2)));
+        assert_eq!(sources(&two), ["t", "a", "x", "y"]);
+        assert_eq!(
+            two[3]["dependencies"][0]["resolved"], "x",
+            "the edge y -> x stays"
+        );
+        let one = reaches(modules.clone(), &filter("^t$", Some(1)));
+        assert_eq!(sources(&one), ["t", "a", "x"]);
+        let three = reaches(modules.clone(), &filter("^t$", Some(3)));
+        assert_eq!(sources(&three), ["t", "a", "x", "y", "z"]);
+        assert_eq!(
+            reaches(modules, &filter("^t$", Some(0))).len(),
+            5,
+            "0 is every step"
+        );
     }
 
     #[test]
