@@ -13,6 +13,8 @@
 //! ([Wave 3, Step 5](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 //! `-T plugin:<path>` renders in the sandbox, and with `--exit-code` the plugin's `exitCode` is the
 //! count ([`crate::plugin`]; [Wave 3, Step 7](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
+//! A saved result read in source mode never gates: with `--exit-code` it exits 2 unless
+//! `--allow-approximate-gate` ([`crate::exit::gate`]; [Wave 3, Step 15](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
 
 use rb_report::ReportOptions;
 use rb_rules::graph::filters::{Filter, Filters};
@@ -22,7 +24,7 @@ use serde_json::{Map, Value, json};
 use crate::cli::FmtArgs;
 use crate::cmd::cruise::color;
 use crate::context::Context;
-use crate::exit::RunExit;
+use crate::exit::{APPROXIMATE_REASON, RunExit, gate, is_approximate};
 use crate::{Outcome, ratchets, write_output};
 
 fn failed(code: RunExit, message: &str) -> Outcome {
@@ -188,6 +190,7 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
     let expired = document.summary.expired.as_ref().map_or(0, Vec::len) as u64;
     // As depcruise-fmt: without --exit-code, 0; with it, the code the cruise gave for this
     // reporter, from what the saved result carries (ADR-0030, ADR-0031).
+    let decides = args.exit_code && (rb_report::gates(&args.output_type) || plugin.is_some());
     let code = if !args.exit_code {
         RunExit::Violations(0)
     } else if no_budget || vacuous {
@@ -200,9 +203,18 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
     } else {
         RunExit::Violations(0)
     };
-    Outcome {
-        stdout,
-        stderr: String::new(),
-        code: code.code_in(args.exit_code_mode),
+    // A saved result read in source mode never gates (ADR-0011).
+    let approximate = is_approximate(&document);
+    match gate(code, decides, approximate, args.allow_approximate_gate) {
+        Some(refused) => Outcome {
+            stdout,
+            stderr: format!("warning: {APPROXIMATE_REASON}\n"),
+            code: refused.code_in(args.exit_code_mode),
+        },
+        None => Outcome {
+            stdout,
+            stderr: String::new(),
+            code: code.code_in(args.exit_code_mode),
+        },
     }
 }

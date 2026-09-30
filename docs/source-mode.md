@@ -49,6 +49,10 @@ A name is resolved without a compiler, so what only a compiler decides is not kn
 
 The comparison covers edges between two files both modes know. `cargo test -p rb-extract-dotnet --features source-mode --test source_mode` asserts at least 90% precision and recall and writes `target/source-mode-precision.json`.
 
+## Never the gate
+
+A run read in source mode never passes or fails a gate. `cruise` with a reporter that gates, `fmt --exit-code` on a saved source-mode result and `diff --exit-code` with a source-mode side print `warning: approximate-mode-not-a-gate: ...` and exit 2, whether the count was zero or not; `attest` refuses to sign such a graph at all. `cruise --from-hook` answers as it always does, because the Stop hook is the inner loop source mode exists for. `--allow-approximate-gate` gives the count back for a local script ([cli.md](cli.md#net-without-a-build---mode-source); [FR-EXT-DN-04](prd.md#fr-ext-dn-04)).
+
 ## The cache
 
 Under `--cache`, a changed `.cs` file is the only one parsed again; every other file's parse is taken from the entry, and the resolution, which depends on every file, is run over all of them, so an incremental run equals a full one. A `.cs` file added or deleted, or a project file changed, reads everything again. A build since the entry was written changes nothing, since no assembly is read ([cli.md](cli.md#the-cache)).

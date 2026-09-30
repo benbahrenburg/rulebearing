@@ -126,6 +126,10 @@ pub struct Tail {
     pub warnings: Vec<String>,
     /// The report's error-severity violations, `summary.error`.
     pub error: u64,
+    /// The graph was read in source mode, so the run never decides a gate
+    /// ([`crate::exit::gate`]).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub approximate: bool,
 }
 
 impl Verdict {
@@ -137,6 +141,7 @@ impl Verdict {
             ratchets: self.ratchets.clone(),
             warnings: self.warnings.clone(),
             error: self.document.summary.error,
+            approximate: crate::exit::is_approximate(&self.document),
         }
     }
 }

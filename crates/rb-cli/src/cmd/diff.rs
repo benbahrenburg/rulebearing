@@ -47,6 +47,9 @@
 //! `fmt`. An unreadable input, a file that is not a cruise result, an unknown revision, a
 //! folder outside a repository and a base that cannot be cruised exit 2 with the reason; an invalid
 //! configuration, an unknown output type or a wrong command line exit 3.
+//! With `--exit-code`, a side read in source mode refuses the gate, exit 2, unless
+//! `--allow-approximate-gate` ([`crate::exit::gate`];
+//! [Wave 3, Step 15](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -59,7 +62,7 @@ use rb_report::diff::{self, Diff, Side};
 use crate::cache::{self, CacheKey, key};
 use crate::cli::{ConfigArgs, CruiseArgs};
 use crate::context::Context;
-use crate::exit::{ExitCodeMode, RunExit};
+use crate::exit::{APPROXIMATE_REASON, ExitCodeMode, RunExit, gate, is_approximate};
 use crate::pipeline::{self, RunError, RunOptions};
 use crate::progress::Progress;
 use crate::{Outcome, configure, ratchets, write_output};
@@ -106,6 +109,11 @@ pub struct DiffArgs {
         requires = "exit_code"
     )]
     pub exit_code_mode: ExitCodeMode,
+    /// Let a run read in source mode (--mode source) decide the exit code, for a local script;
+    /// without it such a run exits 2, since its edges are approximate. Never in CI (ADR-0011)
+    #[arg(long, requires = "exit_code")]
+    pub allow_approximate_gate: bool,
+
     /// With --base: check the base out and extract it even when the cache holds its graph, and
     /// do not write the entry
     #[arg(long)]
@@ -139,8 +147,8 @@ pub fn run(ctx: &mut Context<'_>, args: &DiffArgs) -> Outcome {
         None => saved(ctx, args),
         Some(reference) => against_base(ctx, args, reference),
     };
-    let diff = match result {
-        Ok(diff) => diff,
+    let (diff, approximate) = match result {
+        Ok(found) => found,
         Err(outcome) => return outcome,
     };
     let text = match diff::render(&args.output_type, &diff) {
@@ -151,14 +159,24 @@ pub fn run(ctx: &mut Context<'_>, args: &DiffArgs) -> Outcome {
     if let Err(message) = write_output(ctx, &args.output_to, &text, &mut stdout) {
         return failed(RunExit::Untrustworthy, &message);
     }
-    let code = if args.exit_code {
+    let mut code = if args.exit_code {
         RunExit::Violations(diff.new_errors())
     } else {
         RunExit::Violations(0)
     };
+    let mut stderr = String::new();
+    if let Some(refused) = gate(
+        code,
+        args.exit_code,
+        approximate,
+        args.allow_approximate_gate,
+    ) {
+        code = refused;
+        stderr = format!("warning: {APPROXIMATE_REASON}\n");
+    }
     Outcome {
         stdout,
-        stderr: String::new(),
+        stderr,
         code: code.code_in(args.exit_code_mode),
     }
 }
@@ -184,7 +202,7 @@ fn read(ctx: &Context<'_>, file: &str) -> Result<GraphDocument, Outcome> {
 }
 
 /// `diff OLD NEW`.
-fn saved(ctx: &Context<'_>, args: &DiffArgs) -> Result<Diff, Outcome> {
+fn saved(ctx: &Context<'_>, args: &DiffArgs) -> Result<(Diff, bool), Outcome> {
     if config_given(&args.config) || args.no_cache {
         return Err(failed(
             RunExit::InvalidConfig,
@@ -200,7 +218,9 @@ fn saved(ctx: &Context<'_>, args: &DiffArgs) -> Result<Diff, Outcome> {
             ),
         ));
     };
-    Ok(diff::compute(&read(ctx, old)?, &read(ctx, new)?))
+    let (old, new) = (read(ctx, old)?, read(ctx, new)?);
+    let approximate = is_approximate(&old) || is_approximate(&new);
+    Ok((diff::compute(&old, &new), approximate))
 }
 
 /// A folder this process created under the system temporary directory, removed with everything
@@ -507,7 +527,11 @@ fn base_graph(
 }
 
 /// `diff --base REF`.
-fn against_base(ctx: &mut Context<'_>, args: &DiffArgs, reference: &str) -> Result<Diff, Outcome> {
+fn against_base(
+    ctx: &mut Context<'_>,
+    args: &DiffArgs,
+    reference: &str,
+) -> Result<(Diff, bool), Outcome> {
     let root = git(&ctx.cwd, &["rev-parse", "--show-toplevel"])
         .ok()
         .filter(|r| !r.is_empty())
@@ -549,7 +573,8 @@ fn against_base(ctx: &mut Context<'_>, args: &DiffArgs, reference: &str) -> Resu
     let base = evaluate(ctx, &config, &options, base)
         .map_err(|e| side_failed(&format!("the base `{reference}` ({sha})"), &e))?;
     let head_sha = key::head(&root);
-    Ok(diff::compute(&base, &head).with_sides(
+    let approximate = is_approximate(&base) || is_approximate(&head);
+    let diff = diff::compute(&base, &head).with_sides(
         Side {
             revision: Some(reference.to_owned()),
             sha: Some(sha),
@@ -558,7 +583,8 @@ fn against_base(ctx: &mut Context<'_>, args: &DiffArgs, reference: &str) -> Resu
             revision: None,
             sha: (!head_sha.is_empty()).then_some(head_sha),
         },
-    ))
+    );
+    Ok((diff, approximate))
 }
 
 #[cfg(test)]

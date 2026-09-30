@@ -1,12 +1,16 @@
 //! `cruise --mode source` through the binary: the flag and the configuration key, the receipt
-//! and the marks, `--strict-schema`, the agent header, and the cache reading only the changed
-//! `.cs` files while staying equal to a cold run.
+//! and the marks, `--strict-schema`, the agent header, the cache reading only the changed
+//! `.cs` files while staying equal to a cold run, and the refusal of source mode as a gate by
+//! `cruise`, `fmt --exit-code`, `diff --exit-code` and `attest`.
 //!
 //! - Plan: [Wave 3, Step 14](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof),
 //!   [§ 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //!   ("Source mode")
 //! - Decision: [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md),
 //!   [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
+//! - Refusal: [Wave 3, Step 15](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof),
+//!   [§ 1.6](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make)
+//!   ("Whether source mode may ever feed `--exit-code`"), [ADR-0008](../../../docs/adr/0008-exit-code-contract.md)
 //! - Requirement: [FR-EXT-DN-04](../../../docs/prd.md#fr-ext-dn-04),
 //!   [FR-CLI-05](../../../docs/prd.md#fr-cli-05)
 
@@ -245,8 +249,21 @@ fn the_agent_report_opens_by_saying_it_is_approximate() -> Result {
     let dir = solution("agent", CONFIG)?;
     let output = run(
         &dir,
-        &["cruise", "--mode", "source", "-T", "agent", "--no-progress"],
+        &[
+            "cruise",
+            "--mode",
+            "source",
+            "-T",
+            "agent",
+            "--allow-approximate-gate",
+            "--no-progress",
+        ],
     )?;
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "the one violation, allowed as a count"
+    );
     let report = json(&output)?;
     assert!(
         report["approximate"]
@@ -335,6 +352,189 @@ fn the_cache_parses_only_the_changed_file_and_equals_a_cold_run() -> Result {
         "Domain/Orders/Refund.cs".to_owned(),
         "Domain/Customers/Customer.cs".to_owned()
     )));
+    std::fs::remove_dir_all(&dir)?;
+    Ok(())
+}
+
+const REFUSED: &str = "approximate-mode-not-a-gate: ";
+
+fn stderr(output: &Output) -> String {
+    String::from_utf8_lossy(&output.stderr).into_owned()
+}
+
+#[test]
+fn a_gating_cruise_in_source_mode_is_refused_unless_allowed() -> Result {
+    let dir = solution("gate", CONFIG)?;
+    // The table of Step 15: (arguments, exit code, refused).
+    for (args, code, refused) in [
+        (&["-T", "err"][..], 2, true),
+        (&["-T", "err", "--exit-code-mode", "strict"][..], 2, true),
+        (&["-T", "err", "--allow-approximate-gate"][..], 1, false),
+        (
+            &[
+                "-T",
+                "err",
+                "--allow-approximate-gate",
+                "--exit-code-mode",
+                "strict",
+            ][..],
+            11,
+            false,
+        ),
+        (&["-T", "json"][..], 0, false),
+    ] {
+        let mut full = vec!["cruise", "--mode", "source", "--no-progress"];
+        full.extend_from_slice(args);
+        let output = run(&dir, &full)?;
+        assert_eq!(
+            output.status.code(),
+            Some(code),
+            "{args:?}: {}",
+            stderr(&output)
+        );
+        assert_eq!(
+            stderr(&output).contains(REFUSED),
+            refused,
+            "{args:?}: {}",
+            stderr(&output)
+        );
+        if refused {
+            // The report is still written: the findings are what the inner loop wants.
+            assert!(
+                String::from_utf8_lossy(&output.stdout).contains("orders-not-to-customers"),
+                "{args:?}"
+            );
+        }
+    }
+    // A passing run is refused too: an approximate pass is no pass.
+    let clean = solution(
+        "gate-clean",
+        "rules:\n  dependencies:\n    forbidden:\n      - name: nothing-to-app\n        comment: \"plan:rulebearing-wave-3\"\n        severity: error\n        from: { path: \"^Domain/\" }\n        to: { path: \"^App/\" }\n        allowEmpty: true\n",
+    )?;
+    let output = run(
+        &clean,
+        &[
+            "cruise",
+            "--mode",
+            "source",
+            "-T",
+            "err",
+            "--no-progress",
+            "--liveness",
+            "off",
+        ],
+    )?;
+    assert_eq!(output.status.code(), Some(2), "{}", stderr(&output));
+    assert!(stderr(&output).contains(REFUSED));
+    std::fs::remove_dir_all(&dir)?;
+    std::fs::remove_dir_all(&clean)?;
+    Ok(())
+}
+
+#[test]
+fn the_stop_hook_still_answers_in_source_mode() -> Result {
+    let dir = solution("hook", CONFIG)?;
+    let output = isolated(BIN, &dir)
+        .args(["cruise", "--mode", "source", "--from-hook", "--no-progress"])
+        .stdin(std::process::Stdio::null())
+        .output()?;
+    assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
+    let answer: Value = serde_json::from_slice(&output.stdout)?;
+    assert_eq!(answer["decision"], "block");
+    let reason = answer["reason"].as_str().unwrap_or_default();
+    assert!(
+        reason.contains("orders-not-to-customers") && reason.contains("approximate: "),
+        "{reason}"
+    );
+    assert!(!stderr(&output).contains(REFUSED));
+    std::fs::remove_dir_all(&dir)?;
+    Ok(())
+}
+
+#[test]
+fn a_saved_source_mode_result_does_not_gate_fmt_or_diff() -> Result {
+    let dir = solution("saved", CONFIG)?;
+    let output = run(
+        &dir,
+        &["cruise", "--mode", "source", "-T", "json", "--no-progress"],
+    )?;
+    std::fs::write(dir.join("source.json"), &output.stdout)?;
+    for (args, code, refused) in [
+        (&["fmt", "source.json", "-T", "err"][..], 0, false),
+        (
+            &["fmt", "source.json", "-T", "err", "--exit-code"][..],
+            2,
+            true,
+        ),
+        (
+            &[
+                "fmt",
+                "source.json",
+                "-T",
+                "err",
+                "--exit-code",
+                "--allow-approximate-gate",
+            ][..],
+            1,
+            false,
+        ),
+        (
+            &["fmt", "source.json", "-T", "json", "--exit-code"][..],
+            0,
+            false,
+        ),
+        (&["diff", "source.json", "source.json"][..], 0, false),
+        (
+            &["diff", "source.json", "source.json", "--exit-code"][..],
+            2,
+            true,
+        ),
+        (
+            &[
+                "diff",
+                "source.json",
+                "source.json",
+                "--exit-code",
+                "--allow-approximate-gate",
+            ][..],
+            0,
+            false,
+        ),
+    ] {
+        let output = run(&dir, args)?;
+        assert_eq!(
+            output.status.code(),
+            Some(code),
+            "{args:?}: {}",
+            stderr(&output)
+        );
+        assert_eq!(
+            stderr(&output).contains(REFUSED),
+            refused,
+            "{args:?}: {}",
+            stderr(&output)
+        );
+    }
+    std::fs::remove_dir_all(&dir)?;
+    Ok(())
+}
+
+#[test]
+fn attest_refuses_to_sign_a_source_mode_run() -> Result {
+    let dir = solution(
+        "attest",
+        &format!("languages:\n  dotnet:\n    mode: source\n{CONFIG}"),
+    )?;
+    let output = run(&dir, &["attest"])?;
+    assert_eq!(output.status.code(), Some(2), "{}", stderr(&output));
+    assert!(stderr(&output).contains(REFUSED), "{}", stderr(&output));
+    assert!(!dir.join(".graph/attest.json").exists());
+    // A saved source-mode graph is refused the same way.
+    let saved = run(&dir, &["cruise", "-T", "json", "--no-progress"])?;
+    std::fs::write(dir.join("source.json"), &saved.stdout)?;
+    let output = run(&dir, &["attest", "--graph", "source.json"])?;
+    assert_eq!(output.status.code(), Some(2), "{}", stderr(&output));
+    assert!(stderr(&output).contains(REFUSED));
     std::fs::remove_dir_all(&dir)?;
     Ok(())
 }

@@ -22,7 +22,9 @@ pub const EXIT_CODES: &str = "Exit codes:
   1-255   the number of error-severity violations, capped at 255, from a reporter that gates:
           err, err-long, null, teamcity, azure-devops, github-annotations, agent
           (json, csv and text exit 0, as in dependency-cruiser)
-  2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule
+  2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule, or a
+          .NET graph read with --mode source deciding a gate (--allow-approximate-gate lets a
+          local script have the count)
   3       the configuration is invalid
 A run with exactly 2 or 3 error violations also exits 2 or 3; the report says which it was.
 --exit-code-mode strict exits 10 + n for n error violations instead (capped at 255), so 2 and 3
@@ -472,6 +474,10 @@ pub struct CruiseArgs {
     /// so 2 and 3 are never a count)
     #[arg(long, value_enum, value_name = "MODE", default_value_t = ExitCodeMode::Default)]
     pub exit_code_mode: ExitCodeMode,
+    /// Let a run read in source mode (--mode source) decide the exit code, for a local script;
+    /// without it such a run exits 2, since its edges are approximate. Never in CI (ADR-0011)
+    #[arg(long)]
+    pub allow_approximate_gate: bool,
 }
 
 /// `fmt`.
@@ -520,6 +526,11 @@ pub struct FmtArgs {
     /// count)
     #[arg(long, value_enum, value_name = "MODE", default_value_t = ExitCodeMode::Default)]
     pub exit_code_mode: ExitCodeMode,
+    /// Let a run read in source mode (--mode source) decide the exit code, for a local script;
+    /// without it such a run exits 2, since its edges are approximate. Never in CI (ADR-0011)
+    #[arg(long, requires = "exit_code")]
+    pub allow_approximate_gate: bool,
+
     /// Prefix for links in the reports
     #[arg(short = 'p', long, value_name = "PREFIX")]
     pub prefix: Option<String>,

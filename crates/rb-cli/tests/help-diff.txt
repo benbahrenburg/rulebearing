@@ -56,6 +56,10 @@ Options:
           
           [default: default]
 
+      --allow-approximate-gate
+          Let a run read in source mode (--mode source) decide the exit code, for a local script;
+          without it such a run exits 2, since its edges are approximate. Never in CI (ADR-0011)
+
       --no-cache
           With --base: check the base out and extract it even when the cache holds its graph, and do
           not write the entry

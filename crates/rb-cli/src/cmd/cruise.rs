@@ -28,6 +28,11 @@
 //! hands the findings to the agent before the turn ends; otherwise nothing. It exits 0 always, and
 //! does nothing when the hook input says a `Stop` hook already kept the turn going
 //! (`stop_hook_active`), so the agent is never held in a loop.
+//!
+//! A run read in source mode whose reporter gates is refused, exit 2 with
+//! `approximate-mode-not-a-gate`, unless `--allow-approximate-gate`; `--from-hook` still answers
+//! with it, since the hook is the inner loop source mode is for ([`crate::exit::gate`];
+//! [Wave 3, Step 15](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
 
 use std::fmt::Write as _;
 
@@ -38,7 +43,7 @@ use crate::cache::Content;
 use crate::cache::evaluated::{Tail, Verdict};
 use crate::cli::{ColorChoice, CruiseArgs, Liveness};
 use crate::context::Context;
-use crate::exit::RunExit;
+use crate::exit::{APPROXIMATE_REASON, RunExit, gate};
 use crate::pipeline::{self, RunError, RunOptions};
 use crate::progress::Progress;
 use crate::ratchets::{self, Ratchets};
@@ -615,7 +620,8 @@ fn conclude(
     // that matches nothing counts under strict liveness only (ADR-0032). The count is the
     // report's, after `reaches` and `--affected` kept their modules, as upstream's reporter
     // counts the re-summarised result.
-    let code = if (strict && vacuous) || ratchets.no_budget() {
+    let decides = rb_report::gates(output_type) || plugin_count.is_some();
+    let mut code = if (strict && vacuous) || ratchets.no_budget() {
         RunExit::Untrustworthy
     } else if rb_report::gates(output_type) {
         RunExit::Violations(tail.error + tail.expired.len() as u64 + ratchets.exceeded())
@@ -627,6 +633,12 @@ fn conclude(
     };
     if args.from_hook {
         return stop_hook(code, &stdout, stderr);
+    }
+    // Source mode is the inner loop's, never the gate's (ADR-0011): the hook above answers with
+    // it, and any other run whose count would be the exit code is refused.
+    if let Some(refused) = gate(code, decides, tail.approximate, args.allow_approximate_gate) {
+        let _ = writeln!(stderr, "warning: {APPROXIMATE_REASON}");
+        code = refused;
     }
     Outcome {
         stdout,

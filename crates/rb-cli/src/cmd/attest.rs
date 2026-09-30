@@ -5,7 +5,10 @@
 //!   (`.graph/attest.json`: tool, configHash, inputsHash, resultsHash, head, createdAt; SHA-256)
 //! - Source: [design § The agentic engineering hat](../../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two)
 //! - Plan: [Wave 1, Step 15](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-15-hooks-install---claude-code-summary---format-agent-impact-attest---require-comment-token-1e)
-//! - Requirement: [FR-CLI-03](../../../../docs/prd.md#fr-cli-03)
+//! - Plan: [Wave 3, Step 15](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
+//!   (a graph read in source mode is refused, not signed)
+//! - Requirement: [FR-CLI-03](../../../../docs/prd.md#fr-cli-03),
+//!   [FR-EXT-DN-04](../../../../docs/prd.md#fr-ext-dn-04)
 //!
 //! `configHash` covers every configuration file the load read, in path order; `inputsHash` every
 //! extracted source file (or the `--graph` document), in path order; `resultsHash` the violations.
@@ -44,6 +47,11 @@ pub struct AttestArgs {
     #[arg(value_name = "FILES-OR-DIRECTORIES")]
     pub paths: Vec<String>,
 }
+
+/// Why `attest` refuses a graph read in source mode: a receipt is a gate run's, and an
+/// approximate run is never one ([FR-EXT-DN-04](../../../../docs/prd.md#fr-ext-dn-04),
+/// [ADR-0011](../../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)).
+pub const APPROXIMATE_NOT_ATTESTED: &str = "approximate-mode-not-a-gate: the .NET graph was read from source (--mode source or languages.dotnet.mode: source), whose edges are approximate, so it is not signed as a gate run; attest a compiled-mode run";
 
 /// The receipt.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -155,6 +163,12 @@ pub fn compute(ctx: &mut Context<'_>, args: &AttestArgs) -> Result<Receipt, Outc
             Outcome::failed(RunExit::Untrustworthy, format!("rulebearing attest: {e}\n"))
         })?,
     };
+    if crate::exit::is_approximate(&document) {
+        return Err(Outcome::failed(
+            RunExit::Untrustworthy,
+            format!("rulebearing attest: {APPROXIMATE_NOT_ATTESTED}\n"),
+        ));
+    }
     let inputs = inputs_hash(ctx, &document, args.graph.as_deref())?;
     let mut document = document;
     pipeline::reset(&mut document);

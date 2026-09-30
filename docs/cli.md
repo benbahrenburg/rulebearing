@@ -226,8 +226,19 @@ rulebearing cruise --sidecar node -T err src
 `cruise --mode source` (or `languages.dotnet.mode: source`) reads .NET from the `.cs` files with `tree-sitter-c-sharp` instead of the built assemblies: nothing needs to be built, every .NET edge is namespace-level and marked `approximate: true`, and `summary.inspected.dotnet` records `mode: source`. Compiled mode stays the gate ([ADR-0011](adr/0011-read-dotnet-assemblies-not-source.md)); [source-mode.md](source-mode.md) says what is read, how names are resolved and how close the result is to a compiled one.
 
 ```sh
-rulebearing cruise --mode source --cache -T agent
+rulebearing cruise --mode source --cache --from-hook
 ```
+
+Source mode never decides a gate ([Wave 3 plan § 1.6](plans/pending/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make), [Step 15](plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)). Whenever the run's count would be the exit code, it prints `warning: approximate-mode-not-a-gate: ...` and exits 2 instead, still writing the report:
+
+| Command | Refused, exit 2 | Not refused |
+| --- | --- | --- |
+| `cruise` | a reporter that gates (`err`, `agent`, ...), or a plugin reporter, passing or failing | `json`, `dot` and the other reporters that exit 0; `--from-hook`, which is the inner loop source mode is for |
+| `fmt` | `--exit-code` on a saved result whose receipt says `mode: source` or whose edges are `approximate` | without `--exit-code` |
+| `diff` | `--exit-code` when either side was read in source mode | without `--exit-code` |
+| `attest` | always: a graph read in source mode is not signed as a gate run | |
+
+`--allow-approximate-gate` (on `cruise`, and with `--exit-code` on `fmt` and `diff`) gives the count back for a local script. A CI recipe never uses it: compiled mode is the gate.
 
 ## Flags the query commands share
 
@@ -250,7 +261,7 @@ rulebearing cruise --mode source --cache -T agent
 | --- | --- |
 | 0 | No error-severity violation, or a reporter that does not gate |
 | 1 to 255 | The number of error-severity violations (plus expired entries and exceeded ratchets), capped at 255, from a gating reporter: `err`, `err-long`, `null`, `teamcity`, `azure-devops`, `github-annotations`, `agent` |
-| 2 | The run cannot be trusted: no modules found, an unsupported file, a vacuous rule under `strict` liveness, a ratchet budget that cannot be read |
+| 2 | The run cannot be trusted: no modules found, an unsupported file, a vacuous rule under `strict` liveness, a ratchet budget that cannot be read, a run read in source mode deciding a gate (`approximate-mode-not-a-gate`, [below](#net-without-a-build---mode-source)) |
 | 3 | The configuration is invalid |
 
 A run with exactly two or three error violations also exits 2 or 3; the report says which it was ([ADR-0008](adr/0008-exit-code-contract.md), [ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). `--exit-code-mode strict`, on `cruise` and on `fmt --exit-code`, removes the ambiguity for a pipeline that needs it:

@@ -76,10 +76,13 @@ fn the_fixture_solution_matches_its_expectation() -> Result<(), Box<dyn std::err
     if std::env::var_os("RB_UPDATE_SNAPSHOTS").is_some() {
         std::fs::write(&path, &actual)?;
     }
-    let expected = std::fs::read_to_string(&path)?;
-    assert_eq!(
-        actual, expected,
-        "rerun with RB_UPDATE_SNAPSHOTS=1 and review the diff"
+    // Compared as JSON: a workspace build turns on serde_json's `preserve_order`, which changes
+    // key order but not content.
+    let expected: Value = serde_json::from_str(&std::fs::read_to_string(&path)?)?;
+    assert!(
+        expected == serde_json::from_str::<Value>(&actual)?,
+        "{} differs from the extraction; rerun with RB_UPDATE_SNAPSHOTS=1 and review the diff",
+        path.display()
     );
     Ok(())
 }
