@@ -21,6 +21,17 @@ miniz_oxide = { workspace = true }
 regex = { workspace = true }
 globset = { workspace = true }
 sha1 = { workspace = true }
+# `--mode source` (plan 0003, Step 14): the .cs files parsed with tree-sitter-c-sharp (both MIT,
+# pinned in the workspace), in parallel with rayon (MIT OR Apache-2.0), each file's parse kept
+# for the next incremental run as JSON.
+tree-sitter = { workspace = true, optional = true }
+tree-sitter-c-sharp = { workspace = true, optional = true }
+rayon = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+
+[features]
+# Source mode reads C# without a build; on in the binary through rb-cli's `source-mode` feature.
+source-mode = ["dep:tree-sitter", "dep:tree-sitter-c-sharp", "dep:rayon", "dep:serde_json"]
 
 [dev-dependencies]
 proptest = { workspace = true }
@@ -28,3 +39,7 @@ serde_json = { workspace = true }
 
 [lints]
 workspace = true
+
+[[test]]
+name = "source_mode"
+required-features = ["source-mode"]

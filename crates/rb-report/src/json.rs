@@ -20,6 +20,7 @@ pub const DEPENDENCY_ADDITIONS: &[&str] = &[
     "member",
     "sidecar",
     "declared",
+    "approximate",
 ];
 /// Violation keys Rulebearing adds.
 pub const VIOLATION_ADDITIONS: &[&str] = &["id", "fix", "decision"];
@@ -99,7 +100,7 @@ mod tests {
     #[test]
     fn strict_schema_strips_every_addition() {
         let result = json!({
-            "modules": [{ "source": "a", "language": "typescript", "valid": true, "dependencies": [{ "resolved": "b", "line": 1, "column": 2, "dependencyKind": "import", "sidecar": true }] }],
+            "modules": [{ "source": "a", "language": "typescript", "valid": true, "dependencies": [{ "resolved": "b", "line": 1, "column": 2, "dependencyKind": "import", "sidecar": true, "approximate": true }] }],
             "summary": { "violations": [{ "from": "a", "to": "b", "id": "RB-1", "fix": "f", "decision": "adr:1" }], "inspected": {}, "vacuousRules": [], "cache": { "hit": true, "strategy": "metadata" }, "sidecar": { "tool": "dependency-cruiser", "version": "18.2.0", "files": 2 }, "affected": { "revision": "main", "changed": ["affectedFile"], "closure": [] }, "plugins": ["pluginFile.mjs"],
                          "ruleSetUsed": { "forbidden": [{ "name": "r", "fix": "f", "allowEmpty": true }],
                                           "elements": [{ "name": "sealedElement" }], "slices": [{ "name": "apartSlice" }],
@@ -124,6 +125,7 @@ mod tests {
             "\"hit\"",
             "dependency-cruiser",
             "\"sidecar\"",
+            "approximate",
         ] {
             assert!(!stripped.contains(gone), "{gone}");
         }

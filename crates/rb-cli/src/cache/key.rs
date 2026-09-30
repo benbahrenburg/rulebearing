@@ -326,6 +326,7 @@ pub fn extraction_hash(config: &Config, root: &Path, cwd: &Path, paths: &[String
         ("extract-ts", cfg!(feature = "extract-ts")),
         ("extract-dotnet", cfg!(feature = "extract-dotnet")),
         ("extract-python", cfg!(feature = "extract-python")),
+        ("source-mode", cfg!(feature = "source-mode")),
     ]
     .into_iter()
     .filter_map(|(name, on)| on.then_some(name))

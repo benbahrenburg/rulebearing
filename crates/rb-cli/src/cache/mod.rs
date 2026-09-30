@@ -432,7 +432,15 @@ fn decide(
         .flat_map(|p| p.files.keys())
         .map(|file| (scope.name(&scope.base.join(file)), file))
         .collect();
+    // Source mode keeps each `.cs` file's parse; compiled mode keeps none.
+    let dotnet_sources: BTreeMap<String, &String> = parts
+        .dotnet
+        .iter()
+        .flat_map(|p| p.files.keys())
+        .map(|file| (scope.name(&scope.base.join(file)), file))
+        .collect();
     let (mut ts_changed, mut py_changed, mut dotnet) = (Vec::new(), Vec::new(), false);
+    let mut cs_changed = Vec::new();
     // A source is read again alone and an assembly reads the .NET graph again; any other input
     // (a manifest, a tsconfig and its chain, a Babel configuration, a project file, a folder's
     // entries, a file of the presence set) can move what an unchanged file resolves to.
@@ -443,6 +451,9 @@ fn decide(
             ts_changed.push(PathBuf::from(source.as_str()));
         } else if let Some(file) = python.get(name) {
             py_changed.push(PathBuf::from(file.as_str()));
+        } else if let Some(file) = dotnet_sources.get(name) {
+            cs_changed.push(PathBuf::from(file.as_str()));
+            dotnet = true;
         } else {
             return Some(full(format!("{name} changed")));
         }
@@ -469,7 +480,9 @@ fn decide(
     let plans = Plans {
         typescript: plan(&ts_changed, &typescript, &parts.typescript),
         python: plan(&py_changed, &python, &parts.python),
-        dotnet: if dotnet {
+        dotnet: if !cs_changed.is_empty() {
+            plan(&cs_changed, &dotnet_sources, &parts.dotnet)
+        } else if dotnet {
             Plan::Full
         } else {
             Plan::Reuse(parts.dotnet.clone())
@@ -560,10 +573,20 @@ fn inputs(
             .flat_map(|p| p.files.keys())
             .map(|file| scope.name(&scope.base.join(file))),
     );
+    // Source mode's inputs are the `.cs` files it read; compiled mode's the built assemblies.
+    inputs.extend(
+        parts
+            .dotnet
+            .iter()
+            .flat_map(|p| p.files.keys())
+            .map(|file| scope.name(&scope.base.join(file))),
+    );
     #[cfg(feature = "extract-dotnet")]
     if parts.dotnet.is_some() {
         let options = config.languages.dotnet.clone().unwrap_or_default();
-        if let Ok(assemblies) = rb_extract_dotnet::assembly_inputs(cwd, &options) {
+        if options.mode() == rb_model::DotnetMode::Compiled
+            && let Ok(assemblies) = rb_extract_dotnet::assembly_inputs(cwd, &options)
+        {
             inputs.extend(assemblies.iter().map(|p| scope.name(p)));
         }
         if let Ok(projects) = rb_extract_dotnet::project_files(cwd, &options) {
@@ -599,8 +622,9 @@ fn inputs(
 )]
 pub fn probes(ctx: &Context<'_>, config: &Config) -> BTreeMap<String, String> {
     let mut probes = BTreeMap::new();
+    // Source mode reads no assembly, so a build since the entry was written changes nothing.
     #[cfg(feature = "extract-dotnet")]
-    if pipeline::dotnet_enabled(ctx, config) {
+    if pipeline::dotnet_enabled(ctx, config) && !pipeline::dotnet_source_mode(config) {
         let options = config.languages.dotnet.clone().unwrap_or_default();
         let value = match rb_extract_dotnet::assembly_inputs(&ctx.cwd, &options) {
             Ok(found) => found
@@ -679,12 +703,19 @@ fn scope_of(ctx: &Context<'_>, config: &Config, folder: &Path) -> changes::Scope
         base: ctx.cwd.canonicalize().unwrap_or_else(|_| ctx.cwd.clone()),
         head: Some(key::head(&root)).filter(|h| !h.is_empty()),
         root,
-        extra_extensions: config
-            .languages
-            .typescript
-            .extra_extensions_to_scan
-            .clone()
-            .unwrap_or_default(),
+        extra_extensions: {
+            let mut extra = config
+                .languages
+                .typescript
+                .extra_extensions_to_scan
+                .clone()
+                .unwrap_or_default();
+            // In source mode a `.cs` file appearing or disappearing changes the .NET graph.
+            if pipeline::dotnet_source_mode(config) {
+                extra.push(".cs".to_owned());
+            }
+            extra
+        },
         cache_folder: folder
             .canonicalize()
             .unwrap_or_else(|_| folder.to_path_buf()),

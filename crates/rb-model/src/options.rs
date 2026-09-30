@@ -358,6 +358,47 @@ pub struct DotnetOptions {
     /// Keep only types in these namespaces or below (`LoadNamespacesWithinAssembly`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub namespaces: Option<Vec<String>>,
+    /// How the graph is read: `compiled` (the default) from the built assemblies and portable
+    /// PDBs, or `source` from the `.cs` files without a build. Source mode's edges are
+    /// namespace-level and marked `approximate`, and it is never the gate
+    /// ([ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mode: Option<DotnetMode>,
+}
+
+/// `languages.dotnet.mode` and `--mode`: how the .NET graph is read.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+)]
+#[serde(rename_all = "lowercase")]
+pub enum DotnetMode {
+    /// From the built assemblies and their portable PDBs: the gate.
+    #[default]
+    Compiled,
+    /// From the `.cs` files with `tree-sitter-c-sharp`, without a build: namespace-level,
+    /// every edge `approximate`, the inner loop's answer.
+    Source,
+}
+
+impl DotnetMode {
+    /// The mode as written in a configuration and a receipt.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Compiled => "compiled",
+            Self::Source => "source",
+        }
+    }
 }
 
 /// One `languages.dotnet.directories` entry.
@@ -375,6 +416,11 @@ impl DotnetOptions {
     /// The configuration, with the default applied.
     pub fn configuration(&self) -> &str {
         self.configuration.as_deref().unwrap_or("Debug")
+    }
+
+    /// The mode, with the default (`compiled`) applied.
+    pub fn mode(&self) -> DotnetMode {
+        self.mode.unwrap_or_default()
     }
 }
 

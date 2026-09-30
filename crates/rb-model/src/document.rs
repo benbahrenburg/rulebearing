@@ -256,6 +256,11 @@ pub struct Dependency {
     /// Additive: the edge was declared rather than detected (wave 4).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub declared: Option<bool>,
+    /// Additive: the edge was read from source by `--mode source`, resolved through namespaces
+    /// and `using` directives rather than by a compiler, so it is namespace-level and never the
+    /// gate ([ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub approximate: Option<bool>,
 }
 
 impl Dependency {
@@ -294,6 +299,7 @@ impl Dependency {
             member: None,
             sidecar: None,
             declared: None,
+            approximate: None,
         }
     }
 }
@@ -735,6 +741,10 @@ pub struct Receipt {
     /// found and every non-local, non-stdlib import is `unresolved`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub site: Option<String>,
+    /// How the .NET graph was read: `compiled` from assemblies and PDBs, or `source` from the
+    /// `.cs` files by `--mode source` (.NET only; absent means compiled).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mode: Option<crate::options::DotnetMode>,
 }
 
 impl Receipt {

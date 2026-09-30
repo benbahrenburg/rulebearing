@@ -95,6 +95,7 @@ The top level holds `$schema`, `extends`, `defines`, `languages`, `options`, `ru
 | Key | Holds |
 | --- | --- |
 | `languages.typescript` | The per-language options: `tsConfig`, `tsPreCompilationDeps`, `babelConfig`, `webpackConfig`, `enhancedResolveOptions`, `moduleSystems`, `parser`, `baseDir` and the rest of the TypeScript extractor's options. dependency-cruiser's flat option names are accepted at the top of `options` too, as aliases |
+| `languages.dotnet` | The .NET extractor's options: `solution`, `configuration`, `targetFramework`, `excludeProjects`, the loader keys (`assemblies`, `includeDependencies`, `directories`, `namespaces`), and `mode`: `compiled` (the default) or `source`, which reads the `.cs` files without a build ([source-mode.md](source-mode.md)) |
 | `rules.dependencies` | dependency-cruiser's rule set: `forbidden`, `allowed`, `allowedSeverity`, `required` ([rules.md](rules.md)) |
 | `rules.layers` | Paths from the highest layer to the lowest; each lower layer gets one `forbidden` rule per higher layer, named `<name>:<lower>-to-<higher>` |
 | `rules.independence` | A pattern with one capturing group; a module in one group may not import a module in another |

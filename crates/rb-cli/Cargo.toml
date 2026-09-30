@@ -20,9 +20,11 @@ path = "src/main.rs"
 [features]
 # Each extractor is a feature so a narrower build never links the others
 # (docs/adr/0010-crate-layout-and-extractor-boundary.md).
-default = ["extract-ts", "extract-dotnet", "extract-python"]
+default = ["extract-ts", "extract-dotnet", "extract-python", "source-mode"]
 extract-ts = ["dep:rb-extract-ts"]
 extract-dotnet = ["dep:rb-extract-dotnet"]
+# `--mode source`: .NET read from the .cs files without a build (plan 0003, Step 14).
+source-mode = ["extract-dotnet", "rb-extract-dotnet/source-mode"]
 extract-python = ["dep:rb-extract-python"]
 
 [dependencies]

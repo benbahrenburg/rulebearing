@@ -221,6 +221,14 @@ npm install --save-dev dependency-cruiser@18.2.0 coffeescript   # livescript for
 rulebearing cruise --sidecar node -T err src
 ```
 
+## .NET without a build: `--mode source`
+
+`cruise --mode source` (or `languages.dotnet.mode: source`) reads .NET from the `.cs` files with `tree-sitter-c-sharp` instead of the built assemblies: nothing needs to be built, every .NET edge is namespace-level and marked `approximate: true`, and `summary.inspected.dotnet` records `mode: source`. Compiled mode stays the gate ([ADR-0011](adr/0011-read-dotnet-assemblies-not-source.md)); [source-mode.md](source-mode.md) says what is read, how names are resolved and how close the result is to a compiled one.
+
+```sh
+rulebearing cruise --mode source --cache -T agent
+```
+
 ## Flags the query commands share
 
 | Flag | Meaning |

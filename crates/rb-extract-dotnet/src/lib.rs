@@ -52,6 +52,8 @@ pub mod names;
 pub mod pdb;
 pub mod pe;
 pub mod sig;
+#[cfg(feature = "source-mode")]
+pub mod source;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -210,6 +212,9 @@ pub fn attribute_solution(
 /// the edges between them, and the code layer.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct DotnetExtractor;
+
+/// The reason a build without the `source-mode` feature gives for `mode: source`.
+pub const SOURCE_MODE_NOT_BUILT: &str = "source-mode-not-built: this build of rulebearing has no --mode source (the rb-extract-dotnet feature `source-mode`); use a release build, or compiled mode";
 
 /// The root's path below its git repository's root (`src/`), empty at the root or outside a
 /// repository: deterministic builds write documents relative to the repository root (`/_/`).
@@ -487,6 +492,15 @@ impl Extractor for DotnetExtractor {
         let Some(root) = roots.first() else {
             return Err(ExtractError::NoModulesFound);
         };
+        if options.mode() == rb_model::DotnetMode::Source {
+            #[cfg(feature = "source-mode")]
+            return source::extract(root, options, None, false);
+            #[cfg(not(feature = "source-mode"))]
+            return Err(ExtractError::UnsupportedFile {
+                path: root.clone(),
+                reason: SOURCE_MODE_NOT_BUILT.to_owned(),
+            });
+        }
         let workspace = discover::discover(root, options).map_err(|e| match e {
             DiscoverError::NothingFound { .. } => ExtractError::NoModulesFound,
             DiscoverError::Io { path, source } => read_error(&path, &source),

@@ -190,6 +190,18 @@ pub fn module_systems(list: &str) -> Result<Vec<ModuleSystem>, ConfigError> {
         .collect()
 }
 
+/// `--mode` over `languages.dotnet.mode`
+/// ([Wave 3, Step 14](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
+fn dotnet_flags(config: &mut Config, args: &CruiseArgs) {
+    if let Some(mode) = args.mode {
+        config
+            .languages
+            .dotnet
+            .get_or_insert_with(Default::default)
+            .mode = Some(mode.mode());
+    }
+}
+
 /// Lays `cruise`'s option flags over the configuration, as dependency-cruiser's command line does.
 ///
 /// # Errors
@@ -238,6 +250,7 @@ pub fn apply_flags(
     if let Some(sidecar) = args.sidecar {
         ts.sidecar = Some(sidecar.runtime());
     }
+    dotnet_flags(config, args);
     let options = &mut config.options;
     if let Some(p) = &args.focus {
         options.focus = Some(FilterOption {

@@ -49,8 +49,8 @@ pub use extract::{
     ExtractError, ExtractRequest, Extraction, Extractor, FileState, Warning, source_name,
 };
 pub use options::{
-    CacheOptions, CacheStrategy, DirectoryFilter, DotnetOptions, PythonOptions, SidecarRuntime,
-    TypeScriptOptions,
+    CacheOptions, CacheStrategy, DirectoryFilter, DotnetMode, DotnetOptions, PythonOptions,
+    SidecarRuntime, TypeScriptOptions,
 };
 pub use vocab::{
     Attribution, ChangeType, DependencyKind, DependencyType, ExternalModuleResolutionStrategy,

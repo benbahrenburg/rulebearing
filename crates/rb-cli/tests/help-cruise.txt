@@ -131,6 +131,16 @@ Options:
           - node: The repository's dependency-cruiser, run by the node on the path (or
             `$RULEBEARING_NODE`)
 
+      --mode <MODE>
+          How .NET is read: compiled (the default) from the built assemblies and PDBs, or source
+          from the .cs files without a build, every edge marked approximate; wins over
+          languages.dotnet.mode
+
+          Possible values:
+          - compiled: From the built assemblies and their portable PDBs: the gate
+          - source:   From the .cs files, without a build: namespace-level, every edge approximate,
+            never the gate
+
   -p, --progress [<TYPE>]
           Show progress on stderr
 

@@ -129,7 +129,8 @@
       "enum": [
         "pdb",
         "inferred",
-        "none"
+        "none",
+        "source"
       ],
       "type": "string"
     },
@@ -367,6 +368,13 @@
       "additionalProperties": false,
       "description": "One edge in the module layer: `modules[].dependencies[]`.",
       "properties": {
+        "approximate": {
+          "description": "Additive: the edge was read from source by `--mode source`, resolved through namespaces\nand `using` directives rather than by a compiler, so it is namespace-level and never the\ngate ([ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "circular": {
           "description": "Whether following the edge returns to the source.",
           "type": "boolean"
@@ -633,6 +641,21 @@
         "dynamic"
       ],
       "type": "string"
+    },
+    "DotnetMode": {
+      "description": "`languages.dotnet.mode` and `--mode`: how the .NET graph is read.",
+      "oneOf": [
+        {
+          "const": "compiled",
+          "description": "From the built assemblies and their portable PDBs: the gate.",
+          "type": "string"
+        },
+        {
+          "const": "source",
+          "description": "From the `.cs` files with `tree-sitter-c-sharp`, without a build: namespace-level,\nevery edge `approximate`, the inner loop's answer.",
+          "type": "string"
+        }
+      ]
     },
     "ElementDependency": {
       "description": "One dependency of a type or member on a type: what `dependOnAny`, `onlyDependOn` and\n`haveDependencyInMethodBodyTo` read.",
@@ -1573,6 +1596,17 @@
           "format": "uint64",
           "minimum": 0,
           "type": "integer"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/DotnetMode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "How the .NET graph was read: `compiled` from assemblies and PDBs, or `source` from the\n`.cs` files by `--mode source` (.NET only; absent means compiled)."
         },
         "modules": {
           "description": "Modules produced.",

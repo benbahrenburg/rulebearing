@@ -335,22 +335,30 @@ fn git(root: &Path, args: &[&str]) -> Option<Vec<u8>> {
 /// untracked files, by recorded name; `None` when git cannot answer (no repository, or `head` is
 /// no longer an object it has).
 pub fn git_changes(scope: &Scope, head: &str) -> Option<Vec<(Listed, String)>> {
-    let diff = git(
-        &scope.root,
-        &[
-            "diff",
-            "--name-status",
-            "-z",
-            "--no-renames",
-            "--ignore-submodules=none",
-            head,
-            "--",
-        ],
-    )?;
-    let untracked = git(
-        &scope.root,
-        &["ls-files", "--others", "--exclude-standard", "-z"],
-    )?;
+    // Both walk the worktree; on a large one each takes long enough that running them one
+    // after the other is most of a warm run.
+    let (diff, untracked) = std::thread::scope(|threads| {
+        let untracked = threads.spawn(|| {
+            git(
+                &scope.root,
+                &["ls-files", "--others", "--exclude-standard", "-z"],
+            )
+        });
+        let diff = git(
+            &scope.root,
+            &[
+                "diff",
+                "--name-status",
+                "-z",
+                "--no-renames",
+                "--ignore-submodules=none",
+                head,
+                "--",
+            ],
+        );
+        (diff, untracked.join().ok().flatten())
+    });
+    let (diff, untracked) = (diff?, untracked?);
     let mut listed = Vec::new();
     let mut fields = diff.split(|b| *b == 0).filter(|f| !f.is_empty());
     while let (Some(status), Some(path)) = (fields.next(), fields.next()) {

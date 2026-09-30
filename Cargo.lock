@@ -1862,6 +1862,7 @@ dependencies = [
  "globset",
  "miniz_oxide",
  "proptest",
+ "rayon",
  "rb-model",
  "regex",
  "roxmltree",
@@ -1869,6 +1870,8 @@ dependencies = [
  "serde_json",
  "sha1",
  "thiserror",
+ "tree-sitter",
+ "tree-sitter-c-sharp",
 ]
 
 [[package]]

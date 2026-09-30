@@ -403,7 +403,9 @@ fn count(results: &[TypeAttribution]) -> Counts {
             None => counts.types_excluded += 1,
             Some(Attribution::Pdb) => counts.pdb_attributed += 1,
             Some(Attribution::Inferred) => counts.inferred += 1,
-            Some(Attribution::None) => counts.none += 1,
+            // `source` is `--mode source`'s, which never reaches a PDB; were it recorded here it
+            // would be no attribution the PDB made.
+            Some(Attribution::None | Attribution::Source) => counts.none += 1,
         }
     }
     counts

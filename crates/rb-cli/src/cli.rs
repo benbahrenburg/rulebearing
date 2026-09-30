@@ -180,6 +180,28 @@ impl SidecarArg {
     }
 }
 
+/// `--mode` values: how the .NET graph is read
+/// ([Wave 3, Step 14](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof),
+/// [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum ModeArg {
+    /// From the built assemblies and their portable PDBs: the gate.
+    Compiled,
+    /// From the .cs files, without a build: namespace-level, every edge approximate, never the
+    /// gate.
+    Source,
+}
+
+impl ModeArg {
+    /// The mode the extractor's options carry.
+    pub fn mode(self) -> rb_model::DotnetMode {
+        match self {
+            Self::Compiled => rb_model::DotnetMode::Compiled,
+            Self::Source => rb_model::DotnetMode::Source,
+        }
+    }
+}
+
 /// When to colour terminal output.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, ValueEnum)]
 pub enum ColorChoice {
@@ -386,6 +408,11 @@ pub struct CruiseArgs {
     /// marked sidecar: true. Without it such a file stops the run (exit 2)
     #[arg(long, value_enum, value_name = "RUNTIME")]
     pub sidecar: Option<SidecarArg>,
+    /// How .NET is read: compiled (the default) from the built assemblies and PDBs, or source
+    /// from the .cs files without a build, every edge marked approximate; wins over
+    /// languages.dotnet.mode
+    #[arg(long, value_enum, value_name = "MODE")]
+    pub mode: Option<ModeArg>,
     /// Show progress on stderr
     #[arg(short = 'p', long, value_name = "TYPE", num_args = 0..=1, default_missing_value = "cli-feedback")]
     pub progress: Option<ProgressType>,

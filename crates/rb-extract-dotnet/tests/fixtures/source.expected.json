@@ -1,0 +1,406 @@
+{
+  "inspected": {
+    "assemblies": 0,
+    "files": 8,
+    "mode": "source",
+    "modules": 10,
+    "projects": 3
+  },
+  "modules": [
+    {
+      "attribution": "source",
+      "dependencies": [
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 27,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "project"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 4,
+          "module": "Shop.Domain.Customers.Customer",
+          "moduleSystem": "clr",
+          "resolved": "Domain/Customers/Customer.cs",
+          "valid": true
+        },
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 17,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "project"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 4,
+          "module": "Shop.Domain.Orders.Order",
+          "moduleSystem": "clr",
+          "resolved": "Domain/Orders/Order.cs",
+          "valid": true
+        },
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 1,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "package"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 1,
+          "module": "Serilog",
+          "moduleSystem": "clr",
+          "resolved": "Serilog",
+          "valid": true
+        }
+      ],
+      "followable": true,
+      "language": "dotnet",
+      "project": "App/App.csproj",
+      "source": "App/Program.cs",
+      "valid": true
+    },
+    {
+      "attribution": "source",
+      "dependencies": [],
+      "followable": true,
+      "language": "dotnet",
+      "namespaces": [
+        "Shop.Domain.Customers"
+      ],
+      "project": "Domain/Domain.csproj",
+      "source": "Domain/Customers/Customer.cs",
+      "valid": true
+    },
+    {
+      "attribution": "source",
+      "dependencies": [
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 1,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 5,
+          "module": "Shop.Domain.Orders.Order",
+          "moduleSystem": "clr",
+          "resolved": "Domain/Orders/Order.cs",
+          "valid": true
+        },
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 16,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "signature",
+          "dependencyTypes": [
+            "local",
+            "signature-only"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 13,
+          "module": "Shop.Domain.Values.Amount",
+          "moduleSystem": "clr",
+          "resolved": "Domain/Values/Amount.cs",
+          "valid": true
+        },
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 1,
+          "coreModule": true,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "framework"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 1,
+          "module": "System.Collections.Generic",
+          "moduleSystem": "clr",
+          "resolved": "System.Collections.Generic",
+          "valid": true
+        }
+      ],
+      "followable": true,
+      "language": "dotnet",
+      "namespaces": [
+        "Shop.Domain.Orders"
+      ],
+      "project": "Domain/Domain.csproj",
+      "source": "Domain/Orders/Order.Lines.cs",
+      "valid": true
+    },
+    {
+      "attribution": "source",
+      "dependencies": [
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 22,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "field",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 5,
+          "module": "Shop.Domain.Customers.Customer",
+          "moduleSystem": "clr",
+          "resolved": "Domain/Customers/Customer.cs",
+          "valid": true
+        },
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 18,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "signature",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 7,
+          "module": "Shop.Domain.Customers.Customer",
+          "moduleSystem": "clr",
+          "resolved": "Domain/Customers/Customer.cs",
+          "valid": true
+        },
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 27,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "generic-argument",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 7,
+          "module": "Shop.Domain.Orders.Order+Line",
+          "moduleSystem": "clr",
+          "resolved": "Domain/Orders/Order.Lines.cs",
+          "valid": true
+        }
+      ],
+      "followable": true,
+      "language": "dotnet",
+      "namespaces": [
+        "Shop.Domain.Orders"
+      ],
+      "project": "Domain/Domain.csproj",
+      "source": "Domain/Orders/Order.cs",
+      "valid": true
+    },
+    {
+      "attribution": "source",
+      "dependencies": [
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 29,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "signature",
+          "dependencyTypes": [
+            "local",
+            "signature-only"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 9,
+          "module": "Shop.Domain.Customers.Customer",
+          "moduleSystem": "clr",
+          "resolved": "Domain/Customers/Customer.cs",
+          "valid": true
+        },
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 48,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "signature",
+          "dependencyTypes": [
+            "local",
+            "signature-only"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 9,
+          "module": "Shop.Domain.Orders.Order+Line",
+          "moduleSystem": "clr",
+          "resolved": "Domain/Orders/Order.Lines.cs",
+          "valid": true
+        },
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 19,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "signature",
+          "dependencyTypes": [
+            "local",
+            "signature-only"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 9,
+          "module": "Shop.Domain.Values.Amount",
+          "moduleSystem": "clr",
+          "resolved": "Domain/Values/Amount.cs",
+          "valid": true
+        }
+      ],
+      "followable": true,
+      "language": "dotnet",
+      "namespaces": [
+        "Shop.Domain"
+      ],
+      "project": "Domain/Domain.csproj",
+      "source": "Domain/Pricing.cs",
+      "valid": true
+    },
+    {
+      "attribution": "source",
+      "dependencies": [],
+      "followable": true,
+      "language": "dotnet",
+      "namespaces": [
+        "Shop.Domain.Values"
+      ],
+      "project": "Domain/Domain.csproj",
+      "source": "Domain/Values/Amount.cs",
+      "valid": true
+    },
+    {
+      "coreModule": false,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "package"
+      ],
+      "followable": false,
+      "language": "dotnet",
+      "source": "Serilog",
+      "valid": true
+    },
+    {
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "framework"
+      ],
+      "followable": false,
+      "language": "dotnet",
+      "source": "System.Collections.Generic",
+      "valid": true
+    },
+    {
+      "attribution": "source",
+      "dependencies": [
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 47,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "body",
+          "dependencyTypes": [
+            "project",
+            "test-only"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 9,
+          "module": "Shop.Domain.Orders.Order",
+          "moduleSystem": "clr",
+          "resolved": "Domain/Orders/Order.cs",
+          "valid": true
+        },
+        {
+          "approximate": true,
+          "circular": false,
+          "column": 1,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "import",
+          "dependencyTypes": [
+            "package",
+            "test-only"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": false,
+          "line": 2,
+          "module": "Xunit",
+          "moduleSystem": "clr",
+          "resolved": "Xunit",
+          "valid": true
+        }
+      ],
+      "followable": true,
+      "language": "dotnet",
+      "namespaces": [
+        "Shop.Tests"
+      ],
+      "project": "Tests/Tests.csproj",
+      "source": "Tests/OrderTests.cs",
+      "valid": true
+    },
+    {
+      "coreModule": false,
+      "couldNotResolve": false,
+      "dependencies": [],
+      "dependencyTypes": [
+        "package"
+      ],
+      "followable": false,
+      "language": "dotnet",
+      "source": "Xunit",
+      "valid": true
+    }
+  ],
+  "warnings": []
+}

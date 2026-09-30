@@ -1,0 +1,981 @@
+//! The names every file wrote, resolved against the types every file declares, the way the C#
+//! compiler looks a name up, and projected onto file modules with edges marked `approximate`.
+//!
+//! - Plan: [Wave 3, Step 14](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
+//!   (namespace-level edges projected to files, every dependency `approximate: true`, every module
+//!   `attribution: source`)
+//! - Decision: [ADR-0011](../../../../docs/adr/0011-read-dotnet-assemblies-not-source.md),
+//!   [ADR-0014](../../../../docs/adr/0014-no-invented-cross-language-edges.md)
+//! - Architecture: [§ The graph document](../../../../docs/architecture.md#the-graph-document)
+//! - Requirement: [FR-EXT-DN-04](../../../../docs/prd.md#fr-ext-dn-04)
+//!
+//! A simple name is looked up as C# 12 § 7.6 (namespace and type names) orders it: the nested
+//! types of each enclosing type, innermost first; then, for each namespace from the innermost
+//! out, the types it declares, then the aliases and the namespaces its `using` directives import
+//! at that level; the compilation unit's directives and the project's `global using` directives
+//! at the global level. A dotted name continues from what its first segment found: a namespace's
+//! types and sub-namespaces, a type's nested types, and a type is where it stops when the rest is
+//! a member. Generic arity must match. What only a compiler knows (overload resolution,
+//! extension methods, members inherited from a base, `var`) is not known, which is why every edge
+//! is `approximate`.
+//!
+//! A type declared in several files (a partial type) lands in one of them, as a compiled build
+//! attributes it: the part that declares a constructor when exactly one does, else the file named
+//! after the type, else the first by path. A name that resolves to no declared type is not an
+//! edge. Namespaces imported by a `using` directive and declared nowhere in the repository are
+//! external modules named by the namespace, classified as compiled mode classifies an assembly
+//! name: `package` when a package reference provides it, `framework` for `System.*` and
+//! `Microsoft.*`, else `undetermined`, since without a build nothing says whether it resolves.
+
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+
+use rb_model::{
+    Attribution, Dependency, DependencyKind, DependencyType, Language, Module, ModuleSystem,
+};
+
+use super::tree_sitter::{FileFacts, Reference, TypeKind, Using};
+use crate::discover::PackageRef;
+use crate::edges::{is_framework, providing_package};
+
+/// A project as source mode needs it.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ProjectInfo {
+    /// The project file, relative to the root, `/`-separated.
+    pub path: String,
+    /// A test project: its edges also carry `test-only`.
+    pub is_test: bool,
+    /// Its package references, direct and through its project references.
+    pub package_refs: Vec<PackageRef>,
+}
+
+/// One parsed file.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceFile {
+    /// The module source: relative to the root, `/`-separated.
+    pub source: String,
+    /// The project it compiles in, an index into the projects.
+    pub project: Option<usize>,
+    /// What it declares and writes.
+    pub facts: FileFacts,
+}
+
+/// One declared type, all its partial parts together.
+#[derive(Debug, Clone)]
+struct TypeEntry {
+    /// The metadata name: `Ns.Outer+Inner`, with `` `N `` for a generic arity.
+    full: String,
+    /// The dotted container key its nested types are indexed under: `Ns.Outer.Inner`.
+    dotted: String,
+    kind: TypeKind,
+    arity: u32,
+    /// The file the type lands in.
+    file: usize,
+}
+
+/// What a name has resolved to so far.
+enum Found {
+    Namespace(String),
+    Types(Vec<usize>),
+}
+
+/// (dotted key, arity) to (full name, kind, parts: (file, declaration, constructor)).
+type Declared = BTreeMap<(String, u32), (String, TypeKind, Vec<(usize, usize, bool)>)>;
+
+/// Every type and namespace the files declare.
+struct Index {
+    types: Vec<TypeEntry>,
+    /// (container, simple name) to entries: the container is a namespace or a type's dotted key.
+    members: HashMap<String, HashMap<String, Vec<usize>>>,
+    /// Every declared namespace and each of its prefixes.
+    namespaces: HashSet<String>,
+    /// (file, declaration index) to the entry the declaration is a part of.
+    parts: HashMap<(usize, usize), usize>,
+}
+
+fn join(left: &str, right: &str) -> String {
+    if left.is_empty() {
+        right.to_owned()
+    } else {
+        format!("{left}.{right}")
+    }
+}
+
+fn parent_namespace(namespace: &str) -> &str {
+    namespace.rsplit_once('.').map_or("", |(parent, _)| parent)
+}
+
+fn metadata_name(namespace: &str, outer: &[(String, u32)], name: &str, arity: u32) -> String {
+    let mut full = namespace.to_owned();
+    for (i, (part, part_arity)) in outer
+        .iter()
+        .map(|(n, a)| (n.as_str(), *a))
+        .chain(std::iter::once((name, arity)))
+        .enumerate()
+    {
+        if i == 0 {
+            if !full.is_empty() {
+                full.push('.');
+            }
+        } else {
+            full.push('+');
+        }
+        full.push_str(part);
+        if part_arity > 0 {
+            full.push('`');
+            full.push_str(&part_arity.to_string());
+        }
+    }
+    full
+}
+
+fn dotted_key(namespace: &str, outer: &[(String, u32)], name: &str) -> String {
+    let mut key = namespace.to_owned();
+    for part in outer.iter().map(|(n, _)| n.as_str()).chain([name]) {
+        key = join(&key, part);
+    }
+    key
+}
+
+impl Index {
+    fn build(files: &[SourceFile]) -> Self {
+        let mut parts: Declared = BTreeMap::new();
+        let mut namespaces = HashSet::new();
+        namespaces.insert(String::new());
+        for (file_index, file) in files.iter().enumerate() {
+            for scope in &file.facts.scopes {
+                let mut namespace = scope.namespace.as_str();
+                while !namespace.is_empty() && namespaces.insert(namespace.to_owned()) {
+                    namespace = parent_namespace(namespace);
+                }
+            }
+            for (declaration_index, declaration) in file.facts.declarations.iter().enumerate() {
+                if declaration.name.is_empty() {
+                    continue;
+                }
+                let dotted = dotted_key(
+                    &declaration.namespace,
+                    &declaration.outer,
+                    &declaration.name,
+                );
+                let full = metadata_name(
+                    &declaration.namespace,
+                    &declaration.outer,
+                    &declaration.name,
+                    declaration.arity,
+                );
+                let entry = parts
+                    .entry((dotted, declaration.arity))
+                    .or_insert_with(|| (full, declaration.kind, Vec::new()));
+                entry
+                    .2
+                    .push((file_index, declaration_index, declaration.constructor));
+            }
+        }
+        let mut types = Vec::new();
+        let mut members: HashMap<String, HashMap<String, Vec<usize>>> = HashMap::new();
+        let mut by_part = HashMap::new();
+        for ((dotted, arity), (full, kind, declared)) in parts {
+            let name = dotted.rsplit('.').next().unwrap_or(&dotted).to_owned();
+            let container = dotted
+                .rsplit_once('.')
+                .map_or(String::new(), |(c, _)| c.to_owned());
+            let landing: Vec<(usize, bool)> = declared.iter().map(|(f, _, c)| (*f, *c)).collect();
+            let file = landing_file(files, &name, &landing);
+            for (part_file, declaration, _) in &declared {
+                by_part.insert((*part_file, *declaration), types.len());
+            }
+            members
+                .entry(container)
+                .or_default()
+                .entry(name)
+                .or_default()
+                .push(types.len());
+            types.push(TypeEntry {
+                full,
+                dotted,
+                kind,
+                arity,
+                file,
+            });
+        }
+        Self {
+            types,
+            members,
+            namespaces,
+            parts: by_part,
+        }
+    }
+
+    /// The entries named `name` in `container` with `arity`.
+    fn lookup(&self, container: &str, name: &str, arity: u32) -> Vec<usize> {
+        self.members
+            .get(container)
+            .and_then(|names| names.get(name))
+            .map(|entries| {
+                entries
+                    .iter()
+                    .copied()
+                    .filter(|&e| self.types[e].arity == arity)
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+}
+
+/// The file a type declared in `declared` lands in: the one part with a constructor, else the
+/// file named after the type, else the first by path.
+fn landing_file(files: &[SourceFile], name: &str, declared: &[(usize, bool)]) -> usize {
+    let with_constructor: BTreeSet<usize> = declared
+        .iter()
+        .filter(|(_, constructor)| *constructor)
+        .map(|(file, _)| *file)
+        .collect();
+    if with_constructor.len() == 1
+        && let Some(file) = with_constructor.first()
+    {
+        return *file;
+    }
+    let all: BTreeSet<usize> = declared.iter().map(|(file, _)| *file).collect();
+    let named = format!("{name}.cs");
+    all.iter()
+        .copied()
+        .find(|&file| {
+            files[file]
+                .source
+                .rsplit('/')
+                .next()
+                .is_some_and(|f| f.eq_ignore_ascii_case(&named))
+        })
+        .or_else(|| {
+            all.iter()
+                .copied()
+                .min_by(|&a, &b| files[a].source.cmp(&files[b].source))
+        })
+        .unwrap_or(0)
+}
+
+/// One lookup level: a namespace and the directives written at it.
+struct Level<'f> {
+    namespace: String,
+    usings: Vec<&'f Using>,
+}
+
+/// The lookup levels for a name written in `scope`, innermost namespace first; the global level
+/// carries the compilation unit's directives and the project's global ones.
+fn levels_of<'f>(facts: &'f FileFacts, scope: usize, global: &[&'f Using]) -> Vec<Level<'f>> {
+    let mut out = Vec::new();
+    let mut declaration = Some(scope);
+    let mut namespace = facts
+        .scopes
+        .get(scope)
+        .map(|s| s.namespace.clone())
+        .unwrap_or_default();
+    loop {
+        let mut usings = Vec::new();
+        while let Some(d) = declaration {
+            let Some(current) = facts.scopes.get(d) else {
+                declaration = None;
+                break;
+            };
+            if d == 0 || current.namespace != namespace {
+                break;
+            }
+            usings.extend(current.usings.iter());
+            declaration = current.parent;
+        }
+        if namespace.is_empty() {
+            if let Some(unit) = facts.scopes.first() {
+                usings.extend(unit.usings.iter());
+            }
+            usings.extend(global.iter().copied());
+            out.push(Level {
+                namespace: String::new(),
+                usings,
+            });
+            return out;
+        }
+        out.push(Level {
+            namespace: namespace.clone(),
+            usings,
+        });
+        namespace = parent_namespace(&namespace).to_owned();
+    }
+}
+
+struct Resolver<'a> {
+    index: &'a Index,
+}
+
+impl Resolver<'_> {
+    /// A dotted name from the global namespace (`global::`, an alias target).
+    fn resolve_global(&self, segments: &[(String, u32)]) -> Option<Vec<usize>> {
+        let (first, rest) = segments.split_first()?;
+        let found = self.in_namespace("", first, !rest.is_empty())?;
+        self.continue_with(found, rest)
+    }
+
+    /// `name` as a member of namespace `namespace`: a type, or (when more follows) a namespace.
+    fn in_namespace(
+        &self,
+        namespace: &str,
+        (name, arity): &(String, u32),
+        more: bool,
+    ) -> Option<Found> {
+        let types = self.index.lookup(namespace, name, *arity);
+        if !types.is_empty() {
+            return Some(Found::Types(types));
+        }
+        let nested = join(namespace, name);
+        (more && *arity == 0 && self.index.namespaces.contains(&nested))
+            .then_some(Found::Namespace(nested))
+    }
+
+    fn continue_with(&self, mut found: Found, rest: &[(String, u32)]) -> Option<Vec<usize>> {
+        for (i, segment) in rest.iter().enumerate() {
+            let more = i + 1 < rest.len();
+            found = match found {
+                Found::Namespace(namespace) => self.in_namespace(&namespace, segment, more)?,
+                Found::Types(types) => {
+                    let nested: Vec<usize> = types
+                        .iter()
+                        .flat_map(|&t| {
+                            self.index
+                                .lookup(&self.index.types[t].dotted, &segment.0, segment.1)
+                        })
+                        .collect();
+                    if nested.is_empty() {
+                        // What follows is a member of the type.
+                        return Some(types);
+                    }
+                    Found::Types(nested)
+                }
+            };
+        }
+        match found {
+            Found::Types(types) => Some(types),
+            Found::Namespace(_) => None,
+        }
+    }
+
+    /// The first segment of a name, looked up from where it was written.
+    fn first(
+        &self,
+        facts: &FileFacts,
+        reference: &Reference,
+        levels: &[Level<'_>],
+        segment: &(String, u32),
+        more: bool,
+    ) -> Option<Found> {
+        let (name, arity) = segment;
+        // The nested types of each enclosing type, innermost first.
+        // A type naming itself or an enclosing type is found one container out, or at its
+        // namespace's level.
+        if let Some(enclosing) = reference.enclosing.and_then(|e| facts.declarations.get(e)) {
+            let mut chain: Vec<(String, u32)> = enclosing.outer.clone();
+            chain.push((enclosing.name.clone(), enclosing.arity));
+            while let Some((own, rest)) = chain.split_last() {
+                let key = dotted_key(&enclosing.namespace, rest, &own.0);
+                let types = self.index.lookup(&key, name, *arity);
+                if !types.is_empty() {
+                    return Some(Found::Types(types));
+                }
+                chain.pop();
+            }
+        }
+        for level in levels {
+            if let Some(found) = self.in_namespace(&level.namespace, segment, more) {
+                return Some(found);
+            }
+            for using in level
+                .usings
+                .iter()
+                .filter(|u| u.alias.as_deref() == Some(name))
+            {
+                if *arity != 0 {
+                    continue;
+                }
+                let target: Vec<(String, u32)> =
+                    using.target.iter().map(|t| (t.clone(), 0)).collect();
+                if let Some(types) = self.resolve_global(&target) {
+                    return Some(Found::Types(types));
+                }
+                let namespace = using.target.join(".");
+                if self.index.namespaces.contains(&namespace) {
+                    return Some(Found::Namespace(namespace));
+                }
+                // An alias of something outside the repository.
+                return None;
+            }
+            let mut imported = Vec::new();
+            for using in level.usings.iter().filter(|u| u.alias.is_none()) {
+                let target = using.target.join(".");
+                if using.is_static {
+                    // `using static T;` brings T's nested types into scope.
+                    let owner: Vec<(String, u32)> =
+                        using.target.iter().map(|t| (t.clone(), 0)).collect();
+                    if let Some(owners) = self.resolve_global(&owner) {
+                        for o in owners {
+                            imported.extend(self.index.lookup(
+                                &self.index.types[o].dotted,
+                                name,
+                                *arity,
+                            ));
+                        }
+                    }
+                } else {
+                    imported.extend(self.index.lookup(&target, name, *arity));
+                }
+            }
+            if !imported.is_empty() {
+                imported.sort_unstable();
+                imported.dedup();
+                return Some(Found::Types(imported));
+            }
+        }
+        None
+    }
+
+    /// The types a reference names, when it names any the repository declares.
+    fn resolve(
+        &self,
+        facts: &FileFacts,
+        reference: &Reference,
+        levels: &[Level<'_>],
+    ) -> Vec<usize> {
+        let segments = &reference.segments;
+        match reference.qualifier.as_deref() {
+            Some("global") => return self.resolve_global(segments).unwrap_or_default(),
+            Some(_) => return Vec::new(),
+            None => {}
+        }
+        let Some((first, rest)) = segments.split_first() else {
+            return Vec::new();
+        };
+        let attribute = reference.kind == super::tree_sitter::Position::Attribute;
+        let mut candidates = vec![first.clone()];
+        if attribute && !first.0.ends_with("Attribute") && rest.is_empty() {
+            candidates.insert(0, (format!("{}Attribute", first.0), first.1));
+        }
+        for candidate in &candidates {
+            if let Some(found) = self.first(facts, reference, levels, candidate, !rest.is_empty())
+                && let Some(types) = self.continue_with(found, rest)
+            {
+                return types;
+            }
+        }
+        Vec::new()
+    }
+}
+
+/// The first reference of one grouped edge: line, column, and the first target in sort order.
+type First = (u32, u32, String);
+
+/// From file to (target file, kind) to the first reference.
+type Edges = BTreeMap<usize, BTreeMap<(usize, DependencyKind), First>>;
+
+/// Records one edge, keeping the earliest position and the first target name.
+fn add_edge(
+    edges: &mut Edges,
+    from: usize,
+    target: &TypeEntry,
+    kind: DependencyKind,
+    at: (u32, u32),
+) {
+    if target.file == from {
+        return;
+    }
+    let first = edges
+        .entry(from)
+        .or_default()
+        .entry((target.file, kind))
+        .or_insert_with(|| (at.0, at.1, target.full.clone()));
+    if at < (first.0, first.1) {
+        first.0 = at.0;
+        first.1 = at.1;
+    }
+    if target.full < first.2 {
+        first.2.clone_from(&target.full);
+    }
+}
+
+/// Every file's resolved edges. A reference written at member level in a part of a type that
+/// lands elsewhere is the landing file's, as a compiled build attributes it; each such part with
+/// code refers to its type, and so to the landing file.
+fn resolve_edges(files: &[SourceFile], index: &Index) -> Edges {
+    let resolver = Resolver { index };
+    // Per project: its files' `global using` directives.
+    let mut globals: BTreeMap<Option<usize>, Vec<&Using>> = BTreeMap::new();
+    for file in files {
+        for using in file.facts.scopes.first().iter().flat_map(|s| &s.usings) {
+            if using.global {
+                globals.entry(file.project).or_default().push(using);
+            }
+        }
+    }
+    let empty = Vec::new();
+    let mut edges = Edges::new();
+    for (file_index, file) in files.iter().enumerate() {
+        let global = globals.get(&file.project).unwrap_or(&empty);
+        for (d, declaration) in file.facts.declarations.iter().enumerate() {
+            if let Some(&entry) = index.parts.get(&(file_index, d))
+                && declaration.bodies
+            {
+                let at = (declaration.line, 1);
+                add_edge(
+                    &mut edges,
+                    file_index,
+                    &index.types[entry],
+                    DependencyKind::Body,
+                    at,
+                );
+            }
+        }
+        let scoped: Vec<Vec<Level<'_>>> = (0..file.facts.scopes.len())
+            .map(|scope| levels_of(&file.facts, scope, global))
+            .collect();
+        for reference in &file.facts.references {
+            let Some(levels) = scoped.get(reference.scope) else {
+                continue;
+            };
+            let landing = reference
+                .enclosing
+                .and_then(|d| index.parts.get(&(file_index, d)))
+                .map(|&entry| index.types[entry].file);
+            let from = match landing {
+                Some(file) if reference.member => file,
+                _ => file_index,
+            };
+            for target in resolver.resolve(&file.facts, reference, levels) {
+                let entry = &index.types[target];
+                let kind = reference.kind.dependency_kind(entry.kind);
+                add_edge(
+                    &mut edges,
+                    from,
+                    entry,
+                    kind,
+                    (reference.line, reference.column),
+                );
+            }
+        }
+    }
+    edges
+}
+
+/// One file's edges to other files, with compiled mode's dependency types.
+fn file_dependencies(
+    files: &[SourceFile],
+    file: &SourceFile,
+    project: Option<&ProjectInfo>,
+    grouped: BTreeMap<(usize, DependencyKind), First>,
+) -> Vec<Dependency> {
+    let mut kinds_by_target: BTreeMap<usize, BTreeSet<DependencyKind>> = BTreeMap::new();
+    for (target, kind) in grouped.keys() {
+        kinds_by_target.entry(*target).or_default().insert(*kind);
+    }
+    let mut dependencies = Vec::new();
+    for ((target, kind), (line, column, name)) in grouped {
+        let target_file = &files[target];
+        let mut types = vec![if target_file.project == file.project {
+            DependencyType::Local
+        } else {
+            DependencyType::Project
+        }];
+        if project.is_some_and(|p| p.is_test) {
+            types.push(DependencyType::TestOnly);
+        }
+        if kinds_by_target
+            .get(&target)
+            .is_some_and(|k| k.iter().all(|k| *k == DependencyKind::Signature))
+        {
+            types.push(DependencyType::SignatureOnly);
+        }
+        let mut dependency = Dependency::new(name, target_file.source.clone(), ModuleSystem::Clr);
+        dependency.dependency_types = types;
+        dependency.followable = true;
+        dependency.line = Some(line);
+        dependency.column = Some(column);
+        dependency.dependency_kind = Some(kind);
+        dependency.approximate = Some(true);
+        dependencies.push(dependency);
+    }
+    dependencies
+}
+
+/// The namespaces a file's directives import that no file declares, each an edge to an
+/// external module, classified; `externals` collects each module's classification.
+fn external_imports(
+    file: &SourceFile,
+    project: Option<&ProjectInfo>,
+    index: &Index,
+    externals: &mut BTreeMap<String, DependencyType>,
+) -> Vec<Dependency> {
+    let mut imports: BTreeMap<String, (u32, u32)> = BTreeMap::new();
+    for scope in &file.facts.scopes {
+        for using in &scope.usings {
+            let target = using.target.join(".");
+            if target.is_empty() || index.namespaces.contains(&target) {
+                continue;
+            }
+            let head = if using.is_static || using.alias.is_some() {
+                // A type outside the repository; its namespace is the external module.
+                let (namespace, _) = target.rsplit_once('.').unwrap_or((target.as_str(), ""));
+                namespace.to_owned()
+            } else {
+                target
+            };
+            if head.is_empty() || index.namespaces.contains(&head) {
+                continue;
+            }
+            imports.entry(head).or_insert((using.line, using.column));
+        }
+    }
+    let packages = project.map_or(&[][..], |p| p.package_refs.as_slice());
+    imports
+        .into_iter()
+        .map(|(namespace, (line, column))| {
+            let kind = if providing_package(&namespace, packages).is_some() {
+                DependencyType::Package
+            } else if is_framework(&namespace) {
+                DependencyType::Framework
+            } else {
+                DependencyType::Undetermined
+            };
+            externals.entry(namespace.clone()).or_insert(kind);
+            let mut types = vec![kind];
+            if project.is_some_and(|p| p.is_test) {
+                types.push(DependencyType::TestOnly);
+            }
+            let mut dependency = Dependency::new(namespace.clone(), namespace, ModuleSystem::Clr);
+            dependency.dependency_types = types;
+            dependency.core_module = kind == DependencyType::Framework;
+            dependency.line = Some(line);
+            dependency.column = Some(column);
+            dependency.dependency_kind = Some(DependencyKind::Import);
+            dependency.approximate = Some(true);
+            dependency
+        })
+        .collect()
+}
+
+/// A file's module: its project, its types' namespaces, `attribution: source`.
+fn file_module(
+    file: &SourceFile,
+    project: Option<&ProjectInfo>,
+    mut dependencies: Vec<Dependency>,
+) -> Module {
+    dependencies.sort_by(|a, b| {
+        (&a.resolved, a.dependency_kind, &a.module).cmp(&(
+            &b.resolved,
+            b.dependency_kind,
+            &b.module,
+        ))
+    });
+    let mut module = Module::new(file.source.clone());
+    module.language = Some(Language::Dotnet);
+    module.project = project.map(|p| p.path.clone());
+    let namespaces: BTreeSet<String> = file
+        .facts
+        .declarations
+        .iter()
+        .map(|d| d.namespace.clone())
+        .collect();
+    if !namespaces.is_empty() {
+        module.namespaces = Some(namespaces.into_iter().collect());
+    }
+    module.attribution = Some(Attribution::Source);
+    module.followable = Some(true);
+    module.dependencies = dependencies;
+    module
+}
+
+/// Builds the modules: one per file that declares a type or holds top-level statements, with
+/// its resolved edges, and one per external namespace a `using` directive names.
+pub fn modules(files: &[SourceFile], projects: &[ProjectInfo]) -> Vec<Module> {
+    let index = Index::build(files);
+    let mut edges = resolve_edges(files, &index);
+    let mut modules = Vec::new();
+    let mut externals: BTreeMap<String, DependencyType> = BTreeMap::new();
+    for (file_index, file) in files.iter().enumerate() {
+        if file.facts.declarations.is_empty() && !file.facts.top_level {
+            continue;
+        }
+        let project = file.project.and_then(|p| projects.get(p));
+        let grouped = edges.remove(&file_index).unwrap_or_default();
+        let mut dependencies = file_dependencies(files, file, project, grouped);
+        dependencies.extend(external_imports(file, project, &index, &mut externals));
+        modules.push(file_module(file, project, dependencies));
+    }
+    let sources: HashSet<String> = modules.iter().map(|m| m.source.clone()).collect();
+    for (name, kind) in externals {
+        if sources.contains(&name) {
+            continue;
+        }
+        let mut module = Module::new(name);
+        module.language = Some(Language::Dotnet);
+        module.followable = Some(false);
+        module.core_module = Some(kind == DependencyType::Framework);
+        module.could_not_resolve = Some(false);
+        module.dependency_types = Some(vec![kind]);
+        modules.push(module);
+    }
+    modules.sort_by(|a, b| a.source.cmp(&b.source));
+    modules
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::tree_sitter::{CSharpParser, ParseError};
+    use super::*;
+
+    fn files(sources: &[(&str, Option<usize>, &str)]) -> Result<Vec<SourceFile>, ParseError> {
+        let mut parser = CSharpParser::new()?;
+        sources
+            .iter()
+            .map(|(source, project, text)| {
+                Ok(SourceFile {
+                    source: (*source).to_owned(),
+                    project: *project,
+                    facts: parser.parse(text)?,
+                })
+            })
+            .collect()
+    }
+
+    fn edges(modules: &[Module]) -> BTreeSet<(String, String, String)> {
+        modules
+            .iter()
+            .flat_map(|m| {
+                m.dependencies.iter().map(|d| {
+                    (
+                        m.source.clone(),
+                        d.resolved.clone(),
+                        d.dependency_kind.map_or("", |k| k.as_str()).to_owned(),
+                    )
+                })
+            })
+            .collect()
+    }
+
+    fn has(modules: &[Module], from: &str, to: &str) -> bool {
+        edges(modules).iter().any(|(f, t, _)| f == from && t == to)
+    }
+
+    #[test]
+    fn usings_nesting_and_the_enclosing_namespace_resolve() -> Result<(), ParseError> {
+        let found = files(&[
+            (
+                "a/Order.cs",
+                Some(0),
+                "using Shop.Customers;\nnamespace Shop.Orders;\npublic class Order { Customer c; Line l; }",
+            ),
+            (
+                "a/Line.cs",
+                Some(0),
+                "namespace Shop.Orders { public class Line {} }",
+            ),
+            (
+                "b/Customer.cs",
+                Some(1),
+                "namespace Shop.Customers { public class Customer {} }",
+            ),
+            (
+                "b/Other.cs",
+                Some(1),
+                "namespace Elsewhere { public class Line {} }",
+            ),
+        ])?;
+        let projects = vec![ProjectInfo::default(), ProjectInfo::default()];
+        let modules = modules(&found, &projects);
+        assert!(has(&modules, "a/Order.cs", "b/Customer.cs"));
+        assert!(has(&modules, "a/Order.cs", "a/Line.cs"));
+        assert!(!has(&modules, "a/Order.cs", "b/Other.cs"));
+        let customer = modules
+            .iter()
+            .find(|m| m.source == "a/Order.cs")
+            .and_then(|m| {
+                m.dependencies
+                    .iter()
+                    .find(|d| d.resolved == "b/Customer.cs")
+            });
+        assert_eq!(
+            customer.map(|d| (d.dependency_types.clone(), d.approximate, d.dependency_kind)),
+            Some((
+                vec![DependencyType::Project],
+                Some(true),
+                Some(DependencyKind::Field)
+            ))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn global_usings_reach_every_file_of_their_project_only() -> Result<(), ParseError> {
+        let found = files(&[
+            ("p/GlobalUsings.cs", Some(0), "global using Lib;"),
+            ("p/Use.cs", Some(0), "namespace P; class Use { Thing t; }"),
+            ("q/Use.cs", Some(1), "namespace Q; class Use { Thing t; }"),
+            (
+                "lib/Thing.cs",
+                Some(2),
+                "namespace Lib; public class Thing {}",
+            ),
+        ])?;
+        let modules = modules(
+            &found,
+            &[
+                ProjectInfo::default(),
+                ProjectInfo::default(),
+                ProjectInfo::default(),
+            ],
+        );
+        assert!(has(&modules, "p/Use.cs", "lib/Thing.cs"));
+        assert!(!has(&modules, "q/Use.cs", "lib/Thing.cs"));
+        // A file of directives only is not a module.
+        assert!(!modules.iter().any(|m| m.source == "p/GlobalUsings.cs"));
+        Ok(())
+    }
+
+    #[test]
+    fn aliases_statics_global_qualifiers_and_nested_types_resolve() -> Result<(), ParseError> {
+        let found = files(&[
+            (
+                "Use.cs",
+                None,
+                "using T = Lib.Deep.Target;\nusing static Lib.Holder;\nclass Use { T a; Inner b; global::Lib.Other c; Lib.Holder.Inner d; }",
+            ),
+            ("Target.cs", None, "namespace Lib.Deep { class Target {} }"),
+            (
+                "Holder.cs",
+                None,
+                "namespace Lib { static class Holder { public class Inner {} } }",
+            ),
+            ("Other.cs", None, "namespace Lib { class Other {} }"),
+        ])?;
+        let modules = modules(&found, &[]);
+        assert!(has(&modules, "Use.cs", "Target.cs"));
+        assert!(has(&modules, "Use.cs", "Holder.cs"));
+        assert!(has(&modules, "Use.cs", "Other.cs"));
+        Ok(())
+    }
+
+    #[test]
+    fn attributes_find_the_suffixed_type_and_bases_split_by_kind() -> Result<(), ParseError> {
+        let found = files(&[
+            (
+                "Use.cs",
+                None,
+                "namespace N; [Audit] class Use : Base, IThing {}",
+            ),
+            (
+                "Audit.cs",
+                None,
+                "namespace N; class AuditAttribute : System.Attribute {}",
+            ),
+            ("Base.cs", None, "namespace N; class Base {}"),
+            ("IThing.cs", None, "namespace N; interface IThing {}"),
+        ])?;
+        let all = edges(&modules(&found, &[]));
+        assert!(all.contains(&("Use.cs".into(), "Audit.cs".into(), "attribute".into())));
+        assert!(all.contains(&("Use.cs".into(), "Base.cs".into(), "inherits".into())));
+        assert!(all.contains(&("Use.cs".into(), "IThing.cs".into(), "implements".into())));
+        Ok(())
+    }
+
+    #[test]
+    fn arity_must_match_and_unknown_names_are_not_edges() -> Result<(), ParseError> {
+        let found = files(&[
+            (
+                "Use.cs",
+                None,
+                "namespace N; class Use { Box<int> a; Missing m; }",
+            ),
+            ("Box.cs", None, "namespace N; class Box {}"),
+            ("Box1.cs", None, "namespace N; class Box<T> {}"),
+        ])?;
+        let modules = modules(&found, &[]);
+        assert!(has(&modules, "Use.cs", "Box1.cs"));
+        assert!(!has(&modules, "Use.cs", "Box.cs"));
+        let generic = modules
+            .iter()
+            .flat_map(|m| &m.dependencies)
+            .find(|d| d.resolved == "Box1.cs");
+        assert_eq!(generic.map(|d| d.module.as_str()), Some("N.Box`1"));
+        Ok(())
+    }
+
+    #[test]
+    fn a_partial_type_lands_in_the_part_with_its_constructor() -> Result<(), ParseError> {
+        let found = files(&[
+            (
+                "Order.Lines.cs",
+                None,
+                "namespace N; partial class Order { void Add() {} }",
+            ),
+            (
+                "Order.cs",
+                None,
+                "namespace N; partial class Order { public Order() {} }",
+            ),
+            ("Use.cs", None, "namespace N; class Use { Order o; }"),
+        ])?;
+        let modules = modules(&found, &[]);
+        assert!(has(&modules, "Use.cs", "Order.cs"));
+        assert!(!has(&modules, "Use.cs", "Order.Lines.cs"));
+        Ok(())
+    }
+
+    #[test]
+    fn external_usings_are_classified_as_compiled_mode_classifies_assemblies()
+    -> Result<(), ParseError> {
+        let found = files(&[(
+            "Use.cs",
+            Some(0),
+            "using System.Text;\nusing Serilog.Sinks;\nusing Acme.Unknown;\nusing N;\nnamespace N; class Use {}",
+        )])?;
+        let projects = vec![ProjectInfo {
+            path: "p.csproj".into(),
+            is_test: false,
+            package_refs: vec![PackageRef {
+                id: "Serilog".into(),
+                version: None,
+            }],
+        }];
+        let modules = modules(&found, &projects);
+        let kinds: BTreeMap<String, Vec<DependencyType>> = modules
+            .iter()
+            .flat_map(|m| &m.dependencies)
+            .map(|d| (d.resolved.clone(), d.dependency_types.clone()))
+            .collect();
+        assert_eq!(
+            kinds.get("System.Text"),
+            Some(&vec![DependencyType::Framework])
+        );
+        assert_eq!(
+            kinds.get("Serilog.Sinks"),
+            Some(&vec![DependencyType::Package])
+        );
+        assert_eq!(
+            kinds.get("Acme.Unknown"),
+            Some(&vec![DependencyType::Undetermined])
+        );
+        // A namespace the repository declares is no external module.
+        assert!(!kinds.contains_key("N"));
+        let external = modules.iter().find(|m| m.source == "Serilog.Sinks");
+        assert_eq!(external.and_then(|m| m.followable), Some(false));
+        assert!(
+            modules
+                .iter()
+                .all(|m| m.dependencies.iter().all(|d| d.approximate == Some(true)))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn metadata_names_nest_with_plus_and_carry_arity() {
+        assert_eq!(
+            metadata_name("A.B", &[("Outer".into(), 1)], "Inner", 2),
+            "A.B.Outer`1+Inner`2"
+        );
+        assert_eq!(metadata_name("", &[], "Program", 0), "Program");
+    }
+}

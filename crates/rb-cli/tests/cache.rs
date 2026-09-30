@@ -128,6 +128,8 @@ fn isolated(program: &str, dir: &Path) -> Command {
     for name in GIT_LOCAL_ENV {
         command.env_remove(name);
     }
+    // The caller's virtual environment is not the fixture's: a run finds the one in the tree.
+    command.env_remove("VIRTUAL_ENV");
     command
 }
 

@@ -144,7 +144,8 @@ pub enum Plan {
 pub struct Plans {
     /// TypeScript and JavaScript.
     pub typescript: Plan,
-    /// .NET: [`Plan::Full`] or [`Plan::Reuse`]; the assembly is the unit of change.
+    /// .NET: [`Plan::Full`] or [`Plan::Reuse`] in compiled mode, where the assembly is the unit
+    /// of change; also [`Plan::Incremental`] in source mode, where a `.cs` file is.
     pub dotnet: Plan,
     /// Python.
     pub python: Plan,
@@ -173,6 +174,16 @@ pub fn dotnet_enabled(ctx: &Context<'_>, config: &Config) -> bool {
             .is_some_and(|e| e.eq_ignore_ascii_case("sln") || e.eq_ignore_ascii_case("slnx"))
     };
     config.languages.dotnet.is_some() || has_root_file(&ctx.cwd, solution)
+}
+
+/// Whether .NET is read from source (`--mode source` or `languages.dotnet.mode: source`), whose
+/// unit of change is a `.cs` file rather than an assembly.
+pub fn dotnet_source_mode(config: &Config) -> bool {
+    config
+        .languages
+        .dotnet
+        .as_ref()
+        .is_some_and(|d| d.mode() == rb_model::DotnetMode::Source)
 }
 
 /// Whether the Python extractor runs: `languages.python` is set or a `pyproject.toml`,
@@ -284,11 +295,8 @@ pub fn extract_parts(
         parts.dotnet = match &plans.dotnet {
             Plan::Reuse(part) => part.clone(),
             Plan::Full | Plan::Incremental(_) if dotnet_enabled(ctx, config) => {
-                use rb_model::Extractor as _;
                 let options = config.languages.dotnet.clone().unwrap_or_default();
-                let result = rb_extract_dotnet::DotnetExtractor
-                    .extract(std::slice::from_ref(&ctx.cwd), &options);
-                found(result)?
+                found(dotnet_part(ctx, &options, plans))?
             }
             Plan::Full | Plan::Incremental(_) => None,
         };
@@ -298,6 +306,37 @@ pub fn extract_parts(
         parts.python = python_part(ctx, config, paths, plans)?;
     }
     Ok(parts)
+}
+
+/// The .NET part: compiled mode through the extractor; source mode reading only the changed
+/// `.cs` files of an incremental plan and keeping each file's parse when asked
+/// ([Wave 3, Step 14](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
+#[cfg(feature = "extract-dotnet")]
+fn dotnet_part(
+    ctx: &Context<'_>,
+    options: &rb_model::DotnetOptions,
+    plans: &Plans,
+) -> Result<Extraction, ExtractError> {
+    #[cfg(feature = "source-mode")]
+    if options.mode() == rb_model::DotnetMode::Source {
+        let request = match &plans.dotnet {
+            Plan::Incremental(request) => Some(request),
+            Plan::Full | Plan::Reuse(_) => None,
+        };
+        return rb_extract_dotnet::source::extract(
+            &ctx.cwd,
+            options,
+            request,
+            plans.keep_file_states,
+        );
+    }
+    #[cfg(not(feature = "source-mode"))]
+    let _ = plans;
+    rb_model::Extractor::extract(
+        &rb_extract_dotnet::DotnetExtractor,
+        std::slice::from_ref(&ctx.cwd),
+        options,
+    )
 }
 
 /// An extraction, or nothing when the extractor found nothing to read; any other error stops
