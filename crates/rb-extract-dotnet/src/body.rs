@@ -89,15 +89,42 @@ impl Builder<'_> {
         let marker = method.attributes.iter().find_map(|a| {
             match self.attribute_name(asm, a.type_).as_str() {
                 "System.Runtime.CompilerServices.AsyncStateMachineAttribute" => {
-                    Some(&["__state", "__builder", "__this"][..])
+                    Some((&["__state", "__builder", "__this"][..], a))
                 }
-                "System.Runtime.CompilerServices.IteratorStateMachineAttribute" => {
-                    Some(&["__state", "__current", "__initialThreadId", "__this"][..])
-                }
+                "System.Runtime.CompilerServices.IteratorStateMachineAttribute" => Some((
+                    &["__state", "__current", "__initialThreadId", "__this"][..],
+                    a,
+                )),
                 _ => None,
             }
         });
-        let (Some(excluded), Some(body)) = (marker, &method.body) else {
+        let Some((excluded, attribute)) = marker else {
+            return (None, Vec::new());
+        };
+        let machine_of = |machine: &'s Type, visited: &mut BTreeSet<u32>| {
+            let move_next = machine.methods.iter().find(|m| m.name == "MoveNext")?;
+            visited.insert((u32::from(id::METHOD_DEF) << 24) | move_next.row);
+            let generics = Self::generics_of(machine, None);
+            let fields = machine
+                .fields
+                .iter()
+                .filter(|f| !excluded.iter().any(|suffix| f.name.ends_with(suffix)))
+                .filter_map(|f| self.sig_ref(asm, &f.ty, generics))
+                .collect();
+            Some((machine, move_next, fields))
+        };
+        // The attribute names the state machine (`[AsyncStateMachine(typeof(<M>d__0))]`), as
+        // ArchUnitNET reads it. A release build makes the machine a struct the method starts
+        // without `newobj`, so the attribute is the one place that always names it.
+        let named = attribute
+            .type_arguments
+            .first()
+            .map(|name| name.split(',').next().unwrap_or(name).trim())
+            .and_then(|name| loaded.types.iter().find(|t| t.full_name == name));
+        if let Some((machine, move_next, fields)) = named.and_then(|m| machine_of(m, visited)) {
+            return (Some((machine, move_next)), fields);
+        }
+        let Some(body) = &method.body else {
             return (None, Vec::new());
         };
         for instruction in body.instructions.iter().filter(|i| i.opcode == 0x73) {
@@ -115,15 +142,7 @@ impl Builder<'_> {
             let Some(machine) = loaded.type_at(*row) else {
                 continue;
             };
-            if let Some(move_next) = machine.methods.iter().find(|m| m.name == "MoveNext") {
-                visited.insert((u32::from(id::METHOD_DEF) << 24) | move_next.row);
-                let generics = Self::generics_of(machine, None);
-                let fields = machine
-                    .fields
-                    .iter()
-                    .filter(|f| !excluded.iter().any(|suffix| f.name.ends_with(suffix)))
-                    .filter_map(|f| self.sig_ref(asm, &f.ty, generics))
-                    .collect();
+            if let Some((machine, move_next, fields)) = machine_of(machine, visited) {
                 return (Some((machine, move_next)), fields);
             }
         }

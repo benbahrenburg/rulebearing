@@ -151,8 +151,10 @@
           "Sample.Orders.Order+<LoadOwnerAsync>d__14"
         ],
         "attributeType": "System.Runtime.CompilerServices.AsyncStateMachineAttribute",
-        "file": "src/Order.cs",
+        "column": 9,
+        "file": "src/Order.Lines.cs",
         "language": "dotnet",
+        "line": 25,
         "target": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()"
       },
       {
@@ -471,22 +473,68 @@
         "to": "System.Void System.Text.StringBuilder::.ctor()"
       },
       {
-        "file": "src/Order.cs",
+        "column": 9,
+        "file": "src/Order.Lines.cs",
         "from": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()",
         "language": "dotnet",
-        "to": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<!0> System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Sample.Customers.Customer>::Create()"
+        "line": 25,
+        "to": "System.Boolean System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter::get_IsCompleted()"
       },
       {
-        "file": "src/Order.cs",
+        "column": 9,
+        "file": "src/Order.Lines.cs",
         "from": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()",
         "language": "dotnet",
-        "to": "System.Threading.Tasks.Task`1<!0> System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Sample.Customers.Customer>::get_Task()"
+        "line": 25,
+        "to": "System.Runtime.CompilerServices.YieldAwaitable System.Threading.Tasks.Task::Yield()"
       },
       {
-        "file": "src/Order.cs",
+        "column": 9,
+        "file": "src/Order.Lines.cs",
         "from": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()",
         "language": "dotnet",
-        "to": "System.Void System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Sample.Customers.Customer>::Start(!!0&)"
+        "line": 25,
+        "to": "System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter System.Runtime.CompilerServices.YieldAwaitable::GetAwaiter()"
+      },
+      {
+        "column": 9,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()",
+        "language": "dotnet",
+        "line": 26,
+        "to": "System.Void Sample.Customers.Customer::.ctor(System.String)"
+      },
+      {
+        "column": 9,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()",
+        "language": "dotnet",
+        "line": 25,
+        "to": "System.Void System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Sample.Customers.Customer>::AwaitUnsafeOnCompleted(!!0&,!!1&)"
+      },
+      {
+        "column": 9,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()",
+        "language": "dotnet",
+        "line": 26,
+        "to": "System.Void System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Sample.Customers.Customer>::SetException(System.Exception)"
+      },
+      {
+        "column": 5,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()",
+        "language": "dotnet",
+        "line": 27,
+        "to": "System.Void System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Sample.Customers.Customer>::SetResult(!0)"
+      },
+      {
+        "column": 9,
+        "file": "src/Order.Lines.cs",
+        "from": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()",
+        "language": "dotnet",
+        "line": 25,
+        "to": "System.Void System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter::GetResult()"
       },
       {
         "file": "src/Customer.cs",
@@ -2014,40 +2062,126 @@
       },
       {
         "abstract": false,
+        "column": 9,
         "declaringType": "Sample.Orders.Order",
         "dependencies": [
+          {
+            "form": "body-type",
+            "kind": "body",
+            "line": 25,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "line": 26,
+            "member": ".ctor",
+            "target": "Sample.Customers.Customer"
+          },
           {
             "kind": "generic-argument",
             "target": "Sample.Customers.Customer"
           },
           {
+            "kind": "generic-argument",
+            "line": 25,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 26,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 27,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "form": "body-type",
+            "kind": "body",
+            "line": 25,
+            "target": "System.Exception"
+          },
+          {
+            "form": "body-type",
+            "kind": "body",
+            "line": 25,
+            "target": "System.Int32"
+          },
+          {
             "kind": "attribute",
+            "line": 25,
             "target": "System.Runtime.CompilerServices.AsyncStateMachineAttribute"
           },
           {
             "kind": "body",
-            "member": "Create",
+            "line": 25,
+            "member": "AwaitUnsafeOnCompleted",
             "target": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1"
           },
           {
             "kind": "body",
-            "member": "Start",
+            "line": 26,
+            "member": "SetException",
             "target": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1"
           },
           {
             "kind": "body",
-            "member": "get_Task",
+            "line": 27,
+            "member": "SetResult",
             "target": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1"
+          },
+          {
+            "form": "body-type",
+            "kind": "body",
+            "line": 25,
+            "target": "System.Runtime.CompilerServices.YieldAwaitable"
+          },
+          {
+            "kind": "body",
+            "line": 25,
+            "member": "GetAwaiter",
+            "target": "System.Runtime.CompilerServices.YieldAwaitable"
+          },
+          {
+            "kind": "body",
+            "line": 25,
+            "target": "System.Runtime.CompilerServices.YieldAwaitable+YieldAwaiter"
+          },
+          {
+            "form": "body-type",
+            "kind": "body",
+            "line": 25,
+            "target": "System.Runtime.CompilerServices.YieldAwaitable+YieldAwaiter"
+          },
+          {
+            "kind": "body",
+            "line": 25,
+            "member": "GetResult",
+            "target": "System.Runtime.CompilerServices.YieldAwaitable+YieldAwaiter"
+          },
+          {
+            "kind": "body",
+            "line": 25,
+            "member": "get_IsCompleted",
+            "target": "System.Runtime.CompilerServices.YieldAwaitable+YieldAwaiter"
+          },
+          {
+            "kind": "body",
+            "line": 25,
+            "member": "Yield",
+            "target": "System.Threading.Tasks.Task"
           },
           {
             "kind": "signature",
             "target": "System.Threading.Tasks.Task`1"
           }
         ],
-        "file": "src/Order.cs",
+        "file": "src/Order.Lines.cs",
         "fullName": "System.Threading.Tasks.Task`1<Sample.Customers.Customer> Sample.Orders.Order::LoadOwnerAsync()",
         "kind": "method",
         "language": "dotnet",
+        "line": 25,
         "name": "LoadOwnerAsync()",
         "returnType": "System.Threading.Tasks.Task`1<Sample.Customers.Customer>",
         "static": false,
@@ -3004,9 +3138,21 @@
             "target": "Sample.Core.Clock"
           },
           {
+            "form": "body-type",
+            "kind": "body",
+            "line": 25,
+            "target": "Sample.Customers.Customer"
+          },
+          {
             "form": "call",
             "kind": "body",
             "line": 42,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "body",
+            "line": 26,
+            "member": ".ctor",
             "target": "Sample.Customers.Customer"
           },
           {
@@ -3016,6 +3162,21 @@
           },
           {
             "kind": "generic-argument",
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 25,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 26,
+            "target": "Sample.Customers.Customer"
+          },
+          {
+            "kind": "generic-argument",
+            "line": 27,
             "target": "Sample.Customers.Customer"
           },
           {
@@ -3229,6 +3390,12 @@
             "target": "System.Decimal"
           },
           {
+            "form": "body-type",
+            "kind": "body",
+            "line": 25,
+            "target": "System.Exception"
+          },
+          {
             "kind": "body",
             "line": 20,
             "member": ".ctor",
@@ -3242,6 +3409,12 @@
           {
             "form": "body-type",
             "kind": "body",
+            "target": "System.Int32"
+          },
+          {
+            "form": "body-type",
+            "kind": "body",
+            "line": 25,
             "target": "System.Int32"
           },
           {
@@ -3290,21 +3463,25 @@
           },
           {
             "kind": "attribute",
+            "line": 25,
             "target": "System.Runtime.CompilerServices.AsyncStateMachineAttribute"
           },
           {
             "kind": "body",
-            "member": "Create",
+            "line": 25,
+            "member": "AwaitUnsafeOnCompleted",
             "target": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1"
           },
           {
             "kind": "body",
-            "member": "Start",
+            "line": 26,
+            "member": "SetException",
             "target": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1"
           },
           {
             "kind": "body",
-            "member": "get_Task",
+            "line": 27,
+            "member": "SetResult",
             "target": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1"
           },
           {
@@ -3321,6 +3498,47 @@
             "kind": "attribute",
             "line": 31,
             "target": "System.Runtime.CompilerServices.IteratorStateMachineAttribute"
+          },
+          {
+            "form": "body-type",
+            "kind": "body",
+            "line": 25,
+            "target": "System.Runtime.CompilerServices.YieldAwaitable"
+          },
+          {
+            "kind": "body",
+            "line": 25,
+            "member": "GetAwaiter",
+            "target": "System.Runtime.CompilerServices.YieldAwaitable"
+          },
+          {
+            "kind": "body",
+            "line": 25,
+            "target": "System.Runtime.CompilerServices.YieldAwaitable+YieldAwaiter"
+          },
+          {
+            "form": "body-type",
+            "kind": "body",
+            "line": 25,
+            "target": "System.Runtime.CompilerServices.YieldAwaitable+YieldAwaiter"
+          },
+          {
+            "kind": "body",
+            "line": 25,
+            "member": "GetResult",
+            "target": "System.Runtime.CompilerServices.YieldAwaitable+YieldAwaiter"
+          },
+          {
+            "kind": "body",
+            "line": 25,
+            "member": "get_IsCompleted",
+            "target": "System.Runtime.CompilerServices.YieldAwaitable+YieldAwaiter"
+          },
+          {
+            "kind": "body",
+            "line": 25,
+            "member": "Yield",
+            "target": "System.Threading.Tasks.Task"
           },
           {
             "kind": "signature",
@@ -3507,6 +3725,14 @@
         "referenced": true
       },
       {
+        "fullName": "System.Exception",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Exception",
+        "namespace": "System",
+        "referenced": true
+      },
+      {
         "fullName": "System.Func`2",
         "kind": "unavailable",
         "language": "dotnet",
@@ -3603,6 +3829,22 @@
         "referenced": true
       },
       {
+        "fullName": "System.Runtime.CompilerServices.YieldAwaitable",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "YieldAwaitable",
+        "namespace": "System.Runtime.CompilerServices",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Runtime.CompilerServices.YieldAwaitable+YieldAwaiter",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "YieldAwaiter",
+        "namespace": "System.Runtime.CompilerServices",
+        "referenced": true
+      },
+      {
         "fullName": "System.String",
         "kind": "unavailable",
         "language": "dotnet",
@@ -3616,6 +3858,14 @@
         "language": "dotnet",
         "name": "StringBuilder",
         "namespace": "System.Text",
+        "referenced": true
+      },
+      {
+        "fullName": "System.Threading.Tasks.Task",
+        "kind": "unavailable",
+        "language": "dotnet",
+        "name": "Task",
+        "namespace": "System.Threading.Tasks",
         "referenced": true
       },
       {
@@ -3959,7 +4209,7 @@
         },
         {
           "circular": false,
-          "column": 30,
+          "column": 9,
           "coreModule": true,
           "couldNotResolve": false,
           "dependencyKind": "attribute",
@@ -3969,8 +4219,8 @@
           "dynamic": false,
           "exoticallyRequired": false,
           "followable": false,
-          "line": 31,
-          "module": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
+          "line": 25,
+          "module": "System.Runtime.CompilerServices.AsyncStateMachineAttribute",
           "moduleSystem": "clr",
           "resolved": "System.Runtime",
           "valid": true
@@ -4005,7 +4255,26 @@
           "dynamic": true,
           "exoticallyRequired": false,
           "followable": true,
-          "line": 42,
+          "line": 25,
+          "member": "Sample.Customers.Customer..ctor",
+          "module": "Sample.Customers.Customer",
+          "moduleSystem": "clr",
+          "resolved": "src/Customer.cs",
+          "valid": true
+        },
+        {
+          "circular": false,
+          "column": 9,
+          "coreModule": false,
+          "couldNotResolve": false,
+          "dependencyKind": "generic-argument",
+          "dependencyTypes": [
+            "local"
+          ],
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "followable": true,
+          "line": 25,
           "module": "Sample.Customers.Customer",
           "moduleSystem": "clr",
           "resolved": "src/Customer.cs",
@@ -4178,7 +4447,7 @@
           "exoticallyRequired": false,
           "followable": false,
           "line": 16,
-          "module": "System.Runtime.CompilerServices.AsyncStateMachineAttribute",
+          "module": "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
           "moduleSystem": "clr",
           "resolved": "System.Runtime",
           "valid": true

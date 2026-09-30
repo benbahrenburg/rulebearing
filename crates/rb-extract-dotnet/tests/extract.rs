@@ -91,6 +91,46 @@ fn sample_matches_its_expectation() -> Result<(), Box<dyn std::error::Error>> {
     matches_expectation("sample", &extract(&sample(), &loader("built/Sample.dll"))?)
 }
 
+/// A release build makes an `async` method's state machine a struct the method starts without
+/// `newobj`; the machine is found through `AsyncStateMachineAttribute`, as ArchUnitNET finds it,
+/// so the body's calls are read and attributed to the file the method is written in.
+#[test]
+fn an_async_method_of_a_release_build_is_read_through_its_state_machine()
+-> Result<(), Box<dyn std::error::Error>> {
+    let extraction = extract(&sample(), &loader("built/Sample.dll"))?;
+    let calls: Vec<(String, String)> = extraction
+        .code
+        .iter()
+        .flat_map(|c| &c.calls)
+        .filter(|c| c.from.contains("LoadOwnerAsync"))
+        .map(|c| (c.to.clone(), c.location.file.clone().unwrap_or_default()))
+        .collect();
+    assert!(
+        calls.iter().any(|(to, file)| to
+            == "System.Void Sample.Customers.Customer::.ctor(System.String)"
+            && file == "src/Order.Lines.cs"),
+        "{calls:#?}"
+    );
+    assert!(
+        calls.iter().any(|(to, _)| to.contains("Task::Yield()")),
+        "{calls:#?}"
+    );
+    let lines = extraction
+        .modules
+        .iter()
+        .find(|m| m.source == "src/Order.Lines.cs")
+        .ok_or("no module for src/Order.Lines.cs")?;
+    assert!(
+        lines
+            .dependencies
+            .iter()
+            .any(|d| d.resolved == "src/Customer.cs"
+                && d.dependency_kind == Some(DependencyKind::Body)
+                && d.line == Some(25))
+    );
+    Ok(())
+}
+
 #[test]
 fn two_runs_serialise_byte_for_byte() -> Result<(), Box<dyn std::error::Error>> {
     let first = as_json(&extract(&sample(), &loader("built/Sample.dll"))?)?.to_string();
