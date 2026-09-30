@@ -321,14 +321,13 @@ fn agreement(compiled: &[rb_model::Module], source: &[rb_model::Module]) -> (usi
     (source.len(), compiled.len(), both)
 }
 
-#[test]
-fn source_edges_agree_with_compiled_edges_on_the_sample() -> Result<(), Box<dyn std::error::Error>>
-{
-    let root = fixture("sample");
+/// One fixture's agreement: its name, the source and compiled edge counts, how many agree.
+fn measure(name: &str, dll: &str) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let root = fixture(name);
     let compiled = DotnetExtractor.extract(
         std::slice::from_ref(&root),
         &DotnetOptions {
-            assemblies: Some(vec!["built/Sample.dll".into()]),
+            assemblies: Some(vec![dll.into()]),
             ..DotnetOptions::default()
         },
     )?;
@@ -345,33 +344,34 @@ fn source_edges_agree_with_compiled_edges_on_the_sample() -> Result<(), Box<dyn 
             f64::from(part) / f64::from(whole)
         }
     };
-    let precision = ratio(both, source_count);
-    let recall = ratio(both, compiled_count);
-    let report = json!({
-        "fixtures": [{
-            "name": "rb-extract-dotnet/tests/fixtures/sample",
-            "sourceEdges": source_count,
-            "compiledEdges": compiled_count,
-            "agreeing": both,
-            "precision": precision,
-            "recall": recall,
-        }],
-    });
+    Ok(json!({
+        "name": format!("rb-extract-dotnet/tests/fixtures/{name}"),
+        "sourceEdges": source_count,
+        "compiledEdges": compiled_count,
+        "agreeing": both,
+        "precision": ratio(both, source_count),
+        "recall": ratio(both, compiled_count),
+    }))
+}
+
+#[test]
+fn source_edges_agree_with_compiled_edges_on_the_built_fixtures()
+-> Result<(), Box<dyn std::error::Error>> {
+    let fixtures = vec![
+        measure("sample", "built/Sample.dll")?,
+        measure("toplevel", "built/TopLevel.dll")?,
+    ];
     let target = std::env::var_os("CARGO_TARGET_DIR")
         .map_or_else(|| manifest().join("../../target"), PathBuf::from);
     std::fs::create_dir_all(&target)?;
     std::fs::write(
         target.join("source-mode-precision.json"),
-        serde_json::to_string_pretty(&report)? + "\n",
+        serde_json::to_string_pretty(&json!({ "fixtures": fixtures }))? + "\n",
     )?;
-    assert!(compiled_count > 0);
-    assert!(
-        precision >= 0.9,
-        "precision {precision} ({both} of {source_count})"
-    );
-    assert!(
-        recall >= 0.9,
-        "recall {recall} ({both} of {compiled_count})"
-    );
+    for fixture in &fixtures {
+        assert!(fixture["compiledEdges"].as_u64() > Some(0), "{fixture}");
+        assert!(fixture["precision"].as_f64() >= Some(0.9), "{fixture}");
+        assert!(fixture["recall"].as_f64() >= Some(0.9), "{fixture}");
+    }
     Ok(())
 }

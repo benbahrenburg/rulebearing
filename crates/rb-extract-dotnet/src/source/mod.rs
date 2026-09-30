@@ -164,12 +164,18 @@ fn layout(root: &Path, options: &DotnetOptions) -> Result<Layout, ExtractError> 
         }
     }
     let mut projects = Vec::new();
+    let indices: BTreeMap<String, usize> = discovered
+        .iter()
+        .enumerate()
+        .map(|(i, p)| (relative(root, &p.path), i))
+        .collect();
     for project in &discovered {
         let index = projects.len();
         projects.push(ProjectInfo {
             path: relative(root, &project.path),
             is_test: project.is_test,
             package_refs: project.package_refs.clone(),
+            sees: sees(&discovered, &indices, root, index),
         });
         let folder = canonical(project.folder());
         let slot = by_folder.entry(folder).or_insert(None);
@@ -209,6 +215,28 @@ fn layout(root: &Path, options: &DotnetOptions) -> Result<Layout, ExtractError> 
         warnings,
         solution,
     })
+}
+
+/// The projects project `index` sees: itself and the discovered projects it references,
+/// transitively, sorted. A reference to a project outside the discovered set adds nothing.
+fn sees(
+    discovered: &[discover::Project],
+    indices: &BTreeMap<String, usize>,
+    root: &Path,
+    index: usize,
+) -> Vec<usize> {
+    let mut seen = BTreeSet::from([index]);
+    let mut pending = vec![index];
+    while let Some(current) = pending.pop() {
+        for reference in &discovered[current].project_refs {
+            if let Some(&found) = indices.get(&relative(root, reference))
+                && seen.insert(found)
+            {
+                pending.push(found);
+            }
+        }
+    }
+    seen.into_iter().collect()
 }
 
 /// The `.cs` files source mode reads under `root`, relative to it: the inputs a cache records.
@@ -302,6 +330,8 @@ struct KeptProject {
     path: String,
     is_test: bool,
     packages: Vec<(String, Option<String>)>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    sees: Vec<usize>,
 }
 
 impl KeptProject {
@@ -314,6 +344,7 @@ impl KeptProject {
                 .iter()
                 .map(|p| (p.id.clone(), p.version.clone()))
                 .collect(),
+            sees: info.sees.clone(),
         }
     }
 
@@ -329,6 +360,7 @@ impl KeptProject {
                     version: version.clone(),
                 })
                 .collect(),
+            sees: self.sees.clone(),
         }
     }
 }

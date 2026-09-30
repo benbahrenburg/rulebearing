@@ -65,6 +65,32 @@ pub struct Declaration {
     /// lands in.
     #[serde(default)]
     pub bodies: bool,
+    /// Its `const` fields and, for an enum, its members: a compiled build writes their values
+    /// where they are used, so `Type.Constant` leaves no reference to the type.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub constants: Vec<String>,
+    /// The extension methods it declares (a first parameter marked `this`), by name.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub extensions: Vec<String>,
+}
+
+/// A method called on a value (`value.Name(...)`, `value?.Name(...)`): what an extension method
+/// call looks like, resolved against the extension methods in scope.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct Call {
+    /// The method's name.
+    pub name: String,
+    /// The scope it was written in.
+    pub scope: usize,
+    /// The innermost type declaration it was written in.
+    pub enclosing: Option<usize>,
+    /// Written outside any body (an initializer), as [`Reference::member`].
+    #[serde(default)]
+    pub member: bool,
+    /// The 1-based line of the first such call.
+    pub line: u32,
+    /// The 1-based column.
+    pub column: u32,
 }
 
 /// One `using` directive.
@@ -164,6 +190,9 @@ pub struct FileFacts {
     pub scopes: Vec<Scope>,
     /// The names, each once per (scope, enclosing type, position), sorted.
     pub references: Vec<Reference>,
+    /// The methods called on a value, each once per (scope, enclosing type), sorted.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub calls: Vec<Call>,
     /// The file has top-level statements: a compiled build puts them in a `Program` type of
     /// this file.
     pub top_level: bool,
@@ -219,10 +248,12 @@ impl CSharpParser {
                 ..FileFacts::default()
             },
             seen: BTreeSet::new(),
+            called: BTreeSet::new(),
         };
         walk.compilation_unit(root);
         let mut facts = walk.facts;
         facts.references.sort();
+        facts.calls.sort();
         Ok(facts)
     }
 }
@@ -336,6 +367,8 @@ struct Walk<'s> {
     facts: FileFacts,
     /// (segments, qualifier, scope, enclosing, position) already recorded.
     seen: BTreeSet<Seen>,
+    /// (name, scope, enclosing, member level) of the calls already recorded.
+    called: BTreeSet<(String, usize, Option<usize>, bool)>,
 }
 
 impl<'s> Walk<'s> {
@@ -535,6 +568,105 @@ impl<'s> Walk<'s> {
         arguments
     }
 
+    /// Whether a field declaration carries the `const` modifier.
+    fn is_const(&self, field: Node<'_>) -> bool {
+        let mut cursor = field.walk();
+        field
+            .named_children(&mut cursor)
+            .any(|c| c.kind() == "modifier" && self.text(c) == "const")
+    }
+
+    /// Whether a constructor declaration in class `class` is a C# 14 extension block: a real
+    /// constructor is named after its class.
+    fn is_extension_block(&self, node: Node<'_>, class: &str) -> bool {
+        node.child_by_field_name("name")
+            .is_some_and(|n| self.text(n) == "extension")
+            && class != "extension"
+    }
+
+    /// The methods an extension block declares.
+    fn extension_block_members(&self, node: Node<'_>) -> Vec<String> {
+        let Some(body) = node.child_by_field_name("body") else {
+            return Vec::new();
+        };
+        let mut cursor = body.walk();
+        body.named_children(&mut cursor)
+            .filter(|c| c.kind() == "local_function_statement")
+            .filter_map(|f| f.child_by_field_name("name"))
+            .map(|n| self.text(n).to_owned())
+            .collect()
+    }
+
+    /// Whether a method is an extension method: its first parameter carries `this`.
+    fn is_extension(&self, method: Node<'_>) -> bool {
+        let Some(parameters) = method.child_by_field_name("parameters") else {
+            return false;
+        };
+        let mut cursor = parameters.walk();
+        let first = parameters
+            .named_children(&mut cursor)
+            .find(|p| p.kind() == "parameter");
+        first.is_some_and(|parameter| {
+            let mut inner = parameter.walk();
+            parameter
+                .named_children(&mut inner)
+                .any(|c| c.kind() == "modifier" && self.text(c) == "this")
+        })
+    }
+
+    /// Records a method called on a value.
+    fn call(&mut self, name: Node<'_>, at: Node<'_>, context: Context) {
+        let name = match name.kind() {
+            "generic_name" => {
+                let mut cursor = name.walk();
+                name.named_children(&mut cursor)
+                    .find(|c| c.kind() == "identifier")
+                    .map(|c| self.text(c).to_owned())
+            }
+            _ => Some(self.text(name).to_owned()),
+        };
+        let Some(name) = name.filter(|n| !n.is_empty()) else {
+            return;
+        };
+        let key = (
+            name.clone(),
+            context.scope,
+            context.enclosing,
+            !context.in_body,
+        );
+        if self.called.insert(key) {
+            let position = at.start_position();
+            self.facts.calls.push(Call {
+                name,
+                scope: context.scope,
+                enclosing: context.enclosing,
+                member: !context.in_body,
+                line: line(position.row),
+                column: line(position.column),
+            });
+        }
+    }
+
+    /// The names a field declaration declares.
+    fn declarator_names(&self, field: Node<'_>) -> Vec<String> {
+        let mut cursor = field.walk();
+        let mut names = Vec::new();
+        for declaration in field.named_children(&mut cursor) {
+            if declaration.kind() != "variable_declaration" {
+                continue;
+            }
+            let mut inner = declaration.walk();
+            names.extend(
+                declaration
+                    .named_children(&mut inner)
+                    .filter(|d| d.kind() == "variable_declarator")
+                    .filter_map(|d| d.child_by_field_name("name"))
+                    .map(|n| self.text(n).to_owned()),
+            );
+        }
+        names
+    }
+
     fn declaration(&mut self, node: Node<'_>, kind: TypeKind, context: Context) -> usize {
         let name = node
             .child_by_field_name("name")
@@ -543,6 +675,8 @@ impl<'s> Walk<'s> {
         let mut cursor = node.walk();
         let mut arity = 0;
         let mut constructor = false;
+        let mut constants = Vec::new();
+        let mut extensions = Vec::new();
         for child in node.named_children(&mut cursor) {
             match child.kind() {
                 "type_parameter_list" => {
@@ -557,9 +691,38 @@ impl<'s> Walk<'s> {
                 "parameter_list" => constructor |= kind != TypeKind::Delegate,
                 "declaration_list" => {
                     let mut inner = child.walk();
-                    constructor |= child
-                        .named_children(&mut inner)
-                        .any(|m| m.kind() == "constructor_declaration");
+                    for member in child.named_children(&mut inner) {
+                        match member.kind() {
+                            // A C# 14 `extension(T receiver) { ... }` block, which
+                            // tree-sitter-c-sharp 0.23 reads as a constructor named `extension`
+                            // holding local functions: each is an extension method.
+                            "constructor_declaration" if self.is_extension_block(member, &name) => {
+                                extensions.extend(self.extension_block_members(member));
+                            }
+                            "constructor_declaration" => constructor = true,
+                            "field_declaration" if self.is_const(member) => {
+                                constants.extend(self.declarator_names(member));
+                            }
+                            "method_declaration" if self.is_extension(member) => {
+                                extensions.extend(
+                                    member
+                                        .child_by_field_name("name")
+                                        .map(|n| self.text(n).to_owned()),
+                                );
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                "enum_member_declaration_list" => {
+                    let mut inner = child.walk();
+                    constants.extend(
+                        child
+                            .named_children(&mut inner)
+                            .filter(|m| m.kind() == "enum_member_declaration")
+                            .filter_map(|m| m.child_by_field_name("name"))
+                            .map(|n| self.text(n).to_owned()),
+                    );
                 }
                 _ => {}
             }
@@ -582,6 +745,8 @@ impl<'s> Walk<'s> {
             line: line(node.start_position().row),
             constructor,
             bodies: false,
+            constants,
+            extensions,
         });
         self.facts.declarations.len() - 1
     }
@@ -632,6 +797,23 @@ impl<'s> Walk<'s> {
             }
         }
         stack.extend(children.into_iter().rev());
+    }
+
+    /// The type arguments written on a member's name (`value.Add<T>()`), visited as generic
+    /// arguments; the name itself is a member's, never a type.
+    fn member_type_arguments<'t>(
+        &self,
+        node: Node<'t>,
+        stack: &mut Vec<Visit<'t>>,
+        context: Context,
+    ) {
+        if let Some(name) = node.child_by_field_name("name")
+            && name.kind() == "generic_name"
+        {
+            let mut arguments = Vec::new();
+            self.simple(name, &mut arguments);
+            Self::push_arguments(stack, arguments, context);
+        }
     }
 
     fn push_arguments<'t>(stack: &mut Vec<Visit<'t>>, arguments: Vec<Node<'t>>, context: Context) {
@@ -843,6 +1025,21 @@ impl<'s> Walk<'s> {
                 if skip_all {
                     return;
                 }
+                // `value.Name(...)` and `value?.Name(...)`: perhaps an extension method.
+                let called = function.and_then(|f| match f.kind() {
+                    "member_access_expression" => f.child_by_field_name("name"),
+                    "conditional_access_expression" => {
+                        let mut cursor = f.walk();
+                        let binding = f
+                            .named_children(&mut cursor)
+                            .find(|c| c.kind() == "member_binding_expression");
+                        binding.and_then(|b| b.child_by_field_name("name"))
+                    }
+                    _ => None,
+                });
+                if let Some(name) = called {
+                    self.call(name, node, context);
+                }
                 Self::push_children(node, stack, |field, child| match (field, child) {
                     // A method called by its bare name is a method, never a type.
                     (Some("function"), "identifier" | "generic_name") => None,
@@ -862,14 +1059,17 @@ impl<'s> Walk<'s> {
                     let arguments = self.record(node, context);
                     Self::push_arguments(stack, arguments, context);
                 } else {
-                    // `value.Member`: only the value can hold a type name.
+                    // `value.Member`: only the value can hold a type name, and the member's
+                    // type arguments (`value.Add<T>()`).
                     Self::push_children(node, stack, |field, _| match field {
                         Some("name") => None,
                         _ => Some(context),
                     });
+                    self.member_type_arguments(node, stack, context);
                 }
             }
-            "member_binding_expression" => {}
+            // `?.Member`: only the member's type arguments (`value?.Add<T>()`).
+            "member_binding_expression" => self.member_type_arguments(node, stack, context),
             "qualified_name" | "alias_qualified_name" | "generic_name" => {
                 let arguments = self.record(node, context);
                 Self::push_arguments(stack, arguments, context);
@@ -994,6 +1194,35 @@ mod tests {
     }
 
     #[test]
+    fn extension_methods_and_calls_on_values_are_recorded() -> Result<(), ParseError> {
+        let facts = parse(
+            "public static class E { public static int Twice(this int x) => x; public static void Other(int y) {} }\nclass U { void M(C c) { c.Twice(); c?.Twice(); c.Chain().Again<int>(); Local(); } }",
+        )?;
+        assert_eq!(facts.declarations[0].extensions, vec!["Twice"]);
+        let block = parse(
+            "public static class B { extension(int value) { public int Thrice() => value; } }",
+        )?;
+        assert_eq!(block.declarations[0].extensions, vec!["Thrice"]);
+        assert!(
+            !block.declarations[0].constructor,
+            "an extension block is no constructor"
+        );
+        let called: Vec<&str> = facts.calls.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(called, ["Again", "Chain", "Twice"]);
+        Ok(())
+    }
+
+    #[test]
+    fn constants_and_enum_members_are_recorded() -> Result<(), ParseError> {
+        let facts = parse(
+            "class C { public const string A = \"x\"; static readonly int B = 1; const int D = 2, E = 3; } enum Tier { Basic, Gold = 2 }",
+        )?;
+        assert_eq!(facts.declarations[0].constants, vec!["A", "D", "E"]);
+        assert_eq!(facts.declarations[1].constants, vec!["Basic", "Gold"]);
+        Ok(())
+    }
+
+    #[test]
     fn usings_belong_to_the_declaration_they_are_written_in() -> Result<(), ParseError> {
         let facts = parse(
             "global using G.H;\nusing static S.T;\nusing Alias = X.Y<int>;\nusing Top;\nnamespace N { using Inner; class C {} }",
@@ -1095,6 +1324,22 @@ mod tests {
                 .iter()
                 .any(|r| r.segments == vec![("D".to_owned(), 2)])
         );
+        Ok(())
+    }
+
+    #[test]
+    fn a_generic_members_type_arguments_are_names() -> Result<(), ParseError> {
+        let facts = parse(
+            "class C { void M(S s) { s.Services().AddScoped<IUser, User>(); s?.Get<Thing>(); } }",
+        )?;
+        let all = names(&facts);
+        for expected in ["IUser", "User", "Thing"] {
+            assert!(
+                all.iter().any(|n| n == expected),
+                "{expected} missing from {all:?}"
+            );
+        }
+        assert!(!all.iter().any(|n| n.contains("AddScoped") || n == "Get"));
         Ok(())
     }
 
