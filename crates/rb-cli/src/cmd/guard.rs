@@ -55,6 +55,12 @@ use crate::{Outcome, configure};
 /// The findings file, relative to the working directory.
 pub const FINDINGS: &str = ".graph/guard/findings.json";
 
+/// The file a hook writes to ask a running guard to confirm it has seen every change until then.
+pub const REQUEST: &str = ".graph/guard/request";
+
+/// How long a hook waits for the guard's confirmation before it cruises itself.
+pub const WAIT_MS: u64 = 5_000;
+
 /// How old the findings may be for the hook to serve them.
 pub const FRESH_MS: u64 = 5_000;
 
@@ -129,6 +135,10 @@ pub struct Findings {
     pub tool: String,
     /// When the answer was last confirmed current, milliseconds since the epoch.
     pub written_at: u64,
+    /// The start of the last scan the answer reflects, milliseconds since the epoch: every change
+    /// made before it is in the answer. A hook serves the answer only once this passes the moment
+    /// it asked ([`REQUEST`]).
+    pub seen_up_to: u64,
     /// The configuration files' hash ([`key::config_hash`]).
     pub config_hash: String,
     /// The command line answered for ([`answer_key`]).
@@ -214,22 +224,62 @@ fn config_hash(ctx: &Context<'_>, loaded: Option<&Config>) -> String {
     }
 }
 
-/// The answer a running guard has for `args`, when it is fresh, for this command line, this
-/// configuration and this build.
+/// Whether `findings` answer for `args`: the same build, the same command line and the current
+/// configuration.
+fn answers_for(ctx: &mut Context<'_>, args: &CruiseArgs, findings: &Findings) -> bool {
+    if findings.tool != tool() || findings.key != answer_key(args) {
+        return false;
+    }
+    configure::load(ctx, &args.config)
+        .is_ok_and(|loaded| findings.config_hash == config_hash(ctx, loaded.as_ref()))
+}
+
+fn read_findings(ctx: &Context<'_>) -> Option<Findings> {
+    serde_json::from_str(&std::fs::read_to_string(ctx.resolve(FINDINGS)).ok()?).ok()
+}
+
+/// The answer a running `guard --watch` has for `args`, once it confirms it has seen every
+/// change until now: the findings must be younger than [`FRESH_MS`] and answer for this command
+/// line, configuration and build; the hook then writes [`REQUEST`] and waits, up to [`WAIT_MS`],
+/// for findings whose `seenUpTo` passes it. A file saved a moment before the hook is therefore in
+/// the answer, never missed. `None` when no guard confirms in time: the hook cruises itself.
 pub fn served(ctx: &mut Context<'_>, args: &CruiseArgs) -> Option<String> {
     if args.config.config.as_deref() == Some("-") {
         return None;
     }
-    let text = std::fs::read_to_string(ctx.resolve(FINDINGS)).ok()?;
-    let findings: Findings = serde_json::from_str(&text).ok()?;
+    let findings = read_findings(ctx)?;
     let now = now_ms();
     let fresh = findings.written_at <= now.saturating_add(HEARTBEAT_MS)
         && now.saturating_sub(findings.written_at) < FRESH_MS;
-    if !fresh || findings.tool != tool() || findings.key != answer_key(args) {
+    if !fresh || !answers_for(ctx, args, &findings) {
         return None;
     }
-    let loaded = configure::load(ctx, &args.config).ok()?;
-    (findings.config_hash == config_hash(ctx, loaded.as_ref())).then_some(findings.answer)
+    if findings.seen_up_to >= now {
+        return Some(findings.answer);
+    }
+    let request = ctx.resolve(REQUEST);
+    std::fs::write(&request, now.to_string()).ok()?;
+    let started = Instant::now();
+    while started.elapsed() < Duration::from_millis(WAIT_MS) {
+        std::thread::sleep(Duration::from_millis(2));
+        match read_findings(ctx) {
+            Some(confirmed) if confirmed.seen_up_to >= now => {
+                return answers_for(ctx, args, &confirmed).then_some(confirmed.answer);
+            }
+            Some(_) => {}
+            // The guard stopped and took its findings with it.
+            None => return None,
+        }
+    }
+    None
+}
+
+/// The moment a hook asked, when it asked after `since`.
+fn requested_after(ctx: &Context<'_>, since: u64) -> bool {
+    std::fs::read_to_string(ctx.resolve(REQUEST))
+        .ok()
+        .and_then(|text| text.trim().parse::<u64>().ok())
+        .is_some_and(|asked| asked > since)
 }
 
 /// A file's size and modification time in nanoseconds; `None` while it does not exist.
@@ -507,16 +557,20 @@ struct Check {
     rechecked: Vec<String>,
     newest: Option<u64>,
     timings: Timings,
+    /// When the scan that led to this check started.
+    scanned: u64,
 }
 
 /// Extracts as `plans` say (in full with `None`), then answers; the state keeps the new parts.
+/// `scanned` is when the scan that found the change started: the answer reflects every change
+/// made before it.
 fn check(
     ctx: &mut Context<'_>,
     hook: &CruiseArgs,
     state: &mut State,
     plans: Option<Plans>,
-    rechecked: Vec<String>,
-    newest: Option<u64>,
+    (rechecked, newest): (Vec<String>, Option<u64>),
+    scanned: u64,
 ) -> Check {
     let started = Instant::now();
     let extracted = match plans {
@@ -537,6 +591,7 @@ fn check(
             extract,
             answer: millis(started.elapsed()).saturating_sub(extract),
         },
+        scanned,
     }
 }
 
@@ -550,6 +605,7 @@ fn findings(ctx: &Context<'_>, hook: &CruiseArgs, state: &State, check: Check) -
     Findings {
         tool: tool(),
         written_at,
+        seen_up_to: check.scanned,
         config_hash: config_hash(ctx, state.loaded.as_ref()),
         key: answer_key(hook),
         mode: if pipeline::dotnet_source_mode(&state.effective) {
@@ -605,6 +661,7 @@ pub fn run(
         return RunExit::InvalidConfig.code();
     }
     let hook = args.hook();
+    let scanned = now_ms();
     let started = Instant::now();
     let mut state = match build(ctx, &hook) {
         Ok(state) => state,
@@ -624,6 +681,7 @@ pub fn run(
         rechecked: Vec::new(),
         newest: None,
         timings,
+        scanned,
     };
     let mut current = findings(ctx, &hook, &state, first);
     if let Err(message) = write(ctx, &current) {
@@ -644,10 +702,15 @@ pub fn run(
     let mut beat = Instant::now();
     while !stop() {
         std::thread::sleep(interval);
+        let scanned = now_ms();
         let done = match state.watched.check(&ctx.cwd) {
             Change::None => {
-                if beat.elapsed() >= Duration::from_millis(HEARTBEAT_MS) {
+                // Nothing changed up to this scan: a hook that asked before it can have the
+                // answer now, and the heartbeat keeps it fresh.
+                let asked = requested_after(ctx, current.seen_up_to);
+                if asked || beat.elapsed() >= Duration::from_millis(HEARTBEAT_MS) {
                     current.written_at = now_ms();
+                    current.seen_up_to = scanned;
                     let _ = write(ctx, &current);
                     beat = Instant::now();
                 }
@@ -655,7 +718,7 @@ pub fn run(
             }
             Change::Structural(reason) => {
                 let _ = writeln!(log, "guard: {reason}; reading everything again");
-                check(ctx, &hook, &mut state, None, Vec::new(), None)
+                check(ctx, &hook, &mut state, None, (Vec::new(), None), scanned)
             }
             Change::Sources(changed, newest) => {
                 let plans = plans(&state.parts, &changed);
@@ -663,7 +726,14 @@ pub fn run(
                     .iter()
                     .map(|(_, _, path)| key::slashed(path.strip_prefix(&ctx.cwd).unwrap_or(path)))
                     .collect();
-                check(ctx, &hook, &mut state, Some(plans), rechecked, Some(newest))
+                check(
+                    ctx,
+                    &hook,
+                    &mut state,
+                    Some(plans),
+                    (rechecked, Some(newest)),
+                    scanned,
+                )
             }
         };
         current = findings(ctx, &hook, &state, done);
@@ -674,6 +744,7 @@ pub fn run(
         beat = Instant::now();
     }
     let _ = std::fs::remove_file(ctx.resolve(FINDINGS));
+    let _ = std::fs::remove_file(ctx.resolve(REQUEST));
     let _ = writeln!(log, "guard: standard input closed; stopped");
     0
 }
@@ -761,6 +832,7 @@ mod tests {
         let base = Findings {
             tool: tool(),
             written_at: 1,
+            seen_up_to: 1,
             config_hash: String::new(),
             key: String::new(),
             mode: "source".into(),

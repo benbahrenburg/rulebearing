@@ -100,6 +100,12 @@ fn hook(dir: &Path, extra: &[&str]) -> Result<Output> {
     Ok(child.wait_with_output()?)
 }
 
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
+}
+
 fn findings(dir: &Path) -> Result<Value> {
     Ok(serde_json::from_str(&std::fs::read_to_string(
         dir.join(FINDINGS),
@@ -168,9 +174,19 @@ fn the_hook_serves_a_fresh_answer_for_the_same_command_and_configuration() -> Re
     );
     assert_eq!(found["mode"], "source");
     assert_eq!(found["rechecked"], serde_json::json!([]));
-    // Served: the answer is the file's, byte for byte, so mark it to see that it was.
+    // Findings no running guard confirms are not served: the hook asks, waits, and cruises.
+    let waited = Instant::now();
+    assert_eq!(hook(&dir, &[])?.stdout, cold.stdout);
+    assert!(
+        waited.elapsed() >= Duration::from_secs(4),
+        "the hook waited for a confirmation"
+    );
+    // Served: the answer is the file's, byte for byte, so mark it to see that it was. A
+    // `seenUpTo` ahead of the clock stands for a guard that has confirmed.
     let mut marked = found.clone();
     marked["answer"] = Value::from("served\n");
+    marked["writtenAt"] = Value::from(now_ms());
+    marked["seenUpTo"] = Value::from(now_ms() + 600_000);
     std::fs::write(dir.join(FINDINGS), serde_json::to_string(&marked)?)?;
     assert_eq!(hook(&dir, &[])?.stdout, b"served\n");
     // Another command line is not answered by these findings.
@@ -180,17 +196,12 @@ fn the_hook_serves_a_fresh_answer_for_the_same_command_and_configuration() -> Re
     );
     // Nor stale findings.
     let mut stale = marked.clone();
-    stale["writtenAt"] = Value::from(
-        found["writtenAt"]
-            .as_u64()
-            .unwrap_or(0)
-            .saturating_sub(6_000),
-    );
+    stale["writtenAt"] = Value::from(now_ms().saturating_sub(6_000));
     std::fs::write(dir.join(FINDINGS), serde_json::to_string(&stale)?)?;
     assert_eq!(hook(&dir, &[])?.stdout, cold.stdout);
     // Nor findings for another configuration.
     let mut fresh = marked.clone();
-    fresh["writtenAt"] = found["writtenAt"].clone();
+    fresh["writtenAt"] = Value::from(now_ms());
     std::fs::write(dir.join(FINDINGS), serde_json::to_string(&fresh)?)?;
     std::fs::write(
         dir.join("rulebearing.yaml"),
@@ -254,8 +265,26 @@ fn a_saved_file_is_checked_again_within_100_ms_and_stdin_closing_stops_it() -> R
         latency < 100,
         "from save to findings written: {latency} ms (observed {observed:?})"
     );
-    // The hook serves it.
+    // The hook serves it, once the guard confirms it has seen every change.
+    let asked = Instant::now();
     assert_eq!(hook(&dir, &[])?.stdout, b"");
+    assert!(
+        asked.elapsed() < Duration::from_secs(4),
+        "served, not cruised after the wait"
+    );
+    // A save the hook runs right after is in the answer, never a stale one: the violation is
+    // back the moment the import is.
+    std::fs::write(
+        dir.join("src/ui/page.ts"),
+        "import { store } from \"../db/store\";\nexport const page = store;\n",
+    )?;
+    let answer = hook(&dir, &[])?;
+    assert!(
+        String::from_utf8_lossy(&answer.stdout).contains("ui-not-to-db"),
+        "a stale answer was served"
+    );
+    std::fs::write(dir.join("src/ui/page.ts"), page)?;
+    until(&dir, Duration::from_secs(10), |f| f["answer"] == "")?;
     // A new file is structural: everything is read again, and its violation found.
     std::fs::write(
         dir.join("src/ui/other.ts"),
