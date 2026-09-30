@@ -249,6 +249,8 @@ fn skill_teaches_the_families_the_commands_and_the_reporter() -> Result {
         "`rulebearing impact <file>`",
         "`rulebearing place --imports a,b --imported-by c --language <language>`",
         "`rulebearing test`",
+        "`rulebearing guard --watch`",
+        "an `approximate` line first",
         "## Reading the `agent` reporter",
         AGENTS_LINE,
     ] {
