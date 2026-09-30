@@ -42,6 +42,8 @@ ignore = [
 "**/hatch_*.py" = ["INP001"]
 # The oracle harness's scripts, run by path from testbeds/oracles/*.sh (plan 0002, Step 11).
 "testbeds/oracles/*.py" = ["INP001"]
+# The Stop-hook benchmark, run by path from the nightly (plan 0003, Step 17).
+"testbeds/bench/*.py" = ["INP001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -77,12 +79,18 @@ ignore_missing_imports = true
 #   pytest wrappers/pip --cov=wrappers/pip
 #   pytest adapters/python --cov=adapters/python
 #   pytest testbeds/oracles   (the oracle harness; not a published package, so no floor)
+#   pytest testbeds/bench --cov=testbeds/bench   (the Stop-hook benchmark, at the floor)
 # The sources are imported from the tree (pythonpath), so coverage measures them where they are,
 # and the plugin is loaded by the tests themselves, inside the measured window.
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib -p pytester --cov-report=term-missing --cov-fail-under=70"
-testpaths = ["wrappers/pip", "adapters/python", "testbeds/oracles"]
-pythonpath = ["wrappers/pip/src", "adapters/python/pytest-rulebearing/src", "testbeds/oracles"]
+testpaths = ["wrappers/pip", "adapters/python", "testbeds/oracles", "testbeds/bench"]
+pythonpath = [
+    "wrappers/pip/src",
+    "adapters/python/pytest-rulebearing/src",
+    "testbeds/oracles",
+    "testbeds/bench",
+]
 
 [tool.coverage.run]
 branch = false

@@ -104,9 +104,23 @@ def row(path: Path, readme_dir: Path) -> str:
     return "| " + " | ".join(cell(c) for c in cells) + " |"
 
 
+# Files the nightly writes beside an oracle's row: the plantuml round trip and source mode's
+# precision. A repository's name may hold dots (nager/Nager.Date), so these are told by suffix.
+SIDE_FILES = (".plantuml.json", ".source-mode.json")
+
+
+def is_row(path: Path) -> bool:
+    """Whether a results file is one oracle's row, `<owner>__<repo>.json`.
+
+    Not a file beside the rows (a `.plantuml.json`, a `.source-mode.json`) or among them without
+    an owner (the Stop-hook benchmark's `stop-hook.json`, the joined `source-mode-precision.json`).
+    """
+    return "__" in path.name and not path.name.endswith(SIDE_FILES)
+
+
 def table(readme_dir: Path) -> str:
     """The whole table, rows in file-name order."""
-    files = sorted(RESULTS.glob("*.json"), key=lambda p: p.name.lower())
+    files = sorted(filter(is_row, RESULTS.glob("*.json")), key=lambda p: p.name.lower())
     header = [
         (
             "| Repository | Incumbent | Compared | Agree | Disagree | Stays | Not imported "

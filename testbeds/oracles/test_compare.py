@@ -240,3 +240,18 @@ def test_the_table_never_shows_nothing_compared_as_agreement() -> None:
     assert table.outcome(legacy, [{"verdict": "agree"}, *rows]) == "agrees"
     assert table.outcome(legacy, [{"verdict": "error"}]) == "1 error"
     assert table.outcome({"status": "error", "detail": "no build"}, []) == "error: no build"
+
+
+def test_only_oracle_rows_are_table_rows() -> None:
+    from pathlib import Path  # noqa: PLC0415 - the one test that builds paths
+
+    for name, expected in [
+        ("ardalis__RiverBooks.json", True),
+        ("nager__Nager.Date.json", True),
+        ("NeVeSpl__NetArchTest.eNhancedEdition.json", True),
+        ("ardalis__RiverBooks.plantuml.json", False),
+        ("ardalis__RiverBooks.source-mode.json", False),
+        ("stop-hook.json", False),
+        ("source-mode-precision.json", False),
+    ]:
+        assert table.is_row(Path(name)) == expected, name

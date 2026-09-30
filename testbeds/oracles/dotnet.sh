@@ -139,6 +139,23 @@ PY
   done
   printf '%s}\n' "$summary" > "$results/$slug.plantuml.json"
 fi
+# Source mode's precision against this compiled graph (plan 0003, Step 14): the checkout cruised
+# again with --mode source and no rules, and the file-to-file edges both graphs know compared into
+# <results>/<owner>__<repo>.source-mode.json; the nightly joins them into source-mode-precision.json.
+# The solution the row names is the one source mode reads too, so both graphs are one build's.
+solution="$(oracle_field "$manifest" "$repo" solution)"
+if [ -s "$out/graph.json" ]; then
+  printf 'languages:\n  dotnet:\n    mode: source\n' > "$out/source-mode.yaml"
+  [ -n "$solution" ] && printf '    solution: %s\n' "$solution" >> "$out/source-mode.yaml"
+  if (cd "$checkout" && "$bin" cruise --config "$out/source-mode.yaml" -T json --no-progress --liveness off .) > "$out/source.json" 2> "$out/source.err"; then
+    python3 "$here/precision.py" --compiled "$out/graph.json" --source "$out/source.json" \
+      --repo "$repo" --sha "$sha" --out "$results/$slug.source-mode.json" ||
+      echo "dotnet-oracle: the source-mode comparison failed; see $out/source.err" >&2
+  else
+    echo "dotnet-oracle: the source-mode cruise failed; see $out/source.err" >&2
+  fi
+  rm -f "$out/source.json"
+fi
 rm -f "$out/graph.json"
 rm -f "$out/rulebearing.xml"
 # Without an active rule there is nothing to cruise and no report: compare.py then gives every test

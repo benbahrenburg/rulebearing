@@ -1,0 +1,29 @@
+# The rules the Stop-hook benchmark evaluates on dotnet/aspnetcore (testbeds/bench/stop_hook.py;
+# plan 0003, Step 17, docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md). `init`
+# needs built assemblies and the benchmark measures a repository that was never built, so the
+# configuration is written here: the recommended preset (no-circular, not-to-unresolvable,
+# no-orphans) and three layering rules aspnetcore's own structure keeps. Mvc, Servers, Middleware
+# and Security depend on Http, never the reverse, and Servers sits below Mvc. Every rule matches
+# modules on both sides, so none is vacuous.
+extends: rulebearing:recommended
+rules:
+  dependencies:
+    forbidden:
+      - name: http-not-to-mvc
+        comment: "Http is the layer Mvc is built on. plan:rulebearing-wave-3"
+        fix: "Move what Http needs from Mvc down into Http, or invert the dependency behind an abstraction in Http."
+        severity: error
+        from: { path: "^src/Http/" }
+        to: { path: "^src/Mvc/" }
+      - name: http-not-to-components
+        comment: "Http is below Components. plan:rulebearing-wave-3"
+        fix: "Move the shared type into Http, or reference it from Components only."
+        severity: error
+        from: { path: "^src/Http/" }
+        to: { path: "^src/Components/" }
+      - name: servers-not-to-mvc
+        comment: "The servers host any application model; they do not know Mvc. plan:rulebearing-wave-3"
+        fix: "Depend on the Http abstractions instead of Mvc."
+        severity: error
+        from: { path: "^src/Servers/" }
+        to: { path: "^src/Mvc/" }

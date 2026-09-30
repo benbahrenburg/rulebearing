@@ -232,6 +232,8 @@ jobs:
       - run: python -m pytest adapters/python --cov=adapters/python
       # The oracle harness's join and table (testbeds/oracles/test_compare.py); standard library only.
       - run: python -m pytest testbeds/oracles -p no:cacheprovider
+      # The Stop-hook benchmark (testbeds/bench/stop_hook.py, plan 0003 Step 17); standard library.
+      - run: python -m pytest testbeds/bench --cov=testbeds/bench -p no:cacheprovider
 
   # The .NET test adapters and the dotnet tool (plan 0002, Step 14, 2H): each of the seven
   # Rulebearing.TestAdapter packages and the tool's launcher at its own 70% line floor

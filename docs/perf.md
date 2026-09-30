@@ -57,3 +57,22 @@ Each candidate is still decided by the original predicate, and property tests co
 | 2026-09-24 | same | `cruise` with that `rulebearing.yaml` (33,016 known violations) | 788 s | 11.8 s | byte-identical |
 
 The synthetic tree did not move: `hyperfine -N --warmup 3 --runs 20` gave 817 ms before and 810 ms after on the same loaded machine, with identical output.
+
+## The Stop hook on a large .NET solution
+
+The target is [NFR-PERF-02](prd.md#nfr-perf-02): the Stop hook's p95 under 2 s on dotnet/aspnetcore in source mode, which no build precedes ([Wave 3, Step 17](plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof); [source-mode.md](source-mode.md)). [`testbeds/bench/stop-hook.sh`](../testbeds/bench/stop-hook.sh) clones aspnetcore at its pinned SHA (10,706 `.cs` files in 587 projects), writes [the benchmark's rules](../testbeds/bench/aspnetcore.yaml) into it, and runs [`stop_hook.py`](../testbeds/bench/stop_hook.py). The hook is
+
+```sh
+rulebearing cruise --from-hook --mode source --cache --affected HEAD
+```
+
+run twice untimed so the cache is warm, then once after each of 200 seeded one-line edits, each file restored after its run. The `stop-hook` job of the [nightly](../.github/workflows/nightly-testbeds.yml) runs it on the standard Linux runner and fails the night at a p95 of 2 s or more; the result is published with the others as `stop-hook.json`, and the exit criterion asks for three consecutive nights under the line.
+
+| Date | Machine | Edits | p50 | p95 | p99 | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-09-30 | Linux 6.18 (aarch64), 2 vCPUs, 12 GB, a Docker VM on the machine below | 40 | 1.62 s | 1.78 s | 1.97 s | The tree copied into the container's own file system; the Linux figure is the one the nightly target is set for, and a hosted runner has 4 vCPUs |
+| 2026-09-30 | Apple M2 Pro, 12 threads, 32 GB | 40 | 2.64 s | 2.72 s | 2.74 s | Every file open and git walk on this machine passes an endpoint-security scan; `git status` alone takes 0.5 to 2.6 s here and 40 ms in the container |
+
+Midway through this work, when the container's p95 was 2.34 s, one warm run after an edit split into 47 ms configuration, 1,086 ms extraction, 765 ms evaluation and 206 ms report. Extraction became cheaper when an incremental source-mode run stopped walking the tree, reading project files and re-serialising unchanged parses; evaluation and the report became cheaper when resolution stopped linking a file to another solution's copy of a type (fewer spurious cycles) and the agent reporter stopped scanning every module per violation.
+
+`guard --watch` ([agents.md](agents.md#the-hook-without-the-wait-guard---watch)) takes the hook out of the loop: the hook serves its answer once the guard confirms it has seen every change. A saved file is checked again in under 100 ms on the integration test's fixture, and in about 430 ms on the 5,500-module synthetic tree above, where evaluating the rules over the whole graph is most of it.

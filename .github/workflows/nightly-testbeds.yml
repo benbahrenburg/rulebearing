@@ -247,6 +247,34 @@ jobs:
           path: testbeds/out
           if-no-files-found: warn
 
+  # The Stop hook's p95 (NFR-PERF-02; plan 0003, Step 17 and section 1.7): dotnet/aspnetcore at
+  # its pinned SHA, never built, the hook in source mode with a warm cache, over 200 seeded one-line
+  # edits (testbeds/bench/stop-hook.sh, with testbeds/bench/aspnetcore.yaml as the configuration).
+  # The job fails the night when the p95 reaches 2 s; the result joins the published ones.
+  stop-hook:
+    name: stop hook p95 dotnet/aspnetcore
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python3 -m pip install --quiet pyyaml
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rulebearing-binary
+          path: target/release
+      - run: chmod +x target/release/rulebearing
+      - run: testbeds/bench/stop-hook.sh dotnet/aspnetcore testbeds/bench/aspnetcore.yaml testbeds/results/stop-hook.json
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bench-stop-hook
+          path: testbeds/results/stop-hook.json
+          if-no-files-found: warn
+
   # Conformance gate 1, layer 5 (docs/plans/pending/0001-wave-1-typescript-parity.md, Step 18):
   # dependency-cruiser and Rulebearing over the three named oracles at their pinned SHAs, diffed,
   # and the mutation branch. The same job runs on every push to main in ci.yml; nightly it also
@@ -404,8 +432,10 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: oracle-${{ steps.slug.outputs.slug }}
+          # The row's result, its plantuml round trip (.plantuml.json) and source mode's
+          # precision (.source-mode.json).
           path: |
-            testbeds/results/${{ steps.slug.outputs.slug }}.json
+            testbeds/results/${{ steps.slug.outputs.slug }}*.json
             testbeds/out/${{ steps.slug.outputs.slug }}/*.yaml
             testbeds/out/${{ steps.slug.outputs.slug }}/*.xml
             testbeds/out/${{ steps.slug.outputs.slug }}/*.trx
@@ -414,7 +444,7 @@ jobs:
 
   summary:
     name: summary and regression check
-    needs: [run, layer-5, greenfield-init, scale, oracle-python, oracle-dotnet]
+    needs: [run, layer-5, greenfield-init, scale, stop-hook, oracle-python, oracle-dotnet]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -446,6 +476,34 @@ jobs:
           pattern: oracle-*
           path: testbeds
           merge-multiple: true
+      # The Stop-hook p95 (testbeds/results/stop-hook.json), published with the oracles' results.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        continue-on-error: true
+        with:
+          name: bench-stop-hook
+          path: testbeds/results
+      - name: stop hook p95
+        run: |
+          if [ -f testbeds/results/stop-hook.json ]; then
+            {
+              echo "### Stop hook p95"
+              echo
+              python3 -c 'import json; r = json.load(open("testbeds/results/stop-hook.json")); s = r["seconds"]; print(f"{r[\"repository\"]}@{r[\"sha\"][:7]}: p50 {s[\"p50\"]} s, p95 {s[\"p95\"]} s, p99 {s[\"p99\"]} s over {r[\"edits\"]} edits on {r[\"runner\"][\"cpus\"]} CPUs ({r[\"runner\"][\"cpu\"]})")'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+      # Source mode's precision on each .NET oracle (testbeds/oracles/precision.py), joined.
+      - name: source mode precision
+        run: |
+          shopt -s nullglob
+          files=(testbeds/results/*.source-mode.json)
+          if [ "${#files[@]}" -gt 0 ]; then
+            python3 testbeds/oracles/precision.py --aggregate "${files[@]}" --out testbeds/results/source-mode-precision.json
+            {
+              echo "### Source mode precision against compiled mode"
+              echo
+              python3 -c 'import json; a = json.load(open("testbeds/results/source-mode-precision.json")); [print(f"- {o[\"repo\"]}: precision {o[\"precision\"]}, recall {o[\"recall\"]} over {o[\"files\"]} files ({\"meets\" if o[\"meetsTarget\"] else \"below\"} the {a[\"target\"]} target)") for o in a["oracles"]]'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: oracle agreement table
         run: |
           {

@@ -41,13 +41,19 @@ All of them are additive and `--strict-schema` removes them ([ADR-0004](adr/0004
 
 ## What it cannot know
 
-A name is resolved without a compiler, so what only a compiler decides is not known: overload resolution, extension methods (a `using` that brings them in is an edge to the namespace, not to the class), members inherited from a base class, and the type behind `var`. A local variable or a property that shares its name with a type in scope reads as that type. Every edge is therefore `approximate`, and the precision against compiled mode is measured rather than assumed:
+A name is resolved without a compiler, so what only a compiler decides is not known: overload resolution, members inherited from a base class (a call to one lands in the class that uses it, not the one that declares it), and the type behind `var`. An extension method call (`services.AddClock()`) is resolved as C# looks extension methods up, from the innermost namespace out through the static classes each level declares and imports, with C# 14 `extension(T x) { ... }` blocks included; without the receiver's type every candidate at the first level that has one counts. A constant or an enum member read is no edge, since the compiler writes its value where it is read. A local variable or a property that shares its name with a type in scope reads as that type. Every edge is therefore `approximate`, and how close it is to a compiled graph is measured rather than assumed:
 
 | Graph | Source edges | Compiled edges | Agreeing | Precision | Recall |
 | --- | --- | --- | --- | --- | --- |
 | `crates/rb-extract-dotnet/tests/fixtures/sample` | 5 | 5 | 5 | 100% | 100% |
+| `crates/rb-extract-dotnet/tests/fixtures/toplevel` | 2 | 2 | 2 | 100% | 100% |
+| ardalis/RiverBooks | 97 | 119 | 97 | 100% | 82% |
+| NeVeSpl/NetArchTest.eNhancedEdition | 512 | 609 | 488 | 95.3% | 80% |
+| evolutionary-architecture/evolutionary-architecture-by-example | 129 | 140 | 128 | 99.2% | 91% |
+| onebeyond/monaco | 263 | 342 | 258 | 98.1% | 75% |
+| phongnguyend/Practical.CleanArchitecture | 888 | 1,066 | 884 | 99.6% | 83% |
 
-The comparison covers edges between two files both modes know. `cargo test -p rb-extract-dotnet --features source-mode --test source_mode` asserts at least 90% precision and recall and writes `target/source-mode-precision.json`.
+The comparison covers edges between two files both modes know, each oracle at its pinned SHA with the solution the oracle row names, the compiled side built in Release as the nightly builds it. `cargo test -p rb-extract-dotnet --features source-mode --test source_mode` asserts at least 90% precision and recall on the two built fixtures and writes `target/source-mode-precision.json`; the nightly runs [`testbeds/oracles/precision.py`](../testbeds/oracles/precision.py) on every .NET oracle and joins the results into `source-mode-precision.json` ([Wave 3, Step 14](plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)). Measuring it also found two edges compiled mode missed, now fixed: the body of an `async` or iterator method of a release build, and top-level statements.
 
 ## Never the gate
 
