@@ -37,7 +37,7 @@ A partial type lands in one file, as a compiled build attributes it: the part th
 | `summary.inspected.dotnet` | `mode: source`, `assemblies: 0` |
 | the `agent` report | opens with `approximate`, a sentence saying the findings are namespace-level and compiled mode is the gate; each finding on an approximate edge carries `approximate: true` |
 
-All of them are additive and `--strict-schema` removes them ([ADR-0004](adr/0004-graph-document-is-cruise-result-superset.md)). Source mode has no code layer, so element rules have nothing to evaluate there; compiled mode evaluates them.
+The document's marks are additive, and the `json` reporter's `--strict-schema` removes them ([ADR-0004](adr/0004-graph-document-is-cruise-result-superset.md)); the `agent` report keeps its header and its per-finding marks, since an agent reading it must know. Source mode has no code layer, so element rules have nothing to evaluate there; compiled mode evaluates them.
 
 ## What it cannot know
 

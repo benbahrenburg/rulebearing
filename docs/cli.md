@@ -234,7 +234,7 @@ Source mode never decides a gate ([Wave 3 plan § 1.6](plans/pending/0003-wave-3
 | Command | Refused, exit 2 | Not refused |
 | --- | --- | --- |
 | `cruise` | a reporter that gates (`err`, `agent`, ...), or a plugin reporter, passing or failing | `json`, `dot` and the other reporters that exit 0; `--from-hook`, which is the inner loop source mode is for |
-| `fmt` | `--exit-code` on a saved result whose receipt says `mode: source` or whose edges are `approximate` | without `--exit-code` |
+| `fmt` | `--exit-code` with a reporter that gates, or a plugin, on a saved result whose receipt says `mode: source` or whose edges are `approximate` | without `--exit-code`, or with a reporter that does not gate |
 | `diff` | `--exit-code` when either side was read in source mode | without `--exit-code` |
 | `attest` | always: a graph read in source mode is not signed as a gate run | |
 
