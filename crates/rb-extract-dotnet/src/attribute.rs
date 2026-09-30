@@ -38,6 +38,9 @@ use crate::bytes::ReadError;
 use crate::pdb::{PdbError, PortablePdb};
 use crate::pe::DebugInfo;
 
+/// The type the C# compiler puts top-level statements in.
+pub const TOP_LEVEL_PROGRAM: &str = "Program";
+
 /// What kind of debugging information an assembly had.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -69,6 +72,10 @@ pub struct TypeAttribution {
     /// 1-based line of the first sequence point, for `pdb`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub line: Option<u32>,
+    /// Left out of the ratios (`<Module>` and types carrying `CompilerGeneratedAttribute`),
+    /// whether or not it has a file.
+    #[serde(skip)]
+    pub excluded: bool,
 }
 
 /// Counts over a set of types.
@@ -286,14 +293,24 @@ fn from_pdb(
     let mut results = Vec::with_capacity(assembly.types.len());
     for ty in &assembly.types {
         let excluded = ty.is_module_type || ty.compiler_generated;
+        // Top-level statements compile into a compiler-generated `Program` in the global
+        // namespace. It stays out of the ratios, and gets the file its statements are in, since
+        // they are that file's code.
+        let top_level = ty.compiler_generated
+            && !ty.is_module_type
+            && ty.enclosing.is_none()
+            && ty.namespace.is_empty()
+            && ty.name == TOP_LEVEL_PROGRAM;
+        let attributable = !excluded || top_level;
         let mut found = TypeAttribution {
             full_name: ty.full_name.clone(),
             namespace: ty.namespace.clone(),
-            attribution: (!excluded).then_some(Attribution::None),
+            attribution: attributable.then_some(Attribution::None),
             file: None,
             line: None,
+            excluded,
         };
-        if let (false, Some(pdb)) = (excluded, pdb) {
+        if let (true, Some(pdb)) = (attributable, pdb) {
             let declared = type_documents
                 .get(&ty.row)
                 .and_then(|docs| docs.first())
@@ -312,6 +329,24 @@ fn from_pdb(
                         found.file = document(point.document);
                         found.line = Some(point.line);
                         break;
+                    }
+                }
+            }
+            // An async top-level entry keeps its statements in its state machine, a type nested
+            // in `Program`: the first point there is the file's.
+            if top_level && found.file.is_none() {
+                let nested = assembly
+                    .types
+                    .iter()
+                    .filter(|t| t.enclosing == Some(ty.row));
+                'nested: for machine in nested {
+                    for method in machine.methods.clone() {
+                        if let Some(point) = pdb.first_point(method)? {
+                            found.attribution = Some(Attribution::Pdb);
+                            found.file = document(point.document);
+                            found.line = Some(point.line);
+                            break 'nested;
+                        }
                     }
                 }
             }
@@ -399,6 +434,10 @@ fn count(results: &[TypeAttribution]) -> Counts {
         ..Counts::default()
     };
     for result in results {
+        if result.excluded {
+            counts.types_excluded += 1;
+            continue;
+        }
         match result.attribution {
             None => counts.types_excluded += 1,
             Some(Attribution::Pdb) => counts.pdb_attributed += 1,

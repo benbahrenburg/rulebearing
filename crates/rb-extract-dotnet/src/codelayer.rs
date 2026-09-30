@@ -124,6 +124,9 @@ pub struct Source<'a> {
     pub namespaces: Option<&'a [String]>,
 }
 
+/// The method the C# compiler puts top-level statements in.
+pub const TOP_LEVEL_ENTRY: &str = "<Main>$";
+
 /// A type-level dependency, for the module layer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeDependency {
@@ -1146,6 +1149,12 @@ impl<'u> Builder<'u> {
         type_deps.extend(member_deps_all);
         element.files = files;
         element.dependencies = self.element_dependencies(&type_deps);
+        // Top-level statements compile into `Program.<Main>$`, a member ArchUnitNET leaves out
+        // as compiler-generated, so the code layer does too; their edges are the file's all the
+        // same, and a dependency rule over Program.cs must see them.
+        for method in ty.methods.iter().filter(|m| m.name == TOP_LEVEL_ENTRY) {
+            type_deps.extend(self.body(asm, ty, method));
+        }
         for found in type_deps {
             let Target::Type(target) = found.target.target else {
                 continue;

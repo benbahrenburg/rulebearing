@@ -131,6 +131,42 @@ fn an_async_method_of_a_release_build_is_read_through_its_state_machine()
     Ok(())
 }
 
+/// Top-level statements compile into `Program.<Main>$`, a member the code layer leaves out as
+/// compiler-generated (as ArchUnitNET does); the file's edges are there all the same, so a
+/// dependency rule over `Program.cs` sees what it uses, the extension method's class included.
+#[test]
+fn top_level_statements_have_their_edges() -> Result<(), Box<dyn std::error::Error>> {
+    let root = manifest().join("tests/fixtures/toplevel");
+    let extraction = extract(&root, &loader("built/TopLevel.dll"))?;
+    let program = extraction
+        .modules
+        .iter()
+        .find(|m| m.source == "src/Program.cs")
+        .ok_or("no module for src/Program.cs")?;
+    let targets: Vec<&str> = program
+        .dependencies
+        .iter()
+        .map(|d| d.resolved.as_str())
+        .collect();
+    for expected in ["src/Clock/SystemClock.cs", "src/Clock/Describing.cs"] {
+        assert!(
+            targets.contains(&expected),
+            "{expected} missing from {targets:?}"
+        );
+    }
+    let members: Vec<&str> = extraction
+        .code
+        .iter()
+        .flat_map(|c| &c.members)
+        .filter_map(|m| m.full_name.as_deref())
+        .collect();
+    assert!(
+        !members.iter().any(|m| m.contains("<Main>$")),
+        "the code layer keeps ArchUnitNET's members: {members:?}"
+    );
+    Ok(())
+}
+
 #[test]
 fn two_runs_serialise_byte_for_byte() -> Result<(), Box<dyn std::error::Error>> {
     let first = as_json(&extract(&sample(), &loader("built/Sample.dll"))?)?.to_string();
