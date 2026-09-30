@@ -28,6 +28,7 @@
 //! `Microsoft.*`, else `undetermined`, since without a build nothing says whether it resolves.
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::hash::{BuildHasherDefault, Hasher};
 
 use rb_model::{
     Attribution, Dependency, DependencyKind, DependencyType, Language, Module, ModuleSystem,
@@ -36,6 +37,35 @@ use rb_model::{
 use super::tree_sitter::{FileFacts, Reference, TypeKind, Using};
 use crate::discover::PackageRef;
 use crate::edges::{is_framework, providing_package};
+
+/// FNV-1a over the bytes written: the index's keys are short names hashed millions of times on a
+/// large solution, where the standard library's `SipHash`, built to resist crafted keys a local
+/// graph never sees, was most of the resolution's time.
+#[derive(Debug, Default, Clone, Copy)]
+struct Fnv(u64);
+
+impl Hasher for Fnv {
+    fn finish(&self) -> u64 {
+        self.0
+    }
+
+    fn write(&mut self, bytes: &[u8]) {
+        const OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
+        const PRIME: u64 = 0x0100_0000_01b3;
+        let mut hash = if self.0 == 0 { OFFSET } else { self.0 };
+        for byte in bytes {
+            hash ^= u64::from(*byte);
+            hash = hash.wrapping_mul(PRIME);
+        }
+        self.0 = hash;
+    }
+}
+
+/// A hash map keyed with [`Fnv`].
+type FastMap<K, V> = HashMap<K, V, BuildHasherDefault<Fnv>>;
+
+/// A hash set keyed with [`Fnv`].
+type FastSet<K> = HashSet<K, BuildHasherDefault<Fnv>>;
 
 /// A project as source mode needs it.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -85,11 +115,13 @@ type Declared = BTreeMap<(String, u32), (String, TypeKind, Vec<(usize, usize, bo
 struct Index {
     types: Vec<TypeEntry>,
     /// (container, simple name) to entries: the container is a namespace or a type's dotted key.
-    members: HashMap<String, HashMap<String, Vec<usize>>>,
+    members: FastMap<String, FastMap<String, Vec<usize>>>,
     /// Every declared namespace and each of its prefixes.
-    namespaces: HashSet<String>,
+    namespaces: FastSet<String>,
     /// (file, declaration index) to the entry the declaration is a part of.
-    parts: HashMap<(usize, usize), usize>,
+    parts: FastMap<(usize, usize), usize>,
+    /// Each namespace's sub-namespaces by their last segment, so a lookup allocates nothing.
+    children: FastMap<String, FastSet<String>>,
 }
 
 fn join(left: &str, right: &str) -> String {
@@ -139,7 +171,7 @@ fn dotted_key(namespace: &str, outer: &[(String, u32)], name: &str) -> String {
 impl Index {
     fn build(files: &[SourceFile]) -> Self {
         let mut parts: Declared = BTreeMap::new();
-        let mut namespaces = HashSet::new();
+        let mut namespaces = FastSet::default();
         namespaces.insert(String::new());
         for (file_index, file) in files.iter().enumerate() {
             for scope in &file.facts.scopes {
@@ -172,8 +204,8 @@ impl Index {
             }
         }
         let mut types = Vec::new();
-        let mut members: HashMap<String, HashMap<String, Vec<usize>>> = HashMap::new();
-        let mut by_part = HashMap::new();
+        let mut members: FastMap<String, FastMap<String, Vec<usize>>> = FastMap::default();
+        let mut by_part = FastMap::default();
         for ((dotted, arity), (full, kind, declared)) in parts {
             let name = dotted.rsplit('.').next().unwrap_or(&dotted).to_owned();
             let container = dotted
@@ -198,11 +230,22 @@ impl Index {
                 file,
             });
         }
+        let mut children: FastMap<String, FastSet<String>> = FastMap::default();
+        for namespace in namespaces.iter().filter(|n| !n.is_empty()) {
+            let (parent, last) = namespace
+                .rsplit_once('.')
+                .unwrap_or(("", namespace.as_str()));
+            children
+                .entry(parent.to_owned())
+                .or_default()
+                .insert(last.to_owned());
+        }
         Self {
             types,
             members,
             namespaces,
             parts: by_part,
+            children,
         }
     }
 
@@ -260,6 +303,22 @@ struct Level<'f> {
     usings: Vec<&'f Using>,
 }
 
+/// What an alias names, resolved once per file.
+enum Aliased {
+    Types(Vec<usize>),
+    Namespace(String),
+    Outside,
+}
+
+/// A lookup level with its directives resolved: the namespace, the aliases, and the containers
+/// whose types the directives import (a namespace for `using N;`, a type's nested-type key for
+/// `using static T;`).
+struct Prepared {
+    namespace: String,
+    aliases: Vec<(String, Aliased)>,
+    imports: Vec<String>,
+}
+
 /// The lookup levels for a name written in `scope`, innermost namespace first; the global level
 /// carries the compilation unit's directives and the project's global ones.
 fn levels_of<'f>(facts: &'f FileFacts, scope: usize, global: &[&'f Using]) -> Vec<Level<'f>> {
@@ -307,6 +366,47 @@ struct Resolver<'a> {
 }
 
 impl Resolver<'_> {
+    /// Resolves a level's directives once, for every reference written at that level.
+    fn prepare(&self, level: Level<'_>) -> Prepared {
+        let mut aliases = Vec::new();
+        let mut imports = Vec::new();
+        for using in level.usings {
+            let segments: Vec<(String, u32)> =
+                using.target.iter().map(|t| (t.clone(), 0)).collect();
+            match &using.alias {
+                Some(alias) => {
+                    // The first alias of a name at a level is the one C# binds.
+                    if aliases.iter().any(|(a, _): &(String, Aliased)| a == alias) {
+                        continue;
+                    }
+                    let target = if let Some(types) = self.resolve_global(&segments) {
+                        Aliased::Types(types)
+                    } else {
+                        let namespace = using.target.join(".");
+                        if self.index.namespaces.contains(&namespace) {
+                            Aliased::Namespace(namespace)
+                        } else {
+                            Aliased::Outside
+                        }
+                    };
+                    aliases.push((alias.clone(), target));
+                }
+                None if using.is_static => {
+                    // `using static T;` brings T's nested types into scope.
+                    for owner in self.resolve_global(&segments).unwrap_or_default() {
+                        imports.push(self.index.types[owner].dotted.clone());
+                    }
+                }
+                None => imports.push(using.target.join(".")),
+            }
+        }
+        Prepared {
+            namespace: level.namespace,
+            aliases,
+            imports,
+        }
+    }
+
     /// A dotted name from the global namespace (`global::`, an alias target).
     fn resolve_global(&self, segments: &[(String, u32)]) -> Option<Vec<usize>> {
         let (first, rest) = segments.split_first()?;
@@ -325,9 +425,14 @@ impl Resolver<'_> {
         if !types.is_empty() {
             return Some(Found::Types(types));
         }
-        let nested = join(namespace, name);
-        (more && *arity == 0 && self.index.namespaces.contains(&nested))
-            .then_some(Found::Namespace(nested))
+        let is_namespace = more
+            && *arity == 0
+            && self
+                .index
+                .children
+                .get(namespace)
+                .is_some_and(|children| children.contains(name.as_str()));
+        is_namespace.then(|| Found::Namespace(join(namespace, name)))
     }
 
     fn continue_with(&self, mut found: Found, rest: &[(String, u32)]) -> Option<Vec<usize>> {
@@ -360,72 +465,39 @@ impl Resolver<'_> {
     /// The first segment of a name, looked up from where it was written.
     fn first(
         &self,
-        facts: &FileFacts,
-        reference: &Reference,
-        levels: &[Level<'_>],
+        containers: &[String],
+        levels: &[Prepared],
         segment: &(String, u32),
         more: bool,
     ) -> Option<Found> {
         let (name, arity) = segment;
-        // The nested types of each enclosing type, innermost first.
-        // A type naming itself or an enclosing type is found one container out, or at its
-        // namespace's level.
-        if let Some(enclosing) = reference.enclosing.and_then(|e| facts.declarations.get(e)) {
-            let mut chain: Vec<(String, u32)> = enclosing.outer.clone();
-            chain.push((enclosing.name.clone(), enclosing.arity));
-            while let Some((own, rest)) = chain.split_last() {
-                let key = dotted_key(&enclosing.namespace, rest, &own.0);
-                let types = self.index.lookup(&key, name, *arity);
-                if !types.is_empty() {
-                    return Some(Found::Types(types));
-                }
-                chain.pop();
+        // The nested types of each enclosing type, innermost first. A type naming itself or an
+        // enclosing type is found one container out, or at its namespace's level.
+        for container in containers {
+            let types = self.index.lookup(container, name, *arity);
+            if !types.is_empty() {
+                return Some(Found::Types(types));
             }
         }
         for level in levels {
             if let Some(found) = self.in_namespace(&level.namespace, segment, more) {
                 return Some(found);
             }
-            for using in level
-                .usings
-                .iter()
-                .filter(|u| u.alias.as_deref() == Some(name))
+            if *arity == 0
+                && let Some((_, target)) = level.aliases.iter().find(|(alias, _)| alias == name)
             {
-                if *arity != 0 {
-                    continue;
-                }
-                let target: Vec<(String, u32)> =
-                    using.target.iter().map(|t| (t.clone(), 0)).collect();
-                if let Some(types) = self.resolve_global(&target) {
-                    return Some(Found::Types(types));
-                }
-                let namespace = using.target.join(".");
-                if self.index.namespaces.contains(&namespace) {
-                    return Some(Found::Namespace(namespace));
-                }
-                // An alias of something outside the repository.
-                return None;
+                return match target {
+                    Aliased::Types(types) => Some(Found::Types(types.clone())),
+                    Aliased::Namespace(namespace) => Some(Found::Namespace(namespace.clone())),
+                    // An alias of something outside the repository.
+                    Aliased::Outside => None,
+                };
             }
-            let mut imported = Vec::new();
-            for using in level.usings.iter().filter(|u| u.alias.is_none()) {
-                let target = using.target.join(".");
-                if using.is_static {
-                    // `using static T;` brings T's nested types into scope.
-                    let owner: Vec<(String, u32)> =
-                        using.target.iter().map(|t| (t.clone(), 0)).collect();
-                    if let Some(owners) = self.resolve_global(&owner) {
-                        for o in owners {
-                            imported.extend(self.index.lookup(
-                                &self.index.types[o].dotted,
-                                name,
-                                *arity,
-                            ));
-                        }
-                    }
-                } else {
-                    imported.extend(self.index.lookup(&target, name, *arity));
-                }
-            }
+            let mut imported: Vec<usize> = level
+                .imports
+                .iter()
+                .flat_map(|container| self.index.lookup(container, name, *arity))
+                .collect();
             if !imported.is_empty() {
                 imported.sort_unstable();
                 imported.dedup();
@@ -438,9 +510,9 @@ impl Resolver<'_> {
     /// The types a reference names, when it names any the repository declares.
     fn resolve(
         &self,
-        facts: &FileFacts,
         reference: &Reference,
-        levels: &[Level<'_>],
+        containers: &[String],
+        levels: &[Prepared],
     ) -> Vec<usize> {
         let segments = &reference.segments;
         match reference.qualifier.as_deref() {
@@ -457,7 +529,7 @@ impl Resolver<'_> {
             candidates.insert(0, (format!("{}Attribute", first.0), first.1));
         }
         for candidate in &candidates {
-            if let Some(found) = self.first(facts, reference, levels, candidate, !rest.is_empty())
+            if let Some(found) = self.first(containers, levels, candidate, !rest.is_empty())
                 && let Some(types) = self.continue_with(found, rest)
             {
                 return types;
@@ -530,8 +602,31 @@ fn resolve_edges(files: &[SourceFile], index: &Index) -> Edges {
                 );
             }
         }
-        let scoped: Vec<Vec<Level<'_>>> = (0..file.facts.scopes.len())
-            .map(|scope| levels_of(&file.facts, scope, global))
+        let scoped: Vec<Vec<Prepared>> = (0..file.facts.scopes.len())
+            .map(|scope| {
+                levels_of(&file.facts, scope, global)
+                    .into_iter()
+                    .map(|level| resolver.prepare(level))
+                    .collect()
+            })
+            .collect();
+        // Each declaration's enclosing containers, innermost first, as dotted keys.
+        let enclosing: Vec<Vec<String>> = file
+            .facts
+            .declarations
+            .iter()
+            .map(|d| {
+                let mut chain: Vec<(String, u32)> = d.outer.clone();
+                chain.push((d.name.clone(), d.arity));
+                (1..=chain.len())
+                    .rev()
+                    .filter_map(|n| {
+                        chain[..n]
+                            .split_last()
+                            .map(|(own, rest)| dotted_key(&d.namespace, rest, &own.0))
+                    })
+                    .collect()
+            })
             .collect();
         for reference in &file.facts.references {
             let Some(levels) = scoped.get(reference.scope) else {
@@ -545,7 +640,11 @@ fn resolve_edges(files: &[SourceFile], index: &Index) -> Edges {
                 Some(file) if reference.member => file,
                 _ => file_index,
             };
-            for target in resolver.resolve(&file.facts, reference, levels) {
+            let containers = reference
+                .enclosing
+                .and_then(|e| enclosing.get(e))
+                .map_or(&[][..], Vec::as_slice);
+            for target in resolver.resolve(reference, containers, levels) {
                 let entry = &index.types[target];
                 let kind = reference.kind.dependency_kind(entry.kind);
                 add_edge(
@@ -968,6 +1067,23 @@ mod tests {
                 .all(|m| m.dependencies.iter().all(|d| d.approximate == Some(true)))
         );
         Ok(())
+    }
+
+    #[test]
+    fn fnv_is_fnv_1a() {
+        // The published FNV-1a 64-bit vectors: the empty string and "a".
+        let mut empty = Fnv::default();
+        empty.write(b"");
+        assert_eq!(empty.finish(), 0xcbf2_9ce4_8422_2325);
+        let mut a = Fnv::default();
+        a.write(b"a");
+        assert_eq!(a.finish(), 0xaf63_dc4c_8601_ec8c);
+        let mut split = Fnv::default();
+        split.write(b"a");
+        split.write(b"b");
+        let mut whole = Fnv::default();
+        whole.write(b"ab");
+        assert_eq!(split.finish(), whole.finish());
     }
 
     #[test]

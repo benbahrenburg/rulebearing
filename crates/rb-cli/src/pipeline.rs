@@ -339,6 +339,23 @@ fn dotnet_part(
     )
 }
 
+/// The .NET solution and project files an extraction read: the ones source mode kept in its
+/// file states, else (compiled mode, or a source extraction without them) read again.
+#[cfg(feature = "extract-dotnet")]
+pub fn dotnet_project_files(
+    cwd: &std::path::Path,
+    options: &rb_model::DotnetOptions,
+    part: Option<&Extraction>,
+) -> Vec<std::path::PathBuf> {
+    #[cfg(feature = "source-mode")]
+    if let Some(files) = part.and_then(|p| rb_extract_dotnet::source::kept_project_files(cwd, p)) {
+        return files;
+    }
+    #[cfg(not(feature = "source-mode"))]
+    let _ = part;
+    rb_extract_dotnet::project_files(cwd, options).unwrap_or_default()
+}
+
 /// An extraction, or nothing when the extractor found nothing to read; any other error stops
 /// the run.
 #[cfg(any(feature = "extract-dotnet", feature = "extract-python"))]

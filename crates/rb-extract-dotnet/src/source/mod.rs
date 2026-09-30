@@ -117,6 +117,8 @@ struct Layout {
     projects: Vec<ProjectInfo>,
     files: Vec<(PathBuf, Option<usize>)>,
     warnings: Vec<Warning>,
+    /// The solution discovery read, relative to the root, `/`-separated.
+    solution: Option<String>,
 }
 
 fn relative(root: &Path, path: &Path) -> String {
@@ -124,9 +126,13 @@ fn relative(root: &Path, path: &Path) -> String {
 }
 
 fn layout(root: &Path, options: &DotnetOptions) -> Result<Layout, ExtractError> {
+    let mut solution = None;
     let (discovered, mut warnings) = match discover::discover(root, options) {
         Ok(workspace) => (
-            workspace.projects,
+            {
+                solution = workspace.solution.as_deref().map(|s| relative(root, s));
+                workspace.projects
+            },
             workspace
                 .errors
                 .iter()
@@ -201,6 +207,7 @@ fn layout(root: &Path, options: &DotnetOptions) -> Result<Layout, ExtractError> 
         projects,
         files,
         warnings,
+        solution,
     })
 }
 
@@ -228,6 +235,39 @@ fn refuse_loader(root: &Path, options: &DotnetOptions) -> Result<(), ExtractErro
     Ok(())
 }
 
+/// The solution and project files an extraction kept in its file states (the files whose change
+/// reads everything again), relative to `root`; `None` when it kept no table, which a caller
+/// answers with [`crate::project_files`]. Unlike that function it reads no project file.
+pub fn kept_project_files(root: &Path, extraction: &Extraction) -> Option<Vec<PathBuf>> {
+    let table = extraction
+        .files
+        .values()
+        .next()
+        .and_then(kept)
+        .and_then(|k| k.table)?;
+    let mut files: BTreeSet<PathBuf> = table.projects.iter().map(|p| root.join(&p.path)).collect();
+    files.extend(table.solution.iter().map(|s| root.join(s)));
+    files.extend(table.warnings.iter().filter_map(|w| w.path.clone()));
+    Some(files.into_iter().collect())
+}
+
+thread_local! {
+    /// Each worker thread's parser, made on its first file.
+    static PARSER: std::cell::RefCell<Option<CSharpParser>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Parses with this thread's parser.
+fn parse_on_this_thread(text: &str) -> Result<FileFacts, tree_sitter::ParseError> {
+    PARSER.with(|cell| {
+        let mut slot = cell.borrow_mut();
+        let parser = match slot.as_mut() {
+            Some(parser) => parser,
+            None => slot.insert(CSharpParser::new()?),
+        };
+        parser.parse(text)
+    })
+}
+
 fn read_text(path: &Path) -> std::io::Result<String> {
     let bytes = std::fs::read(path)?;
     let text = String::from_utf8_lossy(&bytes);
@@ -253,6 +293,8 @@ struct Kept {
 struct Table {
     projects: Vec<KeptProject>,
     warnings: Vec<Warning>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    solution: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -319,6 +361,7 @@ fn kept_layout(root: &Path, request: &ExtractRequest) -> Option<(Layout, BTreeMa
             projects: table.projects.iter().map(KeptProject::info).collect(),
             files,
             warnings: table.warnings,
+            solution: table.solution,
         },
         kept_files,
     ))
@@ -353,25 +396,34 @@ pub fn extract(
         }
         None => (layout(root, options)?, BTreeMap::new()),
     };
-    let parsed: Vec<Result<SourceFile, ExtractError>> = layout
+    let mut reusable = reusable;
+    // The files whose parse is the earlier run's: their kept state is too.
+    let reused: BTreeSet<String> = reusable.keys().cloned().collect();
+    let work: Vec<(PathBuf, Option<usize>, Option<FileFacts>)> = layout
         .files
-        .par_iter()
-        .map_init(CSharpParser::new, |parser, (path, project)| {
-            let source = relative(root, path);
-            let facts = if let Some(facts) = reusable.get(&source) {
-                facts.clone()
+        .iter()
+        .map(|(path, project)| {
+            let facts = reusable.remove(&relative(root, path));
+            (path.clone(), *project, facts)
+        })
+        .collect();
+    let parsed: Vec<Result<SourceFile, ExtractError>> = work
+        .into_par_iter()
+        .map(|(path, project, facts)| {
+            let source = relative(root, &path);
+            let facts = if let Some(facts) = facts {
+                facts
             } else {
                 let failed = |reason: String| ExtractError::UnsupportedFile {
                     path: path.clone(),
                     reason,
                 };
-                let text = read_text(path).map_err(|e| failed(e.to_string()))?;
-                let parser = parser.as_mut().map_err(|e| failed(e.to_string()))?;
-                parser.parse(&text).map_err(|e| failed(e.to_string()))?
+                let text = read_text(&path).map_err(|e| failed(e.to_string()))?;
+                parse_on_this_thread(&text).map_err(|e| failed(e.to_string()))?
             };
             Ok(SourceFile {
                 source,
-                project: *project,
+                project,
                 facts,
             })
         })
@@ -391,7 +443,8 @@ pub fn extract(
         warnings.push(warning);
     }
     let file_states = if keep_file_states {
-        file_states(&files, &layout)
+        let previous = request.map(|r| (&r.previous.files, &reused));
+        file_states(&files, &layout, previous)
     } else {
         BTreeMap::new()
     };
@@ -411,15 +464,28 @@ pub fn extract(
     })
 }
 
-/// Each file's [`Kept`] state, the first by path carrying the table.
-fn file_states(files: &[SourceFile], layout: &Layout) -> BTreeMap<String, FileState> {
+/// Each file's [`Kept`] state, the first by path carrying the table. A file whose parse was
+/// reused keeps the earlier run's state as it was, since its parse, its project and (on the
+/// first file) the table it was read from are unchanged.
+fn file_states(
+    files: &[SourceFile],
+    layout: &Layout,
+    previous: Option<(&BTreeMap<String, FileState>, &BTreeSet<String>)>,
+) -> BTreeMap<String, FileState> {
     let first = files.iter().map(|f| f.source.as_str()).min();
     files
         .par_iter()
         .filter_map(|f| {
+            if let Some((states, reused)) = previous
+                && reused.contains(&f.source)
+                && let Some(state) = states.get(&f.source)
+            {
+                return Some((f.source.clone(), state.clone()));
+            }
             let table = (Some(f.source.as_str()) == first).then(|| Table {
                 projects: layout.projects.iter().map(KeptProject::of).collect(),
                 warnings: layout.warnings.clone(),
+                solution: layout.solution.clone(),
             });
             let kept = Kept {
                 project: f.project,

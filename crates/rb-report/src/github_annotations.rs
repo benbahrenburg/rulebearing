@@ -15,7 +15,7 @@
 use serde_json::Value;
 use std::fmt::Write as _;
 
-use crate::{Rendered, edge_position, find_rule, severity, text};
+use crate::{Edges, Rendered, find_rule, severity, text};
 
 /// Escapes a message.
 pub fn escape_data(text: &str) -> String {
@@ -35,6 +35,7 @@ pub fn render(result: &Value, path_prefix: &str) -> Rendered {
     let summary = result.get("summary").cloned().unwrap_or(Value::Null);
     let rule_set = summary.get("ruleSetUsed");
     let mut output = String::new();
+    let edges = Edges::of(result);
     for v in summary
         .get("violations")
         .and_then(Value::as_array)
@@ -55,7 +56,7 @@ pub fn render(result: &Value, path_prefix: &str) -> Rendered {
             "file={}",
             escape_property(&format!("{path_prefix}{from}"))
         )];
-        if let Some((line, column)) = edge_position(result, &from, &to) {
+        if let Some((line, column)) = edges.position(&from, &to) {
             properties.push(format!("line={line}"));
             properties.push(format!("col={column}"));
         }

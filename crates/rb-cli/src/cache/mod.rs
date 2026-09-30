@@ -589,9 +589,9 @@ fn inputs(
         {
             inputs.extend(assemblies.iter().map(|p| scope.name(p)));
         }
-        if let Ok(projects) = rb_extract_dotnet::project_files(cwd, &options) {
-            inputs.extend(projects.iter().map(|p| scope.name(p)));
-        }
+        // Source mode kept the solution and project files it read.
+        let projects = pipeline::dotnet_project_files(cwd, &options, parts.dotnet.as_ref());
+        inputs.extend(projects.iter().map(|p| scope.name(p)));
     }
     inputs.extend(
         key::manifest_paths(&scope.root, cwd, config)

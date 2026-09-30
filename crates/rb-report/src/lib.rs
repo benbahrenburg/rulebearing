@@ -388,6 +388,51 @@ pub(crate) fn find_rule<'a>(rule_set: Option<&'a Value>, name: &str) -> Option<&
         .find(|r| r.get("name").and_then(Value::as_str) == Some(name))
 }
 
+/// The report's edges by their module, built once so a reporter that looks up an edge per
+/// violation does not scan every module each time: the first module with a source, and within it
+/// the first dependency on a target, as [`edge_position`] finds them.
+pub(crate) struct Edges<'r> {
+    by_source: std::collections::HashMap<&'r str, &'r [Value]>,
+}
+
+impl<'r> Edges<'r> {
+    /// Indexes `result`'s modules.
+    pub(crate) fn of(result: &'r Value) -> Self {
+        let mut by_source = std::collections::HashMap::new();
+        for module in result
+            .get("modules")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            if let (Some(source), Some(dependencies)) = (
+                module.get("source").and_then(Value::as_str),
+                module.get("dependencies").and_then(Value::as_array),
+            ) {
+                by_source.entry(source).or_insert(dependencies.as_slice());
+            }
+        }
+        Self { by_source }
+    }
+
+    /// The first dependency of `from` on `to`.
+    pub(crate) fn get(&self, from: &str, to: &str) -> Option<&'r Value> {
+        self.by_source
+            .get(from)?
+            .iter()
+            .find(|d| d.get("resolved").and_then(Value::as_str) == Some(to))
+    }
+
+    /// The edge's line and column, when the extractor recorded them.
+    pub(crate) fn position(&self, from: &str, to: &str) -> Option<(u64, u64)> {
+        let dependency = self.get(from, to)?;
+        Some((
+            dependency.get("line")?.as_u64()?,
+            dependency.get("column")?.as_u64()?,
+        ))
+    }
+}
+
 /// The line and column of the edge `from -> to`, when the extractor recorded them.
 pub(crate) fn edge_position(result: &Value, from: &str, to: &str) -> Option<(u64, u64)> {
     let dependency = result
@@ -667,5 +712,32 @@ mod tests {
         assert_eq!(decision("see plan:wave-1."), Some("plan:wave-1".into()));
         assert_eq!(decision("nope adr:"), None);
         assert_eq!(edge_position(&json!({}), "a", "b"), None);
+    }
+
+    #[test]
+    fn the_edge_index_finds_what_a_scan_finds() {
+        let result = json!({ "modules": [
+            { "source": "a", "dependencies": [
+                { "resolved": "b", "line": 3, "column": 1 },
+                { "resolved": "b", "line": 9, "column": 9 },
+                { "resolved": "c" }
+            ] },
+            { "source": "a", "dependencies": [{ "resolved": "d", "line": 1, "column": 1 }] },
+            { "source": "e" }
+        ] });
+        let edges = Edges::of(&result);
+        for (from, to) in [("a", "b"), ("a", "c"), ("a", "d"), ("e", "a"), ("x", "y")] {
+            assert_eq!(
+                edges.position(from, to),
+                edge_position(&result, from, to),
+                "{from} -> {to}"
+            );
+        }
+        assert_eq!(edges.position("a", "b"), Some((3, 1)));
+        assert!(edges.get("a", "c").is_some());
+        assert!(
+            edges.get("a", "d").is_none(),
+            "only the first module named a is read"
+        );
     }
 }

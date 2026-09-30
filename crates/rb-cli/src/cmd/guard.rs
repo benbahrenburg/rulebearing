@@ -389,8 +389,11 @@ impl Watched {
         #[cfg(feature = "extract-dotnet")]
         if parts.dotnet.is_some() {
             let options = config.languages.dotnet.clone().unwrap_or_default();
-            structural
-                .extend(rb_extract_dotnet::project_files(&ctx.cwd, &options).unwrap_or_default());
+            structural.extend(pipeline::dotnet_project_files(
+                &ctx.cwd,
+                &options,
+                parts.dotnet.as_ref(),
+            ));
             if !watched.cs {
                 structural.extend(
                     rb_extract_dotnet::assembly_inputs(&ctx.cwd, &options).unwrap_or_default(),

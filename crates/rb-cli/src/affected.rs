@@ -431,18 +431,28 @@ fn list_changes(
     // `--no-relative` keeps the paths repository-relative whatever `diff.relative` says; `--`
     // ends the revisions.
     let diff_args = ["diff", revision, "--name-status", "--no-relative", "--"];
-    let diff = git(repo, &diff_args).map_err(|e| match e {
-        (Some(128), _) => AffectedError::UnknownRevision {
-            revision: revision.to_owned(),
-        },
-        other => git_error(repo, &diff_args, other),
-    })?;
     let status_args: &[&str] = if every_untracked_file {
         &["status", "--porcelain", "--untracked-files=all"]
     } else {
         &["status", "--porcelain"]
     };
-    let status = git(repo, status_args).map_err(|e| git_error(repo, status_args, e))?;
+    // Each walks the worktree and neither reads the other's answer; on a large repository
+    // running them one after the other is most of the time `--affected` takes.
+    let (diff, status) = std::thread::scope(|threads| {
+        let status = threads.spawn(|| git(repo, status_args));
+        let diff = git(repo, &diff_args);
+        let status = status
+            .join()
+            .unwrap_or_else(|_| Err((None, "git status did not finish".to_owned())));
+        (diff, status)
+    });
+    let diff = diff.map_err(|e| match e {
+        (Some(128), _) => AffectedError::UnknownRevision {
+            revision: revision.to_owned(),
+        },
+        other => git_error(repo, &diff_args, other),
+    })?;
+    let status = status.map_err(|e| git_error(repo, status_args, e))?;
     let untracked = status
         .lines()
         .filter_map(parse_status_line)

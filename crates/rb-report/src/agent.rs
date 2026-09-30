@@ -24,7 +24,7 @@ use std::collections::HashMap;
 
 use serde_json::{Map, Value, json};
 
-use crate::{Rendered, edge_position, find_rule, severity, text};
+use crate::{Edges, Rendered, find_rule, severity, text};
 
 /// The default number of violations shown per rule.
 pub const DEFAULT_MAX_FINDINGS: usize = 5;
@@ -49,15 +49,6 @@ fn fan_in(result: &Value) -> HashMap<String, usize> {
     counts
 }
 
-fn edge<'r>(result: &'r Value, from: &str, to: &str) -> Option<&'r Value> {
-    result
-        .get("modules")
-        .and_then(Value::as_array)
-        .and_then(|m| m.iter().find(|x| text(x, "source") == from))
-        .and_then(|m| m.get("dependencies").and_then(Value::as_array))
-        .and_then(|d| d.iter().find(|x| text(x, "resolved") == to))
-}
-
 /// The header of a report whose graph was read, in part, from source.
 pub const APPROXIMATE: &str = "approximate: .NET was read from source (--mode source), so its findings are namespace-level and may miss or add an edge a build would not; compiled mode is the gate";
 
@@ -79,7 +70,7 @@ fn steps(v: &Value, key: &str) -> usize {
 /// One violation as a finding: its rule's name and severity, its score, and the finding; `None`
 /// for an `ignore` violation.
 fn finding(
-    result: &Value,
+    index: &Edges<'_>,
     fan: &HashMap<String, usize>,
     v: &Value,
 ) -> Option<(String, String, u64, Value)> {
@@ -101,9 +92,10 @@ fn finding(
         fan.get(&to).copied().unwrap_or(0)
     };
     let score = (edges + target_fan_in) as u64;
-    let (line, column) = edge_position(result, &from, &to)
+    let (line, column) = index
+        .position(&from, &to)
         .map_or((Value::Null, Value::Null), |(l, c)| (json!(l), json!(c)));
-    let found = edge(result, &from, &to);
+    let found = index.get(&from, &to);
     let mut finding = json!({
         "id": v.get("id").cloned().unwrap_or(Value::Null),
         "from": from, "to": to, "line": line, "column": column,
@@ -131,6 +123,7 @@ pub fn render(result: &Value, max_findings: usize) -> Rendered {
     let summary = result.get("summary").cloned().unwrap_or(Value::Null);
     let rule_set = summary.get("ruleSetUsed");
     let fan = fan_in(result);
+    let index = Edges::of(result);
     let mut groups: Vec<Group> = Vec::new();
     for v in summary
         .get("violations")
@@ -138,7 +131,7 @@ pub fn render(result: &Value, max_findings: usize) -> Rendered {
         .into_iter()
         .flatten()
     {
-        let Some((name, sev, score, finding)) = finding(result, &fan, v) else {
+        let Some((name, sev, score, finding)) = finding(&index, &fan, v) else {
             continue;
         };
         match groups.iter_mut().find(|(n, _, _)| *n == name) {
