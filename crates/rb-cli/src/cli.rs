@@ -70,6 +70,9 @@ pub enum Command {
     Hooks(crate::cmd::hooks::HooksCommand),
     /// A brief for an agent starting a session
     Summary(crate::cmd::summary::SummaryArgs),
+    /// Answer the Stop hook ahead of time into .graph/guard/findings.json; with --watch, keep
+    /// the answer current as files are saved until standard input closes
+    Guard(crate::cmd::guard::GuardArgs),
     /// What a file is subject to, before an edit
     Impact(crate::cmd::impact::ImpactArgs),
     /// Where a new module with these imports would be legal

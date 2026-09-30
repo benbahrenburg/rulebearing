@@ -106,6 +106,10 @@ pub fn run(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
     if active {
         return Outcome::printed(String::new());
     }
+    // A running `guard --watch` has the answer already, when it is fresh and for this command.
+    if let Some(answer) = crate::cmd::guard::served(ctx, args) {
+        return Outcome::printed(answer);
+    }
     let outcome = cruise(ctx, args);
     Outcome { code: 0, ..outcome }
 }
@@ -145,7 +149,31 @@ fn renders_cached(output_type: &str) -> bool {
     rb_config::js::plugin::plugin_name(output_type).is_none() && output_type != "x-dot-webpage"
 }
 
+/// An extraction a caller already made (`guard` keeps one in memory): the merged document and
+/// the extractors' warnings, evaluated and reported as a cruise's own would be.
+#[derive(Debug, Clone)]
+pub struct Given {
+    /// The merged document.
+    pub document: rb_model::GraphDocument,
+    /// The extractors' warnings.
+    pub warnings: Vec<rb_model::Warning>,
+}
+
+/// What `cruise --from-hook` answers for an extraction the caller made, without reading stdin
+/// or the guard's findings: the answer the Stop hook would give, exit 0
+/// ([Wave 3, Step 16](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
+pub fn hook_answer(ctx: &mut Context<'_>, args: &CruiseArgs, given: Given) -> Outcome {
+    let mut args = args.clone();
+    args.from_hook = true;
+    let outcome = cruise_with(ctx, &args, Some(given));
+    Outcome { code: 0, ..outcome }
+}
+
 fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
+    cruise_with(ctx, args, None)
+}
+
+fn cruise_with(ctx: &mut Context<'_>, args: &CruiseArgs, given: Option<Given>) -> Outcome {
     if args.info {
         return Outcome {
             stdout: info(),
@@ -197,7 +225,11 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
         paths: args.paths.clone(),
         affected,
     };
-    let (cache, evaluation) = cache_of(ctx, &effective, args, &options, liveness);
+    let (cache, evaluation) = if given.is_some() {
+        (None, None)
+    } else {
+        cache_of(ctx, &effective, args, &options, liveness)
+    };
     let report_options = report_options(ctx, &effective, args, &output_type, &output_to);
     let report_part = report_key(&output_type, &output_to, &report_options);
     let renders_cached = renders_cached(&output_type);
@@ -206,7 +238,11 @@ fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
         evaluation: evaluation.as_deref(),
         report: renders_cached.then_some(report_part.as_str()),
     };
-    let (produced, writing) = match produce(ctx, &effective, args, &options, mode, &mut progress) {
+    let produced = match given {
+        Some(given) => evaluate_given(ctx, &effective, given, &options, &mut progress),
+        None => produce(ctx, &effective, args, &options, mode, &mut progress),
+    };
+    let (produced, writing) = match produced {
         Ok(produced) => produced,
         Err(Produced::Graph(message)) => {
             return Outcome::failed(
@@ -437,6 +473,30 @@ fn produce(
             })
             .map_err(Produced::Run),
     }
+}
+
+/// The evaluated run of an extraction the caller made ([`Given`]); nothing is cached.
+fn evaluate_given(
+    ctx: &Context<'_>,
+    config: &Config,
+    given: Given,
+    options: &RunOptions,
+    progress: &mut Progress,
+) -> Result<(Evaluated, crate::cache::Writing), Produced> {
+    pipeline::run_extracted(
+        ctx,
+        config,
+        (given.document, given.warnings),
+        options,
+        progress,
+    )
+    .map(|run| {
+        (
+            Evaluated::Run(Box::new(run)),
+            crate::cache::Writing::default(),
+        )
+    })
+    .map_err(Produced::Run)
 }
 
 /// The run through the `--cache` entry ([`crate::cache::extract_cached`]): the rendered output

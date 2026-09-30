@@ -50,7 +50,7 @@ pub use crate::exit::RunExit;
 
 /// Subcommands later waves deliver, with the wave. Asking for one says so and exits 2, so no
 /// pipeline mistakes a missing command for a passing gate.
-pub const LATER: &[(&str, u8)] = &[("guard", 3), ("serve", 3)];
+pub const LATER: &[(&str, u8)] = &[("serve", 3)];
 
 /// What a run printed and how it exited; separated from `main` so the dispatch is unit-tested.
 #[derive(Debug, PartialEq, Eq)]
@@ -145,6 +145,7 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         Command::Count(a) => cmd::count::run(ctx, &a),
         Command::Config(c) => cmd::config::run(ctx, &c),
         Command::Hooks(c) => cmd::hooks::run(ctx, &c),
+        Command::Guard(a) => cmd::guard::once(ctx, &a),
         Command::Summary(a) => cmd::summary::run(ctx, &a),
         Command::Impact(a) => cmd::impact::run(ctx, &a),
         Command::Place(a) => cmd::place::run(ctx, &a),
@@ -207,6 +208,46 @@ pub fn run_streaming(
         }),
         _ => None,
     }
+}
+
+/// Runs a command line that lives as long as its standard input (`guard --watch`), with the
+/// process's own streams: a thread reads standard input to its end and the command stops then.
+/// `None` for every other command line. The caller must not hold standard input's lock.
+pub fn run_daemon(args: &[String]) -> Option<u8> {
+    use std::io::{IsTerminal as _, Read as _};
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let command_line = std::iter::once("rulebearing".to_owned()).chain(args.iter().cloned());
+    let Command::Guard(guard) = Cli::try_parse_from(command_line).ok()?.command else {
+        return None;
+    };
+    if !guard.watch {
+        return None;
+    }
+    let closed = Arc::new(AtomicBool::new(false));
+    let signal = Arc::clone(&closed);
+    std::thread::spawn(move || {
+        let mut stdin = std::io::stdin();
+        let mut buffer = [0_u8; 4096];
+        while matches!(stdin.read(&mut buffer), Ok(n) if n > 0) {}
+        signal.store(true, Ordering::SeqCst);
+    });
+    let (today, timestamp) = context::clock();
+    let mut empty: &[u8] = &[];
+    let mut ctx = Context {
+        cwd: std::env::current_dir().unwrap_or_default(),
+        stdin: &mut empty,
+        today,
+        timestamp,
+        color_terminal: std::io::stdout().is_terminal(),
+    };
+    let stop = || closed.load(Ordering::SeqCst);
+    Some(cmd::guard::run(
+        &mut ctx,
+        &guard,
+        &stop,
+        &mut std::io::stderr(),
+    ))
 }
 
 /// The top-level help.

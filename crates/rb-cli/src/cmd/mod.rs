@@ -26,6 +26,7 @@ pub mod docs;
 pub mod explain;
 pub mod fmt;
 pub mod generate;
+pub mod guard;
 pub mod hooks;
 pub mod impact;
 pub mod import;

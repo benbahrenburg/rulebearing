@@ -1,0 +1,78 @@
+Answer the Stop hook ahead of time into .graph/guard/findings.json; with --watch, keep the answer
+current as files are saved until standard input closes
+
+Usage: rulebearing guard [OPTIONS] [FILES-OR-DIRECTORIES]...
+
+Arguments:
+  [FILES-OR-DIRECTORIES]...
+          Files, directories and globs to cruise, as `cruise` takes them
+
+Options:
+  -c, --config [<FILE>]
+          Read rules and options from FILE (`-` for stdin); without a value, look for
+          rulebearing.{yaml,yml,json,jsonc,toml} or .dependency-cruiser.{js,cjs,mjs,json,yaml,yml}
+
+      --no-config
+          Run without a configuration, even when one is present
+
+      --config-format <FORMAT>
+          The configuration format when it cannot be told from the name: native or
+          dependency-cruiser
+
+      --config-via-node
+          Evaluate a JavaScript configuration with the local Node instead of the sandbox
+
+      --strict-compat
+          Refuse what dependency-cruiser would refuse (nested quantifiers, Rulebearing additions)
+
+      --require-comment-token
+          Require a decision token (`adr:NNNN` or `plan:<slug>`) in every rule's comment
+
+      --watch
+          Keep the findings current: check the watched files every --interval milliseconds, check
+          again what was saved, and stop when standard input closes
+
+      --interval <MS>
+          With --watch: milliseconds to wait between two checks of the watched files
+          
+          [default: 25]
+
+      --mode <MODE>
+          How .NET is read: source (the default here, no build needed) or compiled
+
+          Possible values:
+          - compiled: From the built assemblies and their portable PDBs: the gate
+          - source:   From the .cs files, without a build: namespace-level, every edge approximate,
+            never the gate
+
+      --sidecar <RUNTIME>
+          As `cruise --sidecar`
+
+          Possible values:
+          - node: The repository's dependency-cruiser, run by the node on the path (or
+            `$RULEBEARING_NODE`)
+
+  -A, --affected [<REVISION>]
+          As `cruise --affected`
+
+      --affected-depth <NUMBER>
+          As `cruise --affected-depth`
+
+      --liveness <MODE>
+          As `cruise --liveness`
+
+          Possible values:
+          - strict: Fails the run with exit 2 (the default for a native configuration)
+          - warn:   Reported in `summary.vacuousRules` and on stderr, without changing the exit code
+            (the default for a dependency-cruiser configuration, which dependency-cruiser does not
+            check)
+          - off:    Not checked
+
+      --no-liveness
+          As `cruise --no-liveness`
+
+      --max-findings <N>
+          As `cruise --max-findings`
+
+  -h, --help
+          Print help (see a summary with '-h')
