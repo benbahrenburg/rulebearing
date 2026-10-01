@@ -17,6 +17,9 @@ serde_json = { workspace = true }
 regex = { workspace = true }
 chrono = { workspace = true }
 thiserror = { workspace = true }
+# The per-module stages of `evaluate` run in parallel, order preserved (plan 0003, Step 16;
+# NFR-PERF-03).
+rayon = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
