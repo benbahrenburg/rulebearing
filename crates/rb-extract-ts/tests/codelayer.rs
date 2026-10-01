@@ -157,6 +157,7 @@ fn an_incremental_run_links_the_same_code_layer() -> Result<(), Box<dyn Error>> 
             changed: changed.clone(),
             unchanged,
             previous: full.clone(),
+            walk_unchanged: false,
         };
         let again = rb_extract_ts::extract_incremental(&roots, &settings, &config, &request)?;
         assert_eq!(serialise(&again)?, expected, "{changed:?} changed");

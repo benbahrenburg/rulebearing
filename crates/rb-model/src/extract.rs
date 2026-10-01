@@ -43,6 +43,28 @@ pub struct Extraction {
     /// `summary.sidecar`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sidecar: Option<SidecarReceipt>,
+    /// The walk of the inputs that found the initial files, when the caller asked the extractor
+    /// to keep it ([`Walk`]); absent otherwise, and from an extractor that does not walk. A
+    /// later incremental run whose caller has seen none of the walk's folders change can start
+    /// from it instead of listing the folders again ([`ExtractRequest::walk_unchanged`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub walk: Option<Walk>,
+}
+
+/// What an extractor's walk of the inputs found: the initial files, in the order the walk visits
+/// them, and every folder it listed to find them
+/// ([Wave 3, Step 16](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof),
+/// [NFR-PERF-03](../../../docs/prd.md#nfr-perf-03)). The sources follow only from the folders'
+/// entries, the inputs and the options, so while no entry of any folder is added, removed or
+/// renamed, and neither the inputs nor the options change, walking again finds the same sources.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Walk {
+    /// The initial files, as module sources, in the walk's order.
+    pub sources: Vec<String>,
+    /// Every folder listed, as the file system names it (relative paths against the working
+    /// directory), each once, sorted.
+    pub folders: Vec<PathBuf>,
 }
 
 /// What an extractor keeps of one file so a later run can reuse the file's result without
@@ -76,6 +98,11 @@ pub struct ExtractRequest {
     pub unchanged: Vec<PathBuf>,
     /// The earlier extraction.
     pub previous: Extraction,
+    /// The caller's guarantee that `previous.walk` still holds: since `previous`, no entry was
+    /// added to, removed from or renamed in any of its folders, and the inputs and the options
+    /// are the same, so the extractor may take the initial files from it instead of walking
+    /// again. `false` (the default) promises nothing, and the extractor walks.
+    pub walk_unchanged: bool,
 }
 
 impl ExtractRequest {
@@ -256,6 +283,10 @@ mod tests {
                 version: "18.2.0".to_owned(),
                 files: 1,
             }),
+            walk: Some(Walk {
+                sources: vec!["a.py".to_owned()],
+                folders: vec![PathBuf::from(".")],
+            }),
         };
         let text = serde_json::to_string(&extraction)?;
         assert!(text.contains(r#""files":{"a.py""#), "{text}");
@@ -266,12 +297,17 @@ mod tests {
             "{text}"
         );
         assert!(!text.contains(r#""code":null"#), "{text}");
+        assert!(
+            text.contains(r#""walk":{"sources":["a.py"],"folders":["."]}"#),
+            "{text}"
+        );
         assert_eq!(serde_json::from_str::<Extraction>(&text)?, extraction);
         let empty = serde_json::to_string(&Extraction::default())?;
         assert!(
             !empty.contains(r#""files":{"#)
                 && !empty.contains("warnings")
-                && !empty.contains("sidecar"),
+                && !empty.contains("sidecar")
+                && !empty.contains("walk"),
             "{empty}"
         );
         Ok(())
@@ -287,6 +323,7 @@ mod tests {
                 PathBuf::from("././d.ts"),
             ],
             previous: Extraction::default(),
+            walk_unchanged: false,
         };
         let sources: Vec<String> = request.unchanged_sources().into_iter().collect();
         assert_eq!(sources, ["d.ts", "src/a.ts", "src/c.ts"]);

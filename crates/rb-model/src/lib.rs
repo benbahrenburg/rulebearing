@@ -46,7 +46,7 @@ pub use document::{
     SidecarReceipt, Summary, TranspilerFound, VacuousRule, Violation, ViolationMetrics,
 };
 pub use extract::{
-    ExtractError, ExtractRequest, Extraction, Extractor, FileState, Warning, source_name,
+    ExtractError, ExtractRequest, Extraction, Extractor, FileState, Walk, Warning, source_name,
 };
 pub use options::{
     CacheOptions, CacheStrategy, DirectoryFilter, DotnetMode, DotnetOptions, PythonOptions,

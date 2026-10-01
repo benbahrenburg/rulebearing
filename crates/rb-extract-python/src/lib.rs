@@ -635,6 +635,7 @@ pub fn extract_incremental(
         warnings,
         files: states,
         sidecar: None,
+        walk: None,
     })
 }
 

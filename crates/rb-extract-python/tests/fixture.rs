@@ -357,6 +357,7 @@ fn an_incremental_run_equals_the_full_one() -> Result<(), Box<dyn Error>> {
             changed: changed.clone(),
             unchanged,
             previous: full.clone(),
+            walk_unchanged: false,
         };
         let again = rb_extract_python::extract_incremental(&[], &settings, &request)?;
         assert_eq!(serialise(&again)?, expected, "{changed:?} changed");
@@ -384,6 +385,7 @@ fn an_unchanged_file_comes_from_the_earlier_state_not_the_disk() -> Result<(), B
         changed: Vec::new(),
         unchanged: vec![PathBuf::from(source)],
         previous: previous.clone(),
+        walk_unchanged: false,
     };
     let reused = rb_extract_python::extract_incremental(&[], &settings, &request)?;
     let module = reused.modules.iter().find(|m| m.source == source);
@@ -400,6 +402,7 @@ fn an_unchanged_file_comes_from_the_earlier_state_not_the_disk() -> Result<(), B
             changed: vec![PathBuf::from(source)],
             unchanged: vec![PathBuf::from(source)],
             previous: previous.clone(),
+            walk_unchanged: false,
         },
         rb_model::ExtractRequest {
             changed: Vec::new(),
@@ -408,6 +411,7 @@ fn an_unchanged_file_comes_from_the_earlier_state_not_the_disk() -> Result<(), B
                 files: std::collections::BTreeMap::new(),
                 ..previous.clone()
             },
+            walk_unchanged: false,
         },
     ] {
         let read = rb_extract_python::extract_incremental(&[], &settings, &request)?;

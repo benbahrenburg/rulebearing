@@ -331,6 +331,121 @@ fn a_saved_file_is_checked_again_within_100_ms_and_stdin_closing_stops_it() -> R
     Ok(())
 }
 
+/// Stops a daemon by closing its standard input, as the agent's session does.
+fn stop(mut daemon: Daemon) -> Result {
+    drop(daemon.0.stdin.take());
+    let start = Instant::now();
+    while daemon.0.try_wait()?.is_none() {
+        if start.elapsed() > Duration::from_secs(10) {
+            return Err("guard did not stop when standard input closed".into());
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    Ok(())
+}
+
+/// The incremental checks start from the earlier walk's files, so whatever could change what the
+/// walk finds is read in full: a file in a folder that held no source, or a new folder. Each
+/// answer is the one a cold hook gives for the same tree.
+#[test]
+fn what_the_walk_would_find_anew_is_read_in_full_and_answers_as_a_cold_run() -> Result {
+    let dir = tree("walk", 20)?;
+    // A folder the walk lists that holds no source, so no source's folder is it.
+    std::fs::create_dir_all(dir.join("src/ui/assets"))?;
+    std::fs::write(dir.join("src/ui/assets/logo.svg"), "<svg/>\n")?;
+    let daemon = watch(&dir)?;
+    until(&dir, Duration::from_secs(60), |f| {
+        f["answer"]
+            .as_str()
+            .is_some_and(|a| a.contains("ui-not-to-db"))
+    })?;
+    // A save that adds an import: checked again alone, from the earlier walk.
+    std::fs::write(
+        dir.join("src/services/s3.ts"),
+        "import { s2 } from \"./s2\";\nimport { store } from \"../db/store\";\nexport const s3 = s2 + store;\n",
+    )?;
+    until(&dir, Duration::from_secs(10), |f| {
+        f["rechecked"] == serde_json::json!(["src/services/s3.ts"])
+    })?;
+    // A source added to the folder that held none.
+    std::fs::write(
+        dir.join("src/ui/assets/icon.ts"),
+        "import { store } from \"../../db/store\";\nexport const icon = store;\n",
+    )?;
+    until(&dir, Duration::from_secs(60), |f| {
+        f["rechecked"] == serde_json::json!([])
+            && f["answer"]
+                .as_str()
+                .is_some_and(|a| a.contains("src/ui/assets/icon.ts"))
+    })?;
+    // A new folder with a source in it.
+    std::fs::create_dir_all(dir.join("src/ui/nested"))?;
+    std::fs::write(
+        dir.join("src/ui/nested/deep.ts"),
+        "import { store } from \"../../db/store\";\nexport const deep = store;\n",
+    )?;
+    until(&dir, Duration::from_secs(60), |f| {
+        f["rechecked"] == serde_json::json!([])
+            && f["answer"]
+                .as_str()
+                .is_some_and(|a| a.contains("src/ui/nested/deep.ts"))
+    })?;
+    // Then a save, checked alone again, whose answer is a cold run's.
+    std::fs::write(
+        dir.join("src/ui/page.ts"),
+        "import { s3 } from \"../services/s3\";\nexport const page = s3;\n",
+    )?;
+    let last = until(&dir, Duration::from_secs(10), |f| {
+        f["rechecked"] == serde_json::json!(["src/ui/page.ts"])
+    })?;
+    stop(daemon)?;
+    let cold = hook(&dir, &[])?;
+    assert_eq!(
+        last["answer"].as_str().map(str::as_bytes),
+        Some(cold.stdout.as_slice())
+    );
+    std::fs::remove_dir_all(&dir)?;
+    Ok(())
+}
+
+/// An incremental check that fails has used up the earlier extraction, so the next change reads
+/// everything again, and the answer is a cold run's.
+#[cfg(unix)]
+#[test]
+fn after_a_failed_check_the_next_change_reads_everything() -> Result {
+    use std::os::unix::fs::PermissionsExt as _;
+    let dir = tree("failed", 5)?;
+    let daemon = watch(&dir)?;
+    until(&dir, Duration::from_secs(60), |f| {
+        f["answer"]
+            .as_str()
+            .is_some_and(|a| a.contains("ui-not-to-db"))
+    })?;
+    // A save the guard cannot read.
+    let page = dir.join("src/ui/page.ts");
+    std::fs::write(&page, "export const page = 0;\n")?;
+    std::fs::set_permissions(&page, std::fs::Permissions::from_mode(0o000))?;
+    let failed = until(&dir, Duration::from_secs(10), |f| f["error"].is_string());
+    std::fs::set_permissions(&page, std::fs::Permissions::from_mode(0o644))?;
+    failed?;
+    std::fs::write(
+        dir.join("src/services/s1.ts"),
+        "import { s0 } from \"./s0\";\nexport const s1 = s0 + 1;\n",
+    )?;
+    let again = until(&dir, Duration::from_secs(60), |f| {
+        f["error"].is_null() && f["rechecked"] == serde_json::json!([])
+    })?;
+    stop(daemon)?;
+    let cold = hook(&dir, &[])?;
+    assert_eq!(
+        again["answer"].as_str().map(str::as_bytes),
+        Some(cold.stdout.as_slice())
+    );
+    assert_eq!(again["answer"], "", "the unreadable save was read: {again}");
+    std::fs::remove_dir_all(&dir)?;
+    Ok(())
+}
+
 fn copy(from: &Path, to: &Path) -> Result {
     std::fs::create_dir_all(to)?;
     for entry in std::fs::read_dir(from)? {

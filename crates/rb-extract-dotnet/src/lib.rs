@@ -675,6 +675,7 @@ impl Extractor for DotnetExtractor {
             warnings,
             files: BTreeMap::new(),
             sidecar: None,
+            walk: None,
         })
     }
 }

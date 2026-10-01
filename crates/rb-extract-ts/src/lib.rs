@@ -28,6 +28,7 @@
 //! | [`codelayer`] | classes, interfaces, enums, type aliases, functions, members, decorators and calls |
 //! | [`collate`] | JavaScript's `localeCompare` order, which dependency-cruiser sorts with |
 //! | [`pipeline`] | files to resolved, filtered, sorted dependencies, and the reachable modules |
+//! | [`incremental`] | an incremental run that keeps the earlier extraction's unchanged modules |
 //! | [`sidecar`] | `--sidecar node`: CoffeeScript and LiveScript through the repository's own dependency-cruiser |
 //!
 //! `checksum` is left absent on every module: dependency-cruiser computes it only in its cache
@@ -38,6 +39,7 @@ pub mod codelayer;
 /// JavaScript's `localeCompare` order, shared with the engine through `rb-model`.
 pub use rb_model::collate;
 pub mod core;
+pub mod incremental;
 pub mod jsdoc;
 pub mod md;
 pub mod npm;
@@ -71,6 +73,20 @@ pub const SIDECAR_EXTENSIONS: &[&str] = &["coffee", "litcoffee", "ls", "cjsx", "
 /// Whether a path is one this extractor parses natively.
 pub fn owns(path: &str) -> bool {
     extension(path).is_some_and(|e| EXTENSIONS.contains(&e))
+}
+
+/// Whether a walk with `options` gathers a file named `name` it meets in a folder, before the
+/// path filters ([`pipeline::scanned`]). A caller that watches the folders of a kept walk
+/// ([`rb_model::Walk`]) compares these names and the subfolders: no other entry can change the
+/// walk's sources.
+pub fn gathers(options: &TypeScriptOptions, name: &str) -> bool {
+    pipeline::scanned(
+        options
+            .extra_extensions_to_scan
+            .as_deref()
+            .unwrap_or_default(),
+        name,
+    )
 }
 
 /// Whether a path needs the sidecar.
@@ -416,7 +432,7 @@ pub fn prepare(
 
 /// A dependency the walk kept, as the document writes it. One of a file the sidecar extracted
 /// carries `sidecar: true` and no position, which dependency-cruiser does not record.
-fn to_dependency(extracted: &Extracted, by_sidecar: bool) -> Dependency {
+pub(crate) fn to_dependency(extracted: &Extracted, by_sidecar: bool) -> Dependency {
     let position = |at: u32| (!by_sidecar).then_some(at);
     Dependency {
         protocol: extracted.protocol,
@@ -464,14 +480,17 @@ pub fn extract_with(
     settings: &Settings,
     config: &ResolveConfig,
 ) -> Result<Extraction, ExtractError> {
+    let walk = pipeline::gather_walk(&inputs(roots), settings)?;
     let walked = sidecar::extract_modules(
-        &inputs(roots),
+        &walk.sources,
         settings,
         config,
         &std::collections::BTreeMap::new(),
         None,
     )?;
-    finish(walked, settings)
+    let mut extraction = finish(walked, settings)?;
+    extraction.walk = settings.keep_walk.then_some(walk);
+    Ok(extraction)
 }
 
 /// The walk as an [`Extraction`], with the sidecar's receipt and, off the pinned version, its
@@ -524,12 +543,19 @@ pub fn from_dependency(dependency: &Dependency) -> Extracted {
 
 /// Why an incremental extraction reads every file instead of reusing the unchanged ones, or
 /// `None` when reuse is exact: `exclude.dynamic` removes, after the walk, dependencies the walk
-/// followed, so the modules no longer carry each file's result. (A file whose code layer before
-/// linking was not kept, [`Settings::keep_file_states`], is read on its own account.)
+/// followed, so the modules no longer carry each file's result; and under `maxDepth` a file the
+/// earlier walk met at the limit was not read, so its module (no dependencies) is not the file's
+/// result once an edit brings it nearer. (A file whose code layer before linking was not kept,
+/// [`Settings::keep_file_states`], is read on its own account.)
 pub fn reuse_refused(settings: &Settings) -> Option<&'static str> {
     if settings.exclude.as_ref().and_then(|f| f.dynamic).is_some() {
         return Some(
             "exclude.dynamic removed dependencies the walk followed, so the kept ones are not the file's result",
+        );
+    }
+    if settings.max_depth != 0 {
+        return Some(
+            "maxDepth left the files met at the limit unread, so their modules are not the files' results",
         );
     }
     None
@@ -541,12 +567,82 @@ pub fn reuse_refused(settings: &Settings) -> Option<&'static str> {
 /// The result equals [`extract_with`]'s, module order included, when the caller's precondition
 /// holds: no file was added, deleted or renamed and no manifest changed since `previous`, so
 /// every unchanged file resolves as it did. When [`reuse_refused`] gives a reason, every file is
-/// read.
+/// read. This borrows the request and copies `previous`; [`extract_incremental_from`] takes it.
 ///
 /// # Errors
 /// As [`extract_with`].
 pub fn extract_incremental(
     roots: &[PathBuf],
+    settings: &Settings,
+    config: &ResolveConfig,
+    request: &rb_model::ExtractRequest,
+) -> Result<Extraction, ExtractError> {
+    extract_incremental_from(roots, settings, config, request.clone())
+}
+
+/// [`extract_incremental`], taking the request, so the unchanged files' modules, file states and
+/// code layer move from `request.previous` into the result instead of being copied
+/// ([Wave 3, Step 16](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
+/// With `request.walk_unchanged` and a walk kept in `previous`, the initial sources are the
+/// walk's and no folder is listed again; otherwise the inputs are walked. Where
+/// [`incremental::applies`], the walk replays over the earlier modules as they stand
+/// ([`incremental::replay`]); elsewhere each unchanged file's result is rebuilt from its module
+/// for the pipeline's walk. Both give [`extract_with`]'s result.
+///
+/// # Errors
+/// As [`extract_with`].
+pub fn extract_incremental_from(
+    roots: &[PathBuf],
+    settings: &Settings,
+    config: &ResolveConfig,
+    mut request: rb_model::ExtractRequest,
+) -> Result<Extraction, ExtractError> {
+    let kept = if request.walk_unchanged {
+        request.previous.walk.take()
+    } else {
+        None
+    };
+    let walk = match kept {
+        Some(walk) => walk,
+        None => pipeline::gather_walk(&inputs(roots), settings)?,
+    };
+    let mut extraction = if incremental::applies(settings) {
+        // Asked only, never iterated.
+        let unchanged: std::collections::HashSet<std::borrow::Cow<'_, str>> =
+            request.unchanged.iter().map(|p| as_source(p)).collect();
+        let changed: std::collections::HashSet<std::borrow::Cow<'_, str>> =
+            request.changed.iter().map(|p| as_source(p)).collect();
+        // As the pipeline's reuse below: an unchanged file, not also named changed, and only the
+        // sidecar stands behind a CoffeeScript or LiveScript result.
+        let reusable = |module: &rb_model::Module| {
+            unchanged.contains(module.source.as_str())
+                && !changed.contains(module.source.as_str())
+                && !needs_sidecar(&module.source)
+        };
+        let previous = std::mem::take(&mut request.previous);
+        incremental::replay(&walk.sources, settings, config, reusable, previous)?
+    } else {
+        rebuilt(&walk.sources, settings, config, &request)?
+    };
+    extraction.walk = settings.keep_walk.then_some(walk);
+    Ok(extraction)
+}
+
+/// A path as a module source, as [`rb_model::source_name`] spells it, borrowed when it is
+/// spelled so already.
+fn as_source(path: &Path) -> std::borrow::Cow<'_, str> {
+    match path.to_str() {
+        Some(text) if !text.contains('\\') && !text.starts_with("./") => {
+            std::borrow::Cow::Borrowed(text)
+        }
+        _ => std::borrow::Cow::Owned(rb_model::source_name(path)),
+    }
+}
+
+/// The incremental run of the pipeline's own walk: each reusable file's result rebuilt from its
+/// earlier module, the rest read, from the initial sources `initial`.
+fn rebuilt(
+    initial: &[String],
     settings: &Settings,
     config: &ResolveConfig,
     request: &rb_model::ExtractRequest,
@@ -600,7 +696,7 @@ pub fn extract_incremental(
         .sidecar
         .as_ref()
         .map(|r| r.version.as_str());
-    let walked = sidecar::extract_modules(&inputs(roots), settings, config, &reused, earlier)?;
+    let walked = sidecar::extract_modules(initial, settings, config, &reused, earlier)?;
     finish(walked, settings)
 }
 
@@ -686,6 +782,7 @@ pub fn to_extraction(
         warnings: Vec::new(),
         files: states,
         sidecar: None,
+        walk: None,
     })
 }
 
@@ -776,6 +873,64 @@ mod tests {
         assert_eq!(config.alias_fields, ["browser"]);
         let default = resolve_config(&TypeScriptOptions::default());
         assert!(default.symlinks && !default.yarn_pnp);
+    }
+
+    #[test]
+    fn the_walk_gathers_scannable_names_and_the_extra_extensions() {
+        let plain = TypeScriptOptions::default();
+        for (name, gathered) in [
+            ("a.ts", true),
+            ("a.d.ts", true),
+            ("a.vue", true),
+            ("a.coffee", true),
+            ("a.md", false),
+            ("a.json", false),
+            (".a.ts.swp", false),
+            ("4913", false),
+        ] {
+            assert_eq!(gathers(&plain, name), gathered, "{name}");
+        }
+        let extra = TypeScriptOptions {
+            extra_extensions_to_scan: Some(vec![".md".to_owned()]),
+            ..TypeScriptOptions::default()
+        };
+        assert!(gathers(&extra, "a.md"));
+    }
+
+    #[test]
+    fn a_path_is_named_as_a_source_as_the_model_names_it() {
+        for path in [
+            "src/a.ts",
+            "./a.ts",
+            "././d.ts",
+            "src\\c.ts",
+            "",
+            ".x/y.ts",
+            "a/./b.ts",
+        ] {
+            let path = Path::new(path);
+            assert_eq!(
+                as_source(path),
+                rb_model::source_name(path),
+                "{}",
+                path.display()
+            );
+        }
+        assert!(matches!(
+            as_source(Path::new("src/a.ts")),
+            std::borrow::Cow::Borrowed("src/a.ts")
+        ));
+    }
+
+    proptest::proptest! {
+        #[test]
+        fn as_source_agrees_with_source_name(
+            parts in proptest::collection::vec("[a-z.\\\\/]{0,4}", 0..5)
+        ) {
+            let text = parts.concat();
+            let path = Path::new(&text);
+            proptest::prop_assert_eq!(as_source(path), rb_model::source_name(path));
+        }
     }
 
     #[test]
