@@ -73,6 +73,7 @@ fn with_incremental(
             changed: changed.clone(),
             unchanged,
             previous: full.clone(),
+            walk_unchanged: false,
         };
         let again = extract_incremental(roots, &settings, &config, &request)?;
         assert_eq!(
@@ -1554,6 +1555,7 @@ fn tampered(options: &str, keep: bool) -> Result<(Extraction, Extraction), Extra
         changed: Vec::new(),
         unchanged,
         previous,
+        walk_unchanged: false,
     };
     Ok((
         full,

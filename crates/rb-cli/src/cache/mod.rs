@@ -475,6 +475,8 @@ fn decide(
                 .filter(|s| !changed.contains(s))
                 .collect(),
             previous: part.clone().unwrap_or_default(),
+            // The cache sees a folder's entries only as one of its inputs, and keeps no walk.
+            walk_unchanged: false,
         })
     };
     let plans = Plans {
@@ -488,6 +490,7 @@ fn decide(
             Plan::Reuse(parts.dotnet.clone())
         },
         keep_file_states: true,
+        keep_walk: false,
     };
     Some((
         plans,
@@ -788,7 +791,7 @@ pub fn extract_cached(
         strategy: options.strategy,
     };
     let extract = |(plans, served): (Plans, Served), verified: BTreeMap<String, String>| {
-        let parts = pipeline::extract_parts(ctx, config, paths, &plans)?;
+        let parts = pipeline::extract_parts(ctx, config, paths, plans)?;
         let (document, warnings) = pipeline::merge(config, &parts)?;
         let pending = Pending {
             cwd: ctx.cwd.clone(),

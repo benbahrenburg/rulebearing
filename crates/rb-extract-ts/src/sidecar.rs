@@ -549,16 +549,17 @@ fn failed(file: Option<&String>, error: &SidecarError) -> rb_model::ExtractError
     }
 }
 
-/// The walk over `inputs`, with `reused` standing in for the files it names, and with the sidecar
-/// when [`Settings::sidecar`] is set (see the module doc). Without the sidecar this is
-/// [`pipeline::extract_reusing`], and a CoffeeScript or LiveScript file the walk reaches stops it
+/// The walk from `initial` (the inputs' initial sources, [`pipeline::gather_initial_sources`]),
+/// with `reused` standing in for the files it names, and with the sidecar when
+/// [`Settings::sidecar`] is set (see the module doc). Without the sidecar this is
+/// [`pipeline::extract_reusing_from`], and a CoffeeScript or LiveScript file the walk reaches stops it
 /// with [`crate::SIDECAR_REASON`]. `earlier` is the version of an earlier extraction whose
 /// sidecar files `reused` holds.
 ///
 /// # Errors
-/// As [`pipeline::extract_reusing`], and a sidecar failure named on the file that needed it.
+/// As [`pipeline::extract_reusing_from`], and a sidecar failure named on the file that needed it.
 pub fn extract_modules(
-    inputs: &[String],
+    initial: &[String],
     settings: &Settings,
     config: &ResolveConfig,
     reused: &BTreeMap<String, Reused>,
@@ -566,7 +567,7 @@ pub fn extract_modules(
 ) -> Result<Walked, rb_model::ExtractError> {
     let Some(block) = &settings.sidecar else {
         return Ok(Walked {
-            modules: pipeline::extract_reusing(inputs, settings, config, reused)?,
+            modules: pipeline::extract_reusing_from(initial, settings, config, reused)?,
             version: None,
         });
     };
@@ -575,7 +576,7 @@ pub fn extract_modules(
     let mut version = earlier.map(str::to_owned);
     let configuration = configuration(block, config);
     loop {
-        let pending = pipeline::sidecar_pending(inputs, settings, config, &mut reused)?;
+        let pending = pipeline::sidecar_pending(initial, settings, config, &mut reused);
         if pending.is_empty() {
             break;
         }
@@ -600,7 +601,7 @@ pub fn extract_modules(
             });
         }
     }
-    let modules = pipeline::extract_reusing(inputs, settings, config, &reused)?;
+    let modules = pipeline::extract_reusing_from(initial, settings, config, &reused)?;
     let read_by_sidecar = modules
         .iter()
         .find(|m| m.as_dependency.is_none() && crate::needs_sidecar(&m.source));

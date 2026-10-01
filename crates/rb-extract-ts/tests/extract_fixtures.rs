@@ -25,8 +25,13 @@
 //! ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
 //! with every file unchanged, every file changed, and each file changed on its own, the
 //! extraction [`rb_extract_ts::extract_incremental`] gives must equal the full one byte for
-//! byte, module order included. It prints `layer1-incremental: cases=<n> variants=<v>` and fails
-//! on any difference.
+//! byte, module order included. Each variant runs without file states, then keeping them and the
+//! walk (compared too): walking the inputs again, taking the earlier walk as
+//! [`rb_model::ExtractRequest::walk_unchanged`] promises
+//! ([Wave 3, Step 16](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)),
+//! and from an earlier extraction without its linked code layer, so the layer is linked again
+//! from the kept states. It prints `layer1-incremental: cases=<n> variants=<v>` and fails on any
+//! difference.
 //!
 //! A case whose file only the Node sidecar reads (CoffeeScript, LiveScript) is replayed through
 //! the sidecar ([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
@@ -673,12 +678,15 @@ fn incremental_variants(root: &Path, case: &Case) -> Result<usize, String> {
     let Ok(modules) = pipeline::extract(&files, &settings, &config) else {
         return Ok(0);
     };
-    let Ok(full) = rb_extract_ts::to_extraction(modules, &settings) else {
+    let Ok(mut full) = rb_extract_ts::to_extraction(modules, &settings) else {
         return Ok(0);
     };
+    full.walk = pipeline::gather_walk(&files, &settings).ok();
+    let with_states = serde_json::to_string(&full).map_err(|e| e.to_string())?;
     let without_states = |e: &rb_model::Extraction| {
         let mut e = e.clone();
         e.files.clear();
+        e.walk = None;
         serde_json::to_string(&e).map_err(|e| e.to_string())
     };
     let expected = without_states(&full)?;
@@ -694,21 +702,47 @@ fn incremental_variants(root: &Path, case: &Case) -> Result<usize, String> {
         others.remove(index);
         variants.push((vec![file.clone()], others));
     }
-    let count = variants.len();
+    let mut count = 0;
+    // Each variant without states kept, then keeping them and the walk: once walking the inputs
+    // again, once taking the earlier walk as promised, and once from an earlier extraction
+    // without its linked code layer, so the layer is linked again from the kept states.
     for (changed, unchanged) in variants {
-        let (settings, config) = fresh()?;
-        let request = rb_model::ExtractRequest {
-            changed: changed.clone(),
-            unchanged,
-            previous: full.clone(),
-        };
-        let actual = rb_extract_ts::extract_incremental(&roots, &settings, &config, &request)
-            .map_err(|e| format!("changed {changed:?}: {e}"))?;
-        let actual = without_states(&actual)?;
-        if actual != expected {
-            return Err(format!(
-                "changed {changed:?}\nexpected {expected}\nactual   {actual}"
-            ));
+        for (keep, walk_unchanged, without_layer) in [
+            (false, false, false),
+            (true, false, false),
+            (true, true, false),
+            (true, true, true),
+        ] {
+            let (mut settings, config) = fresh()?;
+            settings.keep_file_states = keep;
+            settings.keep_walk = keep;
+            let mut previous = full.clone();
+            if without_layer {
+                previous.code = None;
+            }
+            let request = rb_model::ExtractRequest {
+                changed: changed.clone(),
+                unchanged: unchanged.clone(),
+                previous,
+                walk_unchanged,
+            };
+            let actual = rb_extract_ts::extract_incremental(&roots, &settings, &config, &request)
+                .map_err(|e| format!("changed {changed:?}: {e}"))?;
+            let (actual, expected) = if keep {
+                (
+                    serde_json::to_string(&actual).map_err(|e| e.to_string())?,
+                    &with_states,
+                )
+            } else {
+                (without_states(&actual)?, &expected)
+            };
+            if actual != *expected {
+                return Err(format!(
+                    "changed {changed:?}, states {keep}, walk unchanged {walk_unchanged}, \
+                     without the layer {without_layer}\nexpected {expected}\nactual   {actual}"
+                ));
+            }
+            count += 1;
         }
     }
     Ok(count)

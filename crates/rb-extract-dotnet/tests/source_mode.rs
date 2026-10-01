@@ -220,6 +220,7 @@ fn an_incremental_run_equals_a_full_one() -> Result<(), Box<dyn std::error::Erro
             changed: vec![changed.clone()],
             unchanged: sources.iter().filter(|s| *s != changed).cloned().collect(),
             previous: full.clone(),
+            walk_unchanged: false,
         };
         let again =
             rb_extract_dotnet::source::extract(&root, &source_options(), Some(&request), true)?;
@@ -234,6 +235,7 @@ fn an_incremental_run_equals_a_full_one() -> Result<(), Box<dyn std::error::Erro
         changed: Vec::new(),
         unchanged: sources,
         previous: corrupt,
+        walk_unchanged: false,
     };
     let again = rb_extract_dotnet::source::extract(&root, &source_options(), Some(&request), true)?;
     assert_eq!(again, full);

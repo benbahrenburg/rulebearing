@@ -493,6 +493,7 @@ pub fn extract(
         warnings,
         files: file_states,
         sidecar: None,
+        walk: None,
     })
 }
 

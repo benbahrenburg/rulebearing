@@ -151,6 +151,9 @@ pub struct Plans {
     pub python: Plan,
     /// Keep each file's state in [`Extraction::files`].
     pub keep_file_states: bool,
+    /// Keep the walk of the inputs in [`Extraction::walk`], for a caller that watches its
+    /// folders and can then promise [`ExtractRequest::walk_unchanged`] (`guard --watch`).
+    pub keep_walk: bool,
 }
 
 /// Whether a file with one of `names` sits in `root` (not below it): the signal that a language
@@ -248,12 +251,13 @@ pub fn extract_with_warnings(
     config: &Config,
     paths: &[String],
 ) -> Result<(GraphDocument, Vec<rb_model::Warning>), ExtractError> {
-    let parts = extract_parts(ctx, config, paths, &Plans::default())?;
+    let parts = extract_parts(ctx, config, paths, Plans::default())?;
     merge(config, &parts)
 }
 
 /// Runs each extractor as `plans` says, in the order [`merge`] joins them; the first error that
-/// makes the run untrustworthy stops it.
+/// makes the run untrustworthy stops it. The plans are taken, so an earlier extraction they carry
+/// moves into the result rather than being copied.
 ///
 /// # Errors
 /// As [`extract`].
@@ -283,27 +287,29 @@ pub fn extract_parts(
     ctx: &Context<'_>,
     config: &Config,
     paths: &[String],
-    plans: &Plans,
+    mut plans: Plans,
 ) -> Result<Parts, ExtractError> {
     let mut parts = Parts::default();
     #[cfg(feature = "extract-ts")]
     {
-        parts.typescript = typescript_part(ctx, config, paths, plans)?;
+        let plan = std::mem::take(&mut plans.typescript);
+        parts.typescript = typescript_part(ctx, config, paths, plan, &plans)?;
     }
     #[cfg(feature = "extract-dotnet")]
     {
-        parts.dotnet = match &plans.dotnet {
-            Plan::Reuse(part) => part.clone(),
-            Plan::Full | Plan::Incremental(_) if dotnet_enabled(ctx, config) => {
+        parts.dotnet = match std::mem::take(&mut plans.dotnet) {
+            Plan::Reuse(part) => part,
+            plan @ (Plan::Full | Plan::Incremental(_)) if dotnet_enabled(ctx, config) => {
+                plans.dotnet = plan;
                 let options = config.languages.dotnet.clone().unwrap_or_default();
-                found(dotnet_part(ctx, &options, plans))?
+                found(dotnet_part(ctx, &options, &plans))?
             }
             Plan::Full | Plan::Incremental(_) => None,
         };
     }
     #[cfg(feature = "extract-python")]
     {
-        parts.python = python_part(ctx, config, paths, plans)?;
+        parts.python = python_part(ctx, config, paths, &mut plans)?;
     }
     Ok(parts)
 }
@@ -374,10 +380,11 @@ fn typescript_part(
     ctx: &Context<'_>,
     config: &Config,
     paths: &[String],
+    plan: Plan,
     plans: &Plans,
 ) -> Result<Option<Extraction>, ExtractError> {
-    if let Plan::Reuse(part) = &plans.typescript {
-        return Ok(part.clone());
+    if let Plan::Reuse(part) = plan {
+        return Ok(part);
     }
     let roots: Vec<PathBuf> = if paths.is_empty() {
         vec![PathBuf::from(".")]
@@ -390,6 +397,7 @@ fn typescript_part(
     // file of `extraExtensionsToScan` read (ADR-0036).
     settings.markdown_fences = config.compat == rb_config::CompatMode::Native;
     settings.keep_file_states = plans.keep_file_states;
+    settings.keep_walk = plans.keep_walk;
     let mut warnings = Vec::new();
     // The webpack configuration's `resolve` block wins over `enhancedResolveOptions`, as
     // upstream spreads it last.
@@ -416,9 +424,9 @@ fn typescript_part(
     resolve.resolve_licenses = rb_rules::derive::has_license_rule(&config.rules.dependencies);
     resolve.resolve_deprecations =
         rb_rules::derive::has_deprecation_rule(&config.rules.dependencies);
-    let result = match &plans.typescript {
+    let result = match plan {
         Plan::Incremental(request) => {
-            rb_extract_ts::extract_incremental(&roots, &settings, &resolve, request)
+            rb_extract_ts::extract_incremental_from(&roots, &settings, &resolve, request)
         }
         Plan::Full | Plan::Reuse(_) => rb_extract_ts::extract_with(&roots, &settings, &resolve),
     };
@@ -442,10 +450,10 @@ fn python_part(
     ctx: &Context<'_>,
     config: &Config,
     paths: &[String],
-    plans: &Plans,
+    plans: &mut Plans,
 ) -> Result<Option<Extraction>, ExtractError> {
-    if let Plan::Reuse(part) = &plans.python {
-        return Ok(part.clone());
+    if let Plan::Reuse(part) = &mut plans.python {
+        return Ok(part.take());
     }
     if !python_enabled(ctx, config) {
         return Ok(None);

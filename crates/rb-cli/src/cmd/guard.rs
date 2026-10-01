@@ -21,11 +21,16 @@
 //!
 //! With `--watch` it then polls: every source file an extractor read, the files whose change
 //! moves resolution (the configuration, tsconfig and package manifests, solution and project
-//! files, the built assemblies in compiled mode), and the folders holding the sources. A saved
-//! source is extracted again alone, through the extractor's incremental entry, and the answer
-//! rewritten; a changed structural file, or a source added to or removed from a folder, reads
-//! everything again. While nothing changes the file is rewritten every [`HEARTBEAT_MS`], so its
-//! age says the daemon is alive and has seen every change up to then. .NET is read in source mode
+//! files, the built assemblies in compiled mode), the folders holding the sources, and every
+//! folder the TypeScript walk listed to find its initial files. A saved source is extracted again
+//! alone, through the extractor's incremental entry, and the answer rewritten; a changed
+//! structural file, a source added to or removed from a folder, or a file the walk gathers or a
+//! subfolder added to or removed from a folder it listed, reads everything again. So while
+//! nothing reads everything again, the walk's folders are unchanged and the incremental run starts
+//! from the earlier walk's initial files instead of listing every folder again
+//! ([`rb_model::ExtractRequest::walk_unchanged`]). An incremental run that fails has taken the
+//! earlier extraction with it, so the next change reads everything again. While nothing changes
+//! the file is rewritten every [`HEARTBEAT_MS`], so its age says the daemon is alive and has seen every change up to then. .NET is read in source mode
 //! unless `--mode compiled` is given, since a daemon that waited for a build would not be one.
 //! It polls rather than subscribing to file-system events: `notify` is CC0-1.0, outside the
 //! licence allow-list, and the plan names polling as the fallback (§ 1.8). It writes nothing
@@ -314,6 +319,11 @@ struct Watched {
     structural: BTreeMap<PathBuf, Stamp>,
     /// Each folder holding a source: its stamp and the relevant names it held.
     folders: BTreeMap<PathBuf, (Stamp, BTreeSet<String>)>,
+    /// Each folder the TypeScript walk listed: its stamp and the entries that can change what
+    /// the walk gathers ([`walk_listing`]).
+    walked: BTreeMap<PathBuf, (Stamp, BTreeSet<String>)>,
+    /// The TypeScript options the walk ran with.
+    typescript: rb_model::TypeScriptOptions,
     /// `.cs` files are sources.
     cs: bool,
 }
@@ -352,10 +362,44 @@ fn listing(folder: &Path, cs: bool) -> BTreeSet<String> {
         .unwrap_or_default()
 }
 
+/// The entries of a folder the TypeScript walk listed that can change what it gathers: each
+/// subfolder, marked with a trailing `/`, and each file the walk gathers by its name
+/// ([`rb_extract_ts::gathers`]). Any other entry (an editor's swap file, say) changes nothing.
+fn walk_listing(folder: &Path, options: &rb_model::TypeScriptOptions) -> BTreeSet<String> {
+    let gathers = |name: &str| {
+        #[cfg(feature = "extract-ts")]
+        {
+            rb_extract_ts::gathers(options, name)
+        }
+        #[cfg(not(feature = "extract-ts"))]
+        {
+            let _ = (options, name);
+            false
+        }
+    };
+    std::fs::read_dir(folder)
+        .map(|entries| {
+            entries
+                .flatten()
+                .filter_map(|e| {
+                    let name = e.file_name().to_string_lossy().into_owned();
+                    // As the walk tells them apart: through a symbolic link.
+                    if std::fs::metadata(e.path()).is_ok_and(|m| m.is_dir()) {
+                        Some(format!("{name}/"))
+                    } else {
+                        gathers(&name).then_some(name)
+                    }
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 impl Watched {
     fn of(ctx: &Context<'_>, config: &Config, parts: &Parts) -> Self {
         let mut watched = Self {
             cs: pipeline::dotnet_source_mode(config),
+            typescript: config.languages.typescript.clone(),
             ..Self::default()
         };
         let base = ctx.cwd.join(
@@ -417,6 +461,14 @@ impl Watched {
                 .folders
                 .insert(folder.clone(), (stamp(&folder), names));
         }
+        let walked = parts.typescript.iter().filter_map(|t| t.walk.as_ref());
+        for folder in walked.flat_map(|w| &w.folders) {
+            let folder = ctx.resolve(folder);
+            let names = walk_listing(&folder, &watched.typescript);
+            watched
+                .walked
+                .insert(folder.clone(), (stamp(&folder), names));
+        }
         watched
     }
 
@@ -434,6 +486,18 @@ impl Watched {
                 if listing(folder, self.cs) != *names {
                     return Change::Structural(format!(
                         "a file was added to or removed from {}",
+                        shown(folder)
+                    ));
+                }
+                *recorded = now;
+            }
+        }
+        for (folder, (recorded, names)) in &mut self.walked {
+            let now = stamp(folder);
+            if now != *recorded {
+                if walk_listing(folder, &self.typescript) != *names {
+                    return Change::Structural(format!(
+                        "a file or folder was added to or removed from {}",
                         shown(folder)
                     ));
                 }
@@ -462,34 +526,40 @@ impl Watched {
     }
 }
 
-/// The plans that read the changed sources again and reuse everything else.
-fn plans(parts: &Parts, changed: &[(Part, String, PathBuf)]) -> Plans {
-    let plan = |part: Part, extraction: &Option<Extraction>| {
+/// The plans that read the changed sources again and reuse everything else, taking the parts
+/// out of `parts` so they move into the next extraction rather than being copied. The TypeScript
+/// request promises the walk unchanged: a change to any folder it listed is structural
+/// ([`Watched::check`]), so no check that reaches here saw one.
+fn plans(parts: &mut Parts, changed: &[(Part, String, PathBuf)]) -> Plans {
+    let plan = |part: Part, extraction: &mut Option<Extraction>| {
         let names: Vec<PathBuf> = changed
             .iter()
             .filter(|(p, _, _)| *p == part)
             .map(|(_, name, _)| PathBuf::from(name))
             .collect();
         if names.is_empty() {
-            return Plan::Reuse(extraction.clone());
+            return Plan::Reuse(extraction.take());
         }
-        let unchanged = extraction
-            .iter()
-            .flat_map(|e| e.files.keys())
+        let previous = extraction.take().unwrap_or_default();
+        let unchanged = previous
+            .files
+            .keys()
             .map(PathBuf::from)
             .filter(|n| !names.contains(n))
             .collect();
         Plan::Incremental(ExtractRequest {
             changed: names,
             unchanged,
-            previous: extraction.clone().unwrap_or_default(),
+            previous,
+            walk_unchanged: part == Part::TypeScript,
         })
     };
     Plans {
-        typescript: plan(Part::TypeScript, &parts.typescript),
-        dotnet: plan(Part::Dotnet, &parts.dotnet),
-        python: plan(Part::Python, &parts.python),
+        typescript: plan(Part::TypeScript, &mut parts.typescript),
+        dotnet: plan(Part::Dotnet, &mut parts.dotnet),
+        python: plan(Part::Python, &mut parts.python),
         keep_file_states: true,
+        keep_walk: true,
     }
 }
 
@@ -499,10 +569,18 @@ struct State {
     effective: Config,
     parts: Parts,
     watched: Watched,
+    /// An incremental extraction failed after taking the parts: the next change reads
+    /// everything again.
+    stale: bool,
 }
 
 /// Loads the configuration and extracts in full.
 fn build(ctx: &mut Context<'_>, hook: &CruiseArgs) -> Result<State, (RunExit, String)> {
+    // The findings' folder exists before the walk, so its appearing in a folder the walk lists
+    // is not taken for a change.
+    if let Some(folder) = ctx.resolve(FINDINGS).parent() {
+        let _ = std::fs::create_dir_all(folder);
+    }
     let loaded =
         configure::load(ctx, &hook.config).map_err(|e| (RunExit::InvalidConfig, e.to_string()))?;
     let mut effective = loaded.clone().unwrap_or_default();
@@ -510,9 +588,10 @@ fn build(ctx: &mut Context<'_>, hook: &CruiseArgs) -> Result<State, (RunExit, St
         .map_err(|e| (RunExit::InvalidConfig, e.to_string()))?;
     let plans = Plans {
         keep_file_states: true,
+        keep_walk: true,
         ..Plans::default()
     };
-    let parts = pipeline::extract_parts(ctx, &effective, &hook.paths, &plans)
+    let parts = pipeline::extract_parts(ctx, &effective, &hook.paths, plans)
         .map_err(|e| (RunExit::Untrustworthy, e.to_string()))?;
     let watched = Watched::of(ctx, &effective, &parts);
     Ok(State {
@@ -520,6 +599,7 @@ fn build(ctx: &mut Context<'_>, hook: &CruiseArgs) -> Result<State, (RunExit, St
         effective,
         parts,
         watched,
+        stale: false,
     })
 }
 
@@ -581,9 +661,16 @@ fn check(
         None => build(ctx, hook)
             .map(|built| *state = built)
             .map_err(|(_, message)| message),
-        Some(plans) => pipeline::extract_parts(ctx, &state.effective, &hook.paths, &plans)
-            .map(|parts| state.parts = parts)
-            .map_err(|e| e.to_string()),
+        Some(plans) => match pipeline::extract_parts(ctx, &state.effective, &hook.paths, plans) {
+            Ok(parts) => {
+                state.parts = parts;
+                Ok(())
+            }
+            Err(error) => {
+                state.stale = true;
+                Err(error.to_string())
+            }
+        },
     };
     let extract = millis(started.elapsed());
     let answered = extracted.and_then(|()| answer(ctx, hook, state));
@@ -708,7 +795,13 @@ pub fn run(
     while !stop() {
         std::thread::sleep(interval);
         let scanned = now_ms();
-        let done = match state.watched.check(&ctx.cwd) {
+        let change = match state.watched.check(&ctx.cwd) {
+            Change::Sources(..) if state.stale => {
+                Change::Structural("the last check failed".into())
+            }
+            change => change,
+        };
+        let done = match change {
             Change::None => {
                 // Nothing changed up to this scan: a hook that asked before it can have the
                 // answer now, and the heartbeat keeps it fresh.
@@ -726,7 +819,7 @@ pub fn run(
                 check(ctx, &hook, &mut state, None, (Vec::new(), None), scanned)
             }
             Change::Sources(changed, newest) => {
-                let plans = plans(&state.parts, &changed);
+                let plans = plans(&mut state.parts, &changed);
                 let rechecked = changed
                     .iter()
                     .map(|(_, _, path)| key::slashed(path.strip_prefix(&ctx.cwd).unwrap_or(path)))
@@ -830,6 +923,33 @@ mod tests {
         ] {
             assert_eq!(relevant(name, cs), expected, "{name} cs={cs}");
         }
+    }
+
+    #[cfg(feature = "extract-ts")]
+    #[test]
+    fn a_walked_folder_lists_its_subfolders_and_the_files_the_walk_gathers() -> std::io::Result<()>
+    {
+        let dir = std::env::temp_dir().join(format!("rb-guard-listing-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("sub"))?;
+        for name in [
+            "a.ts",
+            "b.d.ts",
+            ".a.ts.swp",
+            "4913",
+            "logo.svg",
+            "notes.md",
+        ] {
+            std::fs::write(dir.join(name), "")?;
+        }
+        let plain = rb_model::TypeScriptOptions::default();
+        let names: Vec<String> = walk_listing(&dir, &plain).into_iter().collect();
+        assert_eq!(names, ["a.ts", "b.d.ts", "sub/"]);
+        let markdown: rb_model::TypeScriptOptions =
+            serde_json::from_str(r#"{"extraExtensionsToScan": [".md"]}"#).unwrap_or_default();
+        assert!(walk_listing(&dir, &markdown).contains("notes.md"));
+        assert!(walk_listing(&dir.join("absent"), &plain).is_empty());
+        std::fs::remove_dir_all(&dir)
     }
 
     #[test]

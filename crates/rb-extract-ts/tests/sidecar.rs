@@ -196,6 +196,7 @@ fn incremental_extraction_re_runs_the_sidecar_for_a_changed_file_only() -> Resul
             changed,
             unchanged,
             previous: full.clone(),
+            walk_unchanged: false,
         };
         Ok(extract_incremental(
             &[PathBuf::from("src/index.js")],
@@ -231,6 +232,7 @@ fn incremental_extraction_re_runs_the_sidecar_for_a_changed_file_only() -> Resul
         changed: Vec::new(),
         unchanged: read.clone(),
         previous: unrecorded,
+        walk_unchanged: false,
     };
     let recovered = extract_incremental(
         &[PathBuf::from("src/index.js")],
@@ -245,6 +247,7 @@ fn incremental_extraction_re_runs_the_sidecar_for_a_changed_file_only() -> Resul
         changed: Vec::new(),
         unchanged: read,
         previous: full.clone(),
+        walk_unchanged: false,
     };
     let refused = extract_incremental(
         &[PathBuf::from("src/index.js")],
