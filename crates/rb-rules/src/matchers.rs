@@ -32,6 +32,7 @@
 //! be false for every such module. `to` can select the targets of the edges from the modules
 //! `from` can select, since no edge crosses languages.
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 
 use rb_config::Rule;
@@ -46,7 +47,26 @@ use crate::patterns;
 
 /// A pattern as dependency-cruiser tests it: joined, and absent when empty (falsy).
 pub fn pattern(patterns: Option<&Patterns>) -> Option<String> {
-    patterns.map(Patterns::joined).filter(|p| !p.is_empty())
+    pattern_ref(patterns).map(Cow::into_owned)
+}
+
+/// [`pattern`] without copying a single pattern: only a list is joined into a new string.
+pub fn pattern_ref(patterns: Option<&Patterns>) -> Option<Cow<'_, str>> {
+    let joined = match patterns? {
+        Patterns::One(one) => Cow::Borrowed(one.as_str()),
+        many @ Patterns::Many(_) => Cow::Owned(many.joined()),
+    };
+    (!joined.is_empty()).then_some(joined)
+}
+
+/// `replaceGroupPlaceholders(pattern, groups)`, borrowing the pattern when nothing can be
+/// replaced: without groups, or without a `$`, which every placeholder starts with.
+pub fn with_groups<'p>(pattern: &'p str, groups: &[String]) -> Cow<'p, str> {
+    if groups.is_empty() || !pattern.contains('$') {
+        Cow::Borrowed(pattern)
+    } else {
+        Cow::Owned(replace_group_placeholders(pattern, groups))
+    }
 }
 
 /// dependency-cruiser's `DEPENDENCY_TYPE_DUPLICATES_THAT_MATTER`.
@@ -71,7 +91,7 @@ pub fn property_equals(rule_value: Option<bool>, dependency: &Value, property: &
 
 /// `propertyMatches(rule, dependency, ruleProperty, property)`.
 pub fn property_matches(rule_value: Option<&Patterns>, dependency: &Value, property: &str) -> bool {
-    pattern(rule_value).is_none_or(|p| {
+    pattern_ref(rule_value).is_none_or(|p| {
         js::truthy(dependency.get(property)) && patterns::test(&p, &js::text(dependency, property))
     })
 }
@@ -82,42 +102,43 @@ pub fn property_matches_not(
     dependency: &Value,
     property: &str,
 ) -> bool {
-    pattern(rule_value).is_none_or(|p| {
+    pattern_ref(rule_value).is_none_or(|p| {
         js::truthy(dependency.get(property)) && !patterns::test(&p, &js::text(dependency, property))
     })
 }
 
 /// `matchesFromPath`.
 pub fn matches_from_path(rule: &Rule, module: &Value) -> bool {
-    pattern(rule.from.path.as_ref()).is_none_or(|p| patterns::test(&p, &js::text(module, "source")))
+    pattern_ref(rule.from.path.as_ref())
+        .is_none_or(|p| patterns::test(&p, &js::text(module, "source")))
 }
 
 /// `matchesFromPathNot`.
 pub fn matches_from_path_not(rule: &Rule, module: &Value) -> bool {
-    pattern(rule.from.path_not.as_ref())
+    pattern_ref(rule.from.path_not.as_ref())
         .is_none_or(|p| !patterns::test(&p, &js::text(module, "source")))
 }
 
 /// `matchesModulePath`.
 pub fn matches_module_path(rule: &Rule, module: &Value) -> bool {
-    pattern(rule.module.as_ref().and_then(|m| m.path.as_ref()))
+    pattern_ref(rule.module.as_ref().and_then(|m| m.path.as_ref()))
         .is_none_or(|p| patterns::test(&p, &js::text(module, "source")))
 }
 
 /// `matchesModulePathNot`.
 pub fn matches_module_path_not(rule: &Rule, module: &Value) -> bool {
-    pattern(rule.module.as_ref().and_then(|m| m.path_not.as_ref()))
+    pattern_ref(rule.module.as_ref().and_then(|m| m.path_not.as_ref()))
         .is_none_or(|p| !patterns::test(&p, &js::text(module, "source")))
 }
 
 fn to_path(rule: &Rule, text: &str, groups: &[String]) -> bool {
-    pattern(rule.to.path.as_ref())
-        .is_none_or(|p| patterns::test(&replace_group_placeholders(&p, groups), text))
+    pattern_ref(rule.to.path.as_ref())
+        .is_none_or(|p| patterns::test(&with_groups(&p, groups), text))
 }
 
 fn to_path_not(rule: &Rule, text: &str, groups: &[String]) -> bool {
-    pattern(rule.to.path_not.as_ref())
-        .is_none_or(|p| !patterns::test(&replace_group_placeholders(&p, groups), text))
+    pattern_ref(rule.to.path_not.as_ref())
+        .is_none_or(|p| !patterns::test(&with_groups(&p, groups), text))
 }
 
 /// `matchesToPath`: `to.path` against the dependency's `resolved`.
@@ -141,8 +162,16 @@ pub fn match_to_module_path_not(rule: &Rule, module: &Value, groups: &[String]) 
 }
 
 /// `intersects(left, right)`.
-fn intersects(left: &[&str], right: &[DependencyType]) -> bool {
-    left.iter().any(|l| right.iter().any(|r| r.as_str() == *l))
+fn intersects<'a>(left: impl IntoIterator<Item = &'a str>, right: &[DependencyType]) -> bool {
+    left.into_iter()
+        .any(|l| right.iter().any(|r| r.as_str() == l))
+}
+
+/// The strings of the dependency's `dependencyTypes`, as [`js::strings`] lists them.
+fn types_of(dependency: &Value) -> impl Iterator<Item = &str> {
+    js::array(dependency, "dependencyTypes")
+        .iter()
+        .filter_map(Value::as_str)
 }
 
 /// `matchesToDependencyTypes`.
@@ -150,7 +179,7 @@ pub fn matches_to_dependency_types(rule: &Rule, dependency: &Value) -> bool {
     rule.to
         .dependency_types
         .as_ref()
-        .is_none_or(|types| intersects(&js::strings(dependency, "dependencyTypes"), types))
+        .is_none_or(|types| intersects(types_of(dependency), types))
 }
 
 /// `matchesToDependencyTypesNot`.
@@ -158,7 +187,7 @@ pub fn matches_to_dependency_types_not(rule: &Rule, dependency: &Value) -> bool 
     rule.to
         .dependency_types_not
         .as_ref()
-        .is_none_or(|types| !intersects(&js::strings(dependency, "dependencyTypes"), types))
+        .is_none_or(|types| !intersects(types_of(dependency), types))
 }
 
 fn step_has_any(step: &Value, types: &[DependencyType]) -> bool {
@@ -177,14 +206,14 @@ fn via_matches(
     every: Quantifier,
 ) -> bool {
     let name_matches = |p: &str| {
-        let pattern = replace_group_placeholders(p, groups);
+        let pattern = with_groups(p, groups).into_owned();
         move |step: &Value| patterns::test(&pattern, &js::text(step, "name"))
     };
     let mut result = true;
-    if let Some(p) = pattern(via.path.as_ref()) {
+    if let Some(p) = pattern_ref(via.path.as_ref()) {
         result = some(cycle, &name_matches(&p));
     }
-    if let Some(p) = pattern(via.path_not.as_ref()) {
+    if let Some(p) = pattern_ref(via.path_not.as_ref()) {
         result = !every(cycle, &name_matches(&p));
     }
     if let Some(types) = &via.dependency_types {
@@ -358,22 +387,22 @@ impl ModuleFacts {
 
 /// `key` against one optional string: the value must be present and match.
 fn one_matches(p: Option<&Patterns>, value: Option<&str>) -> bool {
-    pattern(p).is_none_or(|p| value.is_some_and(|v| patterns::test(&p, v)))
+    pattern_ref(p).is_none_or(|p| value.is_some_and(|v| patterns::test(&p, v)))
 }
 
 /// `keyNot` against one optional string: the value must be present and not match.
 fn one_matches_not(p: Option<&Patterns>, value: Option<&str>) -> bool {
-    pattern(p).is_none_or(|p| value.is_some_and(|v| !patterns::test(&p, v)))
+    pattern_ref(p).is_none_or(|p| value.is_some_and(|v| !patterns::test(&p, v)))
 }
 
 /// `key` against a list: the list must be present and one entry match.
 fn any_matches(p: Option<&Patterns>, values: Option<&[String]>) -> bool {
-    pattern(p).is_none_or(|p| values.is_some_and(|v| v.iter().any(|x| patterns::test(&p, x))))
+    pattern_ref(p).is_none_or(|p| values.is_some_and(|v| v.iter().any(|x| patterns::test(&p, x))))
 }
 
 /// `keyNot` against a list: the list must be present and no entry match.
 fn none_matches(p: Option<&Patterns>, values: Option<&[String]>) -> bool {
-    pattern(p).is_none_or(|p| values.is_some_and(|v| !v.iter().any(|x| patterns::test(&p, x))))
+    pattern_ref(p).is_none_or(|p| values.is_some_and(|v| !v.iter().any(|x| patterns::test(&p, x))))
 }
 
 /// `language`, `namespace(Not)`, `project(Not)` and `assembly(Not)` of one side against the
@@ -522,12 +551,12 @@ pub fn matches_to_cross_language(rule: &Rule, dependency: &Value, facts: &Module
 
 /// dependency-cruiser's `extractGroups(rule.from, source)`.
 pub fn from_groups(rule: &Rule, source: &str) -> Vec<String> {
-    pattern(rule.from.path.as_ref()).map_or_else(Vec::new, |p| patterns::groups(&p, source))
+    pattern_ref(rule.from.path.as_ref()).map_or_else(Vec::new, |p| patterns::groups(&p, source))
 }
 
 /// `extractGroups(rule.module, source)`.
 pub fn module_groups(rule: &Rule, source: &str) -> Vec<String> {
-    pattern(rule.module.as_ref().and_then(|m| m.path.as_ref()))
+    pattern_ref(rule.module.as_ref().and_then(|m| m.path.as_ref()))
         .map_or_else(Vec::new, |p| patterns::groups(&p, source))
 }
 
@@ -632,6 +661,52 @@ mod tests {
         ));
         assert!(property_matches_not(None, &json!({}), "license"));
         assert_eq!(pattern(Some(&Patterns::Many(vec![]))), None);
+    }
+
+    #[test]
+    fn a_single_pattern_is_borrowed_and_a_list_joined() {
+        let one = Patterns::One("^src/".into());
+        assert!(matches!(
+            pattern_ref(Some(&one)),
+            Some(Cow::Borrowed("^src/"))
+        ));
+        let many = Patterns::Many(vec!["^a".into(), "^b".into()]);
+        assert_eq!(pattern_ref(Some(&many)).as_deref(), Some("^a|^b"));
+        assert_eq!(pattern(Some(&many)).as_deref(), Some("^a|^b"));
+        assert_eq!(pattern_ref(Some(&Patterns::One(String::new()))), None);
+        assert_eq!(pattern_ref(Some(&Patterns::Many(vec![]))), None);
+        assert_eq!(pattern_ref(None), None);
+    }
+
+    #[test]
+    fn dependency_types_are_read_from_the_dependency() {
+        let r = rule(
+            json!({ "from": {}, "to": { "dependencyTypes": ["npm"], "dependencyTypesNot": ["core"] } }),
+        );
+        let npm = json!({ "dependencyTypes": ["local", "npm"] });
+        let core = json!({ "dependencyTypes": ["core", 3] });
+        assert!(matches_to_dependency_types(&r, &npm));
+        assert!(!matches_to_dependency_types(&r, &core));
+        assert!(matches_to_dependency_types_not(&r, &npm));
+        assert!(!matches_to_dependency_types_not(&r, &core));
+        assert!(!matches_to_dependency_types(&r, &json!({})));
+        assert_eq!(types_of(&core).collect::<Vec<_>>(), ["core"]);
+    }
+
+    proptest::proptest! {
+        /// `with_groups` is `replaceGroupPlaceholders`, borrowing exactly when nothing changes.
+        #[test]
+        fn with_groups_is_replace_group_placeholders(
+            pattern in "[a-z$0-9^/.]{0,12}",
+            groups in proptest::collection::vec("[a-z./]{0,4}", 0..4)
+        ) {
+            let ours = with_groups(&pattern, &groups);
+            proptest::prop_assert_eq!(ours.as_ref(), replace_group_placeholders(&pattern, &groups));
+            proptest::prop_assert_eq!(
+                matches!(ours, Cow::Borrowed(_)),
+                groups.is_empty() || !pattern.contains('$')
+            );
+        }
     }
 
     #[test]

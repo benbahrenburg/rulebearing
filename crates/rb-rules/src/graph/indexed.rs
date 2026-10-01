@@ -15,8 +15,10 @@
 //! detour outside the component can never lead back, so pruning those vertices changes nothing
 //! but the running time.
 
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 
+use rayon::prelude::*;
 use serde_json::{Value, json};
 
 use crate::graph::view::View;
@@ -25,20 +27,51 @@ use crate::js;
 /// One step of a path or cycle: `{ name, dependencyTypes }`.
 pub type Step = Value;
 
+/// The `dependencyTypes` of an edge that has none.
+static NO_TYPES: Value = Value::Array(Vec::new());
+
 #[derive(Debug, Clone)]
-struct Vertex {
+struct Vertex<'a> {
     /// `(name, dependencyTypes)` of each outgoing edge, in order.
-    edges: Vec<(String, Value)>,
-    dependents: Vec<String>,
+    edges: Vec<(Cow<'a, str>, Cow<'a, Value>)>,
+    dependents: Vec<Cow<'a, str>>,
+}
+
+impl Vertex<'_> {
+    fn into_owned(self) -> Vertex<'static> {
+        Vertex {
+            edges: self
+                .edges
+                .into_iter()
+                .map(|(name, types)| {
+                    (
+                        Cow::Owned(name.into_owned()),
+                        Cow::Owned(types.into_owned()),
+                    )
+                })
+                .collect(),
+            dependents: self
+                .dependents
+                .into_iter()
+                .map(|d| Cow::Owned(d.into_owned()))
+                .collect(),
+        }
+    }
 }
 
 /// `IndexedModuleGraph`, over modules (index `source`) or folders (index `name`).
+///
+/// The graph borrows the names and dependency types of the modules it indexes, so building and
+/// dropping it copies nothing; [`IndexedGraph::into_owned`] gives one that outlives them, for a
+/// caller that changes the modules while it walks the graph.
 #[derive(Debug, Clone, Default)]
-pub struct IndexedGraph {
-    names: Vec<String>,
-    index: HashMap<String, usize>,
-    vertices: Vec<Vertex>,
+pub struct IndexedGraph<'a> {
+    names: Vec<Cow<'a, str>>,
+    index: HashMap<Cow<'a, str>, usize>,
+    vertices: Vec<Vertex<'a>>,
     component: Vec<usize>,
+    /// The number of vertices in each component, by component.
+    sizes: Vec<usize>,
     /// The vertex each edge leads to, by index, parallel to `vertices[i].edges`; `None` for an
     /// edge to a name no module has.
     targets: Vec<Vec<Option<usize>>>,
@@ -48,11 +81,11 @@ pub struct IndexedGraph {
     blocked: Vec<bool>,
 }
 
-impl IndexedGraph {
+impl<'a> IndexedGraph<'a> {
     /// Indexes `modules` by the string at `attribute`; a later duplicate replaces an earlier
     /// one, as `new Map(entries)` does.
-    pub fn new(modules: &[Value], attribute: &str) -> Self {
-        Self::build(modules, attribute, |_, _| true, ToOwned::to_owned)
+    pub fn new(modules: &'a [Value], attribute: &str) -> Self {
+        Self::build(modules, attribute, |_, _| true, |name| name)
     }
 
     /// The graph a rule with `graph` sees
@@ -62,46 +95,73 @@ impl IndexedGraph {
     /// ([ADR-0051](../../../../docs/adr/0051-a-rule-redirects-the-imports-it-sees.md)), and with
     /// a path continuing only from the vertices `view` lets a chain pass. A path's start always
     /// continues.
-    pub fn narrowed(modules: &[Value], view: &View) -> Self {
+    pub fn narrowed(modules: &'a [Value], view: &View) -> Self {
         let mut graph = Self::build(
             modules,
             "source",
             |from, d| !view.removes_dependency(from, d),
-            |name| view.target(name).to_owned(),
+            |name| Cow::Owned(view.target(&name).to_owned()),
         );
         graph.blocked = graph.names.iter().map(|n| !view.passes(n)).collect();
         graph
     }
 
+    /// The same graph, owning its names and dependency types.
+    pub fn into_owned(self) -> IndexedGraph<'static> {
+        IndexedGraph {
+            names: self
+                .names
+                .into_iter()
+                .map(|n| Cow::Owned(n.into_owned()))
+                .collect(),
+            index: self
+                .index
+                .into_iter()
+                .map(|(n, at)| (Cow::Owned(n.into_owned()), at))
+                .collect(),
+            vertices: self.vertices.into_iter().map(Vertex::into_owned).collect(),
+            component: self.component,
+            sizes: self.sizes,
+            targets: self.targets,
+            blocked: self.blocked,
+        }
+    }
+
     fn build(
-        modules: &[Value],
+        modules: &'a [Value],
         attribute: &str,
-        keep: impl Fn(&str, &Value) -> bool,
-        lead: impl Fn(&str) -> String,
+        keep: impl Fn(&str, &Value) -> bool + Sync,
+        lead: impl Fn(Cow<'a, str>) -> Cow<'a, str> + Sync,
     ) -> Self {
         let mut graph = Self::default();
-        for module in modules {
-            let name = js::text(module, attribute).into_owned();
-            let edges = js::array(module, "dependencies")
-                .iter()
-                .filter(|d| keep(&name, d))
-                .map(|d| {
-                    let name = match d.get("name") {
-                        Some(n) if js::truthy(Some(n)) => lead(&js::text(d, "name")),
-                        _ => lead(&js::text(d, "resolved")),
-                    };
-                    let types = d
-                        .get("dependencyTypes")
-                        .cloned()
-                        .unwrap_or_else(|| json!([]));
-                    (name, types)
-                })
-                .collect();
-            let dependents = js::strings(module, "dependents")
-                .into_iter()
-                .map(str::to_owned)
-                .collect();
-            let vertex = Vertex { edges, dependents };
+        // Each module's vertex reads that module alone, so they are built in parallel; they are
+        // indexed in module order after.
+        let built: Vec<(Cow<'a, str>, Vertex<'a>)> = modules
+            .par_iter()
+            .map(|module| {
+                let name = js::text(module, attribute);
+                let edges = js::array(module, "dependencies")
+                    .iter()
+                    .filter(|d| keep(&name, d))
+                    .map(|d| {
+                        let name = match d.get("name") {
+                            Some(n) if js::truthy(Some(n)) => lead(js::text(d, "name")),
+                            _ => lead(js::text(d, "resolved")),
+                        };
+                        let types = d
+                            .get("dependencyTypes")
+                            .map_or(Cow::Borrowed(&NO_TYPES), Cow::Borrowed);
+                        (name, types)
+                    })
+                    .collect();
+                let dependents = js::strings(module, "dependents")
+                    .into_iter()
+                    .map(Cow::Borrowed)
+                    .collect();
+                (name, Vertex { edges, dependents })
+            })
+            .collect();
+        for (name, vertex) in built {
             if let Some(&at) = graph.index.get(&name) {
                 graph.vertices[at] = vertex;
             } else {
@@ -112,7 +172,7 @@ impl IndexedGraph {
         }
         graph.targets = graph
             .vertices
-            .iter()
+            .par_iter()
             .map(|v| {
                 v.edges
                     .iter()
@@ -121,6 +181,12 @@ impl IndexedGraph {
             })
             .collect();
         graph.component = graph.components();
+        graph.sizes = vec![0; graph.vertices.len()];
+        for &c in &graph.component {
+            if let Some(size) = graph.sizes.get_mut(c) {
+                *size += 1;
+            }
+        }
         graph
     }
 
@@ -230,10 +296,10 @@ impl IndexedGraph {
             visited.push(name.to_owned());
         }
         let vertex = &self.vertices[at];
-        let next: Vec<&String> = if dependents {
-            vertex.dependents.iter().collect()
+        let next: Vec<&str> = if dependents {
+            vertex.dependents.iter().map(AsRef::as_ref).collect()
         } else {
-            vertex.edges.iter().map(|(n, _)| n).collect()
+            vertex.edges.iter().map(|(n, _)| n.as_ref()).collect()
         };
         for n in next {
             if !seen.contains(n) {
@@ -340,6 +406,17 @@ impl IndexedGraph {
         Vec::new()
     }
 
+    /// Whether [`Self::cycle`] can find a cycle from `initial` through any of its edges: false
+    /// for a name no vertex has, and for a vertex alone in its strongly connected component
+    /// without an edge to itself, since a cycle never leaves the component it starts in. A
+    /// caller with many edges from one module asks this once instead of searching each.
+    pub fn may_cycle(&self, initial: &str) -> bool {
+        self.index.get(initial).is_some_and(|&at| {
+            self.sizes.get(self.component[at]).is_some_and(|n| *n > 1)
+                || self.targets[at].contains(&Some(at))
+        })
+    }
+
     /// `getCycle(initial, current)`: the first cycle from `initial` through its edge to
     /// `current`, as dependency-cruiser finds it, or empty.
     pub fn cycle(&self, initial: &str, current: &str) -> Vec<Step> {
@@ -366,10 +443,10 @@ impl IndexedGraph {
             return Vec::new();
         };
         let component = self.component[at];
-        let edges: Vec<&(String, Value)> = self.vertices[at]
+        let edges: Vec<&(Cow<'a, str>, Cow<'a, Value>)> = self.vertices[at]
             .edges
             .iter()
-            .filter(|(n, _)| !visited.contains(n))
+            .filter(|(n, _)| !visited.contains(n.as_ref()))
             .collect();
         if let Some((name, types)) = edges.iter().find(|(n, _)| n == initial) {
             return if initial == current {
@@ -381,11 +458,11 @@ impl IndexedGraph {
         for (name, types) in edges {
             // Outside the component a path never returns to `initial`: prune, as the upstream
             // search would find nothing there either.
-            if self.index.get(name).map(|&i| self.component[i]) != Some(component) {
-                visited.insert(name.clone());
+            if self.index.get(name.as_ref()).map(|&i| self.component[i]) != Some(component) {
+                visited.insert(name.to_string());
                 continue;
             }
-            visited.insert(name.clone());
+            visited.insert(name.to_string());
             let cycle = self.cycle_from(initial, name, types, visited);
             if !cycle.is_empty() && !cycle.iter().any(|s| js::str_of(s, "name") == Some(current)) {
                 let mut out = vec![Self::step(current, current_types)];
@@ -455,7 +532,8 @@ mod tests {
 
     #[test]
     fn cycles_follow_upstream_order() {
-        let graph = IndexedGraph::new(&modules(), "source");
+        let modules = modules();
+        let graph = IndexedGraph::new(&modules, "source");
         let names = |steps: Vec<Step>| -> Vec<String> {
             steps
                 .iter()
@@ -479,7 +557,8 @@ mod tests {
 
     #[test]
     fn paths_and_transitive_walks() {
-        let graph = IndexedGraph::new(&modules(), "source");
+        let modules = modules();
+        let graph = IndexedGraph::new(&modules, "source");
         let names = |steps: Vec<Step>| -> Vec<String> {
             steps
                 .iter()
@@ -504,19 +583,17 @@ mod tests {
 
     #[test]
     fn duplicates_and_names() {
-        let graph = IndexedGraph::new(
-            &[
-                json!({ "name": "f", "dependencies": [{ "name": "g" }] }),
-                json!({ "name": "g", "dependencies": [{ "name": "f" }] }),
-                json!({ "name": "f", "dependencies": [{ "name": "g" }] }),
-            ],
-            "name",
-        );
+        let folders = [
+            json!({ "name": "f", "dependencies": [{ "name": "g" }] }),
+            json!({ "name": "g", "dependencies": [{ "name": "f" }] }),
+            json!({ "name": "f", "dependencies": [{ "name": "g" }] }),
+        ];
+        let graph = IndexedGraph::new(&folders, "name");
         assert_eq!(graph.cycle("f", "g").len(), 2);
         assert_eq!(graph.cycle("f", "g")[0]["dependencyTypes"], json!([]));
     }
 
-    fn graph_of(edges: &[(&str, &[&str])]) -> IndexedGraph {
+    fn graph_of(edges: &[(&str, &[&str])]) -> IndexedGraph<'static> {
         let modules: Vec<Value> = edges
             .iter()
             .map(|(source, to)| {
@@ -525,7 +602,7 @@ mod tests {
                 json!({ "source": source, "dependencies": dependencies })
             })
             .collect();
-        IndexedGraph::new(&modules, "source")
+        IndexedGraph::new(&modules, "source").into_owned()
     }
 
     fn names(steps: &[Step]) -> Vec<&str> {
@@ -594,7 +671,8 @@ mod tests {
 
     #[test]
     fn lookups_answer_for_known_names_only() {
-        let graph = IndexedGraph::new(&modules(), "source");
+        let modules = modules();
+        let graph = IndexedGraph::new(&modules, "source");
         assert!(!graph.contains("missing"));
         assert_eq!(graph.position("a"), Some(0));
         assert_eq!(graph.position("x"), Some(3));
@@ -603,7 +681,8 @@ mod tests {
 
     #[test]
     fn reachable_from_marks_what_a_path_reaches() {
-        let graph = IndexedGraph::new(&modules(), "source");
+        let modules = modules();
+        let graph = IndexedGraph::new(&modules, "source");
         let from_a = graph.reachable_from("a");
         for (to, reached) in [
             ("b", true),
@@ -637,7 +716,7 @@ mod tests {
             return Vec::new();
         };
         for (name, types) in &graph.vertices[at].edges {
-            if !visited.contains(name) {
+            if !visited.contains(name.as_ref()) {
                 if name == to {
                     return vec![IndexedGraph::step(name, types)];
                 }
@@ -692,7 +771,7 @@ mod tests {
         assert_eq!(none, 0);
     }
 
-    fn narrowed(edges: &[(&str, &[&str])], graph: Value) -> IndexedGraph {
+    fn narrowed(edges: &[(&str, &[&str])], graph: Value) -> IndexedGraph<'static> {
         let modules: Vec<Value> = edges
             .iter()
             .map(|(source, to)| {
@@ -704,7 +783,7 @@ mod tests {
             })
             .collect();
         let filter = serde_json::from_value(graph).unwrap_or_default();
-        IndexedGraph::narrowed(&modules, &View::new(&filter))
+        IndexedGraph::narrowed(&modules, &View::new(&filter)).into_owned()
     }
 
     #[test]
@@ -896,6 +975,92 @@ mod tests {
                 }
             }
         }
+
+        /// The shortcut `derive::cycles` takes: a module `may_cycle` denies has no cycle
+        /// through any of its edges, and one it allows is in a component of two or more or has
+        /// an edge to itself. The owned graph answers as the borrowed one.
+        #[test]
+        fn may_cycle_denies_only_modules_without_a_cycle(
+            edges in proptest::collection::vec((0u8..8, 0u8..9), 0..24)
+        ) {
+            let names: Vec<String> = (0..9).map(|n| format!("m{n}")).collect();
+            let modules: Vec<Value> = names[..8]
+                .iter()
+                .enumerate()
+                .map(|(at, name)| {
+                    let dependencies: Vec<Value> = edges
+                        .iter()
+                        .filter(|(from, _)| usize::from(*from) == at)
+                        .map(|(_, to)| json!({ "resolved": names[usize::from(*to)], "dependencyTypes": [to] }))
+                        .collect();
+                    json!({ "source": name, "dependencies": dependencies })
+                })
+                .collect();
+            let graph = IndexedGraph::new(&modules, "source");
+            let owned = graph.clone().into_owned();
+            for from in &names {
+                let cycles: Vec<Vec<Step>> = names.iter().map(|to| graph.cycle(from, to)).collect();
+                if !graph.may_cycle(from) {
+                    proptest::prop_assert!(cycles.iter().all(Vec::is_empty), "{}", from);
+                }
+                let shared = names
+                    .iter()
+                    .any(|to| to != from && graph.same_component(from, to));
+                let looped = edges
+                    .iter()
+                    .any(|(f, t)| f == t && names[usize::from(*f)] == *from);
+                proptest::prop_assert_eq!(
+                    graph.may_cycle(from),
+                    graph.contains(from) && (shared || looped),
+                    "{}", from
+                );
+                proptest::prop_assert_eq!(owned.may_cycle(from), graph.may_cycle(from));
+                for (to, cycle) in names.iter().zip(&cycles) {
+                    proptest::prop_assert_eq!(&owned.cycle(from, to), cycle);
+                    proptest::prop_assert_eq!(owned.path(from, to), graph.path(from, to));
+                }
+                proptest::prop_assert_eq!(
+                    owned.transitive_dependencies(from, 0),
+                    graph.transitive_dependencies(from, 0)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn may_cycle_needs_a_component_of_two_or_an_edge_to_itself() {
+        let modules = modules();
+        let graph = IndexedGraph::new(&modules, "source");
+        assert!(graph.may_cycle("a"), "a, b and c form a cycle");
+        assert!(graph.may_cycle("self"), "an edge to itself");
+        assert!(
+            !graph.may_cycle("x"),
+            "x leads out of the cycle and back to nothing"
+        );
+        assert!(!graph.may_cycle("y"));
+        assert!(!graph.may_cycle("missing"));
+    }
+
+    #[test]
+    fn an_owned_graph_keeps_names_types_dependents_and_stops() {
+        let modules = modules();
+        let owned = IndexedGraph::new(&modules, "source").into_owned();
+        drop(modules);
+        assert_eq!(
+            owned.cycle("a", "b")[0]["dependencyTypes"],
+            json!(["local"])
+        );
+        assert_eq!(owned.transitive_dependents("a", 0), ["a", "c", "b"]);
+        assert_eq!(owned.position("b"), Some(1));
+        let stopped = narrowed(
+            &[("a", &["b"]), ("b", &["c"])],
+            json!({ "chainsThrough": "^a$" }),
+        );
+        assert!(
+            stopped.path("a", "c").is_empty(),
+            "b does not pass the chain on"
+        );
+        assert_eq!(stopped.path("a", "b").len(), 1);
     }
 
     #[test]

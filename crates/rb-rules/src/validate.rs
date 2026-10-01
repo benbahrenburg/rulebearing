@@ -83,10 +83,12 @@ pub fn dependency_match(rule: &Rule, from: &Value, to: &Value, facts: &ModuleFac
     let led = redirected(rule, to);
     let dependency = to;
     let to = led.as_ref().unwrap_or(dependency);
+    // `from` decides alone first: the groups `to` reads are found only for a module it selects.
+    if !(matches_from_path(rule, from) && matches_from_path_not(rule, from)) {
+        return false;
+    }
     let groups = from_groups(rule, &js::text(from, "source"));
-    matches_from_path(rule, from)
-        && matches_from_path_not(rule, from)
-        && matches_to_path(rule, to, &groups)
+    matches_to_path(rule, to, &groups)
         && matches_to_path_not(rule, to, &groups)
         && matches_to_dependency_types(rule, to)
         && matches_to_dependency_types_not(rule, to)
