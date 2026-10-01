@@ -600,12 +600,15 @@ fn render(
     options: &ReportOptions,
 ) -> Result<(String, Option<u64>), RunError> {
     let mut value =
-        serde_json::to_value(&verdict.document).map_err(|e| RunError::Engine(e.into()))?;
+        crate::value::document(&verdict.document).map_err(|e| RunError::Engine(e.into()))?;
     if let Some(name) = rb_config::js::plugin::plugin_name(output_type) {
         let rendered = crate::plugin::render(&ctx.cwd, name, &mut value, options.strict_schema)?;
+        crate::value::release(value);
         return Ok((rendered.output, Some(rendered.exit_code)));
     }
-    rb_report::render(output_type, &value, options)
+    let rendered = rb_report::render(output_type, &value, options);
+    crate::value::release(value);
+    rendered
         .map(|rendered| (rendered.output, None))
         .map_err(|e| match e {
             // `x-dot-webpage` without a working `dot`: the report could not be made (ADR-0053).

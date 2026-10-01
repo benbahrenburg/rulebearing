@@ -1044,6 +1044,47 @@ mod tests {
         Ok(())
     }
 
+    /// `rb-cli` skips the re-summary when a report filters and collapses nothing; that is only
+    /// sound while it gives back the engine's own document, for every kind of rule.
+    #[test]
+    fn the_unfiltered_report_is_the_engine_s_document() -> Result<(), EngineError> {
+        for rules in [
+            json!({ "forbidden": [
+                { "name": "no-cross-app", "severity": "error", "comment": "adr:0003", "fix": "Move it.",
+                  "from": { "path": "^apps/([^/]+)/" }, "to": { "path": "^apps/([^/]+)/", "pathNot": "^apps/$1/" } },
+                { "name": "no-circular", "severity": "warn", "from": {}, "to": { "circular": true } },
+                { "name": "no-orphans", "severity": "info", "from": { "orphan": true }, "to": {} }
+            ] }),
+            json!({ "allowed": [{ "from": {}, "to": { "path": "^packages/" } }], "allowedSeverity": "warn" }),
+            json!({ "forbidden": [{ "name": "folders", "scope": "folder", "severity": "error",
+                "from": { "path": "^apps/" }, "to": { "moreUnstable": true } }] }),
+            json!({ "forbidden": [{ "name": "f", "severity": "error", "from": {}, "to": { "path": "^apps/api" } }],
+                "options": { "knownViolations": [{ "from": "apps/web/a.ts", "to": "apps/api/b.ts",
+                    "rule": { "name": "f", "severity": "error" } }] } }),
+            json!({ "forbidden": [{ "name": "f", "severity": "warn", "from": {}, "to": { "path": "^packages/" } }],
+                "slices": [{ "name": "apps", "matching": "apps/(*)/", "should": "notDependOnEachOther" }] }),
+        ] {
+            let cfg = config(rules.clone());
+            let result = evaluate(
+                document(),
+                &cfg,
+                &EvalOptions {
+                    liveness: false,
+                    today: today(),
+                    args: vec!["apps".into()],
+                    ..EvalOptions::default()
+                },
+            )?;
+            let rewrapped = crate::rewrap::rewrap(
+                result.document.clone(),
+                &crate::rewrap::FormatOptions::default(),
+                Some(&cfg.rules.dependencies),
+            )?;
+            assert_eq!(rewrapped, result.document, "{rules}");
+        }
+        Ok(())
+    }
+
     #[test]
     fn metrics_are_needed_only_for_instability_and_folders() {
         let plain = config(

@@ -86,6 +86,24 @@ fn carry_additions(violations: &mut [Value], saved: &[Value]) {
     }
 }
 
+/// The `ruleSetUsed` keys of the rule families that are not dependency rules
+/// ([`crate::families::rule_set_used`]).
+const FAMILIES: [&str; 3] = ["elements", "slices", "diagrams"];
+
+/// `ruleSetUsed` from `rules`, keeping the element, slice and diagram rules the engine recorded
+/// in `saved`: they are no dependency rules, so they are kept as it wrote them.
+fn rule_set_used(saved: &mut Option<Map<String, Value>>, rules: &DependencyRules) {
+    let mut used = crate::summarize::rule_set_used(rules);
+    for (key, value) in saved.iter().flatten() {
+        if FAMILIES.contains(&key.as_str()) {
+            used.insert(key.clone(), value.clone());
+        }
+    }
+    if !used.is_empty() {
+        *saved = Some(used);
+    }
+}
+
 /// `reSummarizeResults`.
 ///
 /// # Errors
@@ -179,10 +197,7 @@ pub fn rewrap(
     );
     summary.options_used = options_used(&merged, &args);
     if let Some(rules) = rules {
-        let used = crate::summarize::rule_set_used(rules);
-        if !used.is_empty() {
-            summary.rule_set_used = Some(used);
-        }
+        rule_set_used(&mut summary.rule_set_used, rules);
     }
     let modules: Vec<Module> = modules
         .into_iter()
@@ -280,6 +295,34 @@ mod tests {
         assert_eq!(all.summary.violations[0].id.as_deref(), Some("RB-12345678"));
         assert_eq!(all.summary.violations[0].fix.as_deref(), Some("move it"));
         assert_eq!(all.summary.total_dependencies_cruised, Some(2));
+        Ok(())
+    }
+
+    #[test]
+    fn the_families_rule_set_is_kept_beside_the_dependency_rules() -> Result<(), EngineError> {
+        let mut doc = document();
+        let slices = json!([{ "name": "features", "severity": "warn" }]);
+        doc.summary.rule_set_used = json!({ "forbidden": [], "slices": slices.clone(),
+            "elements": [{ "name": "e" }], "diagrams": [{ "name": "d" }], "other": 1 })
+        .as_object()
+        .cloned();
+        let config = json!({ "forbidden": [{ "name": "r", "from": {}, "to": {} }] });
+        let rules = rb_config::load::from_canonical(
+            config.as_object().cloned().unwrap_or_default(),
+            rb_config::CompatMode::Native,
+        )
+        .unwrap_or_default()
+        .rules
+        .dependencies;
+        let out = rewrap(doc, &FormatOptions::default(), Some(&rules))?;
+        let used = out.summary.rule_set_used.unwrap_or_default();
+        let mut keys: Vec<&str> = used.keys().map(String::as_str).collect();
+        keys.sort_unstable();
+        // The dependency rules recomputed, the families as the engine wrote them; nothing else
+        // of the saved set survives.
+        assert_eq!(keys, ["diagrams", "elements", "forbidden", "slices"]);
+        assert_eq!(used["forbidden"][0]["name"], "r");
+        assert_eq!(used["slices"], slices);
         Ok(())
     }
 

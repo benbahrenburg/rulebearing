@@ -648,9 +648,16 @@ pub fn evaluate_document(
             let (narrowed, receipt) = selection.narrow(&evaluation.document);
             (narrowed, Some(receipt))
         }
-        None => (evaluation.document.clone(), None),
+        None => (crate::value::copy(&evaluation.document), None),
     };
-    let mut document = rewrap(evaluated, &format, Some(&config.rules.dependencies))?;
+    // With nothing to filter or collapse, the re-summary finds what the engine just summarised,
+    // so it is skipped: on a large graph it is most of a guard's check (NFR-PERF-03).
+    // `the_unfiltered_report_is_the_engine_s_document` holds the two equal.
+    let mut document = if format == FormatOptions::default() && native.is_none() {
+        evaluated
+    } else {
+        rewrap(evaluated, &format, Some(&config.rules.dependencies))?
+    };
     document.summary.inspected = Some(inspected);
     document.summary.sidecar = sidecar;
     document

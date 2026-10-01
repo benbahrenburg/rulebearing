@@ -39,6 +39,7 @@ pub mod plugin;
 pub mod progress;
 pub mod protocol;
 pub mod ratchets;
+pub mod value;
 
 use std::fmt::Write as _;
 

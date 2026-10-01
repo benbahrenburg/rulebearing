@@ -316,6 +316,14 @@
             "path": "^src/ui/"
           }
         }
+      ],
+      "slices": [
+        {
+          "name": "features",
+          "severity": "warn",
+          "comment": "adr:0011",
+          "fix": "Share code between features through src/shared"
+        }
       ]
     },
     "optionsUsed": {
