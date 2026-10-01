@@ -52,8 +52,13 @@ A name is resolved without a compiler, so what only a compiler decides is not kn
 | evolutionary-architecture/evolutionary-architecture-by-example | 129 | 140 | 128 | 99.2% | 91% |
 | onebeyond/monaco | 263 | 342 | 258 | 98.1% | 75% |
 | phongnguyend/Practical.CleanArchitecture | 888 | 1,066 | 884 | 99.6% | 83% |
+| nager/Nager.Date | 1,051 | 1,264 | 1,051 | 100% | 83% |
+| karaoke-dev/karaoke | 4,428 | 5,068 | 4,407 | 99.5% | 87% |
+| DrJohnMelville/Pdf | 4,256 | 4,890 | 4,078 | 95.8% | 83% |
+| TNG/ArchUnitNET | 2,364 | 3,550 | 2,329 | 98.5% | 66% |
+| BenMorris/NetArchTest | 371 | 384 | 350 | 94.3% | 91% |
 
-The comparison covers edges between two files both modes know, each oracle at its pinned SHA with the solution the oracle row names, the compiled side built in Release as the nightly builds it. `cargo test -p rb-extract-dotnet --features source-mode --test source_mode` asserts at least 90% precision and recall on the two built fixtures and writes `target/source-mode-precision.json`; the nightly runs [`testbeds/oracles/precision.py`](../testbeds/oracles/precision.py) on every .NET oracle and joins the results into `source-mode-precision.json` ([Wave 3, Step 14](plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)). Measuring it also found two edges compiled mode missed, now fixed: the body of an `async` or iterator method of a release build, and top-level statements.
+The ten oracles are every .NET oracle of [`testbeds/manifest.yaml`](../testbeds/manifest.yaml), and each is above the 90% precision target. The comparison covers edges between two files both modes know, each oracle at its pinned SHA with the solution the oracle row names, the compiled side built in Release as the nightly builds it, with the row's `msbuild` arguments and the newest 10.0 SDK beside 8.0 and 9.0 (TNG/ArchUnitNET's `global.json` asks for 10.0.400, and DrJohnMelville/Pdf's `[FromConstructor]` source generator emits no constructors under the 10.0.100 SDK). `cargo test -p rb-extract-dotnet --features source-mode --test source_mode` asserts at least 90% precision and recall on the two built fixtures and writes `target/source-mode-precision.json`; the nightly runs [`testbeds/oracles/precision.py`](../testbeds/oracles/precision.py) on every .NET oracle and joins the results into `source-mode-precision.json` ([Wave 3, Step 14](plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)). Measuring it also found two edges compiled mode missed, now fixed: the body of an `async` or iterator method of a release build, and top-level statements.
 
 ## Never the gate
 
