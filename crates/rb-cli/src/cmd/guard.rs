@@ -187,6 +187,13 @@ fn tool() -> String {
     format!("rulebearing {}", env!("CARGO_PKG_VERSION"))
 }
 
+/// Nanoseconds since the epoch, as [`stamp`] records modification times.
+fn now_ns() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| u64::try_from(d.as_nanos()).unwrap_or(u64::MAX))
+}
+
 fn now_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -326,6 +333,9 @@ struct Watched {
     typescript: rb_model::TypeScriptOptions,
     /// `.cs` files are sources.
     cs: bool,
+    /// Why the next check reads everything: a structural file or a folder changed while the
+    /// extraction these stamps follow was running, so the extraction may not have seen it.
+    unsettled: Option<String>,
 }
 
 /// What a check of the watched files found.
@@ -395,32 +405,23 @@ fn walk_listing(folder: &Path, options: &rb_model::TypeScriptOptions) -> BTreeSe
         .unwrap_or_default()
 }
 
+/// Whether `stamped` was modified at or after `since` (nanoseconds since the epoch).
+fn after(stamped: Stamp, since: u64) -> bool {
+    stamped.is_some_and(|(_, modified)| modified >= since)
+}
+
 impl Watched {
-    fn of(ctx: &Context<'_>, config: &Config, parts: &Parts) -> Self {
+    /// What to watch after an extraction that started at `since` (nanoseconds since the
+    /// epoch). A file or folder modified since may have changed under the extraction, so it is
+    /// not taken as seen: a source is checked again on the first scan, and a structural file or
+    /// a folder reads everything again.
+    fn of(ctx: &Context<'_>, config: &Config, parts: &Parts, since: u64) -> Self {
         let mut watched = Self {
             cs: pipeline::dotnet_source_mode(config),
             typescript: config.languages.typescript.clone(),
             ..Self::default()
         };
-        let base = ctx.cwd.join(
-            config
-                .languages
-                .typescript
-                .base_dir
-                .as_deref()
-                .unwrap_or(""),
-        );
-        for (part, extraction, folder) in [
-            (Part::TypeScript, &parts.typescript, &base),
-            (Part::Dotnet, &parts.dotnet, &ctx.cwd),
-            (Part::Python, &parts.python, &ctx.cwd),
-        ] {
-            for name in extraction.iter().flat_map(|e| e.files.keys()) {
-                let path = folder.join(name);
-                let stamped = stamp(&path);
-                watched.sources.insert(path, (part, name.clone(), stamped));
-            }
-        }
+        watched.add_sources(ctx, config, parts, since);
         let root = key::worktree_root(&ctx.cwd);
         let mut structural: Vec<PathBuf> = config.files.clone();
         structural.extend(key::manifest_paths(&root, &ctx.cwd, config));
@@ -448,32 +449,76 @@ impl Watched {
         for path in structural {
             let path = ctx.resolve(path);
             let stamped = stamp(&path);
+            watched.unsettle(&path, stamped, since, ctx);
             watched.structural.insert(path, stamped);
-        }
-        let folders: BTreeSet<PathBuf> = watched
-            .sources
-            .keys()
-            .filter_map(|p| p.parent().map(Path::to_path_buf))
-            .collect();
-        for folder in folders {
-            let names = listing(&folder, watched.cs);
-            watched
-                .folders
-                .insert(folder.clone(), (stamp(&folder), names));
         }
         let walked = parts.typescript.iter().filter_map(|t| t.walk.as_ref());
         for folder in walked.flat_map(|w| &w.folders) {
             let folder = ctx.resolve(folder);
             let names = walk_listing(&folder, &watched.typescript);
-            watched
-                .walked
-                .insert(folder.clone(), (stamp(&folder), names));
+            let stamped = stamp(&folder);
+            watched.unsettle(&folder, stamped, since, ctx);
+            watched.walked.insert(folder.clone(), (stamped, names));
         }
         watched
     }
 
+    /// Records that `path` changed during the extraction, when it did.
+    fn unsettle(&mut self, path: &Path, stamped: Stamp, since: u64, ctx: &Context<'_>) {
+        if self.unsettled.is_none() && after(stamped, since) {
+            let shown = key::slashed(path.strip_prefix(&ctx.cwd).unwrap_or(path));
+            self.unsettled = Some(format!("{shown} changed while it was being read"));
+        }
+    }
+
+    /// Watches every source of `parts` not watched yet, and the folders holding them: all of
+    /// them after a full read, and after a check the files it reached for the first time. A
+    /// source modified at or after `since` is checked again on the next scan.
+    fn add_sources(&mut self, ctx: &Context<'_>, config: &Config, parts: &Parts, since: u64) {
+        let base = ctx.cwd.join(
+            config
+                .languages
+                .typescript
+                .base_dir
+                .as_deref()
+                .unwrap_or(""),
+        );
+        let mut folders = BTreeSet::new();
+        for (part, extraction, folder) in [
+            (Part::TypeScript, &parts.typescript, &base),
+            (Part::Dotnet, &parts.dotnet, &ctx.cwd),
+            (Part::Python, &parts.python, &ctx.cwd),
+        ] {
+            for name in extraction.iter().flat_map(|e| e.files.keys()) {
+                let path = folder.join(name);
+                if self.sources.contains_key(&path) {
+                    continue;
+                }
+                let stamped = stamp(&path);
+                // Not seen as it is now: the first scan finds it different and checks it again.
+                let recorded = if after(stamped, since) { None } else { stamped };
+                if let Some(parent) = path.parent() {
+                    folders.insert(parent.to_path_buf());
+                }
+                self.sources.insert(path, (part, name.clone(), recorded));
+            }
+        }
+        for folder in folders {
+            if self.folders.contains_key(&folder) {
+                continue;
+            }
+            let names = listing(&folder, self.cs);
+            let stamped = stamp(&folder);
+            self.unsettle(&folder, stamped, since, ctx);
+            self.folders.insert(folder, (stamped, names));
+        }
+    }
+
     /// Checks every watched file once, recording the new stamps of the sources it reports.
     fn check(&mut self, cwd: &Path) -> Change {
+        if let Some(reason) = self.unsettled.take() {
+            return Change::Structural(reason);
+        }
         let shown = |path: &Path| key::slashed(path.strip_prefix(cwd).unwrap_or(path));
         for (path, recorded) in &self.structural {
             if stamp(path) != *recorded {
@@ -591,9 +636,10 @@ fn build(ctx: &mut Context<'_>, hook: &CruiseArgs) -> Result<State, (RunExit, St
         keep_walk: true,
         ..Plans::default()
     };
+    let since = now_ns();
     let parts = pipeline::extract_parts(ctx, &effective, &hook.paths, plans)
         .map_err(|e| (RunExit::Untrustworthy, e.to_string()))?;
-    let watched = Watched::of(ctx, &effective, &parts);
+    let watched = Watched::of(ctx, &effective, &parts, since);
     Ok(State {
         loaded,
         effective,
@@ -657,12 +703,17 @@ fn check(
     scanned: u64,
 ) -> Check {
     let started = Instant::now();
+    let since = now_ns();
     let extracted = match plans {
         None => build(ctx, hook)
             .map(|built| *state = built)
             .map_err(|(_, message)| message),
         Some(plans) => match pipeline::extract_parts(ctx, &state.effective, &hook.paths, plans) {
             Ok(parts) => {
+                // A file the change made reachable is watched from now on.
+                state
+                    .watched
+                    .add_sources(ctx, &state.effective, &parts, since);
                 state.parts = parts;
                 Ok(())
             }
@@ -868,6 +919,109 @@ pub fn once(ctx: &mut Context<'_>, args: &GuardArgs) -> Outcome {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn context<'a>(dir: &Path, stdin: &'a mut dyn std::io::Read) -> Context<'a> {
+        Context {
+            cwd: dir.to_path_buf(),
+            stdin,
+            today: chrono::NaiveDate::default(),
+            timestamp: String::new(),
+            color_terminal: false,
+        }
+    }
+
+    /// TypeScript parts whose extraction read `files`.
+    fn read(files: &[&str]) -> Parts {
+        Parts {
+            typescript: Some(Extraction {
+                files: files
+                    .iter()
+                    .map(|f| ((*f).to_owned(), rb_model::FileState::default()))
+                    .collect(),
+                ..Extraction::default()
+            }),
+            ..Parts::default()
+        }
+    }
+
+    fn folder(name: &str) -> std::io::Result<PathBuf> {
+        let dir = std::env::temp_dir().join(format!("rb-guard-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("src"))?;
+        dir.canonicalize()
+    }
+
+    fn pause() {
+        std::thread::sleep(Duration::from_millis(20));
+    }
+
+    #[test]
+    fn what_changed_while_it_was_read_is_not_taken_as_seen() -> std::io::Result<()> {
+        let dir = folder("unsettled")?;
+        std::fs::write(dir.join("src/a.ts"), "export const a = 1;\n")?;
+        pause();
+        let since = now_ns();
+        pause();
+        // Written while the extraction runs: the extraction may have read it before or after.
+        std::fs::write(dir.join("src/b.ts"), "export const b = 1;\n")?;
+        let mut stdin = std::io::empty();
+        let ctx = context(&dir, &mut stdin);
+        let mut watched = Watched::of(
+            &ctx,
+            &Config::default(),
+            &read(&["src/a.ts", "src/b.ts"]),
+            since,
+        );
+        assert!(watched.sources[&dir.join("src/a.ts")].2.is_some());
+        assert_eq!(watched.sources[&dir.join("src/b.ts")].2, None);
+        // The folder gained b.ts during the read, so the first scan reads everything.
+        assert_eq!(
+            watched.check(&dir),
+            Change::Structural("src changed while it was being read".into())
+        );
+        // A source changed during the read is checked again; once seen, it is settled.
+        assert!(matches!(
+            watched.check(&dir),
+            Change::Sources(changed, _) if changed.len() == 1 && changed[0].1 == "src/b.ts"
+        ));
+        assert_eq!(watched.check(&dir), Change::None);
+        // Nothing modified since: everything is seen as it is.
+        let settled = Watched::of(
+            &ctx,
+            &Config::default(),
+            &read(&["src/a.ts", "src/b.ts"]),
+            now_ns(),
+        );
+        assert!(settled.unsettled.is_none());
+        assert!(settled.sources.values().all(|(_, _, s)| s.is_some()));
+        std::fs::remove_dir_all(&dir)
+    }
+
+    #[test]
+    fn a_file_a_check_reaches_first_is_watched_from_then_on() -> std::io::Result<()> {
+        let dir = folder("reached")?;
+        std::fs::create_dir_all(dir.join("lib"))?;
+        std::fs::write(dir.join("src/a.ts"), "export const a = 1;\n")?;
+        std::fs::write(dir.join("lib/c.ts"), "export const c = 1;\n")?;
+        pause();
+        let mut stdin = std::io::empty();
+        let ctx = context(&dir, &mut stdin);
+        let config = Config::default();
+        let mut watched = Watched::of(&ctx, &config, &read(&["src/a.ts"]), now_ns());
+        assert!(!watched.sources.contains_key(&dir.join("lib/c.ts")));
+        // An edit to a.ts made lib/c.ts reachable.
+        watched.add_sources(&ctx, &config, &read(&["src/a.ts", "lib/c.ts"]), now_ns());
+        assert!(watched.sources.contains_key(&dir.join("lib/c.ts")));
+        assert!(watched.folders.contains_key(&dir.join("lib")));
+        assert_eq!(watched.check(&dir), Change::None);
+        pause();
+        std::fs::write(dir.join("lib/c.ts"), "export const c = 2;\n")?;
+        assert!(matches!(
+            watched.check(&dir),
+            Change::Sources(changed, _) if changed[0].1 == "lib/c.ts"
+        ));
+        std::fs::remove_dir_all(&dir)
+    }
 
     #[test]
     fn the_key_ignores_how_the_answer_is_printed_and_reached() {
