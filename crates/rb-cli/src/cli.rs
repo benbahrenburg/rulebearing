@@ -477,8 +477,9 @@ pub struct CruiseArgs {
     /// so 2 and 3 are never a count)
     #[arg(long, value_enum, value_name = "MODE", default_value_t = ExitCodeMode::Default)]
     pub exit_code_mode: ExitCodeMode,
-    /// Let a run read in source mode (--mode source) decide the exit code, for a local script;
-    /// without it such a run exits 2, since its edges are approximate. Never in CI (ADR-0011)
+    /// Let a run read in source mode (--mode source) decide the exit code, or be written with
+    /// --strict-schema, for a local script; without it such a run exits 2, since its edges are
+    /// approximate. Never in CI (ADR-0011)
     #[arg(long)]
     pub allow_approximate_gate: bool,
 }
@@ -529,9 +530,10 @@ pub struct FmtArgs {
     /// count)
     #[arg(long, value_enum, value_name = "MODE", default_value_t = ExitCodeMode::Default)]
     pub exit_code_mode: ExitCodeMode,
-    /// Let a run read in source mode (--mode source) decide the exit code, for a local script;
-    /// without it such a run exits 2, since its edges are approximate. Never in CI (ADR-0011)
-    #[arg(long, requires = "exit_code")]
+    /// Let a result read in source mode (--mode source) decide the exit code, or be written with
+    /// --strict-schema, for a local script; without it such a result exits 2, since its edges
+    /// are approximate. Never in CI (ADR-0011)
+    #[arg(long)]
     pub allow_approximate_gate: bool,
 
     /// Prefix for links in the reports

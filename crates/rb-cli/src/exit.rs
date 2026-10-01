@@ -70,6 +70,25 @@ impl RunExit {
 /// The warning an approximate run that would decide a gate prints before it exits 2.
 pub const APPROXIMATE_REASON: &str = "approximate-mode-not-a-gate: the .NET graph was read from source (--mode source), whose edges are approximate, so the run neither passes nor fails a gate; run compiled mode for the exit code, or pass --allow-approximate-gate in a local script (ADR-0011)";
 
+/// The error of an approximate run asked to write `--strict-schema` output, which would carry
+/// no mark of being approximate.
+pub const APPROXIMATE_STRICT_REASON: &str = "approximate-mode-not-strict: the .NET graph was read from source (--mode source), and --strict-schema removes the marks that say its edges are approximate, so fmt, diff or attest could later gate on it; write it without --strict-schema, run compiled mode, or pass --allow-approximate-gate in a local script (ADR-0011)";
+
+/// Whether writing `output_type` would strip an approximate run's marks: `--strict-schema` on
+/// the `json` reporter or a plugin, which see the document without its additions. Refused
+/// unless `allowed`, since a document without the marks is one [`is_approximate`] cannot know.
+pub fn strips_approximate(
+    output_type: &str,
+    strict_schema: bool,
+    approximate: bool,
+    allowed: bool,
+) -> bool {
+    strict_schema
+        && approximate
+        && !allowed
+        && (output_type == "json" || rb_config::js::plugin::plugin_name(output_type).is_some())
+}
+
 /// Whether a document was read, in whole or in part, by source mode: a receipt says
 /// `mode: source`, or an edge is marked `approximate`.
 pub fn is_approximate(document: &rb_model::GraphDocument) -> bool {
@@ -102,6 +121,30 @@ pub fn gate(verdict: RunExit, decides: bool, approximate: bool, allowed: bool) -
 mod tests {
     use super::*;
     use proptest::prelude::*;
+
+    #[test]
+    fn strict_schema_output_of_an_approximate_run_is_refused() {
+        for (output_type, strict, approximate, allowed, expected) in [
+            ("json", true, true, false, true),
+            ("plugin:./r.js", true, true, false, true),
+            // Without --strict-schema the marks stay.
+            ("json", false, true, false, false),
+            // A compiled run has none to lose.
+            ("json", true, false, false, false),
+            // A local script may ask for it.
+            ("json", true, true, true, false),
+            // Other reporters keep their marks (agent) or never carried them (err).
+            ("agent", true, true, false, false),
+            ("err", true, true, false, false),
+        ] {
+            assert_eq!(
+                strips_approximate(output_type, strict, approximate, allowed),
+                expected,
+                "{output_type} strict={strict} approximate={approximate} allowed={allowed}"
+            );
+        }
+        assert!(APPROXIMATE_STRICT_REASON.starts_with("approximate-mode-not-strict: "));
+    }
 
     #[test]
     fn an_approximate_run_never_decides_a_gate() {

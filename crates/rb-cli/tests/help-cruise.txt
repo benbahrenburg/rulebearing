@@ -234,8 +234,9 @@ Options:
           [default: default]
 
       --allow-approximate-gate
-          Let a run read in source mode (--mode source) decide the exit code, for a local script;
-          without it such a run exits 2, since its edges are approximate. Never in CI (ADR-0011)
+          Let a run read in source mode (--mode source) decide the exit code, or be written with
+          --strict-schema, for a local script; without it such a run exits 2, since its edges are
+          approximate. Never in CI (ADR-0011)
 
   -h, --help
           Print help (see a summary with '-h')

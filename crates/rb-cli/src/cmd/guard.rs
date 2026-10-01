@@ -143,7 +143,8 @@ pub struct Findings {
     pub config_hash: String,
     /// The command line answered for ([`answer_key`]).
     pub key: String,
-    /// How .NET was read: `source` or `compiled`.
+    /// How the guard reads .NET, `source` or `compiled` (its `--mode`), whether or not the tree
+    /// holds any .NET.
     pub mode: String,
     /// What `cruise --from-hook` prints: the block decision, or nothing.
     pub answer: String,
@@ -611,10 +612,11 @@ fn findings(ctx: &Context<'_>, hook: &CruiseArgs, state: &State, check: Check) -
         seen_up_to: check.scanned,
         config_hash: config_hash(ctx, state.loaded.as_ref()),
         key: answer_key(hook),
-        mode: if pipeline::dotnet_source_mode(&state.effective) {
-            "source".to_owned()
-        } else {
+        // The flag wins over the key, so this is how .NET is read wherever it is read at all.
+        mode: if hook.mode == Some(ModeArg::Compiled) {
             "compiled".to_owned()
+        } else {
+            "source".to_owned()
         },
         answer,
         rechecked: check.rechecked,

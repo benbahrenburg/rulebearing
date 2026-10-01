@@ -43,7 +43,9 @@ use crate::cache::Content;
 use crate::cache::evaluated::{Tail, Verdict};
 use crate::cli::{ColorChoice, CruiseArgs, Liveness};
 use crate::context::Context;
-use crate::exit::{APPROXIMATE_REASON, RunExit, gate};
+use crate::exit::{
+    APPROXIMATE_REASON, APPROXIMATE_STRICT_REASON, RunExit, gate, strips_approximate,
+};
 use crate::pipeline::{self, RunError, RunOptions};
 use crate::progress::Progress;
 use crate::ratchets::{self, Ratchets};
@@ -650,6 +652,21 @@ fn conclude(
     } = finishing;
     for warning in &tail.warnings {
         let _ = writeln!(stderr, "warning: {warning}");
+    }
+    // Output without the approximate marks could later gate through fmt, diff or attest
+    // (ADR-0011), so it is not written.
+    if strips_approximate(
+        output_type,
+        args.strict_schema,
+        tail.approximate,
+        args.allow_approximate_gate,
+    ) {
+        let _ = writeln!(stderr, "rulebearing cruise: {APPROXIMATE_STRICT_REASON}");
+        return Outcome {
+            stdout: String::new(),
+            stderr,
+            code: RunExit::Untrustworthy.code(),
+        };
     }
     progress.stage("report");
     let mut stdout = String::new();

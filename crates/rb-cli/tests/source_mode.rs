@@ -233,10 +233,13 @@ fn strict_schema_removes_the_marks() -> Result {
             "-T",
             "json",
             "--strict-schema",
+            "--allow-approximate-gate",
             "--no-progress",
         ],
     )?;
+    assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
     let text = String::from_utf8_lossy(&output.stdout);
+    assert!(text.contains("\"modules\""), "{text}");
     for gone in ["approximate", "\"attribution\"", "\"inspected\""] {
         assert!(!text.contains(gone), "{gone} survived --strict-schema");
     }
@@ -535,6 +538,108 @@ fn attest_refuses_to_sign_a_source_mode_run() -> Result {
     let output = run(&dir, &["attest", "--graph", "source.json"])?;
     assert_eq!(output.status.code(), Some(2), "{}", stderr(&output));
     assert!(stderr(&output).contains(REFUSED));
+    std::fs::remove_dir_all(&dir)?;
+    Ok(())
+}
+
+const STRIPPED: &str = "approximate-mode-not-strict: ";
+
+#[test]
+fn strict_schema_output_of_a_source_mode_run_is_refused() -> Result {
+    let dir = solution("strict-refused", CONFIG)?;
+    let strict = ["-T", "json", "--strict-schema", "--no-progress"];
+    let output = run(
+        &dir,
+        &[&["cruise", "--mode", "source"][..], &strict].concat(),
+    )?;
+    assert_eq!(output.status.code(), Some(2), "{}", stderr(&output));
+    assert!(stderr(&output).contains(STRIPPED), "{}", stderr(&output));
+    assert!(output.stdout.is_empty());
+    let allowed = [
+        &["cruise", "--mode", "source"][..],
+        &strict,
+        &["--allow-approximate-gate"],
+    ]
+    .concat();
+    let output = run(&dir, &allowed)?;
+    assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
+    assert!(json(&output)?.get("modules").is_some());
+    // A saved result is refused the same way by fmt.
+    let saved = run(
+        &dir,
+        &["cruise", "--mode", "source", "-T", "json", "--no-progress"],
+    )?;
+    std::fs::write(dir.join("source.json"), &saved.stdout)?;
+    for (args, code, refused) in [
+        (
+            &["fmt", "source.json", "-T", "json", "--strict-schema"][..],
+            2,
+            true,
+        ),
+        (
+            &[
+                "fmt",
+                "source.json",
+                "-T",
+                "json",
+                "--strict-schema",
+                "--allow-approximate-gate",
+            ][..],
+            0,
+            false,
+        ),
+        (&["fmt", "source.json", "-T", "json"][..], 0, false),
+    ] {
+        let output = run(&dir, args)?;
+        assert_eq!(
+            output.status.code(),
+            Some(code),
+            "{args:?}: {}",
+            stderr(&output)
+        );
+        assert_eq!(stderr(&output).contains(STRIPPED), refused, "{args:?}");
+    }
+    std::fs::remove_dir_all(&dir)?;
+    Ok(())
+}
+
+#[test]
+fn the_flag_says_how_dotnet_is_read_never_whether() -> Result {
+    let dir = std::env::temp_dir().join(format!("rb-cli-source-whether-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("src"))?;
+    std::fs::create_dir_all(dir.join("tools/T"))?;
+    std::fs::write(
+        dir.join("src/a.ts"),
+        "import { b } from './b';\nexport const a = b;\n",
+    )?;
+    std::fs::write(dir.join("src/b.ts"), "export const b = 1;\n")?;
+    std::fs::write(
+        dir.join("tools/T/T.csproj"),
+        "<Project Sdk=\"Microsoft.NET.Sdk\"></Project>\n",
+    )?;
+    std::fs::write(dir.join("tools/T/X.cs"), "namespace T; class X {}\n")?;
+    let output = run(
+        &dir,
+        &[
+            "cruise",
+            "src",
+            "--mode",
+            "source",
+            "-T",
+            "json",
+            "--no-progress",
+        ],
+    )?;
+    let document = json(&output)?;
+    let sources: Vec<&str> = document["modules"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|m| m["source"].as_str())
+        .collect();
+    assert_eq!(sources, ["src/a.ts", "src/b.ts"], "{}", stderr(&output));
+    assert!(document["summary"]["inspected"]["dotnet"].is_null());
     std::fs::remove_dir_all(&dir)?;
     Ok(())
 }

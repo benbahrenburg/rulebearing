@@ -24,7 +24,10 @@ use serde_json::{Map, Value, json};
 use crate::cli::FmtArgs;
 use crate::cmd::cruise::color;
 use crate::context::Context;
-use crate::exit::{APPROXIMATE_REASON, RunExit, gate, is_approximate};
+use crate::exit::{
+    APPROXIMATE_REASON, APPROXIMATE_STRICT_REASON, RunExit, gate, is_approximate,
+    strips_approximate,
+};
 use crate::{Outcome, ratchets, write_output};
 
 fn failed(code: RunExit, message: &str) -> Outcome {
@@ -109,6 +112,28 @@ fn from_applies(args: &FmtArgs) -> Result<(), String> {
     Ok(())
 }
 
+/// The reporters' options for a saved result: the terminal, the flags and the repository.
+fn report_options(ctx: &Context<'_>, args: &FmtArgs, format: &FormatOptions) -> ReportOptions {
+    ReportOptions {
+        color: color(args.color, ctx.color_terminal) && args.output_to == "-",
+        strict_schema: args.strict_schema,
+        max_findings: args.max_findings,
+        timestamp: ctx.timestamp.clone(),
+        path_prefix: if matches!(args.output_type.as_str(), "github-annotations" | "sarif") {
+            ctx.repository_prefix()
+        } else {
+            String::new()
+        },
+        baseline: rb_report::baseline::Lifecycle::default(),
+        collapse_pattern: format.collapse.clone(),
+        plantuml_from: args
+            .from
+            .clone()
+            .filter(|f| rb_report::plantuml::From::parse(f).is_some()),
+        graphviz: Some(crate::graphviz::system()),
+    }
+}
+
 /// Runs `fmt`.
 pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
     if let Err(message) = from_applies(args) {
@@ -141,25 +166,17 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         Ok(d) => d,
         Err(e) => return failed(RunExit::Untrustworthy, &e.to_string()),
     };
+    let approximate = is_approximate(&document);
+    if strips_approximate(
+        &args.output_type,
+        args.strict_schema,
+        approximate,
+        args.allow_approximate_gate,
+    ) {
+        return failed(RunExit::Untrustworthy, APPROXIMATE_STRICT_REASON);
+    }
     let mut value = serde_json::to_value(&document).unwrap_or(Value::Null);
-    let options = ReportOptions {
-        color: color(args.color, ctx.color_terminal) && args.output_to == "-",
-        strict_schema: args.strict_schema,
-        max_findings: args.max_findings,
-        timestamp: ctx.timestamp.clone(),
-        path_prefix: if matches!(args.output_type.as_str(), "github-annotations" | "sarif") {
-            ctx.repository_prefix()
-        } else {
-            String::new()
-        },
-        baseline: rb_report::baseline::Lifecycle::default(),
-        collapse_pattern: format.collapse.clone(),
-        plantuml_from: args
-            .from
-            .clone()
-            .filter(|f| rb_report::plantuml::From::parse(f).is_some()),
-        graphviz: Some(crate::graphviz::system()),
-    };
+    let options = report_options(ctx, args, &format);
     let plugin = rb_config::js::plugin::plugin_name(&args.output_type);
     let rendered = match plugin {
         // A plugin reporter, in the sandbox (crate::plugin); its failures are exit 3.
@@ -204,7 +221,6 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         RunExit::Violations(0)
     };
     // A saved result read in source mode never gates (ADR-0011).
-    let approximate = is_approximate(&document);
     match gate(code, decides, approximate, args.allow_approximate_gate) {
         Some(refused) => Outcome {
             stdout,

@@ -191,9 +191,21 @@ pub fn module_systems(list: &str) -> Result<Vec<ModuleSystem>, ConfigError> {
 }
 
 /// `--mode` over `languages.dotnet.mode`
-/// ([Wave 3, Step 14](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
-fn dotnet_flags(config: &mut Config, args: &CruiseArgs) {
-    if let Some(mode) = args.mode {
+/// ([Wave 3, Step 14](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)),
+/// where .NET is read at all: the flag says how, never whether, so a repository without
+/// `languages.dotnet` or a root solution reads no `.cs` file because of it.
+fn dotnet_flags(config: &mut Config, args: &CruiseArgs, ctx: &Context<'_>) {
+    let Some(mode) = args.mode else {
+        return;
+    };
+    #[cfg(feature = "extract-dotnet")]
+    let read = crate::pipeline::dotnet_enabled(ctx, config);
+    #[cfg(not(feature = "extract-dotnet"))]
+    let read = {
+        let _ = ctx;
+        config.languages.dotnet.is_some()
+    };
+    if read {
         config
             .languages
             .dotnet
@@ -250,7 +262,7 @@ pub fn apply_flags(
     if let Some(sidecar) = args.sidecar {
         ts.sidecar = Some(sidecar.runtime());
     }
-    dotnet_flags(config, args);
+    dotnet_flags(config, args, ctx);
     let options = &mut config.options;
     if let Some(p) = &args.focus {
         options.focus = Some(FilterOption {
