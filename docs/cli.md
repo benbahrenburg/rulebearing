@@ -238,7 +238,11 @@ Source mode never decides a gate ([Wave 3 plan § 1.6](plans/pending/0003-wave-3
 | `diff` | `--exit-code` when either side was read in source mode | without `--exit-code` |
 | `attest` | always: a graph read in source mode is not signed as a gate run | |
 
-`--allow-approximate-gate` (on `cruise`, and with `--exit-code` on `fmt` and `diff`) gives the count back for a local script. A CI recipe never uses it: compiled mode is the gate.
+A result without its marks could gate later, so `cruise` and `fmt` also refuse to write a source-mode result with `--strict-schema` through the `json` reporter or a plugin, which see the document without Rulebearing's additions: they print `approximate-mode-not-strict: ...`, write nothing and exit 2. Without `--strict-schema` the marks stay, and `fmt --exit-code` or `diff --exit-code` refuses the saved result as the table says.
+
+`--allow-approximate-gate` (on `cruise`, `fmt`, and `diff` with `--exit-code`) gives the count back, and lets `--strict-schema` write, for a local script. A CI recipe never uses it: compiled mode is the gate.
+
+`--mode` says how .NET is read, never whether: in a repository with no `languages.dotnet` and no solution at the root, `--mode source` reads no `.cs` file.
 
 ## Flags the query commands share
 
