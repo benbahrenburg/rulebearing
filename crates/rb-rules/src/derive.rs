@@ -96,20 +96,43 @@ pub(crate) fn find_cycles(
     }
     let graph = IndexedGraph::new(items, attribute);
     // Each item's cycles are found on its own task.
-    let found = items
-        .par_iter()
-        .map(|item| {
-            let from = js::text(item, attribute);
-            if !graph.may_cycle(&from) {
-                return Vec::new();
-            }
-            js::array(item, "dependencies")
-                .iter()
-                .map(|dependency| graph.cycle(&from, &js::text(dependency, dependency_name)))
-                .collect()
-        })
-        .collect();
-    Some(found)
+    let search = || {
+        items
+            .par_iter()
+            .map(|item| {
+                let from = js::text(item, attribute);
+                if !graph.may_cycle(&from) {
+                    return Vec::new();
+                }
+                js::array(item, "dependencies")
+                    .iter()
+                    .map(|dependency| graph.cycle(&from, &js::text(dependency, dependency_name)))
+                    .collect()
+            })
+            .collect()
+    };
+    Some(match deep_pool() {
+        Some(pool) => pool.install(search),
+        None => search(),
+    })
+}
+
+/// The stack of each worker the cycle search runs on: the main thread's, where the search ran
+/// before it ran in parallel.
+const CYCLE_STACK: usize = 8 * 1024 * 1024;
+
+/// The workers the cycle search runs on. The search recurses once per module along a cycle's
+/// path, so a long cycle needs more than the 2 MiB a rayon worker has by default; `None` when
+/// the threads cannot be started, and the search then runs where it is called.
+fn deep_pool() -> Option<&'static rayon::ThreadPool> {
+    static POOL: std::sync::OnceLock<Option<rayon::ThreadPool>> = std::sync::OnceLock::new();
+    POOL.get_or_init(|| {
+        rayon::ThreadPoolBuilder::new()
+            .stack_size(CYCLE_STACK)
+            .build()
+            .ok()
+    })
+    .as_ref()
 }
 
 /// Writes what [`find_cycles`] found: `circular` on every dependency, `cycle` where there is
@@ -539,6 +562,43 @@ mod tests {
             json!({ "source": "lonely.ts", "dependencies": [] }),
             json!({ "source": "fs", "dependencies": [], "coreModule": true }),
         ]
+    }
+
+    /// Recurses until the stack has grown `need` bytes below `top`.
+    fn descend(top: usize, need: usize) -> bool {
+        let here = std::hint::black_box([0_u8; 256]);
+        if top.abs_diff(here.as_ptr() as usize) >= need {
+            return true;
+        }
+        descend(top, need) && here[0] == 0
+    }
+
+    #[test]
+    fn the_cycle_search_runs_where_a_long_cycle_fits() {
+        // 3 MiB of stack: more than a default rayon worker's 2 MiB, within the deep workers' 8.
+        let reached = deep_pool().map(|pool| {
+            pool.install(|| {
+                let top = [0_u8; 1];
+                descend(top.as_ptr() as usize, 3 * 1024 * 1024)
+            })
+        });
+        assert_eq!(reached, Some(true));
+        // And the search itself answers from there.
+        let items = vec![
+            json!({ "source": "a", "dependencies": [{ "resolved": "b" }] }),
+            json!({ "source": "b", "dependencies": [{ "resolved": "a" }] }),
+        ];
+        let cycle_rule = rules(
+            json!({ "forbidden": [{ "name": "c", "from": {}, "to": { "circular": true } }] }),
+        );
+        let found =
+            find_cycles(&items, "source", "resolved", false, &cycle_rule).unwrap_or_default();
+        assert_eq!(found.len(), 2);
+        assert!(
+            found
+                .iter()
+                .all(|edges| edges.len() == 1 && edges[0].len() == 2)
+        );
     }
 
     #[test]

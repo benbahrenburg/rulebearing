@@ -610,10 +610,12 @@ fn plans(parts: &mut Parts, changed: &[(Part, String, PathBuf)]) -> Plans {
 
 /// What the guard holds between checks.
 struct State {
-    loaded: Option<Config>,
     effective: Config,
     parts: Parts,
     watched: Watched,
+    /// The configuration files' hash ([`config_hash`]), as they were when this state was built.
+    /// They are watched as structural files, so a change to one builds a new state.
+    config_hash: String,
     /// An incremental extraction failed after taking the parts: the next change reads
     /// everything again.
     stale: bool,
@@ -641,7 +643,7 @@ fn build(ctx: &mut Context<'_>, hook: &CruiseArgs) -> Result<State, (RunExit, St
         .map_err(|e| (RunExit::Untrustworthy, e.to_string()))?;
     let watched = Watched::of(ctx, &effective, &parts, since);
     Ok(State {
-        loaded,
+        config_hash: config_hash(ctx, loaded.as_ref()),
         effective,
         parts,
         watched,
@@ -738,7 +740,7 @@ fn check(
 }
 
 /// The findings for a check of `state`.
-fn findings(ctx: &Context<'_>, hook: &CruiseArgs, state: &State, check: Check) -> Findings {
+fn findings(hook: &CruiseArgs, state: &State, check: Check) -> Findings {
     let written_at = now_ms();
     let (answer, error) = match check.answered {
         Ok(answer) => (answer, None),
@@ -748,7 +750,7 @@ fn findings(ctx: &Context<'_>, hook: &CruiseArgs, state: &State, check: Check) -
         tool: tool(),
         written_at,
         seen_up_to: check.scanned,
-        config_hash: config_hash(ctx, state.loaded.as_ref()),
+        config_hash: state.config_hash.clone(),
         key: answer_key(hook),
         // The flag wins over the key, so this is how .NET is read wherever it is read at all.
         mode: if hook.mode == Some(ModeArg::Compiled) {
@@ -826,7 +828,7 @@ pub fn run(
         timings,
         scanned,
     };
-    let mut current = findings(ctx, &hook, &state, first);
+    let mut current = findings(&hook, &state, first);
     if let Err(message) = write(ctx, &current) {
         let _ = writeln!(log, "rulebearing guard: {message}");
         return RunExit::Untrustworthy.code();
@@ -885,7 +887,7 @@ pub fn run(
                 )
             }
         };
-        current = findings(ctx, &hook, &state, done);
+        current = findings(&hook, &state, done);
         if let Err(message) = write(ctx, &current) {
             let _ = writeln!(log, "rulebearing guard: {message}");
         }
@@ -986,6 +988,7 @@ mod tests {
         ));
         assert_eq!(watched.check(&dir), Change::None);
         // Nothing modified since: everything is seen as it is.
+        pause();
         let settled = Watched::of(
             &ctx,
             &Config::default(),

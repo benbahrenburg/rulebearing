@@ -40,6 +40,9 @@ fn compiled(text: &str) -> Option<Arc<Matcher>> {
     found
 }
 
+/// How many patterns a thread's cache holds before it starts over.
+const LOCAL_LIMIT: usize = 4096;
+
 /// Runs `f` with the compiled pattern, or `None` when it does not compile, looked up in this
 /// thread's cache without allocating once the thread has seen it.
 fn with<R>(text: &str, f: impl FnOnce(Option<&Arc<Matcher>>) -> R) -> R {
@@ -52,6 +55,12 @@ fn with<R>(text: &str, f: impl FnOnce(Option<&Arc<Matcher>>) -> R) -> R {
         let found = compiled(text);
         let result = f(found.as_ref());
         if let Ok(mut cache) = local.try_borrow_mut() {
+            // A pattern with a capture substituted is a new text for each captured value, so a
+            // process that evaluates for hours (`guard --watch`) starts the thread's cache over
+            // rather than let it grow without end; the shared cache still holds the matchers.
+            if cache.len() >= LOCAL_LIMIT {
+                cache.clear();
+            }
             cache.insert(text.to_owned(), found);
         }
         result
@@ -85,6 +94,24 @@ pub fn first_match(pattern_text: &str, text: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_thread_s_cache_starts_over_at_its_limit() {
+        // On a thread of its own, so no other test's patterns are in the cache.
+        let held = std::thread::spawn(|| {
+            for i in 0..LOCAL_LIMIT {
+                assert!(test(&format!("^limit-{i}$"), &format!("limit-{i}")));
+            }
+            let full = LOCAL.with(|local| local.borrow().len());
+            assert!(test("^one-more$", "one-more"));
+            let after = LOCAL.with(|local| local.borrow().len());
+            // A pattern seen before the cache started over still answers.
+            assert!(test("^limit-0$", "limit-0"));
+            (full, after)
+        })
+        .join();
+        assert_eq!(held.ok(), Some((LOCAL_LIMIT, 1)));
+    }
 
     #[test]
     fn patterns_are_compiled_once_and_tested() {
