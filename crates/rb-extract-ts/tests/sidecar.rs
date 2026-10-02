@@ -50,12 +50,14 @@ const TREE: &[(&str, &str)] = &[
 
 const COMMAND: &str = r##"import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 const args = process.argv.slice(2);
 // Every file follows `--`, as the sidecar passes them; none is taken from before it.
 const files = args.includes("--")
   ? args.slice(args.indexOf("--") + 1).map((f) => path.posix.normalize(f))
   : [];
-const here = path.dirname(path.dirname(new URL(import.meta.url).pathname));
+// As a file path on every platform: a URL's pathname is `/C:/...` on Windows.
+const here = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 fs.appendFileSync(path.join(here, "calls.log"), JSON.stringify(files) + "\n");
 const modules = new Map();
 const visit = (file) => {

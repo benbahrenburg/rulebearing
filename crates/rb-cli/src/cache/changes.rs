@@ -1090,7 +1090,10 @@ mod tests {
                 "a.ts".to_owned(),
                 hash_file(&dir.join("a.ts")).unwrap_or_default(),
             )]);
-            // The edit lands while the run extracts: after it started, before it records.
+            // The edit lands while the run extracts: after it started, before it records. A
+            // file's time is stamped with a clock that can tick as rarely as every 16 ms
+            // (Windows), so the edit is made a clear tick after the start.
+            std::thread::sleep(std::time::Duration::from_millis(50));
             write(&dir.join("a.ts"), "after!\n");
             let inputs = BTreeSet::from(["a.ts".to_owned(), "b.ts".to_owned()]);
             let (hashes, stamps) =

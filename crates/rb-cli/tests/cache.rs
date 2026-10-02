@@ -146,6 +146,10 @@ fn git(dir: &Path, args: &[&str]) -> Result<String> {
             "core.hooksPath=/dev/null",
             "-c",
             "init.defaultBranch=main",
+            // A linked worktree checks the files out again: with the line endings they were
+            // committed with, so the configuration hashes the same there.
+            "-c",
+            "core.autocrlf=false",
         ])
         .args(args)
         .output()?;
