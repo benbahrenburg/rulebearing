@@ -15,7 +15,7 @@
 //! filters and the ratchets, the expired entries, the vacuous rules, the ratchet results and the
 //! extractors' warnings. It is stored beside the extraction as `evaluated-<16 hex>.json` (or
 //! `.json.z`), named by `evaluated.json`, which records the key it was computed under and the
-//! `sha256:` digest of the stored bytes. The key ([`key`]) is the extraction's digest and
+//! `sha256:` digest of the stored bytes. The key ([`key()`]) is the extraction's digest and
 //! everything evaluation reads besides:
 //!
 //! | Part | Why |
@@ -254,7 +254,7 @@ struct Pointer {
     digest: String,
 }
 
-/// The part of [`key`] that does not depend on the extraction, or `None` when the layer is off
+/// The part of [`key()`] that does not depend on the extraction, or `None` when the layer is off
 /// for this run (`--affected`).
 pub fn partial_key(
     ctx: &Context<'_>,

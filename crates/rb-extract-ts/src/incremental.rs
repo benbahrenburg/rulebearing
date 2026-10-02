@@ -16,7 +16,7 @@
 //! [`crate::to_extraction`] give for the same request, byte for byte, under the same rule: every
 //! unchanged file's earlier module is what reading it again would give. The steps are the same
 //! ones in the same order: settle the extension list on the initial sources, walk depth first
-//! ([`crate::pipeline::depth_first`]), put each file's unfollowed dependencies after it, compute
+//! (`crate::pipeline::depth_first`), put each file's unfollowed dependencies after it, compute
 //! the statistics, link the code layer in module order. What differs is only where a reused
 //! file's parts come from: its module (dependencies, statistics, language) and its file state are
 //! the earlier ones, moved; the document's dependency is never turned back into the pipeline's

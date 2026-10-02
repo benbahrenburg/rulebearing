@@ -488,7 +488,7 @@ fn manifests(root: &Path, cwd: &Path, config: &Config) -> Vec<(String, Vec<u8>)>
     out
 }
 
-/// The files [`manifests`] reads, whether or not they exist: the manifests the extractors read
+/// The files `manifests` reads, whether or not they exist: the manifests the extractors read
 /// in `root` and `cwd`, and the files the configuration's `tsConfig`, `webpackConfig` and
 /// `babelConfig` options name.
 pub fn manifest_paths(root: &Path, cwd: &Path, config: &Config) -> Vec<PathBuf> {

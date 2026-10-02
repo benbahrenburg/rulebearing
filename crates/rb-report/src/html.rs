@@ -14,7 +14,7 @@
 //!
 //! The modules are ordered as upstream orders them, non-core before core and then by `source` in
 //! UTF-16 code unit order, with upstream's comparator (`a > b ? 1 : -1`) run through V8's own sort
-//! ([`crate::js_sort`]): the comparator never answers "equal", so where two modules with the same
+//! (`crate::js_sort`): the comparator never answers "equal", so where two modules with the same
 //! `source` end up (upstream's mocks have them) depends on the algorithm, and it is V8's.
 
 use std::fmt::Write as _;

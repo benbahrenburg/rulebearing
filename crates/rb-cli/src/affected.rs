@@ -73,7 +73,7 @@
 //! - The closure is those modules and the modules that reach them (to `--affected-depth`). The
 //!   report keeps the closure's modules with every edge they have, so a violation on an edge that
 //!   leaves the closure (an edited file importing an unchanged, forbidden module) is reported.
-//! - Which violations touch the closure ([`touches`]): a dependency, instability or module-level
+//! - Which violations touch the closure (`touches`): a dependency, instability or module-level
 //!   violation (orphan, `required`, `numberOfDependentsLessThan`) when its `from` module is in
 //!   it; a cycle or reachability violation when any module of its path, or its `to`, is (without
 //!   a depth the `from` module then is too, since it reaches every module of the path; with a
@@ -706,7 +706,7 @@ pub fn saved_graph_seeds(
 /// the saved graph `saved`, and leaves `reaches` alone.
 ///
 /// # Errors
-/// [`AffectedError`] from [`changed_since`] and [`dependents_in_saved_graph`].
+/// [`AffectedError`] from [`changed_since`] and `dependents_in_saved_graph`.
 pub fn select(
     repo: &Path,
     saved: &Path,
@@ -833,7 +833,7 @@ impl Selection {
     /// have, so a violation on an edge that leaves the closure stays; with `--affected-depth`,
     /// also the `from` module of each cycle or reachability violation whose path touches the
     /// closure. Folders keep the ones a kept module sits in; element and slice violations, which
-    /// belong to no module, keep the ones that touch the closure ([`touches`]). The re-summary
+    /// belong to no module, keep the ones that touch the closure (`touches`). The re-summary
     /// then counts the kept modules' violations.
     pub fn narrow(&self, doc: &GraphDocument) -> (GraphDocument, Affected) {
         let mut closure = affected_closure(doc, &self.seeds(doc), self.depth.unwrap_or(0));

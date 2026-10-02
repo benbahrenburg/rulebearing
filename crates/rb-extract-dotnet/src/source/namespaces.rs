@@ -16,7 +16,7 @@
 //! at the global level. A dotted name continues from what its first segment found: a namespace's
 //! types and sub-namespaces, a type's nested types, and a type is where it stops when the rest is
 //! a member. Generic arity must match. A call on a value is looked up as an extension method
-//! ([`Resolver::extension_owners`]), and a constant or an enum member read is no edge. What only a
+//! (`Resolver::extension_owners`), and a constant or an enum member read is no edge. What only a
 //! compiler knows (overload resolution, an extension method's receiver type, members inherited
 //! from a base, `var`) is not known, which is why every edge is `approximate`.
 //!

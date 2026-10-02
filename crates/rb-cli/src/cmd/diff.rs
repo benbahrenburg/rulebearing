@@ -336,7 +336,7 @@ pub fn resolve_revision(dir: &Path, reference: &str) -> Result<String, String> {
     .ok_or_else(unknown)
 }
 
-/// A detached checkout of one commit, in `base/` inside a [`PrivateDir`] of its own under the
+/// A detached checkout of one commit, in `base/` inside a `PrivateDir` of its own under the
 /// system temporary directory; the worktree and the folder are removed when dropped.
 #[derive(Debug)]
 pub struct Checkout {
