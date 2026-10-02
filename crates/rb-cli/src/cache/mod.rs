@@ -409,35 +409,37 @@ fn is_assembly(name: &str) -> bool {
 }
 
 /// What the stored parts (with their per-file states) and the changes call for: a partial
-/// extraction or a full one, or `None` for a hit. Only a changed source is read again alone and
-/// only an assembly reads the .NET graph again; any other changed input is structural.
+/// extraction or a full one, or the parts back for a hit. Only a changed source is read again
+/// alone and only an assembly reads the .NET graph again; any other changed input is structural.
+/// The parts are taken, so an earlier extraction moves into its request and is not copied: on a
+/// large repository the copy was a tenth of a warm run (NFR-PERF-02).
 fn decide(
     config: &Config,
     scope: &changes::Scope,
-    parts: &Parts,
+    parts: Parts,
     found: &changes::Changes,
-) -> Option<(Plans, Served)> {
+) -> Decided {
     if let Some(reason) = &found.structural {
-        return Some(full(reason.clone()));
+        return Decided::extract(full(reason.clone()));
     }
-    let typescript: BTreeMap<String, &String> = parts
+    let typescript: BTreeMap<String, String> = parts
         .typescript
         .iter()
         .flat_map(|p| p.files.keys())
-        .map(|source| (typescript_name(scope, config, source), source))
+        .map(|source| (typescript_name(scope, config, source), source.clone()))
         .collect();
-    let python: BTreeMap<String, &String> = parts
+    let python: BTreeMap<String, String> = parts
         .python
         .iter()
         .flat_map(|p| p.files.keys())
-        .map(|file| (scope.name(&scope.base.join(file)), file))
+        .map(|file| (scope.name(&scope.base.join(file)), file.clone()))
         .collect();
     // Source mode keeps each `.cs` file's parse; compiled mode keeps none.
-    let dotnet_sources: BTreeMap<String, &String> = parts
+    let dotnet_sources: BTreeMap<String, String> = parts
         .dotnet
         .iter()
         .flat_map(|p| p.files.keys())
-        .map(|file| (scope.name(&scope.base.join(file)), file))
+        .map(|file| (scope.name(&scope.base.join(file)), file.clone()))
         .collect();
     let (mut ts_changed, mut py_changed, mut dotnet) = (Vec::new(), Vec::new(), false);
     let mut cs_changed = Vec::new();
@@ -455,17 +457,17 @@ fn decide(
             cs_changed.push(PathBuf::from(file.as_str()));
             dotnet = true;
         } else {
-            return Some(full(format!("{name} changed")));
+            return Decided::extract(full(format!("{name} changed")));
         }
     }
     if ts_changed.is_empty() && py_changed.is_empty() && !dotnet {
-        return None;
+        return Decided::Hit(Box::new(parts));
     }
     let plan = |changed: &[PathBuf],
-                files: &BTreeMap<String, &String>,
-                part: &Option<rb_model::Extraction>| {
+                files: &BTreeMap<String, String>,
+                part: Option<rb_model::Extraction>| {
         if changed.is_empty() {
-            return Plan::Reuse(part.clone());
+            return Plan::Reuse(part);
         }
         Plan::Incremental(rb_model::ExtractRequest {
             changed: changed.to_vec(),
@@ -474,25 +476,25 @@ fn decide(
                 .map(|s| PathBuf::from(s.as_str()))
                 .filter(|s| !changed.contains(s))
                 .collect(),
-            previous: part.clone().unwrap_or_default(),
+            previous: part.unwrap_or_default(),
             // The cache sees a folder's entries only as one of its inputs, and keeps no walk.
             walk_unchanged: false,
         })
     };
     let plans = Plans {
-        typescript: plan(&ts_changed, &typescript, &parts.typescript),
-        python: plan(&py_changed, &python, &parts.python),
+        typescript: plan(&ts_changed, &typescript, parts.typescript),
+        python: plan(&py_changed, &python, parts.python),
         dotnet: if !cs_changed.is_empty() {
-            plan(&cs_changed, &dotnet_sources, &parts.dotnet)
+            plan(&cs_changed, &dotnet_sources, parts.dotnet)
         } else if dotnet {
             Plan::Full
         } else {
-            Plan::Reuse(parts.dotnet.clone())
+            Plan::Reuse(parts.dotnet)
         },
         keep_file_states: true,
         keep_walk: false,
     };
-    Some((
+    Decided::extract((
         plans,
         Served::Incremental {
             typescript: ts_changed.len(),
@@ -500,6 +502,47 @@ fn decide(
             dotnet,
         },
     ))
+}
+
+/// What a stored entry and the changes found call for: the entry's parts when nothing changed
+/// or nothing extracted did, else what to extract. An entry whose states do not parse is
+/// extracted in full.
+fn stored(
+    entry: manifest::Entry,
+    config: &Config,
+    scope: &changes::Scope,
+    found: &changes::Changes,
+) -> Decided {
+    if found.is_empty() {
+        return Decided::Hit(Box::new(entry.parts));
+    }
+    entry.with_states().map_or_else(
+        |miss| Decided::extract(full(miss.to_string())),
+        |parts| decide(config, scope, parts, found),
+    )
+}
+
+/// What [`decide`] found: something to extract, or the stored parts, which answer as they are.
+enum Decided {
+    /// The plans to extract with, and how the run is served.
+    Extract(Box<(Plans, Served)>),
+    /// Nothing extracted changed: the parts back.
+    Hit(Box<Parts>),
+}
+
+impl Decided {
+    fn extract(decision: (Plans, Served)) -> Self {
+        Self::Extract(Box::new(decision))
+    }
+
+    /// The plans and how the run is served, when something is extracted.
+    #[cfg(test)]
+    fn extraction(self) -> Option<(Plans, Served)> {
+        match self {
+            Self::Extract(decision) => Some(*decision),
+            Self::Hit(_) => None,
+        }
+    }
 }
 
 /// The files that change nothing when absent and must be seen when they appear: the manifests
@@ -852,16 +895,11 @@ pub fn extract_cached(
         Ok(entry) => entry,
         Err(miss) => return extract(full(miss.to_string()), BTreeMap::new()),
     };
-    if !found.is_empty() {
-        let decision = match entry.with_states() {
-            Ok(parts) => decide(config, &scope, &parts, &found),
-            Err(miss) => Some(full(miss.to_string())),
-        };
-        if let Some(decision) = decision {
-            return extract(decision, found.hashes);
-        }
-    }
-    let (document, warnings) = pipeline::merge(config, &entry.parts)?;
+    let parts = match stored(entry, config, &scope, &found) {
+        Decided::Extract(decision) => return extract(*decision, found.hashes),
+        Decided::Hit(parts) => *parts,
+    };
+    let (document, warnings) = pipeline::merge(config, &parts)?;
     Ok(Cached {
         content: Content::Extracted(Box::new(document), warnings),
         summary: summary(&Served::Hit),
@@ -1084,10 +1122,16 @@ mod tests {
             modified: names.iter().map(|n| (*n).to_owned()).collect(),
             ..changes::Changes::default()
         };
-        assert!(decide(&config, &scope(dir), &parts, &changed(&[])).is_none());
+        assert!(
+            decide(&config, &scope(dir), parts.clone(), &changed(&[]))
+                .extraction()
+                .is_none()
+        );
         for other in ["notes/x.json", ".babelrc", "configs/base.json", "src/"] {
             assert_eq!(
-                decide(&config, &scope(dir), &parts, &changed(&[other])).map(|(_, s)| s),
+                decide(&config, &scope(dir), parts.clone(), &changed(&[other]))
+                    .extraction()
+                    .map(|(_, s)| s),
                 Some(Served::Full(format!("{other} changed"))),
                 "any input other than a source or an assembly is structural"
             );
@@ -1096,7 +1140,9 @@ mod tests {
             structural: Some("src/c.ts was added".into()),
             ..changed(&["src/a.ts"])
         };
-        let Some((plans, served)) = decide(&config, &scope(dir), &parts, &structural) else {
+        let Some((plans, served)) =
+            decide(&config, &scope(dir), parts.clone(), &structural).extraction()
+        else {
             unreachable!("a structural change extracts");
         };
         assert_eq!(served, Served::Full("src/c.ts was added".into()));
@@ -1105,14 +1151,16 @@ mod tests {
         let manifest = decide(
             &config,
             &scope(dir),
-            &parts,
+            parts.clone(),
             &changed(&["web/package.json"]),
-        );
+        )
+        .extraction();
         assert_eq!(
             manifest.map(|(_, s)| s),
             Some(Served::Full("web/package.json changed".into()))
         );
-        let Some((plans, served)) = decide(&config, &scope(dir), &parts, &changed(&["src/b.ts"]))
+        let Some((plans, served)) =
+            decide(&config, &scope(dir), parts.clone(), &changed(&["src/b.ts"])).extraction()
         else {
             unreachable!("an edit extracts");
         };
@@ -1134,9 +1182,10 @@ mod tests {
         let Some((plans, served)) = decide(
             &config,
             &scope(dir),
-            &parts,
+            parts.clone(),
             &changed(&["app/m.py", "bin/A.dll"]),
-        ) else {
+        )
+        .extraction() else {
             unreachable!("an edit extracts");
         };
         assert_eq!(

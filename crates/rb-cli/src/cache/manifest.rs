@@ -164,10 +164,10 @@ impl Entry {
     ///
     /// # Errors
     /// A [`Miss`] when the states do not parse; the caller extracts in full.
-    pub fn with_states(&self) -> Result<Parts, Miss> {
+    pub fn with_states(self) -> Result<Parts, Miss> {
         let states: States = serde_json::from_slice(&self.states)
             .map_err(|e| Miss::Corrupt(format!("the per-file states: {e}")))?;
-        let mut parts = self.parts.clone();
+        let mut parts = self.parts;
         for (part, files) in [
             (&mut parts.typescript, states.typescript),
             (&mut parts.dotnet, states.dotnet),
@@ -638,7 +638,7 @@ mod tests {
                 .as_ref()
                 .is_some_and(|p| p.files.is_empty())
         );
-        assert_eq!(entry.with_states(), Ok(with_files.clone()));
+        assert_eq!(entry.clone().with_states(), Ok(with_files.clone()));
         let mut broken = entry.clone();
         broken.states = b"{\"typescript\": 3}".to_vec();
         assert!(matches!(broken.with_states(), Err(Miss::Corrupt(_))));
