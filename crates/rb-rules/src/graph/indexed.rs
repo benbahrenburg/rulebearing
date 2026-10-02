@@ -531,6 +531,23 @@ mod tests {
     }
 
     #[test]
+    fn an_edge_leads_to_its_name_when_it_has_one_and_to_resolved_otherwise() {
+        // As upstream's `dependency.name || dependency.resolved`: an empty or null name is none.
+        let modules = vec![
+            json!({ "source": "a", "dependencies": [{ "name": "", "resolved": "b" }] }),
+            json!({ "source": "b", "dependencies": [{ "name": null, "resolved": "c" }] }),
+            json!({ "source": "c", "dependencies": [{ "name": "a", "resolved": "elsewhere" }] }),
+        ];
+        let graph = IndexedGraph::new(&modules, "source");
+        let names: Vec<String> = graph
+            .cycle("a", "b")
+            .iter()
+            .filter_map(|s| s["name"].as_str().map(str::to_owned))
+            .collect();
+        assert_eq!(names, ["b", "c", "a"]);
+    }
+
+    #[test]
     fn cycles_follow_upstream_order() {
         let modules = modules();
         let graph = IndexedGraph::new(&modules, "source");

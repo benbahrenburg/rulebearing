@@ -536,6 +536,27 @@ mod tests {
     use super::*;
 
     #[test]
+    fn the_dotnet_mode_is_named_as_it_is_written_and_defaults_to_compiled() {
+        for (mode, name) in [
+            (DotnetMode::Compiled, "compiled"),
+            (DotnetMode::Source, "source"),
+        ] {
+            assert_eq!(mode.as_str(), name);
+            // The name is what a configuration and a receipt carry.
+            assert_eq!(
+                serde_json::to_string(&mode).unwrap_or_default(),
+                format!("\"{name}\"")
+            );
+        }
+        assert_eq!(DotnetOptions::default().mode(), DotnetMode::Compiled);
+        let source = DotnetOptions {
+            mode: Some(DotnetMode::Source),
+            ..DotnetOptions::default()
+        };
+        assert_eq!(source.mode(), DotnetMode::Source);
+    }
+
+    #[test]
     fn the_sidecar_is_a_command_line_setting_that_never_serialises() {
         assert_eq!(SidecarRuntime::Node.as_str(), "node");
         assert_eq!(
