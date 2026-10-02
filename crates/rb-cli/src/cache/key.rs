@@ -330,7 +330,10 @@ pub fn extraction_hash(config: &Config, root: &Path, cwd: &Path, paths: &[String
         // Every option type serialises; an empty value would only make the entry a miss.
         serde_json::to_vec(value).unwrap_or_default()
     }
-    let canonical = cwd.canonicalize().unwrap_or_else(|_| cwd.to_path_buf());
+    // Without Windows' verbatim prefix, as the root is: with it the working directory is never
+    // under the root and would be hashed by its absolute path, another in every worktree.
+    let canonical =
+        rb_model::without_verbatim(&cwd.canonicalize().unwrap_or_else(|_| cwd.to_path_buf()));
     let within = canonical
         .strip_prefix(root)
         .map_or_else(|_| slashed(cwd), slashed);
@@ -823,7 +826,12 @@ mod tests {
                     files: vec![canonical],
                     ..Config::default()
                 };
-                let hash = config_hash(&config, &root);
+                // The entry's hash too: it names the working directory inside the root.
+                let hash = format!(
+                    "{} {}",
+                    config_hash(&config, &root),
+                    extraction_hash(&config, &root, &dir, &["src".to_owned()])
+                );
                 let _ = std::fs::remove_dir_all(&dir);
                 hash
             })

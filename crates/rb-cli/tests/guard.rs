@@ -503,6 +503,9 @@ fn a_saved_cs_file_is_read_again_in_source_mode() -> Result {
             .as_str()
             .is_some_and(|a| a.contains("approximate: "))
     );
+    // A save made while the first read is still settling is part of a full read, not checked
+    // alone.
+    settled(&dir)?;
     std::fs::write(
         dir.join("Domain/Orders/Order.cs"),
         "namespace Shop.Domain.Orders;\n\npublic partial class Order\n{\n    public Order(int customer)\n    {\n    }\n}\n",
