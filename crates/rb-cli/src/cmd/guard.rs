@@ -405,9 +405,26 @@ fn walk_listing(folder: &Path, options: &rb_model::TypeScriptOptions) -> BTreeSe
         .unwrap_or_default()
 }
 
-/// Whether `stamped` was modified at or after `since` (nanoseconds since the epoch).
+/// How far behind the clock a modification time may be stamped: a kernel stamps with a coarse
+/// clock a few milliseconds behind.
+const STAMP_SLACK_NS: u64 = 10_000_000;
+
+/// The slack for a time in whole seconds: a file system that keeps one or two second times
+/// (FAT, some network mounts) rounds a save down by up to that much.
+const COARSE_SLACK_NS: u64 = 2_000_000_000;
+
+/// Whether `stamped` may have been modified at or after `since` (nanoseconds since the epoch),
+/// allowing for how coarsely the time was recorded. A file wrongly taken as modified is only
+/// checked once more.
 fn after(stamped: Stamp, since: u64) -> bool {
-    stamped.is_some_and(|(_, modified)| modified >= since)
+    stamped.is_some_and(|(_, modified)| {
+        let slack = if modified % 1_000_000_000 == 0 {
+            COARSE_SLACK_NS
+        } else {
+            STAMP_SLACK_NS
+        };
+        modified.saturating_add(slack) >= since
+    })
 }
 
 impl Watched {
@@ -452,9 +469,18 @@ impl Watched {
             watched.unsettle(&path, stamped, since, ctx);
             watched.structural.insert(path, stamped);
         }
+        // The guard writes its findings under `.graph/` a few milliseconds before each scan; a
+        // folder of its own is no input, and watching it would read everything again each time.
+        let own = Path::new(FINDINGS)
+            .components()
+            .next()
+            .map(|first| ctx.resolve(first.as_os_str()));
         let walked = parts.typescript.iter().filter_map(|t| t.walk.as_ref());
         for folder in walked.flat_map(|w| &w.folders) {
             let folder = ctx.resolve(folder);
+            if own.as_ref().is_some_and(|own| folder.starts_with(own)) {
+                continue;
+            }
             let names = walk_listing(&folder, &watched.typescript);
             let stamped = stamp(&folder);
             watched.unsettle(&folder, stamped, since, ctx);
@@ -707,9 +733,21 @@ fn check(
     let started = Instant::now();
     let since = now_ns();
     let extracted = match plans {
-        None => build(ctx, hook)
-            .map(|built| *state = built)
-            .map_err(|(_, message)| message),
+        None => match build(ctx, hook) {
+            Ok(built) => {
+                *state = built;
+                Ok(())
+            }
+            Err((_, message)) => {
+                // The state is the earlier one, which did not see what asked for this read: the
+                // next scan asks again.
+                state
+                    .watched
+                    .unsettled
+                    .get_or_insert_with(|| "the last full read failed".into());
+                Err(message)
+            }
+        },
         Some(plans) => match pipeline::extract_parts(ctx, &state.effective, &hook.paths, plans) {
             Ok(parts) => {
                 // A file the change made reachable is watched from now on.
@@ -955,6 +993,84 @@ mod tests {
 
     fn pause() {
         std::thread::sleep(Duration::from_millis(20));
+    }
+
+    #[test]
+    fn a_stamp_counts_as_after_within_the_slack_of_how_it_was_recorded() {
+        let since = 100 * 1_000_000_000 + 500_000_000;
+        for (modified, expected) in [
+            (since, true),
+            (since + 1, true),
+            // A coarse kernel clock: up to 10 ms behind.
+            (since - STAMP_SLACK_NS, true),
+            (since - STAMP_SLACK_NS - 1, false),
+            // Whole seconds: a file system that rounds down by up to two.
+            (100 * 1_000_000_000, true),
+            (99 * 1_000_000_000, true),
+            (98 * 1_000_000_000, false),
+        ] {
+            assert_eq!(after(Some((1, modified)), since), expected, "{modified}");
+        }
+        assert!(!after(None, since));
+    }
+
+    #[test]
+    fn the_guard_s_own_folder_is_not_watched() -> std::io::Result<()> {
+        let dir = folder("own")?;
+        std::fs::create_dir_all(dir.join(".graph/guard"))?;
+        let mut stdin = std::io::empty();
+        let ctx = context(&dir, &mut stdin);
+        let mut parts = read(&["src/a.ts"]);
+        if let Some(typescript) = parts.typescript.as_mut() {
+            typescript.walk = Some(rb_model::Walk {
+                folders: vec![
+                    ".".into(),
+                    "src".into(),
+                    ".graph".into(),
+                    ".graph/guard".into(),
+                ],
+                ..rb_model::Walk::default()
+            });
+        }
+        pause();
+        // Written now, as the guard writes its findings just before a scan.
+        std::fs::write(dir.join(".graph/guard/findings.json"), "{}")?;
+        let watched = Watched::of(&ctx, &Config::default(), &parts, now_ns());
+        let walked: Vec<&PathBuf> = watched.walked.keys().collect();
+        assert_eq!(walked, [&dir.join("."), &dir.join("src")]);
+        assert!(watched.unsettled.is_none());
+        std::fs::remove_dir_all(&dir)
+    }
+
+    #[test]
+    fn a_full_read_that_fails_is_asked_for_again() -> std::io::Result<()> {
+        let dir = folder("retry")?;
+        std::fs::write(dir.join("src/a.ts"), "export const a = 1;\n")?;
+        std::fs::write(
+            dir.join("rulebearing.yaml"),
+            "rules:\n  dependencies:\n    forbidden:\n      - name: r\n        comment: \"plan:rulebearing-wave-3\"\n        severity: error\n        allowEmpty: true\n        from: { path: \"^src/\" }\n        to: { path: \"^lib/\" }\n",
+        )?;
+        let mut stdin = std::io::empty();
+        let mut ctx = context(&dir, &mut stdin);
+        let hook = GuardArgs::default().hook();
+        let mut state = build(&mut ctx, &hook).map_err(|(_, e)| std::io::Error::other(e))?;
+        // The scan that asked for the read has taken its reason; then the read fails.
+        state.watched.unsettled = None;
+        std::fs::write(dir.join("rulebearing.yaml"), "rules: [not, a, rule, set\n")?;
+        let failed = check(
+            &mut ctx,
+            &hook,
+            &mut state,
+            None,
+            (Vec::new(), None),
+            now_ms(),
+        );
+        assert!(failed.answered.is_err());
+        assert_eq!(
+            state.watched.check(&dir),
+            Change::Structural("the last full read failed".into())
+        );
+        std::fs::remove_dir_all(&dir)
     }
 
     #[test]
