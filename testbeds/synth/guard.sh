@@ -2,8 +2,10 @@
 # The guard's latency for NFR-PERF-03: generate the 5,500-module tree, start
 # `rulebearing guard --watch` on it, save seeded files one at a time and read, from the findings
 # file, how long each check took from the save to the answer written (`latencyMs`, the daemon's
-# own timer). Prints the p50 and p95 and each stage's median, and exits 1 when the p95 is at or
-# above the threshold.
+# own timer). Each file is saved twice: once with a comment added, which leaves the graph as it
+# was, and once with an import added, which changes it and so has the rules evaluated again.
+# Prints the p50 and p95 and each stage's median for both kinds of save, and exits 1 when either
+# p95 is at or above the threshold.
 #
 # Usage: testbeds/synth/guard.sh [<tree directory>]   (default: a folder under the temp directory)
 # $RB_GUARD_EDITS (default 40) and $RB_GUARD_SEED (default 42) set the edits,
@@ -68,25 +70,33 @@ try:
         if name.endswith(".ts")
     )
     chosen = random.Random(seed).sample(sources, min(edits, len(sources)))
-    latencies, extracts, answers = [], [], []
+    kinds = {
+        "a comment added": b"\n// edit\n",
+        "an import added": b'\nimport "node:path";\n',
+    }
+    measured = {kind: {"latency": [], "extract": [], "answer": []} for kind in kinds}
     for path in chosen:
         relative = os.path.relpath(path, tree)
         with open(path, "rb") as handle:
             original = handle.read()
-        for content, measured in ((original + b"\n// edit\n", True), (original, False)):
-            before = read()["writtenAt"]
+        # Each save is followed by the original again, which is not measured.
+        saves = [step for kind, added in kinds.items() for step in ((original + added, kind), (original, None))]
+        for content, kind in saves:
             with open(path, "wb") as handle:
                 handle.write(content)
+            # A scan that started after the save has seen it; an earlier answer for the same
+            # file, or the heartbeat's rewrite of one, is not taken for this save's.
+            saved = time.time() * 1000
             found = wait(
-                lambda f: f["writtenAt"] > before and f.get("rechecked") == [relative],
+                lambda f: f["seenUpTo"] >= saved and f.get("rechecked") == [relative],
                 60, f"the check of {relative}",
             )
-            if measured:
+            if kind is not None:
                 if found.get("error"):
                     sys.exit(f"guard: the check of {relative} failed: {found['error']}")
-                latencies.append(found["latencyMs"])
-                extracts.append(found["timings"]["extract"])
-                answers.append(found["timings"]["answer"])
+                measured[kind]["latency"].append(found["latencyMs"])
+                measured[kind]["extract"].append(found["timings"]["extract"])
+                measured[kind]["answer"].append(found["timings"]["answer"])
 finally:
     guard.stdin.close()
     guard.wait(timeout=60)
@@ -97,11 +107,14 @@ def at(values, quantile):
     return ordered[min(len(ordered) - 1, int(round(quantile * (len(ordered) - 1))))]
 
 
-p50, p95 = at(latencies, 0.5), at(latencies, 0.95)
-print(
-    f"guard: p50 {p50} ms, p95 {p95} ms, max {max(latencies)} ms over {len(latencies)} saved files"
-    f" (median extract {at(extracts, 0.5)} ms, answer {at(answers, 0.5)} ms);"
-    f" threshold {threshold} ms"
-)
-sys.exit(1 if p95 >= threshold else 0)
+worst = 0
+for kind, taken in measured.items():
+    p50, p95 = at(taken["latency"], 0.5), at(taken["latency"], 0.95)
+    worst = max(worst, p95)
+    print(
+        f"guard, {kind}: p50 {p50} ms, p95 {p95} ms, max {max(taken['latency'])} ms over"
+        f" {len(taken['latency'])} saved files (median extract {at(taken['extract'], 0.5)} ms,"
+        f" answer {at(taken['answer'], 0.5)} ms); threshold {threshold} ms"
+    )
+sys.exit(1 if worst >= threshold else 0)
 PY

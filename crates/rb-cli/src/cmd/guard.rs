@@ -645,6 +645,15 @@ struct State {
     /// An incremental extraction failed after taking the parts: the next change reads
     /// everything again.
     stale: bool,
+    /// The last document answered for, with its answer ([`answer`]).
+    answered: Option<Answered>,
+}
+
+/// A merged document, the extractors' warnings and the answer given for them.
+struct Answered {
+    document: rb_model::GraphDocument,
+    warnings: Vec<rb_model::Warning>,
+    answer: Result<String, String>,
 }
 
 /// Loads the configuration and extracts in full.
@@ -674,23 +683,44 @@ fn build(ctx: &mut Context<'_>, hook: &CruiseArgs) -> Result<State, (RunExit, St
         parts,
         watched,
         stale: false,
+        answered: None,
     })
 }
 
 /// The hook's answer for the state's extraction, or why there is none.
-fn answer(ctx: &mut Context<'_>, hook: &CruiseArgs, state: &State) -> Result<String, String> {
+///
+/// A save that leaves the graph as it was (an edit inside a function, a comment) merges into the
+/// document already answered for, and the answer is a function of that document while the
+/// configuration stands, so it is given again without evaluating. That holds only where nothing
+/// else feeds the answer: not with `--affected`, whose closure follows what git calls changed,
+/// and not with ratchets, whose budgets are files read on every run.
+fn answer(ctx: &mut Context<'_>, hook: &CruiseArgs, state: &mut State) -> Result<String, String> {
     let (document, warnings) =
         pipeline::merge(&state.effective, &state.parts).map_err(|e| e.to_string())?;
-    let outcome = cruise::hook_answer(ctx, hook, Given { document, warnings });
-    if outcome.stdout.is_empty()
-        && let Some(line) = outcome
-            .stderr
-            .lines()
-            .find(|l| l.starts_with("rulebearing cruise:"))
+    let repeatable = hook.affected.is_none() && state.effective.rules.ratchets.is_empty();
+    if repeatable
+        && let Some(last) = &state.answered
+        && last.warnings == warnings
+        && last.document == document
     {
-        return Err(line.to_owned());
+        return last.answer.clone();
     }
-    Ok(outcome.stdout)
+    let kept = repeatable.then(|| (crate::value::copy(&document), warnings.clone()));
+    let outcome = cruise::hook_answer(ctx, hook, Given { document, warnings });
+    let answer = match outcome
+        .stderr
+        .lines()
+        .find(|l| l.starts_with("rulebearing cruise:"))
+    {
+        Some(line) if outcome.stdout.is_empty() => Err(line.to_owned()),
+        _ => Ok(outcome.stdout),
+    };
+    state.answered = kept.map(|(document, warnings)| Answered {
+        document,
+        warnings,
+        answer: answer.clone(),
+    });
+    answer
 }
 
 /// Writes the findings file through a temporary file in the same folder, so a reader never
@@ -854,7 +884,7 @@ pub fn run(
         }
     };
     let extract = millis(started.elapsed());
-    let answered = answer(ctx, &hook, &state);
+    let answered = answer(ctx, &hook, &mut state);
     let timings = Timings {
         extract,
         answer: millis(started.elapsed()).saturating_sub(extract),
@@ -1039,6 +1069,55 @@ mod tests {
         let walked: Vec<&PathBuf> = watched.walked.keys().collect();
         assert_eq!(walked, [&dir.join("."), &dir.join("src")]);
         assert!(watched.unsettled.is_none());
+        std::fs::remove_dir_all(&dir)
+    }
+
+    #[test]
+    fn an_unchanged_graph_is_answered_as_before_and_a_changed_one_anew() -> std::io::Result<()> {
+        let dir = folder("repeat")?;
+        std::fs::create_dir_all(dir.join("lib"))?;
+        std::fs::write(dir.join("lib/b.ts"), "export const b = 1;\n")?;
+        std::fs::write(
+            dir.join("src/a.ts"),
+            "import { b } from \"../lib/b\";\nexport const a = b;\n",
+        )?;
+        std::fs::write(
+            dir.join("rulebearing.yaml"),
+            "rules:\n  dependencies:\n    forbidden:\n      - name: r\n        comment: \"plan:rulebearing-wave-3\"\n        severity: error\n        from: { path: \"^src/\" }\n        to: { path: \"^lib/\" }\n",
+        )?;
+        let mut stdin = std::io::empty();
+        let mut ctx = context(&dir, &mut stdin);
+        let hook = GuardArgs::default().hook();
+        let mut state = build(&mut ctx, &hook).map_err(|(_, e)| std::io::Error::other(e))?;
+        let first = answer(&mut ctx, &hook, &mut state);
+        assert!(
+            first
+                .as_ref()
+                .is_ok_and(|a| a.contains("\"decision\":\"block\""))
+        );
+        // The kept answer is what the same graph gets: mark it to see that it is given again.
+        if let Some(kept) = state.answered.as_mut() {
+            assert_eq!(kept.answer, first);
+            kept.answer = Ok("as before".into());
+        }
+        assert_eq!(answer(&mut ctx, &hook, &mut state), Ok("as before".into()));
+        // A graph that differs by one edge is evaluated.
+        if let Some(typescript) = state.parts.typescript.as_mut() {
+            for module in &mut typescript.modules {
+                module.dependencies.clear();
+            }
+        }
+        let changed = answer(&mut ctx, &hook, &mut state);
+        assert_ne!(changed, Ok("as before".into()));
+        assert_ne!(changed, first);
+        // With --affected the answer follows what git calls changed, so none is kept.
+        let affected = CruiseArgs {
+            affected: Some("HEAD".into()),
+            ..hook.clone()
+        };
+        state.answered = None;
+        let _ = answer(&mut ctx, &affected, &mut state);
+        assert!(state.answered.is_none());
         std::fs::remove_dir_all(&dir)
     }
 

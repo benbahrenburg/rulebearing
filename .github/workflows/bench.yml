@@ -62,6 +62,6 @@ jobs:
             echo "### Guard latency"
             echo
             echo '```text'
-            tail -n 1 "$RUNNER_TEMP/guard.txt" || echo "no figure"
+            grep "^guard" "$RUNNER_TEMP/guard.txt" || echo "no figure"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
