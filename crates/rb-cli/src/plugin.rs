@@ -176,7 +176,7 @@ mod tests {
                 }
                 std::fs::write(file, text)?;
             }
-            Ok(Self(path.canonicalize()?))
+            Ok(Self(rb_model::without_verbatim(&path.canonicalize()?)))
         }
     }
 

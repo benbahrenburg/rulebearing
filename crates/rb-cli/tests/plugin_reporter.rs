@@ -83,7 +83,7 @@ fn tree(name: &str) -> Result<PathBuf> {
         "reporters/reads-fs.cjs",
         "module.exports = () => ({ output: require('fs').readFileSync('/etc/passwd', 'utf8'), exitCode: 0 });\n",
     )?;
-    Ok(dir.canonicalize()?)
+    Ok(rb_model::without_verbatim(&dir.canonicalize()?))
 }
 
 fn run(dir: &Path, args: &[&str]) -> Result<Output> {
@@ -346,7 +346,7 @@ fn a_sandbox_rooted_at_home_or_the_filesystem_root_is_refused() -> Result {
     let home = std::env::temp_dir().join(format!("rb-cli-plugin-home-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&home);
     std::fs::create_dir_all(&home)?;
-    let home = home.canonicalize()?;
+    let home = rb_model::without_verbatim(&home.canonicalize()?);
     write(&home, "src/a.js", "export const a = 1;\n")?;
     write(
         &home,

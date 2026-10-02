@@ -83,7 +83,7 @@ fn tree(name: &str) -> Result<PathBuf> {
         }
         std::fs::write(path, text)?;
     }
-    Ok(dir.canonicalize()?)
+    Ok(rb_model::without_verbatim(&dir.canonicalize()?))
 }
 
 fn calls(dir: &Path) -> Vec<Value> {

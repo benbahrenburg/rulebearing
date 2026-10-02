@@ -47,6 +47,7 @@ pub use document::{
 };
 pub use extract::{
     ExtractError, ExtractRequest, Extraction, Extractor, FileState, Walk, Warning, source_name,
+    without_verbatim,
 };
 pub use options::{
     CacheOptions, CacheStrategy, DirectoryFilter, DotnetMode, DotnetOptions, PythonOptions,

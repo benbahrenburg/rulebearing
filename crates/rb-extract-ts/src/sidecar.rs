@@ -240,6 +240,8 @@ impl Package {
     /// [`SidecarError::NotInstalled`] when there is none; [`SidecarError::Manifest`] when its
     /// `package.json` does not name a version, the command or the entry.
     pub fn find(repo: &Path) -> Result<Self, SidecarError> {
+        // Node cannot open a script named with Windows' verbatim prefix.
+        let repo = &rb_model::without_verbatim(repo);
         for folder in repo.ancestors() {
             let installed = folder.join("node_modules").join(TOOL);
             if installed.join("package.json").is_file() {
@@ -254,9 +256,7 @@ impl Package {
                 return Self::read(folder);
             }
         }
-        Err(SidecarError::NotInstalled {
-            repo: repo.to_path_buf(),
-        })
+        Err(SidecarError::NotInstalled { repo: repo.clone() })
     }
 
     /// The package in `folder`, from its `package.json`.
@@ -511,7 +511,7 @@ impl Sidecar {
             .arg("json")
             .arg("--")
             .args(files.iter().map(|f| as_path_argument(f)))
-            .current_dir(cwd)
+            .current_dir(rb_model::without_verbatim(cwd))
             .output()
             .map_err(|e| SidecarError::NodeMissing {
                 node: self.node.clone(),

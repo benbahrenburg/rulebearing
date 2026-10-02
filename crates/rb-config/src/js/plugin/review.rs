@@ -20,7 +20,7 @@ impl Layout {
         let _ = fs::remove_dir_all(&path);
         fs::create_dir_all(path.join("repo"))?;
         fs::create_dir_all(path.join("outside"))?;
-        let layout = Self(path.canonicalize()?);
+        let layout = Self(rb_model::without_verbatim(&path.canonicalize()?));
         for (folder, files) in [("repo", repo), ("outside", outside)] {
             for (name, text) in files {
                 let file = layout.0.join(folder).join(name);

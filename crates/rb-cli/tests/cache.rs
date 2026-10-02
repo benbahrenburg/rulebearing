@@ -93,7 +93,7 @@ fn tree(name: &str, files: &[(&str, &str)]) -> Result<PathBuf> {
     for (file, text) in files {
         write(&dir, file, text)?;
     }
-    Ok(dir.canonicalize()?)
+    Ok(rb_model::without_verbatim(&dir.canonicalize()?))
 }
 
 fn write(dir: &Path, file: &str, text: &str) -> Result {
@@ -913,12 +913,14 @@ fn an_unwritable_cache_is_a_warning_and_the_run_goes_on() -> Result {
     write(&dir, "blocked", "a file where the cache folder would be")?;
     let reference = cruise(&dir, &["src"], "json", &["--cache", "blocked/cache"])?;
     let run = cruise(&dir, &["src"], "json", &["--cache", "blocked/cache"])?;
-    // A folder that cannot hold an entry cannot hold a manifest either: never a hit.
-    assert!(
-        served(&run).starts_with("in full: the entry is unusable"),
-        "{}",
-        served(&run)
-    );
+    // A folder that cannot hold an entry cannot hold a manifest either: never a hit. Windows
+    // reports a path through a file as not found, so there the entry reads as absent.
+    let unusable = if cfg!(windows) {
+        "in full: no entry"
+    } else {
+        "in full: the entry is unusable"
+    };
+    assert!(served(&run).starts_with(unusable), "{}", served(&run));
     same_as_cold(&run, &reference)?;
     let plain: Value = serde_json::from_slice(&cruise(&dir, &["src"], "json", &[])?.stdout)?;
     let mut cached: Value = serde_json::from_slice(&run.stdout)?;

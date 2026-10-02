@@ -122,6 +122,21 @@ pub fn source_name(path: &Path) -> String {
     rest.to_owned()
 }
 
+/// A path without the verbatim prefix Windows' `canonicalize` gives it: `\\?\C:\x` is `C:\x` and
+/// `\\?\UNC\server\share` is `\\server\share`. That is the form git, Node and a path someone
+/// typed all use, so the two compare equal and a child process can open it. Any other path is
+/// returned as it is.
+pub fn without_verbatim(path: &Path) -> PathBuf {
+    let text = path.to_string_lossy();
+    if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {
+        return PathBuf::from(format!(r"\\{rest}"));
+    }
+    match text.strip_prefix(r"\\?\") {
+        Some(rest) => PathBuf::from(rest),
+        None => path.to_path_buf(),
+    }
+}
+
 /// A problem that did not stop extraction, reported with the file it concerns.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Warning {
@@ -329,5 +344,46 @@ mod tests {
         assert_eq!(sources, ["d.ts", "src/a.ts", "src/c.ts"]);
         assert_eq!(source_name(Path::new("x/y.py")), "x/y.py");
         assert_eq!(source_name(Path::new("")), "");
+    }
+
+    #[test]
+    fn a_verbatim_prefix_is_taken_off_and_nothing_else_is_touched() {
+        for (path, plain) in [
+            (r"\\?\C:\Users\x\repo", r"C:\Users\x\repo"),
+            (r"\\?\UNC\server\share\repo", r"\\server\share\repo"),
+            (r"C:\Users\x\repo", r"C:\Users\x\repo"),
+            (r"\\server\share", r"\\server\share"),
+            ("/home/x/repo", "/home/x/repo"),
+            ("src/a.ts", "src/a.ts"),
+            ("", ""),
+            // Only a prefix: the same characters further in are part of a name.
+            (r"C:\a\\?\b", r"C:\a\\?\b"),
+        ] {
+            assert_eq!(
+                without_verbatim(Path::new(path)),
+                PathBuf::from(plain),
+                "{path}"
+            );
+        }
+    }
+
+    proptest::proptest! {
+        /// A path that does not start with the verbatim prefix comes back as it is, and taking
+        /// the prefix off twice is taking it off once.
+        #[test]
+        fn without_verbatim_changes_only_the_prefix(rest in "[A-Za-z0-9 _./:\\\\-]{0,40}") {
+            let plain = PathBuf::from(&rest);
+            if !rest.starts_with(r"\\?\") {
+                proptest::prop_assert_eq!(without_verbatim(&plain), plain.clone());
+            }
+            let prefixed = PathBuf::from(format!(r"\\?\{rest}"));
+            let once = without_verbatim(&prefixed);
+            if !rest.starts_with(r"UNC\") && !rest.starts_with(r"\\?\") {
+                proptest::prop_assert_eq!(&once, &plain);
+            }
+            if !once.to_string_lossy().starts_with(r"\\?\") {
+                proptest::prop_assert_eq!(without_verbatim(&once), once.clone());
+            }
+        }
     }
 }

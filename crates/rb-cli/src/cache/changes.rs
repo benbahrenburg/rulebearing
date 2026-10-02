@@ -131,10 +131,12 @@ impl Scope {
             return key::slashed(relative);
         }
         match path.canonicalize() {
-            Ok(canonical) => canonical.strip_prefix(&self.base).map_or_else(
-                |_| key::strip_verbatim(&key::slashed(&canonical)),
-                key::slashed,
-            ),
+            Ok(canonical) => {
+                let canonical = rb_model::without_verbatim(&canonical);
+                canonical
+                    .strip_prefix(&self.base)
+                    .map_or_else(|_| key::slashed(&canonical), key::slashed)
+            }
             Err(_) => key::slashed(path),
         }
     }
@@ -716,7 +718,7 @@ mod tests {
             std::env::temp_dir().join(format!("rb-cache-changes-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let _ = std::fs::create_dir_all(&dir);
-        dir.canonicalize().unwrap_or(dir)
+        rb_model::without_verbatim(&dir.canonicalize().unwrap_or(dir))
     }
 
     fn write(path: &Path, text: &str) {
@@ -801,9 +803,17 @@ mod tests {
         assert!(!plain.is_relevant("notes.md"));
         assert_eq!(scope.name(&dir.join("src/a.ts")), "src/a.ts");
         assert_eq!(scope.on_disk("src/a.ts"), dir.join("src/a.ts"));
-        let outside = Path::new("/definitely/not/here.ts");
-        assert_eq!(scope.name(outside), "/definitely/not/here.ts");
-        assert_eq!(scope.on_disk("/definitely/not/here.ts"), outside);
+        // An absolute path outside the working directory, as the platform spells one.
+        let outside = dir
+            .ancestors()
+            .last()
+            .unwrap_or(&dir)
+            .join("definitely")
+            .join("not")
+            .join("here.ts");
+        let named = key::slashed(&outside);
+        assert_eq!(scope.name(&outside), named);
+        assert_eq!(scope.on_disk(&named), outside);
         assert!(scope.skipped("node_modules/x/index.js"));
         assert!(scope.skipped("a/.graph/cache/manifest.json"));
         assert!(scope.skipped(".cache/extraction-0.json"));

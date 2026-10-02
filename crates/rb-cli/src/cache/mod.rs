@@ -746,7 +746,11 @@ impl Pending {
 fn scope_of(ctx: &Context<'_>, config: &Config, folder: &Path) -> changes::Scope {
     let root = key::worktree_root(&ctx.cwd);
     changes::Scope {
-        base: ctx.cwd.canonicalize().unwrap_or_else(|_| ctx.cwd.clone()),
+        // Without Windows' verbatim prefix, as the root from git is: a path joined to the root is
+        // then inside the base by its spelling, whether or not the file still exists.
+        base: rb_model::without_verbatim(
+            &ctx.cwd.canonicalize().unwrap_or_else(|_| ctx.cwd.clone()),
+        ),
         head: Some(key::head(&root)).filter(|h| !h.is_empty()),
         root,
         extra_extensions: {
@@ -762,9 +766,11 @@ fn scope_of(ctx: &Context<'_>, config: &Config, folder: &Path) -> changes::Scope
             }
             extra
         },
-        cache_folder: folder
-            .canonicalize()
-            .unwrap_or_else(|_| folder.to_path_buf()),
+        cache_folder: rb_model::without_verbatim(
+            &folder
+                .canonicalize()
+                .unwrap_or_else(|_| folder.to_path_buf()),
+        ),
     }
 }
 
@@ -1045,7 +1051,7 @@ mod tests {
             ));
             let _ = std::fs::remove_dir_all(&dir);
             std::fs::create_dir_all(dir.join("src"))?;
-            let dir = dir.canonicalize()?;
+            let dir = rb_model::without_verbatim(&dir.canonicalize()?);
             std::fs::write(
                 dir.join("src/a.ts"),
                 "import { b } from \"./b\";\nexport const a = b;\n",

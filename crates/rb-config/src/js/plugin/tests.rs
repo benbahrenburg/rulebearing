@@ -16,7 +16,7 @@ impl Repo {
             std::env::temp_dir().join(format!("rb-config-plugin-{}-{n}", std::process::id()));
         let _ = fs::remove_dir_all(&path);
         fs::create_dir_all(&path)?;
-        let repo = Self(path.canonicalize()?);
+        let repo = Self(rb_model::without_verbatim(&path.canonicalize()?));
         for (name, text) in files {
             let file = repo.0.join(name);
             if let Some(parent) = file.parent() {

@@ -120,7 +120,7 @@ fn tree(name: &str, files: &[(&str, &str)]) -> Result<PathBuf> {
     for (file, text) in files {
         write(&dir, file, text)?;
     }
-    Ok(dir.canonicalize()?)
+    Ok(rb_model::without_verbatim(&dir.canonicalize()?))
 }
 
 fn write(dir: &Path, file: &str, text: &str) -> Result {
