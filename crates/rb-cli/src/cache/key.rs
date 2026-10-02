@@ -270,10 +270,22 @@ pub fn head_from_files(root: &Path) -> Option<String> {
     None
 }
 
-/// A configuration file's name in the key: relative to the worktree root when under it.
+/// A configuration file's name in the key: relative to the worktree root when under it, by its
+/// spelling or, failing that, by its canonical form, either without Windows' verbatim prefix. A
+/// name must not carry the worktree's own folder, or two worktrees of one repository would hash
+/// one configuration differently.
 fn config_name(path: &Path, root: &Path) -> String {
-    path.strip_prefix(root)
-        .map_or_else(|_| slashed(path), slashed)
+    let plain = rb_model::without_verbatim(path);
+    if let Ok(relative) = plain.strip_prefix(root) {
+        return slashed(relative);
+    }
+    let canonical = path
+        .canonicalize()
+        .map(|canonical| rb_model::without_verbatim(&canonical));
+    match canonical.as_deref().map(|c| c.strip_prefix(root)) {
+        Ok(Ok(relative)) => slashed(relative),
+        _ => slashed(&plain),
+    }
 }
 
 /// The configuration files [`config_hash`] reads, by the names it hashes them under, sorted;
@@ -790,5 +802,41 @@ mod tests {
             ["/elsewhere/a.yaml", "b.yaml"]
         );
         assert!(config_files(&Config::default(), Path::new("/r")).is_empty());
+    }
+
+    #[test]
+    fn a_configuration_file_is_named_the_same_in_every_worktree() {
+        // The loader gives a canonical path, the root has no verbatim prefix: two folders with
+        // the same file must hash it under the same name, whichever way each path is spelt.
+        let hashes: Vec<String> = ["one", "two"]
+            .iter()
+            .map(|name| {
+                let dir = scratch(&format!("named-{name}"));
+                let file = dir.join("rulebearing.yaml");
+                write(&file, "forbidden: []\n");
+                let canonical = file.canonicalize().unwrap_or_else(|_| file.clone());
+                let root = worktree_root(&dir);
+                for spelling in [&file, &canonical] {
+                    assert_eq!(config_name(spelling, &root), "rulebearing.yaml");
+                }
+                let config = Config {
+                    files: vec![canonical],
+                    ..Config::default()
+                };
+                let hash = config_hash(&config, &root);
+                let _ = std::fs::remove_dir_all(&dir);
+                hash
+            })
+            .collect();
+        assert_eq!(hashes[0], hashes[1]);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_verbatim_configuration_path_is_named_under_a_plain_root() {
+        assert_eq!(
+            config_name(Path::new(r"\\?\C:\r\sub\b.yaml"), Path::new(r"C:\r")),
+            "sub/b.yaml"
+        );
     }
 }
