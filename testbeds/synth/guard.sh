@@ -5,12 +5,15 @@
 # own timer). Each file is saved twice: once with a comment added, which leaves the graph as it
 # was, and once with an import added, which changes it and so has the rules evaluated again.
 # Prints the p50 and p95 and each stage's median for both kinds of save, and exits 1 when either
-# p95 is at or above the threshold.
+# p95 is at or above its threshold. Both thresholds are 100 ms unless set: a developer machine
+# must meet both; the CI runner holds the graph-changing save to a recorded ceiling instead
+# (docs/adr/0060-the-guards-latency-target-is-set-for-a-developer-machine.md).
 #
 # Usage: testbeds/synth/guard.sh [<tree directory>]   (default: a folder under the temp directory)
 # $RB_GUARD_EDITS (default 40) and $RB_GUARD_SEED (default 42) set the edits,
-# $RB_GUARD_THRESHOLD_MS (default 100) the threshold; the binary is $RULEBEARING_BIN, else
-# target/release/rulebearing.
+# $RB_GUARD_THRESHOLD_MS (default 100) the threshold for a save that leaves the graph as it was,
+# $RB_GUARD_CHANGED_THRESHOLD_MS (default 100) the one for a save that changes it; the binary is
+# $RULEBEARING_BIN, else target/release/rulebearing.
 # Take the figure on a machine running nothing else of this repository's
 # (docs/adr/0059-gates-run-by-tier-and-mutants-by-diff.md).
 # Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 16 and section 1.7.
@@ -28,11 +31,12 @@ cp "$here/dependency-cruiser.cjs" "$tree/.dependency-cruiser.cjs"
 rm -rf "$tree/.graph"
 
 python3 - "$bin" "$tree" "${RB_GUARD_EDITS:-40}" "${RB_GUARD_SEED:-42}" \
-  "${RB_GUARD_THRESHOLD_MS:-100}" <<'PY'
+  "${RB_GUARD_THRESHOLD_MS:-100}" "${RB_GUARD_CHANGED_THRESHOLD_MS:-100}" <<'PY'
 import json, os, random, subprocess, sys, time
 
 binary, tree = sys.argv[1], sys.argv[2]
-edits, seed, threshold = int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])
+edits, seed = int(sys.argv[3]), int(sys.argv[4])
+thresholds = {"a comment added": int(sys.argv[5]), "an import added": int(sys.argv[6])}
 findings = os.path.join(tree, ".graph", "guard", "findings.json")
 
 
@@ -107,14 +111,15 @@ def at(values, quantile):
     return ordered[min(len(ordered) - 1, int(round(quantile * (len(ordered) - 1))))]
 
 
-worst = 0
+over = False
 for kind, taken in measured.items():
     p50, p95 = at(taken["latency"], 0.5), at(taken["latency"], 0.95)
-    worst = max(worst, p95)
+    threshold = thresholds[kind]
+    over = over or p95 >= threshold
     print(
         f"guard, {kind}: p50 {p50} ms, p95 {p95} ms, max {max(taken['latency'])} ms over"
         f" {len(taken['latency'])} saved files (median extract {at(taken['extract'], 0.5)} ms,"
         f" answer {at(taken['answer'], 0.5)} ms); threshold {threshold} ms"
     )
-sys.exit(1 if worst >= threshold else 0)
+sys.exit(1 if over else 0)
 PY

@@ -88,4 +88,7 @@ Since then the guard gives its earlier answer again when a save leaves the graph
 | 2026-10-02 | Apple M2 Pro, one thread | a comment added | 46 ms | 58 ms | 7 ms |
 | 2026-10-02 | Apple M2 Pro, one thread | an import added | 173 ms | 188 ms | 137 ms |
 
-A save that changes the graph still evaluates every rule over the whole graph, and that is what the runner cannot do in 100 ms.
+| 2026-10-02 | GitHub `ubuntu-latest`, 4 vCPUs ([run 37018546157](https://github.com/benbahrenburg/rulebearing/actions/runs/37018546157)) | a comment added | 50 ms | 59 ms | 17 ms |
+| 2026-10-02 | GitHub `ubuntu-latest`, 4 vCPUs (the same run) | an import added | 254 ms | 270 ms | 223 ms |
+
+A save that changes the graph still evaluates every rule over the whole graph, and that is what the runner cannot do in 100 ms. [ADR-0060](adr/0060-the-guards-latency-target-is-set-for-a-developer-machine.md) (Proposed) sets the 100 ms for a developer machine of eight or more threads, has the runner gate the unchanged-graph save at 100 ms and hold the graph-changing one to a ceiling of 324 ms (the recorded 270 ms plus 20%), and defers incremental evaluation until a measured need.

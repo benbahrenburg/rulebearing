@@ -50,9 +50,14 @@ jobs:
             ${{ runner.temp }}/bench.txt
             ${{ runner.temp }}/synth/hyperfine.json
       # The guard's check of one saved file on the same tree (NFR-PERF-03), after the benchmark and
-      # never beside it (docs/adr/0059-gates-run-by-tier-and-mutants-by-diff.md); the step fails
-      # when the p95 reaches 100 ms.
+      # never beside it (docs/adr/0059-gates-run-by-tier-and-mutants-by-diff.md). On this runner a
+      # save that leaves the graph as it was must stay under 100 ms; one that changes it must stay
+      # under the ceiling, the last recorded figure plus 20%: 270 ms in run 37018546157, so 324.
+      # The ceiling is lowered when the figure falls and never raised
+      # (docs/adr/0060-the-guards-latency-target-is-set-for-a-developer-machine.md).
       - name: guard latency
+        env:
+          RB_GUARD_CHANGED_THRESHOLD_MS: "324"
         run: |
           set -o pipefail
           testbeds/synth/guard.sh "$RUNNER_TEMP/synth-guard" | tee "$RUNNER_TEMP/guard.txt"

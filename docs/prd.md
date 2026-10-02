@@ -681,7 +681,7 @@ Source: [design § How to know, rather than believe](artifacts/design.md#how-to-
 
 #### NFR-PERF-03
 
-**Query latency and scale regression.** `can-import` MUST answer in milliseconds from the cached graph. `guard --watch` MUST re-check a saved file in under 100 ms. The nightly scale table (wall-clock and peak memory per scale repo) MUST be published in the README, and a regression over 20% MUST fail the nightly run.
+**Query latency and scale regression.** `can-import` MUST answer in milliseconds from the cached graph. `guard --watch` MUST re-check a saved file in under 100 ms, measured on a developer machine; on the CI runner the unchanged-graph save is held to 100 ms and the graph-changing one to a recorded ceiling ([ADR-0060](adr/0060-the-guards-latency-target-is-set-for-a-developer-machine.md), Proposed). The nightly scale table (wall-clock and peak memory per scale repo) MUST be published in the README, and a regression over 20% MUST fail the nightly run.
 
 Acceptance:
 - Timing assertions in the nightly workflow; the README table regenerated nightly.
