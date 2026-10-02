@@ -76,15 +76,57 @@ pub struct RunOptions {
     pub affected: Option<crate::affected::Selection>,
 }
 
-/// A finished run.
+/// A finished run. The graph is held once: the report's document is the engine's when nothing
+/// filtered, collapsed or narrowed it, and only otherwise is the whole graph kept beside it, so
+/// a large graph is not in memory twice.
 #[derive(Debug, Clone)]
 pub struct Run {
-    /// The engine's result (vacuous rules, statistics, expired entries).
-    pub evaluation: Evaluation,
+    /// Rules whose selecting side matched nothing, with liveness on and no `allowEmpty`.
+    pub vacuous: Vec<rb_model::VacuousRule>,
+    /// Per-rule statistics, in rule order.
+    pub rule_stats: Vec<rb_rules::RuleStats>,
+    /// Rules and known violations past their date; each fails the run.
+    pub expired: Vec<rb_rules::Expired>,
+    /// The indices into `config.known_violations` of the entries no violation matched.
+    pub unmatched_known: Vec<usize>,
+    /// The whole evaluated graph, when the report shows a part of it.
+    whole: Option<GraphDocument>,
     /// The document as the report shows it.
     pub document: GraphDocument,
     /// Extraction problems that did not stop the run, as `path: message` lines.
     pub warnings: Vec<String>,
+}
+
+impl Run {
+    /// The whole evaluated graph, whatever the report shows of it: what ratchets count over and
+    /// what a query command reads.
+    pub fn evaluated(&self) -> &GraphDocument {
+        self.whole.as_ref().unwrap_or(&self.document)
+    }
+
+    /// The error-severity violations of the whole graph plus the expired entries: what the exit
+    /// code counts ([ADR-0008](../../../docs/adr/0008-exit-code-contract.md)).
+    pub fn error_count(&self) -> u64 {
+        self.evaluated().summary.error + self.expired.len() as u64
+    }
+
+    /// The engine's result over the whole graph, for a caller that wants the evaluation and
+    /// not a report.
+    pub fn into_evaluation(self) -> Evaluation {
+        Evaluation {
+            document: self.whole.unwrap_or(self.document),
+            vacuous: self.vacuous,
+            rule_stats: self.rule_stats,
+            expired: self.expired,
+            unmatched_known: self.unmatched_known,
+        }
+    }
+
+    /// Takes the whole graph out when it was kept beside the report's document, so a caller
+    /// that is done with it can free it elsewhere.
+    pub fn take_whole(&mut self) -> Option<GraphDocument> {
+        self.whole.take()
+    }
 }
 
 /// The receipt: per language, the files and modules extracted.
@@ -645,38 +687,55 @@ pub fn evaluate_document(
         collapse: cruise_collapse(config),
         options: Map::new(),
     };
+    let Evaluation {
+        document: engine,
+        vacuous,
+        rule_stats,
+        expired,
+        unmatched_known,
+    } = evaluation;
     // With a native configuration, the rules were evaluated over the whole graph and the report
     // keeps what touches the closure (crate::affected::Selection::narrow).
-    let (evaluated, native) = match options
+    let native = options
         .affected
         .as_ref()
         .filter(|s| s.mode == crate::affected::Mode::Closure)
-    {
-        Some(selection) => {
-            let (narrowed, receipt) = selection.narrow(&evaluation.document);
-            (narrowed, Some(receipt))
-        }
-        None => (crate::value::copy(&evaluation.document), None),
+        .map(|selection| selection.narrow(&engine));
+    // With nothing to filter, collapse or narrow, the re-summary finds what the engine just
+    // summarised, so it is skipped and the engine's document is the report's, held once: on a
+    // large graph the re-summary is most of a guard's check (NFR-PERF-03) and a second copy most
+    // of a run's memory. `the_unfiltered_report_is_the_engine_s_document` holds the two equal.
+    let (mut document, whole, native) = match native {
+        Some((narrowed, receipt)) => (
+            rewrap(narrowed, &format, Some(&config.rules.dependencies))?,
+            Some(engine),
+            Some(receipt),
+        ),
+        None if format == FormatOptions::default() => (engine, None, None),
+        None => (
+            rewrap(
+                crate::value::copy(&engine),
+                &format,
+                Some(&config.rules.dependencies),
+            )?,
+            Some(engine),
+            None,
+        ),
     };
-    // With nothing to filter or collapse, the re-summary finds what the engine just summarised,
-    // so it is skipped: on a large graph it is most of a guard's check (NFR-PERF-03).
-    // `the_unfiltered_report_is_the_engine_s_document` holds the two equal.
-    let mut document = if format == FormatOptions::default() && native.is_none() {
-        evaluated
-    } else {
-        rewrap(evaluated, &format, Some(&config.rules.dependencies))?
-    };
+    let evaluated = whole.as_ref().unwrap_or(&document);
+    let vacuous_rules = evaluated.summary.vacuous_rules.clone();
+    let affected = native
+        .or_else(|| upstream.map(|(selection, pattern)| selection.receipt(evaluated, &pattern)));
     document.summary.inspected = Some(inspected);
     document.summary.sidecar = sidecar;
-    document
-        .summary
-        .vacuous_rules
-        .clone_from(&evaluation.document.summary.vacuous_rules);
-    document.summary.affected = native.or_else(|| {
-        upstream.map(|(selection, pattern)| selection.receipt(&evaluation.document, &pattern))
-    });
+    document.summary.vacuous_rules = vacuous_rules;
+    document.summary.affected = affected;
     Ok(Run {
-        evaluation,
+        vacuous,
+        rule_stats,
+        expired,
+        unmatched_known,
+        whole,
         document,
         warnings: Vec::new(),
     })
@@ -746,6 +805,87 @@ pub fn query_graph(
 mod tests {
     use super::*;
     use crate::RunExit;
+
+    /// Three modules, with one forbidden edge from `src/a.ts` to `lib/c.ts`.
+    fn graph() -> GraphDocument {
+        let module = |source: &str, to: &[&str]| rb_model::Module {
+            dependencies: to
+                .iter()
+                .map(|t| rb_model::Dependency::new(*t, *t, rb_model::ModuleSystem::Es6))
+                .collect(),
+            ..rb_model::Module::new(source)
+        };
+        GraphDocument {
+            modules: vec![
+                module("src/a.ts", &["src/b.ts", "lib/c.ts"]),
+                module("src/b.ts", &[]),
+                module("lib/c.ts", &[]),
+            ],
+            ..GraphDocument::default()
+        }
+    }
+
+    fn evaluated(collapse: Option<&str>) -> Result<Run, Box<dyn std::error::Error>> {
+        let rules = serde_json::json!({ "forbidden": [{ "name": "not-to-lib", "severity": "error",
+            "from": { "path": "^src/" }, "to": { "path": "^lib/" } }] });
+        let mut config = rb_config::load::from_canonical(
+            rules.as_object().cloned().unwrap_or_default(),
+            rb_config::CompatMode::Native,
+        )?;
+        config.options.collapse = collapse.map(|c| serde_json::Value::String(c.to_owned()));
+        let mut stdin = std::io::empty();
+        let ctx = Context {
+            cwd: std::env::temp_dir(),
+            stdin: &mut stdin,
+            today: chrono::NaiveDate::default(),
+            timestamp: String::new(),
+            color_terminal: false,
+        };
+        let options = RunOptions {
+            liveness: false,
+            options_used: Map::new(),
+            paths: Vec::new(),
+            affected: None,
+        };
+        Ok(evaluate_document(
+            &ctx,
+            &config,
+            graph(),
+            &options,
+            &mut Progress::new(None),
+        )?)
+    }
+
+    #[test]
+    fn an_unfiltered_run_holds_the_graph_once_and_a_collapsed_one_keeps_the_whole_beside_it()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Nothing filters: the report's document is the whole graph, and there is no other.
+        let mut plain = evaluated(None)?;
+        assert_eq!(plain.evaluated().modules.len(), 3);
+        assert_eq!(plain.document.modules.len(), 3);
+        assert_eq!(plain.error_count(), 1);
+        assert!(plain.take_whole().is_none());
+        let sources = |document: &GraphDocument| -> Vec<String> {
+            document.modules.iter().map(|m| m.source.clone()).collect()
+        };
+        let whole = sources(&plain.document);
+        let evaluation = plain.into_evaluation();
+        assert_eq!(sources(&evaluation.document), whole);
+        assert_eq!(evaluation.error_count(), 1);
+
+        // Collapsed to folders: the report shows two modules, and the whole graph stays for
+        // what counts over it.
+        let mut collapsed = evaluated(Some("^[^/]+"))?;
+        assert_eq!(sources(&collapsed.document), ["lib", "src"]);
+        assert_eq!(sources(collapsed.evaluated()), whole);
+        assert_eq!(collapsed.error_count(), 1);
+        let kept = collapsed.clone().into_evaluation();
+        assert_eq!(sources(&kept.document), whole);
+        assert_eq!(collapsed.take_whole().map(|d| sources(&d)), Some(whole));
+        // Once taken, the report's document is all that is left.
+        assert_eq!(sources(collapsed.evaluated()), ["lib", "src"]);
+        Ok(())
+    }
 
     #[test]
     fn a_stopped_run_exits_as_adr_0008_says() -> Result<(), Box<dyn std::error::Error>> {

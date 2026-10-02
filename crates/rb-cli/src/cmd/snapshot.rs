@@ -405,12 +405,13 @@ pub fn cruise(
     let run =
         pipeline::evaluate_document(ctx, config, document, &options, &mut Progress::new(None))
             .map_err(|e| run_failed(&e))?;
-    let counted = ratchets::evaluate(ctx, config, &run.evaluation.document, false);
+    let counted = ratchets::evaluate(ctx, config, run.evaluated(), false);
+    let rule_stats = run.rule_stats;
     let mut document = run.document;
     if !counted.results.is_empty() {
         document.summary.ratchets = Some(counted.results);
     }
-    Ok((document, run.evaluation.rule_stats))
+    Ok((document, rule_stats))
 }
 
 /// Writes `text` to `path` under a temporary name renamed into place.

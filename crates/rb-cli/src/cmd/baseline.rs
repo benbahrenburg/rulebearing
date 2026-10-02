@@ -375,7 +375,7 @@ fn shrink_only(
     config: &rb_config::Config,
     lifecycle: &Lifecycle,
 ) -> Outcome {
-    let stale = &run.evaluation.unmatched_known;
+    let stale = &run.unmatched_known;
     let mut stderr = String::new();
     let mut stdout = String::new();
     match source {

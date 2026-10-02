@@ -866,13 +866,8 @@ pub fn converge(
                 continue;
             }
         }
-        if !run.evaluation.vacuous.is_empty() {
-            let vacuous: Vec<String> = run
-                .evaluation
-                .vacuous
-                .iter()
-                .map(|v| v.name.clone())
-                .collect();
+        if !run.vacuous.is_empty() {
+            let vacuous: Vec<String> = run.vacuous.iter().map(|v| v.name.clone()).collect();
             let before = rules.len();
             rules.retain(|r| !vacuous.contains(&r.name));
             let removed = rules.len() < before;
@@ -891,15 +886,15 @@ pub fn converge(
             dropped.extend(vacuous);
             continue;
         }
-        let entries = adopt::baseline(ctx, &run.evaluation.document.summary.violations, baseline)?;
+        let entries = adopt::baseline(ctx, &run.evaluated().summary.violations, baseline)?;
         let text = render(found, &rules, &entries, &today);
         let config = load_text(ctx, &text).map_err(|m| {
             Outcome::failed(RunExit::InvalidConfig, format!("rulebearing init: {m}\n"))
         })?;
         let check = pipeline::run(ctx, &config, &options, &mut Progress::new(None))
             .map_err(|e| failed(e.to_string()))?;
-        let errors = check.evaluation.error_count();
-        if errors != 0 || !check.evaluation.vacuous.is_empty() {
+        let errors = check.error_count();
+        if errors != 0 || !check.vacuous.is_empty() {
             return Err(failed(format!(
                 "the proposal with its baseline still has {errors} errors; please report this"
             )));

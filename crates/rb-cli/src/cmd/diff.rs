@@ -451,7 +451,7 @@ fn evaluate(
     pipeline::reset(&mut document);
     let run =
         pipeline::evaluate_document(ctx, config, document, options, &mut Progress::new(None))?;
-    let ratchets = ratchets::evaluate(ctx, config, &run.evaluation.document, false);
+    let ratchets = ratchets::evaluate(ctx, config, run.evaluated(), false);
     let mut document = run.document;
     if !ratchets.results.is_empty() {
         document.summary.ratchets = Some(ratchets.results);

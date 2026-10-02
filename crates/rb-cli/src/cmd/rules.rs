@@ -105,7 +105,7 @@ pub fn statistics(
         affected: None,
     };
     pipeline::evaluate_document(ctx, config, document, &options, &mut Progress::new(None))
-        .map(|run| run.evaluation)
+        .map(pipeline::Run::into_evaluation)
         .map_err(|e| Outcome::failed(RunExit::Untrustworthy, format!("rulebearing: {e}\n")))
 }
 

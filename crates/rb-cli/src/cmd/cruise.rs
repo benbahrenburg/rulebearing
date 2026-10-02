@@ -352,8 +352,7 @@ fn finish(
             }
         }
         Evaluated::Run(mut run) => {
-            let ratchets =
-                ratchets::evaluate(ctx, effective, &run.evaluation.document, options.liveness);
+            let ratchets = ratchets::evaluate(ctx, effective, run.evaluated(), options.liveness);
             summarise(&mut run.document.summary, &ratchets, liveness);
             let verdict = Verdict::of(*run, ratchets);
             let tail = verdict.tail();

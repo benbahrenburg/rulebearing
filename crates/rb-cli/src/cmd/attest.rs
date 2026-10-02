@@ -204,8 +204,7 @@ pub fn compute(ctx: &mut Context<'_>, args: &AttestArgs) -> Result<Receipt, Outc
             )
         })
         .collect();
-    let results =
-        serde_json::to_vec(&run.evaluation.document.summary.violations).unwrap_or_default();
+    let results = serde_json::to_vec(&run.evaluated().summary.violations).unwrap_or_default();
     Ok(Receipt {
         tool: format!("rulebearing {}", env!("CARGO_PKG_VERSION")),
         config_hash: hash_files(relative.into_iter()),
