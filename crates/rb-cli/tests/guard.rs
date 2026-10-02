@@ -445,8 +445,13 @@ fn after_a_failed_check_the_next_change_reads_everything() -> Result {
         dir.join("src/services/s1.ts"),
         "import { s0 } from \"./s0\";\nexport const s1 = s0 + 1;\n",
     )?;
+    // The failed check used up the earlier extraction, so this change is answered by reading
+    // everything. The guard may check the save once more straight after (a file saved within
+    // moments of a read's start is not taken as seen), so what is waited for is an answer from
+    // a scan that started after the save, not the full read's own findings.
+    let saved = now_ms();
     let again = until(&dir, Duration::from_secs(60), |f| {
-        f["error"].is_null() && f["rechecked"] == serde_json::json!([])
+        f["error"].is_null() && f["seenUpTo"].as_u64().is_some_and(|seen| seen >= saved)
     })?;
     stop(daemon)?;
     let cold = hook(&dir, &[])?;
