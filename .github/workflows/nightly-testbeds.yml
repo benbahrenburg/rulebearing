@@ -488,7 +488,17 @@ jobs:
             {
               echo "### Stop hook p95"
               echo
-              python3 -c 'import json; r = json.load(open("testbeds/results/stop-hook.json")); s = r["seconds"]; print(f"{r[\"repository\"]}@{r[\"sha\"][:7]}: p50 {s[\"p50\"]} s, p95 {s[\"p95\"]} s, p99 {s[\"p99\"]} s over {r[\"edits\"]} edits on {r[\"runner\"][\"cpus\"]} CPUs ({r[\"runner\"][\"cpu\"]})")'
+              python3 - <<'PY'
+          import json
+
+          with open("testbeds/results/stop-hook.json", encoding="utf-8") as handle:
+              r = json.load(handle)
+          s, runner = r["seconds"], r["runner"]
+          print(
+              f"{r['repository']}@{r['sha'][:7]}: p50 {s['p50']} s, p95 {s['p95']} s, p99 {s['p99']} s"
+              f" over {r['edits']} edits on {runner['cpus']} CPUs ({runner['cpu']})"
+          )
+          PY
             } >> "$GITHUB_STEP_SUMMARY"
           fi
       # Source mode's precision on each .NET oracle (testbeds/oracles/precision.py), joined.
@@ -501,7 +511,18 @@ jobs:
             {
               echo "### Source mode precision against compiled mode"
               echo
-              python3 -c 'import json; a = json.load(open("testbeds/results/source-mode-precision.json")); [print(f"- {o[\"repo\"]}: precision {o[\"precision\"]}, recall {o[\"recall\"]} over {o[\"files\"]} files ({\"meets\" if o[\"meetsTarget\"] else \"below\"} the {a[\"target\"]} target)") for o in a["oracles"]]'
+              python3 - <<'PY'
+          import json
+
+          with open("testbeds/results/source-mode-precision.json", encoding="utf-8") as handle:
+              a = json.load(handle)
+          for o in a["oracles"]:
+              verdict = "meets" if o["meetsTarget"] else "below"
+              print(
+                  f"- {o['repo']}: precision {o['precision']}, recall {o['recall']}"
+                  f" over {o['files']} files ({verdict} the {a['target']} target)"
+              )
+          PY
             } >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: oracle agreement table
