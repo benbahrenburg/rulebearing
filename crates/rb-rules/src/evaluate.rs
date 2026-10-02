@@ -258,7 +258,6 @@ fn match_counts(
     modules: &[Value],
     facts: &ModuleFacts,
 ) -> Vec<(usize, usize)> {
-    let on_dependencies = probes.iter().any(|p| p.to_path.is_some() && !p.on_modules);
     let zero = || vec![(0, 0); probes.len()];
     modules
         .par_iter()
@@ -270,13 +269,13 @@ fn match_counts(
                     count.1 += usize::from(probe.counts(&source));
                 }
             }
-            if on_dependencies {
-                for dependency in js::array(module, "dependencies") {
-                    let resolved = js::text(dependency, "resolved");
-                    for (probe, count) in probes.iter().zip(counts.iter_mut()) {
-                        if !probe.on_modules {
-                            count.1 += usize::from(probe.counts(&resolved));
-                        }
+            // A probe without `to.path` counts nothing here at once, so every module's
+            // dependencies are read whatever the probes ask.
+            for dependency in js::array(module, "dependencies") {
+                let resolved = js::text(dependency, "resolved");
+                for (probe, count) in probes.iter().zip(counts.iter_mut()) {
+                    if !probe.on_modules {
+                        count.1 += usize::from(probe.counts(&resolved));
                     }
                 }
             }
