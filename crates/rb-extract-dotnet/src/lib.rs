@@ -638,6 +638,17 @@ impl Extractor for DotnetExtractor {
                 files: by_type,
             });
         }
+        // A file that holds code is a module even when no type is attributed to it: top-level
+        // statements whose `Program` is declared in another file (the web SDK's generator writes
+        // `public partial class Program { }` under obj/) are that file's code, and without a
+        // module their edges would be dropped while the assemblies they reach were still listed.
+        for dependency in &built.dependencies {
+            if let (Some(file), Some(read)) = (&dependency.file, reads.get(dependency.assembly)) {
+                files
+                    .entry(file.clone())
+                    .or_insert_with(|| (BTreeSet::new(), true, display(&read.project.path)));
+            }
+        }
         let file_count = files.len() as u64;
         let mut modules: Vec<Module> = files
             .into_iter()

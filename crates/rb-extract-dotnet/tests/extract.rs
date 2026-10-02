@@ -167,6 +167,60 @@ fn top_level_statements_have_their_edges() -> Result<(), Box<dyn std::error::Err
     Ok(())
 }
 
+/// A file that holds code and declares no type is a module: top-level statements whose
+/// `Program` is declared in another file, as the ASP.NET SDK's generator declares it.
+#[test]
+fn a_file_with_code_and_no_type_of_its_own_is_a_module() -> Result<(), Box<dyn std::error::Error>> {
+    let root = manifest().join("tests/fixtures/toplevel-declared");
+    let extraction = extract(&root, &loader("built/TopLevelDeclared.dll"))?;
+    let sources: Vec<&str> = extraction
+        .modules
+        .iter()
+        .filter(|m| m.followable == Some(true))
+        .map(|m| m.source.as_str())
+        .collect();
+    assert_eq!(
+        sources,
+        [
+            "src/Clock/SystemClock.cs",
+            "src/Program.Declared.cs",
+            "src/Program.cs"
+        ]
+    );
+    let program = extraction
+        .modules
+        .iter()
+        .find(|m| m.source == "src/Program.cs")
+        .ok_or("no module for src/Program.cs")?;
+    assert!(
+        program
+            .dependencies
+            .iter()
+            .any(|d| d.resolved == "src/Clock/SystemClock.cs"),
+        "{:?}",
+        program.dependencies
+    );
+    // No edge is dropped: every module that stands for an assembly is some edge's target.
+    let targets: std::collections::BTreeSet<&str> = extraction
+        .modules
+        .iter()
+        .flat_map(|m| &m.dependencies)
+        .map(|d| d.resolved.as_str())
+        .collect();
+    for external in extraction
+        .modules
+        .iter()
+        .filter(|m| m.followable == Some(false))
+    {
+        assert!(
+            targets.contains(external.source.as_str()),
+            "{} is listed and nothing depends on it",
+            external.source
+        );
+    }
+    Ok(())
+}
+
 #[test]
 fn two_runs_serialise_byte_for_byte() -> Result<(), Box<dyn std::error::Error>> {
     let first = as_json(&extract(&sample(), &loader("built/Sample.dll"))?)?.to_string();

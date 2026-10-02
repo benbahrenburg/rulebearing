@@ -18214,6 +18214,326 @@
       "attribution": "pdb"
     },
     {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/AttributeSyntaxElementsTests.cs",
+      "dependencies": [
+        {
+          "module": "ArchUnitNET.Domain.ICanBeAnalyzed",
+          "resolved": "ArchUnitNET",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "ArchUnitNET.Fluent.ArchRuleDefinition.Attributes"
+        },
+        {
+          "module": "ArchUnitNET.Domain.Attribute",
+          "resolved": "ArchUnitNET",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 17,
+          "column": 13,
+          "dependencyKind": "generic-argument"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/AssemblyTestHelper.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 16,
+          "column": 13,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper.AddSnapshotHeader"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/AssemblyTestHelperExtensions.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 20,
+          "column": 13,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions.AssertAnyViolations"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.AttributeAssemblyTestHelpers",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/AttributeAssemblyTestHelper.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.AttributeAssemblyTestHelpers..ctor"
+        },
+        {
+          "module": "System.Exception",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder.AwaitUnsafeOnCompleted"
+        },
+        {
+          "module": "System.Diagnostics.DebuggerStepThroughAttribute",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "attribute"
+        },
+        {
+          "module": "Xunit.FactAttribute",
+          "resolved": "xunit.core",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "attribute"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "ArchUnitNETTests.dll",
+      "namespaces": [],
+      "attribution": "pdb"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/ClassSyntaxElementsTests.cs",
+      "dependencies": [
+        {
+          "module": "ArchUnitNET.Domain.ICanBeAnalyzed",
+          "resolved": "ArchUnitNET",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "ArchUnitNET.Fluent.ArchRuleDefinition.Classes"
+        },
+        {
+          "module": "ArchUnitNET.Domain.Class",
+          "resolved": "ArchUnitNET",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 17,
+          "column": 13,
+          "dependencyKind": "generic-argument"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/AssemblyTestHelper.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 16,
+          "column": 13,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper.AddSnapshotHeader"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/AssemblyTestHelperExtensions.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 20,
+          "column": 13,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions.AssertAnyViolations"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.ClassAssemblyTestHelper",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/ClassAssemblyTestHelper.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.ClassAssemblyTestHelper..ctor"
+        },
+        {
+          "module": "System.Exception",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder.AwaitUnsafeOnCompleted"
+        },
+        {
+          "module": "System.Diagnostics.DebuggerStepThroughAttribute",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "attribute"
+        },
+        {
+          "module": "Xunit.FactAttribute",
+          "resolved": "xunit.core",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "attribute"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "ArchUnitNETTests.dll",
+      "namespaces": [],
+      "attribution": "pdb"
+    },
+    {
       "source": "ArchUnitNETTests/Fluent/Syntax/Elements/CustomSyntaxElementsTests.cs",
       "dependencies": [
         {
@@ -18599,6 +18919,472 @@
       "namespaces": [
         "ArchUnitNETTests.Fluent.Syntax.Elements"
       ],
+      "attribution": "pdb"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/MemberSyntaxElementsTests.cs",
+      "dependencies": [
+        {
+          "module": "ArchUnitNET.Domain.Exceptions.TypeDoesNotExistInArchitecture",
+          "resolved": "ArchUnitNET",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 17,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "ArchUnitNET.Fluent.ArchRuleDefinition.Members"
+        },
+        {
+          "module": "ArchUnitNET.Domain.IMember",
+          "resolved": "ArchUnitNET",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 21,
+          "column": 13,
+          "dependencyKind": "generic-argument"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/AssemblyTestHelper.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 20,
+          "column": 13,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper.AddSnapshotHeader"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/AssemblyTestHelperExtensions.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 24,
+          "column": 13,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions.AssertAnyViolations"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.TypeAssemblyTestHelper",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/TypeAssemblyTestHelper.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 17,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.TypeAssemblyTestHelper..ctor"
+        },
+        {
+          "module": "AttributeNamespace.ClassWithoutAttributes",
+          "resolved": "AttributeAssembly",
+          "coreModule": false,
+          "dependencyTypes": [
+            "package"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 270,
+          "column": 13,
+          "dependencyKind": "typeof"
+        },
+        {
+          "module": "System.Collections.Generic.List`1",
+          "resolved": "System.Collections",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 197,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "System.Collections.Generic.List`1..ctor"
+        },
+        {
+          "module": "System.Exception",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 17,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder.AwaitUnsafeOnCompleted"
+        },
+        {
+          "module": "System.Diagnostics.DebuggerStepThroughAttribute",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 17,
+          "column": 9,
+          "dependencyKind": "attribute"
+        },
+        {
+          "module": "System.Type",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 197,
+          "column": 9,
+          "dependencyKind": "generic-argument"
+        },
+        {
+          "module": "Xunit.FactAttribute",
+          "resolved": "xunit.core",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 17,
+          "column": 9,
+          "dependencyKind": "attribute"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "ArchUnitNETTests.dll",
+      "namespaces": [],
+      "attribution": "pdb"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/MethodMemberSyntaxElementsTests.cs",
+      "dependencies": [
+        {
+          "module": "ArchUnitNET.Domain.Exceptions.TypeDoesNotExistInArchitecture",
+          "resolved": "ArchUnitNET",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 18,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "ArchUnitNET.Fluent.ArchRuleDefinition.MethodMembers"
+        },
+        {
+          "module": "ArchUnitNET.Domain.IType",
+          "resolved": "ArchUnitNET",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 22,
+          "column": 13,
+          "dependencyKind": "generic-argument"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/AssemblyTestHelper.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 21,
+          "column": 13,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper.AddSnapshotHeader"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/AssemblyTestHelperExtensions.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 25,
+          "column": 13,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions.AssertAnyViolations"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.MethodMemberAssemblyTestHelper",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/MethodMemberAssemblyTestHelper.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 18,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.MethodMemberAssemblyTestHelper..ctor"
+        },
+        {
+          "module": "AttributeNamespace.ClassWithoutAttributes",
+          "resolved": "AttributeAssembly",
+          "coreModule": false,
+          "dependencyTypes": [
+            "package"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 205,
+          "column": 13,
+          "dependencyKind": "typeof"
+        },
+        {
+          "module": "MethodMemberNamespace.OtherRegularClass",
+          "resolved": "MethodMemberAssembly",
+          "coreModule": false,
+          "dependencyTypes": [
+            "package"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 533,
+          "column": 13,
+          "dependencyKind": "generic-argument"
+        },
+        {
+          "module": "MethodMemberNamespace.GenericClass`1",
+          "resolved": "MethodMemberAssembly",
+          "coreModule": false,
+          "dependencyTypes": [
+            "package"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 522,
+          "column": 13,
+          "dependencyKind": "typeof"
+        },
+        {
+          "module": "System.Collections.Generic.List`1",
+          "resolved": "System.Collections",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 138,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "System.Collections.Generic.List`1..ctor"
+        },
+        {
+          "module": "System.Exception",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 18,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder.AwaitUnsafeOnCompleted"
+        },
+        {
+          "module": "System.Diagnostics.DebuggerStepThroughAttribute",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 18,
+          "column": 9,
+          "dependencyKind": "attribute"
+        },
+        {
+          "module": "System.Type",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 138,
+          "column": 9,
+          "dependencyKind": "generic-argument"
+        },
+        {
+          "module": "Xunit.FactAttribute",
+          "resolved": "xunit.core",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 18,
+          "column": 9,
+          "dependencyKind": "attribute"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "ArchUnitNETTests.dll",
+      "namespaces": [],
       "attribution": "pdb"
     },
     {
@@ -19016,6 +19802,166 @@
       "namespaces": [
         "ArchUnitNETTests.Fluent.Syntax.Elements"
       ],
+      "attribution": "pdb"
+    },
+    {
+      "source": "ArchUnitNETTests/Fluent/Syntax/Elements/PropertyMemberSyntaxElementsTests.cs",
+      "dependencies": [
+        {
+          "module": "ArchUnitNET.Domain.ICanBeAnalyzed",
+          "resolved": "ArchUnitNET",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "ArchUnitNET.Fluent.ArchRuleDefinition.PropertyMembers"
+        },
+        {
+          "module": "ArchUnitNET.Domain.PropertyMember",
+          "resolved": "ArchUnitNET",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 17,
+          "column": 13,
+          "dependencyKind": "generic-argument"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/AssemblyTestHelper.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 16,
+          "column": 13,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper.AddSnapshotHeader"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/AssemblyTestHelperExtensions.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 20,
+          "column": 13,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions.AssertAnyViolations"
+        },
+        {
+          "module": "ArchUnitNETTests.AssemblyTestHelper.PropertyMemberAssemblyTestHelper",
+          "resolved": "ArchUnitNETTests/AssemblyTestHelper/PropertyMemberAssemblyTestHelper.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "ArchUnitNETTests.AssemblyTestHelper.PropertyMemberAssemblyTestHelper..ctor"
+        },
+        {
+          "module": "System.Exception",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder.AwaitUnsafeOnCompleted"
+        },
+        {
+          "module": "System.Diagnostics.DebuggerStepThroughAttribute",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "attribute"
+        },
+        {
+          "module": "Xunit.FactAttribute",
+          "resolved": "xunit.core",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "attribute"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "ArchUnitNETTests.dll",
+      "namespaces": [],
       "attribution": "pdb"
     },
     {

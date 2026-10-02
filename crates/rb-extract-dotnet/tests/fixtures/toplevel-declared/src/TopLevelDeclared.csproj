@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A fixture for rb-extract-dotnet (docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md,
+       Step 14): top-level statements in Program.cs while `Program` itself is declared in another
+       file, as the ASP.NET SDK's generator declares `public partial class Program { }` under
+       obj/. Program.cs then holds code and declares no type. Rebuilt by ../build.sh; the built
+       assembly and PDB are committed beside it. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>TopLevelDeclared</RootNamespace>
+  </PropertyGroup>
+</Project>

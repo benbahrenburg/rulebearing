@@ -1687,6 +1687,91 @@
       "attribution": "pdb"
     },
     {
+      "source": "test/NetArchTest.TestStructure/Dependencies/Search/DependencyLocation/AsyncMethod.cs",
+      "dependencies": [
+        {
+          "module": "System.Int32",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 12,
+          "column": 9,
+          "dependencyKind": "body"
+        },
+        {
+          "module": "System.Exception",
+          "resolved": "netstandard",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 12,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "System.Runtime.CompilerServices.AsyncTaskMethodBuilder.AwaitUnsafeOnCompleted"
+        },
+        {
+          "module": "System.Diagnostics.DebuggerStepThroughAttribute",
+          "resolved": "netstandard",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 12,
+          "column": 9,
+          "dependencyKind": "attribute"
+        },
+        {
+          "module": "NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency",
+          "resolved": "test/NetArchTest.TestStructure/Dependencies/Examples/ExampleDependency.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 12,
+          "column": 9,
+          "dependencyKind": "body",
+          "member": "NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency..ctor"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "NetArchTest.TestStructure.dll",
+      "namespaces": [],
+      "attribution": "pdb"
+    },
+    {
       "source": "test/NetArchTest.TestStructure/Dependencies/Search/DependencyLocation/AttributeOnClass.cs",
       "dependencies": [
         {
@@ -5129,6 +5214,90 @@
       "namespaces": [
         "NetArchTest.TestStructure.Dependencies.Search.DependencyLocation"
       ],
+      "attribution": "pdb"
+    },
+    {
+      "source": "test/NetArchTest.TestStructure/Dependencies/Search/DependencyLocation/Yield.cs",
+      "dependencies": [
+        {
+          "module": "System.Int32",
+          "resolved": "System.Runtime",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "body"
+        },
+        {
+          "module": "System.Int32",
+          "resolved": "netstandard",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 14,
+          "column": 13,
+          "dependencyKind": "body"
+        },
+        {
+          "module": "System.Runtime.CompilerServices.IteratorStateMachineAttribute",
+          "resolved": "netstandard",
+          "coreModule": true,
+          "dependencyTypes": [
+            "framework"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 13,
+          "column": 9,
+          "dependencyKind": "attribute"
+        },
+        {
+          "module": "NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency",
+          "resolved": "test/NetArchTest.TestStructure/Dependencies/Examples/ExampleDependency.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "clr",
+          "valid": true,
+          "line": 15,
+          "column": 13,
+          "dependencyKind": "body",
+          "member": "NetArchTest.TestStructure.Dependencies.Examples.ExampleDependency..ctor"
+        }
+      ],
+      "valid": true,
+      "followable": true,
+      "language": "dotnet",
+      "project": "NetArchTest.TestStructure.dll",
+      "namespaces": [],
       "attribution": "pdb"
     },
     {
