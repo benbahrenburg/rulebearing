@@ -131,6 +131,10 @@ rulebearing_column() { # dir, config
   local dir="$1" config="$2" bin baseline run
   bin="${RULEBEARING_BIN:-$here/../target/release/rulebearing}"
   baseline="${RULEBEARING_BASELINE_BIN:-}"
+  # The out directory is reused between runs; result() reads whichever of these it finds, so a
+  # previous run's time or pair must not stand in for this one's.
+  rm -f "$out"/rulebearing-timing*.json "$out"/baseline-timing-*.json "$out/regression.json" \
+    "$out/rulebearing.err" "$out/baseline.err"
   [ -x "$bin" ] || return 0
   [ -n "$baseline" ] && [ ! -x "$baseline" ] && baseline=""
   for run in 1 2 3; do
