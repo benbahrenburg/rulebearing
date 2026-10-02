@@ -313,6 +313,20 @@ impl Package {
 /// neither plant the file nor swap it for their own.
 struct Private(PathBuf);
 
+/// A builder for a folder only its owner can enter: mode 0700 where the platform has modes.
+fn private_dir_builder() -> std::fs::DirBuilder {
+    #[cfg(unix)]
+    {
+        let mut builder = std::fs::DirBuilder::new();
+        std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
+        builder
+    }
+    #[cfg(not(unix))]
+    {
+        std::fs::DirBuilder::new()
+    }
+}
+
 impl Private {
     /// A fresh private folder under `parent`, skipping names already taken.
     fn create(parent: &Path) -> std::io::Result<Self> {
@@ -327,10 +341,7 @@ impl Private {
                 std::process::id(),
                 NEXT.fetch_add(1, Ordering::Relaxed)
             ));
-            let mut builder = std::fs::DirBuilder::new();
-            #[cfg(unix)]
-            std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
-            match builder.create(&dir) {
+            match private_dir_builder().create(&dir) {
                 Ok(()) => return Ok(Self(dir)),
                 Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => last = Some(e),
                 Err(e) => return Err(e),

@@ -238,6 +238,20 @@ pub(crate) struct PrivateDir {
     pub(crate) path: PathBuf,
 }
 
+/// A builder for a folder only its owner can enter: mode 0700 where the platform has modes.
+fn private_dir_builder() -> std::fs::DirBuilder {
+    #[cfg(unix)]
+    {
+        let mut builder = std::fs::DirBuilder::new();
+        std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
+        builder
+    }
+    #[cfg(not(unix))]
+    {
+        std::fs::DirBuilder::new()
+    }
+}
+
 impl PrivateDir {
     /// Creates `<temp>/<prefix><pid>-<nanos>-<n>`, trying up to sixteen names.
     ///
@@ -266,13 +280,7 @@ impl PrivateDir {
     ) -> std::io::Result<Self> {
         let mut last = std::io::Error::from(std::io::ErrorKind::AlreadyExists);
         for path in candidates {
-            let mut builder = std::fs::DirBuilder::new();
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::DirBuilderExt as _;
-                builder.mode(0o700);
-            }
-            match builder.create(&path) {
+            match private_dir_builder().create(&path) {
                 Ok(()) => return Ok(Self { path }),
                 Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => last = e,
                 Err(e) => return Err(e),

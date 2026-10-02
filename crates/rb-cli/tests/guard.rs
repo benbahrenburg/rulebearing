@@ -132,6 +132,17 @@ fn until(dir: &Path, limit: Duration, test: impl Fn(&Value) -> bool) -> Result<V
     }
 }
 
+/// Waits until the guard has seen everything written so far: a scan that started after this
+/// call found nothing more to read. A change that adds a folder and a file in it can take two
+/// full reads, and a save made before the second would be part of it, not checked alone.
+fn settled(dir: &Path) -> Result {
+    let asked = now_ms();
+    until(dir, Duration::from_secs(30), |f| {
+        f["seenUpTo"].as_u64().is_some_and(|seen| seen >= asked)
+    })?;
+    Ok(())
+}
+
 /// Every file under `dir` outside `.graph/`, with its content.
 fn snapshot(dir: &Path) -> Result<BTreeMap<PathBuf, Vec<u8>>> {
     let mut files = BTreeMap::new();
@@ -360,6 +371,7 @@ fn what_the_walk_would_find_anew_is_read_in_full_and_answers_as_a_cold_run() -> 
             .is_some_and(|a| a.contains("ui-not-to-db"))
     })?;
     // A save that adds an import: checked again alone, from the earlier walk.
+    settled(&dir)?;
     std::fs::write(
         dir.join("src/services/s3.ts"),
         "import { s2 } from \"./s2\";\nimport { store } from \"../db/store\";\nexport const s3 = s2 + store;\n",
@@ -391,6 +403,7 @@ fn what_the_walk_would_find_anew_is_read_in_full_and_answers_as_a_cold_run() -> 
                 .is_some_and(|a| a.contains("src/ui/nested/deep.ts"))
     })?;
     // Then a save, checked alone again, whose answer is a cold run's.
+    settled(&dir)?;
     std::fs::write(
         dir.join("src/ui/page.ts"),
         "import { s3 } from \"../services/s3\";\nexport const page = s3;\n",
