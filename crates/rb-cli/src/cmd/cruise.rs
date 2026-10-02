@@ -370,14 +370,17 @@ fn finish(
                 Err(e) => failed(&e, &warned(&stderr, &tail)),
             };
             // The evaluated run is stored for the next one once the extraction it came from is.
-            let writing = match (cache, evaluation) {
-                (Some(cache), Some(partial)) => writing.then_remember(
+            let writing = if let (Some(cache), Some(partial)) = (cache, evaluation) {
+                writing.then_remember(
                     ctx.resolve(&cache.folder),
                     partial,
                     verdict,
                     cache.compressed(),
-                ),
-                _ => writing,
+                )
+            } else {
+                // Nothing keeps the verdict; freeing it is not the run's wait.
+                crate::value::release(verdict);
+                writing
             };
             (outcome, writing)
         }

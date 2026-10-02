@@ -92,9 +92,13 @@ pub struct Verdict {
 impl Verdict {
     /// The verdict of an evaluated run and its ratchets.
     pub fn of(run: Run, ratchets: Ratchets) -> Self {
-        Self {
-            expired: run
-                .evaluation
+        let Run {
+            mut evaluation,
+            document,
+            warnings,
+        } = run;
+        let verdict = Self {
+            expired: evaluation
                 .expired
                 .iter()
                 .map(|e| ExpiredLine {
@@ -103,11 +107,15 @@ impl Verdict {
                     expires: e.expires.to_string(),
                 })
                 .collect(),
-            vacuous: run.evaluation.vacuous,
-            document: run.document,
+            vacuous: std::mem::take(&mut evaluation.vacuous),
+            document,
             ratchets,
-            warnings: run.warnings,
-        }
+            warnings,
+        };
+        // The engine's own copy of the document is not needed now; freeing it is not the run's
+        // wait (crate::value::release).
+        crate::value::release(evaluation);
+        verdict
     }
 }
 
