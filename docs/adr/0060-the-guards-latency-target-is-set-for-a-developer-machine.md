@@ -1,6 +1,6 @@
 # ADR-0060: The guard's 100 ms is set for a developer machine; the Linux runner gates the unchanged-graph save and holds the graph-changing one to a ceiling
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-02, by the owner)
 - **Date:** 2026-10-02
 - **Derives from:** [design § The agentic engineering hat](../artifacts/design.md#the-agentic-engineering-hat-turn-two) (`guard --watch` re-checks within 100 ms), [architecture § Performance model](../architecture.md#performance-model), [ADR-0021](0021-agent-surface-cli-first.md) (the guard is a thin loop over the command line), [ADR-0059](0059-gates-run-by-tier-and-mutants-by-diff.md) (a timing is taken on a machine running nothing else)
 - **Supersedes:** nothing. It says which machine [NFR-PERF-03](../prd.md#nfr-perf-03)'s guard figure is measured on, which the requirement leaves open.
