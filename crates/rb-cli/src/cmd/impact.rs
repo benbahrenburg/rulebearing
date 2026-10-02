@@ -257,11 +257,12 @@ fn report(ctx: &mut Context<'_>, args: &ImpactArgs, file: &str) -> Result<Value,
         liveness: false,
         options_used: serde_json::Map::new(),
         paths: Vec::new(),
+        affected: None,
     };
     let evaluation =
         pipeline::evaluate_document(ctx, &config, graph, &options, &mut Progress::new(None))
             .map_err(|e| untrusted(e.to_string()))?
-            .evaluation;
+            .into_evaluation();
     let document = &evaluation.document;
     let mut dependents = BTreeSet::new();
     let mut queue = VecDeque::from([(file.clone(), 0usize)]);

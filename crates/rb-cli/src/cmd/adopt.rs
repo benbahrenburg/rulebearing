@@ -509,6 +509,7 @@ fn cruise(ctx: &Context<'_>, config: &Config, paths: &[String]) -> Result<pipeli
         liveness: true,
         options_used: serde_json::Map::new(),
         paths: paths.to_vec(),
+        affected: None,
     };
     pipeline::run(ctx, config, &options, &mut Progress::new(None))
         .map_err(|e| Outcome::failed(RunExit::Untrustworthy, format!("rulebearing adopt: {e}\n")))
@@ -612,17 +613,8 @@ fn baselined(
     let first = cruise(ctx, &original, paths)?;
     // A rule that matches nothing is named in `allowEmpty`, so the gate goes green while the
     // written file says, rule by rule, which fences are not standing (ADR-0032).
-    let empty: Vec<String> = first
-        .evaluation
-        .vacuous
-        .iter()
-        .map(|v| v.name.clone())
-        .collect();
-    let entries = baseline(
-        ctx,
-        &first.evaluation.document.summary.violations,
-        &args.baseline,
-    )?;
+    let empty: Vec<String> = first.vacuous.iter().map(|v| v.name.clone()).collect();
+    let entries = baseline(ctx, &first.evaluated().summary.violations, &args.baseline)?;
     let text = adopted_config(extends, &entries, &empty, &ctx.today.to_string());
     let options = LoadOptions {
         via_node: args.config.config_via_node,
@@ -635,8 +627,8 @@ fn baselined(
         )
     })?;
     let second = cruise(ctx, &adopted, paths)?;
-    let remaining = second.evaluation.error_count();
-    if remaining != 0 || !second.evaluation.vacuous.is_empty() {
+    let remaining = second.error_count();
+    if remaining != 0 || !second.vacuous.is_empty() {
         return Err(Outcome::failed(
             RunExit::Untrustworthy,
             format!(

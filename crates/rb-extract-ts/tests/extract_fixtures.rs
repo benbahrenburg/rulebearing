@@ -20,6 +20,27 @@
 //! `conformance/dependency-cruiser/threshold.json`. With `RB_UPDATE_LAYER1_OPEN=1` it rewrites
 //! `conformance/dependency-cruiser/layer1-open.json`, the list of failing cases with their class,
 //! which is wave 1's worklist.
+//!
+//! Every `extract` case is also run incrementally
+//! ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+//! with every file unchanged, every file changed, and each file changed on its own, the
+//! extraction [`rb_extract_ts::extract_incremental`] gives must equal the full one byte for
+//! byte, module order included. Each variant runs without file states, then keeping them and the
+//! walk (compared too): walking the inputs again, taking the earlier walk as
+//! [`rb_model::ExtractRequest::walk_unchanged`] promises
+//! ([Wave 3, Step 16](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)),
+//! and from an earlier extraction without its linked code layer, so the layer is linked again
+//! from the kept states. It prints `layer1-incremental: cases=<n> variants=<v>` and fails on any
+//! difference.
+//!
+//! A case whose file only the Node sidecar reads (CoffeeScript, LiveScript) is replayed through
+//! the sidecar ([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
+//! [ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)): the dependency-cruiser
+//! checkout named by `RB_LAYER1_SIDECAR`, which `conformance/dependency-cruiser/run.sh` sets so
+//! the conformance job always replays them, or else the checkout that script clones into
+//! `conformance/dependency-cruiser/upstream/`. With neither, or no Node, such a case is skipped
+//! with the reason printed and left out of the ratio; with `RB_LAYER1_SIDECAR` set, a sidecar
+//! that cannot run fails the test.
 
 use std::collections::BTreeMap;
 use std::error::Error;
@@ -30,6 +51,7 @@ use std::time::Instant;
 use oxc_span::SourceType;
 use rb_extract_ts::pipeline::{self, Extracted, ExtractedModule, Settings};
 use rb_extract_ts::resolve::{self, Context, ResolveConfig};
+use rb_extract_ts::sidecar::{self, Package, Sidecar};
 use rb_extract_ts::walk::{self, Flavour, Found, WalkOptions};
 use rb_model::{DependencyType, ModuleSystem, TypeScriptOptions};
 use serde::Deserialize;
@@ -446,6 +468,73 @@ fn replay_determine(root: &Path, cwd: &Path, input: &Value) -> Result<Value, Fai
     ))
 }
 
+/// The sidecar layer 1 replays CoffeeScript and LiveScript cases through, or why there is none.
+fn layer1_sidecar() -> &'static Result<Sidecar, String> {
+    static SIDECAR: std::sync::OnceLock<Result<Sidecar, String>> = std::sync::OnceLock::new();
+    SIDECAR.get_or_init(|| {
+        let checkout = std::env::var_os("RB_LAYER1_SIDECAR").map_or_else(
+            || conformance().join("upstream/dependency-cruiser"),
+            PathBuf::from,
+        );
+        let package = Package::read(&checkout).map_err(|e| e.to_string())?;
+        let node = std::env::var("RULEBEARING_NODE").unwrap_or_else(|_| "node".to_owned());
+        Sidecar::with_node(&node, package).map_err(|e| e.to_string())
+    })
+}
+
+/// Whether a case is left out for want of the sidecar, saying why; with `RB_LAYER1_SIDECAR` set,
+/// a sidecar that cannot run fails instead.
+fn skipped_without_sidecar(case: &Case) -> bool {
+    let Err(reason) = layer1_sidecar() else {
+        return false;
+    };
+    if !is_sidecar_case(case) {
+        return false;
+    }
+    assert!(
+        std::env::var_os("RB_LAYER1_SIDECAR").is_none(),
+        "RB_LAYER1_SIDECAR is set but the sidecar cannot run: {reason}"
+    );
+    println!("layer1: skipped {} (needs the sidecar: {reason})", case.id);
+    true
+}
+
+/// Whether a case extracts a file only the sidecar reads.
+fn is_sidecar_case(case: &Case) -> bool {
+    case.surface == "extract-dependencies"
+        && case
+            .input
+            .get("fileName")
+            .and_then(Value::as_str)
+            .is_some_and(rb_extract_ts::needs_sidecar)
+}
+
+/// `extract-dependencies` for a CoffeeScript or LiveScript file, through the sidecar: the
+/// dependencies dependency-cruiser gives the file, in the form the pipeline keeps them.
+fn replay_sidecar(
+    sidecar: &Sidecar,
+    cwd: &Path,
+    file: &str,
+    cruise: &Value,
+    config: &ResolveConfig,
+) -> Result<Value, Failure> {
+    let options = typescript_options(cruise)?;
+    let configuration = sidecar::configuration(&sidecar::options_block(&options), config);
+    let mut answered = sidecar
+        .run(cwd, &[file.to_owned()], &configuration)
+        .map_err(surface_error)?;
+    let module = answered
+        .remove(file)
+        .ok_or_else(|| surface_error(format!("no module for {file}")))?;
+    Ok(Value::Array(
+        module
+            .dependencies
+            .iter()
+            .map(|d| extracted_json(&rb_extract_ts::from_dependency(d)))
+            .collect(),
+    ))
+}
+
 /// Replays one case through the Rust surface that corresponds to its dependency-cruiser function.
 fn replay(root: &Path, case: &Case) -> Result<Value, Failure> {
     let input = rooted(&case.input, root);
@@ -485,6 +574,15 @@ fn replay(root: &Path, case: &Case) -> Result<Value, Failure> {
                 field("transpileOptions"),
                 field("cruiseOptions"),
             )?;
+            if let (true, Ok(sidecar)) = (is_sidecar_case(case), layer1_sidecar()) {
+                return replay_sidecar(
+                    sidecar,
+                    &cwd,
+                    &text("fileName"),
+                    field("cruiseOptions"),
+                    &config,
+                );
+            }
             let deps = pipeline::extract_dependencies(&text("fileName"), &settings, &config)
                 .map_err(pipeline_error)?;
             Ok(Value::Array(deps.iter().map(extracted_json).collect()))
@@ -554,6 +652,102 @@ fn classify(actual: &Value, expected: &Value) -> Class {
     }
 }
 
+/// Gate 1 layer 1 under incremental extraction: an `extract` case extracted in full, then again
+/// with each variant of changed and unchanged files taken from the full result. Returns how many
+/// variants were compared (none for a case that throws, which has nothing to reuse), or the first
+/// difference.
+fn incremental_variants(root: &Path, case: &Case) -> Result<usize, String> {
+    let input = rooted(&case.input, root);
+    let cwd = root.join(&case.cwd);
+    let null = Value::Null;
+    let field = |key: &str| input.get(key).unwrap_or(&null);
+    let fresh = || -> Result<(Settings, ResolveConfig), String> {
+        let settings = settings(field("cruiseOptions"), &cwd).map_err(|f| f.detail)?;
+        let config = resolve_config(
+            field("resolveOptions"),
+            &serde_json::json!({"tsConfig": field("tsConfig")}),
+            field("cruiseOptions"),
+        )
+        .map_err(|f| f.detail)?;
+        Ok((settings, config))
+    };
+    let files = strings(field("files"));
+    let roots: Vec<PathBuf> = files.iter().map(PathBuf::from).collect();
+    let (mut settings, config) = fresh()?;
+    settings.keep_file_states = true;
+    let Ok(modules) = pipeline::extract(&files, &settings, &config) else {
+        return Ok(0);
+    };
+    let Ok(mut full) = rb_extract_ts::to_extraction(modules, &settings) else {
+        return Ok(0);
+    };
+    full.walk = pipeline::gather_walk(&files, &settings).ok();
+    let with_states = serde_json::to_string(&full).map_err(|e| e.to_string())?;
+    let without_states = |e: &rb_model::Extraction| {
+        let mut e = e.clone();
+        e.files.clear();
+        e.walk = None;
+        serde_json::to_string(&e).map_err(|e| e.to_string())
+    };
+    let expected = without_states(&full)?;
+    let read: Vec<PathBuf> = full
+        .modules
+        .iter()
+        .filter(|m| m.language.is_some())
+        .map(|m| PathBuf::from(&m.source))
+        .collect();
+    let mut variants = vec![(Vec::new(), read.clone()), (read.clone(), Vec::new())];
+    for (index, file) in read.iter().enumerate() {
+        let mut others = read.clone();
+        others.remove(index);
+        variants.push((vec![file.clone()], others));
+    }
+    let mut count = 0;
+    // Each variant without states kept, then keeping them and the walk: once walking the inputs
+    // again, once taking the earlier walk as promised, and once from an earlier extraction
+    // without its linked code layer, so the layer is linked again from the kept states.
+    for (changed, unchanged) in variants {
+        for (keep, walk_unchanged, without_layer) in [
+            (false, false, false),
+            (true, false, false),
+            (true, true, false),
+            (true, true, true),
+        ] {
+            let (mut settings, config) = fresh()?;
+            settings.keep_file_states = keep;
+            settings.keep_walk = keep;
+            let mut previous = full.clone();
+            if without_layer {
+                previous.code = None;
+            }
+            let request = rb_model::ExtractRequest {
+                changed: changed.clone(),
+                unchanged: unchanged.clone(),
+                previous,
+                walk_unchanged,
+            };
+            let actual = rb_extract_ts::extract_incremental(&roots, &settings, &config, &request)
+                .map_err(|e| format!("changed {changed:?}: {e}"))?;
+            let (actual, expected) = if keep {
+                (
+                    serde_json::to_string(&actual).map_err(|e| e.to_string())?,
+                    &with_states,
+                )
+            } else {
+                (without_states(&actual)?, &expected)
+            };
+            if actual != *expected {
+                return Err(format!(
+                    "changed {changed:?}, states {keep}, walk unchanged {walk_unchanged}, \
+                     without the layer {without_layer}\nexpected {expected}\nactual   {actual}"
+                ));
+            }
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
 fn threshold() -> Result<f64, Box<dyn Error>> {
     let text = std::fs::read_to_string(conformance().join("threshold.json"))?;
     let value: Value = serde_json::from_str(&text)?;
@@ -610,18 +804,77 @@ impl Drop for CacheBustingTree {
     }
 }
 
-#[test]
-fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
-    let root = fixtures();
-    let index: Index = serde_json::from_str(&std::fs::read_to_string(root.join("INDEX.json"))?)?;
-    prepare(&root);
+/// Held by each test that replays the cases: both rename the cache-busting trees, so they take
+/// turns rather than race.
+static FIXTURE_TREE: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+/// Every recorded case, with the index they were recorded under.
+fn recorded_cases(root: &Path) -> Result<(Index, Vec<Case>), Box<dyn Error>> {
+    let index: Index = serde_json::from_str(&std::fs::read_to_string(root.join("INDEX.json"))?)?;
+    prepare(root);
     let mut cases = Vec::new();
     for spec in &index.specs {
         let text = std::fs::read_to_string(root.join(&spec.file))?;
         let recorded: Vec<Case> = serde_json::from_str(&text)?;
         cases.extend(recorded);
     }
+    Ok((index, cases))
+}
+
+/// Layer 1 under incremental extraction (see the module doc).
+#[test]
+fn layer1_extract_cases_incrementally() -> Result<(), Box<dyn Error>> {
+    let _turn = FIXTURE_TREE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let root = fixtures();
+    let (_, cases) = recorded_cases(&root)?;
+    let (mut compared, mut variants) = (0usize, 0usize);
+    let mut failures: Vec<(String, String)> = Vec::new();
+    for case in cases.iter().filter(|c| c.surface == "extract") {
+        let tree = CacheBustingTree::for_case(&root, &case.id);
+        let outcome = incremental_variants(&root, case);
+        drop(tree);
+        match outcome {
+            Ok(count) => {
+                compared += 1;
+                variants += count;
+            }
+            Err(detail) => failures.push((case.id.clone(), detail)),
+        }
+    }
+    println!(
+        "layer1-incremental: cases={compared} variants={variants} mismatches={}",
+        failures.len()
+    );
+    assert!(
+        failures.is_empty(),
+        "incremental extraction differs from full extraction: {failures:#?}"
+    );
+    assert!(
+        variants > compared,
+        "the incremental check compared nothing"
+    );
+    Ok(())
+}
+
+/// `passed` over `total`, or 0 for no case.
+fn ratio(passed: usize, total: usize) -> f64 {
+    #[allow(clippy::cast_precision_loss)] // counts in the hundreds
+    if total == 0 {
+        0.0
+    } else {
+        passed as f64 / total as f64
+    }
+}
+
+#[test]
+fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
+    let _turn = FIXTURE_TREE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let root = fixtures();
+    let (index, cases) = recorded_cases(&root)?;
     assert_eq!(
         cases.len(),
         index.cases,
@@ -630,7 +883,11 @@ fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
 
     let started = Instant::now();
     let mut failures: Vec<(&Case, Failure)> = Vec::new();
-    for case in &cases {
+    let runnable: Vec<&Case> = cases
+        .iter()
+        .filter(|c| !skipped_without_sidecar(c))
+        .collect();
+    for &case in &runnable {
         let tree = CacheBustingTree::for_case(&root, &case.id);
         let outcome = replay(&root, case);
         drop(tree);
@@ -657,14 +914,9 @@ fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
     }
     let elapsed = started.elapsed();
 
-    let total = cases.len();
+    let total = runnable.len();
     let passed = total - failures.len();
-    #[allow(clippy::cast_precision_loss)] // counts in the hundreds
-    let ratio = if total == 0 {
-        0.0
-    } else {
-        passed as f64 / total as f64
-    };
+    let ratio = ratio(passed, total);
     let mut by_class: BTreeMap<Class, usize> = BTreeMap::new();
     for (_, failure) in &failures {
         *by_class.entry(failure.class).or_default() += 1;
@@ -704,7 +956,8 @@ fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
         )?;
     }
 
-    println!("layer1: passed={passed} total={total} ratio={ratio:.4}");
+    let skipped = cases.len() - total;
+    println!("layer1: passed={passed} total={total} ratio={ratio:.4} skipped={skipped}");
     println!(
         "layer1: timing replay_ms={} cases={total}",
         elapsed.as_millis()

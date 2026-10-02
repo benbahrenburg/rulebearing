@@ -1,0 +1,76 @@
+Added and removed edges, new and resolved violations and moved ratchets between two results, or
+between a revision and the working tree
+
+Usage: rulebearing diff [OPTIONS] [OLD-JSON NEW-JSON | FILES-OR-DIRECTORIES]...
+
+Arguments:
+  [OLD-JSON NEW-JSON | FILES-OR-DIRECTORIES]...
+          Without --base: the old and the new cruise result. With --base: the files, directories and
+          globs to cruise on both sides (default: the working directory)
+
+Options:
+      --base <REF>
+          Compare the cruise of this revision (a branch, tag or commit) with the working tree
+
+  -c, --config [<FILE>]
+          Read rules and options from FILE (`-` for stdin); without a value, look for
+          rulebearing.{yaml,yml,json,jsonc,toml} or .dependency-cruiser.{js,cjs,mjs,json,yaml,yml}
+
+      --no-config
+          Run without a configuration, even when one is present
+
+      --config-format <FORMAT>
+          The configuration format when it cannot be told from the name: native or
+          dependency-cruiser
+
+      --config-via-node
+          Evaluate a JavaScript configuration with the local Node instead of the sandbox
+
+      --strict-compat
+          Refuse what dependency-cruiser would refuse (nested quantifiers, Rulebearing additions)
+
+      --require-comment-token
+          Require a decision token (`adr:NNNN` or `plan:<slug>`) in every rule's comment
+
+  -T, --output-type <TYPE>
+          Output type: json, markdown or agent
+          
+          [default: json]
+
+  -f, --output-to <FILE>
+          File to write output to; - for stdout
+          
+          [default: -]
+
+  -e, --exit-code
+          Exit with the number of new error-severity violations
+
+      --exit-code-mode <MODE>
+          With --exit-code: default (the count) or strict (10 + the count, so 2 and 3 are never a
+          count)
+
+          Possible values:
+          - default: The error count, capped at 255, as dependency-cruiser exits
+          - strict:  10 plus the error count when there is one, capped at 255, so 2 and 3 only ever
+            mean an untrustworthy run and an invalid configuration
+          
+          [default: default]
+
+      --allow-approximate-gate
+          Let a run read in source mode (--mode source) decide the exit code, for a local script;
+          without it such a run exits 2, since its edges are approximate. Never in CI (ADR-0011)
+
+      --no-cache
+          With --base: check the base out and extract it even when the cache holds its graph, and do
+          not write the entry
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Exit codes:
+  0       the diff was written (with --exit-code: no new error-severity violation)
+  1-255   with --exit-code: the number of new error-severity violations, capped at 255
+          (with --exit-code-mode strict: 10 + the number, so 2 and 3 are never a count)
+  2       an input cannot be read or is not a cruise result, the revision is unknown, or a side
+          cannot be cruised
+  3       the configuration, the output type or the command line is invalid

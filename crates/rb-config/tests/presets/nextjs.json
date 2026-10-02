@@ -1,0 +1,95 @@
+{
+  "forbidden": [
+    {
+      "comment": "An App Router page, layout, route handler, template or boundary file is an entry Next.js loads by its path; importing one from another module runs it outside its route and couples two routes. plan:rulebearing-nextjs",
+      "examples": {
+        "allowed": [
+          "src/app/dashboard/page.tsx -> src/components/Header.tsx",
+          "src/app/dashboard/page.test.tsx -> src/app/dashboard/page.tsx"
+        ],
+        "forbidden": [
+          "src/components/Header.tsx -> src/app/dashboard/page.tsx",
+          "src/app/settings/page.tsx -> src/app/layout.tsx"
+        ]
+      },
+      "fix": "Move what both need into a module outside app/ (components/ or lib/) and import that from the route file and from here.",
+      "from": {
+        "pathNot": [
+          "\\.(spec|test|stories)\\.[cm]?[jt]sx?$",
+          "(^|/)__tests__/"
+        ]
+      },
+      "name": "nextjs-no-import-of-route-entries",
+      "severity": "error",
+      "to": {
+        "dependencyTypesNot": [
+          "type-only"
+        ],
+        "path": "(^|/)app/(|.+/)(page|layout|route|template|default|loading|error|global-error|not-found)\\.[cm]?[jt]sx?$"
+      }
+    },
+    {
+      "comment": "A file under pages/api/ or app/api/ is an HTTP handler; importing it from a page or a component calls the handler's module in the wrong runtime and ties the UI to the transport. A type-only import is erased and is allowed. plan:rulebearing-nextjs",
+      "examples": {
+        "allowed": [
+          "src/pages/api/users.ts -> src/pages/api/_helpers.ts",
+          "src/pages/api/users.ts -> src/server/users.ts"
+        ],
+        "forbidden": [
+          "src/pages/index.tsx -> src/pages/api/users.ts",
+          "src/components/List.tsx -> src/app/api/items/route.ts"
+        ]
+      },
+      "fix": "Move the logic the handler and the caller share into a server module (server/ or lib/), import that from both, and call the API over HTTP from the browser.",
+      "from": {
+        "pathNot": [
+          "(^|/)(app|pages)/api/",
+          "\\.(spec|test)\\.[cm]?[jt]sx?$",
+          "(^|/)__tests__/"
+        ]
+      },
+      "name": "nextjs-no-import-of-api-routes",
+      "severity": "error",
+      "to": {
+        "dependencyTypesNot": [
+          "type-only"
+        ],
+        "path": "(^|/)(app|pages)/api/"
+      }
+    },
+    {
+      "comment": "components/, hooks/ and lib/ outside the route folders are shared by every route; one that imports from app/ or pages/ makes every route depend on that one. Folders of the same names inside app/ or pages/ are colocated with their route and are part of it. plan:rulebearing-nextjs",
+      "examples": {
+        "allowed": [
+          "src/pages/index.tsx -> src/components/Nav.tsx",
+          "src/components/Nav.tsx -> src/lib/format.ts",
+          "app/lib/data.ts -> app/lib/definitions.ts",
+          "app/components/a.tsx -> app/components/b.tsx",
+          "src/lib/routes.ts -> src/lib/app/paths.ts"
+        ],
+        "forbidden": [
+          "src/components/Nav.tsx -> src/pages/index.tsx",
+          "lib/format.ts -> app/(marketing)/copy.ts"
+        ]
+      },
+      "fix": "Move the code the shared module needs out of the route folder into components/, hooks/ or lib/, or pass it in as a prop or an argument.",
+      "from": {
+        "path": "(^|/)(components|hooks|lib)/",
+        "pathNot": "(^|/)(app|pages)/"
+      },
+      "name": "nextjs-shared-code-not-to-routes",
+      "severity": "error",
+      "to": {
+        "dependencyTypesNot": [
+          "type-only"
+        ],
+        "path": "(^|/)(app|pages)/",
+        "pathNot": [
+          "(^|/)(components|hooks|lib)/(|.*/)(app|pages)/",
+          "(^|/)node_modules/"
+        ]
+      }
+    }
+  ],
+  "options": {}
+}

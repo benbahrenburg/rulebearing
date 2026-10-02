@@ -9,11 +9,35 @@
 //! named `<name>:<lower>-to-<higher>` with 1-based layer numbers. `independence` takes a pattern
 //! with exactly one capturing group and becomes one `$1` fence: a module in one group may not
 //! depend on a module in another. `rulebearing config expand` prints the result.
+//!
+//! An entry's lifecycle fields, `since`, `deprecated` and `replacedBy`
+//! ([Wave 3, Step 12](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)),
+//! are copied onto every rule it expands to, as `comment` and `fix` are.
 
 use serde_json::{Map, Value, json};
 
 use crate::ConfigError;
 use crate::model::{IndependenceShorthand, LayersShorthand};
+
+/// Copies the lifecycle fields that are set onto an expanded rule.
+fn lifecycle(rule: &mut Map<String, Value>, fields: [&Option<String>; 3]) {
+    for (key, value) in ["since", "deprecated", "replacedBy"]
+        .into_iter()
+        .zip(fields)
+    {
+        if let Some(value) = value {
+            rule.insert(key.into(), json!(value));
+        }
+    }
+}
+
+/// The names of the rules one `layers` entry expands to.
+pub fn layer_rule_names(layers: &LayersShorthand) -> Vec<String> {
+    expand_layers(layers)
+        .iter()
+        .filter_map(|r| r.get("name").and_then(Value::as_str).map(str::to_owned))
+        .collect()
+}
 
 /// Expands one `layers` entry.
 pub fn expand_layers(layers: &LayersShorthand) -> Vec<Value> {
@@ -35,6 +59,10 @@ pub fn expand_layers(layers: &LayersShorthand) -> Vec<Value> {
             rule.insert("severity".into(), json!(severity));
             rule.insert("from".into(), json!({ "path": lower_path }));
             rule.insert("to".into(), json!({ "path": higher_path }));
+            lifecycle(
+                &mut rule,
+                [&layers.since, &layers.deprecated, &layers.replaced_by],
+            );
             if layers.allow_empty {
                 rule.insert("allowEmpty".into(), json!(true));
             }
@@ -114,6 +142,10 @@ pub fn expand_independence(entry: &IndependenceShorthand) -> Result<Value, Confi
         "to".into(),
         json!({ "path": entry.pattern, "pathNot": fence }),
     );
+    lifecycle(
+        &mut rule,
+        [&entry.since, &entry.deprecated, &entry.replaced_by],
+    );
     if entry.allow_empty {
         rule.insert("allowEmpty".into(), json!(true));
     }
@@ -183,7 +215,41 @@ mod tests {
             layers: names.iter().map(|s| (*s).to_owned()).collect(),
             allow_empty: true,
             graph: None,
+            ..LayersShorthand::default()
         }
+    }
+
+    #[test]
+    fn lifecycle_fields_are_copied_onto_every_expanded_rule() -> Result<(), ConfigError> {
+        let layered = LayersShorthand {
+            since: Some("1.0.0".into()),
+            deprecated: Some("2.0.0".into()),
+            replaced_by: Some("new-layers".into()),
+            ..layers(&["^a/", "^b/", "^c/"])
+        };
+        let rules = expand_layers(&layered);
+        assert_eq!(rules.len(), 3);
+        for rule in &rules {
+            assert_eq!(rule["since"], "1.0.0");
+            assert_eq!(rule["deprecated"], "2.0.0");
+            assert_eq!(rule["replacedBy"], "new-layers");
+        }
+        assert_eq!(
+            layer_rule_names(&layered),
+            ["clean:2-to-1", "clean:3-to-1", "clean:3-to-2"]
+        );
+        let plain = expand_layers(&layers(&["^a/", "^b/"]));
+        assert!(plain[0].get("since").is_none() && plain[0].get("replacedBy").is_none());
+        let entry = IndependenceShorthand {
+            name: "apart".into(),
+            pattern: "^src/([^/]+)/".into(),
+            deprecated: Some("2.0.0".into()),
+            ..IndependenceShorthand::default()
+        };
+        let rule = expand_independence(&entry)?;
+        assert_eq!(rule["deprecated"], "2.0.0");
+        assert!(rule.get("since").is_none());
+        Ok(())
     }
 
     #[test]
@@ -264,6 +330,7 @@ mod tests {
             pattern: "^apps/web/src/features/([^/]+)/".into(),
             allow_empty: false,
             graph: None,
+            ..IndependenceShorthand::default()
         };
         let rule = expand_independence(&entry)?;
         assert_eq!(rule["from"]["path"], "^apps/web/src/features/([^/]+)/");

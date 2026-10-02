@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A fixture for rb-extract-dotnet (docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md,
+       Step 14): top-level statements, which the compiler puts in Program.<Main>$, calling a type
+       and an extension method of the same assembly from an async body. Rebuilt by ../build.sh;
+       the built assembly and PDB are committed beside it. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>TopLevel</RootNamespace>
+  </PropertyGroup>
+</Project>

@@ -57,3 +57,41 @@ Each candidate is still decided by the original predicate, and property tests co
 | 2026-09-24 | same | `cruise` with that `rulebearing.yaml` (33,016 known violations) | 788 s | 11.8 s | byte-identical |
 
 The synthetic tree did not move: `hyperfine -N --warmup 3 --runs 20` gave 817 ms before and 810 ms after on the same loaded machine, with identical output.
+
+## The Stop hook on a large .NET solution
+
+The target is [NFR-PERF-02](prd.md#nfr-perf-02): the Stop hook's p95 under 2 s on dotnet/aspnetcore in source mode, which no build precedes ([Wave 3, Step 17](plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof); [source-mode.md](source-mode.md)). [`testbeds/bench/stop-hook.sh`](../testbeds/bench/stop-hook.sh) clones aspnetcore at its pinned SHA (10,706 `.cs` files in 587 projects), writes [the benchmark's rules](../testbeds/bench/aspnetcore.yaml) into it, and runs [`stop_hook.py`](../testbeds/bench/stop_hook.py). The hook is
+
+```sh
+rulebearing cruise --from-hook --mode source --cache --affected HEAD
+```
+
+run twice untimed so the cache is warm, then once after each of 200 seeded one-line edits, each file restored after its run. The `stop-hook` job of the [nightly](../.github/workflows/nightly-testbeds.yml) runs it on the standard Linux runner and fails the night at a p95 of 2 s or more; the result is published with the others as `stop-hook.json`, and the exit criterion asks for three consecutive nights under the line.
+
+| Date | Machine | Edits | p50 | p95 | p99 | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-09-30 | Linux 6.18 (aarch64), 2 vCPUs, 12 GB, a Docker VM on the machine below | 40 | 1.62 s | 1.78 s | 1.97 s | The tree copied into the container's own file system; the Linux figure is the one the nightly target is set for, and a hosted runner has 4 vCPUs |
+| 2026-09-30 | Apple M2 Pro, 12 threads, 32 GB | 40 | 2.64 s | 2.72 s | 2.74 s | Every file open and git walk on this machine passes an endpoint-security scan; `git status` alone takes 0.5 to 2.6 s here and 40 ms in the container |
+| 2026-10-02 | Apple M2 Pro, 12 threads, 32 GB | 200 | 2.71 s | 2.81 s | 2.89 s | The full 200 seeded edits at `112b75c`, nothing else of this repository's running; unchanged from the 40-edit figure, so the 3D guard speed-ups (which shorten evaluation and the report) do not move this machine's hook, whose time is the git walk under the endpoint-security scan. The Linux runner's nightly figure decides the target |
+| 2026-10-02 | GitHub `ubuntu-latest`: AMD EPYC 7763, 4 vCPUs, 16 GB (Linux 6.17) | 200 | 2.24 s | 2.27 s | 2.29 s | The nightly `stop-hook` job, dispatched on the branch at `77380a3` ([run 37009293677](https://github.com/benbahrenburg/rulebearing/actions/runs/37009293677)). Over the 2 s of [NFR-PERF-02](prd.md#nfr-perf-02) by about 13%, so the job failed: the target is not met on the runner |
+| 2026-10-02 | GitHub `ubuntu-latest`: AMD EPYC 9V45, 4 vCPUs | 200 | 1.50 s | 1.58 s | 1.62 s | The same job at `c034bfa` ([run 37021485332](https://github.com/benbahrenburg/rulebearing/actions/runs/37021485332)), after source mode resolved names and restored its kept facts in parallel. Under the 2 s target: the first of the three consecutive nights the plan asks for. The runner's processor differs from the run above, so part of the difference is the hardware |
+| 2026-10-02 | GitHub `ubuntu-latest`: AMD EPYC 7763, 4 vCPUs | 200 | 1.88 s | 1.95 s | 1.98 s | The same job at `de647c9` ([run 37027680692](https://github.com/benbahrenburg/rulebearing/actions/runs/37027680692)), back on the processor of the first run: from 2.27 s to 1.95 s on like hardware. Under the target with 2% to spare, which is too little to count on for three consecutive nights |
+| 2026-10-02 | GitHub `ubuntu-latest`: AMD EPYC 7763, 4 vCPUs | 200 | 1.81 s | 1.86 s | 1.88 s | The same job one change later ([run 37037891308](https://github.com/benbahrenburg/rulebearing/actions/runs/37037891308)), after an incremental run moved the stored extraction into its request instead of copying it twice. Under the target with 7% to spare on the slower of the two processors seen |
+
+Midway through this work, when the container's p95 was 2.34 s, one warm run after an edit split into 47 ms configuration, 1,086 ms extraction, 765 ms evaluation and 206 ms report. Extraction became cheaper when an incremental source-mode run stopped walking the tree, reading project files and re-serialising unchanged parses; evaluation and the report became cheaper when resolution stopped linking a file to another solution's copy of a type (fewer spurious cycles) and the agent reporter stopped scanning every module per violation.
+
+`guard --watch` ([agents.md](agents.md#the-hook-without-the-wait-guard---watch)) takes the hook out of the loop: the hook serves its answer once the guard confirms it has seen every change. A saved file is checked again in under 100 ms on the integration test's fixture, and on the 5,500-module synthetic tree above at a p50 of 74 to 81 ms and a p95 of 88 to 98 ms over three runs of 40 edits (2026-10-01, Apple M2 Pro, idle at a load average near 3.2), from about 470 ms. At a load average of 8 to 10 the same build gave a p95 of 100 to 107 ms, which is why a timing is taken on a machine running nothing else of this repository's ([ADR-0059](adr/0059-gates-run-by-tier-and-mutants-by-diff.md)). Three changes made the difference: the report no longer re-summarises an unfiltered result and builds its input in parallel; the engine evaluates in parallel without copying each module; and the guard's TypeScript extraction replays its kept walk instead of walking the tree again. Both are under the 100 ms of [NFR-PERF-03](prd.md#nfr-perf-03) on that machine, whose twelve threads the evaluation uses. On the standard Linux runner (4 vCPUs) the same check took a p50 of 229 ms and a p95 of 255 ms (19 ms extracting, 190 ms answering; [run 37009290813](https://github.com/benbahrenburg/rulebearing/actions/runs/37009290813), 2026-10-02), so the target is not met there: four slower cores do less than one of the laptop's, where one thread answers in about 130 ms.
+
+Since then the guard gives its earlier answer again when a save leaves the graph as it was (no import changed), without evaluating. [`testbeds/synth/guard.sh`](../testbeds/synth/guard.sh) therefore saves each seeded file twice and reports both kinds from the daemon's own `latencyMs`; it exits 1 when either p95 reaches 100 ms, and the nightly `bench` workflow runs it after the synthetic benchmark.
+
+| Date | Machine | Save | p50 | p95 | Answer (median) |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-02 | Apple M2 Pro, 12 threads, load average near 6 | a comment added | 44 ms | 58 ms | 8 ms |
+| 2026-10-02 | Apple M2 Pro, 12 threads, load average near 6 | an import added | 93 ms | 108 ms | 55 ms |
+| 2026-10-02 | Apple M2 Pro, one thread | a comment added | 46 ms | 58 ms | 7 ms |
+| 2026-10-02 | Apple M2 Pro, one thread | an import added | 173 ms | 188 ms | 137 ms |
+
+| 2026-10-02 | GitHub `ubuntu-latest`, 4 vCPUs ([run 37018546157](https://github.com/benbahrenburg/rulebearing/actions/runs/37018546157)) | a comment added | 50 ms | 59 ms | 17 ms |
+| 2026-10-02 | GitHub `ubuntu-latest`, 4 vCPUs (the same run) | an import added | 254 ms | 270 ms | 223 ms |
+
+A save that changes the graph still evaluates every rule over the whole graph, and that is what the runner cannot do in 100 ms. [ADR-0060](adr/0060-the-guards-latency-target-is-set-for-a-developer-machine.md) sets the 100 ms for a developer machine of eight or more threads, has the runner gate the unchanged-graph save at 100 ms and hold the graph-changing one to a ceiling of 324 ms (the recorded 270 ms plus 20%), and defers incremental evaluation until a measured need.

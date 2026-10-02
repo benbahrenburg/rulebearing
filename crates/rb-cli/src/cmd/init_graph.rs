@@ -18,7 +18,12 @@
 //! - **.NET layers.** A namespace segment `Domain`, `Application`, `Infrastructure` or `Web` marks a
 //!   layer, and the segments before it the application it belongs to. Where one application has
 //!   two or more layers, each layer but the outermost is forbidden to depend on the layers outside
-//!   it, in that order. The findings the code has today are baselined, as any other.
+//!   it, in that order. A test project (a namespace or project name with a segment ending in
+//!   `Test` or `Tests`) is no layer: it names none, and each namespace rule's `namespaceNot`
+//!   leaves it out. Each rule's `from` names `language: dotnet`, since namespaces and project
+//!   files are .NET's and a TypeScript front-end beside the solution (a `ClientApp/` under
+//!   `src/Web/`) records neither ([ADR-0014](../../../../docs/adr/0014-no-invented-cross-language-edges.md)).
+//!   The findings the code has today are baselined, as any other.
 //! - **Python packages.** A folder directly under an import root is a top-level package. A package
 //!   that others import today sits below them, so it is forbidden to import them back (that edge
 //!   would be a cycle between packages). When no top-level package imports another, they are
@@ -66,6 +71,20 @@ pub fn layer_of(dotted: &str) -> Option<(String, &'static str)> {
     })
 }
 
+/// The `namespaceNot` of every namespace layer rule: a namespace with a segment ending in `Test` or
+/// `Tests` (`Shop.Application.FunctionalTests`, `Shop.Domain.UnitTests`) is a test project's,
+/// and a test project is no layer. No quantifier is nested, so dependency-cruiser's safe-regex
+/// takes it.
+pub const TEST_NAMESPACE: &str = r"(^|\.)[A-Za-z0-9_]*Tests?(\.|$)";
+
+/// Whether a dotted name (a namespace, a project's file stem) is a test project's: one of its
+/// segments ends in `Test` or `Tests`.
+pub fn is_test_name(dotted: &str) -> bool {
+    dotted
+        .split('.')
+        .any(|part| part.ends_with("Test") || part.ends_with("Tests"))
+}
+
 fn project_stem(project: &str) -> &str {
     let name = project.rsplit('/').next().unwrap_or(project);
     name.rsplit_once('.').map_or(name, |(stem, _)| stem)
@@ -93,7 +112,12 @@ pub fn layerings(modules: &[Module]) -> Vec<Layering> {
         .iter()
         .filter(|m| m.language == Some(Language::Dotnet))
     {
-        for namespace in module.namespaces.iter().flatten() {
+        for namespace in module
+            .namespaces
+            .iter()
+            .flatten()
+            .filter(|n| !is_test_name(n))
+        {
             if let Some((prefix, layer)) = layer_of(namespace) {
                 by_namespace.entry(prefix).or_default().extend(index(layer));
             }
@@ -101,7 +125,9 @@ pub fn layerings(modules: &[Module]) -> Vec<Layering> {
         if let Some((prefix, layer)) = module
             .project
             .as_deref()
-            .and_then(|p| layer_of(project_stem(p)))
+            .map(project_stem)
+            .filter(|stem| !is_test_name(stem))
+            .and_then(layer_of)
         {
             by_project.entry(prefix).or_default().extend(index(layer));
         }
@@ -150,6 +176,12 @@ pub fn layer_rules(layerings: &[Layering]) -> Vec<Proposed> {
             LayerSource::Namespace => "namespace",
             LayerSource::Project => "project",
         };
+        // A test project's namespace carries the layer's name (`Shop.Application.UnitTests`);
+        // a project pattern ends at the project file's extension, so it never matches one.
+        let not_tests = match layering.source {
+            LayerSource::Namespace => format!(", namespaceNot: {}", quoted(TEST_NAMESPACE)),
+            LayerSource::Project => String::new(),
+        };
         let suffix = if layerings.len() > 1 && !layering.prefix.is_empty() {
             format!("-in-{}", slug(&layering.prefix))
         } else {
@@ -181,12 +213,12 @@ pub fn layer_rules(layerings: &[Layering]) -> Vec<Proposed> {
             let _ = writeln!(yaml, "        severity: error");
             let _ = writeln!(
                 yaml,
-                "        from: {{ {key}: {} }}",
+                "        from: {{ language: dotnet, {key}: {}{not_tests} }}",
                 quoted(&layer_pattern(layering, &[layer]))
             );
             let _ = writeln!(
                 yaml,
-                "        to: {{ {key}: {} }}",
+                "        to: {{ {key}: {}{not_tests} }}",
                 quoted(&layer_pattern(layering, outer))
             );
             out.push(Proposed { name, yaml });
@@ -503,14 +535,75 @@ mod tests {
         let rules = layer_rules(&found);
         assert_eq!(rules.len(), 1);
         assert!(
-            rules[0]
-                .yaml
-                .contains(r#"from: { project: "(^|/)Shop\\.Domain\\.[a-z]+proj$" }"#),
+            rules[0].yaml.contains(
+                r#"from: { language: dotnet, project: "(^|/)Shop\\.Domain\\.[a-z]+proj$" }"#
+            ),
             "{}",
             rules[0].yaml
         );
         // One layer alone is no layering.
         assert!(layerings(&bare[..1]).is_empty());
+    }
+
+    #[test]
+    fn a_test_project_is_no_layer() -> Result<(), regex::Error> {
+        let pattern = regex::Regex::new(TEST_NAMESPACE)?;
+        for (name, test) in [
+            ("Clean.Application.FunctionalTests", true),
+            ("Clean.Domain.UnitTests.Entities", true),
+            ("Clean.Infrastructure.IntegrationTests", true),
+            ("Domain.UnitTests", true),
+            ("Clean.Web.AcceptanceTest", true),
+            ("Clean.Application", false),
+            ("Clean.Application.Contests", false),
+            ("Clean.Testing.Domain", false),
+            ("Clean.Domain.Attestation", false),
+        ] {
+            assert_eq!(is_test_name(name), test, "{name}");
+            assert_eq!(pattern.is_match(name), test, "{name}");
+        }
+        // Test namespaces and test projects name no layer: this solution's tests alone have
+        // Domain and Web, which is no layering.
+        let tests_only = [
+            dotnet(
+                "tests/Domain.UnitTests/A.cs",
+                &["Clean.Domain.UnitTests"],
+                "tests/Domain.UnitTests/Domain.UnitTests.csproj",
+            ),
+            dotnet(
+                "tests/Web.AcceptanceTests/B.cs",
+                &["Clean.Web.AcceptanceTests"],
+                "tests/Web.AcceptanceTests/Web.AcceptanceTests.csproj",
+            ),
+        ];
+        assert!(layerings(&tests_only).is_empty());
+        let mut modules = tests_only.to_vec();
+        modules.push(dotnet(
+            "src/Domain/A.cs",
+            &["Clean.Domain"],
+            "src/Domain/Domain.csproj",
+        ));
+        modules.push(dotnet(
+            "src/Application/B.cs",
+            &["Clean.Application"],
+            "src/Application/Application.csproj",
+        ));
+        let found = layerings(&modules);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].layers, ["Domain", "Application"]);
+        let rules = layer_rules(&found);
+        assert_eq!(
+            rules[0].yaml,
+            concat!(
+                "      - name: domain-not-to-outer-layers\n",
+                "        comment: \"Domain is an inner layer: it never depends on Application, which depend on it.\"\n",
+                "        fix: \"Declare what Domain needs as an abstraction in Domain and implement it in the outer layer; never add a ProjectReference from Domain to Application.\"\n",
+                "        severity: error\n",
+                "        from: { language: dotnet, namespace: \"^Clean\\\\.Domain(\\\\.|$)\", namespaceNot: \"(^|\\\\.)[A-Za-z0-9_]*Tests?(\\\\.|$)\" }\n",
+                "        to: { namespace: \"^Clean\\\\.Application(\\\\.|$)\", namespaceNot: \"(^|\\\\.)[A-Za-z0-9_]*Tests?(\\\\.|$)\" }\n",
+            )
+        );
+        Ok(())
     }
 
     #[test]

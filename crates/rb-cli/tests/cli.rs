@@ -23,11 +23,15 @@ fn snapshot_path(file: &str) -> PathBuf {
 }
 
 /// The help texts snapshotted: the top level, and `cruise` and `init`, whose flags are
-/// dependency-cruiser's `depcruise` flags and `--init`'s presets.
+/// dependency-cruiser's `depcruise` flags and `--init`'s presets, and `diff`, whose exit code is
+/// its own table, and `guard`, whose flags must stay the subset of `cruise`'s that the Stop hook's
+/// answer depends on.
 const HELP: &[(&[&str], &str)] = &[
     (&["--help"], "help.txt"),
     (&["cruise", "--help"], "help-cruise.txt"),
     (&["init", "--help"], "help-init.txt"),
+    (&["diff", "--help"], "help-diff.txt"),
+    (&["guard", "--help"], "help-guard.txt"),
 ];
 
 #[test]

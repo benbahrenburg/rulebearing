@@ -3,62 +3,6 @@
   "pin": "0.13.4",
   "entries": [
     {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
-      "test": "BuildUmlByDependenciesTest",
-      "block": null,
-      "query": null,
-      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
-      "test": "BuildUmlByDependenciesWithObjectsWithNoDependenciesTest",
-      "block": null,
-      "query": null,
-      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
-      "test": "BuildUmlByNamespacesTest",
-      "block": null,
-      "query": null,
-      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
-      "test": "BuildUmlBySlicesTest",
-      "block": null,
-      "query": null,
-      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
-      "test": "BuildUmlByTypesIncludingDependenciesToOtherTest",
-      "block": null,
-      "query": null,
-      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
-      "test": "BuildUmlByTypesTest",
-      "block": null,
-      "query": null,
-      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
-      "test": "HandleIllegalComponentNamesTest",
-      "block": null,
-      "query": null,
-      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
-    },
-    {
-      "source": "ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs",
-      "test": "SpecialCharactersInComponentNamesTest",
-      "block": null,
-      "query": null,
-      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
-    },
-    {
       "source": "ArchUnitNETTests/Fluent/ArchRuleEqualityTests.cs",
       "test": "ArchRuleEqualityTest",
       "block": null,
@@ -92,34 +36,6 @@
       "block": null,
       "query": null,
       "reason": "api-only: XmlViolationStore is a C# IViolationStore that keeps the same rule-to-objects store as XML; Rulebearing's store is the dependency-cruiser known-violations JSON file (--ignore-known, options.knownViolations) and has no XML form. Freezing with that store is ported from PassFrozenRules and FailFrozenRule, whose stores hold the same violations"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs",
-      "test": "ComponentDiagramFromCustomDependenciesTest",
-      "block": null,
-      "query": null,
-      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs",
-      "test": "ComponentDiagramFromSlicesTest",
-      "block": null,
-      "query": null,
-      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs",
-      "test": "ComponentDiagramFromTypesTest",
-      "block": null,
-      "query": null,
-      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
-    },
-    {
-      "source": "ArchUnitNETTests/Fluent/PlantUml/PlantUmlFluentComponentDiagramTests.cs",
-      "test": "ComponentDiagramWriteToFileTest",
-      "block": null,
-      "query": null,
-      "reason": "wave-3: plantuml reporter (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md \u00a7 1.2)"
     },
     {
       "source": "ArchUnitNETTests/Fluent/Syntax/ConjunctionFactoryTest.cs",

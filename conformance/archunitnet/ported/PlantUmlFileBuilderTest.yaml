@@ -1,0 +1,103 @@
+# Ported from ArchUnitNET 0.13.4 ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs by hand: the diagram PlantUmlFileBuilder writes, compared with upstream's expected text where the test asserts it and with ArchUnitNET's own output (diagrams/generated/, written by tools/PlantUmlOracle) where it asserts only a non-empty diagram
+source: ArchUnitNETTests/Domain/PlantUml/PlantUmlFileBuilderTest.cs
+architecture: [ArchUnitNETTests]
+cases:
+- id: BuildUmlByTypesTest#1
+  query: 'WithDependenciesFrom(Architecture.Types.Take(100)): the types in ordinal order, as the oracle takes them, since upstream takes the loader''s first 100'
+  csharp: Assert.NotEmpty(new PlantUmlFileBuilder().WithDependenciesFrom(Architecture.Types.Take(100)).AsString())
+  family: plantuml-export
+  rule: {from: types, take: 100}
+  expect: {file: PlantUmlFileBuilderTest.BuildUmlByTypesTest.puml}
+- id: BuildUmlByTypesIncludingDependenciesToOtherTest#1
+  query: 'WithDependenciesFrom(Architecture.Types.Take(100), IncludeDependenciesToOther): also the arrows to types outside the 100'
+  csharp: Assert.NotEmpty(new PlantUmlFileBuilder().WithDependenciesFrom(Architecture.Types.Take(100), new GenerationOptions { IncludeDependenciesToOther = true }).AsString())
+  family: plantuml-export
+  rule: {from: types, take: 100, IncludeDependenciesToOther: true}
+  expect:
+    file: PlantUmlFileBuilderTest.BuildUmlByTypesIncludingDependenciesToOtherTest.puml
+    # Arrows to types outside the selection draw the graph's dependency targets verbatim. The
+    # committed graph names a generic method's type parameter `!!0` or `<Method>+<T>` where
+    # ArchUnitNET's loader names it by the method's full signature, and ArchUnitNET also lists
+    # the interfaces an enum or a delegate inherits from its runtime base type, which the graph
+    # does not: an extractor difference, not the builder's. The check proves these lines, and
+    # only these, are the difference.
+    # Both are recorded in conformance/divergences.md, "Gate 2: .NET extractor divergences".
+    graphDiffers:
+      extra:
+      - '[ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions] --|> [!!0]'
+      - '[ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions] --|> [AssertException+<T>]'
+      - '[ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper] --|> [!!0]'
+      - '[ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper] --|> [AssertException+<T>]'
+      - '[ArchUnitNETTests.Dependencies.ClassWithGenericMethodCall] --|> [<OuterFunc>g__LocalFunc|0_0+<T>]'
+      - '[ArchUnitNETTests.Dependencies.ClassWithGenericMethodCall] --|> [PrivateFunc+<T>]'
+      - '[ArchUnitNETTests.Domain.Dependencies.Attributes.AttributeAssertionRepository] --|> [TypeAttributeAsExpected+<TTargetType>]'
+      missing:
+      - '[ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions] --|> [System.Void ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions::AssertException(ArchUnitNET.Fluent.IArchRule,ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper)<T>+<T>]'
+      - '[ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper] --|> [System.Void ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper::AssertException(ArchUnitNET.Fluent.IArchRule)<T>+<T>]'
+      - '[ArchUnitNETTests.Dependencies.ClassWithGenericMethodCall] --|> [System.Void ArchUnitNETTests.Dependencies.ClassWithGenericMethodCall::<OuterFunc>g__LocalFunc|0_0()<T>+<T>]'
+      - '[ArchUnitNETTests.Dependencies.ClassWithGenericMethodCall] --|> [System.Void ArchUnitNETTests.Dependencies.ClassWithGenericMethodCall::PrivateFunc()<T>+<T>]'
+      - '[ArchUnitNETTests.Domain.Dependencies.Attributes.AttributeAssertionRepository] --|> [System.Void ArchUnitNETTests.Domain.Dependencies.Attributes.AttributeAssertionRepository::TypeAttributeAsExpected(TTargetType,ArchUnitNET.Domain.Class,ArchUnitNET.Domain.Attribute)<TTargetType>+<TTargetType>]'
+      - '[ArchUnitNETTests.Domain.Dependencies.Attributes.DelegateWithAttribute] --|> [System.ICloneable]'
+      - '[ArchUnitNETTests.Domain.Dependencies.Attributes.DelegateWithAttribute] --|> [System.Runtime.Serialization.ISerializable]'
+      - '[ArchUnitNETTests.Domain.Dependencies.Attributes.EnumWithAttribute] --|> [System.IComparable]'
+      - '[ArchUnitNETTests.Domain.Dependencies.Attributes.EnumWithAttribute] --|> [System.IConvertible]'
+      - '[ArchUnitNETTests.Domain.Dependencies.Attributes.EnumWithAttribute] --|> [System.IFormattable]'
+      - '[ArchUnitNETTests.Domain.Dependencies.Attributes.EnumWithAttribute] --|> [System.ISpanFormattable]'
+- id: BuildUmlByNamespacesTest#1
+  query: 'WithDependenciesFrom(Architecture.Namespaces): a namespace block per namespace and its parents, an arrow per namespace pair'
+  csharp: Assert.NotEmpty(new PlantUmlFileBuilder().WithDependenciesFrom(Architecture.Namespaces).AsString())
+  family: plantuml-export
+  rule: {from: namespaces}
+  expect: {file: PlantUmlFileBuilderTest.BuildUmlByNamespacesTest.puml}
+- id: BuildUmlBySlicesTest#1
+  query: 'WithDependenciesFrom(Slices().Matching("ArchUnitNETTests.(*).")): the slices one namespace deep, the arrows between them'
+  csharp: Assert.NotEmpty(new PlantUmlFileBuilder().WithDependenciesFrom(SliceRuleDefinition.Slices().Matching("ArchUnitNETTests.(*).").GetObjects(Architecture)).AsString())
+  family: plantuml-export
+  rule: {from: slices, Matching: ArchUnitNETTests.(*).}
+  expect: {file: PlantUmlFileBuilderTest.BuildUmlBySlicesTest.puml}
+- id: BuildUmlByDependenciesTest#1
+  query: 'WithElements(three OneToOne dependencies): the header, the arrows, @enduml'
+  csharp: Assert.Equal(expectedUml, new PlantUmlFileBuilder().WithElements(Dependencies).AsString())
+  family: plantuml-export
+  rule:
+    from: elements
+    elements:
+    - {dependency: [a, b, OneToOne]}
+    - {dependency: [b, c, OneToOne]}
+    - {dependency: [c, a, OneToOne]}
+  expect:
+    text: "@startuml\n\n!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml\n\nHIDE_STEREOTYPE()\n\n[a] --|> [b]\n[b] --|> [c]\n[c] --|> [a]\n@enduml\n"
+- id: BuildUmlByDependenciesWithObjectsWithNoDependenciesTest#1
+  query: 'WithElements(the dependencies and a class without any): the class is drawn before the arrows'
+  csharp: Assert.Equal(expectedUml, new PlantUmlFileBuilder().WithElements(Dependencies.Concat(new[] { new PlantUmlClass("d") })).AsString())
+  family: plantuml-export
+  rule:
+    from: elements
+    elements:
+    - {dependency: [a, b, OneToOne]}
+    - {dependency: [b, c, OneToOne]}
+    - {dependency: [c, a, OneToOne]}
+    - {class: d}
+  expect:
+    text: "@startuml\n\n!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml\n\nHIDE_STEREOTYPE()\n\nclass \"d\" {\n}\n[a] --|> [b]\n[b] --|> [c]\n[c] --|> [a]\n@enduml\n"
+- id: HandleIllegalComponentNamesTest#1
+  query: 'each forbidden character as a dependency''s origin or target, a class, an interface, a slice or a namespace name throws IllegalComponentNameException'
+  csharp: Assert.Throws<IllegalComponentNameException>(() => new PlantUmlDependency(character, "a", DependencyType.OneToOne)) (and the other five constructors)
+  family: plantuml-export
+  rule:
+    from: names
+    names: ["[", "]", "\r", "\n", "\f", "\a", "\b", "\v"]
+  expect: {error: IllegalComponentNameException}
+- id: SpecialCharactersInComponentNamesTest#1
+  query: 'every other character passes through to the diagram unescaped'
+  csharp: Assert.Equal(expectedUml, new PlantUmlFileBuilder().WithElements(dependenciesWithSpecialCharacters.Concat(classesWithSpecialCharacters)).AsString())
+  family: plantuml-export
+  rule:
+    from: elements
+    elements:
+    - {dependency: ["!\"§´`", "$%&/()=?", OneToOne]}
+    - {dependency: ["\\\t%", "äöüß", OneToOne]}
+    - {dependency: ["^°-*+.,;:", "<>|@€", OneToOne]}
+    - {class: "!§´`$%&/()=?\\\täöüß^°-*+,-.,;:<>|@€"}
+  expect:
+    text: "@startuml\n\n!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml\n\nHIDE_STEREOTYPE()\n\nclass \"!§´`$%&/()=?\\\täöüß^°-*+,-.,;:<>|@€\" {\n}\n[!\"§´`] --|> [$%&/()=?]\n[\\\t%] --|> [äöüß]\n[^°-*+.,;:] --|> [<>|@€]\n@enduml\n"

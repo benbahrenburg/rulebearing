@@ -18,14 +18,17 @@
 #      architecture tests, default the test project's folder), imported again with `--graph` over
 #      a cruise of the assemblies the first import names, so that types from packages resolve;
 #      then `rulebearing cruise -T junit` with the imported configuration;
-#   5. compare.py joins each TRX result with the JUnit cases of the rules named from its method.
+#   5. compare.py joins each TRX result with the JUnit cases of the rules named from its method;
+#   6. the plantuml round trip over the graph of step 4 (docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md,
+#      Step 9): the diagram written from namespaces and from slices, then enforced.
 # A test the importer writes commented out is recorded as `stays` (a custom predicate, or a test
 # that runs no rule and checks the architecture in C#) or `not-imported` with the importer's
 # reason; it is never counted as a disagreement.
 #
 # Writes testbeds/results/<owner>__<repo>.json (or under $RB_ORACLE_RESULTS), which
 # testbeds/oracles/table.py renders, and keeps every intermediate file in <out-dir>/<owner>__<repo>.
-# Exit 0 when every compared test agrees, 1 when one disagrees, 2 when the row could not be compared.
+# Exit 0 when every compared test agrees, 1 when one disagrees or the round trip reports a
+# violation, 2 when the row could not be compared.
 set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source-path=SCRIPTDIR source=lib.sh
@@ -91,6 +94,68 @@ if (cd "$checkout" && "$bin" cruise --config "$out/imported.yaml" -T json --no-p
    (cd "$checkout" && "$bin" import archunit "$tests" --graph "$out/graph.json" --out "$out/imported-graph.yaml") 2>> "$out/import.err"; then
   mv "$out/imported-graph.yaml" "$out/imported.yaml"
 fi
+# The plantuml round trip (plan 0003, Step 9; docs/reporters.md#plantuml): over the oracle's own
+# graph, write the diagram from namespaces and from slices (`<first namespace segment>.(*)`), then
+# enforce each with an `adhereTo` rule over the types it describes; any violation is a defect.
+# Written to <results>/<owner>__<repo>.plantuml.json; a violation makes the harness exit 1.
+plantuml_status=0
+if [ -s "$out/graph.json" ]; then
+  top="$(python3 - "$out/graph.json" <<'PY'
+import collections, json, sys
+types = json.load(open(sys.argv[1])).get("code", {}).get("types", [])
+counts = collections.Counter(
+    (t.get("namespace") or "").split(".")[0] for t in types if not t.get("referenced"))
+print(counts.most_common(1)[0][0] if counts else "")
+PY
+)"
+  mkdir -p "$out/plantuml"
+  summary="{\"repo\": \"$repo\", \"sha\": \"$sha\""
+  for form in namespaces slices; do
+    config="$out/plantuml/generate-$form.yaml"
+    : > "$config"
+    [ "$form" = slices ] &&
+      printf 'options:\n  reporterOptions:\n    plantuml:\n      Matching: "%s.(*)"\n' "$top" > "$config"
+    diagram="$out/plantuml/$form.puml"
+    if ! (cd "$out/plantuml" && "$bin" cruise --config "$config" --graph "$out/graph.json" -T plantuml \
+          --from "$form" -f "$diagram") 2> "$out/plantuml/$form.err"; then
+      summary="$summary, \"$form\": \"not generated\""
+      plantuml_status=1
+      continue
+    fi
+    python3 - "$diagram" "$out/plantuml/enforce-$form.yaml" "$form.puml" <<'PY'
+import json, re, sys
+stereotypes = re.findall(r"^\[[^\]]+\] <<(.*)>>$", open(sys.argv[1]).read(), re.M)
+select = "|".join(f"(?:{s})" for s in stereotypes) or "^$"
+open(sys.argv[2], "w").write(
+    "rules:\n  diagrams:\n    - name: adheres-to-the-generated-diagram\n"
+    "      comment: \"The diagram the plantuml reporter wrote. adr:0009\"\n"
+    f"      select: {{ kind: type, where: {{ resideInNamespaceMatching: {json.dumps(select)} }} }}\n"
+    f"      adhereTo: {sys.argv[3]}\n")
+PY
+    violations="$(cd "$out/plantuml" && "$bin" cruise --config "enforce-$form.yaml" --graph "$out/graph.json" -T json 2> "$out/plantuml/enforce-$form.err" |
+      python3 -c 'import json, sys; print(len(json.load(sys.stdin)["summary"]["violations"]))' 2>/dev/null)"
+    summary="$summary, \"$form\": ${violations:-\"not enforced\"}"
+    [ "${violations:-x}" = 0 ] || plantuml_status=1
+  done
+  printf '%s}\n' "$summary" > "$results/$slug.plantuml.json"
+fi
+# Source mode's precision against this compiled graph (plan 0003, Step 14): the checkout cruised
+# again with --mode source and no rules, and the file-to-file edges both graphs know compared into
+# <results>/<owner>__<repo>.source-mode.json; the nightly joins them into source-mode-precision.json.
+# The solution the row names is the one source mode reads too, so both graphs are one build's.
+solution="$(oracle_field "$manifest" "$repo" solution)"
+if [ -s "$out/graph.json" ]; then
+  printf 'languages:\n  dotnet:\n    mode: source\n' > "$out/source-mode.yaml"
+  [ -n "$solution" ] && printf '    solution: %s\n' "$solution" >> "$out/source-mode.yaml"
+  if (cd "$checkout" && "$bin" cruise --config "$out/source-mode.yaml" -T json --no-progress --liveness off .) > "$out/source.json" 2> "$out/source.err"; then
+    python3 "$here/precision.py" --compiled "$out/graph.json" --source "$out/source.json" \
+      --repo "$repo" --sha "$sha" --out "$results/$slug.source-mode.json" ||
+      echo "dotnet-oracle: the source-mode comparison failed; see $out/source.err" >&2
+  else
+    echo "dotnet-oracle: the source-mode cruise failed; see $out/source.err" >&2
+  fi
+  rm -f "$out/source.json"
+fi
 rm -f "$out/graph.json"
 rm -f "$out/rulebearing.xml"
 # Without an active rule there is nothing to cruise and no report: compare.py then gives every test
@@ -107,3 +172,9 @@ fi
 python3 "$here/compare.py" dotnet --trx "$out/incumbent.trx" --imported "$out/imported.yaml" \
   --junit "$out/rulebearing.xml" --tests-dir "$checkout/$tests" --tests-shown "$tests" \
   --cwd "$checkout" --repo "$repo" --sha "$sha" --tool "$tool" --out "$result"
+compare_status=$?
+if [ "$compare_status" = 0 ] && [ "$plantuml_status" != 0 ]; then
+  echo "dotnet-oracle: the plantuml round trip failed; see $results/$slug.plantuml.json and $out/plantuml" >&2
+  exit 1
+fi
+exit "$compare_status"

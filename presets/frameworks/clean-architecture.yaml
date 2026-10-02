@@ -1,0 +1,86 @@
+# rulebearing:clean-architecture. Original to Rulebearing. An opinion, off by default: the
+# dependency rule of clean architecture, Domain <- Application <- Infrastructure and Presentation,
+# read from paths so that it holds for a .NET solution (src/Domain/, src/Shop.Domain/) and for a
+# TypeScript or Python tree (src/domain/, apps/api/src/domain/) alike. A layer is a path segment
+# named for it, alone or as the last dotted part of a project folder (Shop.Domain); a test project
+# (Domain.UnitTests) is no layer. Presentation is Web, WebUI, WebApi, Api, API, Presentation or UI
+# (with a lower-case first letter too), and it may depend on Infrastructure, which it composes at
+# start-up. A module's layer is the last layer segment of its path: apps/api/src/domain/ is Domain
+# (the app folder apps/api/ comes first), and src/Web/Infrastructure/ is Infrastructure. Each
+# rule's pathNot leaves out a path whose last layer segment is of another kind, and never matches
+# an npm package under node_modules/. No pattern nests a quantifier, so the file carries no
+# safe-regex warning into a user's run. Documented, rule by rule, in
+# presets/frameworks/README.md#rulebearingclean-architecture. Named with
+# `init --preset clean-architecture` or `extends: rulebearing:clean-architecture`.
+# Source: docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo.
+# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 11. Requirements:
+# FR-CLI-08, FR-REACH-04.
+rules:
+  dependencies:
+    forbidden:
+      - name: clean-domain-depends-on-nothing-outer
+        comment: "The domain is the innermost layer: entities, value objects and domain events know no use case, database or UI. plan:rulebearing-clean-architecture"
+        fix: "Move the code into the layer that owns it, or declare what the domain needs as an interface in Domain and implement it in an outer layer."
+        severity: error
+        from:
+          path: "(^|[/.])(Domain|domain)/"
+          pathNot: "(^|[/.])(Domain|domain)(/|/.*[/.])(Application|application|Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/"
+        to:
+          path: "(^|[/.])(Application|application|Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/"
+          pathNot:
+            - "(^|[/.])(Application|application|Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)(/|/.*[/.])(Domain|domain)/"
+            - "(^|/)node_modules/"
+        examples:
+          forbidden:
+            - "src/Domain/Entities/TodoItem.cs -> src/Application/TodoItems/Commands/CreateTodoItem.cs"
+            - "src/Shop.Domain/Order.cs -> src/Shop.Infrastructure/OrderStore.cs"
+            - "src/domain/order.ts -> src/presentation/orderView.ts"
+            - "apps/api/src/domain/order.ts -> apps/api/src/infrastructure/db.ts"
+          allowed:
+            - "src/Application/TodoItems/Commands/CreateTodoItem.cs -> src/Domain/Entities/TodoItem.cs"
+            - "src/Domain/Entities/TodoItem.cs -> src/Domain/Common/BaseEntity.cs"
+            - "apps/api/src/domain/order.ts -> apps/api/src/domain/money.ts"
+            - "src/domain/clock.ts -> node_modules/@opentelemetry/api/build/src/index.js"
+      - name: clean-application-not-to-outer-layers
+        comment: "Use cases depend on the domain and on interfaces they declare themselves; knowing Infrastructure or the UI makes them untestable without a database or a host. plan:rulebearing-clean-architecture"
+        fix: "Declare an interface in Application (for example IApplicationDbContext), implement it in Infrastructure, and register it in the composition root."
+        severity: error
+        from:
+          path: "(^|[/.])(Application|application)/"
+          pathNot: "(^|[/.])(Application|application)(/|/.*[/.])(Domain|domain|Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/"
+        to:
+          path: "(^|[/.])(Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/"
+          pathNot:
+            - "(^|[/.])(Infrastructure|infrastructure|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)(/|/.*[/.])(Domain|domain|Application|application)/"
+            - "(^|/)node_modules/"
+        examples:
+          forbidden:
+            - "src/Application/TodoItems/Commands/CreateTodoItem.cs -> src/Infrastructure/Data/ApplicationDbContext.cs"
+            - "src/application/placeOrder.ts -> src/web/routes.ts"
+            - "apps/web/src/application/placeOrder.ts -> apps/web/src/infrastructure/api.ts"
+          allowed:
+            - "src/Application/TodoItems/Commands/CreateTodoItem.cs -> src/Domain/Entities/TodoItem.cs"
+            - "src/Infrastructure/Data/ApplicationDbContext.cs -> src/Application/Common/Interfaces/IApplicationDbContext.cs"
+            - "apps/web/src/application/placeOrder.ts -> apps/web/src/domain/order.ts"
+            - "src/application/tracing.ts -> node_modules/undici/lib/web/fetch/index.js"
+      - name: clean-infrastructure-not-to-presentation
+        comment: "Infrastructure implements what Application declares; one that imports the UI or the API host inverts the composition and cannot be reused by another host. plan:rulebearing-clean-architecture"
+        fix: "Move the shared type into Application (or Domain), or pass the value in through the interface Infrastructure implements."
+        severity: error
+        from:
+          path: "(^|[/.])(Infrastructure|infrastructure)/"
+          pathNot: "(^|[/.])(Infrastructure|infrastructure)(/|/.*[/.])(Domain|domain|Application|application|Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/"
+        to:
+          path: "(^|[/.])(Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)/"
+          pathNot:
+            - "(^|[/.])(Web|web|WebUI|webUI|WebApi|webApi|Api|api|API|Presentation|presentation|UI|ui)(/|/.*[/.])(Domain|domain|Application|application|Infrastructure|infrastructure)/"
+            - "(^|/)node_modules/"
+        examples:
+          forbidden:
+            - "src/Infrastructure/Identity/IdentityService.cs -> src/Web/Endpoints/Users.cs"
+            - "src/Shop.Infrastructure/OrderStore.cs -> src/Shop.WebApi/Program.cs"
+          allowed:
+            - "src/Web/Program.cs -> src/Infrastructure/DependencyInjection.cs"
+            - "src/Infrastructure/Data/ApplicationDbContext.cs -> src/Domain/Entities/TodoItem.cs"
+            - "src/Web/Infrastructure/EndpointRouteBuilderExtensions.cs -> src/Web/Infrastructure/IEndpointGroup.cs"
+            - "src/infrastructure/trpc.ts -> node_modules/@trpc/server/dist/index.js"

@@ -1,0 +1,32 @@
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: TypeScript, next.
+# Framework presets named with --preset, each an opinion that is off unless named: rulebearing:nextjs.
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: [rulebearing:typescript, rulebearing:recommended, rulebearing:nextjs]
+languages:
+  typescript:
+    tsConfig: { fileName: tsconfig.json }
+    tsPreCompilationDeps: true
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+            - "(^|/)app/(.+/)?(page|layout|route|loading|error|not-found|template|default)\\.[jt]sx?$"
+            - "(^|/)pages/"
+            - "(^|/)middleware\\.[jt]s$"
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    - {"id":"RB-db458514","type":"dependency","from":"src/lib/links.ts","to":"src/app/api/items/route.ts","rule":{"name":"nextjs-no-import-of-api-routes","severity":"error"},"expires":"2026-12-20","owner":"@fixture"}
+    - {"id":"RB-9ab70679","type":"dependency","from":"src/lib/links.ts","to":"src/app/api/items/route.ts","rule":{"name":"nextjs-no-import-of-route-entries","severity":"error"},"expires":"2026-12-20","owner":"@fixture"}
+    - {"id":"RB-2f62c48d","type":"dependency","from":"src/lib/links.ts","to":"src/app/api/items/route.ts","rule":{"name":"nextjs-shared-code-not-to-routes","severity":"error"},"expires":"2026-12-20","owner":"@fixture"}

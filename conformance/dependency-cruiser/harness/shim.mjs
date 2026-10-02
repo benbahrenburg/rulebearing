@@ -99,6 +99,51 @@ export function report(outputType, result, options) {
     return JSON.parse(run.stdout);
 }
 
+/**
+ * The handle layer3-hooks.mjs puts on a plugin fixture a spec imports: the fixture's file URL,
+ * so the module is loaded and run by Rulebearing's sandbox, never by Node (plan 0003, Step 7).
+ */
+export const PLUGIN_HANDLE = Symbol.for('rulebearing.plugin');
+
+/**
+ * `#report/plugins.mjs`'s `isValidPlugin`, answered by `rulebearing validate` over the module
+ * the handle names. A value without a handle is not a function a spec could have imported, and
+ * upstream answers false for anything that is not a function.
+ */
+export function isValidPlugin(candidate) {
+    const plugin = candidate?.[PLUGIN_HANDLE];
+    return call({
+        module: '#report/plugins.mjs',
+        export: 'isValidPlugin',
+        path: [],
+        calls: [[typeof plugin === 'string' ? { plugin } : null]],
+    });
+}
+
+/**
+ * `#report/plugins.mjs`'s `getExternalPluginReporter`: `false` for an output type that names no
+ * plugin (synchronously, as upstream), else a promise of a reporter that renders through
+ * `rulebearing report -T plugin:<name>`, rejected with the binary's message when the plugin
+ * cannot be found or is not valid.
+ */
+export function getExternalPluginReporter(outputType) {
+    let answer;
+    try {
+        answer = call({
+            module: '#report/plugins.mjs',
+            export: 'getExternalPluginReporter',
+            path: [],
+            calls: [[outputType ?? null]],
+        });
+    } catch (error) {
+        return Promise.reject(error);
+    }
+    if (answer === false) {
+        return false;
+    }
+    return Promise.resolve((result, options) => report(outputType, result, options));
+}
+
 function isClass(value) {
     return (
         typeof value === 'function' && /^class[\s{]/u.test(Function.prototype.toString.call(value))

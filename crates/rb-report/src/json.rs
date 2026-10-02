@@ -20,11 +20,21 @@ pub const DEPENDENCY_ADDITIONS: &[&str] = &[
     "member",
     "sidecar",
     "declared",
+    "approximate",
 ];
 /// Violation keys Rulebearing adds.
 pub const VIOLATION_ADDITIONS: &[&str] = &["id", "fix", "decision"];
 /// Summary keys Rulebearing adds.
-pub const SUMMARY_ADDITIONS: &[&str] = &["inspected", "vacuousRules", "ratchets", "expired"];
+pub const SUMMARY_ADDITIONS: &[&str] = &[
+    "inspected",
+    "vacuousRules",
+    "ratchets",
+    "expired",
+    "affected",
+    "cache",
+    "sidecar",
+    "plugins",
+];
 /// Rule-set keys Rulebearing adds (inside `summary.ruleSetUsed`): the element, slice and diagram
 /// rules.
 pub const RULE_SET_ADDITIONS: &[&str] = &["elements", "slices", "diagrams"];
@@ -90,8 +100,8 @@ mod tests {
     #[test]
     fn strict_schema_strips_every_addition() {
         let result = json!({
-            "modules": [{ "source": "a", "language": "typescript", "valid": true, "dependencies": [{ "resolved": "b", "line": 1, "column": 2, "dependencyKind": "import" }] }],
-            "summary": { "violations": [{ "from": "a", "to": "b", "id": "RB-1", "fix": "f", "decision": "adr:1" }], "inspected": {}, "vacuousRules": [],
+            "modules": [{ "source": "a", "language": "typescript", "valid": true, "dependencies": [{ "resolved": "b", "line": 1, "column": 2, "dependencyKind": "import", "sidecar": true, "approximate": true }] }],
+            "summary": { "violations": [{ "from": "a", "to": "b", "id": "RB-1", "fix": "f", "decision": "adr:1" }], "inspected": {}, "vacuousRules": [], "cache": { "hit": true, "strategy": "metadata" }, "sidecar": { "tool": "dependency-cruiser", "version": "18.2.0", "files": 2 }, "affected": { "revision": "main", "changed": ["affectedFile"], "closure": [] }, "plugins": ["pluginFile.mjs"],
                          "ruleSetUsed": { "forbidden": [{ "name": "r", "fix": "f", "allowEmpty": true }],
                                           "elements": [{ "name": "sealedElement" }], "slices": [{ "name": "apartSlice" }],
                                           "diagrams": [{ "name": "drawnDiagram" }] } },
@@ -105,11 +115,17 @@ mod tests {
             "RB-1",
             "inspected",
             "vacuousRules",
+            "affectedFile",
+            "pluginFile",
             "allowEmpty",
             "\"code\"",
             "sealedElement",
             "apartSlice",
             "drawnDiagram",
+            "\"hit\"",
+            "dependency-cruiser",
+            "\"sidecar\"",
+            "approximate",
         ] {
             assert!(!stripped.contains(gone), "{gone}");
         }

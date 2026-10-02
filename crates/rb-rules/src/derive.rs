@@ -12,8 +12,10 @@
 //! With `skipAnalysisNotInRules`, a derivation no rule reads is skipped, exactly where upstream
 //! skips it; `forceDeriveDependents` derives `dependents[]` regardless.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
+use rayon::prelude::*;
 use rb_config::Rule;
 use rb_config::model::DependencyRules;
 use serde_json::{Value, json};
@@ -75,21 +77,87 @@ pub fn cycles(
     skip: bool,
     rules: &DependencyRules,
 ) {
-    let analyse = !skip || has_cycle_rule(rules);
-    let graph = analyse.then(|| IndexedGraph::new(items, attribute));
-    for item in items.iter_mut() {
-        let from = js::text(item, attribute).into_owned();
-        if let Some(Value::Array(dependencies)) = item.get_mut("dependencies") {
-            for dependency in dependencies {
-                js::set(dependency, "circular", Value::Bool(false));
-                if let Some(graph) = &graph {
-                    let to = js::text(dependency, dependency_name).into_owned();
-                    let cycle = graph.cycle(&from, &to);
-                    if !cycle.is_empty() {
-                        js::set(dependency, "circular", Value::Bool(true));
-                        js::set(dependency, "cycle", Value::Array(cycle));
-                    }
+    let found = find_cycles(items, attribute, dependency_name, skip, rules);
+    add_cycles(items, found);
+}
+
+/// The cycle through each dependency of each item, empty where there is none, as
+/// `detectAndAddCycles` finds them; `None` when the analysis is skipped. Reads the items only,
+/// so it can run beside [`find_dependents`].
+pub(crate) fn find_cycles(
+    items: &[Value],
+    attribute: &str,
+    dependency_name: &str,
+    skip: bool,
+    rules: &DependencyRules,
+) -> Option<Vec<Vec<Vec<Value>>>> {
+    if skip && !has_cycle_rule(rules) {
+        return None;
+    }
+    let graph = IndexedGraph::new(items, attribute);
+    // Each item's cycles are found on its own task.
+    let search = || {
+        items
+            .par_iter()
+            .map(|item| {
+                let from = js::text(item, attribute);
+                if !graph.may_cycle(&from) {
+                    return Vec::new();
                 }
+                js::array(item, "dependencies")
+                    .iter()
+                    .map(|dependency| graph.cycle(&from, &js::text(dependency, dependency_name)))
+                    .collect()
+            })
+            .collect()
+    };
+    Some(match deep_pool() {
+        Some(pool) => pool.install(search),
+        None => search(),
+    })
+}
+
+/// The stack of each worker the cycle search runs on: the main thread's, where the search ran
+/// before it ran in parallel.
+const CYCLE_STACK: usize = 8 * 1024 * 1024;
+
+/// The workers the cycle search runs on. The search recurses once per module along a cycle's
+/// path, so a long cycle needs more than the 2 MiB a rayon worker has by default; `None` when
+/// the threads cannot be started, and the search then runs where it is called.
+fn deep_pool() -> Option<&'static rayon::ThreadPool> {
+    static POOL: std::sync::OnceLock<Option<rayon::ThreadPool>> = std::sync::OnceLock::new();
+    POOL.get_or_init(|| {
+        rayon::ThreadPoolBuilder::new()
+            .stack_size(CYCLE_STACK)
+            .build()
+            .ok()
+    })
+    .as_ref()
+}
+
+/// Writes what [`find_cycles`] found: `circular` on every dependency, `cycle` where there is
+/// one; without an analysis, every dependency is not circular.
+pub(crate) fn add_cycles(items: &mut [Value], found: Option<Vec<Vec<Vec<Value>>>>) {
+    match found {
+        Some(found) => items
+            .par_iter_mut()
+            .zip(found)
+            .for_each(|(item, found)| mark_cycles(item, found)),
+        None => items
+            .par_iter_mut()
+            .for_each(|item| mark_cycles(item, Vec::new())),
+    }
+}
+
+/// Sets `circular` on each dependency of `item` and, where `found` holds its cycle, `cycle`.
+fn mark_cycles(item: &mut Value, found: Vec<Vec<Value>>) {
+    if let Some(Value::Array(dependencies)) = item.get_mut("dependencies") {
+        let mut found = found.into_iter();
+        for dependency in dependencies {
+            let cycle = found.next().unwrap_or_default();
+            js::set(dependency, "circular", Value::Bool(!cycle.is_empty()));
+            if !cycle.is_empty() {
+                js::set(dependency, "cycle", Value::Array(cycle));
             }
         }
     }
@@ -116,23 +184,73 @@ pub struct DependentsWhen {
 
 /// `addDependents`.
 pub fn dependents(modules: &mut [Value], when: DependentsWhen, rules: &DependencyRules) {
-    if !when.skip
+    let found = find_dependents(modules, when, rules);
+    add_dependents(modules, found);
+}
+
+/// Each module's `dependents`, or `None` when `addDependents` would not run. Reads the
+/// modules only, so it can run beside [`find_cycles`].
+pub(crate) fn find_dependents(
+    modules: &[Value],
+    when: DependentsWhen,
+    rules: &DependencyRules,
+) -> Option<Vec<Value>> {
+    (!when.skip
         || when.force
         || when.metrics
         || when.reaches
         || when.focus
-        || has_dependents_rule(rules)
-    {
-        let set = DependencySet::new(modules);
-        for module in modules.iter_mut() {
-            let dependents = set.dependents(module);
-            js::set(
-                module,
-                "dependents",
-                Value::Array(dependents.into_iter().map(Value::String).collect()),
-            );
+        || has_dependents_rule(rules))
+    .then(|| dependents_of(modules))
+}
+
+/// Writes what [`find_dependents`] found.
+pub(crate) fn add_dependents(modules: &mut [Value], found: Option<Vec<Value>>) {
+    if let Some(lists) = found {
+        modules
+            .par_iter_mut()
+            .zip(lists)
+            .for_each(|(module, dependents)| js::set(module, "dependents", dependents));
+    }
+}
+
+/// Each module's `dependents`, as [`DependencySet::dependents`] gives them: the `source` of
+/// every module with an edge whose `resolved` is the module's `source`, once per module, in
+/// module order. Indexed by position rather than by copied names, and in parallel where each
+/// module is read alone.
+fn dependents_of(modules: &[Value]) -> Vec<Value> {
+    let sources: Vec<Cow<'_, str>> = modules.iter().map(|m| js::text(m, "source")).collect();
+    let targets: Vec<Vec<Cow<'_, str>>> = modules
+        .par_iter()
+        .map(|module| {
+            let mut targets: Vec<Cow<'_, str>> = js::array(module, "dependencies")
+                .iter()
+                .map(|d| js::text(d, "resolved"))
+                .collect();
+            targets.sort();
+            targets.dedup();
+            targets
+        })
+        .collect();
+    let mut by_target: HashMap<&str, Vec<usize>> = HashMap::new();
+    for (at, targets) in targets.iter().enumerate() {
+        for target in targets {
+            by_target.entry(target.as_ref()).or_default().push(at);
         }
     }
+    sources
+        .par_iter()
+        .map(|source| {
+            let list = by_target
+                .get(source.as_ref())
+                .map_or_else(Vec::new, |from| {
+                    from.iter()
+                        .map(|&at| Value::String(sources[at].clone().into_owned()))
+                        .collect()
+                });
+            Value::Array(list)
+        })
+        .collect()
 }
 
 /// `deriveOrphans`.
@@ -140,16 +258,21 @@ pub fn orphans(modules: &mut [Value], skip: bool, rules: &DependencyRules) {
     if skip && !has_orphan_rule(rules) {
         return;
     }
-    let set = DependencySet::new(modules);
-    for module in modules.iter_mut() {
+    // The dependency set answers only for a module without `dependents`, which after
+    // `addDependents` is none, so it is built the first time one is found.
+    let mut set: Option<DependencySet> = None;
+    for at in 0..modules.len() {
+        let module = &modules[at];
         let orphan = if !js::array(module, "dependencies").is_empty() {
             false
         } else if js::has(module, "dependents") {
             js::array(module, "dependents").is_empty()
         } else {
-            !set.has_dependents(module)
+            // Only `source` and `resolved` are read, which no `orphan` written so far changes.
+            !set.get_or_insert_with(|| DependencySet::new(modules))
+                .has_dependents(module)
         };
-        js::set(module, "orphan", Value::Bool(orphan));
+        js::set(&mut modules[at], "orphan", Value::Bool(orphan));
     }
 }
 
@@ -280,14 +403,15 @@ pub fn reachables(modules: &mut [Value], rules: &DependencyRules) {
     if rules.is_empty() {
         return;
     }
-    let whole = IndexedGraph::new(modules, "source");
-    let mut narrowed: HashMap<String, IndexedGraph> = HashMap::new();
+    // The walks below change the modules, so the graphs own what they index.
+    let whole = IndexedGraph::new(modules, "source").into_owned();
+    let mut narrowed: HashMap<String, IndexedGraph<'static>> = HashMap::new();
     for rule in &rules {
         if let Some(filter) = &rule.graph {
             let key = serde_json::to_string(filter).unwrap_or_default();
-            narrowed
-                .entry(key)
-                .or_insert_with(|| IndexedGraph::narrowed(modules, &View::new(filter)));
+            narrowed.entry(key).or_insert_with(|| {
+                IndexedGraph::narrowed(modules, &View::new(filter)).into_owned()
+            });
         }
     }
     for rule in rules {
@@ -440,6 +564,43 @@ mod tests {
         ]
     }
 
+    /// Recurses until the stack has grown `need` bytes below `top`.
+    fn descend(top: usize, need: usize) -> bool {
+        let here = std::hint::black_box([0_u8; 256]);
+        if top.abs_diff(here.as_ptr() as usize) >= need {
+            return true;
+        }
+        descend(top, need) && here[0] == 0
+    }
+
+    #[test]
+    fn the_cycle_search_runs_where_a_long_cycle_fits() {
+        // 3 MiB of stack: more than a default rayon worker's 2 MiB, within the deep workers' 8.
+        let reached = deep_pool().map(|pool| {
+            pool.install(|| {
+                let top = [0_u8; 1];
+                descend(top.as_ptr() as usize, 3 * 1024 * 1024)
+            })
+        });
+        assert_eq!(reached, Some(true));
+        // And the search itself answers from there.
+        let items = vec![
+            json!({ "source": "a", "dependencies": [{ "resolved": "b" }] }),
+            json!({ "source": "b", "dependencies": [{ "resolved": "a" }] }),
+        ];
+        let cycle_rule = rules(
+            json!({ "forbidden": [{ "name": "c", "from": {}, "to": { "circular": true } }] }),
+        );
+        let found =
+            find_cycles(&items, "source", "resolved", false, &cycle_rule).unwrap_or_default();
+        assert_eq!(found.len(), 2);
+        assert!(
+            found
+                .iter()
+                .all(|edges| edges.len() == 1 && edges[0].len() == 2)
+        );
+    }
+
     #[test]
     fn licence_and_deprecation_rules_are_found_in_forbidden_and_allowed() {
         let none =
@@ -555,6 +716,57 @@ mod tests {
         assert_eq!(skipped[2]["orphan"], false);
         let orphan_rule = rules(json!({ "forbidden": [{ "from": { "orphan": true }, "to": {} }] }));
         assert!(has_orphan_rule(&orphan_rule));
+    }
+
+    proptest::proptest! {
+        /// `dependents_of` is `ModuleGraphWithDependencySet.getDependents` for every module:
+        /// with repeated sources, repeated targets, a target no module has and an edge without
+        /// `resolved`, which both read as `"undefined"`.
+        #[test]
+        fn dependents_are_the_dependency_sets(
+            sources in proptest::collection::vec(0u8..6, 0..8),
+            edges in proptest::collection::vec((0u8..8, 0u8..8), 0..24)
+        ) {
+            let name = |n: u8| if n == 6 { "undefined".to_owned() } else { format!("m{n}") };
+            let modules: Vec<Value> = sources
+                .iter()
+                .enumerate()
+                .map(|(at, source)| {
+                    let dependencies: Vec<Value> = edges
+                        .iter()
+                        .filter(|(from, _)| usize::from(*from) == at)
+                        .map(|(_, to)| match to {
+                            7 => json!({}),
+                            to => json!({ "resolved": name(*to) }),
+                        })
+                        .collect();
+                    json!({ "source": name(*source), "dependencies": dependencies })
+                })
+                .collect();
+            let set = DependencySet::new(&modules);
+            let ours = dependents_of(&modules);
+            proptest::prop_assert_eq!(ours.len(), modules.len());
+            for (module, dependents) in modules.iter().zip(&ours) {
+                proptest::prop_assert_eq!(dependents, &json!(set.dependents(module)));
+            }
+        }
+    }
+
+    #[test]
+    fn orphans_ask_the_dependency_set_only_without_dependents() {
+        // b has no dependencies and no `dependents`, so the set answers for it; a lists its own.
+        let mut modules = vec![
+            json!({ "source": "a", "dependencies": [], "dependents": [] }),
+            json!({ "source": "b", "dependencies": [] }),
+            json!({ "source": "c", "dependencies": [{ "resolved": "b" }] }),
+            json!({ "source": "d", "dependencies": [] }),
+        ];
+        orphans(&mut modules, false, &rules(json!({})));
+        let found: Vec<&Value> = modules.iter().map(|m| &m["orphan"]).collect();
+        assert_eq!(
+            found,
+            [&json!(true), &json!(false), &json!(false), &json!(true)]
+        );
     }
 
     #[test]

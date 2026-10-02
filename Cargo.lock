@@ -1815,7 +1815,9 @@ dependencies = [
  "chrono",
  "clap",
  "jsonschema",
+ "miniz_oxide",
  "proptest",
+ "rayon",
  "rb-config",
  "rb-extract-dotnet",
  "rb-extract-python",
@@ -1860,6 +1862,7 @@ dependencies = [
  "globset",
  "miniz_oxide",
  "proptest",
+ "rayon",
  "rb-model",
  "regex",
  "roxmltree",
@@ -1867,6 +1870,8 @@ dependencies = [
  "serde_json",
  "sha1",
  "thiserror",
+ "tree-sitter",
+ "tree-sitter-c-sharp",
 ]
 
 [[package]]
@@ -1879,6 +1884,7 @@ dependencies = [
  "ruff_python_ast",
  "ruff_python_parser",
  "ruff_text_size",
+ "serde",
  "serde_json",
  "thiserror",
  "toml",
@@ -1924,7 +1930,6 @@ dependencies = [
  "serde_json",
  "sha2",
  "thiserror",
- "xtask",
 ]
 
 [[package]]
@@ -1956,6 +1961,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "proptest",
+ "rayon",
  "rb-config",
  "rb-model",
  "regex",
@@ -3015,6 +3021,13 @@ name = "xtask"
 version = "0.1.0"
 dependencies = [
  "proptest",
+]
+
+[[package]]
+name = "xtask-gate"
+version = "0.1.0"
+dependencies = [
+ "xtask",
 ]
 
 [[package]]

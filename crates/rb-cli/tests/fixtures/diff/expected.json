@@ -1,0 +1,49 @@
+{
+  "addedEdges": [
+    {
+      "from": "src/routes/b.ts",
+      "to": "src/web/view.ts",
+      "line": 1,
+      "column": 1
+    }
+  ],
+  "removedEdges": [
+    {
+      "from": "src/routes/b.ts",
+      "to": "src/db/store.ts",
+      "line": 1,
+      "column": 1
+    }
+  ],
+  "newViolations": [
+    {
+      "id": "RB-915449e6",
+      "rule": "routes-not-to-web",
+      "severity": "error",
+      "from": "src/routes/b.ts",
+      "to": "src/web/view.ts",
+      "line": 1,
+      "column": 1,
+      "fix": "Return data from the route and render it in src/web"
+    }
+  ],
+  "resolvedViolations": [
+    {
+      "id": "RB-e37cce41",
+      "rule": "routes-not-to-db",
+      "severity": "error",
+      "from": "src/routes/b.ts",
+      "to": "src/db/store.ts",
+      "line": 1,
+      "column": 1,
+      "fix": "Call the store through src/services instead of importing src/db"
+    }
+  ],
+  "ratchets": [
+    {
+      "name": "routes-via-service",
+      "before": 2,
+      "after": 1
+    }
+  ]
+}

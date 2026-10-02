@@ -86,12 +86,7 @@ fn failed(code: RunExit, message: &str) -> Outcome {
 }
 
 fn run_failed(error: &RunError) -> Outcome {
-    let code = match error {
-        RunError::Config(_) | RunError::Engine(rb_rules::EngineError::Element(_)) => {
-            RunExit::InvalidConfig
-        }
-        RunError::Extract(_) | RunError::Engine(_) => RunExit::Untrustworthy,
-    };
+    let code = error.exit();
     failed(code, &error.to_string())
 }
 
@@ -314,6 +309,7 @@ fn cruise(ctx: &mut Context<'_>, args: &BaselineArgs, lifecycle: &Lifecycle) -> 
             &args.output_to,
         ),
         paths: args.paths.clone(),
+        affected: None,
     };
     let mut progress = Progress::new(None);
     let result = match &args.graph {
@@ -379,7 +375,7 @@ fn shrink_only(
     config: &rb_config::Config,
     lifecycle: &Lifecycle,
 ) -> Outcome {
-    let stale = &run.evaluation.unmatched_known;
+    let stale = &run.unmatched_known;
     let mut stderr = String::new();
     let mut stdout = String::new();
     match source {

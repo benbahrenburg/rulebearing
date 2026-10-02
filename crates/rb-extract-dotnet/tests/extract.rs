@@ -91,6 +91,136 @@ fn sample_matches_its_expectation() -> Result<(), Box<dyn std::error::Error>> {
     matches_expectation("sample", &extract(&sample(), &loader("built/Sample.dll"))?)
 }
 
+/// A release build makes an `async` method's state machine a struct the method starts without
+/// `newobj`; the machine is found through `AsyncStateMachineAttribute`, as ArchUnitNET finds it,
+/// so the body's calls are read and attributed to the file the method is written in.
+#[test]
+fn an_async_method_of_a_release_build_is_read_through_its_state_machine()
+-> Result<(), Box<dyn std::error::Error>> {
+    let extraction = extract(&sample(), &loader("built/Sample.dll"))?;
+    let calls: Vec<(String, String)> = extraction
+        .code
+        .iter()
+        .flat_map(|c| &c.calls)
+        .filter(|c| c.from.contains("LoadOwnerAsync"))
+        .map(|c| (c.to.clone(), c.location.file.clone().unwrap_or_default()))
+        .collect();
+    assert!(
+        calls.iter().any(|(to, file)| to
+            == "System.Void Sample.Customers.Customer::.ctor(System.String)"
+            && file == "src/Order.Lines.cs"),
+        "{calls:#?}"
+    );
+    assert!(
+        calls.iter().any(|(to, _)| to.contains("Task::Yield()")),
+        "{calls:#?}"
+    );
+    let lines = extraction
+        .modules
+        .iter()
+        .find(|m| m.source == "src/Order.Lines.cs")
+        .ok_or("no module for src/Order.Lines.cs")?;
+    assert!(
+        lines
+            .dependencies
+            .iter()
+            .any(|d| d.resolved == "src/Customer.cs"
+                && d.dependency_kind == Some(DependencyKind::Body)
+                && d.line == Some(25))
+    );
+    Ok(())
+}
+
+/// Top-level statements compile into `Program.<Main>$`, a member the code layer leaves out as
+/// compiler-generated (as ArchUnitNET does); the file's edges are there all the same, so a
+/// dependency rule over `Program.cs` sees what it uses, the extension method's class included.
+#[test]
+fn top_level_statements_have_their_edges() -> Result<(), Box<dyn std::error::Error>> {
+    let root = manifest().join("tests/fixtures/toplevel");
+    let extraction = extract(&root, &loader("built/TopLevel.dll"))?;
+    let program = extraction
+        .modules
+        .iter()
+        .find(|m| m.source == "src/Program.cs")
+        .ok_or("no module for src/Program.cs")?;
+    let targets: Vec<&str> = program
+        .dependencies
+        .iter()
+        .map(|d| d.resolved.as_str())
+        .collect();
+    for expected in ["src/Clock/SystemClock.cs", "src/Clock/Describing.cs"] {
+        assert!(
+            targets.contains(&expected),
+            "{expected} missing from {targets:?}"
+        );
+    }
+    let members: Vec<&str> = extraction
+        .code
+        .iter()
+        .flat_map(|c| &c.members)
+        .filter_map(|m| m.full_name.as_deref())
+        .collect();
+    assert!(
+        !members.iter().any(|m| m.contains("<Main>$")),
+        "the code layer keeps ArchUnitNET's members: {members:?}"
+    );
+    Ok(())
+}
+
+/// A file that holds code and declares no type is a module: top-level statements whose
+/// `Program` is declared in another file, as the ASP.NET SDK's generator declares it.
+#[test]
+fn a_file_with_code_and_no_type_of_its_own_is_a_module() -> Result<(), Box<dyn std::error::Error>> {
+    let root = manifest().join("tests/fixtures/toplevel-declared");
+    let extraction = extract(&root, &loader("built/TopLevelDeclared.dll"))?;
+    let sources: Vec<&str> = extraction
+        .modules
+        .iter()
+        .filter(|m| m.followable == Some(true))
+        .map(|m| m.source.as_str())
+        .collect();
+    assert_eq!(
+        sources,
+        [
+            "src/Clock/SystemClock.cs",
+            "src/Program.Declared.cs",
+            "src/Program.cs"
+        ]
+    );
+    let program = extraction
+        .modules
+        .iter()
+        .find(|m| m.source == "src/Program.cs")
+        .ok_or("no module for src/Program.cs")?;
+    assert!(
+        program
+            .dependencies
+            .iter()
+            .any(|d| d.resolved == "src/Clock/SystemClock.cs"),
+        "{:?}",
+        program.dependencies
+    );
+    // No edge is dropped: every module that stands for an assembly is some edge's target.
+    let targets: std::collections::BTreeSet<&str> = extraction
+        .modules
+        .iter()
+        .flat_map(|m| &m.dependencies)
+        .map(|d| d.resolved.as_str())
+        .collect();
+    for external in extraction
+        .modules
+        .iter()
+        .filter(|m| m.followable == Some(false))
+    {
+        assert!(
+            targets.contains(external.source.as_str()),
+            "{} is listed and nothing depends on it",
+            external.source
+        );
+    }
+    Ok(())
+}
+
 #[test]
 fn two_runs_serialise_byte_for_byte() -> Result<(), Box<dyn std::error::Error>> {
     let first = as_json(&extract(&sample(), &loader("built/Sample.dll"))?)?.to_string();
@@ -509,5 +639,63 @@ fn solution_mode_finds_referenced_assemblies_beside_the_built_output()
         Some(("class".to_owned(), None)),
         "includeDependencies loads the referenced assembly as analysed code"
     );
+    Ok(())
+}
+
+/// The assemblies and PDBs an incremental run keys the .NET graph on
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// the analysed assembly's folder, so the referenced `Sample.Core.dll` read beside it counts too.
+#[test]
+fn the_inputs_are_every_assembly_and_pdb_beside_the_analysed_ones()
+-> Result<(), Box<dyn std::error::Error>> {
+    let inputs = rb_extract_dotnet::assembly_inputs(&sample(), &loader("built/Sample.dll"))?;
+    let names: Vec<String> = inputs
+        .iter()
+        .filter_map(|p| p.file_name().map(|n| n.to_string_lossy().into_owned()))
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "Sample.Core.dll",
+            "Sample.Core.pdb",
+            "Sample.dll",
+            "Sample.pdb"
+        ]
+    );
+    assert!(inputs.iter().all(|p| p.is_file()));
+    let empty = Path::new(env!("CARGO_TARGET_TMPDIR")).join("no-dotnet-inputs");
+    std::fs::create_dir_all(&empty)?;
+    let nothing = rb_extract_dotnet::assembly_inputs(&empty, &DotnetOptions::default());
+    assert!(
+        matches!(nothing, Err(ExtractError::NoModulesFound)),
+        "{nothing:?}"
+    );
+    // Projects found but none built: nothing to key on, and the extraction says why.
+    let unbuilt =
+        rb_extract_dotnet::assembly_inputs(&manifest().join("tests"), &DotnetOptions::default())?;
+    assert!(unbuilt.is_empty(), "{unbuilt:?}");
+    // The project files are listed whether or not anything was built.
+    let projects =
+        rb_extract_dotnet::project_files(&manifest().join("tests"), &DotnetOptions::default())?;
+    assert!(
+        !projects.is_empty()
+            && projects
+                .iter()
+                .all(|p| p.extension().is_some_and(|e| e == "csproj"
+                    || e == "sln"
+                    || e == "slnx"
+                    || e == "fsproj"
+                    || e == "vbproj")),
+        "{projects:?}"
+    );
+    let loose = rb_extract_dotnet::project_files(&sample(), &loader("built/Sample.dll"))?;
+    assert!(
+        loose.is_empty(),
+        "a directly loaded assembly has no project file: {loose:?}"
+    );
+    assert!(matches!(
+        rb_extract_dotnet::project_files(&empty, &DotnetOptions::default()),
+        Err(ExtractError::NoModulesFound)
+    ));
     Ok(())
 }

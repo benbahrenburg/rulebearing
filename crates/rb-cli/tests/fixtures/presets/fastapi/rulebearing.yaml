@@ -1,0 +1,27 @@
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: Python.
+# Framework presets named with --preset, each an opinion that is off unless named: rulebearing:fastapi.
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: [rulebearing:python, rulebearing:recommended, rulebearing:fastapi]
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)__main__\\.py$"
+            - "(^|/)conftest\\.py$"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+      # Left out by init: nothing here matches its from side yet. Delete this entry to turn it on.
+      - name: fastapi-repositories-not-to-services-or-routers
+        severity: ignore
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    - {"id":"RB-ab224016","type":"dependency","from":"app/services/audit.py","to":"app/routers/orders.py","rule":{"name":"fastapi-services-not-to-routers","severity":"error"},"expires":"2026-12-20","owner":"@fixture"}
+    - {"id":"RB-60eaca5a","type":"module","from":"app/__init__.py","to":"app/__init__.py","rule":{"name":"no-orphans","severity":"warn"},"expires":"2026-12-20","owner":"@fixture"}
+    - {"id":"RB-0ff27b3e","type":"module","from":"app/routers/__init__.py","to":"app/routers/__init__.py","rule":{"name":"no-orphans","severity":"warn"},"expires":"2026-12-20","owner":"@fixture"}
+    - {"id":"RB-0a0f8897","type":"module","from":"app/services/__init__.py","to":"app/services/__init__.py","rule":{"name":"no-orphans","severity":"warn"},"expires":"2026-12-20","owner":"@fixture"}

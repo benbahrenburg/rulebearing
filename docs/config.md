@@ -30,6 +30,11 @@ A `.dependency-cruiser.js` that works with dependency-cruiser 18.2.0 works here 
 | `rulebearing:dotnet` | The .NET exclusions and nothing else: C# sources under `obj/` and `bin/`, `*.g.cs`, `*.Designer.cs` left out; `Program.cs`, `Startup.cs`, `AssemblyInfo.cs` and `Migrations/` not orphans ([presets/rulebearing/dotnet.yaml](../presets/rulebearing/dotnet.yaml)) |
 | `rulebearing:python` | The Python exclusions and nothing else: `.venv/`, `venv/`, `site-packages/`, `__pycache__/` and `.pyi` stubs left out; `__main__.py` and `conftest.py` not orphans ([presets/rulebearing/python.yaml](../presets/rulebearing/python.yaml)) |
 | `rulebearing:recommended` | Composes the three (`extends: [rulebearing:typescript, rulebearing:dotnet, rulebearing:python]`) and adds `no-circular` and `not-to-unresolvable`; every rule has a `fix` ([presets/rulebearing/recommended.yaml](../presets/rulebearing/recommended.yaml)) |
+| `rulebearing:nextjs` | An opinion, off unless named: route entries and API handlers are not imported, `components/`, `hooks/` and `lib/` outside the route folders never import a route; type-only imports are never findings ([presets/frameworks/nextjs.yaml](../presets/frameworks/nextjs.yaml)) |
+| `rulebearing:clean-architecture` | An opinion, off unless named: Domain <- Application <- Infrastructure and Presentation, read from path segments (a module's layer is the last one in its path), for a .NET solution or a TypeScript or Python tree ([presets/frameworks/clean-architecture.yaml](../presets/frameworks/clean-architecture.yaml)) |
+| `rulebearing:django` | An opinion, off unless named: models are innermost, views are reached through URL configurations, migrations are not imported ([presets/frameworks/django.yaml](../presets/frameworks/django.yaml)) |
+| `rulebearing:fastapi` | An opinion, off unless named: routers, services, repositories, each importing only the layers beneath it, with models and schemas innermost ([presets/frameworks/fastapi.yaml](../presets/frameworks/fastapi.yaml)) |
+| `rulebearing:vertical-slices` | An opinion, off unless named: a slice under `features/` or `slices/` never imports another, and the shared kernel never imports a slice ([presets/frameworks/vertical-slices.yaml](../presets/frameworks/vertical-slices.yaml)) |
 
 The merge replaces a rule's `from` and an option's value whole, so `rulebearing:recommended` lists the union of the three presets' `no-orphans` exclusions and `exclude` patterns, and a test keeps it the union. A repository with one language puts its own preset first, so that its exclusions win and no other language's are carried ([design § What stays honest across the boundary](artifacts/design.md#what-stays-honest-across-the-boundary)):
 
@@ -38,6 +43,12 @@ extends: [rulebearing:python, rulebearing:recommended]
 ```
 
 `rulebearing init` writes that line for the language it finds, and `extends: rulebearing:recommended` when it finds several ([cli.md](cli.md#commands)).
+
+The framework presets are opinions, and nothing extends one unless a configuration names it ([design § The developer relations hat](artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo): "off by default, each a documented opinion"). Each reads module paths only, declares its own rules (named with its prefix, so none replaces a language preset's) and no options, and goes after the language presets. Every rule's `comment` carries the decision token `plan:rulebearing-<preset>`, which `--require-comment-token` accepts, and its `examples` pass `rulebearing test`. The opinion behind each rule is in [presets/frameworks/README.md](../presets/frameworks/README.md).
+
+```yaml
+extends: [rulebearing:typescript, rulebearing:recommended, rulebearing:nextjs]
+```
 
 Rules merge by name, as dependency-cruiser merges them: a rule in the extending file with the name of an extended rule replaces the attributes it names.
 
@@ -84,6 +95,7 @@ The top level holds `$schema`, `extends`, `defines`, `languages`, `options`, `ru
 | Key | Holds |
 | --- | --- |
 | `languages.typescript` | The per-language options: `tsConfig`, `tsPreCompilationDeps`, `babelConfig`, `webpackConfig`, `enhancedResolveOptions`, `moduleSystems`, `parser`, `baseDir` and the rest of the TypeScript extractor's options. dependency-cruiser's flat option names are accepted at the top of `options` too, as aliases |
+| `languages.dotnet` | The .NET extractor's options: `solution`, `configuration`, `targetFramework`, `excludeProjects`, the loader keys (`assemblies`, `includeDependencies`, `directories`, `namespaces`), and `mode`: `compiled` (the default) or `source`, which reads the `.cs` files without a build ([source-mode.md](source-mode.md)) |
 | `rules.dependencies` | dependency-cruiser's rule set: `forbidden`, `allowed`, `allowedSeverity`, `required` ([rules.md](rules.md)) |
 | `rules.layers` | Paths from the highest layer to the lowest; each lower layer gets one `forbidden` rule per higher layer, named `<name>:<lower>-to-<higher>` |
 | `rules.independence` | A pattern with one capturing group; a module in one group may not import a module in another |
@@ -98,9 +110,30 @@ The top level holds `$schema`, `extends`, `defines`, `languages`, `options`, `ru
 
 **Markdown fences.** In a native file, listing `.md` in `extraExtensionsToScan` also reads the `js`, `ts`, `jsx`, `tsx`, `javascript` and `typescript` code fences of those files, with each dependency's line and column pointing into the Markdown. A dependency-cruiser file keeps dependency-cruiser's behaviour, which never reads a file of `extraExtensionsToScan` ([ADR-0036](adr/0036-markdown-fences-follow-the-configuration-format.md)).
 
+## The cache
+
+`options.cache` turns on the extraction cache `cruise --cache` uses ([cli.md](cli.md#the-cache); [coverage § Options](artifacts/dependency-cruiser-18.2.0-coverage.md#options) row `cache`). It takes dependency-cruiser's forms in both formats, and `optionsUsed` records it normalised, as dependency-cruiser does:
+
+| Written | Means |
+| --- | --- |
+| `true` | on, in `.graph/cache` (`node_modules/.cache/dependency-cruiser` in a dependency-cruiser file) |
+| `"tmp/cache"` | on, in that folder |
+| `{ folder, strategy, compress }` | each given; `strategy` is `metadata` (default) or `content`, `compress: true` stores the extraction zlib-compressed |
+| `false` | off |
+
+```yaml
+options:
+  cache:
+    folder: .graph/cache
+    strategy: metadata
+    compress: true
+```
+
+`--cache`, `--cache-strategy` and `--no-cache` replace it for one run.
+
 ## Rule metadata
 
-Every rule, in either format, may carry five fields dependency-cruiser does not have. They are what `explain`, `err-long` and the `agent` reporter print ([design § Rule metadata](artifacts/design.md#rule-metadata-that-says-what-to-do)).
+Every rule, in either format, may carry these fields dependency-cruiser does not have. They are what `explain`, `err-long` and the `agent` reporter print ([design § Rule metadata](artifacts/design.md#rule-metadata-that-says-what-to-do)).
 
 | Field | Meaning |
 | --- | --- |
@@ -108,7 +141,29 @@ Every rule, in either format, may carry five fields dependency-cruiser does not 
 | `examples` | `forbidden` and `allowed` edges, `from -> to`, that `rulebearing test` checks against the rule |
 | `owner` | Who answers for the rule |
 | `expires` | A date after which the rule fails the run: for a temporary exception |
+| `since` | The release the rule arrived in |
+| `deprecated` | The release the rule was deprecated in; `changelog` lists it as retired |
+| `replacedBy` | The rule that takes over from this one |
 | `allowEmpty` | Opt the rule out of liveness: it may match nothing without failing the run ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)). dependency-cruiser's schema refuses it on a rule, so a rule in a `.dependency-cruiser.*` file is named in the native file's top-level `allowEmpty` list instead ([ADR-0032](adr/0032-liveness-follows-the-configuration-format.md)) |
+
+**Lifecycle fields.** `since`, `deprecated` and `replacedBy` are how a rule file shrinks honestly ([design § The architect's hat](artifacts/design.md#the-architects-hat-across-repos-and-across-time)). They are legal on dependency, element, slice and diagram rules, on the `layers` and `independence` shorthands (copied onto every rule an entry expands to, which `config expand` shows) and on ratchets. They change nothing about how a rule is evaluated: a deprecated rule still reports its violations, and one that matches nothing still fails the run unless it has `allowEmpty` ([ADR-0007](adr/0007-vacuous-rules-fail-by-default.md)). The versions are strings and are not validated, since a repository may release as `1.2.0`, `v1.2.0` or `2026.09`; they are compared as semver when they are semver ([cli.md § Snapshots](cli.md#snapshots-changelog-and-unused-rules)). `rules --json` prints all three, `changelog` reports the deprecations, and `config lint` checks them:
+
+| Finding | When |
+| --- | --- |
+| `replaced-by-unknown` | `replacedBy` names no rule, `layers` or `independence` entry, or ratchet of the configuration |
+| `replaced-by-self` | `replacedBy` names the rule itself |
+| `since-after-deprecated` | `since` is later than `deprecated`, both semver |
+
+A `deprecated` without a `replacedBy` is not a finding: a rule may be retired with nothing in its place.
+
+```yaml
+- name: no-legacy-http-client
+  comment: "adr:0012"
+  since: "1.2.0"
+  deprecated: "2.0.0"
+  replacedBy: no-http-client-outside-gateway
+  severity: warn
+```
 
 A decision token in `comment`, `adr:NNNN` or `plan:<slug>`, links the rule to the decision behind it. `--require-comment-token` makes a rule without one a configuration error (exit 3).
 

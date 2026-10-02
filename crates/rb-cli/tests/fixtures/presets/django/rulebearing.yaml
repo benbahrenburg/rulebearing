@@ -1,0 +1,23 @@
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: Python.
+# Framework presets named with --preset, each an opinion that is off unless named: rulebearing:django.
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: [rulebearing:python, rulebearing:recommended, rulebearing:django]
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)__main__\\.py$"
+            - "(^|/)conftest\\.py$"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    - {"id":"RB-0eb7c81f","type":"dependency","from":"shop/forms.py","to":"shop/views.py","rule":{"name":"django-views-only-from-urls","severity":"error"},"expires":"2026-12-20","owner":"@fixture"}
+    - {"id":"RB-a27c76ad","type":"module","from":"shop/__init__.py","to":"shop/__init__.py","rule":{"name":"no-orphans","severity":"warn"},"expires":"2026-12-20","owner":"@fixture"}
+    - {"id":"RB-44b2fb91","type":"module","from":"shop/migrations/__init__.py","to":"shop/migrations/__init__.py","rule":{"name":"no-orphans","severity":"warn"},"expires":"2026-12-20","owner":"@fixture"}

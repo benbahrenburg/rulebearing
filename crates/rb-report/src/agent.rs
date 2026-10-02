@@ -12,12 +12,19 @@
 //! the target), summed into `score`. Violations are ordered by `score`, then `from` and `to`; rules
 //! by their cheapest violation, then name. `maxFindings` caps each rule's shown violations; `count`
 //! keeps the total and `budget.truncated` says whether anything was cut.
+//!
+//! When a language was read in source mode (`summary.inspected.<language>.mode` is `source`),
+//! the report opens with `approximate`, a sentence saying the findings are namespace-level and
+//! compiled mode is the gate, and each finding on an edge marked `approximate` carries
+//! `approximate: true`
+//! ([Wave 3 § 1.4](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#the-inner-loop-on-a-large-net-solution),
+//! [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)).
 
 use std::collections::HashMap;
 
 use serde_json::{Map, Value, json};
 
-use crate::{Rendered, edge_position, find_rule, severity, text};
+use crate::{Edges, Rendered, find_rule, severity, text};
 
 /// The default number of violations shown per rule.
 pub const DEFAULT_MAX_FINDINGS: usize = 5;
@@ -42,19 +49,70 @@ fn fan_in(result: &Value) -> HashMap<String, usize> {
     counts
 }
 
-fn edge_kind(result: &Value, from: &str, to: &str) -> Value {
-    result
-        .get("modules")
-        .and_then(Value::as_array)
-        .and_then(|m| m.iter().find(|x| text(x, "source") == from))
-        .and_then(|m| m.get("dependencies").and_then(Value::as_array))
-        .and_then(|d| d.iter().find(|x| text(x, "resolved") == to))
-        .and_then(|d| d.get("dependencyKind").cloned())
-        .unwrap_or(Value::Null)
+/// The header of a report whose graph was read, in part, from source.
+pub const APPROXIMATE: &str = "approximate: .NET was read from source (--mode source), so its findings are namespace-level and may miss or add an edge a build would not; compiled mode is the gate";
+
+fn read_from_source(summary: &Value) -> bool {
+    summary
+        .get("inspected")
+        .and_then(Value::as_object)
+        .is_some_and(|languages| {
+            languages
+                .values()
+                .any(|r| r.get("mode").and_then(Value::as_str) == Some("source"))
+        })
 }
 
 fn steps(v: &Value, key: &str) -> usize {
     v.get(key).and_then(Value::as_array).map_or(0, Vec::len)
+}
+
+/// One violation as a finding: its rule's name and severity, its score, and the finding; `None`
+/// for an `ignore` violation.
+fn finding(
+    index: &Edges<'_>,
+    fan: &HashMap<String, usize>,
+    v: &Value,
+) -> Option<(String, String, u64, Value)> {
+    let sev = severity(v);
+    if sev == "ignore" {
+        return None;
+    }
+    let from = text(v, "from");
+    let to = text(v, "to");
+    let edges = match v.get("type").and_then(Value::as_str) {
+        Some("module") => 0,
+        Some("cycle") => steps(v, "cycle"),
+        Some("reachability") => steps(v, "via"),
+        _ => 1,
+    };
+    let target_fan_in = if v.get("type").and_then(Value::as_str) == Some("module") {
+        0
+    } else {
+        fan.get(&to).copied().unwrap_or(0)
+    };
+    let score = (edges + target_fan_in) as u64;
+    let (line, column) = index
+        .position(&from, &to)
+        .map_or((Value::Null, Value::Null), |(l, c)| (json!(l), json!(c)));
+    let found = index.get(&from, &to);
+    let mut finding = json!({
+        "id": v.get("id").cloned().unwrap_or(Value::Null),
+        "from": from, "to": to, "line": line, "column": column,
+        "member": Value::Null,
+        "dependencyKind": found.and_then(|d| d.get("dependencyKind").cloned()).unwrap_or(Value::Null),
+        "cost": { "edgesToMove": edges, "targetFanIn": target_fan_in, "score": score }
+    });
+    if found
+        .and_then(|d| d.get("approximate"))
+        .and_then(Value::as_bool)
+        == Some(true)
+        && let Some(object) = finding.as_object_mut()
+    {
+        object.insert("approximate".into(), json!(true));
+    }
+    let name = v.get("rule").map(|r| text(r, "name")).unwrap_or_default();
+    Some((name, sev, score, finding))
 }
 
 /// One rule's findings: name, severity, and each finding with its weight.
@@ -65,6 +123,7 @@ pub fn render(result: &Value, max_findings: usize) -> Rendered {
     let summary = result.get("summary").cloned().unwrap_or(Value::Null);
     let rule_set = summary.get("ruleSetUsed");
     let fan = fan_in(result);
+    let index = Edges::of(result);
     let mut groups: Vec<Group> = Vec::new();
     for v in summary
         .get("violations")
@@ -72,34 +131,9 @@ pub fn render(result: &Value, max_findings: usize) -> Rendered {
         .into_iter()
         .flatten()
     {
-        let sev = severity(v);
-        if sev == "ignore" {
+        let Some((name, sev, score, finding)) = finding(&index, &fan, v) else {
             continue;
-        }
-        let from = text(v, "from");
-        let to = text(v, "to");
-        let edges = match v.get("type").and_then(Value::as_str) {
-            Some("module") => 0,
-            Some("cycle") => steps(v, "cycle"),
-            Some("reachability") => steps(v, "via"),
-            _ => 1,
         };
-        let target_fan_in = if v.get("type").and_then(Value::as_str) == Some("module") {
-            0
-        } else {
-            fan.get(&to).copied().unwrap_or(0)
-        };
-        let score = (edges + target_fan_in) as u64;
-        let (line, column) = edge_position(result, &from, &to)
-            .map_or((Value::Null, Value::Null), |(l, c)| (json!(l), json!(c)));
-        let finding = json!({
-            "id": v.get("id").cloned().unwrap_or(Value::Null),
-            "from": from, "to": to, "line": line, "column": column,
-            "member": Value::Null,
-            "dependencyKind": edge_kind(result, &text(v, "from"), &text(v, "to")),
-            "cost": { "edgesToMove": edges, "targetFanIn": target_fan_in, "score": score }
-        });
-        let name = v.get("rule").map(|r| text(r, "name")).unwrap_or_default();
         match groups.iter_mut().find(|(n, _, _)| *n == name) {
             Some((_, _, list)) => list.push((score, finding)),
             None => groups.push((name, sev, vec![(score, finding)])),
@@ -147,13 +181,20 @@ pub fn render(result: &Value, max_findings: usize) -> Rendered {
             Value::Object(out)
         })
         .collect();
-    let report = json!({
+    let mut report = Map::new();
+    if read_from_source(&summary) {
+        report.insert("approximate".into(), json!(APPROXIMATE));
+    }
+    let body = json!({
         "inspected": summary.get("inspected").cloned().unwrap_or_else(|| json!({})),
         "vacuousRules": summary.get("vacuousRules").cloned().unwrap_or_else(|| json!([])),
         "rules": rules,
         "budget": { "maxFindings": max_findings, "truncated": truncated }
     });
-    let mut output = serde_json::to_string_pretty(&report).unwrap_or_default();
+    if let Value::Object(fields) = body {
+        report.extend(fields);
+    }
+    let mut output = serde_json::to_string_pretty(&Value::Object(report)).unwrap_or_default();
     output.push('\n');
     Rendered {
         output,
@@ -222,6 +263,35 @@ mod tests {
             2
         );
         assert_eq!(report["budget"]["truncated"], false);
+        assert!(
+            report.get("approximate").is_none(),
+            "compiled mode has no header"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_source_mode_report_says_it_is_approximate() -> Result<(), serde_json::Error> {
+        let result = json!({
+            "modules": [{ "source": "A.cs", "dependencies": [{ "resolved": "B.cs", "line": 2, "column": 5, "dependencyKind": "field", "approximate": true }] }],
+            "summary": {
+                "error": 1,
+                "inspected": { "dotnet": { "files": 2, "assemblies": 0, "modules": 2, "mode": "source" } },
+                "violations": [{ "type": "dependency", "from": "A.cs", "to": "B.cs", "rule": { "name": "r", "severity": "error" } }]
+            }
+        });
+        let output = render(&result, DEFAULT_MAX_FINDINGS).output;
+        assert!(
+            output.starts_with("{\n  \"approximate\": \"approximate: "),
+            "{output}"
+        );
+        let report: Value = serde_json::from_str(&output)?;
+        assert_eq!(report["approximate"], APPROXIMATE);
+        assert_eq!(report["rules"][0]["violations"][0]["approximate"], true);
+        assert_eq!(
+            report["rules"][0]["violations"][0]["dependencyKind"],
+            "field"
+        );
         Ok(())
     }
 }

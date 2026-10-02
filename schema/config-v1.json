@@ -27,6 +27,73 @@
       },
       "type": "object"
     },
+    "CacheObject": {
+      "additionalProperties": false,
+      "description": "The object form of `options.cache`.",
+      "properties": {
+        "compress": {
+          "default": null,
+          "description": "Compress the stored extraction. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "folder": {
+          "default": null,
+          "description": "The folder the entry is written to, relative to the working directory. Default:\n`.graph/cache` (`node_modules/.cache/dependency-cruiser` for a dependency-cruiser file).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "strategy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CacheStrategy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How changes are found: `metadata` (version control status and file metadata, the\ndefault) or `content` (every input hashed)."
+        }
+      },
+      "type": "object"
+    },
+    "CacheStrategy": {
+      "description": "How a cache decides what changed since the entry was written: dependency-cruiser's\n`cache.strategy` and `--cache-strategy`\n([coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),\n[Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).",
+      "oneOf": [
+        {
+          "const": "metadata",
+          "description": "`git` status and diff against the recorded commit plus file size and modification time;\nonly what they name is hashed. The default.",
+          "type": "string"
+        },
+        {
+          "const": "content",
+          "description": "Every input file hashed on every run.",
+          "type": "string"
+        }
+      ]
+    },
+    "CacheValue": {
+      "anyOf": [
+        {
+          "description": "`true`: on, in the default folder; `false`: off.",
+          "type": "boolean"
+        },
+        {
+          "description": "On, in this folder.",
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/CacheObject",
+          "description": "On, with each setting given."
+        }
+      ],
+      "description": "`options.cache` in any of its forms."
+    },
     "CachedInputFileSystem": {
       "additionalProperties": false,
       "description": "`enhancedResolveOptions.cachedInputFileSystem`.",
@@ -248,6 +315,21 @@
       ],
       "type": "object"
     },
+    "DotnetMode": {
+      "description": "`languages.dotnet.mode` and `--mode`: how the .NET graph is read.",
+      "oneOf": [
+        {
+          "const": "compiled",
+          "description": "From the built assemblies and their portable PDBs: the gate.",
+          "type": "string"
+        },
+        {
+          "const": "source",
+          "description": "From the `.cs` files with `tree-sitter-c-sharp`, without a build: namespace-level,\nevery edge `approximate`, the inner loop's answer.",
+          "type": "string"
+        }
+      ]
+    },
     "DotnetOptions": {
       "additionalProperties": false,
       "description": "`languages.dotnet`.",
@@ -296,6 +378,17 @@
             "boolean",
             "null"
           ]
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DotnetMode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "How the graph is read: `compiled` (the default) from the built assemblies and portable\nPDBs, or `source` from the `.cs` files without a build. Source mode's edges are\nnamespace-level and marked `approximate`, and it is never the gate\n([ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md))."
         },
         "namespaces": {
           "description": "Keep only types in these namespaces or below (`LoadNamespacesWithinAssembly`).",
@@ -3807,6 +3900,13 @@
             "null"
           ]
         },
+        "deprecated": {
+          "description": "The release it was deprecated in; it is still evaluated\n([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "fix": {
           "description": "The fix.",
           "type": [
@@ -3833,6 +3933,13 @@
           "description": "A path pattern with exactly one capturing group naming the module, for example\n`^apps/web/src/features/([^/]+)/`.",
           "type": "string"
         },
+        "replacedBy": {
+          "description": "The rule, shorthand or ratchet that takes over; `config lint` checks it exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "severity": {
           "anyOf": [
             {
@@ -3843,6 +3950,13 @@
             }
           ],
           "description": "Severity. Default `error`."
+        },
+        "since": {
+          "description": "The release it arrived in ([`crate::version`]); informational.",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "required": [
@@ -3974,6 +4088,13 @@
             "null"
           ]
         },
+        "deprecated": {
+          "description": "The release it was deprecated in; it is still evaluated\n([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "fix": {
           "description": "The fix shared by every expanded rule.",
           "type": [
@@ -4003,6 +4124,13 @@
           "description": "The rule name; each expanded rule is `<name>:<lower>-to-<higher>`.",
           "type": "string"
         },
+        "replacedBy": {
+          "description": "The rule, shorthand or ratchet that takes over; `config lint` checks it exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "severity": {
           "anyOf": [
             {
@@ -4013,6 +4141,13 @@
             }
           ],
           "description": "Severity of every expanded rule. Default `error`."
+        },
+        "since": {
+          "description": "The release it arrived in ([`crate::version`]); informational.",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "required": [
@@ -4155,6 +4290,10 @@
                 "description": "Why the rule exists; the decision token (`adr:NNNN`) goes here.",
                 "type": "string"
               },
+              "deprecated": {
+                "description": "The release the rule was deprecated in. The rule is still evaluated and a rule that matches nothing still fails unless `allowEmpty` (ADR-0007); `changelog` lists it as retired.",
+                "type": "string"
+              },
               "expires": {
                 "description": "The last day the rule applies, YYYY-MM-DD; the run fails the day after, as for a dependency rule.",
                 "format": "date",
@@ -4172,6 +4311,10 @@
                 "description": "Who answers for the rule.",
                 "type": "string"
               },
+              "replacedBy": {
+                "description": "The rule that takes over from this one; `config lint` warns when no rule has that name.",
+                "type": "string"
+              },
               "select": {
                 "$ref": "#/$defs/ElementSelector"
               },
@@ -4183,6 +4326,10 @@
                   "info",
                   "ignore"
                 ]
+              },
+              "since": {
+                "description": "The release the rule arrived in. A version string; compared as semver when it is one. Informational: it does not change how the rule is evaluated.",
+                "type": "string"
               }
             },
             "required": [
@@ -4212,6 +4359,10 @@
                 "description": "Why the rule exists; the decision token (`adr:NNNN`) goes here.",
                 "type": "string"
               },
+              "deprecated": {
+                "description": "The release the rule was deprecated in. The rule is still evaluated and a rule that matches nothing still fails unless `allowEmpty` (ADR-0007); `changelog` lists it as retired.",
+                "type": "string"
+              },
               "expires": {
                 "description": "The last day the rule applies, YYYY-MM-DD; the run fails the day after, as for a dependency rule.",
                 "format": "date",
@@ -4229,6 +4380,10 @@
                 "description": "Who answers for the rule.",
                 "type": "string"
               },
+              "replacedBy": {
+                "description": "The rule that takes over from this one; `config lint` warns when no rule has that name.",
+                "type": "string"
+              },
               "select": {
                 "$ref": "#/$defs/ElementSelector"
               },
@@ -4243,6 +4398,10 @@
               },
               "should": {
                 "$ref": "#/$defs/ElementCondition"
+              },
+              "since": {
+                "description": "The release the rule arrived in. A version string; compared as semver when it is one. Informational: it does not change how the rule is evaluated.",
+                "type": "string"
               }
             },
             "required": [
@@ -4301,6 +4460,10 @@
                 "description": "Why the rule exists; the decision token (`adr:NNNN`) goes here.",
                 "type": "string"
               },
+              "deprecated": {
+                "description": "The release the rule was deprecated in. The rule is still evaluated and a rule that matches nothing still fails unless `allowEmpty` (ADR-0007); `changelog` lists it as retired.",
+                "type": "string"
+              },
               "expires": {
                 "description": "The last day the rule applies, YYYY-MM-DD; the run fails the day after, as for a dependency rule.",
                 "format": "date",
@@ -4340,6 +4503,10 @@
                 "description": "Who answers for the rule.",
                 "type": "string"
               },
+              "replacedBy": {
+                "description": "The rule that takes over from this one; `config lint` warns when no rule has that name.",
+                "type": "string"
+              },
               "segments": {
                 "description": "Keep the first this many segments of each slice name, so a package and everything below it are one slice (import-linter's `acyclic_siblings`). A Rulebearing addition.",
                 "minimum": 1,
@@ -4374,6 +4541,10 @@
                   }
                 ],
                 "description": "`NotDependOnEachOther()`, `BeFreeOfCycles()`, or both."
+              },
+              "since": {
+                "description": "The release the rule arrived in. A version string; compared as semver when it is one. Informational: it does not change how the rule is evaluated.",
+                "type": "string"
               },
               "where": {
                 "description": "A pattern a slice name must match to take part.",
@@ -4453,8 +4624,16 @@
           "description": "Changes to the runtime's built-in module list."
         },
         "cache": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CacheValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
           "default": null,
-          "description": "Accepted and recorded; the content-addressed cache is wave 3."
+          "description": "The extraction cache (`--cache`): `true` for the default folder (`.graph/cache`), a\nfolder, `false` for off, or `{ folder, strategy, compress }`."
         },
         "collapse": {
           "default": null,
@@ -4815,6 +4994,13 @@
             "null"
           ]
         },
+        "deprecated": {
+          "description": "The release it was deprecated in; it is still evaluated\n([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "fix": {
           "description": "The imperative to follow when the count rises.",
           "type": [
@@ -4832,6 +5018,20 @@
         },
         "owner": {
           "description": "Who answers for it.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "replacedBy": {
+          "description": "The rule, shorthand or ratchet that takes over; `config lint` checks it exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "since": {
+          "description": "The release it arrived in ([`crate::version`]); informational.",
           "type": [
             "string",
             "null"
@@ -4878,6 +5078,13 @@
         },
         "comment": {
           "description": "Why the rule exists; carries the decision token.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deprecated": {
+          "description": "The release the rule was deprecated in; the rule is still evaluated and still live\n([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
           "type": [
             "string",
             "null"
@@ -4949,6 +5156,13 @@
             "null"
           ]
         },
+        "replacedBy": {
+          "description": "The rule that takes over from this one; `config lint` checks it exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "scope": {
           "anyOf": [
             {
@@ -4970,6 +5184,13 @@
             }
           ],
           "description": "`error`, `warn`, `info` or `ignore`. Default `warn`."
+        },
+        "since": {
+          "description": "The release the rule arrived in ([`crate::version`]); informational.",
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "to": {
           "$ref": "#/$defs/ToRestriction",

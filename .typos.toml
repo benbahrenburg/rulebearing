@@ -27,6 +27,11 @@ extend-exclude = [
   "lcov.info",
 ]
 
+[default]
+# The SHA-256 of "abc" (FIPS 180-2's test vector) and a truncation of it, whose first hex digits
+# typos reads as a word: the content-named files in crates/rb-cli/src/cache/manifest.rs's tests.
+extend-ignore-re = ["extraction-ba78[0-9a-f]*"]
+
 [default.extend-words]
 # A deliberate misspelling: rb-config's test that an unknown element key is named with the
 # nearest known one (`arePublc`, did you mean `arePublic`).

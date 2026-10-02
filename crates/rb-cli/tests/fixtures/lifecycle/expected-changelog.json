@@ -1,0 +1,75 @@
+{
+  "since": {
+    "version": "1.0.0",
+    "sha": "1111111111111111111111111111111111111111",
+    "counts": {
+      "modules": 8,
+      "dependencies": 8,
+      "violations": {
+        "error": 0,
+        "warn": 1,
+        "info": 0
+      }
+    }
+  },
+  "to": {
+    "version": "1.1.0",
+    "sha": "2222222222222222222222222222222222222222",
+    "counts": {
+      "modules": 7,
+      "dependencies": 6,
+      "violations": {
+        "error": 1,
+        "warn": 2,
+        "info": 0
+      }
+    }
+  },
+  "newEdgesAcrossBoundaries": [
+    {
+      "from": "src/domain/model.ts",
+      "to": "src/ui/format.ts",
+      "boundaries": [
+        {
+          "kind": "layers",
+          "rule": "app-layers",
+          "from": "2",
+          "to": "1"
+        }
+      ]
+    },
+    {
+      "from": "src/features/a/x.ts",
+      "to": "src/features/b/y.ts",
+      "boundaries": [
+        {
+          "kind": "slices",
+          "rule": "features",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  ],
+  "retiredRules": [
+    {
+      "name": "no-legacy-http",
+      "removed": false,
+      "deprecated": "1.1.0",
+      "replacedBy": "ui-through-services"
+    },
+    {
+      "name": "old-rule",
+      "removed": true,
+      "deprecated": null,
+      "replacedBy": null
+    }
+  ],
+  "ratchetsFell": [
+    {
+      "name": "ui-to-db",
+      "before": 2,
+      "after": 1
+    }
+  ]
+}

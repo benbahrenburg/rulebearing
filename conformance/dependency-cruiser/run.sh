@@ -2,13 +2,17 @@
 # Conformance gate 1 (dependency-cruiser, the version in PIN): the `conformance-gate-1` job.
 #
 #   layer 1  crates/rb-extract-ts/tests/extract_fixtures.rs replays the recorded test/extract
-#            cases against the Rust extractor; fails under threshold.json
+#            cases against the Rust extractor; fails under threshold.json. The CoffeeScript
+#            cases go through the Node sidecar with the upstream checkout (RB_LAYER1_SIDECAR),
+#            and the sidecar's command-line test runs the same checkout
+#            (docs/adr/0017-coffeescript-livescript-sidecar.md)
 #   layer 2  harness/run-layer-2.mjs runs upstream's test/validate and test/graph-utl specs with the
 #            unit under test forwarded to `rulebearing validate`; fails on a failure not listed in
 #            ../excluded.json
-#   layer 3  harness/run-layer-3.mjs runs upstream's test/report specs for the wave 1 and wave 2
-#            reporters with each reporter forwarded to `rulebearing report`; the specs byte-compare
-#            the output, and every wave 2 reporter is compared with upstream's over the mocks
+#   layer 3  harness/run-layer-3.mjs runs upstream's test/report specs for the wave 1, wave 2 and
+#            wave 3 reporters with each reporter forwarded to `rulebearing report`; the specs
+#            byte-compare the output, and every wave 2 and wave 3 reporter is compared with
+#            upstream's over the mocks (x-dot-webpage's comparison needs GraphViz' dot)
 #   layer 4  scripts/run-layer-4.sh validates the JSON output (--strict-schema) and every accepted
 #            configuration against the vendored upstream schemas
 #
@@ -23,9 +27,6 @@ root="$(cd "$here/../.." && pwd -P)"
 pin="$(tr -d '[:space:]' < "$here/PIN")"
 upstream="$here/upstream/dependency-cruiser"
 
-echo "gate 1, layer 1: recorded test/extract cases"
-(cd "$root" && cargo test --quiet -p rb-extract-ts --test extract_fixtures -- --nocapture)
-
 if [ ! -f "$upstream/package.json" ] || [ "$(node -p "require('$upstream/package.json').version")" != "$pin" ]; then
   echo "gate 1: cloning dependency-cruiser v$pin into upstream/"
   rm -rf "$upstream"
@@ -34,6 +35,10 @@ if [ ! -f "$upstream/package.json" ] || [ "$(node -p "require('$upstream/package
     https://github.com/sverweij/dependency-cruiser.git "$upstream"
   (cd "$upstream" && npm ci --no-audit --no-fund --ignore-scripts --silent)
 fi
+
+echo "gate 1, layer 1: recorded test/extract cases, the CoffeeScript ones through the sidecar"
+(cd "$root" && RB_LAYER1_SIDECAR="$upstream" cargo test --quiet -p rb-extract-ts --test extract_fixtures -- --nocapture)
+(cd "$root" && RB_LAYER1_SIDECAR="$upstream" cargo test --quiet -p rb-cli --test sidecar -- --nocapture)
 
 echo "gate 1, layer 2: upstream specs through the shim"
 if [ -z "${RULEBEARING_BIN:-}" ]; then

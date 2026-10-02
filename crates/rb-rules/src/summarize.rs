@@ -15,6 +15,7 @@
 
 use std::collections::HashMap;
 
+use rayon::prelude::*;
 use rb_config::Rule;
 use rb_config::model::DependencyRules;
 use serde_json::{Map, Value, json};
@@ -118,24 +119,30 @@ fn module_violations(rule: &Value, module: &Value, rules: Option<&DependencyRule
 
 /// `summarizeModules`: dependency and module violations, sorted, duplicates removed.
 pub fn summarize_modules(modules: &[Value], rules: Option<&DependencyRules>) -> Vec<Value> {
-    let mut violations: Vec<Value> = Vec::new();
-    for module in modules {
-        for dependency in js::array(module, "dependencies") {
-            if dependency.get("valid") == Some(&Value::Bool(false)) {
-                for rule in js::array(dependency, "rules") {
-                    violations.push(dependency_violation(rule, module, dependency, rules));
-                }
-            }
-        }
-    }
-    for module in modules
-        .iter()
+    // Each module's violations read that module alone; collected in parallel, in module order.
+    let mut violations: Vec<Value> = modules
+        .par_iter()
+        .flat_map_iter(|module| {
+            js::array(module, "dependencies")
+                .iter()
+                .filter(|d| d.get("valid") == Some(&Value::Bool(false)))
+                .flat_map(move |dependency| {
+                    js::array(dependency, "rules")
+                        .iter()
+                        .map(move |rule| dependency_violation(rule, module, dependency, rules))
+                })
+        })
+        .collect();
+    let module_level: Vec<Value> = modules
+        .par_iter()
         .filter(|m| m.get("valid") == Some(&Value::Bool(false)))
-    {
-        for rule in js::array(module, "rules") {
-            violations.extend(module_violations(rule, module, rules));
-        }
-    }
+        .flat_map_iter(|module| {
+            js::array(module, "rules")
+                .iter()
+                .flat_map(move |rule| module_violations(rule, module, rules))
+        })
+        .collect();
+    violations.extend(module_level);
     violations.sort_by(compare_violations);
     unique_violations(violations)
 }

@@ -20,10 +20,15 @@ export default defineConfig([
         'conformance/**/fixtures/**',
         // Vendored verbatim from dependency-cruiser 18.2.0 (MIT) as the bundled presets.
         'presets/dependency-cruiser/**',
+        // The x-dot-webpage script, vendored verbatim from dependency-cruiser 18.2.0 (MIT) and
+        // byte-compared with upstream's page (plan 0003, Step 6).
+        'crates/rb-report/src/svg_in_html/**',
         // The extractor's option fixtures are inputs, kept verbatim (plan 0001, sub-wave 1C).
         'crates/rb-extract-ts/tests/options/**',
         // The code-layer fixture tree, whose lines and columns the expectation records (plan 0002, 2C).
         'crates/rb-extract-ts/tests/fixtures/**',
+        // The framework-preset fixture repositories, inputs to `init --preset` (plan 0003, Step 11).
+        'crates/rb-cli/tests/fixtures/presets/**',
         // The ESLint plugin's fixture repository, linted by the plugin's own tests against the gate
         // (plan 0002, Step 13), not by the repository's configuration.
         'frontends/eslint-plugin-rulebearing/test/fixture/**',

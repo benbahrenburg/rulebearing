@@ -9,6 +9,12 @@
 //!
 //! `fmt` never reads the source tree: its only input is the result. As `depcruise-fmt`, it exits
 //! 0 unless `--exit-code` asks for the error count; an input that is not a result exits 2.
+//! `--exit-code-mode strict` shifts the count to `10 + n`
+//! ([Wave 3, Step 5](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+//! `-T plugin:<path>` renders in the sandbox, and with `--exit-code` the plugin's `exitCode` is the
+//! count ([`crate::plugin`]; [Wave 3, Step 7](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
+//! A saved result read in source mode never gates: with `--exit-code` it exits 2 unless
+//! `--allow-approximate-gate` ([`crate::exit::gate`]; [Wave 3, Step 15](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
 
 use rb_report::ReportOptions;
 use rb_rules::graph::filters::{Filter, Filters};
@@ -18,7 +24,10 @@ use serde_json::{Map, Value, json};
 use crate::cli::FmtArgs;
 use crate::cmd::cruise::color;
 use crate::context::Context;
-use crate::exit::RunExit;
+use crate::exit::{
+    APPROXIMATE_REASON, APPROXIMATE_STRICT_REASON, RunExit, gate, is_approximate,
+    strips_approximate,
+};
 use crate::{Outcome, ratchets, write_output};
 
 fn failed(code: RunExit, message: &str) -> Outcome {
@@ -80,17 +89,55 @@ fn known_violations(
     result.map_err(|e| failed(RunExit::Untrustworthy, &e.to_string()))
 }
 
+/// `--from`: where the result came from (`rulebearing`, `dependency-cruiser`), or, for
+/// `plantuml` only, what the diagram's nodes are.
+fn from_applies(args: &FmtArgs) -> Result<(), String> {
+    let Some(from) = args.from.as_deref() else {
+        return Ok(());
+    };
+    if matches!(from, "rulebearing" | "dependency-cruiser") {
+        return Ok(());
+    }
+    if rb_report::plantuml::From::parse(from).is_none() {
+        return Err(format!(
+            "--from `{from}`: use rulebearing or dependency-cruiser (where the result came from), or slices, types, namespaces or folders (the plantuml diagram's nodes)"
+        ));
+    }
+    if args.output_type != "plantuml" {
+        return Err(format!(
+            "--from {from} applies to --output-type plantuml, not {}",
+            args.output_type
+        ));
+    }
+    Ok(())
+}
+
+/// The reporters' options for a saved result: the terminal, the flags and the repository.
+fn report_options(ctx: &Context<'_>, args: &FmtArgs, format: &FormatOptions) -> ReportOptions {
+    ReportOptions {
+        color: color(args.color, ctx.color_terminal) && args.output_to == "-",
+        strict_schema: args.strict_schema,
+        max_findings: args.max_findings,
+        timestamp: ctx.timestamp.clone(),
+        path_prefix: if matches!(args.output_type.as_str(), "github-annotations" | "sarif") {
+            ctx.repository_prefix()
+        } else {
+            String::new()
+        },
+        baseline: rb_report::baseline::Lifecycle::default(),
+        collapse_pattern: format.collapse.clone(),
+        plantuml_from: args
+            .from
+            .clone()
+            .filter(|f| rb_report::plantuml::From::parse(f).is_some()),
+        graphviz: Some(crate::graphviz::system()),
+    }
+}
+
 /// Runs `fmt`.
 pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
-    if let Some(from) = args
-        .from
-        .as_deref()
-        .filter(|f| !matches!(*f, "rulebearing" | "dependency-cruiser"))
-    {
-        return failed(
-            RunExit::InvalidConfig,
-            &format!("--from `{from}`: use rulebearing or dependency-cruiser"),
-        );
+    if let Err(message) = from_applies(args) {
+        return failed(RunExit::InvalidConfig, &message);
     }
     let text = if args.input == "-" {
         ctx.read_stdin().map_err(|e| e.to_string())
@@ -119,23 +166,31 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         Ok(d) => d,
         Err(e) => return failed(RunExit::Untrustworthy, &e.to_string()),
     };
-    let value = serde_json::to_value(&document).unwrap_or(Value::Null);
-    let options = ReportOptions {
-        color: color(args.color, ctx.color_terminal) && args.output_to == "-",
-        strict_schema: args.strict_schema,
-        max_findings: args.max_findings,
-        timestamp: ctx.timestamp.clone(),
-        path_prefix: if matches!(args.output_type.as_str(), "github-annotations" | "sarif") {
-            ctx.repository_prefix()
-        } else {
-            String::new()
-        },
-        baseline: rb_report::baseline::Lifecycle::default(),
-        collapse_pattern: format.collapse.clone(),
+    let approximate = is_approximate(&document);
+    if strips_approximate(
+        &args.output_type,
+        args.strict_schema,
+        approximate,
+        args.allow_approximate_gate,
+    ) {
+        return failed(RunExit::Untrustworthy, APPROXIMATE_STRICT_REASON);
+    }
+    let mut value = serde_json::to_value(&document).unwrap_or(Value::Null);
+    let options = report_options(ctx, args, &format);
+    let plugin = rb_config::js::plugin::plugin_name(&args.output_type);
+    let rendered = match plugin {
+        // A plugin reporter, in the sandbox (crate::plugin); its failures are exit 3.
+        Some(name) => crate::plugin::render(&ctx.cwd, name, &mut value, args.strict_schema)
+            .map_err(|e| (RunExit::InvalidConfig, e.to_string())),
+        None => rb_report::render(&args.output_type, &value, &options).map_err(|e| match e {
+            // `x-dot-webpage` without a working `dot`: the report could not be made (ADR-0053).
+            rb_report::ReportError::Graphviz(_) => (RunExit::Untrustworthy, e.to_string()),
+            other => (RunExit::InvalidConfig, other.to_string()),
+        }),
     };
-    let rendered = match rb_report::render(&args.output_type, &value, &options) {
+    let rendered = match rendered {
         Ok(r) => r,
-        Err(e) => return failed(RunExit::InvalidConfig, &e.to_string()),
+        Err((code, message)) => return failed(code, &message),
     };
     let mut stdout = String::new();
     if let Err(message) = write_output(ctx, &args.output_to, &rendered.output, &mut stdout) {
@@ -152,18 +207,30 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
     let expired = document.summary.expired.as_ref().map_or(0, Vec::len) as u64;
     // As depcruise-fmt: without --exit-code, 0; with it, the code the cruise gave for this
     // reporter, from what the saved result carries (ADR-0030, ADR-0031).
+    let decides = args.exit_code && (rb_report::gates(&args.output_type) || plugin.is_some());
     let code = if !args.exit_code {
         RunExit::Violations(0)
     } else if no_budget || vacuous {
         RunExit::Untrustworthy
     } else if rb_report::gates(&args.output_type) {
         RunExit::Violations(document.summary.error + exceeded + expired)
+    } else if plugin.is_some() {
+        // A plugin decides its own count (ADR-0030).
+        RunExit::Violations(rendered.exit_code)
     } else {
         RunExit::Violations(0)
     };
-    Outcome {
-        stdout,
-        stderr: String::new(),
-        code: code.code(),
+    // A saved result read in source mode never gates (ADR-0011).
+    match gate(code, decides, approximate, args.allow_approximate_gate) {
+        Some(refused) => Outcome {
+            stdout,
+            stderr: format!("warning: {APPROXIMATE_REASON}\n"),
+            code: refused.code_in(args.exit_code_mode),
+        },
+        None => Outcome {
+            stdout,
+            stderr: String::new(),
+            code: code.code_in(args.exit_code_mode),
+        },
     }
 }

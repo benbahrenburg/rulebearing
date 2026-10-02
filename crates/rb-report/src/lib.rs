@@ -17,24 +17,33 @@
 //! extra field renders the way it would upstream. The reporters of [`OUTPUT_TYPES`] up to the
 //! current wave are delivered; asking for a later one is a named error. Wave 2 adds `baseline`,
 //! `sarif`, `junit` and `trx`, the graph reporters ([`dot`], [`mermaid`], [`d2`]), [`metrics`] and
-//! [`err_html`].
+//! [`err_html`]. Wave 3 adds [`markdown`], [`html`] (the matrix), [`anon`] and
+//! [`dot_webpage`] (`x-dot-webpage`, whose page `rulebearing wrap-html` also writes).
+//! Wave 3 also adds [`plantuml`], the diagram an `adhereTo` rule enforces.
 
 pub mod agent;
+pub mod anon;
 pub mod azure_devops;
 pub mod baseline;
 pub mod catalog;
 pub mod conformance;
 pub mod csv;
 pub mod d2;
+pub mod diff;
 pub mod dot;
+pub mod dot_webpage;
 pub mod err;
 pub mod err_html;
 pub mod github_annotations;
+pub mod html;
 pub(crate) mod js;
+pub(crate) mod js_sort;
 pub mod json;
 pub mod junit;
+pub mod markdown;
 pub mod mermaid;
 pub mod metrics;
+pub mod plantuml;
 pub mod sarif;
 pub mod style;
 pub mod teamcity;
@@ -98,6 +107,17 @@ pub fn gates(output_type: &str) -> bool {
     GATING.contains(&output_type)
 }
 
+/// The reporters whose output carries [`ReportOptions::timestamp`]; every other reporter's
+/// output is the same at any time, which the `--cache` layer that keeps rendered output relies
+/// on ([Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// A test renders every output type at two times and holds this list to what changes.
+pub const STAMPED: &[&str] = &["err-html", "junit", "markdown", "trx", "teamcity"];
+
+/// Whether `output_type`'s output carries the run's timestamp.
+pub fn stamps(output_type: &str) -> bool {
+    STAMPED.contains(&output_type)
+}
+
 /// Whether `name` is a known output type. `plugin:<path>` is always accepted syntactically and
 /// resolved at run time ([coverage § Output types](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types)).
 pub fn is_output_type(name: &str) -> bool {
@@ -119,9 +139,12 @@ pub enum ReportError {
     /// Not an output type.
     #[error("`{0}` is not a valid output type")]
     Unknown(String),
+    /// `plantuml` cannot draw the result with the options given.
+    #[error(transparent)]
+    PlantUml(#[from] plantuml::PlantUmlError),
     /// An output type a later wave delivers.
     #[error(
-        "the `{name}` reporter arrives in wave {wave}; use err, err-long, err-html, json, text, csv, teamcity, azure-devops, github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot, mermaid, d2, metrics or null"
+        "the `{name}` reporter arrives in wave {wave}; use err, err-long, err-html, json, text, csv, teamcity, azure-devops, github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, plantuml or null"
     )]
     NotYet {
         /// The type.
@@ -129,6 +152,10 @@ pub enum ReportError {
         /// The wave.
         wave: u8,
     },
+    /// `x-dot-webpage` could not draw the graph: GraphViz' `dot` is missing, is not GraphViz', or
+    /// failed. The message is upstream's.
+    #[error("{0}")]
+    Graphviz(String),
 }
 
 /// What a report needs besides the result.
@@ -151,6 +178,11 @@ pub struct ReportOptions {
     /// `collapse` given to `fmt` (or `cruise`): passed to the reporter as `collapsePattern` over its
     /// own section, as dependency-cruiser's `reportWrap` does.
     pub collapse_pattern: Option<String>,
+    /// `--from` for `plantuml`: what the diagram's nodes are, over `reporterOptions.plantuml.from`.
+    pub plantuml_from: Option<String>,
+    /// `x-dot-webpage`: what runs GraphViz' `dot`. Without one, the reporter reports `dot` as
+    /// unavailable, as upstream does on a system without it.
+    pub graphviz: Option<dot_webpage::GraphvizRunner>,
 }
 
 /// Renders `result` as `output_type`.
@@ -238,12 +270,21 @@ pub fn render_with(
         }
         "mermaid" => mermaid::render(result, reporter_options("mermaid").as_ref()),
         "d2" => d2::render(result),
+        "plantuml" => render_plantuml(result, options, reporter_options("plantuml"))?,
         "metrics" => metrics::render(result, reporter_options("metrics").as_ref(), options.color),
         "err-html" => err_html::render(
             result,
             reporter_options("err-html").as_ref(),
             &options.timestamp,
         ),
+        "markdown" => markdown::render(
+            result,
+            reporter_options("markdown").as_ref(),
+            &options.timestamp,
+        ),
+        "html" => html::render(result),
+        "anon" => anon::render(result, reporter_options("anon").as_ref()),
+        "x-dot-webpage" => web_page(result, reporter_options("dot").as_ref(), options)?,
         "null" => Rendered {
             output: String::new(),
             exit_code: result
@@ -262,6 +303,35 @@ pub fn render_with(
             });
         }
     })
+}
+
+/// `x-dot-webpage` with the runner in `options`; without one, `dot` is unavailable.
+fn web_page(
+    result: &Value,
+    section: Option<&Value>,
+    options: &ReportOptions,
+) -> Result<Rendered, ReportError> {
+    match &options.graphviz {
+        Some(runner) => dot_webpage::render(result, section, runner.0.as_ref()),
+        None => Err(ReportError::Graphviz(dot_webpage::NOT_AVAILABLE.into())),
+    }
+}
+
+/// `plantuml` with its section: `collapse` has already shaped the modules and is not one of the
+/// diagram's options, so the `collapsePattern` the wrapper adds is taken out again.
+fn render_plantuml(
+    result: &Value,
+    options: &ReportOptions,
+    mut section: Option<Value>,
+) -> Result<Rendered, ReportError> {
+    if let (Some(_), Some(Value::Object(map))) = (&options.collapse_pattern, &mut section) {
+        map.remove("collapsePattern");
+    }
+    let diagram = plantuml::PlantUmlOptions::from_reporter_options(
+        section.as_ref(),
+        options.plantuml_from.as_deref(),
+    )?;
+    Ok(plantuml::render(result, &diagram)?)
 }
 
 /// A string field as JavaScript's template literal would print it (`undefined` when absent).
@@ -318,6 +388,51 @@ pub(crate) fn find_rule<'a>(rule_set: Option<&'a Value>, name: &str) -> Option<&
         .find(|r| r.get("name").and_then(Value::as_str) == Some(name))
 }
 
+/// The report's edges by their module, built once so a reporter that looks up an edge per
+/// violation does not scan every module each time: the first module with a source, and within it
+/// the first dependency on a target, as [`edge_position`] finds them.
+pub(crate) struct Edges<'r> {
+    by_source: std::collections::HashMap<&'r str, &'r [Value]>,
+}
+
+impl<'r> Edges<'r> {
+    /// Indexes `result`'s modules.
+    pub(crate) fn of(result: &'r Value) -> Self {
+        let mut by_source = std::collections::HashMap::new();
+        for module in result
+            .get("modules")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            if let (Some(source), Some(dependencies)) = (
+                module.get("source").and_then(Value::as_str),
+                module.get("dependencies").and_then(Value::as_array),
+            ) {
+                by_source.entry(source).or_insert(dependencies.as_slice());
+            }
+        }
+        Self { by_source }
+    }
+
+    /// The first dependency of `from` on `to`.
+    pub(crate) fn get(&self, from: &str, to: &str) -> Option<&'r Value> {
+        self.by_source
+            .get(from)?
+            .iter()
+            .find(|d| d.get("resolved").and_then(Value::as_str) == Some(to))
+    }
+
+    /// The edge's line and column, when the extractor recorded them.
+    pub(crate) fn position(&self, from: &str, to: &str) -> Option<(u64, u64)> {
+        let dependency = self.get(from, to)?;
+        Some((
+            dependency.get("line")?.as_u64()?,
+            dependency.get("column")?.as_u64()?,
+        ))
+    }
+}
+
 /// The line and column of the edge `from -> to`, when the extractor recorded them.
 pub(crate) fn edge_position(result: &Value, from: &str, to: &str) -> Option<(u64, u64)> {
     let dependency = result
@@ -364,6 +479,62 @@ mod tests {
     use super::*;
     use serde_json::json;
 
+    /// A GraphViz that is there and draws every program as `<svg/>`.
+    struct Svg;
+
+    impl dot_webpage::Graphviz for Svg {
+        fn run(&self, args: &[&str], _input: Option<&str>) -> dot_webpage::Spawned {
+            dot_webpage::Spawned {
+                status: Some(0),
+                stdout: "<svg/>".into(),
+                stderr: if args == ["-V"] {
+                    "dot - graphviz version 2.43.0".into()
+                } else {
+                    String::new()
+                },
+                error: None,
+            }
+        }
+    }
+
+    #[test]
+    fn only_the_stamped_reporters_change_with_the_time() {
+        let result = json!({
+            "modules": [
+                { "source": "a.ts", "valid": false, "dependencies": [
+                    { "module": "./b", "resolved": "b.ts", "coreModule": false, "followable": true,
+                      "couldNotResolve": false, "dependencyTypes": ["local"], "dynamic": false,
+                      "exoticallyRequired": false, "moduleSystem": "es6", "circular": false,
+                      "valid": false, "rules": [{ "name": "r", "severity": "error" }] } ] },
+                { "source": "b.ts", "valid": true, "dependencies": [] }
+            ],
+            "summary": {
+                "violations": [{ "from": "a.ts", "to": "b.ts", "rule": { "name": "r", "severity": "error" } }],
+                "error": 1, "warn": 0, "info": 0, "ignore": 0, "totalCruised": 2,
+                "totalDependenciesCruised": 1,
+                "optionsUsed": {},
+                "ruleSetUsed": { "forbidden": [{ "name": "r", "severity": "error", "from": {}, "to": {} }] }
+            }
+        });
+        let at = |timestamp: &str| ReportOptions {
+            timestamp: timestamp.to_owned(),
+            ..ReportOptions::default()
+        };
+        let mut rendered = 0;
+        for (name, _) in OUTPUT_TYPES {
+            let (Ok(one), Ok(two)) = (
+                render(name, &result, &at("2026-01-01T00:00:00.000")),
+                render(name, &result, &at("2027-02-02T11:11:11.111")),
+            ) else {
+                continue;
+            };
+            rendered += 1;
+            assert_eq!(one.output != two.output, stamps(name), "{name}");
+        }
+        assert!(rendered > 20, "{rendered}");
+        assert!(stamps("teamcity") && !stamps("err"));
+    }
+
     #[test]
     fn knows_every_dependency_cruiser_output_type() {
         for name in [
@@ -387,6 +558,7 @@ mod tests {
             "html",
             "markdown",
             "anon",
+            "plantuml",
             "baseline",
             "metrics",
             "null",
@@ -443,13 +615,36 @@ mod tests {
             Ok(1),
             "no folders"
         );
+        // The wave 3B reporters render and exit 0, as each of upstream's does.
+        for t in ["markdown", "html", "anon"] {
+            assert_eq!(render(t, &result, &o).map(|r| r.exit_code), Ok(0), "{t}");
+            assert!(!gates(t), "{t}");
+        }
+        let markdown = render("markdown", &result, &o).map(|r| r.output);
+        assert!(markdown.is_ok_and(|m| m.starts_with("## Forbidden dependency check")));
+        // `x-dot-webpage` without a way to run `dot` says what upstream says without `dot`.
         assert_eq!(
             render("x-dot-webpage", &result, &o),
-            Err(ReportError::NotYet {
-                name: "x-dot-webpage".into(),
-                wave: 3
-            })
+            Err(ReportError::Graphviz(dot_webpage::NOT_AVAILABLE.into()))
         );
+        let svg = ReportOptions {
+            graphviz: Some(dot_webpage::GraphvizRunner(std::sync::Arc::new(Svg))),
+            ..ReportOptions::default()
+        };
+        let page = render("x-dot-webpage", &result, &svg);
+        assert_eq!(page.as_ref().map(|r| r.exit_code), Ok(0), "{page:?}");
+        assert!(!gates("x-dot-webpage"));
+        assert_eq!(
+            page.map(|r| r.output),
+            Ok(dot_webpage::wrap_in_html("<svg/>"))
+        );
+        // Every output type up to wave 3 is delivered: none is still a named later-wave error.
+        for (t, _) in OUTPUT_TYPES {
+            assert!(
+                !matches!(render(t, &result, &o), Err(ReportError::NotYet { .. })),
+                "{t}"
+            );
+        }
         // `collapse` reaches the reporter as `collapsePattern` over its own section.
         let modules =
             json!({ "modules": [{ "source": "src/a/b.js", "dependencies": [] }], "summary": {} });
@@ -476,6 +671,35 @@ mod tests {
     }
 
     #[test]
+    fn plantuml_draws_and_names_what_it_cannot_draw() {
+        let result = json!({ "modules": [], "summary": { "violations": [], "error": 0, "warn": 0, "info": 0, "totalCruised": 0, "totalDependenciesCruised": 0, "optionsUsed": {} } });
+        let o = ReportOptions::default();
+        assert_eq!(
+            render("plantuml", &result, &o).map(|r| r.output),
+            Ok("@startuml\n\nhide stereotype\n\n@enduml\n".into())
+        );
+        let from_types = ReportOptions {
+            plantuml_from: Some("types".into()),
+            ..ReportOptions::default()
+        };
+        assert!(
+            render("plantuml", &result, &from_types)
+                .is_ok_and(|r| r.output.starts_with("@startuml\n\n!include "))
+        );
+        let refused = render_with("plantuml", &result, &o, Some(&json!({ "Typo": true })));
+        assert!(
+            matches!(&refused, Err(ReportError::PlantUml(e)) if e.to_string().contains("`Typo`")),
+            "{refused:?}"
+        );
+        // `collapse` is not one of the diagram's options and does not reach it.
+        let collapsing = ReportOptions {
+            collapse_pattern: Some("^src/[^/]+".into()),
+            ..ReportOptions::default()
+        };
+        assert!(render("plantuml", &result, &collapsing).is_ok());
+    }
+
+    #[test]
     fn helpers() {
         assert_eq!(js_number(Some(&json!(3.0))), "3");
         assert_eq!(js_number(Some(&json!(0.5))), "0.5");
@@ -488,5 +712,32 @@ mod tests {
         assert_eq!(decision("see plan:wave-1."), Some("plan:wave-1".into()));
         assert_eq!(decision("nope adr:"), None);
         assert_eq!(edge_position(&json!({}), "a", "b"), None);
+    }
+
+    #[test]
+    fn the_edge_index_finds_what_a_scan_finds() {
+        let result = json!({ "modules": [
+            { "source": "a", "dependencies": [
+                { "resolved": "b", "line": 3, "column": 1 },
+                { "resolved": "b", "line": 9, "column": 9 },
+                { "resolved": "c" }
+            ] },
+            { "source": "a", "dependencies": [{ "resolved": "d", "line": 1, "column": 1 }] },
+            { "source": "e" }
+        ] });
+        let edges = Edges::of(&result);
+        for (from, to) in [("a", "b"), ("a", "c"), ("a", "d"), ("e", "a"), ("x", "y")] {
+            assert_eq!(
+                edges.position(from, to),
+                edge_position(&result, from, to),
+                "{from} -> {to}"
+            );
+        }
+        assert_eq!(edges.position("a", "b"), Some((3, 1)));
+        assert!(edges.get("a", "c").is_some());
+        assert!(
+            edges.get("a", "d").is_none(),
+            "only the first module named a is read"
+        );
     }
 }

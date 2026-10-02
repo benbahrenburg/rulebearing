@@ -9,43 +9,109 @@
 //! built at run time by substituting captures can still fail, and such a pattern matches
 //! nothing, which is what an invalid `RegExp` would do after dependency-cruiser caught the error.
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock, PoisonError};
 
 use rb_config::pattern::{self, Matcher};
 
-fn cache() -> &'static Mutex<HashMap<String, Option<Arc<Matcher>>>> {
-    static CACHE: OnceLock<Mutex<HashMap<String, Option<Arc<Matcher>>>>> = OnceLock::new();
+type Cache = HashMap<String, Option<Arc<Matcher>>>;
+
+/// Every pattern the run has compiled, shared by every thread, so each compiles once.
+fn shared() -> &'static Mutex<Cache> {
+    static CACHE: OnceLock<Mutex<Cache>> = OnceLock::new();
     CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+thread_local! {
+    /// The patterns this thread has used, in front of [`shared`], so the engine's parallel
+    /// stages neither wait for the lock nor share a reference count.
+    static LOCAL: RefCell<Cache> = RefCell::new(HashMap::new());
+}
+
+/// The compiled pattern from the shared cache, compiled there on first use.
+fn compiled(text: &str) -> Option<Arc<Matcher>> {
+    let mut cache = shared().lock().unwrap_or_else(PoisonError::into_inner);
+    if let Some(found) = cache.get(text) {
+        return found.clone();
+    }
+    let found = pattern::matcher(text).ok().map(Arc::new);
+    cache.insert(text.to_owned(), found.clone());
+    found
+}
+
+/// How many patterns a thread's cache holds before it starts over.
+const LOCAL_LIMIT: usize = 4096;
+
+/// Runs `f` with the compiled pattern, or `None` when it does not compile, looked up in this
+/// thread's cache without allocating once the thread has seen it.
+fn with<R>(text: &str, f: impl FnOnce(Option<&Arc<Matcher>>) -> R) -> R {
+    LOCAL.with(|local| {
+        if let Ok(cache) = local.try_borrow()
+            && let Some(found) = cache.get(text)
+        {
+            return f(found.as_ref());
+        }
+        let found = compiled(text);
+        let result = f(found.as_ref());
+        if let Ok(mut cache) = local.try_borrow_mut() {
+            // A pattern with a capture substituted is a new text for each captured value, so a
+            // process that evaluates for hours (`guard --watch`) starts the thread's cache over
+            // rather than let it grow without end; the shared cache still holds the matchers.
+            if cache.len() >= LOCAL_LIMIT {
+                cache.clear();
+            }
+            cache.insert(text.to_owned(), found);
+        }
+        result
+    })
 }
 
 /// The compiled pattern, or `None` when it does not compile.
 pub fn get(text: &str) -> Option<Arc<Matcher>> {
-    let mut cache = cache().lock().unwrap_or_else(PoisonError::into_inner);
-    cache
-        .entry(text.to_owned())
-        .or_insert_with(|| pattern::matcher(text).ok().map(Arc::new))
-        .clone()
+    with(text, |found| found.map(Arc::clone))
 }
 
 /// `getCachedRegExp(pattern).test(text)`.
 pub fn test(pattern_text: &str, text: &str) -> bool {
-    get(pattern_text).is_some_and(|m| m.is_match(text))
+    with(pattern_text, |m| m.is_some_and(|m| m.is_match(text)))
 }
 
 /// `extractGroups({ path: pattern }, text)`: the match and its participating groups, or nothing.
 pub fn groups(pattern_text: &str, text: &str) -> Vec<String> {
-    get(pattern_text).map_or_else(Vec::new, |m| m.groups(text))
+    with(pattern_text, |m| {
+        m.map_or_else(Vec::new, |m| m.groups(text))
+    })
 }
 
 /// `getCachedRegExp(pattern).exec(text)?.[0]`.
 pub fn first_match(pattern_text: &str, text: &str) -> Option<String> {
-    get(pattern_text).and_then(|m| m.find(text).map(str::to_owned))
+    with(pattern_text, |m| {
+        m.and_then(|m| m.find(text).map(str::to_owned))
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_thread_s_cache_starts_over_at_its_limit() {
+        // On a thread of its own, so no other test's patterns are in the cache.
+        let held = std::thread::spawn(|| {
+            for i in 0..LOCAL_LIMIT {
+                assert!(test(&format!("^limit-{i}$"), &format!("limit-{i}")));
+            }
+            let full = LOCAL.with(|local| local.borrow().len());
+            assert!(test("^one-more$", "one-more"));
+            let after = LOCAL.with(|local| local.borrow().len());
+            // A pattern seen before the cache started over still answers.
+            assert!(test("^limit-0$", "limit-0"));
+            (full, after)
+        })
+        .join();
+        assert_eq!(held.ok(), Some((LOCAL_LIMIT, 1)));
+    }
 
     #[test]
     fn patterns_are_compiled_once_and_tested() {
@@ -66,5 +132,36 @@ mod tests {
             Some("src/app".to_owned())
         );
         assert_eq!(first_match("^z", "a"), None);
+    }
+
+    #[test]
+    fn every_thread_shares_one_compiled_pattern() {
+        let here = get("^shared/");
+        let there: Vec<_> = std::thread::scope(|scope| {
+            let threads: Vec<_> = (0..4)
+                .map(|_| {
+                    scope.spawn(|| {
+                        let tested = (test("^shared/", "shared/a"), test("^shared/", "a"));
+                        (tested, get("^shared/"))
+                    })
+                })
+                .collect();
+            threads.into_iter().filter_map(|t| t.join().ok()).collect()
+        });
+        assert_eq!(there.len(), 4);
+        for (tested, pointer) in there {
+            assert_eq!(tested, (true, false));
+            let same = here
+                .as_ref()
+                .zip(pointer.as_ref())
+                .is_some_and(|(a, b)| Arc::ptr_eq(a, b));
+            assert!(same, "compiled once, by whichever thread came first");
+        }
+        assert!(
+            get("(").is_none(),
+            "an uncompilable pattern is cached as none"
+        );
+        assert!(groups("(", "x").is_empty());
+        assert_eq!(first_match("(", "x"), None);
     }
 }

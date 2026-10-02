@@ -1,0 +1,32 @@
+@startuml
+
+' A partial picture, not a diagram for adhereTo: FocusOn leave(s) arrows out.
+
+[TestAssembly] as C1
+[TestAssembly.DependencyTargets] as C2
+[TestAssembly.Diagram.ConfusingNamespaceNames.FooNamespace.BarNamespace] as C3
+[TestAssembly.Diagram.NoDependencies.Independent] as C4
+[TestAssembly.Diagram.NoDependencies.SomeNamespace] as C5
+[TestAssembly.Diagram.SimpleDependency.Origin] as C6
+[TestAssembly.Diagram.SimpleDependency.Target] as C7
+[TestAssembly.Domain.Entities] as C8
+[TestAssembly.Domain.Marker] as C9
+[TestAssembly.Domain.Repository] as C10
+[TestAssembly.Domain.Services] as C11
+[TestAssembly.PlantUml.Addresses] as C12
+[TestAssembly.PlantUml.Catalog] as C13
+[TestAssembly.PlantUml.Customers] as C14
+[TestAssembly.PlantUml.Importer] as C15
+[TestAssembly.PlantUml.Orders] as C16
+[TestAssembly.PlantUml.Products] as C17
+[TestAssembly.PlantUml.Xml.Processor] as C18
+[TestAssembly.PlantUml.Xml.Types] as C19
+[TestAssembly.PlantUml.Xml.Utils] as C20
+[TestAssembly.Slices.Slice1] as C21
+[TestAssembly.Slices.Slice1.Service] as C22
+[TestAssembly.Slices.Slice2] as C23
+[TestAssembly.Slices.Slice2.Service] as C24
+[TestAssembly.Slices.Slice3] as C25
+[TestAssembly.Slices.Slice3.Group1] as C26
+[TestAssembly.Slices.Slice3.Group2] as C27
+@enduml

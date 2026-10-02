@@ -1,0 +1,207 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+HIDE_STEREOTYPE()
+
+class "ArchUnitNETTests.ArchitectureTests.ArchUnitArchitectureTests" {
+}
+class "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelper" {
+}
+class "ArchUnitNETTests.AssemblyTestHelper.AssemblyTestHelperExtensions" {
+}
+class "ArchUnitNETTests.AssemblyTestHelper.AttributeAssemblyTestHelpers" {
+}
+class "ArchUnitNETTests.AssemblyTestHelper.ClassAssemblyTestHelper" {
+}
+class "ArchUnitNETTests.AssemblyTestHelper.MethodDependencyAssemblyTestHelper" {
+}
+class "ArchUnitNETTests.AssemblyTestHelper.MethodMemberAssemblyTestHelper" {
+}
+class "ArchUnitNETTests.AssemblyTestHelper.PropertyMemberAssemblyTestHelper" {
+}
+class "ArchUnitNETTests.AssemblyTestHelper.TypeAssemblyTestHelper" {
+}
+class "ArchUnitNETTests.AssemblyTestHelper.TypeDependencyAssemblyTestHelper" {
+}
+class "ArchUnitNETTests.AssemblyTestHelper.VisibilityAssemblyTestHelper" {
+}
+class "ArchUnitNETTests.Dependencies.AccessFieldDependenciesTests" {
+}
+class "ArchUnitNETTests.Dependencies.AccessedClass" {
+}
+class "ArchUnitNETTests.Dependencies.ArgumentClass" {
+}
+class "ArchUnitNETTests.Dependencies.ArrayTests" {
+}
+class "ArchUnitNETTests.Dependencies.CastClassA" {
+}
+class "ArchUnitNETTests.Dependencies.CastClassB" {
+}
+class "ArchUnitNETTests.Dependencies.CastDependenciesTest" {
+}
+class "ArchUnitNETTests.Dependencies.ClassAccessingFields" {
+}
+class "ArchUnitNETTests.Dependencies.ClassAccessingStaticMethod" {
+}
+class "ArchUnitNETTests.Dependencies.ClassAccessingStaticMethodInGenerator" {
+}
+class "ArchUnitNETTests.Dependencies.ClassAccessingStaticMethodWithoutGenerator" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithArrayMethod" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithBoolArrayFields" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithCastDependency" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithException" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithGenerators" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithGenericMethodCall" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithIndexingDependency" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithLambdaDependency" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithLocalString" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithNonStaticFields" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithPropertyDependency" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithPropertyString" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithStaticFields" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithStaticMethods" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithStringField" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithTypeDependency" {
+}
+class "ArchUnitNETTests.Dependencies.ClassWithTypeOfDependency" {
+}
+class "ArchUnitNETTests.Dependencies.DependenciesToStaticMethodsTests" {
+}
+class "ArchUnitNETTests.Dependencies.DependingClass" {
+}
+class "ArchUnitNETTests.Dependencies.DependingTypeOfClass" {
+}
+class "ArchUnitNETTests.Dependencies.ExceptionDependenciesTests" {
+}
+class "ArchUnitNETTests.Dependencies.ExternalDependenciesTests" {
+}
+class "ArchUnitNETTests.Dependencies.FieldDependency" {
+}
+class "ArchUnitNETTests.Dependencies.GeneratorDependenciesTests" {
+}
+class "ArchUnitNETTests.Dependencies.GenericArgumentClass" {
+}
+class "ArchUnitNETTests.Dependencies.GenericMemberDependenciesTests" {
+}
+class "ArchUnitNETTests.Dependencies.KeepDependenciesInCompilerGeneratedTypesTests" {
+}
+class "ArchUnitNETTests.Dependencies.MethodArgumentDependency" {
+}
+class "ArchUnitNETTests.Dependencies.MethodBodyDependency" {
+}
+class "ArchUnitNETTests.Dependencies.OtherGenericArgumentClass" {
+}
+class "ArchUnitNETTests.Dependencies.PlantUmlDependenciesTest" {
+}
+class "ArchUnitNETTests.Dependencies.PropertyDependOnClass" {
+}
+class "ArchUnitNETTests.Dependencies.PropertyDependency" {
+}
+class "ArchUnitNETTests.Dependencies.PropertyDependencyTests" {
+}
+class "ArchUnitNETTests.Dependencies.PropertyTestDataClass" {
+}
+class "ArchUnitNETTests.Dependencies.ReturnedClass" {
+}
+class "ArchUnitNETTests.Dependencies.StringDependenciesTests" {
+}
+class "ArchUnitNETTests.Dependencies.ThrowingClass" {
+}
+class "ArchUnitNETTests.Dependencies.TypeCheckDependenciesTests" {
+}
+class "ArchUnitNETTests.Dependencies.TypeOfDependenciesTests" {
+}
+class "ArchUnitNETTests.Domain.ArchitectureCacheKeyTests" {
+}
+class "ArchUnitNETTests.Domain.ArchitectureCacheTests" {
+}
+class "ArchUnitNETTests.Domain.AttributeArgumentTests" {
+}
+class "ArchUnitNETTests.Domain.AttributeTests" {
+}
+class "ArchUnitNETTests.Domain.AttributeTests+AttributeEquivalencyTestData" {
+}
+class "ArchUnitNETTests.Domain.AttributeTests+AttributeOriginClassPair" {
+}
+class "ArchUnitNETTests.Domain.AttributeWithObjectParameter" {
+}
+class "ArchUnitNETTests.Domain.AttributeWithStringParameters" {
+}
+class "ArchUnitNETTests.Domain.ChildTestAttribute" {
+}
+class "ArchUnitNETTests.Domain.ClassTests" {
+}
+class "ArchUnitNETTests.Domain.ClassTests+ClassEquivalencyTestData" {
+}
+class "ArchUnitNETTests.Domain.ClassWithArrayParameterAttribute" {
+}
+class "ArchUnitNETTests.Domain.ClassWithGenericParameters`1" {
+}
+class "ArchUnitNETTests.Domain.ClassWithMixedParameterAttribute" {
+}
+class "ArchUnitNETTests.Domain.ClassWithMultipleAttributesWithParameters" {
+}
+class "ArchUnitNETTests.Domain.ClassWithTypeParameterAttribute" {
+}
+class "ArchUnitNETTests.Domain.CompilerGeneratedTypesTests" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.AttributeAssertionRepository" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.AttributeDependencyTests" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.AttributeTestsBuild" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.AttributeTestsBuild+MemberAttributesAreFoundData" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.AttributeTestsBuild+TypeAttributesAreFoundData" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.AttributeWithAttributes" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.ChildOfAbstractAttribute" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.ClassWithExampleAttribute" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.ClassWithInnerAttributeDependency" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.ConstructorAttribute" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.CountryAttributeWithParameters" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.DelegateWithAttribute" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.EnumWithAttribute" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.ExampleAbstractAttribute" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.ExampleAttribute" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.ExampleClassAttribute" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.ExampleDelegateAttribute" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.ExampleEnumAttribute" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.ExampleFieldAttribute" {
+}
+class "ArchUnitNETTests.Domain.Dependencies.Attributes.ExampleInterfaceAttribute" {
+}
+interface "ArchUnitNETTests.Dependencies.ICastInterfaceA" {
+}
+@enduml

@@ -4,10 +4,13 @@
 //!   ("reads the repo before it asks anything ... every rule already passing or baselined")
 //! - Plans: [Wave 1, Step 16](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-16-init-1f),
 //!   [Wave 2, Step 9](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
-//!   ("`init` (wave 1) selects presets from the languages it detects")
+//!   ("`init` (wave 1) selects presets from the languages it detects"),
+//!   [Wave 3, Step 11](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
+//!   (`init --preset <framework>`)
 //! - Source: [design § What stays honest across the boundary](../../../../docs/artifacts/design.md#what-stays-honest-across-the-boundary)
 //!   (per-language presets, composed by `rulebearing:recommended`)
-//! - Requirements: [FR-CLI-03](../../../../docs/prd.md#fr-cli-03), [FR-CFG-06](../../../../docs/prd.md#fr-cfg-06)
+//! - Requirements: [FR-CLI-03](../../../../docs/prd.md#fr-cli-03), [FR-CFG-06](../../../../docs/prd.md#fr-cfg-06),
+//!   [FR-CLI-08](../../../../docs/prd.md#fr-cli-08)
 //!
 //! Discovery reads the tree: TypeScript (`tsconfig.json`) or JavaScript (`package.json`), .NET (a
 //! solution, a project file or `Directory.Build.props` at the root), Python (`pyproject.toml`,
@@ -16,6 +19,9 @@
 //! languages found (or named with `--preset`) choose the presets: one language extends its own
 //! preset and `rulebearing:recommended`, its own first so that its exclusions win and no other
 //! language's are carried; several extend `rulebearing:recommended`, which composes all three.
+//! A framework preset (`nextjs`, `clean-architecture`, `django`, `fastapi`, `vertical-slices`) is
+//! an opinion, never chosen from what is found: `--preset` names it, and it is extended after the
+//! language presets.
 //! A .NET or Python project in a folder below the root (`dotnet/`, `python/`) is found too, and
 //! the proposal's `languages` block names it: the solution listing the most projects, or every
 //! project file when there is no solution, and the import roots of each Python project or uv
@@ -24,9 +30,10 @@
 //! then runs over it, and the rules its graph calls for are added: the layers the .NET namespaces
 //! name and the order of the top-level Python packages ([`crate::cmd::init_graph`], plan
 //! [Wave 2, Step 15](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-upstream-offers-second-maintainer-2i)).
-//! A rule that would be vacuous is dropped, and every current finding is written into the
-//! baseline ([`crate::cmd::adopt::baseline`]), so the file is written only when a second cruise
-//! with it exits 0.
+//! A rule that would be vacuous is dropped (a framework preset's, which is extended rather than
+//! written, is left out with a `severity: ignore` entry naming it), and every current finding is
+//! written into the baseline ([`crate::cmd::adopt::baseline`]), so the file is written only when
+//! a second cruise with it exits 0.
 
 use std::fmt::Write as _;
 use std::path::Path;
@@ -44,7 +51,9 @@ use crate::pipeline::{self, RunOptions};
 use crate::progress::Progress;
 use crate::{Outcome, RunExit};
 
-/// A language whose defaults are a bundled preset (`rulebearing:<name>`).
+/// A bundled preset `--preset` names (`rulebearing:<name>`): a language, whose defaults replace
+/// the languages found, or a framework, an opinion that is off unless named
+/// ([plan 0003, Step 11](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Preset {
     /// TypeScript and JavaScript: `rulebearing:typescript`.
@@ -53,6 +62,16 @@ pub enum Preset {
     Dotnet,
     /// Python: `rulebearing:python`.
     Python,
+    /// Next.js route and server boundaries: `rulebearing:nextjs`.
+    Nextjs,
+    /// Domain, Application, Infrastructure and Presentation: `rulebearing:clean-architecture`.
+    CleanArchitecture,
+    /// Django's models, views, URLs and migrations: `rulebearing:django`.
+    Django,
+    /// FastAPI's routers, services and repositories: `rulebearing:fastapi`.
+    Fastapi,
+    /// Features independent of each other: `rulebearing:vertical-slices`.
+    VerticalSlices,
 }
 
 impl Preset {
@@ -62,35 +81,95 @@ impl Preset {
             Self::Typescript => "typescript",
             Self::Dotnet => "dotnet",
             Self::Python => "python",
+            Self::Nextjs => "nextjs",
+            Self::CleanArchitecture => "clean-architecture",
+            Self::Django => "django",
+            Self::Fastapi => "fastapi",
+            Self::VerticalSlices => "vertical-slices",
         }
     }
 
+    /// Whether this is a framework preset rather than a language's defaults.
+    pub fn is_framework(self) -> bool {
+        extends::is_framework_preset(self.name())
+    }
+
     /// The language as the proposal's header names it.
-    const fn label(self) -> &'static str {
+    fn label(self) -> String {
         match self {
-            Self::Typescript => "TypeScript",
-            Self::Dotnet => ".NET",
-            Self::Python => "Python",
+            Self::Typescript => "TypeScript".to_owned(),
+            Self::Dotnet => ".NET".to_owned(),
+            Self::Python => "Python".to_owned(),
+            framework => format!("rulebearing:{}", framework.name()),
         }
     }
 }
 
-/// The `extends` a proposal for `languages` writes: one language's preset before
-/// `rulebearing:recommended`, so its exclusions win; otherwise `rulebearing:recommended`, the
-/// composition of all three.
-pub fn extends_for(languages: &[Preset]) -> String {
-    match languages {
-        [one] => format!("[rulebearing:{}, rulebearing:recommended]", one.name()),
-        _ => "rulebearing:recommended".to_owned(),
+/// The `extends` a proposal for `languages` and `frameworks` writes: one language's preset before
+/// `rulebearing:recommended`, so its exclusions win, otherwise `rulebearing:recommended`, the
+/// composition of all three; then each framework preset named, whose rules are its own.
+pub fn extends_for(languages: &[Preset], frameworks: &[Preset]) -> String {
+    let mut entries: Vec<String> = match languages {
+        [one] => vec![
+            format!("rulebearing:{}", one.name()),
+            "rulebearing:recommended".to_owned(),
+        ],
+        _ => vec!["rulebearing:recommended".to_owned()],
+    };
+    entries.extend(
+        frameworks
+            .iter()
+            .map(|f| format!("rulebearing:{}", f.name())),
+    );
+    match entries.as_slice() {
+        [one] => one.clone(),
+        _ => format!("[{}]", entries.join(", ")),
+    }
+}
+
+/// The names of the dependency rules a bundled preset declares itself (not those it extends).
+pub fn preset_rule_names(preset: Preset) -> Vec<String> {
+    let Ok(Target::NativePreset(_, text)) =
+        extends::resolve(&format!("rulebearing:{}", preset.name()), Path::new("."))
+    else {
+        return Vec::new();
+    };
+    let Ok(value) = serde_yaml::from_str::<Value>(text) else {
+        return Vec::new();
+    };
+    ["forbidden", "allowed", "required"]
+        .iter()
+        .filter_map(|family| value.pointer(&format!("/rules/dependencies/{family}")))
+        .filter_map(Value::as_array)
+        .flatten()
+        .filter_map(|rule| rule.get("name").and_then(Value::as_str))
+        .map(str::to_owned)
+        .collect()
+}
+
+/// The entry that leaves a framework preset's rule out of this repository's configuration
+/// (`severity: ignore`, which drops it), because its `from` side matches nothing here yet.
+fn left_out(name: &str) -> Proposed {
+    let mut yaml = String::new();
+    let _ = writeln!(
+        yaml,
+        "      # Left out by init: nothing here matches its from side yet. Delete this entry to turn it on."
+    );
+    let _ = writeln!(yaml, "      - name: {name}");
+    let _ = writeln!(yaml, "        severity: ignore");
+    Proposed {
+        name: name.to_owned(),
+        yaml,
     }
 }
 
 /// `init`.
 #[derive(Debug, Clone, Default, Args)]
 pub struct InitArgs {
-    /// Use these languages' presets instead of the ones found: typescript, dotnet, python
-    /// (repeat, or separate with commas)
-    #[arg(long, value_enum, value_delimiter = ',', value_name = "LANGUAGE")]
+    /// Presets to use: languages (typescript, dotnet, python) replace the ones found; frameworks
+    /// (nextjs, clean-architecture, django, fastapi, vertical-slices), opinions that are off
+    /// unless named, are added (repeat, or separate with commas)
+    #[arg(long, value_enum, value_delimiter = ',', value_name = "PRESET")]
     pub preset: Vec<Preset>,
     /// Print the proposal and do not write it
     #[arg(long)]
@@ -116,8 +195,10 @@ pub struct Discovery {
     /// The languages whose presets the proposal extends: those found (TypeScript for a
     /// `tsconfig.json` or `package.json` at the root; .NET for a `.sln`, `.slnx`, `.csproj` or
     /// `Directory.Build.props`, and Python for a `pyproject.toml`, `setup.py` or `setup.cfg`, each
-    /// at the root or in a folder directly below it), or those `--preset` names.
+    /// at the root or in a folder directly below it), or the languages `--preset` names.
     pub languages: Vec<Preset>,
+    /// The framework presets `--preset` names; never found, since each is an opinion.
+    pub framework_presets: Vec<Preset>,
     /// Where the .NET projects are, when found.
     pub dotnet: Option<DotnetSource>,
     /// The Python import roots to write, when the project is not at the root (a folder below it, or
@@ -456,6 +537,7 @@ pub fn discover(root: &Path) -> Discovery {
         typescript,
         package_json,
         languages,
+        framework_presets: Vec::new(),
         dotnet,
         python_roots: python.unwrap_or_default(),
         apps,
@@ -645,12 +727,12 @@ pub fn render(found: &Discovery, rules: &[Proposed], entries: &[Value], today: &
             Preset::Dotnet => match &found.dotnet {
                 Some(DotnetSource::Solution(solution)) => format!(".NET ({solution})"),
                 Some(DotnetSource::Projects) => ".NET (project files, no solution)".to_owned(),
-                _ => Preset::Dotnet.label().to_owned(),
+                _ => Preset::Dotnet.label(),
             },
             Preset::Python if !found.python_roots.is_empty() => {
                 format!("Python ({})", found.python_roots.join(", "))
             }
-            other => other.label().to_owned(),
+            other => other.label(),
         });
     }
     if !found.apps.is_empty() {
@@ -666,6 +748,14 @@ pub fn render(found: &Discovery, rules: &[Proposed], entries: &[Value], today: &
         seen.push((*f).to_owned());
     }
     let _ = writeln!(out, "# Found: {}.", seen.join(", "));
+    if !found.framework_presets.is_empty() {
+        let named: Vec<String> = found.framework_presets.iter().map(|f| f.label()).collect();
+        let _ = writeln!(
+            out,
+            "# Framework presets named with --preset, each an opinion that is off unless named: {}.",
+            named.join(", ")
+        );
+    }
     let _ = writeln!(
         out,
         "# Every rule says why it exists (comment) and what to do when it fires (fix);"
@@ -674,7 +764,11 @@ pub fn render(found: &Discovery, rules: &[Proposed], entries: &[Value], today: &
         out,
         "# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too."
     );
-    let _ = writeln!(out, "extends: {}", extends_for(&found.languages));
+    let _ = writeln!(
+        out,
+        "extends: {}",
+        extends_for(&found.languages, &found.framework_presets)
+    );
     let dotnet = match (&found.dotnet, found.languages.contains(&Preset::Dotnet)) {
         (Some(DotnetSource::Solution(solution)), true) => {
             Some(format!("  dotnet: {{ solution: {} }}\n", quoted(solution)))
@@ -723,7 +817,9 @@ fn load_text(ctx: &Context<'_>, text: &str) -> Result<rb_config::Config, String>
 
 /// Cruises the proposal, adds the rules the first cruise's graph calls for
 /// ([`init_graph::graph_rules`]), drops vacuous rules and baselines findings, until a run exits 0.
-/// Each pass either adds the graph's rules (once) or drops at least one rule, so it ends.
+/// A vacuous rule of a framework preset is left out with a `severity: ignore` entry, since the
+/// preset is extended rather than copied. Each pass either adds the graph's rules (once) or drops
+/// or leaves out at least one rule, so it ends.
 ///
 /// # Errors
 /// An [`Outcome`] naming what could not be made to pass.
@@ -740,9 +836,15 @@ pub fn converge(
         liveness: true,
         options_used: serde_json::Map::new(),
         paths: found.roots.clone(),
+        affected: None,
     };
     let mut dropped = Vec::new();
     let mut derived = false;
+    let framework_rules: Vec<String> = found
+        .framework_presets
+        .iter()
+        .flat_map(|f| preset_rule_names(*f))
+        .collect();
     loop {
         let text = render(found, &rules, &[], &today);
         let config = load_text(ctx, &text).map_err(|m| {
@@ -764,33 +866,35 @@ pub fn converge(
                 continue;
             }
         }
-        if !run.evaluation.vacuous.is_empty() {
-            let vacuous: Vec<String> = run
-                .evaluation
-                .vacuous
-                .iter()
-                .map(|v| v.name.clone())
-                .collect();
+        if !run.vacuous.is_empty() {
+            let vacuous: Vec<String> = run.vacuous.iter().map(|v| v.name.clone()).collect();
             let before = rules.len();
             rules.retain(|r| !vacuous.contains(&r.name));
-            if rules.len() == before {
+            let removed = rules.len() < before;
+            let from_presets: Vec<Proposed> = vacuous
+                .iter()
+                .filter(|v| framework_rules.contains(v) && rules.iter().all(|r| &r.name != *v))
+                .map(|name| left_out(name))
+                .collect();
+            if !removed && from_presets.is_empty() {
                 return Err(failed(format!(
                     "rules {} match nothing and are not ones init proposed",
                     vacuous.join(", ")
                 )));
             }
+            rules.extend(from_presets);
             dropped.extend(vacuous);
             continue;
         }
-        let entries = adopt::baseline(ctx, &run.evaluation.document.summary.violations, baseline)?;
+        let entries = adopt::baseline(ctx, &run.evaluated().summary.violations, baseline)?;
         let text = render(found, &rules, &entries, &today);
         let config = load_text(ctx, &text).map_err(|m| {
             Outcome::failed(RunExit::InvalidConfig, format!("rulebearing init: {m}\n"))
         })?;
         let check = pipeline::run(ctx, &config, &options, &mut Progress::new(None))
             .map_err(|e| failed(e.to_string()))?;
-        let errors = check.evaluation.error_count();
-        if errors != 0 || !check.evaluation.vacuous.is_empty() {
+        let errors = check.error_count();
+        if errors != 0 || !check.vacuous.is_empty() {
             return Err(failed(format!(
                 "the proposal with its baseline still has {errors} errors; please report this"
             )));
@@ -821,12 +925,15 @@ pub fn run(ctx: &mut Context<'_>, args: &InitArgs) -> Outcome {
         );
     }
     let mut found = discover(&ctx.cwd);
-    if !args.preset.is_empty() {
-        let mut named = args.preset.clone();
-        named.sort_unstable();
-        named.dedup();
-        found.languages = named;
+    let mut named = args.preset.clone();
+    named.sort_unstable();
+    named.dedup();
+    let (frameworks, languages): (Vec<Preset>, Vec<Preset>) =
+        named.into_iter().partition(|p| p.is_framework());
+    if !languages.is_empty() {
+        found.languages = languages;
     }
+    found.framework_presets = frameworks;
     if found.languages.is_empty() {
         return Outcome::failed(
             RunExit::Untrustworthy,
@@ -1056,14 +1163,25 @@ mod tests {
     #[test]
     fn languages_choose_the_presets() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(
-            extends_for(&[Preset::Dotnet]),
+            extends_for(&[Preset::Dotnet], &[]),
             "[rulebearing:dotnet, rulebearing:recommended]"
         );
         assert_eq!(
-            extends_for(&[Preset::Typescript, Preset::Python]),
+            extends_for(&[Preset::Typescript, Preset::Python], &[]),
             "rulebearing:recommended"
         );
-        assert_eq!(extends_for(&[]), "rulebearing:recommended");
+        assert_eq!(extends_for(&[], &[]), "rulebearing:recommended");
+        assert_eq!(
+            extends_for(&[Preset::Typescript], &[Preset::Nextjs]),
+            "[rulebearing:typescript, rulebearing:recommended, rulebearing:nextjs]"
+        );
+        assert_eq!(
+            extends_for(
+                &[Preset::Dotnet, Preset::Typescript],
+                &[Preset::CleanArchitecture, Preset::VerticalSlices]
+            ),
+            "[rulebearing:recommended, rulebearing:clean-architecture, rulebearing:vertical-slices]"
+        );
         let names: Vec<&str> = [Preset::Typescript, Preset::Dotnet, Preset::Python]
             .iter()
             .map(|p| p.name())
@@ -1084,6 +1202,88 @@ mod tests {
         assert_eq!(discover(&dir).languages, [Preset::Python]);
         let _ = std::fs::remove_dir_all(&dir);
         Ok(())
+    }
+
+    #[test]
+    fn every_preset_name_resolves_and_frameworks_are_told_apart() {
+        let table = [
+            (Preset::Typescript, "typescript", false, "TypeScript"),
+            (Preset::Dotnet, "dotnet", false, ".NET"),
+            (Preset::Python, "python", false, "Python"),
+            (Preset::Nextjs, "nextjs", true, "rulebearing:nextjs"),
+            (
+                Preset::CleanArchitecture,
+                "clean-architecture",
+                true,
+                "rulebearing:clean-architecture",
+            ),
+            (Preset::Django, "django", true, "rulebearing:django"),
+            (Preset::Fastapi, "fastapi", true, "rulebearing:fastapi"),
+            (
+                Preset::VerticalSlices,
+                "vertical-slices",
+                true,
+                "rulebearing:vertical-slices",
+            ),
+        ];
+        assert_eq!(table.len(), Preset::value_variants().len());
+        for (preset, name, framework, label) in table {
+            assert_eq!(preset.name(), name);
+            assert_eq!(preset.is_framework(), framework, "{name}");
+            assert_eq!(preset.label(), label);
+            // The command-line spelling is the preset's name.
+            assert_eq!(
+                preset.to_possible_value().map(|v| v.get_name().to_owned()),
+                Some(name.to_owned())
+            );
+            assert!(
+                matches!(
+                    extends::resolve(&format!("rulebearing:{name}"), Path::new(".")),
+                    Ok(Target::NativePreset(..))
+                ),
+                "{name}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_framework_preset_s_rules_are_read_and_left_out_by_name() {
+        assert_eq!(
+            preset_rule_names(Preset::VerticalSlices),
+            [
+                "slices-are-independent",
+                "slices-shared-kernel-not-to-slices"
+            ]
+        );
+        assert_eq!(preset_rule_names(Preset::Fastapi).len(), 4);
+        // A language preset declares no-orphans and, for TypeScript, the npm rules.
+        assert_eq!(preset_rule_names(Preset::Python), ["no-orphans"]);
+        let entry = left_out("django-no-import-of-migrations");
+        assert_eq!(entry.name, "django-no-import-of-migrations");
+        assert_eq!(
+            entry.yaml,
+            "      # Left out by init: nothing here matches its from side yet. Delete this entry to turn it on.\n      - name: django-no-import-of-migrations\n        severity: ignore\n"
+        );
+        let found = Discovery {
+            languages: vec![Preset::Python],
+            framework_presets: vec![Preset::Django],
+            ..Discovery::default()
+        };
+        let text = render(&found, &[entry], &[], "2026-09-28");
+        assert!(
+            text.contains(
+                "extends: [rulebearing:python, rulebearing:recommended, rulebearing:django]\n"
+            ),
+            "{text}"
+        );
+        assert!(
+            text.contains("# Framework presets named with --preset, each an opinion that is off unless named: rulebearing:django.\n"),
+            "{text}"
+        );
+        assert!(text.contains("        severity: ignore\n"), "{text}");
+        assert!(
+            !render(&Discovery::default(), &[], &[], "2026-09-28").contains("Framework presets")
+        );
     }
 
     #[test]

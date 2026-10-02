@@ -1,0 +1,40 @@
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: .NET.
+# Framework presets named with --preset, each an opinion that is off unless named: rulebearing:clean-architecture.
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: [rulebearing:dotnet, rulebearing:recommended, rulebearing:clean-architecture]
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)(Program|Startup|AssemblyInfo)\\.cs$"
+            - "(^|/)Migrations/"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+      - name: domain-not-to-outer-layers
+        comment: "Domain is an inner layer: it never depends on Application, Infrastructure, Web, which depend on it."
+        fix: "Declare what Domain needs as an abstraction in Domain and implement it in the outer layer; never add a ProjectReference from Domain to Application, Infrastructure, Web."
+        severity: error
+        from: { language: dotnet, namespace: "^Shop\\.Domain(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+        to: { namespace: "^Shop\\.(Application|Infrastructure|Web)(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+      - name: application-not-to-outer-layers
+        comment: "Application is an inner layer: it never depends on Infrastructure, Web, which depend on it."
+        fix: "Declare what Application needs as an abstraction in Application and implement it in the outer layer; never add a ProjectReference from Application to Infrastructure, Web."
+        severity: error
+        from: { language: dotnet, namespace: "^Shop\\.Application(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+        to: { namespace: "^Shop\\.(Infrastructure|Web)(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+      - name: infrastructure-not-to-outer-layers
+        comment: "Infrastructure is an inner layer: it never depends on Web, which depend on it."
+        fix: "Declare what Infrastructure needs as an abstraction in Infrastructure and implement it in the outer layer; never add a ProjectReference from Infrastructure to Web."
+        severity: error
+        from: { language: dotnet, namespace: "^Shop\\.Infrastructure(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+        to: { namespace: "^Shop\\.Web(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    - {"id":"RB-7d94d1f0","type":"dependency","from":"crates/rb-cli/tests/fixtures/init-layers/src/Shop.Application/PlaceOrder.cs","to":"crates/rb-cli/tests/fixtures/init-layers/src/Shop.Infrastructure/OrderStore.cs","rule":{"name":"application-not-to-outer-layers","severity":"error"},"expires":"2026-12-20","owner":"@fixture"}
+    - {"id":"RB-bf03252c","type":"dependency","from":"crates/rb-cli/tests/fixtures/init-layers/src/Shop.Application/PlaceOrder.cs","to":"crates/rb-cli/tests/fixtures/init-layers/src/Shop.Infrastructure/OrderStore.cs","rule":{"name":"clean-application-not-to-outer-layers","severity":"error"},"expires":"2026-12-20","owner":"@fixture"}

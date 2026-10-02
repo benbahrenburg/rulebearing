@@ -18,6 +18,7 @@
 //! `maxDepth` counts and the first error reported are the ones the sequential walk gives. Output
 //! is therefore identical however many threads ran.
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
@@ -69,6 +70,14 @@ pub enum PipelineError {
         path: PathBuf,
         /// The parser's message.
         reason: String,
+    },
+    /// A CoffeeScript or LiveScript file, which only the Node sidecar reads
+    /// ([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)); it is never parsed
+    /// as JavaScript.
+    #[error("{path}: {reason}", path = path.display(), reason = crate::sidecar_reason(path))]
+    NeedsSidecar {
+        /// The file, as the walk names it.
+        path: PathBuf,
     },
 }
 
@@ -213,6 +222,14 @@ pub struct Settings {
     /// Whether each extracted file's code layer is read from the same parse
     /// ([`codelayer`]); on by default.
     pub code_layer: bool,
+    /// Whether the extraction keeps each file's code layer before linking in
+    /// [`rb_model::Extraction::files`], so a later incremental run can reuse the file
+    /// ([`crate::extract_incremental`]). Off by default; the cache turns it on.
+    pub keep_file_states: bool,
+    /// Whether the extraction keeps the walk of the inputs in [`rb_model::Extraction::walk`], so
+    /// a later incremental run whose caller watched the walk's folders can skip walking
+    /// ([`rb_model::ExtractRequest::walk_unchanged`]). Off by default; `guard --watch` turns it on.
+    pub keep_walk: bool,
     /// Whether a `.md` file that `extraExtensionsToScan` lists has its JavaScript and TypeScript
     /// fences read ([`md`]). Off by default, which is dependency-cruiser's behaviour (a listed
     /// extension is never read); the command line turns it on for a native configuration
@@ -220,6 +237,10 @@ pub struct Settings {
     pub markdown_fences: bool,
     /// The tsconfig's `module` and `target`, read by [`crate::prepare`] when `tsConfig` names one.
     pub compiler_options: TsCompilerOptions,
+    /// With `--sidecar node`, the options block the sidecar hands dependency-cruiser
+    /// ([`crate::sidecar::options_block`]); `None` stops the run at the first CoffeeScript
+    /// or LiveScript file the walk reads.
+    pub sidecar: Option<serde_json::Map<String, serde_json::Value>>,
 }
 
 impl Settings {
@@ -254,8 +275,13 @@ impl Settings {
             experimental_stats: options.experimental_stats.unwrap_or(false),
             babel: None,
             code_layer: true,
+            keep_file_states: false,
+            keep_walk: false,
             markdown_fences: false,
             compiler_options: TsCompilerOptions::default(),
+            sidecar: options
+                .sidecar
+                .map(|_| crate::sidecar::options_block(options)),
         })
     }
 
@@ -929,9 +955,10 @@ pub fn extract_dependencies(
 
 /// What one file yields: its dependencies and, when [`Settings::code_layer`] is on, its code
 /// layer, still to be linked with the other files'.
-type FileResult = Result<(Vec<Extracted>, Option<FileCode>), PipelineError>;
+pub(crate) type FileResult = Result<(Vec<Extracted>, Option<FileCode>), PipelineError>;
 
-fn extract_file(file: &str, settings: &Settings, config: &ResolveConfig) -> FileResult {
+/// One file's dependencies and, when [`Settings::code_layer`] is on, its code layer.
+pub(crate) fn extract_file(file: &str, settings: &Settings, config: &ResolveConfig) -> FileResult {
     resolved_dependencies(file, settings, config, settings.code_layer)
         .map(|(extracted, _, code)| (extracted, code))
 }
@@ -943,6 +970,27 @@ type Resolved = (
     Option<FileCode>,
 );
 
+/// Whether `file` is not parsed at all: `Ok(true)` for an extension `extraExtensionsToScan`
+/// lists (scanned, never read), and [`PipelineError::NeedsSidecar`] for CoffeeScript and
+/// LiveScript, which are not JavaScript even where they parse as such; only the sidecar reads
+/// them.
+fn not_parsed(file: &str, settings: &Settings) -> Result<bool, PipelineError> {
+    if !reads_fences(settings, file)
+        && settings
+            .extra_extensions_to_scan
+            .iter()
+            .any(|e| e == node_extname(file))
+    {
+        return Ok(true);
+    }
+    if crate::needs_sidecar(file) {
+        return Err(PipelineError::NeedsSidecar {
+            path: PathBuf::from(file),
+        });
+    }
+    Ok(false)
+}
+
 /// [`extract_dependencies`], and the extension list of the file's first resolution that found
 /// a file, in upstream's resolving order (before filtering), for
 /// [`ResolveConfig::settle_followable`]; with `collect`, also the file's code layer.
@@ -952,12 +1000,7 @@ fn resolved_dependencies(
     config: &ResolveConfig,
     collect: bool,
 ) -> Result<Resolved, PipelineError> {
-    if !reads_fences(settings, file)
-        && settings
-            .extra_extensions_to_scan
-            .iter()
-            .any(|e| e == node_extname(file))
-    {
+    if not_parsed(file, settings)? {
         return Ok((Vec::new(), None, None));
     }
     let mut first_found = None;
@@ -1119,7 +1162,7 @@ fn resolve_code_specifiers(
 /// order, each file's resolutions in order, until one finds a file. Before that first success
 /// nothing is followable, so upstream's depth-first walk reaches no other file first. A file
 /// that fails to extract is passed over here; the walk reports it when it gets there.
-fn settle_followable(initial: &[String], settings: &Settings, config: &ResolveConfig) {
+pub(crate) fn settle_followable(initial: &[String], settings: &Settings, config: &ResolveConfig) {
     if config.bust_the_cache || config.settled_followable().is_some() {
         return;
     }
@@ -1136,9 +1179,14 @@ fn is_glob(text: &str) -> bool {
 }
 
 fn scannable(settings: &Settings, file: &str) -> bool {
+    scanned(&settings.extra_extensions_to_scan, file)
+}
+
+/// Whether the walk gathers a file named `file` before the path filters: an extension upstream
+/// scans, or one of `extra` (`extraExtensionsToScan`).
+pub fn scanned(extra: &[String], file: &str) -> bool {
     let ext = resolve::extension(file);
-    SCANNABLE_EXTENSIONS.contains(&ext)
-        || settings.extra_extensions_to_scan.iter().any(|e| e == ext)
+    SCANNABLE_EXTENSIONS.contains(&ext) || extra.iter().any(|e| e == ext)
 }
 
 /// `ancestors` are the canonical folders above `directory` on this walk, `directory`'s own
@@ -1148,9 +1196,10 @@ fn gather_directory(
     directory: &str,
     settings: &Settings,
     ancestors: &mut Vec<PathBuf>,
-    out: &mut Vec<String>,
+    out: &mut Gathered,
 ) -> Result<(), PipelineError> {
     let on_disk = settings.on_disk(directory);
+    out.folders.insert(on_disk.clone());
     let mut entries: Vec<String> = std::fs::read_dir(&on_disk)
         .map_err(|source| PipelineError::Io {
             path: on_disk.clone(),
@@ -1195,10 +1244,17 @@ fn gather_directory(
                 .as_ref()
                 .is_none_or(|f| f.path.is_none() || f.path_matches(&path))
         {
-            out.push(path);
+            out.files.push(path);
         }
     }
     Ok(())
+}
+
+/// What a walk of the inputs gathers: the files, and every folder it listed.
+#[derive(Default)]
+struct Gathered {
+    files: Vec<String>,
+    folders: BTreeSet<PathBuf>,
 }
 
 /// The canonical form of folder `path`, unless it is one of `ancestors` (a symlink cycle).
@@ -1225,7 +1281,7 @@ fn normalise(path: &str) -> String {
     }
 }
 
-fn expand_glob(pattern: &str, settings: &Settings) -> Vec<String> {
+fn expand_glob(pattern: &str, settings: &Settings, folders: &mut BTreeSet<PathBuf>) -> Vec<String> {
     let segments: Vec<&str> = pattern.split('/').collect();
     let base_count = segments.iter().take_while(|s| !is_glob(s)).count();
     let base = segments[..base_count].join("/");
@@ -1242,6 +1298,8 @@ fn expand_glob(pattern: &str, settings: &Settings) -> Vec<String> {
     let mut stack: Vec<(PathBuf, Vec<PathBuf>)> =
         vec![(root.clone(), not_a_cycle(&root, &[]).into_iter().collect())];
     while let Some((dir, ancestors)) = stack.pop() {
+        // Recorded before it is read: a folder that cannot be read yet is watched all the same.
+        folders.insert(dir.clone());
         let Ok(entries) = std::fs::read_dir(&dir) else {
             continue;
         };
@@ -1275,15 +1333,27 @@ pub fn gather_initial_sources(
     inputs: &[String],
     settings: &Settings,
 ) -> Result<Vec<String>, PipelineError> {
+    gather_walk(inputs, settings).map(|walk| walk.sources)
+}
+
+/// [`gather_initial_sources`], with every folder the walk listed: what
+/// [`rb_model::Extraction::walk`] keeps.
+///
+/// # Errors
+/// When a named file or folder does not exist.
+pub fn gather_walk(
+    inputs: &[String],
+    settings: &Settings,
+) -> Result<rb_model::Walk, PipelineError> {
+    let mut files = Gathered::default();
     let mut expanded = Vec::new();
     for input in inputs {
         if is_glob(input) {
-            expanded.extend(expand_glob(input, settings));
+            expanded.extend(expand_glob(input, settings, &mut files.folders));
         } else {
             expanded.push(normalise(input));
         }
     }
-    let mut files = Vec::new();
     for item in expanded {
         let on_disk = settings.on_disk(&item);
         let metadata = std::fs::metadata(&on_disk).map_err(|source| PipelineError::Io {
@@ -1294,12 +1364,15 @@ pub fn gather_initial_sources(
             let mut ancestors: Vec<PathBuf> = not_a_cycle(&on_disk, &[]).into_iter().collect();
             gather_directory(&item, settings, &mut ancestors, &mut files)?;
         } else {
-            files.push(item);
+            files.files.push(item);
         }
     }
     // JavaScript's default sort: UTF-16 code units, which for these paths is byte order.
-    files.sort();
-    Ok(files)
+    files.files.sort();
+    Ok(rb_model::Walk {
+        sources: files.files,
+        folders: files.folders.into_iter().collect(),
+    })
 }
 
 /// One module as `extract` returns it, before the rule engine sees it.
@@ -1317,6 +1390,19 @@ pub struct ExtractedModule {
     pub code: Option<FileCode>,
 }
 
+/// One file's result carried over from an earlier extraction instead of reading the file again
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// its resolved, filtered, sorted dependencies and its statistics.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Reused {
+    /// The dependencies, as the file's own extraction returned them.
+    pub dependencies: Vec<Extracted>,
+    /// Its `experimentalStats`, when the earlier run computed them.
+    pub experimental_stats: Option<ExperimentalStats>,
+    /// Its code layer before linking, when the code layer is on.
+    pub code: Option<FileCode>,
+}
+
 /// Whether a dependency leads to a file the walk extracts in turn.
 fn followed(dependency: &Extracted) -> bool {
     dependency.followable && !dependency.matches_do_not_follow
@@ -1331,6 +1417,7 @@ fn reachable_dependencies(
     initial: &[String],
     settings: &Settings,
     config: &ResolveConfig,
+    reused: &BTreeMap<String, Reused>,
 ) -> BTreeMap<String, FileResult> {
     let mut done: BTreeMap<String, FileResult> = BTreeMap::new();
     let mut seen: BTreeSet<&str> = BTreeSet::new();
@@ -1344,7 +1431,10 @@ fn reachable_dependencies(
         let results: Vec<(String, FileResult)> = frontier
             .into_par_iter()
             .map(|file| {
-                let result = extract_file(&file, settings, config);
+                let result = match reused.get(&file) {
+                    Some(earlier) => Ok((earlier.dependencies.clone(), earlier.code.clone())),
+                    None => extract_file(&file, settings, config),
+                };
                 (file, result)
             })
             .collect();
@@ -1365,27 +1455,79 @@ fn reachable_dependencies(
     done
 }
 
-/// Phase two of [`extract`]: upstream's `extractRecursive`, depth first from each initial
-/// source, over the dependencies phase one found.
+/// Upstream's `extractRecursive` order: depth first from each initial source in turn, each
+/// file's followed dependencies in their order, every file once. `visit` gives a file's followed
+/// dependencies and what to keep of it, from the file and its depth (0 for an initial source);
+/// the files come back in visiting order with what `visit` kept. The first error `visit` gives
+/// stops the walk. A followed dependency may borrow from what `visit` reads (`'a`), so a walk
+/// over results already in memory copies no name it only passes over.
+///
+/// # Errors
+/// The first error of `visit`.
+pub(crate) fn depth_first<'a, T>(
+    initial: &'a [String],
+    mut visit: impl FnMut(&str, u32) -> Result<(Vec<Cow<'a, str>>, T), PipelineError>,
+) -> Result<Vec<(String, T)>, PipelineError> {
+    struct Frame<'a> {
+        follow: Vec<Cow<'a, str>>,
+        next: usize,
+        depth: u32,
+    }
+    // Only asked, never iterated, so its order cannot reach the output.
+    let mut visited: std::collections::HashSet<Cow<'a, str>> = std::collections::HashSet::new();
+    let mut out = Vec::new();
+    for file in initial {
+        if !visited.insert(Cow::Borrowed(file.as_str())) {
+            continue;
+        }
+        let (follow, kept) = visit(file, 0)?;
+        out.push((file.clone(), kept));
+        let mut stack = vec![Frame {
+            follow,
+            next: 0,
+            depth: 0,
+        }];
+        while let Some(frame) = stack.last_mut() {
+            // Each entry is read once, so it is taken rather than copied.
+            let Some(next) = frame.follow.get_mut(frame.next).map(std::mem::take) else {
+                stack.pop();
+                continue;
+            };
+            frame.next += 1;
+            let depth = frame.depth + 1;
+            if !visited.contains(&next) {
+                let (follow, kept) = visit(&next, depth)?;
+                out.push((next.clone().into_owned(), kept));
+                visited.insert(next);
+                stack.push(Frame {
+                    follow,
+                    next: 0,
+                    depth,
+                });
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// The resolutions of the dependencies the walk follows, in order.
+pub(crate) fn follows(dependencies: &[Extracted]) -> Vec<Cow<'static, str>> {
+    dependencies
+        .iter()
+        .filter(|d| followed(d))
+        .map(|d| Cow::Owned(d.resolved.clone()))
+        .collect()
+}
+
+/// Phase two of [`extract`]: upstream's `extractRecursive` ([`depth_first`]) over the
+/// dependencies phase one found.
 fn replay(
     initial: &[String],
     settings: &Settings,
     config: &ResolveConfig,
     mut found: BTreeMap<String, FileResult>,
 ) -> Result<Vec<ExtractedModule>, PipelineError> {
-    struct Frame {
-        follow: Vec<String>,
-        next: usize,
-        depth: u32,
-    }
-    let mut visited: BTreeSet<String> = BTreeSet::new();
-    let mut out = Vec::new();
-    let mut visit = |file: &str,
-                     depth: u32,
-                     visited: &mut BTreeSet<String>,
-                     out: &mut Vec<ExtractedModule>|
-     -> Result<Frame, PipelineError> {
-        visited.insert(file.to_owned());
+    let visited = depth_first(initial, |file, depth| {
         let (dependencies, code) = if settings.max_depth == 0 || depth < settings.max_depth {
             match found.remove(file) {
                 Some(result) => result?,
@@ -1394,43 +1536,18 @@ fn replay(
         } else {
             (Vec::new(), None)
         };
-        let follow = dependencies
-            .iter()
-            .filter(|d| followed(d))
-            .map(|d| d.resolved.clone())
-            .collect();
-        out.push(ExtractedModule {
-            source: file.to_owned(),
+        Ok((follows(&dependencies), (dependencies, code)))
+    })?;
+    Ok(visited
+        .into_iter()
+        .map(|(source, (dependencies, code))| ExtractedModule {
+            source,
             dependencies,
             experimental_stats: None,
             as_dependency: None,
             code,
-        });
-        Ok(Frame {
-            follow,
-            next: 0,
-            depth,
         })
-    };
-    for file in initial {
-        if visited.contains(file) {
-            continue;
-        }
-        let mut stack = vec![visit(file, 0, &mut visited, &mut out)?];
-        while let Some(frame) = stack.last_mut() {
-            let Some(next) = frame.follow.get(frame.next).cloned() else {
-                stack.pop();
-                continue;
-            };
-            frame.next += 1;
-            let depth = frame.depth + 1;
-            if !visited.contains(&next) {
-                let child = visit(&next, depth, &mut visited, &mut out)?;
-                stack.push(child);
-            }
-        }
-    }
-    Ok(out)
+        .collect())
 }
 
 /// `extract`: every module reachable from the inputs, then the unfollowed dependencies as modules.
@@ -1442,14 +1559,49 @@ pub fn extract(
     settings: &Settings,
     config: &ResolveConfig,
 ) -> Result<Vec<ExtractedModule>, PipelineError> {
+    extract_reusing(inputs, settings, config, &BTreeMap::new())
+}
+
+/// [`extract`], taking each file in `reused` from there instead of reading it. Phase one is seeded
+/// with the reused results and phase two replays as it always does, so the modules, their order
+/// and the depth `maxDepth` counts are the ones a full extraction gives, provided each reused
+/// result is what reading its file would give (the caller's soundness rule:
+/// [`crate::extract_incremental`]).
+///
+/// # Errors
+/// As [`extract`].
+pub fn extract_reusing(
+    inputs: &[String],
+    settings: &Settings,
+    config: &ResolveConfig,
+    reused: &BTreeMap<String, Reused>,
+) -> Result<Vec<ExtractedModule>, PipelineError> {
     let initial = gather_initial_sources(inputs, settings)?;
-    settle_followable(&initial, settings, config);
-    let found = reachable_dependencies(&initial, settings, config);
-    let mut modules = replay(&initial, settings, config, found)?;
+    extract_reusing_from(&initial, settings, config, reused)
+}
+
+/// [`extract_reusing`] from the initial sources [`gather_initial_sources`] gave.
+///
+/// # Errors
+/// When a file the walk reaches cannot be read or parsed.
+pub fn extract_reusing_from(
+    initial: &[String],
+    settings: &Settings,
+    config: &ResolveConfig,
+    reused: &BTreeMap<String, Reused>,
+) -> Result<Vec<ExtractedModule>, PipelineError> {
+    settle_followable(initial, settings, config);
+    let found = reachable_dependencies(initial, settings, config, reused);
+    let mut modules = replay(initial, settings, config, found)?;
     if settings.experimental_stats {
         let all: Vec<Result<ExperimentalStats, PipelineError>> = modules
             .par_iter()
-            .map(|m| stats(&m.source, settings))
+            .map(
+                |m| match reused.get(&m.source).and_then(|r| r.experimental_stats) {
+                    Some(earlier) => Ok(earlier),
+                    None => stats(&m.source, settings),
+                },
+            )
             .collect();
         for (module, result) in modules.iter_mut().zip(all) {
             module.experimental_stats = Some(result?);
@@ -1483,6 +1635,37 @@ pub fn extract(
         }
     }
     Ok(complete)
+}
+
+/// The first phase of [`extract_reusing`] alone, for the sidecar
+/// ([`crate::sidecar`]): the CoffeeScript and LiveScript files the walk can reach that `reused`
+/// does not answer, sorted. Every other file the phase read successfully joins `reused` with the
+/// result reading it gave, so the walk that follows reads no file twice.
+///
+/// `initial` is what [`gather_initial_sources`] gave.
+pub fn sidecar_pending(
+    initial: &[String],
+    settings: &Settings,
+    config: &ResolveConfig,
+    reused: &mut BTreeMap<String, Reused>,
+) -> Vec<String> {
+    settle_followable(initial, settings, config);
+    let mut pending = Vec::new();
+    for (file, result) in reachable_dependencies(initial, settings, config, reused) {
+        match result {
+            Ok((dependencies, code)) => {
+                reused.entry(file).or_insert(Reused {
+                    dependencies,
+                    experimental_stats: None,
+                    code,
+                });
+            }
+            Err(PipelineError::NeedsSidecar { .. }) => pending.push(file),
+            // Reported by the walk, and only if it reaches the file.
+            Err(_) => {}
+        }
+    }
+    pending
 }
 
 /// `experimentalStats` for one file: top-level statements and size.

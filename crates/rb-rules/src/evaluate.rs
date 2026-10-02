@@ -16,12 +16,22 @@
 //! `fix` and decision token on each violation; liveness (a rule whose selecting side matches no
 //! module is vacuous); expiry of rules and known violations; and the per-rule statistics
 //! `rules --json` prints.
+//!
+//! The stages that read or write one module at a time (the conversion to and from JSON values,
+//! the cycle search, the dependents, the verdicts, the statistics) run in parallel with rayon;
+//! every result is collected or written back in module order, so the output is the sequential
+//! one byte for byte. That keeps a `guard --watch` re-check inside its budget
+//! ([NFR-PERF-03](../../../docs/prd.md#nfr-perf-03);
+//! [Wave 3, Step 16](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
 
-use std::collections::HashMap;
+use std::borrow::Cow;
+use std::collections::{HashMap, HashSet};
 
 use chrono::NaiveDate;
+use rayon::prelude::*;
 use rb_config::model::{DependencyRules, Family, Rules};
 use rb_config::{Config, Rule, decision_token};
+use rb_model::options::Patterns;
 use rb_model::violation_id::violation_id;
 use rb_model::{ExpiredEntry, Folder, GraphDocument, Module, Summary, VacuousRule, Violation};
 use serde::{Deserialize, Serialize};
@@ -33,7 +43,7 @@ use crate::graph::filters::{Filter, add_focus};
 use crate::graph::view::{self, View};
 use crate::js;
 use crate::known::KnownSet;
-use crate::matchers::{ModuleFacts, matches_from_cross_language, pattern};
+use crate::matchers::{ModuleFacts, matches_from_cross_language, pattern_ref};
 use crate::patterns;
 use crate::summarize::{
     options_used, rule_set_used, summarize_folders, summarize_modules, violation_stats,
@@ -171,94 +181,184 @@ pub fn uses_cross_language(rules: &DependencyRules) -> bool {
         .any(|r| !r.from.cross.written().is_empty() || !r.to.additions().is_empty())
 }
 
-/// The selecting side of a rule: `module` for dependents and required rules, else `from`; then
-/// the cross-language keys of `from`, which the loader allows only where `from` selects.
-fn selects(rule: &Rule, module: &Value, facts: &ModuleFacts) -> bool {
-    let source = js::text(module, "source");
-    let (path, path_not) = match &rule.module {
-        Some(m) => (pattern(m.path.as_ref()), pattern(m.path_not.as_ref())),
-        None => (
-            pattern(rule.from.path.as_ref()),
-            pattern(rule.from.path_not.as_ref()),
-        ),
-    };
-    path.is_none_or(|p| patterns::test(&p, &source))
-        && path_not.is_none_or(|p| !patterns::test(&p, &source))
-        && matches_from_cross_language(rule, module, facts)
-}
-
 fn has_placeholder(p: &str) -> bool {
     p.as_bytes()
         .windows(2)
         .any(|w| w[0] == b'$' && w[1].is_ascii_digit())
 }
 
-fn to_matches(rule: &Rule, family: Family, modules: &[Value]) -> usize {
-    let Some(path) = pattern(rule.to.path.as_ref()).filter(|p| !has_placeholder(p)) else {
-        return 0;
-    };
-    let path_not = pattern(rule.to.path_not.as_ref()).filter(|p| !has_placeholder(p));
-    let ok = |text: &str| {
-        patterns::test(&path, text) && path_not.as_ref().is_none_or(|p| !patterns::test(p, text))
-    };
-    if rule.to.reachable.is_some() || family == Family::Required {
-        modules
-            .iter()
-            .filter(|m| ok(&js::text(m, "source")))
-            .count()
-    } else {
-        modules
-            .iter()
-            .flat_map(|m| js::array(m, "dependencies"))
-            .filter(|d| ok(&js::text(d, "resolved")))
-            .count()
+/// What a rule's statistics count, with its patterns joined once.
+struct Probe<'r> {
+    rule: &'r Rule,
+    /// The selecting side: `module` for dependents and required rules, else `from`.
+    path: Option<Cow<'r, str>>,
+    path_not: Option<Cow<'r, str>>,
+    /// `to.path`, absent when the rule has none or it holds a placeholder, which cannot be
+    /// counted without a `from`; nothing is counted then.
+    to_path: Option<Cow<'r, str>>,
+    /// `to.pathNot`, left out when it holds a placeholder.
+    to_path_not: Option<Cow<'r, str>>,
+    /// Whether `to.path` counts modules (a reachability or required rule) rather than
+    /// dependencies.
+    on_modules: bool,
+}
+
+impl<'r> Probe<'r> {
+    fn new(rule: &'r Rule, family: Family) -> Self {
+        let (path, path_not) = match &rule.module {
+            Some(m) => (
+                pattern_ref(m.path.as_ref()),
+                pattern_ref(m.path_not.as_ref()),
+            ),
+            None => (
+                pattern_ref(rule.from.path.as_ref()),
+                pattern_ref(rule.from.path_not.as_ref()),
+            ),
+        };
+        let unplaced = |p: Option<&'r Patterns>| pattern_ref(p).filter(|p| !has_placeholder(p));
+        Self {
+            rule,
+            path,
+            path_not,
+            to_path: unplaced(rule.to.path.as_ref()),
+            to_path_not: unplaced(rule.to.path_not.as_ref()),
+            on_modules: rule.to.reachable.is_some() || family == Family::Required,
+        }
     }
+
+    /// Whether the selecting side matches the module whose `source` is `source`; then the
+    /// cross-language keys of `from`, which the loader allows only where `from` selects.
+    fn selects(&self, module: &Value, source: &str, facts: &ModuleFacts) -> bool {
+        self.path.as_ref().is_none_or(|p| patterns::test(p, source))
+            && self
+                .path_not
+                .as_ref()
+                .is_none_or(|p| !patterns::test(p, source))
+            && matches_from_cross_language(self.rule, module, facts)
+    }
+
+    /// Whether `to.path` matches `text` and `to.pathNot` does not.
+    fn counts(&self, text: &str) -> bool {
+        self.to_path
+            .as_ref()
+            .is_some_and(|p| patterns::test(p, text))
+            && self
+                .to_path_not
+                .as_ref()
+                .is_none_or(|p| !patterns::test(p, text))
+    }
+}
+
+/// For each probe, the modules its selecting side matches and the dependencies (or, for a
+/// probe on modules, the modules) its `to.path` matches: one pass over the graph for every
+/// rule, each module read once, in parallel. The counts are sums, so the order does not
+/// matter.
+fn match_counts(
+    probes: &[Probe<'_>],
+    modules: &[Value],
+    facts: &ModuleFacts,
+) -> Vec<(usize, usize)> {
+    let zero = || vec![(0, 0); probes.len()];
+    modules
+        .par_iter()
+        .fold(zero, |mut counts, module| {
+            let source = js::text(module, "source");
+            for (probe, count) in probes.iter().zip(counts.iter_mut()) {
+                count.0 += usize::from(probe.selects(module, &source, facts));
+                if probe.on_modules {
+                    count.1 += usize::from(probe.counts(&source));
+                }
+            }
+            // A probe without `to.path` counts nothing here at once, so every module's
+            // dependencies are read whatever the probes ask.
+            for dependency in js::array(module, "dependencies") {
+                let resolved = js::text(dependency, "resolved");
+                for (probe, count) in probes.iter().zip(counts.iter_mut()) {
+                    if !probe.on_modules {
+                        count.1 += usize::from(probe.counts(&resolved));
+                    }
+                }
+            }
+            counts
+        })
+        .reduce(zero, |mut left, right| {
+            for (l, r) in left.iter_mut().zip(right) {
+                l.0 += r.0;
+                l.1 += r.1;
+            }
+            left
+        })
 }
 
 fn kind_of(value: &Value) -> Option<&str> {
     js::str_of(value, "type")
 }
 
-/// Adds the stable id, the `fix` and the decision token to each violation.
-fn annotate(violations: &mut [Value], modules: &[Value], rules: &DependencyRules) {
-    let mut kinds: HashMap<(String, String), String> = HashMap::new();
+/// The `dependencyKind` of each `wanted` edge, by `(source, resolved)`; of two edges with the
+/// same ends, the later one's. Only the modules a wanted edge starts at are read.
+fn edge_kinds<'w, 'm>(
+    modules: &'m [Value],
+    wanted: &[(&'w str, &'w str)],
+) -> HashMap<(&'w str, &'w str), &'m str> {
+    let mut by_from: HashMap<&'w str, HashSet<&'w str>> = HashMap::new();
+    for (from, to) in wanted {
+        by_from.entry(from).or_default().insert(to);
+    }
+    let mut kinds = HashMap::new();
     for module in modules {
+        let source = js::text(module, "source");
+        let Some((&from, tos)) = by_from.get_key_value(source.as_ref()) else {
+            continue;
+        };
         for dependency in js::array(module, "dependencies") {
-            if let Some(kind) = js::str_of(dependency, "dependencyKind") {
-                kinds.insert(
-                    (
-                        js::text(module, "source").into_owned(),
-                        js::text(dependency, "resolved").into_owned(),
-                    ),
-                    kind.to_owned(),
-                );
+            if let Some(kind) = js::str_of(dependency, "dependencyKind")
+                && let Some(&to) = tos.get(js::text(dependency, "resolved").as_ref())
+            {
+                kinds.insert((from, to), kind);
             }
         }
     }
-    for violation in violations.iter_mut() {
-        let name = violation
-            .get("rule")
-            .map(|r| js::text(r, "name").into_owned())
-            .unwrap_or_default();
-        let from = js::text(violation, "from").into_owned();
-        let to = js::text(violation, "to").into_owned();
-        let edge = matches!(
-            kind_of(violation),
-            Some("dependency" | "cycle" | "instability")
-        );
-        let kind = if edge {
+    kinds
+}
+
+/// Adds the stable id, the `fix` and the decision token to each violation.
+fn annotate(violations: &mut [Value], modules: &[Value], rules: &DependencyRules) {
+    let ends: Vec<(String, String, String, bool)> = violations
+        .iter()
+        .map(|violation| {
+            let name = violation
+                .get("rule")
+                .map(|r| js::text(r, "name").into_owned())
+                .unwrap_or_default();
+            let edge = matches!(
+                kind_of(violation),
+                Some("dependency" | "cycle" | "instability")
+            );
+            (
+                name,
+                js::text(violation, "from").into_owned(),
+                js::text(violation, "to").into_owned(),
+                edge,
+            )
+        })
+        .collect();
+    // Only an edge violation reads a kind, so only the edges of those are looked up.
+    let wanted: Vec<(&str, &str)> = ends
+        .iter()
+        .filter(|(_, _, _, edge)| *edge)
+        .map(|(_, from, to, _)| (from.as_str(), to.as_str()))
+        .collect();
+    let kinds = edge_kinds(modules, &wanted);
+    for (violation, (name, from, to, edge)) in violations.iter_mut().zip(&ends) {
+        let kind = if *edge {
             kinds
-                .get(&(from.clone(), to.clone()))
-                .cloned()
+                .get(&(from.as_str(), to.as_str()))
+                .copied()
                 .unwrap_or_default()
         } else {
-            String::new()
+            ""
         };
-        js::set(
-            violation,
-            "id",
-            json!(violation_id(&name, &from, &to, &kind)),
-        );
+        js::set(violation, "id", json!(violation_id(name, from, to, kind)));
         let rule = rules
             .forbidden
             .iter()
@@ -295,6 +395,11 @@ fn stats_and_liveness(
         (Family::Allowed, &rules.allowed),
         (Family::Required, &rules.required),
     ];
+    let probes: Vec<Probe<'_>> = lists
+        .iter()
+        .flat_map(|(family, list)| list.iter().map(|rule| Probe::new(rule, *family)))
+        .collect();
+    let mut counts = match_counts(&probes, modules, facts).into_iter();
     for (family, list) in lists {
         for (index, rule) in list.iter().enumerate() {
             let name = if family == Family::Allowed {
@@ -302,7 +407,7 @@ fn stats_and_liveness(
             } else {
                 rule.name().to_owned()
             };
-            let from_matches = modules.iter().filter(|m| selects(rule, m, facts)).count();
+            let (from_matches, to_matches) = counts.next().unwrap_or_default();
             let count = violations
                 .iter()
                 .filter(|v| v.get("rule").and_then(|r| js::str_of(r, "name")) == Some(rule.name()))
@@ -334,7 +439,7 @@ fn stats_and_liveness(
                 name,
                 family,
                 from_matches,
-                to_matches: to_matches(rule, family, modules),
+                to_matches,
                 violations: count,
             });
         }
@@ -384,34 +489,45 @@ fn focus_filter(options: &rb_config::model::Options) -> Option<Filter> {
 
 /// Merges each module's and each dependency's verdict into it; with `validate` off, every
 /// verdict is `{ "valid": true }`.
+///
+/// Every verdict reads the module as it was before any verdict was merged: a module's own
+/// verdict does not change what its dependencies match, so each module's verdicts are computed
+/// first and merged after, one module per task, in parallel.
 fn add_validations(
     modules: &mut [Value],
     rules: &DependencyRules,
     validate: bool,
     facts: &ModuleFacts,
 ) {
-    for module in modules {
-        let verdict = if validate {
-            validate_module(rules, module, facts)
+    modules.par_iter_mut().for_each(|module| {
+        let (verdict, verdicts) = if validate {
+            let verdicts: Vec<Value> = js::array(module, "dependencies")
+                .iter()
+                .map(|dependency| validate_dependency(rules, module, dependency, facts))
+                .collect();
+            (validate_module(rules, module, facts), verdicts)
         } else {
-            json!({ "valid": true })
+            (json!({ "valid": true }), Vec::new())
         };
-        let snapshot = module.clone();
-        if let (Value::Object(target), Value::Object(verdict)) = (&mut *module, verdict) {
-            target.extend(verdict);
-        }
+        merge(module, verdict);
         if let Some(Value::Array(dependencies)) = module.get_mut("dependencies") {
-            for dependency in dependencies.iter_mut() {
-                let verdict = if validate {
-                    validate_dependency(rules, &snapshot, dependency, facts)
-                } else {
-                    json!({ "valid": true })
-                };
-                if let (Value::Object(target), Value::Object(verdict)) = (dependency, verdict) {
-                    target.extend(verdict);
+            if validate {
+                for (dependency, verdict) in dependencies.iter_mut().zip(verdicts) {
+                    merge(dependency, verdict);
+                }
+            } else {
+                for dependency in dependencies.iter_mut() {
+                    merge(dependency, json!({ "valid": true }));
                 }
             }
         }
+    });
+}
+
+/// Merges the keys of `verdict` into `target` when both are objects.
+fn merge(target: &mut Value, verdict: Value) {
+    if let (Value::Object(target), Value::Object(verdict)) = (target, verdict) {
+        target.extend(verdict);
     }
 }
 
@@ -456,23 +572,27 @@ pub fn evaluate(
         code,
         ..
     } = document;
+    // Each module is converted, and its typed form dropped, on its own task.
     let mut modules: Vec<Value> = modules
-        .iter()
-        .map(serde_json::to_value)
+        .into_par_iter()
+        .map(|module| serde_json::to_value(&module))
         .collect::<Result<_, _>>()?;
 
-    derive::cycles(&mut modules, "source", "resolved", skip, rules);
-    derive::dependents(
-        &mut modules,
-        DependentsWhen {
-            skip,
-            metrics,
-            reaches: options.reaches.is_some(),
-            focus: focus.is_some(),
-            force: options.force_derive_dependents.unwrap_or(false),
-        },
-        rules,
+    let when = DependentsWhen {
+        skip,
+        metrics,
+        reaches: options.reaches.is_some(),
+        focus: focus.is_some(),
+        force: options.force_derive_dependents.unwrap_or(false),
+    };
+    // Cycles and dependents each read only what the other does not write, so both are found
+    // at once and written after, which is what running them in turn writes.
+    let (cycles, dependents) = rayon::join(
+        || derive::find_cycles(&modules, "source", "resolved", skip, rules),
+        || derive::find_dependents(&modules, when, rules),
     );
+    derive::add_cycles(&mut modules, cycles);
+    derive::add_dependents(&mut modules, dependents);
     derive::orphans(&mut modules, skip, rules);
     derive::reachables(&mut modules, rules);
     if metrics {
@@ -534,7 +654,7 @@ pub fn evaluate(
         ..Summary::default()
     };
     let modules: Vec<Module> = modules
-        .into_iter()
+        .into_par_iter()
         .map(serde_json::from_value)
         .collect::<Result<_, _>>()?;
     let folders: Option<Vec<Folder>> = if metrics {
@@ -1044,6 +1164,47 @@ mod tests {
         Ok(())
     }
 
+    /// `rb-cli` skips the re-summary when a report filters and collapses nothing; that is only
+    /// sound while it gives back the engine's own document, for every kind of rule.
+    #[test]
+    fn the_unfiltered_report_is_the_engine_s_document() -> Result<(), EngineError> {
+        for rules in [
+            json!({ "forbidden": [
+                { "name": "no-cross-app", "severity": "error", "comment": "adr:0003", "fix": "Move it.",
+                  "from": { "path": "^apps/([^/]+)/" }, "to": { "path": "^apps/([^/]+)/", "pathNot": "^apps/$1/" } },
+                { "name": "no-circular", "severity": "warn", "from": {}, "to": { "circular": true } },
+                { "name": "no-orphans", "severity": "info", "from": { "orphan": true }, "to": {} }
+            ] }),
+            json!({ "allowed": [{ "from": {}, "to": { "path": "^packages/" } }], "allowedSeverity": "warn" }),
+            json!({ "forbidden": [{ "name": "folders", "scope": "folder", "severity": "error",
+                "from": { "path": "^apps/" }, "to": { "moreUnstable": true } }] }),
+            json!({ "forbidden": [{ "name": "f", "severity": "error", "from": {}, "to": { "path": "^apps/api" } }],
+                "options": { "knownViolations": [{ "from": "apps/web/a.ts", "to": "apps/api/b.ts",
+                    "rule": { "name": "f", "severity": "error" } }] } }),
+            json!({ "forbidden": [{ "name": "f", "severity": "warn", "from": {}, "to": { "path": "^packages/" } }],
+                "slices": [{ "name": "apps", "matching": "apps/(*)/", "should": "notDependOnEachOther" }] }),
+        ] {
+            let cfg = config(rules.clone());
+            let result = evaluate(
+                document(),
+                &cfg,
+                &EvalOptions {
+                    liveness: false,
+                    today: today(),
+                    args: vec!["apps".into()],
+                    ..EvalOptions::default()
+                },
+            )?;
+            let rewrapped = crate::rewrap::rewrap(
+                result.document.clone(),
+                &crate::rewrap::FormatOptions::default(),
+                Some(&cfg.rules.dependencies),
+            )?;
+            assert_eq!(rewrapped, result.document, "{rules}");
+        }
+        Ok(())
+    }
+
     #[test]
     fn metrics_are_needed_only_for_instability_and_folders() {
         let plain = config(
@@ -1145,6 +1306,24 @@ mod tests {
         assert!(!has_placeholder("$"));
     }
 
+    fn to_matches(rule: &Rule, family: Family, modules: &[Value]) -> usize {
+        match_counts(
+            &[Probe::new(rule, family)],
+            modules,
+            &ModuleFacts::default(),
+        )[0]
+        .1
+    }
+
+    fn selects(rule: &Rule, module: &Value, facts: &ModuleFacts) -> bool {
+        let counts = match_counts(
+            &[Probe::new(rule, Family::Forbidden)],
+            std::slice::from_ref(module),
+            facts,
+        );
+        counts[0].0 == 1
+    }
+
     #[test]
     fn stats_count_selected_modules_and_matched_targets() {
         let modules: Vec<Value> = document()
@@ -1189,6 +1368,132 @@ mod tests {
         let module_not = rule(json!({ "module": { "pathNot": "^apps/" }, "to": {} }));
         assert!(!selects(&module_not, &modules[0], &ModuleFacts::default()));
         assert!(selects(&module_not, &modules[3], &ModuleFacts::default()));
+    }
+
+    #[test]
+    fn edge_kinds_are_looked_up_for_the_wanted_edges_only() {
+        let modules = vec![
+            json!({ "source": "a", "dependencies": [
+                { "resolved": "b", "dependencyKind": "import" },
+                { "resolved": "c", "dependencyKind": "body" },
+                { "resolved": "b", "dependencyKind": "field" }
+            ] }),
+            json!({ "source": "b", "dependencies": [{ "resolved": "a" }] }),
+            json!({ "source": "a", "dependencies": [{ "resolved": "c", "dependencyKind": "call" }] }),
+            json!({ "source": "c", "dependencies": [{ "resolved": "a", "dependencyKind": "import" }] }),
+        ];
+        let kinds = edge_kinds(&modules, &[("a", "b"), ("a", "c"), ("b", "a"), ("z", "a")]);
+        let mut found: Vec<(&str, &str, &str)> =
+            kinds.iter().map(|((f, t), k)| (*f, *t, *k)).collect();
+        found.sort_unstable();
+        assert_eq!(
+            found,
+            [("a", "b", "field"), ("a", "c", "call")],
+            "the later edge of two with the same ends wins; an edge without a kind has none"
+        );
+        assert!(edge_kinds(&modules, &[]).is_empty());
+    }
+
+    /// The counts `rules --json` printed before they were taken in one pass: each rule over
+    /// the whole graph on its own.
+    fn reference_counts(rule: &Rule, family: Family, modules: &[Value]) -> (usize, usize) {
+        use crate::matchers::pattern;
+        let (path, path_not) = match &rule.module {
+            Some(m) => (pattern(m.path.as_ref()), pattern(m.path_not.as_ref())),
+            None => (
+                pattern(rule.from.path.as_ref()),
+                pattern(rule.from.path_not.as_ref()),
+            ),
+        };
+        let from = modules
+            .iter()
+            .filter(|m| {
+                let source = js::text(m, "source");
+                path.as_ref().is_none_or(|p| patterns::test(p, &source))
+                    && path_not
+                        .as_ref()
+                        .is_none_or(|p| !patterns::test(p, &source))
+            })
+            .count();
+        let Some(to_path) = pattern(rule.to.path.as_ref()).filter(|p| !has_placeholder(p)) else {
+            return (from, 0);
+        };
+        let to_not = pattern(rule.to.path_not.as_ref()).filter(|p| !has_placeholder(p));
+        let ok = |text: &str| {
+            patterns::test(&to_path, text)
+                && to_not.as_ref().is_none_or(|p| !patterns::test(p, text))
+        };
+        let to = if rule.to.reachable.is_some() || family == Family::Required {
+            modules
+                .iter()
+                .filter(|m| ok(&js::text(m, "source")))
+                .count()
+        } else {
+            modules
+                .iter()
+                .flat_map(|m| js::array(m, "dependencies"))
+                .filter(|d| ok(&js::text(d, "resolved")))
+                .count()
+        };
+        (from, to)
+    }
+
+    proptest::proptest! {
+        /// One pass over the graph counts what each rule counted over it alone.
+        #[test]
+        fn match_counts_are_each_rules_own(
+            specs in proptest::collection::vec(
+                (0usize..4, 0usize..4, 0usize..5, 0usize..4, proptest::bool::ANY, proptest::bool::ANY, 0usize..3),
+                1..5
+            ),
+            graph in proptest::collection::vec(
+                (0usize..4, proptest::collection::vec(0usize..4, 0..4)),
+                0..6
+            )
+        ) {
+            const FROM: [Option<&str>; 4] = [None, Some("^a"), Some("b/"), Some("")];
+            const TO: [Option<&str>; 5] = [None, Some("^a"), Some("y$"), Some("^$1"), Some("a|b")];
+            const NAMES: [&str; 4] = ["a/x", "b/y", "ab", "c"];
+            let keys = |pairs: [(&str, Option<&str>); 2]| -> Value {
+                pairs
+                    .into_iter()
+                    .filter_map(|(key, value)| value.map(|v| (key.to_owned(), json!(v))))
+                    .collect::<Map<String, Value>>()
+                    .into()
+            };
+            let rule = |(path, not, to, to_not, module, reachable, _): (usize, usize, usize, usize, bool, bool, usize)| {
+                let side = keys([("path", FROM[path]), ("pathNot", FROM[not])]);
+                let mut value = json!({ "from": if module { json!({}) } else { side.clone() },
+                    "to": keys([("path", TO[to]), ("pathNot", TO[to_not])]) });
+                if module {
+                    value["module"] = side;
+                }
+                if reachable {
+                    value["to"]["reachable"] = json!(false);
+                }
+                serde_json::from_value::<Rule>(value)
+            };
+            let family = |at: usize| [Family::Forbidden, Family::Allowed, Family::Required][at];
+            let mut rules: Vec<(Rule, Family)> = Vec::new();
+            for spec in &specs {
+                let parsed = rule(*spec);
+                proptest::prop_assert!(parsed.is_ok(), "{:?}", parsed);
+                rules.extend(parsed.ok().map(|r| (r, family(spec.6))));
+            }
+            let modules: Vec<Value> = graph
+                .iter()
+                .map(|(source, to)| {
+                    let dependencies: Vec<Value> =
+                        to.iter().map(|t| json!({ "resolved": NAMES[*t] })).collect();
+                    json!({ "source": NAMES[*source], "dependencies": dependencies })
+                })
+                .collect();
+            let probes: Vec<Probe<'_>> = rules.iter().map(|(r, f)| Probe::new(r, *f)).collect();
+            let ours = match_counts(&probes, &modules, &ModuleFacts::default());
+            let theirs: Vec<(usize, usize)> =
+                rules.iter().map(|(r, f)| reference_counts(r, *f, &modules)).collect();
+            proptest::prop_assert_eq!(ours, theirs);
+        }
     }
 
     #[test]

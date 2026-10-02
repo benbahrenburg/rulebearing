@@ -34,7 +34,13 @@ Options:
   -T, --output-type <TYPE>
           Output type: err, err-long, err-html, json, text, csv, teamcity, azure-devops,
           github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat,
-          fdot, mermaid, d2, metrics, null
+          fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, plantuml, null
+
+      --from <NODES>
+          plantuml: what the diagram's nodes are (slices, types, namespaces or folders); wins over
+          reporterOptions.plantuml.from
+          
+          [possible values: slices, types, namespaces, folders]
 
   -f, --output-to <FILE>
           File to write output to; - for stdout
@@ -86,6 +92,19 @@ Options:
       --suffix <SUFFIX>
           Suffix for links in the reports
 
+  -C, --cache [<FOLDER>]
+          Keep the extraction in FOLDER and re-read only what changed since the last run (default
+          .graph/cache; node_modules/.cache/dependency-cruiser for a dependency-cruiser
+          configuration); replaces options.cache
+
+      --cache-strategy <STRATEGY>
+          How the cache finds what changed: metadata (git and file size and time, the default) or
+          content (every input hashed)
+
+          Possible values:
+          - metadata: git status and diff against the recorded commit, and file size and time
+          - content:  Every input hashed
+
       --ts-pre-compilation-deps [<VALUE>]
           Keep TypeScript edges that vanish in compilation: true, false or specify
 
@@ -102,6 +121,25 @@ Options:
       --webpack-config-json <FILE>
           A webpack configuration, or its `resolve` block, already evaluated to JSON; wins over
           --webpack-config and webpackConfig
+
+      --sidecar <RUNTIME>
+          Extract CoffeeScript and LiveScript files (.coffee, .litcoffee, .coffee.md, .ls, .cjsx,
+          .csx) by running the repository's own dependency-cruiser with Node; their edges are marked
+          sidecar: true. Without it such a file stops the run (exit 2)
+
+          Possible values:
+          - node: The repository's dependency-cruiser, run by the node on the path (or
+            `$RULEBEARING_NODE`)
+
+      --mode <MODE>
+          How .NET is read: compiled (the default) from the built assemblies and PDBs, or source
+          from the .cs files without a build, every edge marked approximate; wins over
+          languages.dotnet.mode
+
+          Possible values:
+          - compiled: From the built assemblies and their portable PDBs: the gate
+          - source:   From the .cs files, without a build: namespace-level, every edge approximate,
+            never the gate
 
   -p, --progress [<TYPE>]
           Show progress on stderr
@@ -122,14 +160,21 @@ Options:
           Write a first configuration instead of cruising, as `init` does, never asking: `yes` (the
           default), or `x-scripts` to also add run scripts to package.json
 
-      --preset <LANGUAGE>
-          With --init: the languages whose presets to use instead of the ones found: typescript,
-          dotnet, python
+      --preset <PRESET>
+          With --init: presets to use, as `init --preset` takes them: languages (typescript, dotnet,
+          python) instead of the ones found, and frameworks (nextjs, clean-architecture, django,
+          fastapi, vertical-slices), opinions that are off unless named
 
           Possible values:
-          - typescript: TypeScript and JavaScript: `rulebearing:typescript`
-          - dotnet:     .NET: `rulebearing:dotnet`
-          - python:     Python: `rulebearing:python`
+          - typescript:         TypeScript and JavaScript: `rulebearing:typescript`
+          - dotnet:             .NET: `rulebearing:dotnet`
+          - python:             Python: `rulebearing:python`
+          - nextjs:             Next.js route and server boundaries: `rulebearing:nextjs`
+          - clean-architecture: Domain, Application, Infrastructure and Presentation:
+            `rulebearing:clean-architecture`
+          - django:             Django's models, views, URLs and migrations: `rulebearing:django`
+          - fastapi:            FastAPI's routers, services and repositories: `rulebearing:fastapi`
+          - vertical-slices:    Features independent of each other: `rulebearing:vertical-slices`
 
       --no-liveness
           Do not check whether rules match anything; the same as --liveness off
@@ -167,6 +212,32 @@ Options:
           Answer as a Claude Code Stop hook: the agent report as the reason to keep going when there
           are errors, exit 0 always
 
+  -A, --affected [<REVISION>]
+          Only report the modules changed since REVISION (default main), committed or not, and every
+          module that reaches them, as dependency-cruiser does; with a rulebearing.* configuration,
+          also every violation on their edges that leave them. .NET source files map to their types'
+          modules
+
+      --affected-depth <NUMBER>
+          With --affected or options.affected: how many steps of dependents to include; 0 (the
+          default) for all
+
+      --exit-code-mode <MODE>
+          How the error count becomes the exit code: default (the count) or strict (10 + the count,
+          so 2 and 3 are never a count)
+
+          Possible values:
+          - default: The error count, capped at 255, as dependency-cruiser exits
+          - strict:  10 plus the error count when there is one, capped at 255, so 2 and 3 only ever
+            mean an untrustworthy run and an invalid configuration
+          
+          [default: default]
+
+      --allow-approximate-gate
+          Let a run read in source mode (--mode source) decide the exit code, or be written with
+          --strict-schema, for a local script; without it such a run exits 2, since its edges are
+          approximate. Never in CI (ADR-0011)
+
   -h, --help
           Print help (see a summary with '-h')
 
@@ -175,6 +246,10 @@ Exit codes:
   1-255   the number of error-severity violations, capped at 255, from a reporter that gates:
           err, err-long, null, teamcity, azure-devops, github-annotations, agent
           (json, csv and text exit 0, as in dependency-cruiser)
-  2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule
+  2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule, or a
+          .NET graph read with --mode source deciding a gate (--allow-approximate-gate lets a
+          local script have the count)
   3       the configuration is invalid
 A run with exactly 2 or 3 error violations also exits 2 or 3; the report says which it was.
+--exit-code-mode strict exits 10 + n for n error violations instead (capped at 255), so 2 and 3
+only ever mean an untrustworthy run and an invalid configuration.

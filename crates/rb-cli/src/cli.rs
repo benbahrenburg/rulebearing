@@ -13,6 +13,8 @@
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
+use crate::exit::ExitCodeMode;
+
 /// The exit-code table, printed under every help text
 /// ([ADR-0008](../../../docs/adr/0008-exit-code-contract.md), [ADR-0030](../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)).
 pub const EXIT_CODES: &str = "Exit codes:
@@ -20,9 +22,13 @@ pub const EXIT_CODES: &str = "Exit codes:
   1-255   the number of error-severity violations, capped at 255, from a reporter that gates:
           err, err-long, null, teamcity, azure-devops, github-annotations, agent
           (json, csv and text exit 0, as in dependency-cruiser)
-  2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule
+  2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule, or a
+          .NET graph read with --mode source deciding a gate (--allow-approximate-gate lets a
+          local script have the count)
   3       the configuration is invalid
-A run with exactly 2 or 3 error violations also exits 2 or 3; the report says which it was.";
+A run with exactly 2 or 3 error violations also exits 2 or 3; the report says which it was.
+--exit-code-mode strict exits 10 + n for n error violations instead (capped at 255), so 2 and 3
+only ever mean an untrustworthy run and an invalid configuration.";
 
 /// `rulebearing`: one architecture rule set for TypeScript, .NET and Python.
 #[derive(Debug, Parser)]
@@ -64,6 +70,9 @@ pub enum Command {
     Hooks(crate::cmd::hooks::HooksCommand),
     /// A brief for an agent starting a session
     Summary(crate::cmd::summary::SummaryArgs),
+    /// Answer the Stop hook ahead of time into .graph/guard/findings.json; with --watch, keep
+    /// the answer current as files are saved until standard input closes
+    Guard(crate::cmd::guard::GuardArgs),
     /// What a file is subject to, before an edit
     Impact(crate::cmd::impact::ImpactArgs),
     /// Where a new module with these imports would be legal
@@ -82,9 +91,21 @@ pub enum Command {
     Adopt(crate::cmd::adopt::AdoptArgs),
     /// Write the current violations to a known-violations file, as depcruise-baseline does
     Baseline(crate::cmd::baseline::BaselineArgs),
+    /// Added and removed edges, new and resolved violations and moved ratchets between two
+    /// results, or between a revision and the working tree
+    Diff(crate::cmd::diff::DiffArgs),
+    /// Summarise the architecture at a release into .graph/snapshots, for changelog and
+    /// rules --unused
+    Snapshot(crate::cmd::snapshot::SnapshotArgs),
+    /// The architecture between two snapshots in words: new edges across boundaries, retired
+    /// rules, ratchets that fell
+    Changelog(crate::cmd::changelog::ChangelogArgs),
     /// Translate ArchUnitNET, NetArchTest, import-linter or eslint rules into a rulebearing.yaml
     #[command(subcommand)]
     Import(crate::cmd::import::ImportCommand),
+    /// Wrap an SVG read from stdin in the page x-dot-webpage writes: dependency-cruiser's
+    /// depcruise-wrap-stream-in-html
+    WrapHtml(crate::cmd::wrap_html::WrapHtmlArgs),
     /// Conformance gate 1 layer 2's protocol (hidden).
     #[command(hide = true)]
     Validate(ProtocolArgs),
@@ -124,6 +145,66 @@ pub enum ProgressType {
     Ndjson,
     /// Nothing.
     None,
+}
+
+/// `--cache-strategy` values
+/// ([Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum CacheStrategyArg {
+    /// git status and diff against the recorded commit, and file size and time.
+    Metadata,
+    /// Every input hashed.
+    Content,
+}
+
+impl CacheStrategyArg {
+    /// The strategy the options carry.
+    pub fn strategy(self) -> rb_model::CacheStrategy {
+        match self {
+            Self::Metadata => rb_model::CacheStrategy::Metadata,
+            Self::Content => rb_model::CacheStrategy::Content,
+        }
+    }
+}
+
+/// `--sidecar` values
+/// ([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
+/// [ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum SidecarArg {
+    /// The repository's dependency-cruiser, run by the node on the path (or `$RULEBEARING_NODE`).
+    Node,
+}
+
+impl SidecarArg {
+    /// The runtime the extractor's options carry.
+    pub fn runtime(self) -> rb_model::SidecarRuntime {
+        match self {
+            Self::Node => rb_model::SidecarRuntime::Node,
+        }
+    }
+}
+
+/// `--mode` values: how the .NET graph is read
+/// ([Wave 3, Step 14](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof),
+/// [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum ModeArg {
+    /// From the built assemblies and their portable PDBs: the gate.
+    Compiled,
+    /// From the .cs files, without a build: namespace-level, every edge approximate, never the
+    /// gate.
+    Source,
+}
+
+impl ModeArg {
+    /// The mode the extractor's options carry.
+    pub fn mode(self) -> rb_model::DotnetMode {
+        match self {
+            Self::Compiled => rb_model::DotnetMode::Compiled,
+            Self::Source => rb_model::DotnetMode::Source,
+        }
+    }
 }
 
 /// When to colour terminal output.
@@ -240,9 +321,13 @@ pub struct CruiseArgs {
     pub graph: Option<String>,
     /// Output type: err, err-long, err-html, json, text, csv, teamcity, azure-devops,
     /// github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot,
-    /// mermaid, d2, metrics, null
+    /// x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, plantuml, null
     #[arg(short = 'T', long, value_name = "TYPE")]
     pub output_type: Option<String>,
+    /// plantuml: what the diagram's nodes are (slices, types, namespaces or folders); wins over
+    /// reporterOptions.plantuml.from
+    #[arg(long, value_name = "NODES", value_parser = ["slices", "types", "namespaces", "folders"])]
+    pub from: Option<String>,
     /// File to write output to; - for stdout
     #[arg(short = 'f', long, value_name = "FILE")]
     pub output_to: Option<String>,
@@ -292,6 +377,20 @@ pub struct CruiseArgs {
     /// Suffix for links in the reports
     #[arg(long, value_name = "SUFFIX")]
     pub suffix: Option<String>,
+    /// Keep the extraction in FOLDER and re-read only what changed since the last run (default
+    /// .graph/cache; node_modules/.cache/dependency-cruiser for a dependency-cruiser
+    /// configuration); replaces options.cache
+    #[arg(short = 'C', long, value_name = "FOLDER", num_args = 0..=1, default_missing_value = "",
+          overrides_with = "no_cache")]
+    pub cache: Option<String>,
+    /// How the cache finds what changed: metadata (git and file size and time, the default) or
+    /// content (every input hashed)
+    #[arg(long, value_enum, value_name = "STRATEGY")]
+    pub cache_strategy: Option<CacheStrategyArg>,
+    /// Do not use the cache, even when options.cache or --cache asks for it. Hidden, as
+    /// dependency-cruiser hides it
+    #[arg(long, hide = true, overrides_with = "cache")]
+    pub no_cache: bool,
     /// Keep TypeScript edges that vanish in compilation: true, false or specify
     #[arg(long, value_name = "VALUE", num_args = 0..=1, default_missing_value = "true")]
     pub ts_pre_compilation_deps: Option<String>,
@@ -309,6 +408,16 @@ pub struct CruiseArgs {
     /// --webpack-config and webpackConfig
     #[arg(long, value_name = "FILE")]
     pub webpack_config_json: Option<String>,
+    /// Extract CoffeeScript and LiveScript files (.coffee, .litcoffee, .coffee.md, .ls, .cjsx,
+    /// .csx) by running the repository's own dependency-cruiser with Node; their edges are
+    /// marked sidecar: true. Without it such a file stops the run (exit 2)
+    #[arg(long, value_enum, value_name = "RUNTIME")]
+    pub sidecar: Option<SidecarArg>,
+    /// How .NET is read: compiled (the default) from the built assemblies and PDBs, or source
+    /// from the .cs files without a build, every edge marked approximate; wins over
+    /// languages.dotnet.mode
+    #[arg(long, value_enum, value_name = "MODE")]
+    pub mode: Option<ModeArg>,
     /// Show progress on stderr
     #[arg(short = 'p', long, value_name = "TYPE", num_args = 0..=1, default_missing_value = "cli-feedback")]
     pub progress: Option<ProgressType>,
@@ -322,13 +431,14 @@ pub struct CruiseArgs {
     /// (the default), or `x-scripts` to also add run scripts to package.json
     #[arg(long, value_name = "ONESHOT", num_args = 0..=1, default_missing_value = "yes")]
     pub init: Option<String>,
-    /// With --init: the languages whose presets to use instead of the ones found: typescript,
-    /// dotnet, python
+    /// With --init: presets to use, as `init --preset` takes them: languages (typescript,
+    /// dotnet, python) instead of the ones found, and frameworks (nextjs, clean-architecture,
+    /// django, fastapi, vertical-slices), opinions that are off unless named
     #[arg(
         long,
         value_enum,
         value_delimiter = ',',
-        value_name = "LANGUAGE",
+        value_name = "PRESET",
         requires = "init"
     )]
     pub preset: Vec<crate::cmd::init::Preset>,
@@ -353,6 +463,25 @@ pub struct CruiseArgs {
     /// there are errors, exit 0 always
     #[arg(long)]
     pub from_hook: bool,
+    /// Only report the modules changed since REVISION (default main), committed or not, and
+    /// every module that reaches them, as dependency-cruiser does; with a rulebearing.* configuration,
+    /// also every violation on their edges that leave them. .NET source files map to their types' modules
+    #[arg(short = 'A', long, value_name = "REVISION", num_args = 0..=1,
+          default_missing_value = rb_config::model::DEFAULT_AFFECTED_REVISION)]
+    pub affected: Option<String>,
+    /// With --affected or options.affected: how many steps of dependents to include; 0 (the
+    /// default) for all
+    #[arg(long, value_name = "NUMBER")]
+    pub affected_depth: Option<u32>,
+    /// How the error count becomes the exit code: default (the count) or strict (10 + the count,
+    /// so 2 and 3 are never a count)
+    #[arg(long, value_enum, value_name = "MODE", default_value_t = ExitCodeMode::Default)]
+    pub exit_code_mode: ExitCodeMode,
+    /// Let a run read in source mode (--mode source) decide the exit code, or be written with
+    /// --strict-schema, for a local script; without it such a run exits 2, since its edges are
+    /// approximate. Never in CI (ADR-0011)
+    #[arg(long)]
+    pub allow_approximate_gate: bool,
 }
 
 /// `fmt`.
@@ -362,7 +491,9 @@ pub struct FmtArgs {
     /// The result to re-report; - for stdin
     #[arg(value_name = "RESULT-JSON")]
     pub input: String,
-    /// Output type
+    /// Output type: any of cruise's (err, err-long, err-html, json, text, csv, teamcity,
+    /// azure-devops, github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi,
+    /// cdot, flat, fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, null)
     #[arg(short = 'T', long, value_name = "TYPE", default_value = "err")]
     pub output_type: String,
     /// File to write output to; - for stdout
@@ -395,11 +526,23 @@ pub struct FmtArgs {
     /// Exit with the number of error violations
     #[arg(short = 'e', long)]
     pub exit_code: bool,
+    /// With --exit-code: default (the count) or strict (10 + the count, so 2 and 3 are never a
+    /// count)
+    #[arg(long, value_enum, value_name = "MODE", default_value_t = ExitCodeMode::Default)]
+    pub exit_code_mode: ExitCodeMode,
+    /// Let a result read in source mode (--mode source) decide the exit code, or be written with
+    /// --strict-schema, for a local script; without it such a result exits 2, since its edges
+    /// are approximate. Never in CI (ADR-0011)
+    #[arg(long)]
+    pub allow_approximate_gate: bool,
+
     /// Prefix for links in the reports
     #[arg(short = 'p', long, value_name = "PREFIX")]
     pub prefix: Option<String>,
-    /// Where the result came from: rulebearing or dependency-cruiser
-    #[arg(long, value_name = "TOOL")]
+    /// Where the result came from (rulebearing or dependency-cruiser), or, for plantuml, what the
+    /// diagram's nodes are (slices, types, namespaces or folders; wins over
+    /// reporterOptions.plantuml.from)
+    #[arg(long, value_name = "TOOL-OR-NODES")]
     pub from: Option<String>,
     /// json: strip every Rulebearing addition
     #[arg(long)]

@@ -105,6 +105,7 @@ A name in that list that is no rule is a configuration error. `rulebearing adopt
 | `fix` | The imperative printed under every finding by `err-long`, `explain`, `can-import` and the `agent` reporter |
 | `examples.forbidden`, `examples.allowed` | Edges `rulebearing test` builds into a graph and checks the rule against, so a rule's regex is tested like code |
 | `owner`, `expires` | Who answers for a temporary rule, and the day after which it fails the run |
+| `since`, `deprecated`, `replacedBy` | When the rule arrived, when it was deprecated and what replaces it; reported by `rules --json` and `changelog`, checked by `config lint`, and without effect on evaluation ([config.md § Rule metadata](config.md#rule-metadata)) |
 | A decision token in `comment` | `adr:NNNN` or `plan:<slug>`; required by `--require-comment-token` |
 | A stable `id` on every violation | `RB-` and eight hex digits from the rule, the two ends and the kind of edge ([ADR-0015](adr/0015-stable-violation-id.md)), so a baseline entry survives unrelated edits |
 | `line` and `column` on every TypeScript edge | Where the import is, so a finding points at a line |
@@ -120,6 +121,7 @@ A name in that list that is no rule is a configuration error. `rulebearing adopt
 | Command | Answers |
 | --- | --- |
 | `rulebearing test` | Does each rule flag its `forbidden` examples and pass its `allowed` ones? |
-| `rulebearing config lint` | Can a rule never match? Is it shadowed by an earlier one? Does an `allowed` list admit everything? Does every rule have a `fix` that says more than its name? |
+| `rulebearing config lint` | Can a rule never match? Is it shadowed by an earlier one? Does an `allowed` list admit everything? Does every rule have a `fix` that says more than its name? Does every `replacedBy` name a rule? |
 | `rulebearing rules --json` | Every rule with its family, severity, and how many modules each side matched |
+| `rulebearing rules --unused` | Which rules matched nothing in each of the last releases' snapshots ([cli.md](cli.md#snapshots-changelog-and-unused-rules)) |
 | `rulebearing explain <rule>` | The rule in a sentence, its reason and fix, and the first edges it matched |

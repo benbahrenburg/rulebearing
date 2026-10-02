@@ -13,7 +13,8 @@
 //! rule, and the expectation: the passing and failing object sets, an error
 //! (`TypeDoesNotExistInArchitecture`), a vacuous selection, or `passes` (`HasNoViolations`). A
 //! case's `family` is `element` (the default), `slice`, `diagram` (a diagram rule over `conformance/archunitnet/diagrams/`),
-//! `plantuml` (a diagram parsed on its own), `association` (a diagram associated with one type
+//! `plantuml` (a diagram parsed on its own), `plantuml-export` (a diagram `PlantUmlFileBuilder` writes,
+//! compared with upstream's text or with `ArchUnitNET`'s own output under `diagrams/generated/`), `association` (a diagram associated with one type
 //! of the architecture, as `ClassDiagramAssociation` does) or `baseline` (an element or slice rule
 //! frozen against a known-violations file under `conformance/archunitnet/baselines/`, as
 //! `FreezingArchRule` is against its violation store). The graphs are
@@ -62,6 +63,7 @@ fn check(architecture: &Architecture<'_>, id: &str, case: &Value) -> Option<Stri
             Err(e) => Some(format!("{id}: the rule does not parse: {e}")),
         },
         "plantuml" => check_plantuml(id, case, &expect),
+        "plantuml-export" => check_plantuml_export(architecture, id, case, &expect),
         "baseline" => check_baseline(id, case, &expect),
         "association" => check_association(architecture, id, case, &expect),
         other => Some(format!("{id}: unknown family {other}")),
@@ -341,6 +343,230 @@ fn check_association(
             (got != want).then(|| format!("{id}: got {got}"))
         }
     }
+}
+
+/// One element of a `from: elements` build: `{dependency: [origin, target, DependencyType]}` or
+/// `{class: name}`.
+fn export_element(value: &Value) -> Result<rb_rules::plantuml_export::Element, String> {
+    use rb_rules::plantuml_export::{Dependency, DependencyType, Element};
+    if let Some(name) = value.get("class").and_then(Value::as_str) {
+        return Element::class(name).map_err(|e| e.to_string());
+    }
+    let parts: Vec<&str> = value
+        .get("dependency")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .collect();
+    let [origin, target, kind] = parts[..] else {
+        return Err(format!("unknown element {value}"));
+    };
+    let kind = match kind {
+        "OneToOne" => DependencyType::OneToOne,
+        "OneToMany" => DependencyType::OneToMany,
+        "OneToPackage" => DependencyType::OneToPackage,
+        "PackageToOne" => DependencyType::PackageToOne,
+        "PackageToPackage" => DependencyType::PackageToPackage,
+        "OneToOneIfSameParentNamespace" => DependencyType::OneToOneIfSameParentNamespace,
+        "PackageToPackageIfSameParentNamespace" => {
+            DependencyType::PackageToPackageIfSameParentNamespace
+        }
+        "OneToOneCompact" => DependencyType::OneToOneCompact,
+        "Circle" => DependencyType::Circle,
+        "NoDependency" => DependencyType::NoDependency,
+        other => return Err(format!("unknown DependencyType {other}")),
+    };
+    Dependency::new(origin, target, kind)
+        .map(Element::Dependency)
+        .map_err(|e| e.to_string())
+}
+
+/// Every constructor `HandleIllegalComponentNamesTest` calls, with `name` in each position: the
+/// exceptions they raise, one per constructor that raised one.
+fn illegal_name_errors(name: &str) -> Vec<rb_rules::plantuml_export::ExportException> {
+    use rb_rules::plantuml_export::{Dependency, DependencyType, Element, SliceNode};
+    [
+        Dependency::new(name, "a", DependencyType::OneToOne).err(),
+        Dependency::new("a", name, DependencyType::OneToOne).err(),
+        Element::class(name).err(),
+        Element::interface(name).err(),
+        SliceNode::new(name, None, None).err(),
+        Element::namespace(name).err(),
+    ]
+    .into_iter()
+    .flatten()
+    .map(|e| e.exception)
+    .collect()
+}
+
+/// A `PlantUmlFileBuilder` case: `rule.from` is `types` (the loaded types in ordinal order,
+/// `take` the first N or `only` those named), `namespaces`, `slices` (`Matching` or
+/// `MatchingWithPackages`), `elements` (custom elements) or `names` (each checked against every
+/// constructor), with the generation options by their `ArchUnitNET` names. `expect.text` is the
+/// diagram upstream asserts, `expect.file` a diagram under `diagrams/generated/` that
+/// `ArchUnitNET` itself wrote for the same selection, `expect.error` the exception.
+fn check_plantuml_export(
+    architecture: &Architecture<'_>,
+    id: &str,
+    case: &Value,
+    expect: &Value,
+) -> Option<String> {
+    let build = case.get("rule").cloned().unwrap_or(Value::Null);
+    if build.get("from").and_then(Value::as_str) == Some("names") {
+        return check_illegal_names(id, &build, expect);
+    }
+    let diagram = match export_builder(architecture, id, &build) {
+        Ok(diagram) => diagram,
+        Err(e) => return Some(e),
+    };
+    match diagram.and_then(|b| b.render()) {
+        Ok(text) => compare_diagram(id, &text, expect),
+        Err(error) => (expect.get("error").and_then(Value::as_str) != Some(error.exception.name()))
+            .then(|| format!("{id}: {error}")),
+    }
+}
+
+/// `HandleIllegalComponentNamesTest`: every name in `rule.names` refused by all six
+/// constructors with the expected exception.
+fn check_illegal_names(id: &str, build: &Value, expect: &Value) -> Option<String> {
+    use rb_rules::plantuml_export::ExportException;
+    let names = strings(build.get("names"));
+    let want = expect.get("error").and_then(Value::as_str);
+    let wrong: Vec<String> = names
+        .iter()
+        .filter(|name| {
+            let errors = illegal_name_errors(name);
+            errors.len() != 6
+                || errors
+                    .iter()
+                    .any(|e| Some(e.name()) != want || *e != ExportException::IllegalComponentName)
+        })
+        .map(|name| format!("{name:?}"))
+        .collect();
+    (names.len() != 8 || !wrong.is_empty())
+        .then(|| format!("{id}: not refused by every constructor: {wrong:?}"))
+}
+
+/// The builder a case draws with: `Err` when the case itself is malformed.
+fn export_builder(
+    architecture: &Architecture<'_>,
+    id: &str,
+    build: &Value,
+) -> Result<
+    Result<rb_rules::plantuml_export::Builder, rb_rules::plantuml_export::ExportError>,
+    String,
+> {
+    use rb_rules::plantuml_export::{
+        Builder, GenerationOptions, export_namespaces, export_slices, export_types,
+    };
+    let flag = |key: &str| build.get(key).and_then(Value::as_bool).unwrap_or(false);
+    let options = GenerationOptions {
+        include_dependencies_to_other: flag("IncludeDependenciesToOther"),
+        limit_dependencies: flag("LimitDependencies"),
+        c4_style: flag("C4Style"),
+        ..GenerationOptions::default()
+    };
+    match build.get("from").and_then(Value::as_str) {
+        Some("types") => {
+            let mut types = export_types(architecture);
+            let only = strings(build.get("only"));
+            if !only.is_empty() {
+                types.retain(|t| only.contains(&t.full_name));
+            }
+            if let Some(take) = build.get("take").and_then(Value::as_u64) {
+                types.truncate(usize::try_from(take).unwrap_or(usize::MAX));
+            }
+            Ok(Builder::new().with_types(&types, &options))
+        }
+        Some("namespaces") => {
+            Ok(Builder::new().with_slices(&export_namespaces(architecture), &options))
+        }
+        Some("slices") => {
+            let (pattern, packages) = match (
+                build.get("Matching").and_then(Value::as_str),
+                build.get("MatchingWithPackages").and_then(Value::as_str),
+            ) {
+                (Some(pattern), None) => (pattern, false),
+                (None, Some(pattern)) => (pattern, true),
+                _ => return Err(format!("{id}: one of Matching and MatchingWithPackages")),
+            };
+            let slicing = rb_rules::slices::slicing(architecture, pattern, packages, id)
+                .map_err(|e| format!("{id}: {e}"))?;
+            Ok(Builder::new().with_slices(&export_slices(&slicing), &options))
+        }
+        Some("elements") => {
+            let elements = build
+                .get("elements")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .map(export_element)
+                .collect::<Result<Vec<_>, String>>()
+                .map_err(|e| format!("{id}: {e}"))?;
+            Ok(Ok(Builder::new().with_elements(elements)))
+        }
+        other => Err(format!("{id}: unknown rule.from {other:?}")),
+    }
+}
+
+/// The diagram against `expect.text`, or `expect.file` under `diagrams/generated/`, with the
+/// `graphDiffers` lines (drawn differently by the committed graph than by `ArchUnitNET`'s
+/// loader, each of which must occur) taken out of both sides first.
+fn compare_diagram(id: &str, text: &str, expect: &Value) -> Option<String> {
+    let want = match (
+        expect.get("text").and_then(Value::as_str),
+        expect.get("file").and_then(Value::as_str),
+    ) {
+        (Some(text), _) => text.to_owned(),
+        (None, Some(file)) => {
+            match std::fs::read_to_string(conformance().join("diagrams/generated").join(file)) {
+                Ok(text) => text,
+                Err(e) => return Some(format!("{id}: {file}: {e}")),
+            }
+        }
+        (None, None) => return Some(format!("{id}: expect neither text nor file")),
+    };
+    let differs = expect.get("graphDiffers");
+    let (extra, missing) = (
+        strings(differs.and_then(|d| d.get("extra"))),
+        strings(differs.and_then(|d| d.get("missing"))),
+    );
+    let without = |text: &str, lines: &BTreeSet<String>| -> (String, usize) {
+        let mut found = 0;
+        let mut kept = String::new();
+        for line in text.split_inclusive('\n') {
+            if lines.contains(line.trim_end_matches('\n')) {
+                found += 1;
+            } else {
+                kept.push_str(line);
+            }
+        }
+        (kept, found)
+    };
+    let (text, extra_found) = without(text, &extra);
+    let (want, missing_found) = without(&want, &missing);
+    if extra_found != extra.len() || missing_found != missing.len() {
+        return Some(format!(
+            "{id}: graphDiffers is stale: {extra_found} of {} extra and {missing_found} of {} missing lines occur",
+            extra.len(),
+            missing.len()
+        ));
+    }
+    if text.is_empty() || text != want {
+        let first = text
+            .lines()
+            .zip(want.lines())
+            .position(|(a, b)| a != b)
+            .unwrap_or(text.lines().count().min(want.lines().count()));
+        return Some(format!(
+            "{id}: the diagram differs from line {} ({:?} against {:?})",
+            first + 1,
+            text.lines().nth(first),
+            want.lines().nth(first)
+        ));
+    }
+    None
 }
 
 #[test]

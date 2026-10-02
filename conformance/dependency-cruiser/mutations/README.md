@@ -6,6 +6,7 @@ Conformance gate 1, layer 5, second half ([plan 0001, Step 18](../../../docs/pla
 | --- | --- |
 | [mutations.patch](mutations.patch) | New files only: `.dependency-cruiser.mutations.cjs` (twelve rules, one per shape) and `src/mutation/<nn>-<shape>/` (the violating modules). Applies with `git apply` at the manifest SHA |
 | [expected.json](expected.json) | The twelve violations, `{ rule, from, to }`, that each tool must report, and nothing else |
+| [expected-affected.json](expected-affected.json) | The seven violations each tool must report with the mutations committed and `--affected <manifest SHA>` ([below](#the-affected-run)) |
 
 ## The twelve shapes
 
@@ -33,6 +34,10 @@ conformance/dependency-cruiser/scripts/run-layer-5.sh --mutations
 ```
 
 The script clones dependency-cruiser's repository at the manifest SHA into the layer 5 checkout folder, applies the patch, installs its dependencies, runs dependency-cruiser at the pinned version ([PIN](../PIN)) and `rulebearing cruise --no-liveness` with `--config .dependency-cruiser.mutations.cjs src bin`, and passes both results to [zero-diff.mjs](../harness/zero-diff.mjs) with `--expect expected.json`. It fails unless each tool reports exactly the twelve expected violations and the two results agree field for field, as the oracle zero-diff requires ([divergences.md](../../divergences.md)).
+
+## The affected run
+
+After the twelve, the script commits the mutations on top of the manifest SHA and runs both tools again with `--affected <manifest SHA>` ([plan 0003, Step 3](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict); [ADR-0052](../../../docs/adr/0052-affected-is-upstreams-reaches-filter.md)). The mutations are committed because `git status --porcelain` lists the new, untracked `src/mutation/` folder rather than its files, and neither tool counts a folder. Both results must agree field for field and hold exactly [expected-affected.json](expected-affected.json): the seven violations whose modules are all in the closure. The other five (`m01`, `m02`, `m06`, `not-in-allowed` and `m12`) are on edges from a mutation to a module that reaches no changed file (`src/cli/format-meta-info.mjs`, `src/graph-utl/compare.mjs`, `path`, `src/utl/bus.mjs`, the unresolved `./does-not-exist.mjs`), which dependency-cruiser's `reaches` filter drops, so neither tool reports them.
 
 ## Changing it
 

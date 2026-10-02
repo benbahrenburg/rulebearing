@@ -188,34 +188,51 @@ fn global_json_folder(project: &Path, root: &Path) -> Option<PathBuf> {
     None
 }
 
-/// The .NET 8 `artifacts/` folder, when a `Directory.Build.props` turns `UseArtifactsOutput`
-/// on: its `ArtifactsPath` expanded (`$(MSBuildThisFileDirectory)` is the props file's folder),
-/// else `artifacts/` beside it.
+/// The value of `name` in the first file of `props` (nearest first) that sets it to something
+/// other than white space, and that file: MSBuild's nearest file wins, and an empty element
+/// (`<UseArtifactsOutput/>`) leaves the property unset.
+fn first_set<'a>(
+    props: &'a [(PathBuf, Properties)],
+    name: &str,
+) -> Option<(&'a PathBuf, &'a Properties, &'a str)> {
+    props.iter().find_map(|(dir, p)| {
+        p.get(name)
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
+            .map(|v| (dir, p, v))
+    })
+}
+
+/// The .NET 8 `artifacts/` folder, when the `Directory.Build.props` chain turns the layout on:
+/// `UseArtifactsOutput` decides, the nearest file that sets it winning (a nearer `false` keeps it
+/// off whatever a parent says); when no file sets it, an `ArtifactsPath` turns it on, which the SDK
+/// reads the same way (as jasontaylordev/CleanArchitecture does). The folder is the nearest
+/// `ArtifactsPath` expanded (`$(MSBuildThisFileDirectory)` is its props file's folder), else
+/// `artifacts/` beside the file that turned the layout on.
 fn artifacts_output(props: &[(PathBuf, Properties)]) -> Option<PathBuf> {
-    let (dir, p) = props.iter().find(|(_, p)| {
-        p.get("UseArtifactsOutput")
-            .is_some_and(|v| v.eq_ignore_ascii_case("true"))
-    })?;
-    let this_file_directory = format!("{}/", dir.display());
-    let path = p
-        .get("ArtifactsPath")
-        .map(|value| {
-            expand(value, &|name: &str| {
-                if name.eq_ignore_ascii_case("MSBuildThisFileDirectory") {
-                    Some(this_file_directory.clone())
-                } else if name.eq_ignore_ascii_case("ArtifactsPath") {
-                    None
-                } else {
-                    p.get(name).map(str::to_owned)
-                }
-            })
-        })
-        .filter(|expanded| !expanded.contains("$(") && !expanded.trim().is_empty())
-        .map_or_else(
-            || dir.join("artifacts"),
-            |expanded| dir.join(expanded.trim().replace('\\', "/")),
-        );
-    Some(normalise(&path))
+    let path = first_set(props, "ArtifactsPath");
+    let on_at = match first_set(props, "UseArtifactsOutput") {
+        Some((dir, _, value)) if value.eq_ignore_ascii_case("true") => dir,
+        Some(_) => return None,
+        None => path?.0,
+    };
+    let folder = path.and_then(|(dir, p, value)| {
+        let this_file_directory = format!("{}/", dir.display());
+        let expanded = expand(value, &|name: &str| {
+            if name.eq_ignore_ascii_case("MSBuildThisFileDirectory") {
+                Some(this_file_directory.clone())
+            } else if name.eq_ignore_ascii_case("ArtifactsPath") {
+                None
+            } else {
+                p.get(name).map(str::to_owned)
+            }
+        });
+        (!expanded.contains("$(") && !expanded.trim().is_empty())
+            .then(|| dir.join(expanded.trim().replace('\\', "/")))
+    });
+    Some(normalise(
+        &folder.unwrap_or_else(|| on_at.join("artifacts")),
+    ))
 }
 
 /// A project file read, before its output is located.
@@ -631,6 +648,93 @@ mod tests {
                 "{path}"
             );
         }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_artifacts_path_alone_turns_the_artifacts_layout_on() {
+        let dir = scratch("artifacts-implied");
+        write(&dir.join("A/A.csproj"), "<Project/>");
+        for (props, expected) in [
+            (
+                "<Project><PropertyGroup><ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath></PropertyGroup></Project>",
+                Some(normalise(&dir.join("artifacts"))),
+            ),
+            // An empty element leaves the property unset: the ArtifactsPath still turns it on.
+            (
+                "<Project><PropertyGroup><UseArtifactsOutput/><ArtifactsPath>built</ArtifactsPath></PropertyGroup></Project>",
+                Some(normalise(&dir.join("built"))),
+            ),
+            (
+                "<Project><PropertyGroup><UseArtifactsOutput>true</UseArtifactsOutput></PropertyGroup></Project>",
+                Some(normalise(&dir.join("artifacts"))),
+            ),
+            (
+                "<Project><PropertyGroup><UseArtifactsOutput>false</UseArtifactsOutput><ArtifactsPath>out</ArtifactsPath></PropertyGroup></Project>",
+                None,
+            ),
+            ("<Project><PropertyGroup /></Project>", None),
+        ] {
+            write(&dir.join("Directory.Build.props"), props);
+            let project = ProjectFile::read(&dir.join("A/A.csproj"), "Debug", &dir).ok();
+            assert_eq!(project.and_then(|p| p.artifacts), expected, "{props}");
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_nearest_props_file_decides_the_artifacts_layout() {
+        let dir = scratch("artifacts-chain");
+        write(&dir.join("sub/A/A.csproj"), "<Project/>");
+        let chain = |nearest: &str, parent: &str| {
+            write(&dir.join("sub/Directory.Build.props"), nearest);
+            write(&dir.join("Directory.Build.props"), parent);
+            ProjectFile::read(&dir.join("sub/A/A.csproj"), "Debug", &dir)
+                .ok()
+                .and_then(|p| p.artifacts)
+        };
+        let props =
+            |body: &str| format!("<Project><PropertyGroup>{body}</PropertyGroup></Project>");
+        // A nearer false keeps the layout off, whatever a parent's ArtifactsPath says.
+        assert_eq!(
+            chain(
+                &props("<UseArtifactsOutput>false</UseArtifactsOutput>"),
+                &props("<ArtifactsPath>$(MSBuildThisFileDirectory)out</ArtifactsPath>")
+            ),
+            None
+        );
+        // A nearer file that sets nothing leaves the parent's ArtifactsPath in charge.
+        assert_eq!(
+            chain(
+                &props("<Other>x</Other>"),
+                &props("<ArtifactsPath>$(MSBuildThisFileDirectory)out</ArtifactsPath>")
+            ),
+            Some(normalise(&dir.join("out")))
+        );
+        // A nearer true with the parent's path: the path is the parent's, relative to it.
+        assert_eq!(
+            chain(
+                &props("<UseArtifactsOutput>true</UseArtifactsOutput>"),
+                &props("<ArtifactsPath>$(MSBuildThisFileDirectory)out</ArtifactsPath>")
+            ),
+            Some(normalise(&dir.join("out")))
+        );
+        // A nearer true and no path anywhere: artifacts/ beside the file that turned it on.
+        assert_eq!(
+            chain(
+                &props("<UseArtifactsOutput>true</UseArtifactsOutput>"),
+                &props("<UseArtifactsOutput>false</UseArtifactsOutput>")
+            ),
+            Some(normalise(&dir.join("sub/artifacts")))
+        );
+        // An empty nearer element is unset, so the parent's false wins.
+        assert_eq!(
+            chain(
+                &props("<UseArtifactsOutput/><ArtifactsPath>near</ArtifactsPath>"),
+                &props("<UseArtifactsOutput>false</UseArtifactsOutput>")
+            ),
+            None
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 

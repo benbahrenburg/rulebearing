@@ -52,6 +52,8 @@ pub mod names;
 pub mod pdb;
 pub mod pe;
 pub mod sig;
+#[cfg(feature = "source-mode")]
+pub mod source;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -211,6 +213,9 @@ pub fn attribute_solution(
 #[derive(Debug, Clone, Copy, Default)]
 pub struct DotnetExtractor;
 
+/// The reason a build without the `source-mode` feature gives for `mode: source`.
+pub const SOURCE_MODE_NOT_BUILT: &str = "source-mode-not-built: this build of rulebearing has no --mode source (the rb-extract-dotnet feature `source-mode`); use a release build, or compiled mode";
+
 /// The root's path below its git repository's root (`src/`), empty at the root or outside a
 /// repository: deterministic builds write documents relative to the repository root (`/_/`).
 fn repository_prefix(root: &Path) -> String {
@@ -318,6 +323,76 @@ fn beside_assemblies(
     found
 }
 
+/// Every assembly and PDB an extraction under `root` with `options` can read, sorted: each
+/// `.dll` and `.pdb` in the output folder of every project whose assembly discovery finds. That
+/// folder holds the analysed assemblies, their PDBs, and the assemblies beside them that
+/// `includeDependencies` and the referenced-type descriptions read, so the list covers them all
+/// (and may name a few the run does not open). It is what an incremental run keys the .NET
+/// graph on ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// the assembly is the unit of change.
+///
+/// # Errors
+/// As discovery fails in [`DotnetExtractor`]'s `extract`; [`ExtractError::NoModulesFound`] when
+/// there is nothing .NET to read.
+pub fn assembly_inputs(root: &Path, options: &DotnetOptions) -> Result<Vec<PathBuf>, ExtractError> {
+    let workspace = discover::discover(root, options).map_err(|e| match e {
+        DiscoverError::NothingFound { .. } => ExtractError::NoModulesFound,
+        DiscoverError::Io { path, source } => read_error(&path, &source),
+        other => read_error(root, &other),
+    })?;
+    let folders: BTreeSet<PathBuf> = workspace
+        .projects
+        .iter()
+        .filter(|p| p.assembly.is_some())
+        .map(output_folder)
+        .collect();
+    let mut inputs = BTreeSet::new();
+    for folder in folders {
+        let Ok(entries) = std::fs::read_dir(&folder) else {
+            continue;
+        };
+        for path in entries.flatten().map(|e| e.path()) {
+            let binary = path
+                .extension()
+                .and_then(|x| x.to_str())
+                .is_some_and(|x| x.eq_ignore_ascii_case("dll") || x.eq_ignore_ascii_case("pdb"));
+            if binary && path.is_file() {
+                inputs.insert(path);
+            }
+        }
+    }
+    Ok(inputs.into_iter().collect())
+}
+
+/// The solution and every project file discovery under `root` reads, sorted: a change to one
+/// can move an assembly or rename it, so a cache treats each as structural
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// A directly loaded assembly (`assemblies`, `directories`) has no project file and is not
+/// listed.
+///
+/// # Errors
+/// As [`assembly_inputs`].
+pub fn project_files(root: &Path, options: &DotnetOptions) -> Result<Vec<PathBuf>, ExtractError> {
+    let workspace = discover::discover(root, options).map_err(|e| match e {
+        DiscoverError::NothingFound { .. } => ExtractError::NoModulesFound,
+        DiscoverError::Io { path, source } => read_error(&path, &source),
+        other => read_error(root, &other),
+    })?;
+    let mut files: BTreeSet<PathBuf> = workspace
+        .projects
+        .iter()
+        .filter(|p| {
+            !p.path
+                .extension()
+                .is_some_and(|e| e.eq_ignore_ascii_case("dll"))
+        })
+        .map(|p| p.path.clone())
+        .collect();
+    files.extend(workspace.solution);
+    files.extend(workspace.errors.into_iter().map(|(path, _)| path));
+    Ok(files.into_iter().collect())
+}
+
 /// Whether a dependency target names a generic parameter (`Declarer+<T>`, or `!!0` when the
 /// declarer is unknown) rather than a type.
 fn is_generic_parameter(name: &str) -> bool {
@@ -417,6 +492,15 @@ impl Extractor for DotnetExtractor {
         let Some(root) = roots.first() else {
             return Err(ExtractError::NoModulesFound);
         };
+        if options.mode() == rb_model::DotnetMode::Source {
+            #[cfg(feature = "source-mode")]
+            return source::extract(root, options, None, false);
+            #[cfg(not(feature = "source-mode"))]
+            return Err(ExtractError::UnsupportedFile {
+                path: root.clone(),
+                reason: SOURCE_MODE_NOT_BUILT.to_owned(),
+            });
+        }
         let workspace = discover::discover(root, options).map_err(|e| match e {
             DiscoverError::NothingFound { .. } => ExtractError::NoModulesFound,
             DiscoverError::Io { path, source } => read_error(&path, &source),
@@ -554,6 +638,17 @@ impl Extractor for DotnetExtractor {
                 files: by_type,
             });
         }
+        // A file that holds code is a module even when no type is attributed to it: top-level
+        // statements whose `Program` is declared in another file (the web SDK's generator writes
+        // `public partial class Program { }` under obj/) are that file's code, and without a
+        // module their edges would be dropped while the assemblies they reach were still listed.
+        for dependency in &built.dependencies {
+            if let (Some(file), Some(read)) = (&dependency.file, reads.get(dependency.assembly)) {
+                files
+                    .entry(file.clone())
+                    .or_insert_with(|| (BTreeSet::new(), true, display(&read.project.path)));
+            }
+        }
         let file_count = files.len() as u64;
         let mut modules: Vec<Module> = files
             .into_iter()
@@ -589,6 +684,9 @@ impl Extractor for DotnetExtractor {
                 ..Receipt::counts(file_count, reads.len() as u64, module_count)
             },
             warnings,
+            files: BTreeMap::new(),
+            sidecar: None,
+            walk: None,
         })
     }
 }

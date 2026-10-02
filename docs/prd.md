@@ -681,7 +681,7 @@ Source: [design § How to know, rather than believe](artifacts/design.md#how-to-
 
 #### NFR-PERF-03
 
-**Query latency and scale regression.** `can-import` MUST answer in milliseconds from the cached graph. `guard --watch` MUST re-check a saved file in under 100 ms. The nightly scale table (wall-clock and peak memory per scale repo) MUST be published in the README, and a regression over 20% MUST fail the nightly run.
+**Query latency and scale regression.** `can-import` MUST answer in milliseconds from the cached graph. `guard --watch` MUST re-check a saved file in under 100 ms, measured on a developer machine; on the CI runner the unchanged-graph save is held to 100 ms and the graph-changing one to a recorded ceiling ([ADR-0060](adr/0060-the-guards-latency-target-is-set-for-a-developer-machine.md)). The nightly scale table (wall-clock and peak memory per scale repo) MUST be published in the README, and a regression over 20% MUST fail the nightly run.
 
 Acceptance:
 - Timing assertions in the nightly workflow; the README table regenerated nightly.
@@ -764,8 +764,8 @@ Source: [design § Open questions](artifacts/design.md#open-questions) | Wave: 0
 **Traceability.** Every code file, plan and ADR MUST carry linked references: a crate's `lib.rs` links its architecture section and plan; a plan links the PRD requirements, ADRs and design sections; an ADR links the design section it derives from and the architecture section it constrains. Plans MUST live in `plans/pending/` and move to `plans/implemented/` only when every exit criterion is met. This repository's own `rulebearing.yaml` MUST cite ADRs in every rule. Every relative link MUST resolve, both the file and, where the link carries one, the `#anchor`.
 
 Acceptance:
-- The link check runs inside every compile (`crates/rb-model/build.rs`), in `cargo xtask lint` and as its own CI job; a broken link fails the build, not only the pull request.
-- Rust doc comments are checked as well as Markdown, so a renamed document breaks the crate that cites it.
+- The link check runs inside every workspace-wide compile (`xtask/gate/build.rs`, [ADR-0058](adr/0058-the-edit-compile-cycle-rebuilds-only-what-changed.md)), in `cargo xtask lint` and as its own CI job; a broken link fails the build, not only the pull request.
+- Rust doc comments are checked as well as Markdown, so a renamed document breaks the workspace build that compiles the crate citing it.
 - A plan move is a reviewed pull request showing the exit criteria met.
 
 Source: [ADR-0001](adr/0001-record-architecture-decisions.md) | Wave: 0 | ADRs: [0001](adr/0001-record-architecture-decisions.md), [0023](adr/0023-documentation-link-and-lint-gates.md)

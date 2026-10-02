@@ -156,9 +156,10 @@ pub struct Options {
     /// `reporterOptions`, verbatim; each reporter reads its own key.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reporter_options: Option<Value>,
-    /// `cache`, accepted and recorded (the content-addressed cache is wave 3).
+    /// `cache`, normalised as dependency-cruiser normalises it ([`CacheSetting`]); `--cache`,
+    /// `--cache-strategy` and `--no-cache` are laid over it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cache: Option<Value>,
+    pub cache: Option<CacheSetting>,
     /// `outputType`, when a config pins one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub output_type: Option<String>,
@@ -168,9 +169,12 @@ pub struct Options {
     /// `baseline` (`mode`, `staleEntriesSeverity`), accepted and recorded (wave 2).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub baseline: Option<Value>,
-    /// `affected`, accepted and recorded (wave 3).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub affected: Option<Value>,
+    /// `affected`: `true` for the changes since `main`, a revision, or `false`. dependency-cruiser
+    /// reads it from the command line only and ignores it in a configuration; a native
+    /// configuration applies it as `--affected` would (`rb-cli`'s `affected` module). Never in
+    /// `optionsUsed`, where dependency-cruiser does not share it either.
+    #[serde(default, skip_serializing)]
+    pub affected: Option<AffectedOption>,
     /// The `resolve` block of the webpack configuration, evaluated: from `--webpack-config-json`,
     /// or from `webpackConfig.fileName` in the sandbox ([`crate::webpack`]). The TypeScript
     /// extractor lays it over its resolver. Never read from or written to a file: `optionsUsed`
@@ -178,6 +182,120 @@ pub struct Options {
     #[serde(skip)]
     pub webpack_config_json: Option<Value>,
 }
+
+/// `options.cache` after normalisation: off (`false`, or `--no-cache`), or the folder, strategy
+/// and compression ([coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)
+/// row `cache`, [Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// It serialises as dependency-cruiser's `optionsUsed.cache` does: `false`, or the object.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CacheSetting {
+    /// `cache: false` or `--no-cache`.
+    Off,
+    /// The cache is on.
+    On(rb_model::CacheOptions),
+}
+
+impl CacheSetting {
+    /// The options when the cache is on.
+    pub fn options(&self) -> Option<&rb_model::CacheOptions> {
+        match self {
+            Self::Off => None,
+            Self::On(options) => Some(options),
+        }
+    }
+
+    /// The folder `cache: true` or `--cache` without a folder means: Rulebearing's for a native
+    /// configuration, dependency-cruiser's for a dependency-cruiser one.
+    pub fn default_folder(compat: CompatMode) -> &'static str {
+        match compat {
+            CompatMode::Native => rb_model::CacheOptions::DEFAULT_FOLDER,
+            CompatMode::DependencyCruiser => rb_model::CacheOptions::DEPENDENCY_CRUISER_FOLDER,
+        }
+    }
+
+    /// `normalizeCacheOptions`: `true` is the default folder, a string is the folder, an object
+    /// has its missing `folder` and `strategy` filled in, `false` is off.
+    ///
+    /// # Errors
+    /// A message naming what is wrong with any other value.
+    pub fn normalise(value: &Value, compat: CompatMode) -> Result<Self, String> {
+        let folder = Self::default_folder(compat);
+        match value {
+            Value::Bool(false) => Ok(Self::Off),
+            Value::Bool(true) => Ok(Self::On(rb_model::CacheOptions::in_folder(folder))),
+            Value::String(named) if !named.is_empty() => {
+                Ok(Self::On(rb_model::CacheOptions::in_folder(named.clone())))
+            }
+            Value::Object(map) => {
+                let mut filled = map.clone();
+                filled
+                    .entry("folder")
+                    .or_insert_with(|| Value::String(folder.to_owned()));
+                serde_json::from_value::<rb_model::CacheOptions>(Value::Object(filled))
+                    .map(Self::On)
+                    .map_err(|e| {
+                        format!("{e}; use folder (a path), strategy (metadata or content) and compress (true or false)")
+                    })
+            }
+            other => Err(format!(
+                "{other} is not a cache setting; use true, false, a folder, or {{ folder, strategy, compress }}"
+            )),
+        }
+    }
+}
+
+impl Serialize for CacheSetting {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::Off => serializer.serialize_bool(false),
+            Self::On(options) => options.serialize(serializer),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for CacheSetting {
+    /// Reads the normalised forms only (`false`, or the object with its folder), as
+    /// [`CacheSetting::normalise`] writes them.
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Written {
+            Off(bool),
+            On(rb_model::CacheOptions),
+        }
+        match Written::deserialize(deserializer)? {
+            Written::Off(false) => Ok(Self::Off),
+            Written::Off(true) => Err(serde::de::Error::custom(
+                "cache: true must be normalised to a folder first",
+            )),
+            Written::On(options) => Ok(Self::On(options)),
+        }
+    }
+}
+/// `options.affected`, in dependency-cruiser's shape (`string | boolean`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(untagged)]
+pub enum AffectedOption {
+    /// `true`: the changes since `main`; `false`: off.
+    Enabled(bool),
+    /// The changes since this revision.
+    Revision(String),
+}
+
+impl AffectedOption {
+    /// The revision to compare with, or `None` when the option is off.
+    pub fn revision(&self) -> Option<&str> {
+        match self {
+            Self::Enabled(true) => Some(DEFAULT_AFFECTED_REVISION),
+            Self::Enabled(false) => None,
+            Self::Revision(revision) => Some(revision),
+        }
+    }
+}
+
+/// The revision `--affected` compares with when given no value, as dependency-cruiser's
+/// command line does.
+pub const DEFAULT_AFFECTED_REVISION: &str = "main";
 
 /// `focus`, `reaches`, `highlight`: the pattern form or the compound form.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -295,6 +413,16 @@ pub struct RuleMeta {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(with = "Option<String>")]
     pub expires: Option<NaiveDate>,
+    /// The release the rule arrived in ([`crate::version`]); informational.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub since: Option<String>,
+    /// The release the rule was deprecated in; the rule is still evaluated and still live
+    /// ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deprecated: Option<String>,
+    /// The rule that takes over from this one; `config lint` checks it exists.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub replaced_by: Option<String>,
     /// Opt out of liveness ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub allow_empty: bool,
@@ -826,6 +954,16 @@ pub struct Ratchet {
     /// Who answers for it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub owner: Option<String>,
+    /// The release it arrived in ([`crate::version`]); informational.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub since: Option<String>,
+    /// The release it was deprecated in; it is still evaluated
+    /// ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deprecated: Option<String>,
+    /// The rule, shorthand or ratchet that takes over; `config lint` checks it exists.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub replaced_by: Option<String>,
 }
 
 /// `rules.layers[]`: one `forbidden` rule per lower-to-higher pair
@@ -854,6 +992,16 @@ pub struct LayersShorthand {
     /// ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub graph: Option<GraphFilter>,
+    /// The release it arrived in ([`crate::version`]); informational.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub since: Option<String>,
+    /// The release it was deprecated in; it is still evaluated
+    /// ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deprecated: Option<String>,
+    /// The rule, shorthand or ratchet that takes over; `config lint` checks it exists.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub replaced_by: Option<String>,
 }
 
 /// `rules.independence[]`: one `$1` fence
@@ -882,6 +1030,16 @@ pub struct IndependenceShorthand {
     /// ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub graph: Option<GraphFilter>,
+    /// The release it arrived in ([`crate::version`]); informational.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub since: Option<String>,
+    /// The release it was deprecated in; it is still evaluated
+    /// ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deprecated: Option<String>,
+    /// The rule, shorthand or ratchet that takes over; `config lint` checks it exists.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub replaced_by: Option<String>,
 }
 
 /// `defines.<name>`: a value read from a JSON file
@@ -954,6 +1112,115 @@ mod tests {
     use super::*;
 
     #[test]
+    fn every_cache_form_normalises_as_dependency_cruiser_does() {
+        use rb_model::{CacheOptions, CacheStrategy};
+        let native = CompatMode::Native;
+        let cruiser = CompatMode::DependencyCruiser;
+        let table = [
+            (
+                serde_json::json!(true),
+                native,
+                Ok(CacheSetting::On(CacheOptions::in_folder(".graph/cache"))),
+            ),
+            (
+                serde_json::json!(true),
+                cruiser,
+                Ok(CacheSetting::On(CacheOptions::in_folder(
+                    "node_modules/.cache/dependency-cruiser",
+                ))),
+            ),
+            (serde_json::json!(false), native, Ok(CacheSetting::Off)),
+            (
+                serde_json::json!("tmp/c"),
+                cruiser,
+                Ok(CacheSetting::On(CacheOptions::in_folder("tmp/c"))),
+            ),
+            (
+                serde_json::json!({ "strategy": "content", "compress": true }),
+                native,
+                Ok(CacheSetting::On(CacheOptions {
+                    folder: ".graph/cache".into(),
+                    strategy: CacheStrategy::Content,
+                    compress: Some(true),
+                })),
+            ),
+            (
+                serde_json::json!({ "folder": "f" }),
+                cruiser,
+                Ok(CacheSetting::On(CacheOptions::in_folder("f"))),
+            ),
+        ];
+        for (value, compat, expected) in table {
+            assert_eq!(CacheSetting::normalise(&value, compat), expected, "{value}");
+        }
+        for wrong in [
+            serde_json::json!(3),
+            serde_json::json!(""),
+            serde_json::json!(null),
+            serde_json::json!(["a"]),
+            serde_json::json!({ "strategy": "fastest" }),
+            serde_json::json!({ "folder": "f", "size": 1 }),
+        ] {
+            let error = CacheSetting::normalise(&wrong, native);
+            assert!(error.is_err(), "{wrong}");
+        }
+        assert!(
+            CacheSetting::normalise(&serde_json::json!({ "strategy": 1 }), native)
+                .is_err_and(|e| e.contains("metadata or content"))
+        );
+    }
+
+    #[test]
+    fn a_cache_setting_serialises_as_options_used_records_it() -> Result<(), serde_json::Error> {
+        let on = CacheSetting::On(rb_model::CacheOptions::in_folder("x"));
+        assert_eq!(
+            serde_json::to_string(&on)?,
+            r#"{"folder":"x","strategy":"metadata"}"#
+        );
+        assert_eq!(serde_json::to_string(&CacheSetting::Off)?, "false");
+        assert_eq!(
+            serde_json::from_str::<CacheSetting>("false")?,
+            CacheSetting::Off
+        );
+        assert_eq!(
+            serde_json::from_str::<CacheSetting>(r#"{"folder":"x"}"#)?,
+            on
+        );
+        assert!(serde_json::from_str::<CacheSetting>("true").is_err());
+        assert_eq!(on.options().map(|o| o.folder.as_str()), Some("x"));
+        assert_eq!(CacheSetting::Off.options(), None);
+        Ok(())
+    }
+
+    #[test]
+    fn affected_takes_dependency_cruisers_string_or_boolean() {
+        for (text, option, revision) in [
+            ("true", AffectedOption::Enabled(true), Some("main")),
+            ("false", AffectedOption::Enabled(false), None),
+            (
+                r#""origin/dev""#,
+                AffectedOption::Revision("origin/dev".into()),
+                Some("origin/dev"),
+            ),
+        ] {
+            let parsed: Option<AffectedOption> = serde_json::from_str(text).ok();
+            assert_eq!(parsed.as_ref(), Some(&option), "{text}");
+            assert_eq!(option.revision(), revision, "{text}");
+        }
+        assert!(serde_json::from_str::<AffectedOption>("3").is_err());
+        let options: Options = serde_json::from_str(r#"{"affected":"HEAD"}"#).unwrap_or_default();
+        assert_eq!(
+            options.affected,
+            Some(AffectedOption::Revision("HEAD".into()))
+        );
+        let written = serde_json::to_value(&options).unwrap_or_default();
+        assert!(
+            written.get("affected").is_none(),
+            "never reaches optionsUsed: {written}"
+        );
+    }
+
+    #[test]
     fn a_dependency_cruiser_rule_deserialises_key_for_key() {
         let rule: Rule = serde_json::from_str(
             r#"{"name":"no-cross","severity":"error","comment":"c adr:0003",
@@ -1020,6 +1287,23 @@ mod tests {
         let back = serde_json::to_value(&rule).unwrap_or_default();
         assert_eq!(back["expires"], "2026-12-31");
         assert_eq!(back["examples"]["allowed"][0], "a -> b");
+    }
+
+    #[test]
+    fn lifecycle_fields_round_trip() {
+        let text = r#"{"name":"r","since":"1.2.0","deprecated":"2.0.0","replacedBy":"s","from":{},"to":{}}"#;
+        let rule: Rule = serde_json::from_str(text).unwrap_or_default();
+        assert_eq!(rule.meta.since.as_deref(), Some("1.2.0"));
+        assert_eq!(rule.meta.deprecated.as_deref(), Some("2.0.0"));
+        assert_eq!(rule.meta.replaced_by.as_deref(), Some("s"));
+        let back = serde_json::to_value(&rule).unwrap_or_default();
+        assert_eq!(back["since"], "1.2.0");
+        assert_eq!(back["deprecated"], "2.0.0");
+        assert_eq!(back["replacedBy"], "s");
+        let plain = serde_json::to_value(Rule::default()).unwrap_or_default();
+        for key in ["since", "deprecated", "replacedBy"] {
+            assert!(plain.get(key).is_none(), "{key} is left out when absent");
+        }
     }
 
     #[test]

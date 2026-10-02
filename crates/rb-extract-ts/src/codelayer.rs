@@ -81,11 +81,13 @@ use rb_model::{
     Accessor, AttributeElement, CallElement, CodeLayer, ElementDependency, Language, Location,
     MemberElement, TypeElement,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::pipeline::Lines;
+use rayon::prelude::*;
 
 /// What an import binds.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 enum Imported {
     /// One export by name; a default import is the export `default`.
     Named(String),
@@ -97,7 +99,7 @@ enum Imported {
 }
 
 /// Where a name points, as its file sees it.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 enum Target {
     /// Declared in this file: the qualified name, `Outer.Inner` for a namespace member.
     Local(String),
@@ -112,7 +114,7 @@ enum Target {
 }
 
 /// A name written in the source, before linking.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct Reference {
     target: Target,
     written: String,
@@ -120,7 +122,7 @@ struct Reference {
 }
 
 /// One entry of a module's export list.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 enum Export {
     /// `export class X`, `export { X as Y }`, `export default X`: a name the file declares.
     Local { exported: String, local: String },
@@ -135,14 +137,14 @@ enum Export {
     All { specifier: String },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct PendingDependency {
     target: Reference,
-    kind: &'static str,
+    kind: String,
     member: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct PendingType {
     element: TypeElement,
     base: Option<Reference>,
@@ -150,20 +152,20 @@ struct PendingType {
     dependencies: Vec<PendingDependency>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct PendingMember {
     element: MemberElement,
     dependencies: Vec<PendingDependency>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct PendingAttribute {
     element: AttributeElement,
     attribute: Reference,
 }
 
 /// The object a method is called on.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 enum Receiver {
     /// `this`, inside the type with this full name.
     This(String),
@@ -171,7 +173,7 @@ enum Receiver {
     Typed(Reference),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct PendingCall {
     from: String,
     receiver: Receiver,
@@ -180,7 +182,7 @@ struct PendingCall {
 }
 
 /// One file's code layer, with its names not yet resolved against the other files.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileCode {
     file: String,
     types: Vec<PendingType>,
@@ -858,7 +860,7 @@ impl<'s> Collector<'s> {
             let target = self.reference(&segments, offset);
             into.push(PendingDependency {
                 target,
-                kind,
+                kind: kind.to_owned(),
                 member: None,
             });
         }
@@ -925,7 +927,7 @@ impl<'s> Collector<'s> {
             });
             dependencies.push(PendingDependency {
                 target: attribute,
-                kind: "attribute",
+                kind: "attribute".to_owned(),
                 member: None,
             });
         }
@@ -1339,7 +1341,7 @@ impl<'s> Collector<'s> {
         if let Some(base) = &base {
             dependencies.push(PendingDependency {
                 target: base.clone(),
-                kind: "inherits",
+                kind: "inherits".to_owned(),
                 member: None,
             });
         }
@@ -1352,7 +1354,7 @@ impl<'s> Collector<'s> {
             );
             dependencies.push(PendingDependency {
                 target: interface.clone(),
-                kind: "implements",
+                kind: "implements".to_owned(),
                 member: None,
             });
             interfaces.push(interface);
@@ -1637,7 +1639,7 @@ impl<'s> Collector<'s> {
             self.type_argument_dependencies(heritage.type_arguments.as_deref(), &mut dependencies);
             dependencies.push(PendingDependency {
                 target: extended.clone(),
-                kind: "inherits",
+                kind: "inherits".to_owned(),
                 member: None,
             });
             interfaces.push(extended);
@@ -1873,7 +1875,7 @@ impl BodyWalker<'_, '_> {
         if let Receiver::Typed(reference) = &receiver {
             self.dependencies.push(PendingDependency {
                 target: reference.clone(),
-                kind: "body",
+                kind: "body".to_owned(),
                 member: Some(method.to_owned()),
             });
         }
@@ -1936,7 +1938,7 @@ impl<'a> Visit<'a> for BodyWalker<'_, '_> {
         if let Some(target) = self.named_type(&it.callee) {
             self.dependencies.push(PendingDependency {
                 target,
-                kind: "body",
+                kind: "body".to_owned(),
                 member: Some("constructor".to_owned()),
             });
         }
@@ -2012,63 +2014,31 @@ impl<'a> Visit<'a> for BodyWalker<'_, '_> {
     }
 }
 
-/// Resolves every file's names against the others' and returns the layer, normalised.
+/// One file's elements with its names resolved, before the graph-wide steps.
+type Linked = (Vec<TypeElement>, Vec<MemberElement>, Vec<AttributeElement>);
+
+/// Resolves every file's names against the others' and returns the layer, normalised. Each
+/// file's names are resolved on their own, in parallel, and joined in the files' order, so the
+/// layer is the one resolving them one file after another gives.
 pub fn link(files: Vec<FileCode>) -> CodeLayer {
-    let modules: BTreeMap<String, (Vec<Export>, BTreeMap<String, String>)> = files
+    let modules: Modules<'_> = files
         .iter()
-        .map(|f| (f.file.clone(), (f.exports.clone(), f.resolved.clone())))
+        .map(|f| (f.file.as_str(), (f.exports.as_slice(), &f.resolved)))
         .collect();
-    let known: BTreeSet<String> = files
+    let known: BTreeSet<&str> = files
         .iter()
-        .flat_map(|f| f.types.iter().map(|t| t.element.full_name.clone()))
+        .flat_map(|f| f.types.iter().map(|t| t.element.full_name.as_str()))
         .collect();
     let linker = Linker {
         modules: &modules,
         known: &known,
     };
+    let per_file: Vec<Linked> = files.par_iter().map(|file| linker.file(file)).collect();
     let mut layer = CodeLayer::default();
-    let mut pending_calls: Vec<(String, PendingCall)> = Vec::new();
-    for file in files {
-        let resolve = |reference: &Reference| linker.resolve(&file.file, reference);
-        let dependency = |pending: &PendingDependency| {
-            resolve(&pending.target).map(|target| ElementDependency {
-                target,
-                kind: pending.kind.to_owned(),
-                member: pending.member.clone(),
-                line: Some(pending.target.line),
-                // A body dependency is `new X()` or a call on X: both are calls.
-                form: (pending.kind == "body").then(|| "call".to_owned()),
-            })
-        };
-        for pending in &file.types {
-            let mut element = pending.element.clone();
-            element.base_type = pending
-                .base
-                .as_ref()
-                .map(|b| resolve(b).unwrap_or_else(|| b.written.clone()));
-            element.interfaces = pending
-                .interfaces
-                .iter()
-                .map(|i| resolve(i).unwrap_or_else(|| i.written.clone()))
-                .collect();
-            element.dependencies = pending.dependencies.iter().filter_map(dependency).collect();
-            layer.types.push(element);
-        }
-        for pending in &file.members {
-            let mut element = pending.element.clone();
-            element.dependencies = pending.dependencies.iter().filter_map(dependency).collect();
-            layer.members.push(element);
-        }
-        for pending in &file.attributes {
-            let mut element = pending.element.clone();
-            if let Some(resolved) = resolve(&pending.attribute) {
-                element.attribute_type = resolved;
-            }
-            layer.attributes.push(element);
-        }
-        for call in file.calls {
-            pending_calls.push((file.file.clone(), call));
-        }
+    for (types, members, attributes) in per_file {
+        layer.types.extend(types);
+        layer.members.extend(members);
+        layer.attributes.extend(attributes);
     }
     close_chains(&mut layer);
     let base_of: BTreeMap<String, String> = layer
@@ -2081,21 +2051,26 @@ pub fn link(files: Vec<FileCode>) -> CodeLayer {
         .iter()
         .map(|m| (m.declaring_type.clone(), m.name.clone()))
         .collect();
-    for (file, call) in pending_calls {
-        let receiver = match &call.receiver {
-            Receiver::This(this_type) => Some(this_type.clone()),
-            Receiver::Typed(reference) => linker.resolve(&file, reference),
-        };
-        let Some(receiver) = receiver else {
-            continue;
-        };
-        let declaring = declaring_type(&receiver, &call.method, &base_of, &declared_members);
-        layer.calls.push(CallElement {
-            from: call.from,
-            to: format!("{declaring}.{}", call.method),
-            location: call.location,
-        });
-    }
+    let calls: Vec<(&str, &PendingCall)> = files
+        .iter()
+        .flat_map(|f| f.calls.iter().map(move |call| (f.file.as_str(), call)))
+        .collect();
+    let calls: Vec<Option<CallElement>> = calls
+        .par_iter()
+        .map(|(file, call)| {
+            let receiver = match &call.receiver {
+                Receiver::This(this_type) => Some(this_type.clone()),
+                Receiver::Typed(reference) => linker.resolve(file, reference),
+            }?;
+            let declaring = declaring_type(&receiver, &call.method, &base_of, &declared_members);
+            Some(CallElement {
+                from: call.from.clone(),
+                to: format!("{declaring}.{}", call.method),
+                location: call.location.clone(),
+            })
+        })
+        .collect();
+    layer.calls.extend(calls.into_iter().flatten());
     // A type depends on whatever its members depend on.
     let positions: BTreeMap<String, usize> = layer
         .types
@@ -2112,7 +2087,61 @@ pub fn link(files: Vec<FileCode>) -> CodeLayer {
         }
     }
     layer.normalise();
+    // Freeing every file's unlinked layer is the caller's wait for nothing: the pool does it.
+    drop(modules);
+    drop(known);
+    rayon::spawn(move || drop(files));
     layer
+}
+
+/// Each file's exports and where its specifiers resolve, by file.
+type Modules<'f> = BTreeMap<&'f str, (&'f [Export], &'f BTreeMap<String, String>)>;
+
+impl Linker<'_> {
+    /// One file's types, members and attributes, its names resolved.
+    fn file(&self, file: &FileCode) -> Linked {
+        let resolve = |reference: &Reference| self.resolve(&file.file, reference);
+        let dependency = |pending: &PendingDependency| {
+            resolve(&pending.target).map(|target| ElementDependency {
+                target,
+                kind: pending.kind.clone(),
+                member: pending.member.clone(),
+                line: Some(pending.target.line),
+                // A body dependency is `new X()` or a call on X: both are calls.
+                form: (pending.kind == "body").then(|| "call".to_owned()),
+            })
+        };
+        let mut types = Vec::with_capacity(file.types.len());
+        for pending in &file.types {
+            let mut element = pending.element.clone();
+            element.base_type = pending
+                .base
+                .as_ref()
+                .map(|b| resolve(b).unwrap_or_else(|| b.written.clone()));
+            element.interfaces = pending
+                .interfaces
+                .iter()
+                .map(|i| resolve(i).unwrap_or_else(|| i.written.clone()))
+                .collect();
+            element.dependencies = pending.dependencies.iter().filter_map(dependency).collect();
+            types.push(element);
+        }
+        let mut members = Vec::with_capacity(file.members.len());
+        for pending in &file.members {
+            let mut element = pending.element.clone();
+            element.dependencies = pending.dependencies.iter().filter_map(dependency).collect();
+            members.push(element);
+        }
+        let mut attributes = Vec::with_capacity(file.attributes.len());
+        for pending in &file.attributes {
+            let mut element = pending.element.clone();
+            if let Some(resolved) = resolve(&pending.attribute) {
+                element.attribute_type = resolved;
+            }
+            attributes.push(element);
+        }
+        (types, members, attributes)
+    }
 }
 
 /// The type along `receiver`'s base chain that declares `method`, else `receiver` itself.
@@ -2161,8 +2190,8 @@ fn close_chains(layer: &mut CodeLayer) {
 
 /// Resolves names across files.
 struct Linker<'l> {
-    modules: &'l BTreeMap<String, (Vec<Export>, BTreeMap<String, String>)>,
-    known: &'l BTreeSet<String>,
+    modules: &'l Modules<'l>,
+    known: &'l BTreeSet<&'l str>,
 }
 
 impl Linker<'_> {
@@ -2188,7 +2217,7 @@ impl Linker<'_> {
             full.push('.');
             full.push_str(segment);
         }
-        self.known.contains(&full).then_some(full)
+        self.known.contains(full.as_str()).then_some(full)
     }
 
     /// `seen` holds the (file, export) pairs already asked, so a re-export cycle ends and a
@@ -2223,7 +2252,7 @@ impl Linker<'_> {
         if !seen.insert((file.to_owned(), name.to_owned())) {
             return None;
         }
-        let (exports, resolved) = self.modules.get(file)?;
+        let &(exports, resolved) = self.modules.get(file)?;
         for export in exports {
             match export {
                 Export::Local { exported, local } if exported == name => {

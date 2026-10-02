@@ -325,3 +325,127 @@ fn a_namespace_two_distributions_share_names_neither() -> Result<(), Box<dyn Err
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
+
+/// Incremental extraction of the fixture package
+/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// with every file unchanged, every file changed, and each file changed on its own, the result
+/// equals the full extraction byte for byte: modules, code layer (base chains included),
+/// receipt and warnings (the unparsable file's included), and the kept states themselves.
+#[test]
+fn an_incremental_run_equals_the_full_one() -> Result<(), Box<dyn Error>> {
+    let mut settings = rb_extract_python::prepare(&fixture(), &PythonOptions::default(), None)?;
+    let plain = rb_extract_python::extract_with(&[], &settings)?;
+    settings.keep_file_states = true;
+    let full = rb_extract_python::extract_with(&[], &settings)?;
+    let expected = serialise(&full)?;
+    assert_eq!(
+        expected,
+        serialise(&plain)?,
+        "keeping states changes nothing"
+    );
+    assert!(plain.files.is_empty());
+    let read: Vec<PathBuf> = full.files.keys().map(PathBuf::from).collect();
+    assert!(read.len() > 10, "{read:?}");
+    let mut variants = vec![(Vec::new(), read.clone()), (read.clone(), Vec::new())];
+    for (index, file) in read.iter().enumerate() {
+        let mut others = read.clone();
+        others.remove(index);
+        variants.push((vec![file.clone()], others));
+    }
+    for (changed, unchanged) in variants {
+        let request = rb_model::ExtractRequest {
+            changed: changed.clone(),
+            unchanged,
+            previous: full.clone(),
+            walk_unchanged: false,
+        };
+        let again = rb_extract_python::extract_incremental(&[], &settings, &request)?;
+        assert_eq!(serialise(&again)?, expected, "{changed:?} changed");
+        assert_eq!(again.files, full.files, "{changed:?} changed");
+    }
+    Ok(())
+}
+
+#[test]
+fn an_unchanged_file_comes_from_the_earlier_state_not_the_disk() -> Result<(), Box<dyn Error>> {
+    let mut settings = rb_extract_python::prepare(&fixture(), &PythonOptions::default(), None)?;
+    settings.keep_file_states = true;
+    let full = rb_extract_python::extract_with(&[], &settings)?;
+    let source = "src/app/shapes.py";
+    let mut previous = full.clone();
+    for module in &mut previous.modules {
+        if module.source == source {
+            module.dependencies.clear();
+        }
+    }
+    if let Some(state) = previous.files.get_mut(source) {
+        state.warnings = vec![rb_model::Warning::about(source, "from the earlier run")];
+    }
+    let request = rb_model::ExtractRequest {
+        changed: Vec::new(),
+        unchanged: vec![PathBuf::from(source)],
+        previous: previous.clone(),
+        walk_unchanged: false,
+    };
+    let reused = rb_extract_python::extract_incremental(&[], &settings, &request)?;
+    let module = reused.modules.iter().find(|m| m.source == source);
+    assert_eq!(module.map(|m| m.dependencies.len()), Some(0));
+    assert!(
+        reused
+            .warnings
+            .iter()
+            .any(|w| w.message == "from the earlier run")
+    );
+    // Marked changed as well, or without a kept state, the file is read again.
+    for request in [
+        rb_model::ExtractRequest {
+            changed: vec![PathBuf::from(source)],
+            unchanged: vec![PathBuf::from(source)],
+            previous: previous.clone(),
+            walk_unchanged: false,
+        },
+        rb_model::ExtractRequest {
+            changed: Vec::new(),
+            unchanged: vec![PathBuf::from(source)],
+            previous: rb_model::Extraction {
+                files: std::collections::BTreeMap::new(),
+                ..previous.clone()
+            },
+            walk_unchanged: false,
+        },
+    ] {
+        let read = rb_extract_python::extract_incremental(&[], &settings, &request)?;
+        assert_eq!(serialise(&read)?, serialise(&full)?);
+    }
+    Ok(())
+}
+
+/// The environment a cache compares between runs: the chosen `site-packages` and its
+/// distributions, so an installation into an ignored `.venv` is seen.
+#[test]
+fn the_environment_names_the_site_and_its_distributions() -> Result<(), Box<dyn Error>> {
+    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join("py-environment");
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("app"))?;
+    std::fs::write(dir.join("pyproject.toml"), "[project]\nname = \"x\"\n")?;
+    std::fs::write(dir.join("app/__init__.py"), "")?;
+    let options = PythonOptions::default();
+    assert_eq!(
+        rb_extract_python::environment(&dir, &options, None)?,
+        "none"
+    );
+    let site = dir.join(".venv/lib/python3.12/site-packages");
+    std::fs::create_dir_all(site.join("fancylib-1.0.dist-info"))?;
+    std::fs::create_dir_all(site.join("fancylib"))?;
+    let one = rb_extract_python::environment(&dir, &options, None)?;
+    assert!(
+        one.ends_with("site-packages\nfancylib-1.0.dist-info"),
+        "{one}"
+    );
+    std::fs::create_dir_all(site.join("requests-2.31.0.dist-info"))?;
+    let two = rb_extract_python::environment(&dir, &options, None)?;
+    assert_ne!(one, two);
+    assert!(two.contains("requests-2.31.0.dist-info"));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}

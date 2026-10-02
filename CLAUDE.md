@@ -32,7 +32,7 @@ The primary language is Rust (a Cargo workspace under `crates/`). TypeScript, C#
 
 1. **Find the plan.** Every feature belongs to a sub-wave of one plan under `docs/plans/pending/`. Do not build something no plan names; if the design calls for it and no plan does, add it to the plan first in a separate change.
 2. **Read the ADRs the plan applies.** An ADR is not edited after acceptance; a reversal is a new ADR that supersedes it. The wave 0 .NET decision ([ADR-0003](docs/adr/0003-dotnet-extractor-fallback.md)) is the model: a measured trigger, a decision rule fixed in advance, an outcome recorded as a new ADR.
-3. **Link everything.** Every source file's module doc, every plan and every ADR carries links to the architecture section, the ADRs, the plan and the PRD requirement it serves. The check is not advisory: it runs inside `cargo build`, `cargo test` and `cargo clippy` through `crates/rb-model/build.rs`, in `cargo xtask lint`, and as its own CI job, and it verifies both the file and the `#anchor` ([ADR-0023](docs/adr/0023-documentation-link-and-lint-gates.md)). A broken link fails the compile; `RB_SKIP_DOC_LINK_CHECK=1` bypasses it locally while you move a document. When you add a crate, copy the doc-comment header pattern from `crates/rb-model/src/lib.rs`.
+3. **Link everything.** Every source file's module doc, every plan and every ADR carries links to the architecture section, the ADRs, the plan and the PRD requirement it serves. The check is not advisory: it runs inside every workspace-wide `cargo build`, `cargo test` and `cargo clippy` through `xtask/gate/build.rs`, in `cargo xtask lint`, and as its own CI job, and it verifies both the file and the `#anchor` ([ADR-0023](docs/adr/0023-documentation-link-and-lint-gates.md), [ADR-0058](docs/adr/0058-the-edit-compile-cycle-rebuilds-only-what-changed.md)). A command scoped to one package (`-p`) does not run it. A broken link fails the compile; `RB_SKIP_DOC_LINK_CHECK=1` bypasses it locally while you move a document. When you add a crate, copy the doc-comment header pattern from `crates/rb-model/src/lib.rs`.
 4. **Update the ledger.** A coverage-tab row in `docs/artifacts/` is never edited. When the pinned upstream suite proves a row, the plan's status table records it with the CI run as evidence; the tab itself is regenerated from the design document, not hand-edited.
 5. **Move the plan when it is done.** The checklist at the end of each plan's third section says what "done" means. The pull request that moves a plan to `implemented/` links the green checks for every exit criterion. A move is the only way a plan leaves `pending/`; nothing in either folder is ever deleted (see "Things not to do").
 
@@ -67,9 +67,19 @@ Coverage is a floor, not the measure of a good test. Three further gates say whe
 
 | Gate | Command | Rule |
 | --- | --- | --- |
-| Mutation testing | `cargo mutants --package rb-model --package rb-rules --package xtask` | A surviving mutant fails CI. It is a missing assertion, so the fix is a test, never a new exclusion. Exclusions live in `.cargo/mutants.toml` and each carries its reason |
+| Mutation testing | `scripts/mutants-diff.sh <base>` for a change; `cargo mutants --package rb-model --package rb-rules --package xtask` for the whole scope | A surviving mutant fails CI. A pull request mutates the lines it changes, a push to `main` the whole scope ([ADR-0059](docs/adr/0059-gates-run-by-tier-and-mutants-by-diff.md)). It is a missing assertion, so the fix is a test, never a new exclusion. Exclusions live in `.cargo/mutants.toml` and each carries its reason |
 | Property tests | `cargo test` | A pure function over an open input space (a hash, a slug, a path, a parser) carries `proptest` invariants beside its examples |
 | Snapshots | `RB_UPDATE_SNAPSHOTS=1 cargo test -p rb-cli` | The command-line help is a committed snapshot, because flag parity is a promise. Regenerating one is a reviewable diff that must be explained |
+
+Which gates run when ([ADR-0059](docs/adr/0059-gates-run-by-tier-and-mutants-by-diff.md)). CI runs every required check on every pull request regardless; the tiers say what to run locally before it gets there.
+
+| Tier | When | Gates |
+| --- | --- | --- |
+| Inner loop | after each edit | `cargo check -p <crate>`, `cargo test -p <crate>`, `cargo clippy -p <crate> --all-targets -- -D warnings` |
+| Step merge | once per step branch, after its review fixes, not after each finding | `cargo lint`, `cargo test --workspace --all-features`, `scripts/mutants-diff.sh <wave branch>`, gate 1 layers 1 to 4 and gate 2 when the step touches an extractor, a reporter or the engine |
+| Sub-wave close | once, before the sub-wave is marked `Done` | the whole definition of done below: coverage per crate, both gates in full with the ratchets, layer 5, the oracles, the whole mutation scope, `cargo deny`, the plan's timings |
+
+Never take a timing while a mutation run or the workspace suite is running on the same machine, and never start the two of those side by side.
 
 What a change must ship with:
 
@@ -93,6 +103,7 @@ The workspace lints in `Cargo.toml` are the rule; `cargo clippy --workspace --al
 - **Regex.** Only the `regex` crate. No `fancy-regex`. Captured groups are substituted escaped ([ADR-0016](docs/adr/0016-linear-time-regex-and-strict-compat.md)).
 - **Dependencies** are declared once in `[workspace.dependencies]` and must pass `cargo deny` (MIT-compatible only; no GPL). Add a dependency in the plan that needs it, not in advance.
 - **Features.** Each extractor is a feature of `rb-cli`; `cargo build -p rb-cli --no-default-features --features extract-python` must build. Do not add cross-feature `cfg` in the engine.
+- **Build speed.** Dev and test builds carry line tables only; set `CARGO_PROFILE_DEV_DEBUG=full` for a build a debugger needs locals from. Set `RUSTC_WRAPPER=sccache` on your machine (not in the repository) so parallel worktrees share compiled dependencies ([ADR-0058](docs/adr/0058-the-edit-compile-cycle-rebuilds-only-what-changed.md)).
 - **Performance.** Parallelise with `rayon` at the file level; never hold a whole repository's source text in memory at once; the cache is content-addressed under `.graph/`. Measure with the nightly table, not by feel.
 - **Errors for agents.** Every error message names the file, the rule and the fix where one exists; `err-long`, `sarif`, `junit` and `agent` all print the rule's `fix` text.
 
@@ -135,6 +146,7 @@ cargo build --release                                   # target/release/rulebea
 cargo test --workspace --all-features
 cargo llvm-cov --workspace --all-features --fail-under-lines 70 && scripts/coverage-per-crate.sh 70
 cargo mutants --package rb-model --package rb-rules --package xtask   # a survivor fails CI
+scripts/mutants-diff.sh origin/main                     # the same, over the lines changed since the merge base
 cargo deny check licenses advisories bans sources       # needs cargo-deny
 typos && actionlint && git ls-files '*.sh' | xargs shellcheck --severity=style
 conformance/dependency-cruiser/run.sh                   # gate 1, layers 1 to 4 (needs Node 22)
@@ -153,6 +165,7 @@ fuzz/run.sh metadata_reader 600                         # fuzz the metadata read
 wrappers/publish-placeholders.sh --dry-run              # package the four 0.0.1 name reservations (docs/release.md)
 scripts/cargo-graph.sh > target/cargo-graph.json && ./target/release/rulebearing cruise --config rulebearing.yaml --require-comment-token --graph target/cargo-graph.json   # the self-check CI runs
 testbeds/synth/bench.sh                                 # NFR-PERF-01: the 5,500-module synthetic benchmark (docs/perf.md)
+testbeds/synth/guard.sh                                 # NFR-PERF-03: guard --watch's check of a saved file on that tree, p95 under 100 ms
 testbeds/init/run.sh <checkout> <owner/name>            # regenerate an init fixture
 scripts/adoption-signals.sh <checkout> --repo <owner/name> --gate <check>   # NFR-ADOPT-01 signals (docs/adoption.md)
 ./target/release/rulebearing --help

@@ -9,7 +9,8 @@
 //!
 //! **Keys.** A key dependency-cruiser's configuration schema does not define is an error, as it
 //! is in dependency-cruiser (a typo must not quietly widen a rule). The native metadata keys
-//! (`fix`, `examples`, `owner`, `expires`, `allowEmpty`) are legal in both formats; in a
+//! (`fix`, `examples`, `owner`, `expires`, the lifecycle fields `since`, `deprecated` and
+//! `replacedBy`, and `allowEmpty`) are legal in both formats; in a
 //! `.dependency-cruiser.*` file each is a warning that the file no longer runs on
 //! dependency-cruiser, and an error under `--strict-compat`.
 //!
@@ -54,7 +55,16 @@ const RULE_KEYS: &[&str] = &[
     "name", "severity", "comment", "scope", "from", "to", "module",
 ];
 /// The native metadata keys.
-pub const NATIVE_RULE_KEYS: &[&str] = &["fix", "examples", "owner", "expires", "allowEmpty"];
+pub const NATIVE_RULE_KEYS: &[&str] = &[
+    "fix",
+    "examples",
+    "owner",
+    "expires",
+    "since",
+    "deprecated",
+    "replacedBy",
+    "allowEmpty",
+];
 /// The rule key that narrows the graph a rule sees, native configurations only
 /// ([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).
 pub const GRAPH_KEY: &str = "graph";
@@ -907,6 +917,33 @@ mod tests {
     }
 
     #[test]
+    fn lifecycle_fields_are_native_additions() -> Result<(), ConfigError> {
+        for key in ["since", "deprecated", "replacedBy"] {
+            let config = object(json!({ "forbidden": [{ "name": "r", key: "1.0.0" }] }));
+            assert!(
+                check_keys(&config, CompatMode::Native, false)?
+                    .warnings
+                    .is_empty()
+            );
+            let check = check_keys(&config, CompatMode::DependencyCruiser, false)?;
+            assert_eq!(check.warnings.len(), 1, "{key}");
+            assert!(
+                check.warnings[0]
+                    .message
+                    .contains(&format!("`{key}` is a Rulebearing addition")),
+                "{}",
+                check.warnings[0].message
+            );
+            let strict = check_keys(&config, CompatMode::DependencyCruiser, true);
+            assert!(
+                matches!(&strict, Err(ConfigError::Strict { rule, message }) if rule == "r" && message.contains(key)),
+                "{key}: {strict:?}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn normalisation_is_dependency_cruisers() -> Result<(), ConfigError> {
         let config = object(json!({
             "forbidden": [
@@ -1310,7 +1347,9 @@ mod tests {
         .map(|e| e.to_string())
         .unwrap_or_default();
         assert!(
-            unknown.ends_with("module, fix, examples, owner, expires, allowEmpty, graph"),
+            unknown.ends_with(
+                "module, fix, examples, owner, expires, since, deprecated, replacedBy, allowEmpty, graph"
+            ),
             "{unknown}"
         );
         Ok(())

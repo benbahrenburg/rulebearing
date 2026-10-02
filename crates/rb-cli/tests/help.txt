@@ -13,6 +13,8 @@ Commands:
   config      Convert, expand or lint a configuration
   hooks       Install agent hooks
   summary     A brief for an agent starting a session
+  guard       Answer the Stop hook ahead of time into .graph/guard/findings.json; with --watch, keep
+              the answer current as files are saved until standard input closes
   impact      What a file is subject to, before an edit
   place       Where a new module with these imports would be legal
   propose     Draft a rule from globs, a selector or one forbidden edge, with what it matches today
@@ -22,8 +24,16 @@ Commands:
   init        Write a first configuration from what the repository holds, passing on its first run
   adopt       Put an existing dependency-cruiser configuration behind a green gate, with a baseline
   baseline    Write the current violations to a known-violations file, as depcruise-baseline does
+  diff        Added and removed edges, new and resolved violations and moved ratchets between two
+              results, or between a revision and the working tree
+  snapshot    Summarise the architecture at a release into .graph/snapshots, for changelog and rules
+              --unused
+  changelog   The architecture between two snapshots in words: new edges across boundaries, retired
+              rules, ratchets that fell
   import      Translate ArchUnitNET, NetArchTest, import-linter or eslint rules into a
               rulebearing.yaml
+  wrap-html   Wrap an SVG read from stdin in the page x-dot-webpage writes: dependency-cruiser's
+              depcruise-wrap-stream-in-html
 
 Options:
   -h, --help     Print help
@@ -34,6 +44,10 @@ Exit codes:
   1-255   the number of error-severity violations, capped at 255, from a reporter that gates:
           err, err-long, null, teamcity, azure-devops, github-annotations, agent
           (json, csv and text exit 0, as in dependency-cruiser)
-  2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule
+  2       the run cannot be trusted: zero modules, an unsupported file, a vacuous rule, or a
+          .NET graph read with --mode source deciding a gate (--allow-approximate-gate lets a
+          local script have the count)
   3       the configuration is invalid
 A run with exactly 2 or 3 error violations also exits 2 or 3; the report says which it was.
+--exit-code-mode strict exits 10 + n for n error violations instead (capped at 255), so 2 and 3
+only ever mean an untrustworthy run and an invalid configuration.

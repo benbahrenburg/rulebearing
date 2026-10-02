@@ -10,6 +10,17 @@ use std::process::ExitCode;
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    if let Some(code) = rb_cli::run_daemon(&args) {
+        return ExitCode::from(code);
+    }
+    if let Some(code) = rb_cli::run_streaming(
+        &args,
+        &mut std::io::stdin().lock(),
+        &mut std::io::stdout().lock(),
+        &mut std::io::stderr(),
+    ) {
+        return ExitCode::from(code);
+    }
     let outcome = rb_cli::run_with_input(&args, &mut std::io::stdin());
     let _ = std::io::stdout().write_all(outcome.stdout.as_bytes());
     let _ = std::io::stderr().write_all(outcome.stderr.as_bytes());

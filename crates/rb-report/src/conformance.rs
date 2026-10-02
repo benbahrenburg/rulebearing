@@ -1,20 +1,30 @@
 //! The reporters' half of the `rulebearing validate` protocol: dependency-cruiser's unit specs for
 //! reporter internals (`test/report/dot/theming.spec.mjs`, `module-utl.spec.mjs`,
-//! `test/report/error-html/utl.spec.mjs`) call these functions through it, unmodified.
+//! `test/report/error-html/utl.spec.mjs`, the `test/report/anon` unit specs) call these functions
+//! through it, unmodified.
 //!
 //! - Protocol: `conformance/dependency-cruiser/harness/shim.mjs` (its header is the contract)
 //! - Decision: [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md)
-//! - Plan: [Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e),
+//!   [Wave 3, Step 6](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
 //! - Requirement: [NFR-CONF-01](../../../docs/prd.md#nfr-conf-01)
 //!
 //! A request names a `#report/...` module, an export and one argument list per application of a
 //! curried function; [`dispatch`] maps each to the Rust function that ports it. The engine's
 //! modules are answered by `rb_rules::conformance`, which this module reuses for the request and
 //! error shapes.
+//!
+//! Upstream's anonymiser keeps state between calls: `anonymizePathElement` takes words off the
+//! front of the list it is given, and a module-level cache maps each replaced part to its word
+//! until `clearCache()`. The protocol is stateless, so the harness (`anon-forward.mjs`) holds that
+//! state and sends it as one more argument after upstream's (the cache as `[part, word]` pairs),
+//! and the reply is `{ value, wordList, cache }`: the return value, the words left and the cache
+//! after the call, which the harness writes back into the caller's list and its own cache.
 
 use rb_rules::conformance::{ProtocolError, Request};
 use serde_json::{Map, Value, json};
 
+use crate::anon::{Anonymizer, NO_DOCUMENT, WHITELIST_RE, random_string};
 use crate::dot::module_utl::{add_url, extract_first_transgression, flat_label, folderify};
 use crate::dot::theme::{apply_theme, attributize, normalize_theme, theme_attributes};
 use crate::err_html::{
@@ -103,7 +113,51 @@ pub fn dispatch(request: &Request) -> Result<Value, ProtocolError> {
         ("#report/error-html/utl.mjs", "determineFromExtras") => {
             Value::String(determine_from_extras(first(0).unwrap_or(&empty)))
         }
+        ("#report/anon/random-string.mjs", "default") => {
+            Value::String(random_string(&NO_DOCUMENT, &text(first(0))))
+        }
+        ("#report/anon/anonymize-path-element.mjs", "anonymizePathElement") => {
+            let mut anonymizer = stateful(first(1), first(4));
+            let whitelist = first(2).map_or_else(|| "^$".to_owned(), |w| text(Some(w)));
+            let cached = first(3).is_none_or(|c| js::truthy(Some(c)));
+            let value = anonymizer.path_element(&text(first(0)), &whitelist, cached);
+            state_reply(&value, &anonymizer)
+        }
+        ("#report/anon/anonymize-path.mjs", "anonymizePath") => {
+            let mut anonymizer = stateful(first(1), first(3));
+            let whitelist = first(2).map_or_else(|| WHITELIST_RE.to_owned(), |w| text(Some(w)));
+            let value = anonymizer.path(&text(first(0)), &whitelist);
+            state_reply(&value, &anonymizer)
+        }
         _ => return Err(not_ported(request)),
+    })
+}
+
+/// The anonymiser a stateful call starts from: the caller's word list, used as given, and the
+/// cache the harness holds.
+fn stateful(words: Option<&Value>, cache: Option<&Value>) -> Anonymizer {
+    let words = words
+        .and_then(Value::as_array)
+        .map(|w| w.iter().map(|v| js::to_string(Some(v))).collect::<Vec<_>>())
+        .unwrap_or_default();
+    let mut anonymizer = Anonymizer::new(words);
+    for pair in cache.and_then(Value::as_array).into_iter().flatten() {
+        if let (Some(part), Some(word)) = (
+            pair.get(0).and_then(Value::as_str),
+            pair.get(1).and_then(Value::as_str),
+        ) {
+            anonymizer.cache.insert(part.to_owned(), word.to_owned());
+        }
+    }
+    anonymizer
+}
+
+/// `{ value, wordList, cache }` after a stateful call.
+fn state_reply(value: &str, anonymizer: &Anonymizer) -> Value {
+    json!({
+        "value": value,
+        "wordList": anonymizer.words,
+        "cache": anonymizer.cache.iter().map(|(k, v)| json!([k, v])).collect::<Vec<_>>(),
     })
 }
 
@@ -241,6 +295,54 @@ mod tests {
             r#"{"result":"b=\"x\""}"#
         );
         assert!(answer("{").is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn anon_internals_carry_their_state() -> Result<(), ProtocolError> {
+        let element = "#report/anon/anonymize-path-element.mjs";
+        let reply = call(
+            element,
+            "anonymizePathElement",
+            json!([["one", ["aap", "noot"], "^$", false, []]]),
+        )?;
+        assert_eq!(
+            reply,
+            json!({ "value": "aap", "wordList": ["noot"], "cache": [] })
+        );
+        let cached = call(
+            element,
+            "anonymizePathElement",
+            json!([["yudelyo", null, null, null, [["yudelyo", "zelda"]]]]),
+        )?;
+        assert_eq!(cached["value"], json!("zelda"));
+        let whitelisted = call(
+            element,
+            "anonymizePathElement",
+            json!([["package", [], "^packages?$", false, []]]),
+        )?;
+        assert_eq!(whitelisted["value"], json!("package"));
+        let path = call(
+            "#report/anon/anonymize-path.mjs",
+            "anonymizePath",
+            json!([["src/tien/index.ts", ["foo"], null, []]]),
+        )?;
+        assert_eq!(
+            path,
+            json!({ "value": "src/foo/index.ts", "wordList": [], "cache": [["tien", "foo"]] })
+        );
+        let own = call(
+            "#report/anon/anonymize-path.mjs",
+            "anonymizePath",
+            json!([["src/x", ["foo"], "^x$", []]]),
+        )?;
+        assert_eq!(own["value"], json!("foo/x"));
+        let random = call(
+            "#report/anon/random-string.mjs",
+            "default",
+            json!([["ab-1"]]),
+        )?;
+        assert_eq!(random, json!(random_string(&NO_DOCUMENT, "ab-1")));
         Ok(())
     }
 }

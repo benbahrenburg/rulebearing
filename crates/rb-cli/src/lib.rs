@@ -13,26 +13,33 @@
 //!
 //! | Module | Does |
 //! | --- | --- |
-//! | [`cache`] | the worktree-aware graph cache the query commands read |
+//! | [`affected`] | `--affected`: the changed files and the modules that reach them |
+//! | [`cache`] | the worktree-aware graph cache the query commands read, and `cruise --cache` |
 //! | [`cli`] | every flag, declared once |
 //! | [`cmd`] | one module per subcommand |
 //! | [`pipeline`] | the five stages as one call |
+//! | [`plugin`] | `-T plugin:<path>`, a reporter run in the sandbox |
 //! | [`configure`] | the configuration and the flags laid over it |
 //! | [`context`] | the working directory, the clock, the terminal |
 //! | [`exit`] | the exit-code table |
+//! | [`graphviz`] | GraphViz' `dot`, for `x-dot-webpage` only ([ADR-0053](../../../docs/adr/0053-x-dot-webpage-draws-with-graphviz-dot.md)) |
 //! | [`progress`] | `--progress` |
 //! | [`protocol`] | the conformance harness's `validate` and `report` |
 
+pub mod affected;
 pub mod cache;
 pub mod cli;
 pub mod cmd;
 pub mod configure;
 pub mod context;
 pub mod exit;
+pub mod graphviz;
 pub mod pipeline;
+pub mod plugin;
 pub mod progress;
 pub mod protocol;
 pub mod ratchets;
+pub mod value;
 
 use std::fmt::Write as _;
 
@@ -44,13 +51,7 @@ pub use crate::exit::RunExit;
 
 /// Subcommands later waves deliver, with the wave. Asking for one says so and exits 2, so no
 /// pipeline mistakes a missing command for a passing gate.
-pub const LATER: &[(&str, u8)] = &[
-    ("diff", 3),
-    ("guard", 3),
-    ("snapshot", 3),
-    ("changelog", 3),
-    ("serve", 3),
-];
+pub const LATER: &[(&str, u8)] = &[("serve", 3)];
 
 /// What a run printed and how it exited; separated from `main` so the dispatch is unit-tested.
 #[derive(Debug, PartialEq, Eq)]
@@ -145,6 +146,7 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         Command::Count(a) => cmd::count::run(ctx, &a),
         Command::Config(c) => cmd::config::run(ctx, &c),
         Command::Hooks(c) => cmd::hooks::run(ctx, &c),
+        Command::Guard(a) => cmd::guard::once(ctx, &a),
         Command::Summary(a) => cmd::summary::run(ctx, &a),
         Command::Impact(a) => cmd::impact::run(ctx, &a),
         Command::Place(a) => cmd::place::run(ctx, &a),
@@ -155,16 +157,22 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         Command::Init(a) => cmd::init::run(ctx, &a),
         Command::Adopt(a) => cmd::adopt::run(ctx, &a),
         Command::Baseline(a) => cmd::baseline::run(ctx, &a),
+        Command::Diff(a) => cmd::diff::run(ctx, &a),
+        Command::Snapshot(a) => cmd::snapshot::run(ctx, &a),
+        Command::Changelog(a) => cmd::changelog::run(ctx, &a),
         Command::Import(c) => cmd::import::run(ctx, &c),
+        Command::WrapHtml(a) => cmd::wrap_html::run(ctx, &a),
         Command::Validate(a) => match protocol_input(ctx, &a) {
-            Ok(text) => protocol::validate(&text),
+            Ok(text) => protocol::validate(&ctx.cwd, &text),
             Err(e) => Outcome::failed(
                 RunExit::Untrustworthy,
                 format!("rulebearing validate: cannot read the request: {e}\n"),
             ),
         },
         Command::Report(a) => match protocol_input(ctx, &a) {
-            Ok(text) => protocol::report(a.output_type.as_deref().unwrap_or("err"), &text),
+            Ok(text) => {
+                protocol::report(&ctx.cwd, a.output_type.as_deref().unwrap_or("err"), &text)
+            }
             Err(e) => Outcome::failed(
                 RunExit::Untrustworthy,
                 format!("rulebearing report: cannot read the request: {e}\n"),
@@ -179,6 +187,68 @@ fn protocol_input(ctx: &mut Context<'_>, args: &cli::ProtocolArgs) -> std::io::R
         Some(file) => std::fs::read_to_string(ctx.resolve(file)),
         None => ctx.read_stdin(),
     }
+}
+
+/// Runs a command line that streams standard input to standard output (`wrap-html`) straight
+/// through the process's streams, so an input of any size is never held in memory; `None` for
+/// every other command line, which [`run_with_input`] then runs.
+pub fn run_streaming(
+    args: &[String],
+    stdin: &mut dyn std::io::Read,
+    stdout: &mut dyn std::io::Write,
+    stderr: &mut dyn std::io::Write,
+) -> Option<u8> {
+    let command_line = std::iter::once("rulebearing".to_owned()).chain(args.iter().cloned());
+    match Cli::try_parse_from(command_line).ok()?.command {
+        Command::WrapHtml(_) => Some(match cmd::wrap_html::stream(stdin, stdout) {
+            Ok(()) => RunExit::Violations(0).code(),
+            Err(e) => {
+                let _ = std::io::Write::write_all(stderr, cmd::wrap_html::failure(&e).as_bytes());
+                RunExit::Untrustworthy.code()
+            }
+        }),
+        _ => None,
+    }
+}
+
+/// Runs a command line that lives as long as its standard input (`guard --watch`), with the
+/// process's own streams: a thread reads standard input to its end and the command stops then.
+/// `None` for every other command line. The caller must not hold standard input's lock.
+pub fn run_daemon(args: &[String]) -> Option<u8> {
+    use std::io::{IsTerminal as _, Read as _};
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let command_line = std::iter::once("rulebearing".to_owned()).chain(args.iter().cloned());
+    let Command::Guard(guard) = Cli::try_parse_from(command_line).ok()?.command else {
+        return None;
+    };
+    if !guard.watch {
+        return None;
+    }
+    let closed = Arc::new(AtomicBool::new(false));
+    let signal = Arc::clone(&closed);
+    std::thread::spawn(move || {
+        let mut stdin = std::io::stdin();
+        let mut buffer = [0_u8; 4096];
+        while matches!(stdin.read(&mut buffer), Ok(n) if n > 0) {}
+        signal.store(true, Ordering::SeqCst);
+    });
+    let (today, timestamp) = context::clock();
+    let mut empty: &[u8] = &[];
+    let mut ctx = Context {
+        cwd: std::env::current_dir().unwrap_or_default(),
+        stdin: &mut empty,
+        today,
+        timestamp,
+        color_terminal: std::io::stdout().is_terminal(),
+    };
+    let stop = || closed.load(Ordering::SeqCst);
+    Some(cmd::guard::run(
+        &mut ctx,
+        &guard,
+        &stop,
+        &mut std::io::stderr(),
+    ))
 }
 
 /// The top-level help.
@@ -273,7 +343,7 @@ mod tests {
 
     #[test]
     fn later_subcommands_name_their_wave() {
-        let o = run(&args(&["diff", "a.json", "b.json"]));
+        let o = run(&args(&["serve", "--mcp"]));
         assert_eq!(o.code, 2);
         assert!(o.stderr.contains("wave 3"));
         assert!(subcommands().contains(&"cruise".to_owned()));

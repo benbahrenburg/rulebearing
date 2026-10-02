@@ -1,0 +1,75 @@
+# rulebearing:nextjs. Original to Rulebearing. An opinion, off by default: the boundaries a
+# Next.js application's folders imply, for the App Router (app/) and the Pages Router (pages/),
+# read from paths alone. A route entry is Next.js's to load, so nothing imports one, and shared
+# code (components, hooks, lib outside app/ and pages/) never reaches into a route. Whether a
+# component may import server code depends on whether it is a Server or a Client Component, which
+# the "use client" directive decides and the graph does not record, so this preset does not rule
+# on it. Documented, rule by rule, in presets/frameworks/README.md#rulebearingnextjs. Named with
+# `init --preset nextjs` or `extends: rulebearing:nextjs`, beside the TypeScript preset. No
+# pattern nests a quantifier, so the file carries no safe-regex warning into a user's run.
+# Source: docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo.
+# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 11. Requirements:
+# FR-CLI-08, FR-REACH-04.
+rules:
+  dependencies:
+    forbidden:
+      - name: nextjs-no-import-of-route-entries
+        comment: "An App Router page, layout, route handler, template or boundary file is an entry Next.js loads by its path; importing one from another module runs it outside its route and couples two routes. plan:rulebearing-nextjs"
+        fix: "Move what both need into a module outside app/ (components/ or lib/) and import that from the route file and from here."
+        severity: error
+        from:
+          pathNot:
+            - "\\.(spec|test|stories)\\.[cm]?[jt]sx?$"
+            - "(^|/)__tests__/"
+        to:
+          path: "(^|/)app/(|.+/)(page|layout|route|template|default|loading|error|global-error|not-found)\\.[cm]?[jt]sx?$"
+          dependencyTypesNot: [type-only]
+        examples:
+          forbidden:
+            - "src/components/Header.tsx -> src/app/dashboard/page.tsx"
+            - "src/app/settings/page.tsx -> src/app/layout.tsx"
+          allowed:
+            - "src/app/dashboard/page.tsx -> src/components/Header.tsx"
+            - "src/app/dashboard/page.test.tsx -> src/app/dashboard/page.tsx"
+      - name: nextjs-no-import-of-api-routes
+        comment: "A file under pages/api/ or app/api/ is an HTTP handler; importing it from a page or a component calls the handler's module in the wrong runtime and ties the UI to the transport. A type-only import is erased and is allowed. plan:rulebearing-nextjs"
+        fix: "Move the logic the handler and the caller share into a server module (server/ or lib/), import that from both, and call the API over HTTP from the browser."
+        severity: error
+        from:
+          pathNot:
+            - "(^|/)(app|pages)/api/"
+            - "\\.(spec|test)\\.[cm]?[jt]sx?$"
+            - "(^|/)__tests__/"
+        to:
+          path: "(^|/)(app|pages)/api/"
+          dependencyTypesNot: [type-only]
+        examples:
+          forbidden:
+            - "src/pages/index.tsx -> src/pages/api/users.ts"
+            - "src/components/List.tsx -> src/app/api/items/route.ts"
+          allowed:
+            - "src/pages/api/users.ts -> src/pages/api/_helpers.ts"
+            - "src/pages/api/users.ts -> src/server/users.ts"
+      - name: nextjs-shared-code-not-to-routes
+        comment: "components/, hooks/ and lib/ outside the route folders are shared by every route; one that imports from app/ or pages/ makes every route depend on that one. Folders of the same names inside app/ or pages/ are colocated with their route and are part of it. plan:rulebearing-nextjs"
+        fix: "Move the code the shared module needs out of the route folder into components/, hooks/ or lib/, or pass it in as a prop or an argument."
+        severity: error
+        from:
+          path: "(^|/)(components|hooks|lib)/"
+          pathNot: "(^|/)(app|pages)/"
+        to:
+          path: "(^|/)(app|pages)/"
+          pathNot:
+            - "(^|/)(components|hooks|lib)/(|.*/)(app|pages)/"
+            - "(^|/)node_modules/"
+          dependencyTypesNot: [type-only]
+        examples:
+          forbidden:
+            - "src/components/Nav.tsx -> src/pages/index.tsx"
+            - "lib/format.ts -> app/(marketing)/copy.ts"
+          allowed:
+            - "src/pages/index.tsx -> src/components/Nav.tsx"
+            - "src/components/Nav.tsx -> src/lib/format.ts"
+            - "app/lib/data.ts -> app/lib/definitions.ts"
+            - "app/components/a.tsx -> app/components/b.tsx"
+            - "src/lib/routes.ts -> src/lib/app/paths.ts"
