@@ -7,6 +7,12 @@ node testbeds/synth/gen.mjs /tmp/synth        # Node 22 or later, no dependencie
 cargo run --release -p rb-extract-ts --example extract-timing -- /tmp/synth
 ```
 
+`guard.sh` measures [NFR-PERF-03](../../docs/prd.md#nfr-perf-03) on the same tree: it starts `rulebearing guard --watch`, saves seeded files one at a time, and reads from the findings file how long each check took from the save to the answer written. It prints the p50 and p95 and exits 1 when the p95 reaches 100 ms ([plan 0003, Step 16](../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof); figures in [docs/perf.md](../../docs/perf.md)).
+
+```sh
+testbeds/synth/guard.sh /tmp/synth-guard     # RB_GUARD_EDITS, RB_GUARD_SEED, RB_GUARD_THRESHOLD_MS
+```
+
 ## What it writes
 
 | Part | Count | Shape |

@@ -3,6 +3,8 @@
 # job summary and an artefact; docs/perf.md records it by hand, so this workflow needs no write
 # permission (docs/adr/0025-ci-and-supply-chain-hardening.md).
 # Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 20.
+# It then runs testbeds/synth/guard.sh on the same tree for NFR-PERF-03 (docs/prd.md#nfr-perf-03):
+# plan docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 16.
 name: bench
 
 on:
@@ -47,3 +49,19 @@ jobs:
           path: |
             ${{ runner.temp }}/bench.txt
             ${{ runner.temp }}/synth/hyperfine.json
+      # The guard's check of one saved file on the same tree (NFR-PERF-03), after the benchmark and
+      # never beside it (docs/adr/0059-gates-run-by-tier-and-mutants-by-diff.md); the step fails
+      # when the p95 reaches 100 ms.
+      - name: guard latency
+        run: |
+          set -o pipefail
+          testbeds/synth/guard.sh "$RUNNER_TEMP/synth-guard" | tee "$RUNNER_TEMP/guard.txt"
+      - if: always()
+        run: |
+          {
+            echo "### Guard latency"
+            echo
+            echo '```text'
+            tail -n 1 "$RUNNER_TEMP/guard.txt" || echo "no figure"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

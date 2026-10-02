@@ -165,6 +165,7 @@ fuzz/run.sh metadata_reader 600                         # fuzz the metadata read
 wrappers/publish-placeholders.sh --dry-run              # package the four 0.0.1 name reservations (docs/release.md)
 scripts/cargo-graph.sh > target/cargo-graph.json && ./target/release/rulebearing cruise --config rulebearing.yaml --require-comment-token --graph target/cargo-graph.json   # the self-check CI runs
 testbeds/synth/bench.sh                                 # NFR-PERF-01: the 5,500-module synthetic benchmark (docs/perf.md)
+testbeds/synth/guard.sh                                 # NFR-PERF-03: guard --watch's check of a saved file on that tree, p95 under 100 ms
 testbeds/init/run.sh <checkout> <owner/name>            # regenerate an init fixture
 scripts/adoption-signals.sh <checkout> --repo <owner/name> --gate <check>   # NFR-ADOPT-01 signals (docs/adoption.md)
 ./target/release/rulebearing --help
