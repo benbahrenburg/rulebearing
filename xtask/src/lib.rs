@@ -7,8 +7,9 @@
 //!
 //! Two jobs: [`doclinks`] checks that every relative link between documents and from a doc
 //! comment resolves, and the binary in `main.rs` is the one lint entry point for all four
-//! languages. The library is compiled by `crates/rb-model/build.rs`, so the link check runs on
-//! every compile as well as on every lint.
+//! languages. The library is compiled by `xtask/gate/build.rs`, so the link check runs on every
+//! workspace-wide compile as well as on every lint
+//! ([ADR-0058](../../docs/adr/0058-the-edit-compile-cycle-rebuilds-only-what-changed.md)).
 
 pub mod doclinks;
 

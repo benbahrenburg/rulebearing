@@ -1930,7 +1930,6 @@ dependencies = [
  "serde_json",
  "sha2",
  "thiserror",
- "xtask",
 ]
 
 [[package]]
@@ -3022,6 +3021,13 @@ name = "xtask"
 version = "0.1.0"
 dependencies = [
  "proptest",
+]
+
+[[package]]
+name = "xtask-gate"
+version = "0.1.0"
+dependencies = [
+ "xtask",
 ]
 
 [[package]]

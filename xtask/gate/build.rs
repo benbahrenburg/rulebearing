@@ -1,11 +1,13 @@
-//! Runs the documentation link check on every compile.
+//! Runs the documentation link check on every workspace-wide compile.
 //!
-//! Every crate in the workspace depends on `rb-model`, so building or testing anything runs this
-//! once. The check is the same code `cargo xtask check-links` and the `lint` job run, and it
-//! fails the build when a relative link between documents, or from a doc comment, does not
-//! resolve. See:
+//! `xtask-gate` is a workspace member that no crate depends on, so `cargo build`, `cargo test`
+//! and `cargo clippy` over the workspace run this once, and a re-run rebuilds only this crate
+//! rather than every crate above `rb-model`. The check is the same code `cargo xtask check-links`
+//! and the `lint` job run, and it fails the build when a relative link between documents, or from
+//! a doc comment, does not resolve. See:
 //!
-//! - Decision: `docs/adr/0023-documentation-link-and-lint-gates.md`
+//! - Decision: `docs/adr/0023-documentation-link-and-lint-gates.md`, placed here by
+//!   `docs/adr/0058-the-edit-compile-cycle-rebuilds-only-what-changed.md`
 //! - Rule it enforces: `docs/adr/0001-record-architecture-decisions.md`, "link everything"
 //! - Requirement: `docs/prd.md#nfr-doc-01`
 //!

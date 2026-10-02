@@ -17,6 +17,7 @@ members = [
     "crates/rb-cli",
     "crates/rb-node",
     "xtask",
+    "xtask/gate",
 ]
 
 [workspace.package]
@@ -120,6 +121,11 @@ expect_used = "deny"
 panic = "deny"
 module_name_repetitions = "allow"
 must_use_candidate = "allow"
+
+# Line tables are enough for a backtrace with file and line; full debug info is most of what a
+# test binary links and most of each worktree's target/ (docs/adr/0058-the-edit-compile-cycle-rebuilds-only-what-changed.md).
+[profile.dev]
+debug = "line-tables-only"
 
 [profile.release]
 lto = "thin"

@@ -764,8 +764,8 @@ Source: [design § Open questions](artifacts/design.md#open-questions) | Wave: 0
 **Traceability.** Every code file, plan and ADR MUST carry linked references: a crate's `lib.rs` links its architecture section and plan; a plan links the PRD requirements, ADRs and design sections; an ADR links the design section it derives from and the architecture section it constrains. Plans MUST live in `plans/pending/` and move to `plans/implemented/` only when every exit criterion is met. This repository's own `rulebearing.yaml` MUST cite ADRs in every rule. Every relative link MUST resolve, both the file and, where the link carries one, the `#anchor`.
 
 Acceptance:
-- The link check runs inside every compile (`crates/rb-model/build.rs`), in `cargo xtask lint` and as its own CI job; a broken link fails the build, not only the pull request.
-- Rust doc comments are checked as well as Markdown, so a renamed document breaks the crate that cites it.
+- The link check runs inside every workspace-wide compile (`xtask/gate/build.rs`, [ADR-0058](adr/0058-the-edit-compile-cycle-rebuilds-only-what-changed.md)), in `cargo xtask lint` and as its own CI job; a broken link fails the build, not only the pull request.
+- Rust doc comments are checked as well as Markdown, so a renamed document breaks the workspace build that compiles the crate citing it.
 - A plan move is a reviewed pull request showing the exit criteria met.
 
 Source: [ADR-0001](adr/0001-record-architecture-decisions.md) | Wave: 0 | ADRs: [0001](adr/0001-record-architecture-decisions.md), [0023](adr/0023-documentation-link-and-lint-gates.md)

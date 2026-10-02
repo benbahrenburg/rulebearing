@@ -300,7 +300,7 @@ Release is one tag: `cargo-dist` builds the binaries, and the three wrappers are
 | Linters | rustfmt and clippy, eslint and prettier, ruff and mypy, dotnet format, behind `cargo xtask lint` | [0023](adr/0023-documentation-link-and-lint-gates.md) |
 | Test quality | `cargo-mutants`, `proptest`, committed snapshots | [0024](adr/0024-test-quality-gates.md) |
 | CI and supply chain | least privilege, SHA-pinned actions, `cargo deny` sources, `cargo-hack`, Dependabot, `typos`, `actionlint`, `shellcheck` | [0025](adr/0025-ci-and-supply-chain-hardening.md) |
-| Documentation links | `xtask/src/doclinks.rs`, run by `crates/rb-model/build.rs` on every compile | [0023](adr/0023-documentation-link-and-lint-gates.md) |
+| Documentation links | `xtask/src/doclinks.rs`, run by `xtask/gate/build.rs` on every workspace-wide compile | [0023](adr/0023-documentation-link-and-lint-gates.md), [0058](adr/0058-the-edit-compile-cycle-rebuilds-only-what-changed.md) |
 
 ## Security posture
 
@@ -334,7 +334,7 @@ Fixed by [ADR-0009](adr/0009-conformance-suites-as-specification.md) and [ADR-00
 | Conformance gate 2 | ArchUnitNET 0.13.4 and NetArchTest: `TestAssembly` fixture, ported element tests, oracle agreement with `dotnet test` | `conformance/archunitnet/` | yes, ratcheting unported count |
 | Test beds | oracle zero-diff, greenfield `init` fixtures, scale timing | `testbeds/manifest.yaml`, nightly workflow | nightly; timing regression fails |
 | Wrapper and adapter tests | vitest, xUnit with coverlet, pytest-cov | `wrappers/`, `adapters/`, `frontends/` | yes, ≥ 70% lines |
-| Documentation links | every relative link and `#anchor` in Markdown and in Rust doc comments resolves; runs inside every compile, in `cargo xtask lint` and as its own CI job ([ADR-0023](adr/0023-documentation-link-and-lint-gates.md)) | `xtask/src/doclinks.rs`, `crates/rb-model/build.rs` | yes |
+| Documentation links | every relative link and `#anchor` in Markdown and in Rust doc comments resolves; runs inside every workspace-wide compile, in `cargo xtask lint` and as its own CI job ([ADR-0023](adr/0023-documentation-link-and-lint-gates.md), [ADR-0058](adr/0058-the-edit-compile-cycle-rebuilds-only-what-changed.md)) | `xtask/src/doclinks.rs`, `xtask/gate/build.rs` | yes |
 | Linters, all languages | rustfmt and clippy; eslint and prettier; ruff and mypy; dotnet format. One entry point, `cargo xtask lint --strict` | `eslint.config.mjs`, `pyproject.toml`, `Directory.Build.props`, `.editorconfig`, `rustfmt.toml` | yes |
 | Self-check | this repository's own `rulebearing.yaml` enforcing the crate boundary, citing ADRs | repo root | yes, from wave 1 |
 | Mutation testing | `cargo mutants` over `rb-model`, `rb-rules` and `xtask`; a surviving mutant fails ([ADR-0024](adr/0024-test-quality-gates.md)) | `.cargo/mutants.toml` | yes |
@@ -361,7 +361,7 @@ rulebearing/
 ├── wrappers/    npm/  nuget/  pip/
 ├── adapters/    dotnet/  python/  vitest/
 ├── frontends/   eslint-plugin-rulebearing/  Rulebearing.Analyzer/
-├── xtask/       doclinks.rs (link gate) and the one lint entry point
+├── xtask/       doclinks.rs (link gate) and the one lint entry point; gate/ runs the link check on every workspace build
 ├── conformance/ dependency-cruiser/  archunitnet/  excluded.json
 ├── testbeds/    manifest.yaml
 ├── schema/      v1.json (generated)

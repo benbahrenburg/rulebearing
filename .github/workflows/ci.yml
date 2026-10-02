@@ -271,14 +271,23 @@ jobs:
         shard: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The pull-request run diffs against the merge base, so it needs the history.
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2
         with:
           tool: cargo-mutants
       # Coverage says a line ran; this says a test would notice if it were wrong.
-      # Scope and policy: docs/adr/0024-test-quality-gates.md.
-      - run: cargo mutants --no-shuffle --package rb-model --package rb-rules --package xtask --shard ${{ matrix.shard }}/8 --jobs 2
+      # Scope and policy: docs/adr/0024-test-quality-gates.md. A pull request mutates the lines it
+      # changes; a push to main mutates the whole scope (docs/adr/0059-gates-run-by-tier-and-mutants-by-diff.md).
+      - if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: scripts/mutants-diff.sh "origin/$BASE_REF" --shard ${{ matrix.shard }}/8 --jobs 2
+      - if: github.event_name != 'pull_request'
+        run: cargo mutants --no-shuffle --package rb-model --package rb-rules --package xtask --shard ${{ matrix.shard }}/8 --jobs 2
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

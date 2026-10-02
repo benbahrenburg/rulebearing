@@ -5,7 +5,7 @@
 # Build scripts and the binary's argument dispatch are exercised through the process, not the
 # unit tests, so mutating them reports noise rather than missing assertions.
 exclude_globs = [
-    "crates/rb-model/build.rs",
+    "xtask/gate/build.rs",
     "xtask/src/main.rs",
 ]
 

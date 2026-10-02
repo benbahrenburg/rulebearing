@@ -9,8 +9,8 @@ repository.workspace = true
 authors.workspace = true
 publish = false
 
-# No dependencies on purpose. This crate is compiled by rb-model's build script, so every
-# `cargo build` and `cargo test` pays for it; the standard library keeps that cost near zero and
+# No dependencies on purpose. This crate is compiled by xtask-gate's build script (xtask/gate), so
+# every workspace build and test pays for it; the standard library keeps that cost near zero and
 # keeps `cargo deny` unaffected (docs/adr/0019-mit-licence.md).
 
 [lib]
