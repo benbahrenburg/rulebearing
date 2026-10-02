@@ -378,11 +378,15 @@ fn kept(state: &FileState) -> Option<Kept> {
 fn kept_layout(root: &Path, request: &ExtractRequest) -> Option<(Layout, BTreeMap<String, Kept>)> {
     let mut sources: BTreeSet<String> = request.unchanged_sources();
     sources.extend(request.changed.iter().map(|p| source_name(p)));
-    let mut kept_files = BTreeMap::new();
-    for source in &sources {
-        let state = request.previous.files.get(source)?;
-        kept_files.insert(source.clone(), kept(state)?);
-    }
+    // Each file's kept state is read on its own, in parallel; one that kept nothing readable
+    // answers for all.
+    let kept_files: BTreeMap<String, Kept> = sources
+        .par_iter()
+        .map(|source| {
+            let state = request.previous.files.get(source)?;
+            Some((source.clone(), kept(state)?))
+        })
+        .collect::<Option<_>>()?;
     let table = kept_files.values().next()?.table.clone()?;
     let files = kept_files
         .iter()

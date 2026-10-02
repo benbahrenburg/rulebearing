@@ -31,6 +31,8 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::hash::{BuildHasherDefault, Hasher};
 
+use rayon::prelude::*;
+
 use rb_model::{
     Attribution, Dependency, DependencyKind, DependencyType, Language, Module, ModuleSystem,
 };
@@ -700,6 +702,31 @@ fn add_edge(
     }
 }
 
+/// Folds `more` into `edges`: per edge the earliest position and the first target name, as
+/// [`add_edge`] keeps them, so the order the parts were found in does not matter.
+fn merge_edges(edges: &mut Edges, more: Edges) {
+    for (from, grouped) in more {
+        let into = edges.entry(from).or_default();
+        for (key, found) in grouped {
+            match into.entry(key) {
+                std::collections::btree_map::Entry::Vacant(slot) => {
+                    slot.insert(found);
+                }
+                std::collections::btree_map::Entry::Occupied(mut slot) => {
+                    let first = slot.get_mut();
+                    if (found.0, found.1) < (first.0, first.1) {
+                        first.0 = found.0;
+                        first.1 = found.1;
+                    }
+                    if found.2 < first.2 {
+                        first.2 = found.2;
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Every file's resolved edges. A reference written at member level in a part of a type that
 /// lands elsewhere is the landing file's, as a compiled build attributes it; each such part with
 /// code refers to its type, and so to the landing file.
@@ -714,8 +741,10 @@ fn resolve_edges(files: &[SourceFile], projects: &[ProjectInfo], index: &Index) 
         }
     }
     let empty = Vec::new();
-    let mut edges = Edges::new();
-    for (file_index, file) in files.iter().enumerate() {
+    // Each file is resolved on its own, in parallel, into edges of its own; an edge keeps a
+    // minimum, so folding the files' edges together gives what one pass over them would.
+    let resolve = |(file_index, file): (usize, &SourceFile)| {
+        let mut edges = Edges::new();
         let global = globals.get(&file.project).unwrap_or(&empty);
         // A file sees the types of its project and of the projects it references, as its
         // compilation does.
@@ -742,8 +771,16 @@ fn resolve_edges(files: &[SourceFile], projects: &[ProjectInfo], index: &Index) 
             }
         }
         resolve_file(&mut edges, &resolver, (file_index, file), global);
-    }
-    edges
+        edges
+    };
+    files
+        .par_iter()
+        .enumerate()
+        .map(resolve)
+        .reduce(Edges::new, |mut all, more| {
+            merge_edges(&mut all, more);
+            all
+        })
 }
 
 /// Each declaration's enclosing containers, innermost first, as dotted keys.
@@ -1018,6 +1055,54 @@ mod tests {
                 })
             })
             .collect()
+    }
+
+    #[test]
+    fn folding_edges_keeps_the_earliest_position_and_the_first_name_in_either_order() {
+        // From, to, kind, position, target name.
+        type Entry<'a> = (usize, usize, DependencyKind, (u32, u32), &'a str);
+        let part = |entries: &[Entry<'_>]| {
+            let mut edges = Edges::new();
+            for (from, to, kind, at, name) in entries {
+                edges
+                    .entry(*from)
+                    .or_default()
+                    .insert((*to, *kind), (at.0, at.1, (*name).to_owned()));
+            }
+            edges
+        };
+        let one = part(&[
+            (0, 1, DependencyKind::Body, (5, 2), "B.Late"),
+            (0, 2, DependencyKind::Signature, (1, 1), "C.Only"),
+        ]);
+        let other = part(&[
+            (0, 1, DependencyKind::Body, (3, 9), "A.Early"),
+            (0, 1, DependencyKind::Signature, (7, 7), "A.Early"),
+            (4, 0, DependencyKind::Body, (2, 2), "Z.Other"),
+        ]);
+        let expected = part(&[
+            // The earliest position, and the first name in sort order, each on its own.
+            (0, 1, DependencyKind::Body, (3, 9), "A.Early"),
+            (0, 1, DependencyKind::Signature, (7, 7), "A.Early"),
+            (0, 2, DependencyKind::Signature, (1, 1), "C.Only"),
+            (4, 0, DependencyKind::Body, (2, 2), "Z.Other"),
+        ]);
+        let mut forward = one.clone();
+        merge_edges(&mut forward, other.clone());
+        let mut backward = other;
+        merge_edges(&mut backward, one);
+        assert_eq!(forward, expected);
+        assert_eq!(backward, expected);
+        // Position and name are kept apart: the later position's name can be the first.
+        let mut mixed = part(&[(0, 1, DependencyKind::Body, (1, 1), "M.Name")]);
+        merge_edges(
+            &mut mixed,
+            part(&[(0, 1, DependencyKind::Body, (9, 9), "A.Name")]),
+        );
+        assert_eq!(
+            mixed,
+            part(&[(0, 1, DependencyKind::Body, (1, 1), "A.Name")])
+        );
     }
 
     fn has(modules: &[Module], from: &str, to: &str) -> bool {
