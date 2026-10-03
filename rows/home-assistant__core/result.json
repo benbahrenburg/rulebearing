@@ -1,0 +1,14 @@
+{
+  "repo": "home-assistant/core",
+  "sha": "f50d777440e878554ef6872062341d24c6da0289",
+  "role": "scale",
+  "tool": "none",
+  "status": "ok",
+  "detail": "modules: javascript 3, python 22920, typescript 2, unknown 1",
+  "incumbent": null,
+  "rulebearing": {
+    "wall_seconds": 12.29,
+    "max_rss_kb": 4070488,
+    "exit_code": 0
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "repo": "seddonym/import-linter",
+  "sha": "31927f1457e3df673912cb5efb0afa6dbc37585f",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "ok",
+  "detail": "import-linter contracts kept",
+  "incumbent": {
+    "wall_seconds": 0.17,
+    "max_rss_kb": 31304,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

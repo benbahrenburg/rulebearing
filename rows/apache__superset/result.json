@@ -1,0 +1,10 @@
+{
+  "repo": "apache/superset",
+  "sha": "4c229cb66a7b6401113ca81f49ee617ad8426e64",
+  "role": "greenfield",
+  "tool": "none",
+  "status": "idle",
+  "detail": "no incumbent tool; the Rulebearing column starts in wave 1",
+  "incumbent": null,
+  "rulebearing": null
+}

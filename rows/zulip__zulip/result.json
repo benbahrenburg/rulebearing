@@ -1,0 +1,10 @@
+{
+  "repo": "zulip/zulip",
+  "sha": "370f7b66fca175e66f9545330f4534290cc9f9db",
+  "role": "greenfield",
+  "tool": "none",
+  "status": "idle",
+  "detail": "no incumbent tool; the Rulebearing column starts in wave 1",
+  "incumbent": null,
+  "rulebearing": null
+}

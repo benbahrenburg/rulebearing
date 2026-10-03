@@ -1,0 +1,14 @@
+{
+  "repo": "online-ml/river",
+  "sha": "d7085cde5bf90898b338d1ad522c71b9b9aa26f8",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "ok",
+  "detail": "import-linter contracts kept",
+  "incumbent": {
+    "wall_seconds": 0.47,
+    "max_rss_kb": 34556,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

@@ -1,0 +1,14 @@
+{
+  "repo": "openedx/openedx-platform",
+  "sha": "23f45c133cf8e5074a723e6f6685137c87c01780",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "failed",
+  "detail": "import-linter reported broken contracts",
+  "incumbent": {
+    "wall_seconds": 0.85,
+    "max_rss_kb": 77588,
+    "exit_code": 1
+  },
+  "rulebearing": null
+}

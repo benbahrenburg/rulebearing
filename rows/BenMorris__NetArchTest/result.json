@@ -1,0 +1,14 @@
+{
+  "repo": "BenMorris/NetArchTest",
+  "sha": "a761f63b694a6facd4be01fbc8fe2ae26579572e",
+  "role": "oracle",
+  "tool": "netarchtest",
+  "status": "failed",
+  "detail": "netarchtest tests failed (exit 1)",
+  "incumbent": {
+    "wall_seconds": 1.58,
+    "max_rss_kb": 125712,
+    "exit_code": 1
+  },
+  "rulebearing": null
+}

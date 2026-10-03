@@ -1,0 +1,14 @@
+{
+  "repo": "bridgecrewio/checkov",
+  "sha": "92ca0101e39e7f575c8182b5b1fd7c89b04e136b",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "ok",
+  "detail": "import-linter contracts kept",
+  "incumbent": {
+    "wall_seconds": 0.23,
+    "max_rss_kb": 47748,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

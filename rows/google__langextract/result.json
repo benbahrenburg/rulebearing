@@ -1,0 +1,14 @@
+{
+  "repo": "google/langextract",
+  "sha": "62b933a2c757fd2bbb100498571b8d1692db4344",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "ok",
+  "detail": "import-linter contracts kept",
+  "incumbent": {
+    "wall_seconds": 0.15,
+    "max_rss_kb": 32200,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

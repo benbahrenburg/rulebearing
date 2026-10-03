@@ -1,0 +1,14 @@
+{
+  "repo": "nager/Nager.Date",
+  "sha": "e2734bcfad2397957a5fe18a4f22fb145e87c1e0",
+  "role": "oracle",
+  "tool": "archunitnet",
+  "status": "ok",
+  "detail": "archunitnet tests passed",
+  "incumbent": {
+    "wall_seconds": 1.94,
+    "max_rss_kb": 125916,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

@@ -1,0 +1,14 @@
+{
+  "repo": "evolutionary-architecture/evolutionary-architecture-by-example",
+  "sha": "441a7cd94d3acfbac7d210a95ea8e78429fc9f47",
+  "role": "oracle",
+  "tool": "netarchtest",
+  "status": "ok",
+  "detail": "netarchtest tests passed",
+  "incumbent": {
+    "wall_seconds": 2.88,
+    "max_rss_kb": 125880,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

@@ -1,0 +1,23 @@
+{
+  "repo": "tsparticles/tsparticles",
+  "sha": "d92ba4b96524f57921cdfbd3d4a60d31c897a149",
+  "role": "oracle",
+  "tool": "dependency-cruiser",
+  "status": "ok",
+  "detail": "dependency-cruiser@18.2.0",
+  "incumbent": {
+    "wall_seconds": 0.36,
+    "max_rss_kb": 92320,
+    "exit_code": 0
+  },
+  "rulebearing": {
+    "wall_seconds": 0.03,
+    "max_rss_kb": 15964,
+    "exit_code": 0
+  },
+  "regression": {
+    "current": 0.03,
+    "baseline": 0.03,
+    "baseline_sha": "8671c0e789a2a1191362226d7afde8754b2793db"
+  }
+}

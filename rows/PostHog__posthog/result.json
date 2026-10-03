@@ -1,0 +1,10 @@
+{
+  "repo": "PostHog/posthog",
+  "sha": "3ad9f699e53d824e424514f521a9432b27faa347",
+  "role": "greenfield",
+  "tool": "none",
+  "status": "idle",
+  "detail": "no incumbent tool; the Rulebearing column starts in wave 1",
+  "incumbent": null,
+  "rulebearing": null
+}

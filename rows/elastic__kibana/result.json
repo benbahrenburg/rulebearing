@@ -1,0 +1,10 @@
+{
+  "repo": "elastic/kibana",
+  "sha": "b502e688526bca862855361abf0081d84e65c547",
+  "role": "scale",
+  "tool": "none",
+  "status": "idle",
+  "detail": "no incumbent tool; the Rulebearing column starts in wave 1",
+  "incumbent": null,
+  "rulebearing": null
+}

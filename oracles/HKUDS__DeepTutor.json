@@ -1,0 +1,212 @@
+{
+  "repo": "HKUDS/DeepTutor",
+  "sha": "11f9c15f6d2727ce07ff8d66e511b1e7ae2f8463",
+  "tool": "import-linter",
+  "importLinterVersion": "2.15",
+  "settings": ".importlinter",
+  "config": "imported",
+  "status": "compared",
+  "summary": {
+    "total": 3,
+    "agree": 3,
+    "disagree": 0,
+    "stays": 0,
+    "not-imported": 0,
+    "error": 0
+  },
+  "contracts": [
+    {
+      "id": "core-purity",
+      "name": "Core contains values and protocols only",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "no-api-backimports",
+      "name": "Runtime and service layers do not import API adapters",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": "app-adapter-direction",
+      "name": "Application does not import API adapters",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    }
+  ],
+  "graph": {
+    "rootPackages": [
+      "deeptutor"
+    ],
+    "importLinter": 3485,
+    "rulebearing": 3613,
+    "equal": false,
+    "unexplained": 0,
+    "onlyRulebearing": {
+      "dynamic": {
+        "count": 15,
+        "sample": [
+          [
+            "deeptutor/agents/question/__init__.py",
+            "deeptutor/agents/question/agents/followup_agent.py"
+          ],
+          [
+            "deeptutor/agents/question/__init__.py",
+            "deeptutor/agents/question/coordinator.py"
+          ],
+          [
+            "deeptutor/agents/question/__init__.py",
+            "deeptutor/agents/question/pipeline.py"
+          ],
+          [
+            "deeptutor/agents/question/agents/__init__.py",
+            "deeptutor/agents/question/agents/followup_agent.py"
+          ],
+          [
+            "deeptutor/runtime/registry/capability_registry.py",
+            "deeptutor/plugins/loader.py"
+          ],
+          [
+            "deeptutor/services/__init__.py",
+            "deeptutor/services/config/__init__.py"
+          ],
+          [
+            "deeptutor/services/__init__.py",
+            "deeptutor/services/embedding/__init__.py"
+          ],
+          [
+            "deeptutor/services/__init__.py",
+            "deeptutor/services/llm/__init__.py"
+          ],
+          [
+            "deeptutor/services/__init__.py",
+            "deeptutor/services/prompt/__init__.py"
+          ],
+          [
+            "deeptutor/services/__init__.py",
+            "deeptutor/services/rag/__init__.py"
+          ],
+          [
+            "deeptutor/services/__init__.py",
+            "deeptutor/services/search/__init__.py"
+          ],
+          [
+            "deeptutor/services/__init__.py",
+            "deeptutor/services/session/__init__.py"
+          ],
+          [
+            "deeptutor/services/__init__.py",
+            "deeptutor/services/setup/__init__.py"
+          ],
+          [
+            "deeptutor/services/llm/__init__.py",
+            "deeptutor/services/llm/cloud_provider.py"
+          ],
+          [
+            "deeptutor/services/llm/__init__.py",
+            "deeptutor/services/llm/local_provider.py"
+          ]
+        ]
+      },
+      "notGrimpModule": {
+        "count": 113,
+        "sample": [
+          [
+            "deeptutor/agents/notebook/analysis_agent.py",
+            "deeptutor/utils/json_parser.py"
+          ],
+          [
+            "deeptutor/agents/question/pipeline.py",
+            "deeptutor/utils/json_parser.py"
+          ],
+          [
+            "deeptutor/agents/research/capability.py",
+            "deeptutor/agents/research/pipeline.py"
+          ],
+          [
+            "deeptutor/agents/research/capability.py",
+            "deeptutor/agents/research/request_config.py"
+          ],
+          [
+            "deeptutor/agents/research/capability.py",
+            "deeptutor/core/capability_protocol.py"
+          ],
+          [
+            "deeptutor/agents/research/capability.py",
+            "deeptutor/core/context.py"
+          ],
+          [
+            "deeptutor/agents/research/capability.py",
+            "deeptutor/runtime/request_contracts.py"
+          ],
+          [
+            "deeptutor/agents/research/capability.py",
+            "deeptutor/runtime/stream_bus.py"
+          ],
+          [
+            "deeptutor/agents/research/capability.py",
+            "deeptutor/services/config/__init__.py"
+          ],
+          [
+            "deeptutor/agents/research/data_structures.py",
+            "deeptutor/utils/json_parser.py"
+          ],
+          [
+            "deeptutor/agents/research/pipeline.py",
+            "deeptutor/agents/_shared/capability_result.py"
+          ],
+          [
+            "deeptutor/agents/research/pipeline.py",
+            "deeptutor/agents/_shared/tool_composition.py"
+          ],
+          [
+            "deeptutor/agents/research/pipeline.py",
+            "deeptutor/agents/_shared/tool_runtime.py"
+          ],
+          [
+            "deeptutor/agents/research/pipeline.py",
+            "deeptutor/agents/_shared/workspace_prompt.py"
+          ],
+          [
+            "deeptutor/agents/research/pipeline.py",
+            "deeptutor/agents/chat/agentic_pipeline.py"
+          ],
+          [
+            "deeptutor/agents/research/pipeline.py",
+            "deeptutor/agents/research/data_structures.py"
+          ],
+          [
+            "deeptutor/agents/research/pipeline.py",
+            "deeptutor/agents/research/utils/citation_manager.py"
+          ],
+          [
+            "deeptutor/agents/research/pipeline.py",
+            "deeptutor/core/context.py"
+          ],
+          [
+            "deeptutor/agents/research/pipeline.py",
+            "deeptutor/core/trace.py"
+          ],
+          [
+            "deeptutor/agents/research/pipeline.py",
+            "deeptutor/knowledge/kb_types.py"
+          ]
+        ]
+      }
+    },
+    "onlyImportLinter": {}
+  },
+  "agrees": true
+}

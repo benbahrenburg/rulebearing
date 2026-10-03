@@ -1,0 +1,23 @@
+{
+  "repo": "liveblocks/liveblocks",
+  "sha": "1e3a117a1a2020806b90c16cd4cd5171c00c232c",
+  "role": "oracle",
+  "tool": "dependency-cruiser",
+  "status": "ok",
+  "detail": "dependency-cruiser@17.3.10",
+  "incumbent": {
+    "wall_seconds": 0.27,
+    "max_rss_kb": 88128,
+    "exit_code": 0
+  },
+  "rulebearing": {
+    "wall_seconds": 0.08,
+    "max_rss_kb": 49432,
+    "exit_code": 0
+  },
+  "regression": {
+    "current": 0.08,
+    "baseline": 0.1,
+    "baseline_sha": "8671c0e789a2a1191362226d7afde8754b2793db"
+  }
+}

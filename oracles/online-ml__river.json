@@ -1,0 +1,41 @@
+{
+  "repo": "online-ml/river",
+  "sha": "d7085cde5bf90898b338d1ad522c71b9b9aa26f8",
+  "tool": "import-linter",
+  "importLinterVersion": "2.15",
+  "settings": "pyproject.toml",
+  "config": "imported",
+  "status": "compared",
+  "summary": {
+    "total": 1,
+    "agree": 1,
+    "disagree": 0,
+    "stays": 0,
+    "not-imported": 0,
+    "error": 0
+  },
+  "contracts": [
+    {
+      "id": null,
+      "name": "River sub-packages form a DAG",
+      "type": "acyclic_siblings",
+      "importLinter": "kept",
+      "rules": 50,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    }
+  ],
+  "graph": {
+    "rootPackages": [
+      "river"
+    ],
+    "importLinter": 1237,
+    "rulebearing": 1237,
+    "equal": true,
+    "unexplained": 0,
+    "onlyRulebearing": {},
+    "onlyImportLinter": {}
+  },
+  "agrees": true
+}

@@ -1,0 +1,179 @@
+{
+  "repo": "napari/napari",
+  "sha": "5ef58e212af1af11737bc005048cfd0fb7a1aefd",
+  "tool": "import-linter",
+  "importLinterVersion": "2.15",
+  "settings": "pyproject.toml",
+  "config": "imported",
+  "status": "compared",
+  "summary": {
+    "total": 4,
+    "agree": 4,
+    "disagree": 0,
+    "stays": 0,
+    "not-imported": 0,
+    "error": 0
+  },
+  "contracts": [
+    {
+      "id": null,
+      "name": "Forbid import PyQt and PySide",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "Block import from qt module in napari.layers",
+      "type": "layers",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "Block import from qt module in napari.components",
+      "type": "layers",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "Block imports from napari_builtins in napari core",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    }
+  ],
+  "graph": {
+    "rootPackages": [
+      "napari"
+    ],
+    "importLinter": 2423,
+    "rulebearing": 2764,
+    "equal": false,
+    "unexplained": 0,
+    "onlyRulebearing": {
+      "notGrimpModule": {
+        "count": 345,
+        "sample": [
+          [
+            "src/napari/_app_model/_tests/test_app.py",
+            "src/napari/_app_model/__init__.py"
+          ],
+          [
+            "src/napari/_app_model/_tests/test_app.py",
+            "src/napari/layers/__init__.py"
+          ],
+          [
+            "src/napari/_app_model/_tests/test_constants.py",
+            "src/napari/_app_model/constants/__init__.py"
+          ],
+          [
+            "src/napari/_app_model/_tests/test_context.py",
+            "src/napari/_app_model/context/_context.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_debug_menu.py",
+            "src/napari/_app_model/__init__.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_debug_menu.py",
+            "src/napari/_qt/_qapp_model/_tests/utils.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_debug_menu.py",
+            "src/napari/utils/perf/__init__.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_dummy_actions.py",
+            "src/napari/_app_model/constants/_menus.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_dummy_actions.py",
+            "src/napari/_app_model/utils.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_file_menu.py",
+            "src/napari/_app_model/__init__.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_file_menu.py",
+            "src/napari/_app_model/constants/__init__.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_file_menu.py",
+            "src/napari/_qt/_qapp_model/_tests/utils.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_file_menu.py",
+            "src/napari/layers/__init__.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_file_menu.py",
+            "src/napari/plugins/__init__.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_file_menu.py",
+            "src/napari/utils/action_manager.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_help_menu.py",
+            "src/napari/_app_model/__init__.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_help_menu.py",
+            "src/napari/_qt/_qapp_model/qactions/_help.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_help_menu.py",
+            "src/napari/_qt/widgets/qt_viewer_tour.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_layerlist_context_actions.py",
+            "src/napari/_app_model/__init__.py"
+          ],
+          [
+            "src/napari/_qt/_qapp_model/_tests/test_layerlist_context_actions.py",
+            "src/napari/_app_model/actions/_layerlist_context_actions.py"
+          ]
+        ]
+      }
+    },
+    "onlyImportLinter": {
+      "ancestorOfMissing": {
+        "count": 4,
+        "sample": [
+          [
+            "src/napari/_qt/_tests/test_qt_viewer.py",
+            "src/napari/__init__.py"
+          ],
+          [
+            "src/napari/_tests/test_notebook_display.py",
+            "src/napari/__init__.py"
+          ],
+          [
+            "src/napari/components/experimental/commands.py",
+            "src/napari/__init__.py"
+          ],
+          [
+            "src/napari/utils/io.py",
+            "src/napari/__init__.py"
+          ]
+        ]
+      }
+    }
+  },
+  "agrees": true
+}
