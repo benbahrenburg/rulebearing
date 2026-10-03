@@ -6,7 +6,7 @@
 //! - Requirement: [NFR-SEC-01](../../docs/prd.md#nfr-sec-01)
 #![no_main]
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use libfuzzer_sys::fuzz_target;
 use rb_cli::cache::manifest::{self, Key, Manifest, digest, extraction_file, load};
@@ -36,6 +36,8 @@ fuzz_target!(|data: &[u8]| {
         strategy: CacheStrategy::Metadata,
         inputs: BTreeMap::new(),
         stamps: BTreeMap::new(),
+        probes: BTreeMap::new(),
+        watched: BTreeSet::new(),
         extraction: named,
     };
     for step in 0..2 {
