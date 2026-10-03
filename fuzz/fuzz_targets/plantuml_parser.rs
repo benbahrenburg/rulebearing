@@ -21,7 +21,11 @@ fuzz_target!(|data: &[u8]| {
     let Ok(association) = Association::new(diagram) else {
         return;
     };
-    for name in names.iter().map(String::as_str).chain(["", "A.B", "System"]) {
+    for name in names
+        .iter()
+        .map(String::as_str)
+        .chain(["", "A.B", "System"])
+    {
         let _ = association.contains(name);
         let _ = association.namespace_identifiers_of("T", name);
         let _ = association.target_namespace_identifiers("T", name);

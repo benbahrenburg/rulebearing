@@ -36,12 +36,26 @@ fn compiled(text: &str) -> Option<Arc<Matcher>> {
         return found.clone();
     }
     let found = pattern::matcher(text).ok().map(Arc::new);
-    cache.insert(text.to_owned(), found.clone());
+    insert(&mut cache, SHARED_LIMIT, text, found.clone());
     found
 }
 
 /// How many patterns a thread's cache holds before it starts over.
 const LOCAL_LIMIT: usize = 4096;
+
+/// How many patterns the shared cache holds before it starts over.
+const SHARED_LIMIT: usize = 4096;
+
+/// Adds a pattern to a cache, emptying it first when it holds `limit` patterns. A pattern with a
+/// capture substituted is a new text for each captured value, so a process that evaluates for
+/// hours (`guard --watch`) or for millions of inputs (a fuzz target) would otherwise keep every
+/// matcher it ever compiled. A matcher still in use elsewhere lives on through its `Arc`.
+fn insert(cache: &mut Cache, limit: usize, text: &str, found: Option<Arc<Matcher>>) {
+    if cache.len() >= limit {
+        cache.clear();
+    }
+    cache.insert(text.to_owned(), found);
+}
 
 /// Runs `f` with the compiled pattern, or `None` when it does not compile, looked up in this
 /// thread's cache without allocating once the thread has seen it.
@@ -55,13 +69,7 @@ fn with<R>(text: &str, f: impl FnOnce(Option<&Arc<Matcher>>) -> R) -> R {
         let found = compiled(text);
         let result = f(found.as_ref());
         if let Ok(mut cache) = local.try_borrow_mut() {
-            // A pattern with a capture substituted is a new text for each captured value, so a
-            // process that evaluates for hours (`guard --watch`) starts the thread's cache over
-            // rather than let it grow without end; the shared cache still holds the matchers.
-            if cache.len() >= LOCAL_LIMIT {
-                cache.clear();
-            }
-            cache.insert(text.to_owned(), found);
+            insert(&mut cache, LOCAL_LIMIT, text, found);
         }
         result
     })
@@ -111,6 +119,26 @@ mod tests {
         })
         .join();
         assert_eq!(held.ok(), Some((LOCAL_LIMIT, 1)));
+    }
+
+    #[test]
+    fn a_cache_starts_over_at_its_limit_and_never_holds_more() {
+        let mut cache = Cache::new();
+        insert(&mut cache, 2, "a", None);
+        insert(&mut cache, 2, "b", get("^b"));
+        assert_eq!(cache.len(), 2, "below the limit nothing is dropped");
+        insert(&mut cache, 2, "b", None);
+        assert_eq!(cache.len(), 1, "at the limit the cache starts over");
+        assert!(
+            cache.get("b").is_some_and(Option::is_none),
+            "and holds the pattern just added"
+        );
+        insert(&mut cache, 2, "c", None);
+        assert_eq!(cache.len(), 2);
+        for i in 0..10 {
+            insert(&mut cache, 3, &format!("p{i}"), None);
+            assert!(cache.len() <= 3);
+        }
     }
 
     #[test]
