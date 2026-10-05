@@ -71,7 +71,7 @@ oxc_ast_visit = "=0.151.0"
 oxc_diagnostics = "=0.151.0"
 oxc_parser = "=0.151.0"
 oxc_semantic = "=0.151.0"
-oxc_span = "=0.151.0"
+oxc_span = "=0.152.0"
 # `yarn_pnp` resolves through a Yarn Plug'n'Play manifest for `externalModuleResolutionStrategy:
 # yarn-pnp` (plan 0001, sub-wave 1C); it adds the BSD-2-Clause `pnp` crate.
 oxc_resolver = { version = "=11.24.3", features = ["yarn_pnp"] }
