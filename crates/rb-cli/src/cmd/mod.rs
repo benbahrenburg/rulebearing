@@ -35,6 +35,7 @@ pub mod init_graph;
 pub mod place;
 pub mod plain;
 pub mod propose;
+pub mod query;
 pub mod rules;
 pub mod snapshot;
 pub mod summary;

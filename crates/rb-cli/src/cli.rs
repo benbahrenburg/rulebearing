@@ -62,6 +62,8 @@ pub enum Command {
     CanImport(crate::cmd::can_import::CanImportArgs),
     /// The edges a ratchet counts, against its budget
     Count(crate::cmd::count::CountArgs),
+    /// The edges matching a from and to pair, as count counts them
+    Query(crate::cmd::query::QueryArgs),
     /// Convert, expand or lint a configuration
     #[command(subcommand)]
     Config(crate::cmd::config::ConfigCommand),

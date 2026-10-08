@@ -504,6 +504,7 @@ fn base_graph(
         today: ctx.today,
         timestamp: ctx.timestamp.clone(),
         color_terminal: false,
+        warm: None,
     };
     let base = args.base.as_deref().unwrap_or(sha);
     // A path the change adds is not in the base yet, and a base with nothing to extract (a

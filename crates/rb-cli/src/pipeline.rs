@@ -780,8 +780,8 @@ pub fn load_graph(ctx: &Context<'_>, file: &str) -> Result<GraphDocument, String
         .map_err(|e| format!("{} is not a cruise result: {e}", path.display()))
 }
 
-/// The graph a query command works on: `--graph FILE`, else the saved graph when there is one,
-/// else a fresh extraction of `paths`. The result is un-annotated and ready to evaluate.
+/// The graph a query command works on: `--graph FILE`, else a server's warm graph, else the saved
+/// graph when there is one, else a fresh extraction of `paths`. The result is un-annotated and ready to evaluate.
 ///
 /// # Errors
 /// A message when the graph cannot be read or extracted.
@@ -792,8 +792,10 @@ pub fn query_graph(
     paths: &[String],
 ) -> Result<GraphDocument, String> {
     let saved = ctx.resolve(SAVED_GRAPH);
+    let warm = ctx.warm.and_then(crate::serve::graph::WarmGraph::document);
     let mut document = match graph {
         Some(file) => load_graph(ctx, file)?,
+        None if paths.is_empty() && warm.is_some() => warm.cloned().unwrap_or_default(),
         None if paths.is_empty() && saved.is_file() => load_graph(ctx, SAVED_GRAPH)?,
         None => extract(ctx, config, paths).map_err(|e| e.to_string())?,
     };
@@ -840,6 +842,7 @@ mod tests {
             today: chrono::NaiveDate::default(),
             timestamp: String::new(),
             color_terminal: false,
+            warm: None,
         };
         let options = RunOptions {
             liveness: false,

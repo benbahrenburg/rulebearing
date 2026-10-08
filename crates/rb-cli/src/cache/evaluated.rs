@@ -429,6 +429,7 @@ mod tests {
             today: chrono::NaiveDate::default(),
             timestamp: String::new(),
             color_terminal: false,
+            warm: None,
         };
         let options = RunOptions::default();
         let key = || partial_key(&ctx, &config, &options, "Strict");

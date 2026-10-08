@@ -26,6 +26,7 @@
 //! | [`graphviz`] | GraphViz' `dot`, for `x-dot-webpage` only ([ADR-0053](../../../docs/adr/0053-x-dot-webpage-draws-with-graphviz-dot.md)) |
 //! | [`progress`] | `--progress` |
 //! | [`protocol`] | the conformance harness's `validate` and `report` |
+//! | [`serve`] | `serve --mcp` and `serve --lsp` over one warm graph |
 
 pub mod affected;
 pub mod cache;
@@ -41,6 +42,7 @@ pub mod plugin;
 pub mod progress;
 pub mod protocol;
 pub mod ratchets;
+pub mod serve;
 pub mod value;
 
 use std::fmt::Write as _;
@@ -146,6 +148,7 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         Command::Test(a) => cmd::test_rules::run(ctx, &a),
         Command::CanImport(a) => cmd::can_import::run(ctx, &a),
         Command::Count(a) => cmd::count::run(ctx, &a),
+        Command::Query(a) => cmd::query::run(ctx, &a),
         Command::Config(c) => cmd::config::run(ctx, &c),
         Command::Hooks(c) => cmd::hooks::run(ctx, &c),
         Command::Guard(a) => cmd::guard::once(ctx, &a),
@@ -243,6 +246,7 @@ pub fn run_daemon(args: &[String]) -> Option<u8> {
         today,
         timestamp,
         color_terminal: std::io::stdout().is_terminal(),
+        warm: None,
     };
     let stop = || closed.load(Ordering::SeqCst);
     Some(cmd::guard::run(
@@ -269,6 +273,7 @@ pub fn run_with_input(args: &[String], stdin: &mut dyn std::io::Read) -> Outcome
         today,
         timestamp,
         color_terminal: std::io::stdout().is_terminal(),
+        warm: None,
     };
     run_in(&mut ctx, args)
 }

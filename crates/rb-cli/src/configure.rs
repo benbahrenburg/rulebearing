@@ -525,6 +525,7 @@ mod tests {
             today: NaiveDate::default(),
             timestamp: String::new(),
             color_terminal: false,
+            warm: None,
         }
     }
 

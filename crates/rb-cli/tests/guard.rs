@@ -307,6 +307,22 @@ fn a_saved_file_is_checked_again_within_100_ms_and_stdin_closing_stops_it() -> R
                 .as_str()
                 .is_some_and(|a| a.contains("src/ui/other.ts"))
     })?;
+    // The graph it answered for is written beside the findings for a server to pick up, and
+    // follows the saves: the new file is in it.
+    let graph_file = dir.join(".graph/guard/graph.json");
+    let start = Instant::now();
+    loop {
+        let text = std::fs::read_to_string(&graph_file).unwrap_or_default();
+        if text.contains("\"src/ui/other.ts\"") {
+            let graph: serde_json::Value = serde_json::from_str(&text)?;
+            assert!(graph["modules"].as_array().is_some_and(|m| !m.is_empty()));
+            break;
+        }
+        if start.elapsed() > Duration::from_secs(10) {
+            return Err(format!("{} never held the new file", graph_file.display()).into());
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
     // Standard input closing stops it cleanly, and it takes its findings with it.
     drop(daemon.0.stdin.take());
     let start = Instant::now();
@@ -330,6 +346,7 @@ fn a_saved_file_is_checked_again_within_100_ms_and_stdin_closing_stops_it() -> R
     );
     assert!(log.contains("stopped"), "{log}");
     assert!(!dir.join(FINDINGS).exists());
+    assert!(!graph_file.exists(), "the graph goes with the findings");
     // Nothing was written outside `.graph/` but the two edits the test made.
     let mut expected = before;
     expected.insert(PathBuf::from("src/ui/page.ts"), page.as_bytes().to_vec());
