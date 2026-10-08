@@ -1,11 +1,11 @@
 # ADR-0061: A type is attributed to a file its developer wrote; a source generator's output under `obj/` only when the type is in no other
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-08, by the owner)
 - **Date:** 2026-10-08
 - **Derives from:** [ADR-0011](0011-read-dotnet-assemblies-not-source.md) (a type's fields and attributes are attributed to the document of its first constructor or first method), [design § One engine](../artifacts/design.md#one-engine-three-languages-one-monorepo) (row Module identity)
 - **Supersedes:** nothing. It refines ADR-0011's attribution sentence for a type whose code is in more than one document.
 - **Constrains:** `crates/rb-extract-dotnet/src/attribute.rs`, `crates/rb-extract-dotnet/src/discover/mod.rs`, [docs/source-mode.md](../source-mode.md)
-- **Implemented by:** the change that adds this record
+- **Implemented by:** [PR #72](https://github.com/benbahrenburg/rulebearing/pull/72)
 - **Requirements:** [FR-EXT-DN-04](../prd.md#fr-ext-dn-04)
 
 ## Context
