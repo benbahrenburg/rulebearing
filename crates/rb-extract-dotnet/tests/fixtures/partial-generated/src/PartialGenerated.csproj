@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A fixture for rb-extract-dotnet (docs/adr/0061-a-type-is-attributed-to-a-file-its-developer-wrote.md):
+       a partial type written in src/Shapes/Square.cs whose constructor sits in a file under obj/,
+       where a source generator writes its output. ../build.sh copies Generated/Square.g.cs to
+       obj/Generator/ for the build and removes it after, so the PDB records the path a generator's
+       output has. The built assembly and PDB are committed beside it. -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>PartialGenerated</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Generated/**;obj/**" />
+    <Compile Include="obj/Generator/*.g.cs" />
+  </ItemGroup>
+</Project>

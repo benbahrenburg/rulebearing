@@ -60,6 +60,21 @@ A name is resolved without a compiler, so what only a compiler decides is not kn
 
 The ten oracles are every .NET oracle of [`testbeds/manifest.yaml`](../testbeds/manifest.yaml), and each is above the 90% precision target. The comparison covers edges between two files both modes know, each oracle at its pinned SHA with the solution the oracle row names, the compiled side built in Release as the nightly builds it, with the row's `msbuild` arguments and the newest 10.0 SDK beside 8.0 and 9.0 (TNG/ArchUnitNET's `global.json` asks for 10.0.400, and DrJohnMelville/Pdf's `[FromConstructor]` source generator emits no constructors under the 10.0.100 SDK). `cargo test -p rb-extract-dotnet --features source-mode --test source_mode` asserts at least 90% precision and recall on the two built fixtures and writes `target/source-mode-precision.json`; the nightly runs [`testbeds/oracles/precision.py`](../testbeds/oracles/precision.py) on every .NET oracle and joins the results into `source-mode-precision.json` ([Wave 3, Step 14](plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)). Measuring it also found two edges compiled mode missed, now fixed: the body of an `async` or iterator method of a release build, and top-level statements.
 
+The nightly measures it again on every .NET oracle row, against the compiled graph that row's own architecture tests run against: the assemblies the imported tests name, not the whole solution. [`testbeds/oracles/dotnet.sh`](../testbeds/oracles/dotnet.sh) writes each result and the summary job joins them into `testbeds/results/source-mode-precision.json`. TNG/ArchUnitNET and BenMorris/NetArchTest are the conformance suites of gate 2, not oracle rows there, so the nightly lists eight. Measured that way on 2026-10-08, each at its pinned SHA with the 10.0.401 SDK:
+
+| Oracle | Source edges | Compiled edges | Agreeing | Precision | Recall |
+| --- | --- | --- | --- | --- | --- |
+| ardalis/RiverBooks | 47 | 59 | 47 | 100% | 80% |
+| NeVeSpl/NetArchTest.eNhancedEdition | 99 | 96 | 96 | 97% | 100% |
+| evolutionary-architecture/evolutionary-architecture-by-example | 115 | 125 | 113 | 98.3% | 90% |
+| onebeyond/monaco | 152 | 211 | 152 | 100% | 72% |
+| phongnguyend/Practical.CleanArchitecture | 386 | 491 | 384 | 99.5% | 78% |
+| nager/Nager.Date | 1,048 | 1,260 | 1,047 | 99.9% | 83% |
+| karaoke-dev/karaoke | 291 | 351 | 291 | 100% | 83% |
+| DrJohnMelville/Pdf | 2,202 | 2,326 | 2,064 | 93.7% | 89% |
+
+DrJohnMelville/Pdf was at 70.75% on every night from 2026-10-03 to 2026-10-08. Its `[StaticSingleton]` source generator writes a partial type's constructor under `obj/`, and compiled mode credited the type's base class and fields to that generated file, which source mode never reads. Compiled mode now attributes a type to a file its developer wrote whenever the PDB names one ([ADR-0061](adr/0061-a-type-is-attributed-to-a-file-its-developer-wrote.md)); the other seven oracles have no generated partial types and did not move.
+
 ## Never the gate
 
 A run read in source mode never passes or fails a gate. `cruise` with a reporter that gates, `fmt --exit-code` on a saved source-mode result and `diff --exit-code` with a source-mode side print `warning: approximate-mode-not-a-gate: ...` and exit 2, whether the count was zero or not; `attest` refuses to sign such a graph at all. `cruise --from-hook` answers as it always does, because the Stop hook is the inner loop source mode exists for. `--allow-approximate-gate` gives the count back for a local script ([cli.md](cli.md#net-without-a-build---mode-source); [FR-EXT-DN-04](prd.md#fr-ext-dn-04)).

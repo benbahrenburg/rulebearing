@@ -175,6 +175,14 @@ pub struct Workspace {
 /// Directory names never searched: build output, tool caches, other ecosystems.
 const SKIPPED_DIRECTORIES: &[&str] = &["bin", "obj", "node_modules", ".git", ".vs", "artifacts"];
 
+/// Whether a path, relative or absolute and with either separator, lies inside a folder
+/// discovery never searches: build output such as a source generator's files under `obj/`,
+/// rather than a file someone wrote ([ADR-0061](../../../../docs/adr/0061-a-type-is-attributed-to-a-file-its-developer-wrote.md)).
+pub(crate) fn is_build_output(path: &str) -> bool {
+    path.split(['/', '\\'])
+        .any(|segment| SKIPPED_DIRECTORIES.contains(&segment))
+}
+
 /// Files under `dir` for which `keep` is true, recursively, not through symbolic links.
 fn walk(dir: &Path, keep: &dyn Fn(&Path) -> bool, found: &mut Vec<PathBuf>, skip_output: bool) {
     let Ok(entries) = std::fs::read_dir(dir) else {
@@ -422,6 +430,34 @@ pub fn close_package_refs(projects: &mut [Project], configuration: &str, root: &
 pub(crate) mod tests {
     use super::*;
     use rb_model::{DirectoryFilter, options::Patterns};
+
+    #[test]
+    fn build_output_is_any_path_through_a_skipped_folder() {
+        for (path, expected) in [
+            ("src/Api/obj/Release/net10.0/Gen/Gen.Type/A.g.cs", true),
+            (r"src\Api\obj\Debug\A.g.cs", true),
+            ("artifacts/obj/Api/release/A.g.cs", true),
+            ("src/Api/bin/Release/A.cs", true),
+            ("/work/repo/src/Api/obj/A.cs", true),
+            ("src/Api/Objects/A.cs", false),
+            ("src/Api/objective.cs", false),
+            ("src/Api/A.cs", false),
+            ("", false),
+        ] {
+            assert_eq!(is_build_output(path), expected, "{path}");
+        }
+    }
+
+    proptest::proptest! {
+        #[test]
+        fn a_path_is_build_output_exactly_when_a_segment_is_skipped(
+            segments in proptest::collection::vec("[a-zA-Z.]{1,8}", 0..6),
+        ) {
+            let skipped = segments.iter().any(|s| SKIPPED_DIRECTORIES.contains(&s.as_str()));
+            proptest::prop_assert_eq!(is_build_output(&segments.join("/")), skipped);
+            proptest::prop_assert_eq!(is_build_output(&segments.join("\\")), skipped);
+        }
+    }
 
     pub(crate) fn scratch(tag: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("rb-discover-{tag}-{}", std::process::id()));
