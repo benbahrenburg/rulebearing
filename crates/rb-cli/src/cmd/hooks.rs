@@ -10,6 +10,13 @@
 //!
 //! The file is merged, never overwritten: other settings and other hooks stay, and installing twice
 //! adds nothing. `impact` reads the file being edited from the hook's JSON on stdin.
+//!
+//! `--mcp` also registers `rulebearing serve --mcp` as the project's MCP server `rulebearing` in
+//! `.mcp.json` ([Wave 3, Step 19](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)),
+//! merged the same way: other servers stay, and an entry already named `rulebearing` is kept as
+//! it is.
+
+use std::fmt::Write as _;
 
 use clap::{Args, Subcommand};
 use serde_json::{Map, Value, json};
@@ -30,6 +37,65 @@ pub struct InstallArgs {
     /// Install Claude Code's hooks into .claude/settings.json
     #[arg(long)]
     pub claude_code: bool,
+    /// Also register `rulebearing serve --mcp` as the project's MCP server in .mcp.json
+    #[arg(long, requires = "claude_code")]
+    pub mcp: bool,
+}
+
+/// The MCP server entry `--mcp` adds to `.mcp.json`.
+pub fn mcp_server() -> Value {
+    json!({ "command": "rulebearing", "args": ["serve", "--mcp"] })
+}
+
+/// Adds the `rulebearing` server to an `.mcp.json` object unless one by that name is there.
+pub fn merged_mcp(existing: Value) -> Value {
+    let mut config = match existing {
+        Value::Object(map) => map,
+        _ => Map::new(),
+    };
+    let servers = config.entry("mcpServers").or_insert_with(|| json!({}));
+    if !servers.is_object() {
+        *servers = json!({});
+    }
+    if let Value::Object(servers) = servers {
+        servers
+            .entry("rulebearing".to_owned())
+            .or_insert_with(mcp_server);
+    }
+    Value::Object(config)
+}
+
+/// Reads a JSON file to merge into, `{}` when it does not exist.
+fn read_json(path: &std::path::Path) -> Result<Value, Outcome> {
+    match std::fs::read_to_string(path) {
+        Ok(text) => serde_json::from_str(&text).map_err(|e| {
+            Outcome::failed(
+                RunExit::InvalidConfig,
+                format!(
+                    "rulebearing hooks: {} is not JSON: {e}; fix it and run again\n",
+                    path.display()
+                ),
+            )
+        }),
+        Err(_) => Ok(json!({})),
+    }
+}
+
+/// Writes a merged JSON file, creating its folder.
+fn write_json(path: &std::path::Path, value: &Value) -> Result<(), Outcome> {
+    let mut text = serde_json::to_string_pretty(value).unwrap_or_default();
+    text.push('\n');
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| {
+            Outcome::failed(RunExit::Untrustworthy, format!("rulebearing hooks: {e}\n"))
+        })?;
+    }
+    std::fs::write(path, text).map_err(|e| {
+        Outcome::failed(
+            RunExit::Untrustworthy,
+            format!("rulebearing hooks: cannot write {}: {e}\n", path.display()),
+        )
+    })
 }
 
 /// The session brief.
@@ -96,44 +162,58 @@ pub fn run(ctx: &mut Context<'_>, command: &HooksCommand) -> Outcome {
         );
     }
     let path = ctx.resolve(".claude/settings.json");
-    let existing = match std::fs::read_to_string(&path) {
-        Ok(text) => match serde_json::from_str(&text) {
-            Ok(v) => v,
-            Err(e) => {
-                return Outcome::failed(
-                    RunExit::InvalidConfig,
-                    format!(
-                        "rulebearing hooks: {} is not JSON: {e}; fix it and run again\n",
-                        path.display()
-                    ),
-                );
-            }
-        },
-        Err(_) => json!({}),
-    };
-    let settings = merged(existing);
-    let mut text = serde_json::to_string_pretty(&settings).unwrap_or_default();
-    text.push('\n');
-    if let Some(parent) = path.parent()
-        && let Err(e) = std::fs::create_dir_all(parent)
-    {
-        return Outcome::failed(RunExit::Untrustworthy, format!("rulebearing hooks: {e}\n"));
+    let installed = read_json(&path)
+        .map(merged)
+        .and_then(|settings| write_json(&path, &settings));
+    if let Err(outcome) = installed {
+        return outcome;
     }
-    match std::fs::write(&path, text) {
-        Ok(()) => Outcome::printed(format!(
-            "installed in {}:\n  SessionStart  {SESSION_START}\n  PreToolUse    {PRE_TOOL_USE}  (Edit, Write)\n  Stop          {STOP}\n",
-            path.display()
-        )),
-        Err(e) => Outcome::failed(
-            RunExit::Untrustworthy,
-            format!("rulebearing hooks: cannot write {}: {e}\n", path.display()),
-        ),
+    let mut out = format!(
+        "installed in {}:\n  SessionStart  {SESSION_START}\n  PreToolUse    {PRE_TOOL_USE}  (Edit, Write)\n  Stop          {STOP}\n",
+        path.display()
+    );
+    if args.mcp {
+        let mcp = ctx.resolve(".mcp.json");
+        let registered = read_json(&mcp)
+            .map(merged_mcp)
+            .and_then(|config| write_json(&mcp, &config));
+        if let Err(outcome) = registered {
+            return outcome;
+        }
+        let _ = write!(
+            out,
+            "registered in {}:\n  rulebearing   rulebearing serve --mcp\n",
+            mcp.display()
+        );
     }
+    Outcome::printed(out)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_mcp_server_is_added_once_and_never_replaces_an_entry() {
+        let added = merged_mcp(json!({ "mcpServers": { "other": { "command": "x" } } }));
+        assert_eq!(added["mcpServers"]["rulebearing"], mcp_server());
+        assert_eq!(added["mcpServers"]["other"], json!({ "command": "x" }));
+        assert_eq!(merged_mcp(added.clone()), added, "twice adds nothing");
+        let own = json!({ "mcpServers": { "rulebearing": { "command": "/opt/rb", "args": ["serve", "--mcp"] } } });
+        assert_eq!(
+            merged_mcp(own.clone()),
+            own,
+            "an entry by that name is kept"
+        );
+        assert_eq!(
+            merged_mcp(json!([1]))["mcpServers"]["rulebearing"],
+            mcp_server()
+        );
+        assert_eq!(
+            merged_mcp(json!({ "mcpServers": 3 }))["mcpServers"]["rulebearing"],
+            mcp_server()
+        );
+    }
 
     #[test]
     fn merging_is_idempotent_and_keeps_other_settings() {

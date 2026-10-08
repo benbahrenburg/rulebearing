@@ -86,10 +86,10 @@ fn exit_codes_follow_the_contract() -> Result<(), Box<dyn Error>> {
     assert!(String::from_utf8(cruise.stderr)?.contains("no modules found"));
     let _ = std::fs::remove_dir_all(&empty);
 
-    // A subcommand a later wave delivers says so and exits 2.
-    let later = Command::new(BIN).arg("serve").output()?;
-    assert_eq!(later.status.code(), Some(2));
-    assert!(String::from_utf8(later.stderr)?.contains("wave 3"));
+    // serve, delivered in wave 3, needs its protocol named: without one it is a usage error.
+    let unnamed = Command::new(BIN).arg("serve").output()?;
+    assert_eq!(unnamed.status.code(), Some(3));
+    assert!(String::from_utf8(unnamed.stderr)?.contains("--mcp"));
 
     // An unknown subcommand is a configuration error.
     let unknown = Command::new(BIN).arg("frobnicate").output()?;

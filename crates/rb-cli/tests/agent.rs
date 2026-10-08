@@ -595,6 +595,36 @@ fn config_commands_convert_expand_and_lint() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn hooks_install_registers_the_mcp_server_on_request() -> Result<(), Box<dyn Error>> {
+    let dir = tree("hooks-mcp")?;
+    assert_eq!(
+        run(&dir, &["hooks", "install", "--claude-code"])?
+            .status
+            .code(),
+        Some(0)
+    );
+    assert!(
+        !dir.join(".mcp.json").exists(),
+        "only --mcp registers the server"
+    );
+    let registered = run(&dir, &["hooks", "install", "--claude-code", "--mcp"])?;
+    assert_eq!(registered.status.code(), Some(0));
+    assert!(stdout(&registered).contains("rulebearing serve --mcp"));
+    let mcp: Value = serde_json::from_str(&std::fs::read_to_string(dir.join(".mcp.json"))?)?;
+    assert_eq!(
+        mcp["mcpServers"]["rulebearing"],
+        serde_json::json!({ "command": "rulebearing", "args": ["serve", "--mcp"] })
+    );
+    assert_eq!(
+        run(&dir, &["hooks", "install", "--mcp"])?.status.code(),
+        Some(3),
+        "--mcp goes with --claude-code"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
 fn hooks_summary_and_impact_serve_an_agent() -> Result<(), Box<dyn Error>> {
     let dir = tree("hooks")?;
     assert_eq!(run(&dir, &["hooks", "install"])?.status.code(), Some(3));

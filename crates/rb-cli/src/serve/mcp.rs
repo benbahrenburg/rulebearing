@@ -318,6 +318,12 @@ fn with_config(config: &ConfigArgs, line: &mut Vec<String>) {
     }
 }
 
+/// Each tool's name and what it answers, in the design's order: what `docs --format skill`
+/// lists.
+pub fn tool_summaries() -> Vec<(&'static str, &'static str)> {
+    TOOLS.iter().map(|t| (t.name, t.description)).collect()
+}
+
 /// The `tools/list` result.
 fn list() -> Value {
     let tools: Vec<Value> = TOOLS
