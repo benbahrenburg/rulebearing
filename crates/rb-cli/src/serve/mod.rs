@@ -8,6 +8,7 @@
 
 pub mod graph;
 pub mod jsonrpc;
+pub mod lsp;
 pub mod mcp;
 
 use std::io::{BufRead, Write};
@@ -21,10 +22,14 @@ use crate::{Outcome, RunExit};
 
 /// `serve`.
 #[derive(Debug, Clone, Default, Args)]
+#[command(group(clap::ArgGroup::new("protocol").required(true).args(["mcp", "lsp"])))]
 pub struct ServeArgs {
     /// Answer Model Context Protocol tool calls, one JSON-RPC message per line
-    #[arg(long, required = true)]
+    #[arg(long)]
     pub mcp: bool,
+    /// Publish the findings as editor diagnostics over the Language Server Protocol
+    #[arg(long)]
+    pub lsp: bool,
     /// Configuration
     #[command(flatten)]
     pub config: ConfigArgs,
@@ -74,24 +79,14 @@ impl Session {
         }
     }
 
-    /// Runs one command line over the warm graph, reading the graph again first when it changed.
-    /// The command reads no standard input: the server's input is the protocol's.
-    pub fn run(&mut self, line: &[String]) -> Outcome {
-        let mut empty: &[u8] = &[];
-        let plain = Context {
-            cwd: self.cwd.clone(),
-            stdin: &mut empty,
-            today: self.today,
-            timestamp: self.timestamp.clone(),
-            color_terminal: false,
-            warm: None,
-        };
-        if let Err(message) = self.warm.ensure_fresh(&plain) {
-            return Outcome::failed(
-                RunExit::Untrustworthy,
-                format!("rulebearing serve: {message}\n"),
-            );
-        }
+    /// The working directory.
+    pub fn cwd(&self) -> &std::path::Path {
+        &self.cwd
+    }
+
+    /// Runs `f` with a context in the session's working directory, answering from the warm
+    /// graph when `warm`, reading no standard input: the server's input is the protocol's.
+    pub fn with_context<R>(&self, warm: bool, f: impl FnOnce(&mut Context<'_>) -> R) -> R {
         let mut empty: &[u8] = &[];
         let mut ctx = Context {
             cwd: self.cwd.clone(),
@@ -99,9 +94,37 @@ impl Session {
             today: self.today,
             timestamp: self.timestamp.clone(),
             color_terminal: false,
-            warm: Some(&self.warm),
+            warm: warm.then_some(&self.warm),
         };
-        crate::run_in(&mut ctx, line)
+        f(&mut ctx)
+    }
+
+    /// Reads the warm graph again when it changed.
+    ///
+    /// # Errors
+    /// As [`graph::WarmGraph::ensure_fresh`].
+    pub fn ensure_fresh(&mut self) -> Result<graph::Freshness, String> {
+        let mut empty: &[u8] = &[];
+        let ctx = Context {
+            cwd: self.cwd.clone(),
+            stdin: &mut empty,
+            today: self.today,
+            timestamp: self.timestamp.clone(),
+            color_terminal: false,
+            warm: None,
+        };
+        self.warm.ensure_fresh(&ctx)
+    }
+
+    /// Runs one command line over the warm graph, reading the graph again first when it changed.
+    pub fn run(&mut self, line: &[String]) -> Outcome {
+        if let Err(message) = self.ensure_fresh() {
+            return Outcome::failed(
+                RunExit::Untrustworthy,
+                format!("rulebearing serve: {message}\n"),
+            );
+        }
+        self.with_context(true, |ctx| crate::run_in(ctx, line))
     }
 }
 
@@ -122,9 +145,14 @@ pub fn run(
         return RunExit::InvalidConfig.code();
     }
     let mut session = Session::new(origin, &args.config);
-    let served = mcp::serve(&mut session, input, output);
+    let served = if args.lsp {
+        // The protocol's exit code: 0 when the client shut the server down first, else 1.
+        lsp::serve(&mut session, input, output).map(|shut_down| u8::from(!shut_down))
+    } else {
+        mcp::serve(&mut session, input, output).map(|()| 0)
+    };
     match served {
-        Ok(()) => 0,
+        Ok(code) => code,
         Err(error) => {
             let _ = writeln!(log, "rulebearing serve: {error}");
             RunExit::Untrustworthy.code()
