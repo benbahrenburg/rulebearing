@@ -13,7 +13,9 @@
 //! 1. `pdb`: by the portable PDB, from Roslyn's `TypeDefinitionDocuments` record (written for types
 //!    with no method bodies), else the document declaring its first constructor (the document of
 //!    the constructor's last visible point), else the first visible sequence point of any of its
-//!    methods;
+//!    methods. A document under build output (`obj/`, where a source generator writes) is taken
+//!    only when the type is in no other: a partial type whose constructor a generator wrote is
+//!    its developer's file ([ADR-0061](../../../docs/adr/0061-a-type-is-attributed-to-a-file-its-developer-wrote.md));
 //! 2. `inferred`: a nested type with no sequence point of its own takes its enclosing type's file,
 //!    because C# declares a nested type inside its enclosing type's body;
 //! 3. `inferred`: by convention, when exactly one `<TypeName>.cs` exists under the project (or
@@ -35,6 +37,7 @@ use serde::Serialize;
 
 use crate::assembly::{Assembly, TypeInfo, row_index};
 use crate::bytes::ReadError;
+use crate::discover;
 use crate::pdb::{PdbError, PortablePdb};
 use crate::pe::DebugInfo;
 
@@ -311,25 +314,38 @@ fn from_pdb(
             excluded,
         };
         if let (true, Some(pdb)) = (attributable, pdb) {
-            let declared = type_documents
+            let declared: Vec<String> = type_documents
                 .get(&ty.row)
-                .and_then(|docs| docs.first())
-                .and_then(|row| document(*row));
-            if let Some(file) = declared {
+                .map(|docs| docs.iter().filter_map(|row| document(*row)).collect())
+                .unwrap_or_default();
+            if let Some(file) = written_first(declared.into_iter().map(|file| (file, None))) {
                 found.attribution = Some(Attribution::Pdb);
-                found.file = Some(file);
-            } else if let Some((file, line)) = constructor_document(pdb, ty)? {
-                found.attribution = Some(Attribution::Pdb);
-                found.file = document(file);
-                found.line = Some(line);
+                found.file = Some(file.0);
             } else {
-                for method in ty.methods.clone() {
-                    if let Some(point) = pdb.first_point(method)? {
-                        found.attribution = Some(Attribution::Pdb);
-                        found.file = document(point.document);
-                        found.line = Some(point.line);
-                        break;
+                // The constructor's document, else the first point of any method; a document
+                // under build output (a source generator's) only when the type is in no other.
+                let constructor = constructor_document(pdb, ty)?
+                    .and_then(|(file, line)| document(file).map(|file| (file, Some(line))));
+                let written = constructor
+                    .as_ref()
+                    .is_some_and(|(file, _)| !discover::is_build_output(file));
+                let chosen = if written {
+                    constructor
+                } else {
+                    let mut points = Vec::new();
+                    for method in ty.methods.clone() {
+                        if let Some(point) = pdb.first_point(method)?
+                            && let Some(file) = document(point.document)
+                        {
+                            points.push((file, Some(point.line)));
+                        }
                     }
+                    written_first(constructor.into_iter().chain(points))
+                };
+                if let Some((file, line)) = chosen {
+                    found.attribution = Some(Attribution::Pdb);
+                    found.file = Some(file);
+                    found.line = line;
                 }
             }
             // An async top-level entry keeps its statements in its state machine, a type nested
@@ -354,6 +370,23 @@ fn from_pdb(
         results.push(found);
     }
     Ok(results)
+}
+
+/// The first candidate in a file someone wrote, else the first candidate: a partial type is
+/// attributed to its developer's file rather than to what a source generator wrote under `obj/`,
+/// and a type only a generator declares keeps the generated file
+/// ([ADR-0061](../../../docs/adr/0061-a-type-is-attributed-to-a-file-its-developer-wrote.md)).
+fn written_first(
+    candidates: impl IntoIterator<Item = (String, Option<u32>)>,
+) -> Option<(String, Option<u32>)> {
+    let mut first = None;
+    for candidate in candidates {
+        if !discover::is_build_output(&candidate.0) {
+            return Some(candidate);
+        }
+        first.get_or_insert(candidate);
+    }
+    first
 }
 
 /// The document that declares the type's first constructor, and the line of its first point
@@ -506,6 +539,41 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
         assert_eq!(index.keys().collect::<Vec<_>>(), ["Order"]);
         assert_eq!(index.get("Order").map(Vec::len), Some(1));
+    }
+
+    #[test]
+    fn a_written_file_is_preferred_to_build_output() {
+        type Candidate = (String, Option<u32>);
+        let candidate = |file: &str, line| (file.to_owned(), line);
+        let generated = candidate("src/obj/Release/net10.0/Gen/Gen.Type/A.g.cs", Some(3));
+        let written = candidate("src/A.cs", Some(7));
+        let cases: [(Vec<Candidate>, Option<Candidate>); 5] = [
+            (vec![], None),
+            (vec![written.clone()], Some(written.clone())),
+            (vec![generated.clone()], Some(generated.clone())),
+            (
+                vec![generated.clone(), written.clone()],
+                Some(written.clone()),
+            ),
+            (
+                vec![
+                    written.clone(),
+                    candidate("src/B.cs", Some(1)),
+                    generated.clone(),
+                ],
+                Some(written),
+            ),
+        ];
+        for (candidates, expected) in cases {
+            assert_eq!(
+                written_first(candidates.clone()),
+                expected,
+                "{candidates:?}"
+            );
+        }
+        // Among build output only, the first one stays.
+        let other = candidate("artifacts/obj/Api/B.g.cs", None);
+        assert_eq!(written_first([generated.clone(), other]), Some(generated));
     }
 
     #[test]

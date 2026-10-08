@@ -221,6 +221,64 @@ fn a_file_with_code_and_no_type_of_its_own_is_a_module() -> Result<(), Box<dyn s
     Ok(())
 }
 
+/// A partial type is the file its developer wrote, not the generator's output under `obj/`: its
+/// base class is that file's edge, while a type only the generator declares keeps the generated
+/// file (ADR-0061).
+#[test]
+fn a_partial_type_is_the_file_its_developer_wrote() -> Result<(), Box<dyn std::error::Error>> {
+    let root = manifest().join("tests/fixtures/partial-generated");
+    let extraction = extract(&root, &loader("built/PartialGenerated.dll"))?;
+    let edges = |source: &str| -> Vec<&str> {
+        extraction
+            .modules
+            .iter()
+            .filter(|m| m.source == source)
+            .flat_map(|m| &m.dependencies)
+            .map(|d| d.resolved.as_str())
+            .collect()
+    };
+    assert!(
+        edges("src/Shapes/Square.cs").contains(&"src/Shapes/Shape.cs"),
+        "the base class is the written file's edge: {:?}",
+        edges("src/Shapes/Square.cs")
+    );
+    let generated = "src/obj/Generator/Square.g.cs";
+    assert!(
+        !edges(generated).contains(&"src/Shapes/Shape.cs")
+            || edges(generated).contains(&"src/Shapes/Square.cs"),
+        "the generated file keeps only its own code's edges: {:?}",
+        edges(generated)
+    );
+    let factory = extraction
+        .code
+        .as_ref()
+        .and_then(|code| {
+            code.types
+                .iter()
+                .find(|t| t.full_name == "PartialGenerated.Shapes.SquareFactory")
+        })
+        .ok_or("no SquareFactory in the code layer")?;
+    assert_eq!(
+        factory.location.file.as_deref(),
+        Some(generated),
+        "a generated-only type"
+    );
+    let square = extraction
+        .code
+        .as_ref()
+        .and_then(|code| {
+            code.types
+                .iter()
+                .find(|t| t.full_name == "PartialGenerated.Shapes.Square")
+        })
+        .ok_or("no Square in the code layer")?;
+    assert_eq!(
+        square.location.file.as_deref(),
+        Some("src/Shapes/Square.cs")
+    );
+    Ok(())
+}
+
 #[test]
 fn two_runs_serialise_byte_for_byte() -> Result<(), Box<dyn std::error::Error>> {
     let first = as_json(&extract(&sample(), &loader("built/Sample.dll"))?)?.to_string();
