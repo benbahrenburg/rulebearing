@@ -54,7 +54,6 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use rayon::prelude::*;
 use rb_model::CacheStrategy;
@@ -323,7 +322,7 @@ pub enum Listed {
 }
 
 fn git(root: &Path, args: &[&str]) -> Option<Vec<u8>> {
-    Command::new("git")
+    crate::git::command()
         .args(["-c", "core.quotepath=off"])
         .args(args)
         .current_dir(root)

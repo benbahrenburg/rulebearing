@@ -52,7 +52,6 @@
 //! [Wave 3, Step 15](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use clap::Args;
 use rb_config::Config;
@@ -301,7 +300,7 @@ impl Drop for PrivateDir {
 pub(crate) fn git(dir: &Path, arguments: &[&str]) -> Result<String, String> {
     let no_hooks = PrivateDir::create("rulebearing-no-hooks-")
         .map_err(|e| format!("cannot create a private empty folder for git's hooks: {e}"))?;
-    let output = Command::new("git")
+    let output = crate::git::command()
         .arg("-c")
         .arg(format!("core.hooksPath={}", no_hooks.path.display()))
         .args(arguments)

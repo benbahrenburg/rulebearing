@@ -22,6 +22,7 @@
 //! | [`configure`] | the configuration and the flags laid over it |
 //! | [`context`] | the working directory, the clock, the terminal |
 //! | [`exit`] | the exit-code table |
+//! | `git` | every `git` the crate starts, without a hook's repository variables under test |
 //! | [`graphviz`] | GraphViz' `dot`, for `x-dot-webpage` only ([ADR-0053](../../../docs/adr/0053-x-dot-webpage-draws-with-graphviz-dot.md)) |
 //! | [`progress`] | `--progress` |
 //! | [`protocol`] | the conformance harness's `validate` and `report` |
@@ -33,6 +34,7 @@ pub mod cmd;
 pub mod configure;
 pub mod context;
 pub mod exit;
+mod git;
 pub mod graphviz;
 pub mod pipeline;
 pub mod plugin;

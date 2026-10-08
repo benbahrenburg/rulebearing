@@ -15,7 +15,6 @@
 //! `--verify` recomputes all three and the commit and exits 1 on any mismatch, naming it.
 
 use std::fmt::Write as _;
-use std::process::Command;
 
 use clap::Args;
 use rb_model::GraphDocument;
@@ -102,7 +101,7 @@ fn read(path: &std::path::Path, name: &str) -> Result<Vec<u8>, Outcome> {
 }
 
 fn head(ctx: &Context<'_>) -> String {
-    Command::new("git")
+    crate::git::command()
         .args(["rev-parse", "HEAD"])
         .current_dir(&ctx.cwd)
         .output()

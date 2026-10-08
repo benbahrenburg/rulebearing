@@ -6,6 +6,10 @@
 set -euo pipefail
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
+# Git exports its repository variables (`git rev-parse --local-env-vars`) to a hook. From a
+# linked worktree GIT_DIR is an absolute path to this repository, and a test that runs git in a
+# scratch folder would act on this repository instead. Nothing below needs them.
+while IFS= read -r name; do unset "$name"; done < <(git rev-parse --local-env-vars)
 echo "pre-push: cargo lint"
 cargo lint
 echo "pre-push: cargo test --workspace --all-features"

@@ -81,7 +81,7 @@ pub const DEFAULT_DAYS: u64 = 90;
 pub const BRANCH: &str = "rulebearing/adopt";
 
 fn git(ctx: &Context<'_>, args: &[&str]) -> Option<String> {
-    Command::new("git")
+    crate::git::command()
         .args(args)
         .current_dir(&ctx.cwd)
         .output()
