@@ -98,15 +98,15 @@ jobs:
       # Must match `rust-version` in Cargo.toml; the two are compared by the step below.
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
-          toolchain: "1.96"
+          toolchain: "1.97"
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: declared MSRV matches this job
         run: |
           declared="$(grep -m1 '^rust-version' Cargo.toml | cut -d'"' -f2)"
-          test "$declared" = "1.96" || { echo "::error::Cargo.toml says $declared, this job pins 1.96"; exit 1; }
-      # `+1.96` overrides rust-toolchain.toml, which pins the development toolchain. 1.96 is what
+          test "$declared" = "1.97" || { echo "::error::Cargo.toml says $declared, this job pins 1.97"; exit 1; }
+      # `+1.97` overrides rust-toolchain.toml, which pins the development toolchain. 1.97 is what
       # the pinned oxc crates require (docs/adr/0012-oxc-for-typescript.md).
-      - run: cargo +1.96 check --workspace --all-features --all-targets
+      - run: cargo +1.97 check --workspace --all-features --all-targets
 
   features:
     name: features
@@ -116,7 +116,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
-      - uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2
+      - uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2
         with:
           tool: cargo-hack
       # Every combination of the three extractor features must build, because a narrower build
@@ -153,7 +153,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
           components: llvm-tools-preview
-      - uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2
+      - uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2
         with:
           tool: cargo-llvm-cov
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
@@ -276,7 +276,7 @@ jobs:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
-      - uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2
+      - uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2
         with:
           tool: cargo-mutants
       # Coverage says a line ran; this says a test would notice if it were wrong.
@@ -309,7 +309,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2
+      - uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2
         with:
           tool: typos-cli
       - run: typos
