@@ -82,7 +82,7 @@ That writes three hooks for Claude Code:
 | **PreToolUse** on Edit and Write | Runs `impact` on the file about to change | The agent is told *before* editing that the file sits on a boundary, not after |
 | **Stop** | Runs the affected check and feeds violations back before the turn ends | Sub-two-second budget, so it stays on. A thirteen-second check gets disabled |
 
-For pipelines and editors, the same rules and the same graph feed a pre-commit hook, one test case per rule in xUnit, NUnit, pytest or vitest, an ESLint rule that flags a boundary violation inline as the agent types, a Roslyn analyzer that fails `dotnet build` with the line, and an MCP server so the architecture is available as tools rather than as a document the agent may not have read.
+For pipelines and editors, the same rules and the same graph feed a pre-commit hook, one test case per rule in xUnit, NUnit, pytest or vitest, an ESLint rule that flags a boundary violation inline as the agent types, a Roslyn analyzer that fails `dotnet build` with the line, an MCP server so the architecture is available as tools rather than as a document the agent may not have read (`rulebearing hooks install --claude-code --mcp`), and a language server that shows each finding in the editor with its `fix` as the quick-fix title ([serve.md](docs/serve.md)).
 
 Before it writes the import, the agent can ask:
 
