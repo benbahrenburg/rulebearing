@@ -275,7 +275,7 @@ jobs:
           path: testbeds/results/stop-hook.json
           if-no-files-found: warn
 
-  # Conformance gate 1, layer 5 (docs/plans/pending/0001-wave-1-typescript-parity.md, Step 18):
+  # Conformance gate 1, layer 5 (docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 18):
   # dependency-cruiser and Rulebearing over the three named oracles at their pinned SHAs, diffed,
   # and the mutation branch. The same job runs on every push to main in ci.yml; nightly it also
   # catches a change in what the pinned upstream tools download.

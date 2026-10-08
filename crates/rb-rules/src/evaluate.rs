@@ -1,12 +1,12 @@
 //! The engine entry point: one graph document and one configuration in, the annotated document,
 //! the violations, the vacuous rules and the per-rule statistics out.
 //!
-//! - Contract: [Wave 1 plan § 1.5](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
+//! - Contract: [Wave 1 plan § 1.5](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
 //!   (`evaluate(doc, cfg, opts) -> Evaluation`)
 //! - Decisions: [ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md) (liveness),
 //!   [ADR-0015](../../../docs/adr/0015-stable-violation-id.md) (ids),
 //!   [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md) (additions)
-//! - Plan: [Wave 1, Steps 5 to 7](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
+//! - Plan: [Wave 1, Steps 5 to 7](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
 //! - Requirements: [FR-CORE-04](../../../docs/prd.md#fr-core-04), [FR-CORE-05](../../../docs/prd.md#fr-core-05),
 //!   [FR-RULE-01](../../../docs/prd.md#fr-rule-01), [FR-CFG-07](../../../docs/prd.md#fr-cfg-07)
 //!

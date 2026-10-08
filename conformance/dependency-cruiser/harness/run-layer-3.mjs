@@ -4,7 +4,7 @@
 // output byte for byte against upstream's fixtures (teamcity's per-session flowId and timestamp
 // aside, which the spec itself removes), so a pass is a byte-compare pass.
 //
-// Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 12;
+// Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 12;
 // docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 10;
 // docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 6. Decision:
 // docs/adr/0009-conformance-suites-as-specification.md.

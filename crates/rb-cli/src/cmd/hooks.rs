@@ -1,11 +1,11 @@
 //! `rulebearing hooks install --claude-code`: the three Claude Code hooks, merged into
 //! `.claude/settings.json`.
 //!
-//! - Contract: [Wave 1 plan § 1.5](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
+//! - Contract: [Wave 1 plan § 1.5](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
 //!   (`SessionStart`, `PreToolUse` on Edit and Write, `Stop`)
 //! - Source: [design § Hooks, test runners, an MCP server, an LSP](../../../../docs/artifacts/design.md#hooks-test-runners-an-mcp-server-an-lsp)
 //! - Decision: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md)
-//! - Plan: [Wave 1, Step 15](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-15-hooks-install---claude-code-summary---format-agent-impact-attest---require-comment-token-1e)
+//! - Plan: [Wave 1, Step 15](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-15-hooks-install---claude-code-summary---format-agent-impact-attest---require-comment-token-1e)
 //! - Requirement: [FR-CLI-03](../../../../docs/prd.md#fr-cli-03)
 //!
 //! The file is merged, never overwritten: other settings and other hooks stay, and installing twice

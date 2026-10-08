@@ -2,7 +2,7 @@
 //!
 //! - Decision: [ADR-0005](../../../docs/adr/0005-native-config-superset-and-compat.md) ("the
 //!   native schema is published with descriptions at the `$schema` URL")
-//! - Plan: [Wave 1, Step 1](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-1-config-model-and-the-two-front-ends-1a)
+//! - Plan: [Wave 1, Step 1](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-1-config-model-and-the-two-front-ends-1a)
 //! - Requirement: [FR-CFG-02](../../../docs/prd.md#fr-cfg-02)
 //!
 //! The schema is generated from the types the loader deserialises into, so a key the schema

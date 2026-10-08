@@ -4,7 +4,7 @@
 //!
 //! - Architecture: [The five stages](../../../docs/architecture.md#the-five-stages)
 //! - Source: [design § The five stages](../../../docs/artifacts/design.md#the-five-stages)
-//! - Plan: [Wave 1 § 1.4](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#14-architecture-of-what-this-wave-builds)
+//! - Plan: [Wave 1 § 1.4](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#14-architecture-of-what-this-wave-builds)
 //!   (the path a gate takes)
 //! - Requirements: [FR-CORE-02](../../../docs/prd.md#fr-core-02), [FR-CORE-04](../../../docs/prd.md#fr-core-04),
 //!   [FR-CLI-05](../../../docs/prd.md#fr-cli-05) (the extraction in parts the cache keeps:

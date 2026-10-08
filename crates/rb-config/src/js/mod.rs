@@ -2,7 +2,7 @@
 //!
 //! - Decisions: [ADR-0006](../../../../docs/adr/0006-embedded-quickjs-config-evaluator.md),
 //!   [ADR-0027](../../../../docs/adr/0027-pure-path-and-url-modules-in-the-config-sandbox.md)
-//! - Plan: [Wave 1, Step 2](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-2-the-quickjs-evaluator-1a)
+//! - Plan: [Wave 1, Step 2](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-2-the-quickjs-evaluator-1a)
 //! - Requirements: [FR-CFG-03](../../../../docs/prd.md#fr-cfg-03), [NFR-SEC-01](../../../../docs/prd.md#nfr-sec-01)
 //! - Security posture: [architecture § Security posture](../../../../docs/architecture.md#security-posture)
 //!

@@ -4,7 +4,7 @@
 # crates/rb-config/tests/oracle_configs.rs. Nothing fetched is committed (testbeds/manifest.yaml:
 # "every repository is a read-only test bed"). For dependency-cruiser itself the bundled configs/
 # folder its configuration extends is fetched too.
-# Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 1 ("every manifest config loads").
+# Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 1 ("every manifest config loads").
 # Usage: scripts/fetch-oracle-configs.sh
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."

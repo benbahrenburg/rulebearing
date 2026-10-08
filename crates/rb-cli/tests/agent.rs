@@ -1,8 +1,8 @@
 //! End-to-end checks on the agent surface: `rules`, `explain`, `test`, `can-import`, `count`,
 //! `config`, `hooks`, `summary`, `impact` and `attest`, run as a process against a small tree.
 //!
-//! - Plan: [Wave 1, Step 14](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-14-rules---json-explain-explain---plain-test-can-import-1e),
-//!   [Step 15](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-15-hooks-install---claude-code-summary---format-agent-impact-attest---require-comment-token-1e)
+//! - Plan: [Wave 1, Step 14](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-14-rules---json-explain-explain---plain-test-can-import-1e),
+//!   [Step 15](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-15-hooks-install---claude-code-summary---format-agent-impact-attest---require-comment-token-1e)
 //! - Contract: [ADR-0008](../../../docs/adr/0008-exit-code-contract.md) (exit codes)
 //! - Requirements: [FR-CLI-01](../../../docs/prd.md#fr-cli-01), [FR-CLI-03](../../../docs/prd.md#fr-cli-03)
 

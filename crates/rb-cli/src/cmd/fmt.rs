@@ -4,7 +4,7 @@
 //! - Source: [design § The subcommands a guard reaches for](../../../../docs/artifacts/design.md#the-subcommands-a-guard-reaches-for)
 //! - Coverage: [coverage § Command line](../../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#command-line),
 //!   row `depcruise-fmt`
-//! - Plan: [Wave 1, Step 13](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
+//! - Plan: [Wave 1, Step 13](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
 //! - Requirements: [FR-CORE-02](../../../../docs/prd.md#fr-core-02), [FR-CLI-01](../../../../docs/prd.md#fr-cli-01)
 //!
 //! `fmt` never reads the source tree: its only input is the result. As `depcruise-fmt`, it exits

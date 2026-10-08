@@ -53,7 +53,7 @@ The GitHub `release` job needs the `version` job and all three install checks, a
 
 ## The npm wrapper (from wave 1)
 
-[`wrappers/npm/`](../wrappers/npm/README.md) is the `rulebearing` package: a launcher that runs the binary from one of six unscoped platform packages, `rulebearing-cli-<platform>`, listed under `optionalDependencies` ([plan 0001 Step 19](plans/pending/0001-wave-1-typescript-parity.md#step-19-npm-package-github-action-release-1g), [ADR-0020](adr/0020-single-name-across-registries.md); the `@rulebearing` scope is not held). The committed `package.json` carries the workspace version; the release version is stamped at staging time and the source tree is never edited.
+[`wrappers/npm/`](../wrappers/npm/README.md) is the `rulebearing` package: a launcher that runs the binary from one of six unscoped platform packages, `rulebearing-cli-<platform>`, listed under `optionalDependencies` ([plan 0001 Step 19](plans/implemented/0001-wave-1-typescript-parity.md#step-19-npm-package-github-action-release-1g), [ADR-0020](adr/0020-single-name-across-registries.md); the `@rulebearing` scope is not held). The committed `package.json` carries the workspace version; the release version is stamped at staging time and the source tree is never edited.
 
 [`release.yml`](../.github/workflows/release.yml) adds three jobs after `binaries`:
 

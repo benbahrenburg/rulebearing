@@ -5,7 +5,7 @@
 //!   conformance gate 1 layer 2
 //! - Coverage: [coverage § Options](../../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),
 //!   rows `focus.path`, `focus.depth`, `includeOnly.path`, `reaches.path`, `exclude.path`
-//! - Plan: [Wave 1, Step 6](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-6-graph-analysis-1b)
+//! - Plan: [Wave 1, Step 6](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-6-graph-analysis-1b)
 //!   (`filters.rs`)
 //! - Requirement: [FR-CLI-08](../../../../docs/prd.md#fr-cli-08)
 //!

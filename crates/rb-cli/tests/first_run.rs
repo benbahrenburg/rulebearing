@@ -1,8 +1,8 @@
 //! The first run, end to end: `init` on a fresh repository and `adopt` on one already on
 //! dependency-cruiser with three violations. Both must leave a gate that exits 0.
 //!
-//! - Plan: [Wave 1, Step 16](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-16-init-1f),
-//!   [Step 17](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-17-adopt-1f)
+//! - Plan: [Wave 1, Step 16](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-16-init-1f),
+//!   [Step 17](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-17-adopt-1f)
 //!   (a fixture repository with three violations; the PR body snapshot)
 //! - Source: [design § The developer relations hat](../../../docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo)
 //! - Requirement: [FR-CLI-03](../../../docs/prd.md#fr-cli-03)

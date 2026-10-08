@@ -2,7 +2,7 @@
 //!
 //! - Decision: [ADR-0016](../../../docs/adr/0016-linear-time-regex-and-strict-compat.md)
 //!   (linear-time engine, the compatibility table, escaped captures, `--strict-compat`)
-//! - Plan: [Wave 1, Step 3](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-3-extends-presets-defines-captures-regex-1a)
+//! - Plan: [Wave 1, Step 3](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-3-extends-presets-defines-captures-regex-1a)
 //! - Requirement: [FR-RULE-10](../../../docs/prd.md#fr-rule-10)
 //! - Source: [design § The rule file](../../../docs/artifacts/design.md#the-rule-file) (safe-regex)
 //!

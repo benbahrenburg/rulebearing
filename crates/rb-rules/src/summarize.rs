@@ -1,7 +1,7 @@
 //! `summary`: violations extracted from the annotated graph, counted and ordered, plus the
 //! options and rule set the run used. dependency-cruiser 18.2.0's `src/analyze/summarize`, ported.
 //!
-//! - Plan: [Wave 1, Step 7](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
+//! - Plan: [Wave 1, Step 7](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
 //!   (`summary.rs`)
 //! - Coverage: [coverage § Result document](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#result-document-cruise-result-schema)
 //! - Decisions: [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)

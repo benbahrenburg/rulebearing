@@ -2,9 +2,9 @@
 //! through the same entry points `TypeScriptExtractor::extract` uses, and the modules and
 //! dependencies it yields asserted.
 //!
-//! - Plan: [Wave 1, Step 10](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-10-rb-extract-ts-to-100-and-the-option-set-1c)
+//! - Plan: [Wave 1, Step 10](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-10-rb-extract-ts-to-100-and-the-option-set-1c)
 //!   ("every new option gets a fixture under `rb-extract-ts/tests/options/`") and
-//!   [Wave 1C](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#wave-1c-rb-extract-ts-completion)
+//!   [Wave 1C](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#wave-1c-rb-extract-ts-completion)
 //! - Source: [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),
 //!   the Wave 1 rows; [coverage § Extraction and resolution](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution)
 //! - Decisions: [ADR-0012](../../../docs/adr/0012-oxc-for-typescript.md),

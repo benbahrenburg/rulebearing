@@ -2,7 +2,7 @@
 //
 // Decision: docs/adr/0006-embedded-quickjs-config-evaluator.md and
 // docs/adr/0027-pure-path-and-url-modules-in-the-config-sandbox.md. Plan:
-// docs/plans/pending/0001-wave-1-typescript-parity.md, Step 2.
+// docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 2.
 //
 // The host (Rust, crates/rb-config/src/js/mod.rs) provides exactly two primitives:
 //   __rb_resolve(fromFile, specifier) -> target   resolution, refusing anything outside the

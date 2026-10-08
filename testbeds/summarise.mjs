@@ -5,7 +5,7 @@
 //
 // With --layer5, each <dir>/<owner>__<repo>/row.json that gate 1's layer 5 wrote gives its row
 // the zero diff and Rulebearing's time, taken where both tools ran with the repository's
-// dependencies installed (docs/plans/pending/0001-wave-1-typescript-parity.md, Step 18).
+// dependencies installed (docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 18).
 //
 // A row's `regression` pair (this build and the baseline, timed on one runner by run.sh) passes
 // through unchanged; the layer 5 time replaces only `rulebearing`.

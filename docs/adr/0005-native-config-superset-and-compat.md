@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § Configuration](../artifacts/design.md#configuration-a-native-format-and-dependency-cruisers-as-it-is), [§ The native format](../artifacts/design.md#the-native-format), [§ The rule language](../artifacts/design.md#the-rule-language), [§ Where it would be ignored](../artifacts/design.md#where-it-would-be-ignored)
 - **Constrains:** [architecture.md § Configuration and the rule language](../architecture.md#configuration-and-the-rule-language)
-- **Implemented by:** [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md), [Wave 2 plan](../plans/pending/0002-wave-2-dotnet-python-element-rules.md)
+- **Implemented by:** [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md), [Wave 2 plan](../plans/pending/0002-wave-2-dotnet-python-element-rules.md)
 
 ## Context
 

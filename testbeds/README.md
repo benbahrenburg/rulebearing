@@ -8,7 +8,7 @@ The repositories in [manifest.yaml](manifest.yaml) are the nightly proof ([NFR-C
 | --- | --- | --- |
 | `oracle` | Runs the incumbent tool (dependency-cruiser, NetArchTest, ArchUnitNET or import-linter) with the repository's own configuration and records its output, wall-clock time and peak memory | Rulebearing runs beside it; the findings must agree with zero difference |
 | `greenfield` | Records the row as `idle`: there is no incumbent | `rulebearing init` fixtures. From wave 2, semantic-kernel and autogen have a nightly job of their own ([`greenfield.sh`](greenfield.sh)): built, the fixture regenerated and compared, init's proposal cruised back; exit 0 is `ok`, and a failure fails the night ([init/README.md](init/README.md)) |
-| `scale` | Records the row as `idle` | Rulebearing's timing; a regression over 20% fails the night. From wave 2, aspnetcore, jellyfin and home-assistant have a job each ([`scale.sh`](scale.sh)): built, configured by `init`, the median of three cruises. n8n, grafana and kibana stay `idle` ([plan 0001 § 3](../docs/plans/pending/0001-wave-1-typescript-parity.md#3-wave-based-delivery-plan) cuts them) |
+| `scale` | Records the row as `idle` | Rulebearing's timing; a regression over 20% fails the night. From wave 2, aspnetcore, jellyfin and home-assistant have a job each ([`scale.sh`](scale.sh)): built, configured by `init`, the median of three cruises. n8n, grafana and kibana stay `idle` ([plan 0001 § 3](../docs/plans/implemented/0001-wave-1-typescript-parity.md#3-wave-based-delivery-plan) cuts them) |
 | `own` | Records the row as `idle` | The maintainer's own repositories, the first users ([NFR-ADOPT-02](../docs/prd.md#nfr-adopt-02)) |
 
 ## Scripts

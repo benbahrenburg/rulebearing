@@ -2,7 +2,7 @@
 //!
 //! - Source: [design § The agentic engineering hat](../../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two)
 //!   ("Files under `apps/<x>/` may not import files under `apps/<y>/` unless x = y")
-//! - Plan: [Wave 1, Step 14](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-14-rules---json-explain-explain---plain-test-can-import-1e)
+//! - Plan: [Wave 1, Step 14](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-14-rules---json-explain-explain---plain-test-can-import-1e)
 //!   (templates in `rb-cli/src/plain/`, here one module; one test per shape)
 //! - Requirement: [FR-CLI-01](../../../../docs/prd.md#fr-cli-01)
 //!

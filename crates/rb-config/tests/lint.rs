@@ -1,6 +1,6 @@
 //! `config lint`: one fixture per finding class, under `tests/lint/`.
 //!
-//! - Plan: [Wave 1, Step 4](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-4-config-convert-config-expand-config-lint-shorthands-1a)
+//! - Plan: [Wave 1, Step 4](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-4-config-convert-config-expand-config-lint-shorthands-1a)
 //!   ("One fixture per finding under `rb-config/tests/lint/`")
 //! - Requirement: [FR-CFG-05](../../../docs/prd.md#fr-cfg-05); `type-only-on-dotnet` is
 //!   [FR-RULE-02](../../../docs/prd.md#fr-rule-02)

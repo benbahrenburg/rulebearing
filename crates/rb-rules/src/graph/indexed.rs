@@ -4,7 +4,7 @@
 //! - Specification: `test/graph-utl/indexed-module-graph.spec.mjs`,
 //!   `module-graph-with-dependency-set.spec.mjs`, run by conformance gate 1 layer 2
 //!   ([ADR-0009](../../../../docs/adr/0009-conformance-suites-as-specification.md))
-//! - Plan: [Wave 1, Step 6](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-6-graph-analysis-1b)
+//! - Plan: [Wave 1, Step 6](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-6-graph-analysis-1b)
 //!   (Tarjan and cycle path order: hand-written, because the reporters print the path)
 //! - Requirement: [FR-RULE-08](../../../../docs/prd.md#fr-rule-08),
 //!   [NFR-PERF-01](../../../../docs/prd.md#nfr-perf-01)

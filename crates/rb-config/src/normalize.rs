@@ -3,8 +3,8 @@
 //!
 //! - Decisions: [ADR-0005](../../../docs/adr/0005-native-config-superset-and-compat.md),
 //!   [ADR-0016](../../../docs/adr/0016-linear-time-regex-and-strict-compat.md)
-//! - Plan: [Wave 1, Step 1](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-1-config-model-and-the-two-front-ends-1a),
-//!   [Step 3](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-3-extends-presets-defines-captures-regex-1a)
+//! - Plan: [Wave 1, Step 1](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-1-config-model-and-the-two-front-ends-1a),
+//!   [Step 3](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-3-extends-presets-defines-captures-regex-1a)
 //! - Requirements: [FR-CFG-01](../../../docs/prd.md#fr-cfg-01), [FR-RULE-10](../../../docs/prd.md#fr-rule-10)
 //!
 //! **Keys.** A key dependency-cruiser's configuration schema does not define is an error, as it

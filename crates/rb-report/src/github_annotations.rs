@@ -1,7 +1,7 @@
 //! `github-annotations`: one GitHub workflow command per violation, so findings appear inline on
 //! the pull request.
 //!
-//! - Contract: [Wave 1 plan § 1.5](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
+//! - Contract: [Wave 1 plan § 1.5](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
 //!   (the line format is the plan's decision, fixed by a snapshot)
 //! - Source: [design § Reporters](../../../docs/artifacts/design.md#reporters)
 //! - Requirement: [FR-OUT-02](../../../docs/prd.md#fr-out-02)

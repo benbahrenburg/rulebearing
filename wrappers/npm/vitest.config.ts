@@ -1,5 +1,5 @@
 // Tests and the coverage floor of the npm wrapper: 70% of lines (docs/adr/0018-test-coverage-threshold.md).
-// Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 19.
+// Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 19.
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({

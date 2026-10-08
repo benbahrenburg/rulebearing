@@ -3,7 +3,7 @@
 # is the cruise's (docs/adr/0008-exit-code-contract.md, docs/adr/0030-the-reporter-decides-the-error-count-exit.md);
 # with the default output type, github-annotations, findings appear inline on the pull request.
 #
-# Contract: docs/plans/pending/0001-wave-1-typescript-parity.md § 1.5 ("The GitHub Action") and Step 19.
+# Contract: docs/plans/implemented/0001-wave-1-typescript-parity.md § 1.5 ("The GitHub Action") and Step 19.
 # Requirement: docs/prd.md#fr-dist-01. Distribution: docs/architecture.md#distribution.
 #
 #   - uses: benbahrenburg/rulebearing@v0.1.0

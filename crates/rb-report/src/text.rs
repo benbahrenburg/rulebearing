@@ -4,7 +4,7 @@
 //! - Specification: `test/report/text/*.spec.mjs`, run by conformance gate 1 layer 3
 //! - Coverage: [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),
 //!   `reporterOptions.text.highlightFocused`
-//! - Plan: [Wave 1, Step 12](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
+//! - Plan: [Wave 1, Step 12](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
 
 use std::collections::HashSet;

@@ -1,7 +1,7 @@
 //! Conformance gate 1, layer 4: what Rulebearing writes validates against dependency-cruiser's own
 //! schemas.
 //!
-//! - Plan: [Wave 1, Step 12](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
+//! - Plan: [Wave 1, Step 12](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
 //!   (layer 4: every `json` with `--strict-schema` against `cruise-result.schema.json`, every
 //!   accepted config against `configuration.schema.json`)
 //! - Decisions: [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)

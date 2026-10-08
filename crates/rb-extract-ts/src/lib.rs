@@ -4,7 +4,7 @@
 //! - Decisions: [ADR-0012](../../../docs/adr/0012-oxc-for-typescript.md),
 //!   [ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)
 //! - Plans: [Wave 0, Spike A](../../../docs/plans/pending/0000-wave-0-spike.md),
-//!   [Wave 1, sub-wave 1C](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#wave-1c-rb-extract-ts-completion),
+//!   [Wave 1, sub-wave 1C](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#wave-1c-rb-extract-ts-completion),
 //!   [Wave 2C](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#wave-2c-element-slice-and-diagram-rules-the-capability-table-gate-2-to-zero)
 //!   (the code layer)
 //! - Requirements: [FR-EXT-TS-01](../../../docs/prd.md#fr-ext-ts-01) to [FR-EXT-TS-05](../../../docs/prd.md#fr-ext-ts-05),

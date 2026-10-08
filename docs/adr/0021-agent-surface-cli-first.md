@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § Rules an agent can implement and follow](../artifacts/design.md#rules-an-agent-can-implement-and-follow), [§ Where it would be ignored](../artifacts/design.md#where-it-would-be-ignored) (MCP over CLI), [§ Two front-ends that will matter more than the MCP server](../artifacts/design.md#two-front-ends-that-will-matter-more-than-the-mcp-server), [§ Where each lands](../artifacts/design.md#where-each-lands), [§ How to know, rather than believe](../artifacts/design.md#how-to-know-rather-than-believe)
 - **Constrains:** [architecture.md § Agent surface](../architecture.md#agent-surface)
-- **Implemented by:** [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md), [Wave 2 plan](../plans/pending/0002-wave-2-dotnet-python-element-rules.md), [Wave 3 plan](../plans/pending/0003-wave-3-operations-surface-inner-loop.md)
+- **Implemented by:** [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md), [Wave 2 plan](../plans/pending/0002-wave-2-dotnet-python-element-rules.md), [Wave 3 plan](../plans/pending/0003-wave-3-operations-surface-inner-loop.md)
 
 ## Context
 

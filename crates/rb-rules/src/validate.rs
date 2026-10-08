@@ -5,7 +5,7 @@
 //!   ([ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md))
 //! - Coverage: [coverage § Rules](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#rules)
 //!   (every Wave 1 row)
-//! - Plan: [Wave 1, Step 5](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-5-matchers-and-restriction-evaluation-1b)
+//! - Plan: [Wave 1, Step 5](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-5-matchers-and-restriction-evaluation-1b)
 //! - Requirements: [FR-RULE-01](../../../docs/prd.md#fr-rule-01), [FR-RULE-08](../../../docs/prd.md#fr-rule-08),
 //!   [FR-RULE-02](../../../docs/prd.md#fr-rule-02) (the cross-language keys, through [`ModuleFacts`])
 //!

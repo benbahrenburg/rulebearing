@@ -1,7 +1,7 @@
 //! `reportWrap`'s re-summary: the filters and `collapse` of a report, applied to a result, with
 //! the summary recomputed. dependency-cruiser 18.2.0's `src/main/report-wrap.mjs`, ported.
 //!
-//! - Plan: [Wave 1, Step 13](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
+//! - Plan: [Wave 1, Step 13](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
 //!   (`fmt` re-reports a saved result without extracting)
 //! - Source: [design § The subcommands a guard reaches for](../../../docs/artifacts/design.md#the-subcommands-a-guard-reaches-for)
 //! - Requirements: [FR-CORE-02](../../../docs/prd.md#fr-core-02),

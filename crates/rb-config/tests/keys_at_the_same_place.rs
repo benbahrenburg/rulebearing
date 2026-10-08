@@ -1,7 +1,7 @@
 //! Every dependency-cruiser key is legal in a native file at the same place, with the same
 //! meaning ([ADR-0005](../../../docs/adr/0005-native-config-superset-and-compat.md)).
 //!
-//! - Plan: [Wave 1, Step 1](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-1-config-model-and-the-two-front-ends-1a)
+//! - Plan: [Wave 1, Step 1](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-1-config-model-and-the-two-front-ends-1a)
 //!   ("a table test that every dependency-cruiser key is legal in a native file at the same path")
 //! - Requirements: [FR-CFG-02](../../../docs/prd.md#fr-cfg-02), [FR-CFG-06](../../../docs/prd.md#fr-cfg-06)
 //!

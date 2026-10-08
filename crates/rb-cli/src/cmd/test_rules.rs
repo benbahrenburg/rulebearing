@@ -2,7 +2,7 @@
 //!
 //! - Source: [design § Rule metadata that says what to do](../../../../docs/artifacts/design.md#rule-metadata-that-says-what-to-do)
 //!   ("`rulebearing test` asserts the allowed ones pass and the forbidden ones fail")
-//! - Plan: [Wave 1, Step 14](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-14-rules---json-explain-explain---plain-test-can-import-1e)
+//! - Plan: [Wave 1, Step 14](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-14-rules---json-explain-explain---plain-test-can-import-1e)
 //! - Requirement: [FR-CFG-07](../../../../docs/prd.md#fr-cfg-07)
 //!
 //! Each example is `"from -> to"`. For every rule with examples, a graph holding just those edges

@@ -2,8 +2,8 @@
 //!
 //! - Protocol: `conformance/dependency-cruiser/harness/shim.mjs`
 //! - Decision: [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md)
-//! - Plan: [Wave 1, Step 8](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-8-rulebearing-validate-for-gate-1-layer-2-1b),
-//!   [Step 12](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
+//! - Plan: [Wave 1, Step 8](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-8-rulebearing-validate-for-gate-1-layer-2-1b),
+//!   [Step 12](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
 //! - Requirement: [NFR-CONF-01](../../../docs/prd.md#nfr-conf-01)
 //!
 //! `#report/plugins.mjs` and `report -T plugin:<path>` are answered by [`crate::plugin`], so the

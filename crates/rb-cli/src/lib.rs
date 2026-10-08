@@ -4,7 +4,7 @@
 //!   [`#agent-surface`](../../../docs/architecture.md#agent-surface)
 //! - Decisions: [ADR-0008](../../../docs/adr/0008-exit-code-contract.md),
 //!   [ADR-0021](../../../docs/adr/0021-agent-surface-cli-first.md)
-//! - Plans: [Wave 1](../../../docs/plans/pending/0001-wave-1-typescript-parity.md) onward
+//! - Plans: [Wave 1](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md) onward
 //! - Requirements: [FR-CLI-01](../../../docs/prd.md#fr-cli-01) to [FR-CLI-08](../../../docs/prd.md#fr-cli-08)
 //!
 //! This library holds the dispatch and the exit-code table so the binary, the tests and the Node

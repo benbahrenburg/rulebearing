@@ -1,6 +1,6 @@
 # The mutation branch
 
-Conformance gate 1, layer 5, second half ([plan 0001, Step 18](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-18-gate-1-layer-5-the-mutation-branch-oracle-zero-diff-1g); [NFR-CONF-01](../../../docs/prd.md#nfr-conf-01), [NFR-CONF-03](../../../docs/prd.md#nfr-conf-03)). The zero-diff half proves that both tools agree on repositories whose rules mostly pass; this half proves that both tools report a violation of every rule shape when one is there. dependency-cruiser's own repository, at the SHA [testbeds/manifest.yaml](../../../testbeds/manifest.yaml) pins, is the tree; the "branch" is held as a patch, applied at run time to a fresh checkout, so nothing from the repository is committed here.
+Conformance gate 1, layer 5, second half ([plan 0001, Step 18](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-18-gate-1-layer-5-the-mutation-branch-oracle-zero-diff-1g); [NFR-CONF-01](../../../docs/prd.md#nfr-conf-01), [NFR-CONF-03](../../../docs/prd.md#nfr-conf-03)). The zero-diff half proves that both tools agree on repositories whose rules mostly pass; this half proves that both tools report a violation of every rule shape when one is there. dependency-cruiser's own repository, at the SHA [testbeds/manifest.yaml](../../../testbeds/manifest.yaml) pins, is the tree; the "branch" is held as a patch, applied at run time to a fresh checkout, so nothing from the repository is committed here.
 
 | File | What it is |
 | --- | --- |

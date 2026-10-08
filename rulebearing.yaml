@@ -1,5 +1,5 @@
 # Rulebearing's own architecture rules, enforced by the `self-check` job in .github/workflows/ci.yml
-# (docs/plans/pending/0001-wave-1-typescript-parity.md, Step 9). Every rule cites the ADR it serves,
+# (docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 9). Every rule cites the ADR it serves,
 # and the job runs with --require-comment-token, as ADR-0001 asks of every user.
 # Rust is not one of the three supported languages, so the rules are evaluated over the crate graph
 # scripts/cargo-graph.sh builds from `cargo metadata`: one module per crate, named by its manifest

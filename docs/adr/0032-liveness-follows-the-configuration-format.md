@@ -5,7 +5,7 @@
 - **Derives from:** [design § Why](../artifacts/design.md#why) ("superset, precisely; nothing is dropped"), [ADR-0007](0007-vacuous-rules-fail-by-default.md), [ADR-0030](0030-the-reporter-decides-the-error-count-exit.md) (a drop-in exits as dependency-cruiser does), the private monorepo measurement in [docs/perf.md](../perf.md#the-private-monorepo)
 - **Constrains:** `crates/rb-config` (`allowEmpty` at the top level of a native file), `crates/rb-model` (`summary.vacuousRules[].severity`), `crates/rb-cli` (`--liveness`, `cruise`, `fmt --exit-code`, `adopt`)
 - **Supersedes:** the clause of [ADR-0007](0007-vacuous-rules-fail-by-default.md) that keeps the check failing "in dependency-cruiser compatibility mode". Its default for native files, its `allowEmpty: true` on a rule, `--no-liveness`, and `summary.vacuousRules` stand.
-- **Implemented by:** [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md), Steps 7 and 17
+- **Implemented by:** [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md), Steps 7 and 17
 - **Requirements:** [FR-CORE-05](../prd.md#fr-core-05), [NFR-CONF-01](../prd.md#nfr-conf-01)
 
 ## Context

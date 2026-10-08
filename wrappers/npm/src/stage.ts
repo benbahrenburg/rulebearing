@@ -1,7 +1,7 @@
 // Stages the npm packages of one release from the archives release.yml builds.
 //
 // Architecture: docs/architecture.md#distribution. Decision: docs/adr/0020-single-name-across-registries.md.
-// Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 19. Requirement: FR-DIST-01.
+// Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 19. Requirement: FR-DIST-01.
 // Procedure: docs/release.md.
 //
 // Given a directory of `rulebearing-<target>.tar.gz` archives and a version, writes one folder per

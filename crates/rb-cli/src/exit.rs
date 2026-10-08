@@ -1,7 +1,7 @@
 //! The exit-code function every subcommand shares
 //! ([ADR-0008](../../../docs/adr/0008-exit-code-contract.md)).
 //!
-//! - Contract: [Wave 1 plan § 1.5](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
+//! - Contract: [Wave 1 plan § 1.5](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
 //! - Strict mode: [Wave 3, Step 5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict),
 //!   [Wave 3 plan § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //! - Requirement: [FR-CORE-06](../../../docs/prd.md#fr-core-06)

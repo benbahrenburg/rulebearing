@@ -1,11 +1,11 @@
 //! Loading: one file in, one [`Config`] out.
 //!
-//! - Contract: [Wave 1 plan § 1.5](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
+//! - Contract: [Wave 1 plan § 1.5](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
 //!   (`load(path, opts) -> Result<Config, ConfigError>`; every error is exit 3)
 //! - Decisions: [ADR-0005](../../../docs/adr/0005-native-config-superset-and-compat.md),
 //!   [ADR-0006](../../../docs/adr/0006-embedded-quickjs-config-evaluator.md),
 //!   [ADR-0008](../../../docs/adr/0008-exit-code-contract.md)
-//! - Plan: [Wave 1, Steps 1 to 3](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-1-config-model-and-the-two-front-ends-1a)
+//! - Plan: [Wave 1, Steps 1 to 3](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-1-config-model-and-the-two-front-ends-1a)
 //! - Requirements: [FR-CFG-01](../../../docs/prd.md#fr-cfg-01) to [FR-CFG-06](../../../docs/prd.md#fr-cfg-06)
 //!
 //! The stages, in order: read the file; map a native file onto the canonical shape; resolve and

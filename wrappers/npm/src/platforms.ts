@@ -2,7 +2,7 @@
 //
 // Architecture: docs/architecture.md#distribution. Decision: docs/adr/0020-single-name-across-registries.md
 // (the `@rulebearing` scope is not held, so the platform packages are unscoped `rulebearing-cli-*`).
-// Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 19. Requirement: FR-DIST-01.
+// Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 19. Requirement: FR-DIST-01.
 //
 // The targets are the matrix of .github/workflows/release.yml; each archive it produces is named
 // `rulebearing-<target>.tar.gz`. The launcher and the staging script both read this one table.

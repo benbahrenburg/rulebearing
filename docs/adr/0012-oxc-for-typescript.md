@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § The five stages](../artifacts/design.md#the-five-stages) (stage 2), [§ What each extractor has to get right](../artifacts/design.md#what-each-extractor-has-to-get-right) (TypeScript), [§ Language decision](../artifacts/design.md#language-decision); [dependency-cruiser coverage § Extraction and resolution](../artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution), [§ Options](../artifacts/dependency-cruiser-18.2.0-coverage.md#options) (`parser`, `enhancedResolveOptions`, `tsConfig`)
 - **Constrains:** [architecture.md § Extractors](../architecture.md#extractors)
-- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md), [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md)
+- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md), [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md)
 
 ## Context
 

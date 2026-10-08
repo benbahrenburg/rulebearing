@@ -3,7 +3,7 @@
 //! - Coverage: [coverage § Command line](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)
 //!   (dependency-cruiser's flags, same names and short forms)
 //! - Source: [design § The subcommands a guard reaches for](../../../docs/artifacts/design.md#the-subcommands-a-guard-reaches-for)
-//! - Plan: [Wave 1, Step 13](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
+//! - Plan: [Wave 1, Step 13](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
 //! - Requirements: [FR-CLI-01](../../../docs/prd.md#fr-cli-01), [FR-CLI-08](../../../docs/prd.md#fr-cli-08)
 //!
 //! Flag names and short forms are dependency-cruiser's (`-T`, `-f`, `-I`, `-F`, `-R`, `-x`, `-X`,

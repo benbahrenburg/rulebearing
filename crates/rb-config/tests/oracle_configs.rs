@@ -1,6 +1,6 @@
 //! Every dependency-cruiser configuration in the test-bed manifest loads without edits.
 //!
-//! - Plan: [Wave 1, Step 1](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-1-config-model-and-the-two-front-ends-1a)
+//! - Plan: [Wave 1, Step 1](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-1-config-model-and-the-two-front-ends-1a)
 //!   ("Done when every manifest config loads without edits")
 //! - Decisions: [ADR-0005](../../../docs/adr/0005-native-config-superset-and-compat.md),
 //!   [ADR-0006](../../../docs/adr/0006-embedded-quickjs-config-evaluator.md),

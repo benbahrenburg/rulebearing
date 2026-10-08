@@ -7,7 +7,7 @@
 //!   1 and 2; [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)
 //!   (`doNotFollow`, `exclude`, `includeOnly`, `maxDepth`, `tsPreCompilationDeps`,
 //!   `extraExtensionsToScan`, `experimentalStats`)
-//! - Plan: [Wave 1, Step 10](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-10-rb-extract-ts-to-100-and-the-option-set-1c)
+//! - Plan: [Wave 1, Step 10](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-10-rb-extract-ts-to-100-and-the-option-set-1c)
 //!   (`.vue` scripts, `babelConfig` aliases, `line` and `column`, file-level parallelism)
 //! - Specification: dependency-cruiser 18.2.0 `src/extract/{extract-dependencies,
 //!   gather-initial-sources,index,extract-stats}.mjs`, `src/extract/transpile/vue-template-wrap.cjs`

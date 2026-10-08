@@ -3,7 +3,7 @@
 //! - Specification: dependency-cruiser 18.2.0 `src/validate` and `src/graph-utl`, run unmodified
 //!   against this engine by conformance gate 1 layer 2
 //!   ([ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md))
-//! - Plan: [Wave 1, Step 5](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-5-matchers-and-restriction-evaluation-1b)
+//! - Plan: [Wave 1, Step 5](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-5-matchers-and-restriction-evaluation-1b)
 //!
 //! The engine walks the graph as JSON values because dependency-cruiser's matchers ask whether a
 //! key is present (`Object.hasOwn`), coerce a missing string to `"undefined"` when they test a

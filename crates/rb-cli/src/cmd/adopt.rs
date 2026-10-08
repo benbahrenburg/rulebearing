@@ -3,7 +3,7 @@
 //! - Source: [design § The developer relations hat](../../../../docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo)
 //!   ("writes the baseline, the CI step, the hook, and a `docs/architecture/rulebearing.md`, in
 //!   one pull request that is green on day one")
-//! - Plan: [Wave 1, Step 17](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-17-adopt-1f)
+//! - Plan: [Wave 1, Step 17](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-17-adopt-1f)
 //! - Requirement: [FR-CLI-03](../../../../docs/prd.md#fr-cli-03)
 //!
 //! The repository's dependency-cruiser configuration is kept as it is: `adopt` writes a

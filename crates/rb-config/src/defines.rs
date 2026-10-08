@@ -2,7 +2,7 @@
 //!
 //! - Source: [design § The native format](../../../docs/artifacts/design.md#the-native-format)
 //!   ("the declarative replacement for computed JavaScript")
-//! - Plan: [Wave 1, Step 3](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-3-extends-presets-defines-captures-regex-1a)
+//! - Plan: [Wave 1, Step 3](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-3-extends-presets-defines-captures-regex-1a)
 //! - Requirement: [FR-CFG-04](../../../docs/prd.md#fr-cfg-04)
 //!
 //! A define reads a JSON file relative to the configuration, selects values with a small path

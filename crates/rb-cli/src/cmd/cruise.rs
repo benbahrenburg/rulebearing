@@ -5,7 +5,7 @@
 //! - Decisions: [ADR-0008](../../../../docs/adr/0008-exit-code-contract.md),
 //!   [ADR-0007](../../../../docs/adr/0007-vacuous-rules-fail-by-default.md),
 //!   [ADR-0017](../../../../docs/adr/0017-coffeescript-livescript-sidecar.md)
-//! - Plan: [Wave 1, Step 13](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
+//! - Plan: [Wave 1, Step 13](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
 //! - Requirements: [FR-CORE-02](../../../../docs/prd.md#fr-core-02), [FR-CORE-06](../../../../docs/prd.md#fr-core-06),
 //!   [FR-CLI-08](../../../../docs/prd.md#fr-cli-08)
 //!

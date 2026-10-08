@@ -2,7 +2,7 @@
 //!
 //! - Decisions: [ADR-0016](../../../docs/adr/0016-linear-time-regex-and-strict-compat.md),
 //!   [ADR-0028](../../../docs/adr/0028-backreferences-by-instantiation-on-the-linear-engine.md)
-//! - Plan: [Wave 1, Step 5](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-5-matchers-and-restriction-evaluation-1b)
+//! - Plan: [Wave 1, Step 5](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-5-matchers-and-restriction-evaluation-1b)
 //!
 //! A pattern that cannot compile never reaches the engine from a loaded configuration
 //! (`rb-config` compiles every rule pattern at load time and refuses with exit 3); one that is

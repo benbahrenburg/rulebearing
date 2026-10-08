@@ -9,7 +9,7 @@
 # TypeScript. Layer 5 installs them and diffs the three named oracles, and the summary takes their
 # zero diff from it (conformance/dependency-cruiser/scripts/run-layer-5.sh).
 #
-# Plans: docs/plans/pending/0000-wave-0-spike.md, Step 7 item 2; docs/plans/pending/0001-wave-1-typescript-parity.md, Step 18.
+# Plans: docs/plans/pending/0000-wave-0-spike.md, Step 7 item 2; docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 18.
 # Requirement: docs/prd.md#nfr-conf-03.
 # Usage: testbeds/run.sh <owner/repo> [out-dir]   (default out-dir: testbeds/out)
 # Checkouts go to $RB_TESTBED_CHECKOUTS (default: rulebearing-testbeds under the temp directory).

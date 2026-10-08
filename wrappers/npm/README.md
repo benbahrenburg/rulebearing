@@ -12,7 +12,7 @@ The command-line surface is the binary's (`npx rulebearing --help`); the exit co
 
 ## How the package works
 
-The package is a launcher and nothing else ([architecture § Distribution](../../docs/architecture.md#distribution), [FR-DIST-01](../../docs/prd.md#fr-dist-01), [plan 0001 Step 19](../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-19-npm-package-github-action-release-1g)). The binary ships in one of six platform packages, listed under `optionalDependencies` at the same version as `rulebearing`. Each declares `os`, `cpu` and, on Linux, `libc`, so npm installs only the one that matches the machine. There is no `postinstall` script.
+The package is a launcher and nothing else ([architecture § Distribution](../../docs/architecture.md#distribution), [FR-DIST-01](../../docs/prd.md#fr-dist-01), [plan 0001 Step 19](../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-19-npm-package-github-action-release-1g)). The binary ships in one of six platform packages, listed under `optionalDependencies` at the same version as `rulebearing`. Each declares `os`, `cpu` and, on Linux, `libc`, so npm installs only the one that matches the machine. There is no `postinstall` script.
 
 | Platform package | Release target | Installed on |
 | --- | --- | --- |

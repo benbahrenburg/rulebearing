@@ -5,7 +5,7 @@
 - **Derives from:** [ADR-0016](0016-linear-time-regex-and-strict-compat.md) ("Revisit if an oracle config needs it"), [design § Test beds](../artifacts/design.md#test-beds-open-source-repositories-to-validate-against), [design § Waves](../artifacts/design.md#waves) (wave 1 exit: zero-diff on langfuse)
 - **Constrains:** `crates/rb-config/src/pattern.rs`, the compatibility table
 - **Supersedes:** the backreference clause of [ADR-0016](0016-linear-time-regex-and-strict-compat.md); its lookaround clause stands
-- **Implemented by:** [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md), Step 3
+- **Implemented by:** [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md), Step 3
 - **Requirements:** [FR-RULE-10](../prd.md#fr-rule-10), [NFR-CONF-01](../prd.md#nfr-conf-01)
 
 ## Context

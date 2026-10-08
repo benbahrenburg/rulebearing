@@ -17,7 +17,7 @@
 #            configuration against the vendored upstream schemas
 #
 # Layer 5 needs the test-bed checkouts and runs nightly from scripts/run-layer-5.sh
-# (docs/plans/pending/0001-wave-1-typescript-parity.md, Steps 12 and 18).
+# (docs/plans/implemented/0001-wave-1-typescript-parity.md, Steps 12 and 18).
 # Plan: docs/plans/pending/0000-wave-0-spike.md, Step 5. Decision: docs/adr/0009-conformance-suites-as-specification.md.
 # Needs Node 22 or later and network access for the upstream clone (kept in upstream/, git-ignored).
 set -euo pipefail

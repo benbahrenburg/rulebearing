@@ -12,7 +12,7 @@
 # artefacts without releasing or publishing. Only a `vX.Y.Z` tag releases, and only once the
 # version check and all three install checks have passed.
 # Plans: docs/plans/pending/0000-wave-0-spike.md, Step 11 (binaries);
-# docs/plans/pending/0001-wave-1-typescript-parity.md, Step 19 (npm);
+# docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 19 (npm);
 # docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Steps 13 (eslint-plugin-rulebearing)
 # and 14 (PyPI, NuGet).
 # Hardening: docs/adr/0025. Only the npm publish job holds id-token: write (provenance); the PyPI
