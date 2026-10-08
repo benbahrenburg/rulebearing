@@ -1,6 +1,6 @@
 # ADR-0053: `x-dot-webpage` draws its graph with GraphViz' `dot`, as dependency-cruiser does
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-08, by the owner)
 - **Date:** 2026-09-27
 - **Derives from:** [dependency-cruiser coverage § Output types](../artifacts/dependency-cruiser-18.2.0-coverage.md#output-types) (row `x-dot-webpage`, Parity, wave 3), [design § Reporters](../artifacts/design.md#reporters), [architecture § Security posture](../architecture.md#security-posture), [ADR-0009](0009-conformance-suites-as-specification.md) (the upstream specs are the specification), [ADR-0010](0010-crate-layout-and-extractor-boundary.md) (what each crate may do)
 - **Constrains:** `crates/rb-report/src/dot_webpage.rs`, `crates/rb-cli/src/graphviz.rs`, `crates/rb-cli/src/protocol.rs`, `conformance/dependency-cruiser/harness/dot-webpage-forward.mjs`

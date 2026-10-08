@@ -1,6 +1,6 @@
 # ADR-0059: Gates run by tier; a pull request mutates the lines it changes, a push to `main` mutates the whole scope
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-08, by the owner)
 - **Date:** 2026-10-01
 - **Derives from:** [ADR-0024](0024-test-quality-gates.md) (mutation testing on the contract crates), [ADR-0009](0009-conformance-suites-as-specification.md) (the conformance gates), [ADR-0018](0018-test-coverage-threshold.md) (the coverage floor), [ADR-0058](0058-the-edit-compile-cycle-rebuilds-only-what-changed.md) (what one edit rebuilds), [architecture § Verification strategy](../architecture.md#verification-strategy)
 - **Supersedes:** nothing. It refines when [ADR-0024](0024-test-quality-gates.md)'s mutation gate mutates which lines; its scope (`rb-model`, `rb-rules`, `xtask`), its exclusion policy and its rule that a survivor is fixed with a test stand.

@@ -1,6 +1,6 @@
 # ADR-0052: `--affected` follows the configuration format: dependency-cruiser's `reaches` filter, or the closure
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-08, by the owner)
 - **Date:** 2026-09-27
 - **Derives from:** [dependency-cruiser coverage § Options](../artifacts/dependency-cruiser-18.2.0-coverage.md#options) (row `affected`, Parity+), [§ Command line](../artifacts/dependency-cruiser-18.2.0-coverage.md#command-line) (row `--affected [revision]`), [ADR-0004](0004-graph-document-is-cruise-result-superset.md) (the receipt is additive), [ADR-0030](0030-the-reporter-decides-the-error-count-exit.md) (the reporter's exit code), [ADR-0032](0032-liveness-follows-the-configuration-format.md) (a behaviour may follow the configuration format)
 - **Constrains:** `crates/rb-cli/src/affected.rs`, `crates/rb-cli/src/cmd/cruise.rs`, `crates/rb-cli/src/pipeline.rs`, `crates/rb-rules/src/graph/filters.rs` (`reaches` with a depth), `crates/rb-config/src/model.rs` (`options.affected`), `crates/rb-model/src/document.rs` (`summary.affected`)

@@ -1,6 +1,6 @@
 # ADR-0058: The edit-compile cycle rebuilds only what changed: the link check moves to a crate nothing depends on, dev builds carry line tables, `sccache` is per machine
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-08, by the owner)
 - **Date:** 2026-10-01
 - **Derives from:** [ADR-0023](0023-documentation-link-and-lint-gates.md) (the link check is a compile-time gate), [ADR-0024](0024-test-quality-gates.md) (mutation testing rebuilds once per mutant), [ADR-0010](0010-crate-layout-and-extractor-boundary.md) (every crate depends on `rb-model`), [architecture § Verification strategy](../architecture.md#verification-strategy)
 - **Supersedes:** the clause of [ADR-0023](0023-documentation-link-and-lint-gates.md) decision 1 that runs the check from `crates/rb-model/build.rs`, and the clause of its decision 4 that `xtask` is compiled as a build dependency of `rb-model`. The check itself, what it checks, `cargo xtask lint`, the `docs-links` job and `RB_SKIP_DOC_LINK_CHECK` stand.
