@@ -47,7 +47,7 @@ impl Context<'_> {
     /// The working directory relative to the root of its git repository, with a trailing `/`
     /// (`web/`), or empty at the root or outside a repository.
     pub fn repository_prefix(&self) -> String {
-        std::process::Command::new("git")
+        crate::git::command()
             .args(["rev-parse", "--show-prefix"])
             .current_dir(&self.cwd)
             .output()

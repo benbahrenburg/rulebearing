@@ -42,7 +42,6 @@
 //! git at all `HEAD` is empty, and the key still separates configurations, folders and edits.
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use rb_config::Config;
 use serde_json::Value;
@@ -169,7 +168,7 @@ pub fn strip_verbatim(path: &str) -> String {
 /// The root of the worktree `cwd` is in, from git, else `cwd` itself; canonical when it exists,
 /// without a verbatim prefix.
 pub fn worktree_root(cwd: &Path) -> PathBuf {
-    let from_git = Command::new("git")
+    let from_git = crate::git::command()
         .args(["rev-parse", "--show-toplevel"])
         .current_dir(cwd)
         .output()
@@ -187,7 +186,7 @@ pub fn worktree_root(cwd: &Path) -> PathBuf {
 /// `git rev-parse HEAD`, else empty.
 pub fn head(root: &Path) -> String {
     head_from_files(root).unwrap_or_else(|| {
-        Command::new("git")
+        crate::git::command()
             .args(["rev-parse", "HEAD"])
             .current_dir(root)
             .output()
@@ -420,7 +419,7 @@ pub fn inputs(root: &Path, cwd: &Path, config: &Config) -> String {
 /// Each entry of `git status --porcelain -z --untracked-files=all` in `root`, with the bytes of
 /// the file it names when that file exists; `None` when git cannot answer (no repository).
 pub fn git_status(root: &Path) -> Option<Vec<(String, Vec<u8>)>> {
-    let output = Command::new("git")
+    let output = crate::git::command()
         .args([
             "-c",
             "core.quotepath=off",

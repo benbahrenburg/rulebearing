@@ -99,7 +99,6 @@
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use rb_config::model::{CompatMode, FilterOption};
 use rb_config::{Config, ConfigWarning};
@@ -334,7 +333,7 @@ pub fn parse_status_line(line: &str) -> Option<(ChangeType, String, Option<Strin
 /// `core.quotePath=false`, so a path with non-ASCII characters is written as it is rather than
 /// quoted with octal escapes, which would match no module.
 fn git(dir: &Path, args: &[&str]) -> Result<String, (Option<i32>, String)> {
-    let output = Command::new("git")
+    let output = crate::git::command()
         .args(["-c", "core.quotePath=false"])
         .args(args)
         .current_dir(dir)
