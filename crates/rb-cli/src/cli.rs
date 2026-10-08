@@ -75,6 +75,8 @@ pub enum Command {
     /// Answer the Stop hook ahead of time into .graph/guard/findings.json; with --watch, keep
     /// the answer current as files are saved until standard input closes
     Guard(crate::cmd::guard::GuardArgs),
+    /// The query commands as MCP tools over standard input and output, from one warm graph
+    Serve(crate::serve::ServeArgs),
     /// What a file is subject to, before an edit
     Impact(crate::cmd::impact::ImpactArgs),
     /// Where a new module with these imports would be legal
