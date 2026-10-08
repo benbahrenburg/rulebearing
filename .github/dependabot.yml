@@ -8,6 +8,16 @@ updates:
     schedule: { interval: weekly, day: monday }
     open-pull-requests-limit: 5
     groups:
+      # The oxc crates and the ruff crates each release in lockstep and are pinned to one exact
+      # version, so a bump of one alone puts two versions in the graph and fails to compile. A
+      # 0.x minor is a major to Dependabot, so these groups take every update type. A dependency
+      # joins the first group that matches it; these come before the minor-and-patch group.
+      # oxc_resolver is versioned on its own line.
+      oxc:
+        patterns: ["oxc_*"]
+        exclude-patterns: ["oxc_resolver"]
+      ruff:
+        patterns: ["ruff_*"]
       rust-minor-and-patch:
         update-types: [minor, patch]
 
