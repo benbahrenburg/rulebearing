@@ -36,7 +36,7 @@ How the 2026-09-23 row was taken, with `hyperfine --warmup 2 --runs 10` over the
 - **Parity.** The two results were diffed with layer 5's harness: 5,838 modules and 1 violation in each, 0 differences.
 - **Stage split, one run.** Configuration 9 ms, extract 2,044 ms, evaluate 686 ms, report 122 ms. The run spent 10.2 s of system time against 3.3 s of user time.
 
-3.46 times faster than dependency-cruiser, but over the 2-second target, and the miss is in extraction: 2.0 s here against 0.18 s for the synthetic tree's 5,500 modules on the runner. The high system time points at file-system work in resolution, which the synthetic tree does not exercise. Finding and fixing it is a wave 2 performance item; the synthetic figure above meets [NFR-PERF-01](prd.md#nfr-perf-01).
+3.46 times faster than dependency-cruiser, but over the 2-second target, and the miss is in extraction: 2.0 s here against 0.18 s for the synthetic tree's 5,500 modules on the runner. The high system time points at file-system work in resolution, which the synthetic tree does not exercise. Finding and fixing it is a wave 2 performance item, tracked in [plan 0002, Wave 2D](plans/pending/0002-wave-2-dotnet-python-element-rules.md#wave-2d-cross-language-rule-additions-presets-vue-svelte-markdown-and-the-remaining-wave-2-option-rows); the synthetic figure above meets [NFR-PERF-01](prd.md#nfr-perf-01).
 
 ## Scale repositories
 

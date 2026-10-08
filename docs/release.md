@@ -119,3 +119,13 @@ wrappers/nuget/pack.sh <dist-dir> <version> <out-dir>
 | Check | `dotnet tool install Rulebearing --version <version> --tool-path <dir> --add-source <out-dir>`, then `<dir>/rulebearing --version` prints `rulebearing <version>` on macOS arm64, Linux x64 and Windows x64 |
 
 `nuget-pack` fails with a named error when `pack.sh` is absent or writes no `Rulebearing.<version>.nupkg`. `nuget-publish` pushes every package in the artefact with `--skip-duplicate`. `NUGET_API_KEY` is a nuget.org API key, stored as a repository secret (set 2026-09-25), with the scope "push new packages and package versions" and a glob that covers every id the release packs, such as `Rulebearing*`: only `Rulebearing` exists on nuget.org (the 0.0.1 reservation), so the first release creates the seven `Rulebearing.TestAdapter*` packages, and a key limited to existing packages would push `Rulebearing` and then fail. A manual run of the release workflow proves the key without publishing: its `nuget-credentials` job pushes the `Rulebearing` 0.0.1 package already on nuget.org with `--skip-duplicate`, which nuget.org refuses before it reports the duplicate when the key is missing, expired or scoped away from `Rulebearing`. The workflow reads no other NuGet secret; `NUGET_USER` would only be needed by trusted publishing, which would also need `id-token: write` on `nuget-publish` ([ADR-0025](adr/0025-ci-and-supply-chain-hardening.md)).
+
+## The schemas on Pages (from wave 1)
+
+The graph document's and the configuration's JSON schemas carry `$id`s under `https://benbahrenburg.github.io/rulebearing/schema/` ([schema/README.md](../schema/README.md)), and `rulebearing import` writes that URL into every configuration it produces. The `schema-pages` job serves them there.
+
+| Job | Runs on | What it does |
+| --- | --- | --- |
+| `schema-pages` | a `vX.Y.Z` tag only, after `release` | copies `schema/v1.json` and `schema/config-v1.json` to `schema/` on the Pages site with `actions/deploy-pages`; the job alone holds `pages: write` and `id-token: write` ([ADR-0025](adr/0025-ci-and-supply-chain-hardening.md)) |
+
+The site is served from the tag, so the URLs hold the released contract, not the state of `main`. Two repository settings are needed once: Pages with the source "GitHub Actions", and a deployment rule on the `github-pages` environment that admits `v*` tags.
