@@ -5,7 +5,7 @@
 //! - Decisions: [ADR-0015](../../../docs/adr/0015-stable-violation-id.md),
 //!   [ADR-0021](../../../docs/adr/0021-agent-surface-cli-first.md),
 //!   [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
-//! - Plans: [Wave 1, sub-wave 1D](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#wave-1d-reporters-fmt-exit-codes),
+//! - Plans: [Wave 1, sub-wave 1D](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#wave-1d-reporters-fmt-exit-codes),
 //!   [Wave 2, sub-wave 2E](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md),
 //!   [Wave 3, sub-wave 3B](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md)
 //! - Requirements: [FR-OUT-01](../../../docs/prd.md#fr-out-01) to [FR-OUT-03](../../../docs/prd.md#fr-out-03)

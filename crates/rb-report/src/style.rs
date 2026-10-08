@@ -4,7 +4,7 @@
 //! - Specification: dependency-cruiser 18.2.0 `src/utl/wrap-and-indent.mjs`,
 //!   `src/report/utl/index.mjs`; byte-compared by conformance gate 1 layer 3
 //!   ([ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md))
-//! - Plan: [Wave 1, Step 12](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
+//! - Plan: [Wave 1, Step 12](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
 //!
 //! Colour is off unless the caller asks for it, as dependency-cruiser's is when stdout is not a
 //! terminal or `NO_COLOR` is set; the escape codes are the ones `styleText` writes.

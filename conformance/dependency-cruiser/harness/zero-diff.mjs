@@ -2,7 +2,7 @@
 // with Rulebearing's for the same repository, tree, configuration and roots, after sorting, and
 // fails on any difference that conformance/divergences.md does not record with a reason.
 //
-// Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 18. Requirements:
+// Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 18. Requirements:
 // docs/prd.md#nfr-conf-01, docs/prd.md#nfr-conf-03. Decision:
 // docs/adr/0009-conformance-suites-as-specification.md. Runner: ../scripts/run-layer-5.sh.
 //

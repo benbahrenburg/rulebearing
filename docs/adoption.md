@@ -1,6 +1,6 @@
 # Adoption
 
-The six signals of [NFR-ADOPT-01](prd.md#nfr-adopt-01), measured monthly from wave 1 on the repositories where agent-authored pull requests are visible ([design § How to know, rather than believe](artifacts/design.md#how-to-know-rather-than-believe)). [`scripts/adoption-signals.sh`](../scripts/adoption-signals.sh) computes them for one repository from a checkout and the GitHub API, read-only. Before a repository switches, the gate is whatever boundary check it already runs, so the first row is the pre-switch baseline ([plan 0001, Step 21](plans/pending/0001-wave-1-typescript-parity.md#step-21-the-upstream-offer-and-the-adoption-baseline-1g)).
+The six signals of [NFR-ADOPT-01](prd.md#nfr-adopt-01), measured monthly from wave 1 on the repositories where agent-authored pull requests are visible ([design § How to know, rather than believe](artifacts/design.md#how-to-know-rather-than-believe)). [`scripts/adoption-signals.sh`](../scripts/adoption-signals.sh) computes them for one repository from a checkout and the GitHub API, read-only. Before a repository switches, the gate is whatever boundary check it already runs, so the first row is the pre-switch baseline ([plan 0001, Step 21](plans/implemented/0001-wave-1-typescript-parity.md#step-21-the-upstream-offer-and-the-adoption-baseline-1g)).
 
 | Signal | Target after two months |
 | --- | --- |

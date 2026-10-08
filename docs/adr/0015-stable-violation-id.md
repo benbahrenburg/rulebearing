@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § Precision an agent can act on](../artifacts/design.md#precision-an-agent-can-act-on), [§ Reporters](../artifacts/design.md#reporters) (`sarif` fingerprints), [§ What agents actually do with rules](../artifacts/design.md#what-agents-actually-do-with-rules)
 - **Constrains:** [architecture.md § The graph document](../architecture.md#the-graph-document), [§ Outputs and CI contract](../architecture.md#outputs-and-ci-contract)
-- **Implemented by:** [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md)
+- **Implemented by:** [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md)
 
 ## Context
 

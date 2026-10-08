@@ -2,7 +2,7 @@
 //!
 //! - Source: [design § The dependency-cruiser format](../../../docs/artifacts/design.md#the-dependency-cruiser-format)
 //!   ("`extends` resolves files, npm packages, and the bundled presets, exactly as today")
-//! - Plans: [Wave 1, Step 3](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-3-extends-presets-defines-captures-regex-1a);
+//! - Plans: [Wave 1, Step 3](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-3-extends-presets-defines-captures-regex-1a);
 //!   [Wave 3, Step 11](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
 //!   (the framework presets, `rulebearing:nextjs` and the rest)
 //! - Coverage: [coverage § Rules](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#rules), row `extends`

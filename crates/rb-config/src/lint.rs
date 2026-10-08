@@ -2,7 +2,7 @@
 //!
 //! - Source: [design § The native format](../../../docs/artifacts/design.md#the-native-format),
 //!   [design § Rules an agent writes](../../../docs/artifacts/design.md#rules-an-agent-writes-held-to-the-same-bar)
-//! - Plan: [Wave 1, Step 4](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-4-config-convert-config-expand-config-lint-shorthands-1a);
+//! - Plan: [Wave 1, Step 4](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-4-config-convert-config-expand-config-lint-shorthands-1a);
 //!   [Wave 2, Step 8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)
 //!   (`type-only-on-dotnet`)
 //! - Requirement: [FR-CFG-05](../../../docs/prd.md#fr-cfg-05), [FR-RULE-02](../../../docs/prd.md#fr-rule-02)

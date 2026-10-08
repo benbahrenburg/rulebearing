@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § Architecture](../artifacts/design.md#architecture), [§ The five stages](../artifacts/design.md#the-five-stages) (stage 3), [§ The run and its consumers](../artifacts/design.md#the-run-and-its-consumers); [dependency-cruiser coverage § Result document](../artifacts/dependency-cruiser-18.2.0-coverage.md#result-document-cruise-result-schema)
 - **Constrains:** [architecture.md § The graph document](../architecture.md#the-graph-document)
-- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md), [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md)
+- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md), [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md)
 
 ## Context
 

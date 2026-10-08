@@ -8,7 +8,7 @@
 //! - Coverage: [coverage § Output types](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types),
 //!   rows `err`, `err-long`; [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),
 //!   `reporterOptions.err` (`showAliasedModulesUnresolved`, `showExternalModulesUnresolved`)
-//! - Plan: [Wave 1, Step 12](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
+//! - Plan: [Wave 1, Step 12](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
 //! - Requirements: [FR-OUT-01](../../../docs/prd.md#fr-out-01), [FR-OUT-03](../../../docs/prd.md#fr-out-03)
 //!
 //! The `fix` line appears only when a rule has a `fix`, so every dependency-cruiser fixture renders

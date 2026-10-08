@@ -2,7 +2,7 @@
 //!
 //! - Source: [design § The subcommands a guard reaches for](../../../../docs/artifacts/design.md#the-subcommands-a-guard-reaches-for),
 //!   [design § Three pipelines](../../../../docs/artifacts/design.md#three-pipelines) (the reference line)
-//! - Plan: [Wave 1, Step 7](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
+//! - Plan: [Wave 1, Step 7](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
 //! - Requirement: [FR-RULE-06](../../../../docs/prd.md#fr-rule-06)
 //!
 //! Counts the direct edges from modules matching `--from` to targets matching `--to` (`$1` takes

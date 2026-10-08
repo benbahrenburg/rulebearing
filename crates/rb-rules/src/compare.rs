@@ -1,7 +1,7 @@
 //! Orderings: dependency-cruiser 18.2.0's `src/graph-utl/compare.mjs`, ported.
 //!
 //! - Specification: `test/graph-utl/compare.*.spec.mjs`, run by conformance gate 1 layer 2
-//! - Plan: [Wave 1, Step 7](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
+//! - Plan: [Wave 1, Step 7](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
 //! - Requirement: [FR-CORE-07](../../../docs/prd.md#fr-core-07) (deterministic output)
 //!
 //! Strings compare with JavaScript's `localeCompare` ([`rb_model::collate`]), as upstream does,

@@ -3,7 +3,7 @@
 //!
 //! - Specification: `test/graph-utl/consolidate-to-folder.spec.mjs`,
 //!   `consolidate-to-pattern.spec.mjs`, run by conformance gate 1 layer 2
-//! - Plan: [Wave 1, Step 6](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-6-graph-analysis-1b)
+//! - Plan: [Wave 1, Step 6](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-6-graph-analysis-1b)
 //!   (`folders.rs`: consolidation into `folders[]`)
 //! - Requirement: [FR-RULE-08](../../../../docs/prd.md#fr-rule-08)
 //!

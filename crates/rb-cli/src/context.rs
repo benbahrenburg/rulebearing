@@ -1,7 +1,7 @@
 //! What a command needs from its environment, passed in rather than read from globals, so every
 //! command runs the same way in a test as from a terminal.
 //!
-//! - Plan: [Wave 1, Step 13](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
+//! - Plan: [Wave 1, Step 13](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
 //! - Requirement: [FR-CORE-07](../../../docs/prd.md#fr-core-07) (hermetic, deterministic runs)
 
 use std::io::Read;

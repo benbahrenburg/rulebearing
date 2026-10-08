@@ -4,7 +4,7 @@
 //!   [design § Shorthands](../../../../docs/artifacts/design.md#shorthands),
 //!   [design § Rules an agent writes](../../../../docs/artifacts/design.md#rules-an-agent-writes-held-to-the-same-bar)
 //! - Decision: [ADR-0005](../../../../docs/adr/0005-native-config-superset-and-compat.md)
-//! - Plan: [Wave 1, Step 4](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-4-config-convert-config-expand-config-lint-shorthands-1a)
+//! - Plan: [Wave 1, Step 4](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-4-config-convert-config-expand-config-lint-shorthands-1a)
 //! - Requirement: [FR-CFG-05](../../../../docs/prd.md#fr-cfg-05)
 //!
 //! `convert` and `expand` work on the file as written (a JavaScript file is evaluated first);

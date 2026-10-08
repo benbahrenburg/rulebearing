@@ -1,6 +1,6 @@
 //! `agent`: violations shaped for a model, grouped by rule, cheapest fix first, token-budgeted.
 //!
-//! - Contract: [Wave 1 plan § 1.5](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
+//! - Contract: [Wave 1 plan § 1.5](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
 //!   (the shape, fix-cost ordering, `--max-findings`)
 //! - Source: [design § Precision an agent can act on](../../../docs/artifacts/design.md#precision-an-agent-can-act-on),
 //!   [design § The agentic engineering hat](../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two)

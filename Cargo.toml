@@ -60,7 +60,7 @@ miniz_oxide = "0.9"
 # (docs/adr/0024-test-quality-gates.md). MIT or Apache-2.0, so cargo deny is unaffected.
 proptest = "1"
 # Layer 4 of gate 1 validates results and configs against the vendored upstream schemas
-# (docs/plans/pending/0001-wave-1-typescript-parity.md, Step 12).
+# (docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 12).
 jsonschema = { version = "0.58", default-features = false }
 
 # The TypeScript extractor (plan 0000, Step 8). oxc is pinned to exact versions and bumped only by a
@@ -83,7 +83,7 @@ globset = "0.4"
 # sub-wave 1C). MIT/Apache-2.0.
 rayon = "1"
 
-# Wave 1 (docs/plans/pending/0001-wave-1-typescript-parity.md § 1.8). All MIT or MIT/Apache-2.0.
+# Wave 1 (docs/plans/implemented/0001-wave-1-typescript-parity.md § 1.8). All MIT or MIT/Apache-2.0.
 # The configuration evaluator is QuickJS, sandboxed (docs/adr/0006-embedded-quickjs-config-evaluator.md).
 rquickjs = { version = "0.14", default-features = false, features = ["std", "loader"] }
 # Configuration formats (docs/adr/0005-native-config-superset-and-compat.md).

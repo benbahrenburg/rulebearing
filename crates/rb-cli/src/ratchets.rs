@@ -3,7 +3,7 @@
 //! - Decision: [ADR-0029](../../../docs/adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)
 //!   (`summary.ratchets[]`; an exceeded ratchet is one error; a missing budget exits 2)
 //! - Source: [design § The run and its consumers](../../../docs/artifacts/design.md#the-run-and-its-consumers)
-//! - Plan: [Wave 1, Step 7](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
+//! - Plan: [Wave 1, Step 7](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
 //! - Requirement: [FR-RULE-06](../../../docs/prd.md#fr-rule-06)
 //!
 //! The count and the comparison are `rb_rules::ratchet`'s; this module reads the budget files,

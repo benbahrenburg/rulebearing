@@ -4,7 +4,7 @@
 //! - Architecture: [`docs/architecture.md#crate-layout`](../../../docs/architecture.md#crate-layout)
 //! - Decisions: [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md),
 //!   [ADR-0003](../../../docs/adr/0003-dotnet-extractor-fallback.md)
-//! - Plans: [Wave 1](../../../docs/plans/pending/0001-wave-1-typescript-parity.md) (`fmt --from dependency-cruiser`),
+//! - Plans: [Wave 1](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md) (`fmt --from dependency-cruiser`),
 //!   [Wave 2](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md) (importers)
 //! - Requirements: [FR-CLI-01](../../../docs/prd.md#fr-cli-01), [FR-CLI-04](../../../docs/prd.md#fr-cli-04)
 //!

@@ -5,7 +5,7 @@
 - **Derives from:** [design § The run and its consumers](../artifacts/design.md#the-run-and-its-consumers) (the ratchet guard "fails hard on a missing JSON and on an implausible zero"), [design § The native format](../artifacts/design.md#the-native-format) (`ratchets`, "a budget that may only fall, as config"), [ADR-0004](0004-graph-document-is-cruise-result-superset.md), [ADR-0007](0007-vacuous-rules-fail-by-default.md), [ADR-0008](0008-exit-code-contract.md)
 - **Constrains:** `crates/rb-model` (`Summary`), `crates/rb-cli` (`cruise`, `fmt`), `crates/rb-report` (`--strict-schema`), `schema/v1.json`
 - **Extends:** the summary additions listed in [ADR-0004](0004-graph-document-is-cruise-result-superset.md)
-- **Implemented by:** [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md), Steps 7 and 15
+- **Implemented by:** [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md), Steps 7 and 15
 - **Requirements:** [FR-RULE-06](../prd.md#fr-rule-06), [FR-CORE-04](../prd.md#fr-core-04)
 
 ## Context

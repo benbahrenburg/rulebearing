@@ -9,7 +9,7 @@
 # they drift. A single-language repository puts its own preset first
 # (`extends: [rulebearing:python, rulebearing:recommended]`), which then wins, and carries no other
 # language's exclusions. Source: docs/artifacts/design.md#what-stays-honest-across-the-boundary.
-# Plans: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 3;
+# Plans: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 3;
 # docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 9. Requirement: FR-CFG-06.
 extends: [rulebearing:typescript, rulebearing:dotnet, rulebearing:python]
 rules:

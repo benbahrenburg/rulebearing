@@ -4,7 +4,7 @@
 //!   ("native to dependency-cruiser is lossy and says exactly what it dropped; dependency-cruiser
 //!   to native is lossless"), [§ Shorthands](../../../docs/artifacts/design.md#shorthands)
 //! - Decision: [ADR-0005](../../../docs/adr/0005-native-config-superset-and-compat.md)
-//! - Plan: [Wave 1, Step 4](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-4-config-convert-config-expand-config-lint-shorthands-1a)
+//! - Plan: [Wave 1, Step 4](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-4-config-convert-config-expand-config-lint-shorthands-1a)
 //! - Requirement: [FR-CFG-05](../../../docs/prd.md#fr-cfg-05)
 //!
 //! Both work on one file as written, not on the merged result of its `extends` chain, so a

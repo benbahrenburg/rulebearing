@@ -1,10 +1,10 @@
 //! `rulebearing attest [--verify]`: a receipt proving which configuration, inputs and results a
 //! run had, at which commit.
 //!
-//! - Contract: [Wave 1 plan § 1.5](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
+//! - Contract: [Wave 1 plan § 1.5](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
 //!   (`.graph/attest.json`: tool, configHash, inputsHash, resultsHash, head, createdAt; SHA-256)
 //! - Source: [design § The agentic engineering hat](../../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two)
-//! - Plan: [Wave 1, Step 15](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-15-hooks-install---claude-code-summary---format-agent-impact-attest---require-comment-token-1e)
+//! - Plan: [Wave 1, Step 15](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-15-hooks-install---claude-code-summary---format-agent-impact-attest---require-comment-token-1e)
 //! - Plan: [Wave 3, Step 15](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
 //!   (a graph read in source mode is refused, not signed)
 //! - Requirement: [FR-CLI-03](../../../../docs/prd.md#fr-cli-03),

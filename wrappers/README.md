@@ -4,7 +4,7 @@ Thin shells over the one static binary ([architecture § Distribution](../docs/a
 
 | Directory | Registry | Package | Lands in |
 | --- | --- | --- | --- |
-| [npm/](npm/README.md) | npm | `rulebearing`, a launcher over six unscoped platform packages `rulebearing-cli-<platform>` under `optionalDependencies`; it also exports the `rulebearing/vitest` entry point built from [adapters/vitest](../adapters/vitest/README.md) | [Wave 1, 1G, Step 19](../docs/plans/pending/0001-wave-1-typescript-parity.md#step-19-npm-package-github-action-release-1g) |
+| [npm/](npm/README.md) | npm | `rulebearing`, a launcher over six unscoped platform packages `rulebearing-cli-<platform>` under `optionalDependencies`; it also exports the `rulebearing/vitest` entry point built from [adapters/vitest](../adapters/vitest/README.md) | [Wave 1, 1G, Step 19](../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-19-npm-package-github-action-release-1g) |
 | [nuget/](nuget/) | NuGet | `Rulebearing` as a `dotnet tool`, binary under `runtimes/` | [Wave 2, 2H](../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md) |
 | [pip/](pip/README.md) | PyPI | `rulebearing` wheel per platform, binary in the package data, console script `rulebearing`; `pytest-rulebearing` ([adapters/python](../adapters/python/README.md)) depends on it | [Wave 2, 2H](../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md) |
 

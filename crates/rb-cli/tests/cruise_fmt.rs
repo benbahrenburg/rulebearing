@@ -2,7 +2,7 @@
 //! shape a report, progress, `--output-to`, a dependency-cruiser result through `fmt`, and the
 //! gating exit codes.
 //!
-//! - Plan: [Wave 1, Step 13](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
+//! - Plan: [Wave 1, Step 13](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
 //! - Contract: [ADR-0008](../../../docs/adr/0008-exit-code-contract.md)
 //! - Requirements: [FR-CORE-06](../../../docs/prd.md#fr-core-06), [FR-CLI-08](../../../docs/prd.md#fr-cli-08)
 

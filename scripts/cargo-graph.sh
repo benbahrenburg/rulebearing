@@ -3,7 +3,7 @@
 # workspace crate (named by its manifest, crates/<name>/Cargo.toml), one edge per normal
 # dependency (not dev, not build) on another workspace crate. The repository's own rulebearing.yaml
 # is evaluated over it by `rulebearing cruise --graph`, because Rust is not an extracted language.
-# Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 9. Decision: docs/adr/0010-crate-layout-and-extractor-boundary.md.
+# Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 9. Decision: docs/adr/0010-crate-layout-and-extractor-boundary.md.
 # Usage: scripts/cargo-graph.sh > target/cargo-graph.json
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."

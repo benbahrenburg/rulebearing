@@ -5,7 +5,7 @@
 //! - Coverage: [coverage § Rules](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#rules)
 //! - Decision: [ADR-0016](../../../docs/adr/0016-linear-time-regex-and-strict-compat.md)
 //!   (captures substituted escaped)
-//! - Plan: [Wave 1, Step 5](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-5-matchers-and-restriction-evaluation-1b)
+//! - Plan: [Wave 1, Step 5](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-5-matchers-and-restriction-evaluation-1b)
 //! - Requirement: [FR-RULE-01](../../../docs/prd.md#fr-rule-01)
 //!
 //! Each function keeps its upstream name in snake case and its upstream quirks. Two are worth

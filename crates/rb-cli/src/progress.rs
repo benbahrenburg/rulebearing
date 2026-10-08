@@ -2,8 +2,8 @@
 //!
 //! - Coverage: [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),
 //!   row `progress` (`none`, `cli-feedback`, `performance-log`, `ndjson`)
-//! - Plan: [Wave 1, Step 13](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d),
-//!   [Step 20](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-20-performance-measurement-for-nfr-perf-01-1g-started-in-1c)
+//! - Plan: [Wave 1, Step 13](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d),
+//!   [Step 20](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-20-performance-measurement-for-nfr-perf-01-1g-started-in-1c)
 //!   (the stage split a performance miss is attributed to)
 //! - Requirement: [NFR-PERF-01](../../../docs/prd.md#nfr-perf-01)
 

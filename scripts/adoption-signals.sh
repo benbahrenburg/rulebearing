@@ -19,7 +19,7 @@
 #          [--since YYYY-MM-DD] [--agents <regex>] [--graph <graph document>]
 # --graph is for a repository whose rules run over a saved graph (this one's run over
 # scripts/cargo-graph.sh's crate graph).
-# Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 21. Requirement: docs/prd.md#nfr-adopt-01.
+# Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 21. Requirement: docs/prd.md#nfr-adopt-01.
 # Signals: docs/artifacts/design.md#how-to-know-rather-than-believe. Results: docs/adoption.md.
 set -euo pipefail
 

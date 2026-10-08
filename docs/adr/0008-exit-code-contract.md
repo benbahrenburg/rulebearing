@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § Exit codes](../artifacts/design.md#exit-codes), [§ The run and its consumers](../artifacts/design.md#the-run-and-its-consumers) (toolchain guard), [dependency-cruiser coverage § Extraction and resolution](../artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution) (unsupported-transpiler failure mode)
 - **Constrains:** [architecture.md § Outputs and CI contract](../architecture.md#outputs-and-ci-contract)
-- **Implemented by:** [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md)
+- **Implemented by:** [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md)
 
 ## Context
 

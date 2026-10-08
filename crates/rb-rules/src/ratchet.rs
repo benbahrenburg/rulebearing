@@ -3,7 +3,7 @@
 //! - Source: [design § The subcommands a guard reaches for](../../../docs/artifacts/design.md#the-subcommands-a-guard-reaches-for)
 //!   (`count --from --to [--budget] [--write]`), [design § Rules an agent writes](../../../docs/artifacts/design.md#rules-an-agent-writes-held-to-the-same-bar)
 //!   ("Ratchets only fall")
-//! - Plan: [Wave 1, Step 7](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
+//! - Plan: [Wave 1, Step 7](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
 //!   (`ratchet.rs`)
 //! - Requirement: [FR-RULE-06](../../../docs/prd.md#fr-rule-06)
 //!

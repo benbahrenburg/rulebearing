@@ -3,7 +3,7 @@
 //!
 //! - Protocol: `conformance/dependency-cruiser/harness/shim.mjs` (its header is the contract)
 //! - Decision: [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md)
-//! - Plan: [Wave 1, Step 8](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-8-rulebearing-validate-for-gate-1-layer-2-1b)
+//! - Plan: [Wave 1, Step 8](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-8-rulebearing-validate-for-gate-1-layer-2-1b)
 //! - Requirement: [NFR-CONF-01](../../../docs/prd.md#nfr-conf-01)
 //!
 //! A request names an upstream module, an export, a path into it (a method of a class, or a

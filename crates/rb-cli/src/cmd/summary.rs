@@ -1,9 +1,9 @@
 //! `rulebearing summary --format agent`: the `SessionStart` brief.
 //!
 //! - Source: [design § The agentic engineering hat](../../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two)
-//! - Plan: [Wave 1 § 1.6](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#16-decisions-applied-and-decisions-to-make)
+//! - Plan: [Wave 1 § 1.6](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#16-decisions-applied-and-decisions-to-make)
 //!   (limited to open violations, ratchet headroom and vacuous rules),
-//!   [Step 15](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-15-hooks-install---claude-code-summary---format-agent-impact-attest---require-comment-token-1e)
+//!   [Step 15](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-15-hooks-install---claude-code-summary---format-agent-impact-attest---require-comment-token-1e)
 //! - Requirement: [FR-CLI-03](../../../../docs/prd.md#fr-cli-03)
 //!
 //! Token-budgeted like the `agent` reporter: counts by rule, the ten most violated first, each with

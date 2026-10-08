@@ -1,7 +1,7 @@
 //! `--config-via-node`: the explicit way out of the sandbox.
 //!
 //! - Decision: [ADR-0006](../../../../docs/adr/0006-embedded-quickjs-config-evaluator.md)
-//! - Plan: [Wave 1, Step 2](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-2-the-quickjs-evaluator-1a)
+//! - Plan: [Wave 1, Step 2](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-2-the-quickjs-evaluator-1a)
 //! - Requirement: [FR-CFG-03](../../../../docs/prd.md#fr-cfg-03)
 //!
 //! A configuration that needs Node (one that reads the filesystem, say) is evaluated by a local

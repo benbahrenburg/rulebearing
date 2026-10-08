@@ -1,6 +1,6 @@
 # Synthetic monorepo
 
-`gen.mjs` writes the public synthetic tree that [plan 0001 § 2 Step 20](../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-20-performance-measurement-for-nfr-perf-01-1g-started-in-1c) measures [NFR-PERF-01](../../docs/prd.md#nfr-perf-01) against: 5,500 TypeScript modules, the size of the private monorepo the design's 13-second figure comes from. It is checked in as a generator, never as files.
+`gen.mjs` writes the public synthetic tree that [plan 0001 § 2 Step 20](../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-20-performance-measurement-for-nfr-perf-01-1g-started-in-1c) measures [NFR-PERF-01](../../docs/prd.md#nfr-perf-01) against: 5,500 TypeScript modules, the size of the private monorepo the design's 13-second figure comes from. It is checked in as a generator, never as files.
 
 ```sh
 node testbeds/synth/gen.mjs /tmp/synth        # Node 22 or later, no dependencies
@@ -32,4 +32,4 @@ The extractor alone, `extract-timing` in release mode, with the tree's `tsconfig
 | --- | --- | --- | --- | --- | --- |
 | 2026-09-22 | Apple M2 Pro, 12 threads | sub-wave 1C | 5,500 | 21,550 (26,958 with `tsPreCompilationDeps: true`) | about 350 ms |
 
-This is extraction only. The end-to-end figure with `hyperfine`, the stage split from `--progress performance-log` and the CI runner's number follow in sub-wave 1G, once `rulebearing cruise` exists ([plan 0001 § 3, Wave 1G](../../docs/plans/pending/0001-wave-1-typescript-parity.md#wave-1g-distribution-zero-diff-upstream-offer)).
+This is extraction only. The end-to-end figure with `hyperfine`, the stage split from `--progress performance-log` and the CI runner's number follow in sub-wave 1G, once `rulebearing cruise` exists ([plan 0001 § 3, Wave 1G](../../docs/plans/implemented/0001-wave-1-typescript-parity.md#wave-1g-distribution-zero-diff-upstream-offer)).

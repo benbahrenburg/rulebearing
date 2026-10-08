@@ -4,7 +4,7 @@
 //!   (`--config`, `--validate`, `--no-config`, the option flags that override the config)
 //! - Decisions: [ADR-0005](../../../docs/adr/0005-native-config-superset-and-compat.md),
 //!   [ADR-0006](../../../docs/adr/0006-embedded-quickjs-config-evaluator.md)
-//! - Plan: [Wave 1, Step 13](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
+//! - Plan: [Wave 1, Step 13](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-13-rb-cli-cruise-fmt-exit-codes-flags-1d)
 //! - Requirement: [FR-CFG-01](../../../docs/prd.md#fr-cfg-01)
 
 use std::path::PathBuf;

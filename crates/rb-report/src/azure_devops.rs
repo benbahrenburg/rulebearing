@@ -2,7 +2,7 @@
 //! `src/report/azure-devops.mjs`, ported.
 //!
 //! - Specification: `test/report/azure-devops/*.spec.mjs`, run by conformance gate 1 layer 3
-//! - Plan: [Wave 1, Step 12](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
+//! - Plan: [Wave 1, Step 12](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
 
 use serde_json::Value;

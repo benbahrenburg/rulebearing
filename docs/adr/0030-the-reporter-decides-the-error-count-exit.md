@@ -5,7 +5,7 @@
 - **Derives from:** [design § Three pipelines](../artifacts/design.md#three-pipelines) (`cruise --output-type json > .graph/cruise.json`, then `fmt --exit-code --output-type err`), [design § The run and its consumers](../artifacts/design.md#the-run-and-its-consumers) (the gate reads the error count through `depcruise-fmt --exit-code --output-type err`), conformance gate 1 layer 5 on dependency-cruiser's own repository
 - **Constrains:** `crates/rb-cli` (`cruise`, `fmt`, the help text), `crates/rb-report` (the table of gating reporters)
 - **Supersedes:** the clause of [ADR-0008](0008-exit-code-contract.md) that every reporter shares one exit-code function, and its statement that dependency-cruiser always exits with the error count. The codes 2 and 3 and the cap at 255 stand.
-- **Implemented by:** [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md), Steps 13 and 18
+- **Implemented by:** [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md), Steps 13 and 18
 - **Requirements:** [FR-CORE-06](../prd.md#fr-core-06), [NFR-CONF-01](../prd.md#nfr-conf-01)
 
 ## Context

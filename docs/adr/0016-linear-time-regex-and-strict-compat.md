@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § The rule file](../artifacts/design.md#the-rule-file) (safe-regex), [§ The dependency-cruiser format](../artifacts/design.md#the-dependency-cruiser-format), [§ Language decision](../artifacts/design.md#language-decision) (regex safety)
 - **Constrains:** [architecture.md § The rule engine](../architecture.md#the-rule-engine)
-- **Implemented by:** [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md)
+- **Implemented by:** [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md)
 
 ## Context
 

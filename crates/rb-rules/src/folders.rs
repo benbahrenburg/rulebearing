@@ -1,7 +1,7 @@
 //! The folder layer: modules aggregated into `folders[]` with couplings, instability and cycles.
 //! dependency-cruiser 18.2.0's `src/analyze/derive/folders`, ported.
 //!
-//! - Plan: [Wave 1, Step 6](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-6-graph-analysis-1b)
+//! - Plan: [Wave 1, Step 6](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-6-graph-analysis-1b)
 //!   (`folders.rs`: `moduleCount`, `dependencies[]`, `dependents[]`, couplings, instability)
 //! - Coverage: [coverage § Rules](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#rules),
 //!   row `scope: folder`; [coverage § Result document](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#result-document-cruise-result-schema)

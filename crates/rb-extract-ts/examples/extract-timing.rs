@@ -1,8 +1,8 @@
 //! Times one extraction over a directory: the first synthetic benchmark of NFR-PERF-01.
 //!
-//! - Plan: [Wave 1, Step 20](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-20-performance-measurement-for-nfr-perf-01-1g-started-in-1c)
+//! - Plan: [Wave 1, Step 20](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-20-performance-measurement-for-nfr-perf-01-1g-started-in-1c)
 //!   item 2 (the synthetic tree from `testbeds/synth/gen.mjs`), started in
-//!   [Wave 1C](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#wave-1c-rb-extract-ts-completion)
+//!   [Wave 1C](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#wave-1c-rb-extract-ts-completion)
 //! - Requirement: [NFR-PERF-01](../../../docs/prd.md#nfr-perf-01)
 //! - Architecture: [Performance model](../../../docs/architecture.md#performance-model)
 //!

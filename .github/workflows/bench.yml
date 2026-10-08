@@ -2,7 +2,7 @@
 # standard Linux runner, the machine the design's 2-second target is set for. The figure goes to the
 # job summary and an artefact; docs/perf.md records it by hand, so this workflow needs no write
 # permission (docs/adr/0025-ci-and-supply-chain-hardening.md).
-# Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 20.
+# Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 20.
 # It then runs testbeds/synth/guard.sh on the same tree for NFR-PERF-03 (docs/prd.md#nfr-perf-03):
 # plan docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 16.
 name: bench

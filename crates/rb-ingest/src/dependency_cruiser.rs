@@ -1,6 +1,6 @@
 //! dependency-cruiser's `cruise-result` in, the graph document out: `fmt --from dependency-cruiser`.
 //!
-//! - Plan: [Wave 1, Step 11](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-11-rb-ingest-for-dependency-cruiser-json-1d)
+//! - Plan: [Wave 1, Step 11](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-11-rb-ingest-for-dependency-cruiser-json-1d)
 //! - Decision: [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
 //!   (the module layer is the same schema, so no translation is needed)
 //! - Requirement: [FR-CLI-01](../../../docs/prd.md#fr-cli-01)

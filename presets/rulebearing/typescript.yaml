@@ -4,7 +4,7 @@
 # output left out, and the files the toolchain enters by convention not reported as orphans.
 # Composed by rulebearing:recommended; a TypeScript-only repository writes
 # `extends: [rulebearing:typescript, rulebearing:recommended]`, and these settings win.
-# Plans: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 3;
+# Plans: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 3;
 # docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 9. Requirement: FR-CFG-06.
 languages:
   typescript:

@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § Why](../artifacts/design.md#why) (liveness), [§ The name](../artifacts/design.md#the-name), [§ The five stages](../artifacts/design.md#the-five-stages) (stage 4), [§ What agents actually do with rules](../artifacts/design.md#what-agents-actually-do-with-rules)
 - **Constrains:** [architecture.md § The rule engine](../architecture.md#the-rule-engine), [ADR-0008](0008-exit-code-contract.md)
-- **Implemented by:** [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md)
+- **Implemented by:** [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md)
 
 ## Context
 

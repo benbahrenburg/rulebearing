@@ -1,6 +1,6 @@
 //! One module per subcommand.
 //!
-//! - Plan: [Wave 1 § 2](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#2-lead-developer-section-step-by-step-implementation)
+//! - Plan: [Wave 1 § 2](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#2-lead-developer-section-step-by-step-implementation)
 //! - Plan: [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //!   (`docs`, `propose`, `place`, `decisions`, `test --generate`)
 //! - Plan: [Wave 3, Step 4](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)

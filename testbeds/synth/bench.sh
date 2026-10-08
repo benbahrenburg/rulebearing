@@ -6,7 +6,7 @@
 # split of one run from --progress performance-log.
 #
 # Usage: testbeds/synth/bench.sh [<tree directory>]   (default: a folder under the temp directory)
-# Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 20. Results: docs/perf.md.
+# Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 20. Results: docs/perf.md.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"

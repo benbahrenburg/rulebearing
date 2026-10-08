@@ -3,7 +3,7 @@
 //!
 //! - Decision: [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
 //!   (the additions are additive; `--strict-schema` strips them; layer 4 validates)
-//! - Plan: [Wave 1, Step 12](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
+//! - Plan: [Wave 1, Step 12](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
 //! - Requirements: [FR-OUT-01](../../../docs/prd.md#fr-out-01), [FR-CORE-03](../../../docs/prd.md#fr-core-03)
 
 use serde_json::Value;

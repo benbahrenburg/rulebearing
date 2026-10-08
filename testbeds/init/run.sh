@@ -17,7 +17,7 @@
 # --dry-run ignores it, which is the "config moved aside" of the plan. The clock is pinned, and
 # the baseline entries are replaced by their count per rule, because the entries are the test
 # bed's findings rather than init's discovery, and thousands of them would bury the proposal.
-# Plans: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 16;
+# Plans: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 16;
 # docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 15;
 # docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 11 (--preset).
 # RB_INIT_FIXTURES names another folder to write to (the nightly writes beside the committed ones

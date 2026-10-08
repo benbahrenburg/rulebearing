@@ -1,7 +1,7 @@
 //! The `layers` and `independence` shorthands, expanded into `forbidden` rules.
 //!
 //! - Source: [design § Shorthands](../../../docs/artifacts/design.md#shorthands)
-//! - Plan: [Wave 1, Step 4](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-4-config-convert-config-expand-config-lint-shorthands-1a)
+//! - Plan: [Wave 1, Step 4](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-4-config-convert-config-expand-config-lint-shorthands-1a)
 //! - Requirement: [FR-RULE-07](../../../docs/prd.md#fr-rule-07)
 //!
 //! `layers` lists path patterns from the highest layer to the lowest, as import-linter's layers

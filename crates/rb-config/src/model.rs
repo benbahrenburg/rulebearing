@@ -1,6 +1,6 @@
 //! The configuration model: one set of types that both front-ends load into.
 //!
-//! - Contract: [Wave 1 plan § 1.5](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
+//! - Contract: [Wave 1 plan § 1.5](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
 //!   (the config model)
 //! - Decision: [ADR-0005](../../../docs/adr/0005-native-config-superset-and-compat.md) (one model,
 //!   two front-ends; every dependency-cruiser key legal at the same place)
@@ -54,7 +54,7 @@ pub struct Config {
     /// The rule families.
     pub rules: Rules,
     /// `options.knownViolations`, read path only in wave 1
-    /// ([Wave 1 plan § 1.6](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#16-decisions-applied-and-decisions-to-make)).
+    /// ([Wave 1 plan § 1.6](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#16-decisions-applied-and-decisions-to-make)).
     pub known_violations: Vec<KnownViolation>,
     /// The front-end that read the root file.
     pub compat: CompatMode,

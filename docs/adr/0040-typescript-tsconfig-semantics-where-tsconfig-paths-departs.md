@@ -1,10 +1,10 @@
 # ADR-0040: A TypeScript 7 tsconfig resolves as TypeScript resolves it where dependency-cruiser's `tsconfig-paths` departs; the tsconfig's `module` decides what is compiled for acorn
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-08, by the owner)
 - **Date:** 2026-09-26
 - **Derives from:** the project's promise, "superset, precisely; nothing is dropped"; [ADR-0009](0009-conformance-suites-as-specification.md) (the upstream suites are the specification), [ADR-0012](0012-oxc-for-typescript.md) (oxc parses and `oxc_resolver` resolves), [ADR-0036](0036-markdown-fences-follow-the-configuration-format.md) (the precedent for a behaviour that departs from upstream)
 - **Constrains:** `crates/rb-extract-ts` (`lib.rs` `load_tsconfig` and `check_module`, `pipeline.rs` `TsCompilerOptions` and `commonjs_output`), [conformance/divergences.md](../../conformance/divergences.md)
-- **Implemented by:** `crates/rb-extract-ts`, with the fixtures `tests/options/ts7-config` and `tests/options/ts-config-module`
+- **Implemented by:** [PR #36](https://github.com/benbahrenburg/rulebearing/pull/36): `crates/rb-extract-ts`, with the fixtures `tests/options/ts7-config` and `tests/options/ts-config-module`
 - **Requirements:** [FR-EXT-TS-02](../prd.md#fr-ext-ts-02), [FR-EXT-TS-03](../prd.md#fr-ext-ts-03)
 
 ## Context

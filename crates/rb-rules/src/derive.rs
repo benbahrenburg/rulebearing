@@ -1,7 +1,7 @@
 //! The derivations the rules read: cycles, dependents, orphans, reachability and instability.
 //! dependency-cruiser 18.2.0's `src/analyze/derive`, ported.
 //!
-//! - Plan: [Wave 1, Step 6](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-6-graph-analysis-1b)
+//! - Plan: [Wave 1, Step 6](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-6-graph-analysis-1b)
 //!   (`tarjan.rs`, `reach.rs`, `dependents.rs`, `orphan.rs` in the plan's layout)
 //! - Coverage: [coverage § Rules](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#rules)
 //!   (`to.circular`, `to.reachable`, `from.orphan`, `module.numberOfDependents*`),

@@ -1,7 +1,7 @@
 // The `rulebearing` command on npm: find the platform binary and run it, nothing else.
 //
 // Architecture: docs/architecture.md#distribution. Decision: docs/adr/0020-single-name-across-registries.md.
-// Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 19. Requirement: FR-DIST-01.
+// Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 19. Requirement: FR-DIST-01.
 // Exit codes: docs/adr/0008-exit-code-contract.md (2 is the "untrustworthy run" code, used here when
 // no binary can be found or started).
 //

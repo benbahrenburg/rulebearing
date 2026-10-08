@@ -12,7 +12,7 @@
 #                        then, with the mutations committed, that `--affected <manifest SHA>`
 #                        gives the same result from both, exactly mutations/expected-affected.json
 #
-# Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 18 and sub-wave 1G.
+# Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 18 and sub-wave 1G.
 # Requirements: docs/prd.md#nfr-conf-01, docs/prd.md#nfr-conf-03.
 # Decision: docs/adr/0009-conformance-suites-as-specification.md.
 #

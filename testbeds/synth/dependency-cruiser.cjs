@@ -1,6 +1,6 @@
 // The configuration the synthetic benchmark cruises with: what a monorepo already on
 // dependency-cruiser typically has. bench.sh copies it into the generated tree as
-// .dependency-cruiser.cjs. Plan: docs/plans/pending/0001-wave-1-typescript-parity.md, Step 20.
+// .dependency-cruiser.cjs. Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 20.
 module.exports = {
     forbidden: [
         {

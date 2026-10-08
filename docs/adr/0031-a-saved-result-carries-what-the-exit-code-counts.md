@@ -4,7 +4,7 @@
 - **Date:** 2026-09-23
 - **Derives from:** [ADR-0030](0030-the-reporter-decides-the-error-count-exit.md) (`fmt --exit-code` applies the same rule as `cruise`), [design § Three pipelines](../artifacts/design.md#three-pipelines), the wave 1 review
 - **Constrains:** `crates/rb-model` (`summary.expired[]`), `crates/rb-rules` (fills it), `crates/rb-report` (`--strict-schema` strips it), `crates/rb-cli` (`fmt --exit-code`)
-- **Implemented by:** [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md), Step 13
+- **Implemented by:** [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md), Step 13
 - **Requirements:** [FR-CORE-06](../prd.md#fr-core-06)
 
 ## Context

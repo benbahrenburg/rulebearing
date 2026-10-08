@@ -5,7 +5,7 @@
 //!   [ADR-0006](../../../docs/adr/0006-embedded-quickjs-config-evaluator.md),
 //!   [ADR-0016](../../../docs/adr/0016-linear-time-regex-and-strict-compat.md),
 //!   [ADR-0027](../../../docs/adr/0027-pure-path-and-url-modules-in-the-config-sandbox.md)
-//! - Plan: [Wave 1, sub-wave 1A](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#wave-1a-rb-config)
+//! - Plan: [Wave 1, sub-wave 1A](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#wave-1a-rb-config)
 //! - Requirements: [FR-CFG-01](../../../docs/prd.md#fr-cfg-01) to [FR-CFG-07](../../../docs/prd.md#fr-cfg-07),
 //!   [FR-RULE-07](../../../docs/prd.md#fr-rule-07), [FR-RULE-10](../../../docs/prd.md#fr-rule-10)
 //! - Source: [design § Configuration](../../../docs/artifacts/design.md#configuration-a-native-format-and-dependency-cruisers-as-it-is)

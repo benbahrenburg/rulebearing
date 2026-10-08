@@ -1,7 +1,7 @@
 //! Fuzzes the QuickJS configuration sandbox: arbitrary source must produce a configuration or a
 //! named error, never a panic, a hang past the time limit or an escape.
 //!
-//! - Plan: [Wave 1, Step 2](../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-2-the-quickjs-evaluator-1a)
+//! - Plan: [Wave 1, Step 2](../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-2-the-quickjs-evaluator-1a)
 //!   (fuzz target `config_js`)
 //! - Decision: [ADR-0006](../../docs/adr/0006-embedded-quickjs-config-evaluator.md)
 //! - Requirement: [NFR-SEC-01](../../docs/prd.md#nfr-sec-01)

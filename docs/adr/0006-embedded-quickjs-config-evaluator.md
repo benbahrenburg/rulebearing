@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § The dependency-cruiser format](../artifacts/design.md#the-dependency-cruiser-format), [§ Rules an agent writes, held to the same bar](../artifacts/design.md#rules-an-agent-writes-held-to-the-same-bar) (hermetic runs)
 - **Constrains:** [architecture.md § Configuration and the rule language](../architecture.md#configuration-and-the-rule-language), [§ Security posture](../architecture.md#security-posture)
-- **Implemented by:** [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md)
+- **Implemented by:** [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md)
 
 ## Context
 

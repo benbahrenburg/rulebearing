@@ -1,9 +1,9 @@
 //! `rulebearing impact <file>`: what a file is subject to, before an edit.
 //!
 //! - Source: [design § Questions an agent can ask before it writes the import](../../../../docs/artifacts/design.md#questions-an-agent-can-ask-before-it-writes-the-import)
-//! - Plan: [Wave 1 § 1.6](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#16-decisions-applied-and-decisions-to-make)
+//! - Plan: [Wave 1 § 1.6](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#16-decisions-applied-and-decisions-to-make)
 //!   (`impact` lands in wave 1 for the `PreToolUse` hook),
-//!   [Step 15](../../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-15-hooks-install---claude-code-summary---format-agent-impact-attest---require-comment-token-1e)
+//!   [Step 15](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-15-hooks-install---claude-code-summary---format-agent-impact-attest---require-comment-token-1e)
 //!   and [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //!   (text or `--json`; the worktree-aware cache of Step 13)
 //! - Requirement: [FR-CLI-03](../../../../docs/prd.md#fr-cli-03)

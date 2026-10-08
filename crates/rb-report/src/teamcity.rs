@@ -2,7 +2,7 @@
 //! ported.
 //!
 //! - Specification: `test/report/teamcity/*.spec.mjs`, run by conformance gate 1 layer 3
-//! - Plan: [Wave 1, Step 12](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
+//! - Plan: [Wave 1, Step 12](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
 //! - Requirements: [FR-OUT-01](../../../docs/prd.md#fr-out-01), [FR-CORE-07](../../../docs/prd.md#fr-core-07)
 //!
 //! Upstream draws the `flowId` at random and stamps each message with the time. Here the flow id is

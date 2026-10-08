@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Writes the synthetic 5,500-module TypeScript monorepo of plan 0001 § 2 Step 20, item 2
-// (docs/plans/pending/0001-wave-1-typescript-parity.md): 4 apps and 40 packages, tsconfig `paths`
+// (docs/plans/implemented/0001-wave-1-typescript-parity.md): 4 apps and 40 packages, tsconfig `paths`
 // for `@pkg/<name>`, workspace package.json files, relative, path-alias and type-only imports, and
 // exactly two dependency cycles. Deterministic: a seeded PRNG, so every run writes the same bytes.
 //

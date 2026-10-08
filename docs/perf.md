@@ -1,6 +1,6 @@
 # Performance
 
-The target is [NFR-PERF-01](prd.md#nfr-perf-01): a cruise of a 5,500-module TypeScript monorepo in 2 seconds or less, against the 13 seconds dependency-cruiser takes on the private monorepo the design measured ([design § Three pipelines](artifacts/design.md#three-pipelines)). The model behind it is in [architecture § Performance model](architecture.md#performance-model), and the plan's measurement procedure is [plan 0001, Step 20](plans/pending/0001-wave-1-typescript-parity.md#step-20-performance-measurement-for-nfr-perf-01-1g-started-in-1c).
+The target is [NFR-PERF-01](prd.md#nfr-perf-01): a cruise of a 5,500-module TypeScript monorepo in 2 seconds or less, against the 13 seconds dependency-cruiser takes on the private monorepo the design measured ([design § Three pipelines](artifacts/design.md#three-pipelines)). The model behind it is in [architecture § Performance model](architecture.md#performance-model), and the plan's measurement procedure is [plan 0001, Step 20](plans/implemented/0001-wave-1-typescript-parity.md#step-20-performance-measurement-for-nfr-perf-01-1g-started-in-1c).
 
 ## The command
 

@@ -1,7 +1,7 @@
 //! Fuzzes the data-format configuration front-ends (YAML, JSON, JSONC, TOML) and everything after
 //! parsing: native mapping, shorthands, key checks, normalisation and pattern compilation.
 //!
-//! - Plan: [Wave 1 § 1.7](../../docs/plans/pending/0001-wave-1-typescript-parity.md#17-quality-attributes)
+//! - Plan: [Wave 1 § 1.7](../../docs/plans/implemented/0001-wave-1-typescript-parity.md#17-quality-attributes)
 //!   ("fuzz targets for both config parsers")
 //! - Requirement: [NFR-SEC-01](../../docs/prd.md#nfr-sec-01)
 #![no_main]

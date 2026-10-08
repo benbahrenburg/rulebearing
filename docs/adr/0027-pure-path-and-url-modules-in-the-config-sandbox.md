@@ -4,7 +4,7 @@
 - **Date:** 2026-09-22
 - **Derives from:** [ADR-0006](0006-embedded-quickjs-config-evaluator.md) (the sandboxed QuickJS evaluator), [design § The dependency-cruiser format](../artifacts/design.md#the-dependency-cruiser-format), [design § Test beds](../artifacts/design.md#test-beds-open-source-repositories-to-validate-against)
 - **Constrains:** [architecture § Security posture](../architecture.md#security-posture), `crates/rb-config/src/js/`
-- **Implemented by:** [Wave 1 plan](../plans/pending/0001-wave-1-typescript-parity.md), Step 2
+- **Implemented by:** [Wave 1 plan](../plans/implemented/0001-wave-1-typescript-parity.md), Step 2
 - **Requirements:** [FR-CFG-03](../prd.md#fr-cfg-03), [NFR-SEC-01](../prd.md#nfr-sec-01)
 
 ## Context

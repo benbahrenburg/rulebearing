@@ -3,7 +3,7 @@
 //! - Decision: [ADR-0005](../../../docs/adr/0005-native-config-superset-and-compat.md) (a strict
 //!   superset: every dependency-cruiser key legal at the same place, nothing renamed)
 //! - Source: [design § The native format](../../../docs/artifacts/design.md#the-native-format)
-//! - Plan: [Wave 1, Step 1](../../../docs/plans/pending/0001-wave-1-typescript-parity.md#step-1-config-model-and-the-two-front-ends-1a)
+//! - Plan: [Wave 1, Step 1](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-1-config-model-and-the-two-front-ends-1a)
 //! - Requirements: [FR-CFG-02](../../../docs/prd.md#fr-cfg-02), [FR-CFG-06](../../../docs/prd.md#fr-cfg-06)
 //!
 //! Internally every configuration is *canonical*: a dependency-cruiser-shaped object
