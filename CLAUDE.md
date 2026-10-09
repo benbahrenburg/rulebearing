@@ -169,6 +169,8 @@ scripts/cargo-graph.sh > target/cargo-graph.json && ./target/release/rulebearing
 testbeds/synth/bench.sh                                 # NFR-PERF-01: the 5,500-module synthetic benchmark (docs/perf.md)
 testbeds/synth/guard.sh                                 # NFR-PERF-03: guard --watch's check of a saved file on that tree, p95 under 100 ms
 testbeds/init/run.sh <checkout> <owner/name>            # regenerate an init fixture
+scripts/sync-rule-library.sh <rulebearing-rules checkout> [--check]   # presets/frameworks/ from the rule library
+python3 testbeds/bench/scale_table.py --readme README.md   # the README's scale table from testbeds/results/scale.json
 scripts/adoption-signals.sh <checkout> --repo <owner/name> --gate <check>   # NFR-ADOPT-01 signals (docs/adoption.md)
 ./target/release/rulebearing --help
 ```

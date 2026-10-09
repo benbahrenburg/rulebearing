@@ -15,5 +15,6 @@ doc-valid-idents = [
     "NetArchTest",
     "NuGet",
     "PnP",
+    "PyPI",
     "QuickJS",
 ]

@@ -1,0 +1,28 @@
+# testbeds/init: `rulebearing init --dry-run` on umbraco/Umbraco-CMS at e81538b0400677a2fc319e6b1600b51645be3497
+# (a cruise of src with this configuration exits 0 (13466 findings baselined)). Regenerate with testbeds/init/run.sh.
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: .NET.
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: [rulebearing:dotnet, rulebearing:recommended]
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)(Program|Startup|AssemblyInfo)\\.cs$"
+            - "(^|/)Migrations/"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+      - name: infrastructure-not-to-outer-layers
+        comment: "Infrastructure is an inner layer: it never depends on Web, which depend on it."
+        fix: "Declare what Infrastructure needs as an abstraction in Infrastructure and implement it in the outer layer; never add a ProjectReference from Infrastructure to Web."
+        severity: error
+        from: { language: dotnet, namespace: "^Umbraco\\.Cms\\.Infrastructure(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+        to: { namespace: "^Umbraco\\.Cms\\.Web(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    # no-circular: 733, no-orphans: 29, not-to-unresolvable: 12704 (entries elided)

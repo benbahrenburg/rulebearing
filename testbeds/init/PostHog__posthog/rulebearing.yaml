@@ -1,0 +1,40 @@
+# testbeds/init: `rulebearing init --dry-run` on PostHog/posthog at 3ad9f699e53d824e424514f521a9432b27faa347
+# (a cruise of packages with this configuration exits 0 (574 findings baselined)). Regenerate with testbeds/init/run.sh.
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: TypeScript, Python (packages/owners-yaml, packages/personhog-proto, tools/hogli/src), 4 packages.
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: rulebearing:recommended
+languages:
+  typescript:
+    tsConfig: { fileName: tsconfig.json }
+    tsPreCompilationDeps: true
+  python:
+    roots: ["packages/owners-yaml", "packages/personhog-proto", "tools/hogli/src"]
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "(^|/)(Program|Startup|AssemblyInfo)\\.cs$"
+            - "(^|/)Migrations/"
+            - "(^|/)__main__\\.py$"
+            - "(^|/)conftest\\.py$"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+      - name: owners_yaml-not-to-its-dependents
+        comment: "tests import owners_yaml, so it sits below them: owners_yaml importing one of them back would make a cycle between top-level packages."
+        fix: "Move what owners_yaml needs from them down into owners_yaml (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^packages/owners-yaml/owners_yaml/" }
+        to: { path: "^packages/owners-yaml/tests/" }
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    # no-circular: 3, no-orphans: 6, not-to-unresolvable: 565 (entries elided)

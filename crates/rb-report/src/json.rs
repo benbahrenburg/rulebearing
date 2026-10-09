@@ -80,11 +80,15 @@ pub fn strip(result: &mut Value) {
 
 /// Renders `json`: two-space indentation and a trailing newline, as `JSON.stringify(r, null, "  ")`.
 pub fn render(result: &Value, strict_schema: bool) -> Rendered {
-    let mut result = result.clone();
-    if strict_schema {
-        strip(&mut result);
+    // Copied only to strip it: a large graph's result is gigabytes as a value.
+    let mut output = if strict_schema {
+        let mut stripped = result.clone();
+        strip(&mut stripped);
+        serde_json::to_string_pretty(&stripped)
+    } else {
+        serde_json::to_string_pretty(result)
     }
-    let mut output = serde_json::to_string_pretty(&result).unwrap_or_default();
+    .unwrap_or_default();
     output.push('\n');
     Rendered {
         output,

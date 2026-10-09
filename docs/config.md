@@ -19,7 +19,13 @@ A `.dependency-cruiser.js` that works with dependency-cruiser 18.2.0 works here 
 
 **JavaScript configurations** run in an embedded QuickJS sandbox with no filesystem, network or process access, and with CommonJS and ES module syntax. `require` and `import` resolve only inside the repository, and the pure `path` and `url` modules are provided ([ADR-0027](adr/0027-pure-path-and-url-modules-in-the-config-sandbox.md)). A configuration that reads files, such as one that lists a folder to build a pattern, is refused with a message naming `--config-via-node`, which evaluates it with the local Node instead.
 
-**`extends`** takes a file, an npm package, or one of the bundled presets.
+**`extends`** takes a file, a package, or one of the bundled presets. A package named `<package>/<path>` is looked for in this order, so a rule library installed from any one registry resolves under one name ([ADR-0020](adr/0020-single-name-across-registries.md), [plan 0003 Step 23](plans/pending/0003-wave-3-operations-surface-inner-loop.md#27-steps-for-sub-wave-3g-the-rule-library-the-scale-table-adoption)):
+
+| Layout | Where `extends: rulebearing-rules/nextjs` is found |
+| --- | --- |
+| npm | `node_modules/rulebearing-rules/nextjs.yaml`, in the configuration's folder or one above it |
+| NuGet | `<global packages>/rulebearing.rules/<version>/rulebearing-rules/nextjs.yaml`; the global packages folder is `$NUGET_PACKAGES`, else `~/.nuget/packages`; the version is the one installed, else the one a project under the repository root references, and several installed with none referenced is an error naming them |
+| PyPI | `<site-packages>/rulebearing_rules/nextjs.yaml`, in `$VIRTUAL_ENV`, else a `.venv` or `venv` folder in the configuration's folder or one above it |
 
 ### Presets
 
