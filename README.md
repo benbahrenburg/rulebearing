@@ -191,7 +191,7 @@ Beside the waves, five tracks. Two run alongside waves 1 and 2. The other three 
 
 ## Validated nightly against real repositories
 
-Every night the repositories in [testbeds/manifest.yaml](testbeds/manifest.yaml) are cloned at a pinned commit and their incumbent tool runs with its own configuration: dependency-cruiser, NetArchTest, ArchUnitNET or import-linter. From wave 1 Rulebearing runs beside it, and the table shows whether the two agree to the finding and how long each took ([testbeds/README.md](testbeds/README.md)). The latest full run is on the [`testbeds-results`](https://github.com/benbahrenburg/rulebearing/tree/testbeds-results) branch; the table below is refreshed from it by pull request. In it, `failed` means the incumbent itself reports failing tests or broken contracts at the pinned commit, and `error` means the repository does not build there. From wave 2 the table has two more kinds of row with a Rulebearing time and no incumbent: the greenfield `init` proof on microsoft/semantic-kernel and microsoft/autogen, `ok` when the configuration `init` writes cruises back with exit 0 and matches its [committed fixture](testbeds/init/README.md), and the scale rows dotnet/aspnetcore, jellyfin/jellyfin and home-assistant/core, where a Rulebearing time more than 20% slower than the previous night fails the run.
+Every night the repositories in [testbeds/manifest.yaml](testbeds/manifest.yaml) are cloned at a pinned commit and their incumbent tool runs with its own configuration: dependency-cruiser, NetArchTest, ArchUnitNET or import-linter. From wave 1 Rulebearing runs beside it, and the table shows whether the two agree to the finding and how long each took ([testbeds/README.md](testbeds/README.md)). The latest full run is on the [`testbeds-results`](https://github.com/benbahrenburg/rulebearing/tree/testbeds-results) branch; the table below is refreshed from it by pull request. In it, `failed` means the incumbent itself reports failing tests or broken contracts at the pinned commit, and `error` means the repository does not build there. From wave 2 the table has two more kinds of row with a Rulebearing time and no incumbent: the greenfield `init` proof on microsoft/semantic-kernel and microsoft/autogen, `ok` when the configuration `init` writes cruises back with exit 0 and matches its [committed fixture](testbeds/init/README.md), and the scale rows n8n-io/n8n, grafana/grafana, elastic/kibana, dotnet/aspnetcore, jellyfin/jellyfin and home-assistant/core, timed in the [scale table](#scale-wall-clock-and-peak-memory-on-large-repositories) below.
 
 <!-- testbeds:start -->
 Rows: 52; error 2, failed 4, idle 19, ok 27. Zero-diff and the Rulebearing timings start in wave 1.
@@ -250,6 +250,24 @@ Rows: 52; error 2, failed 4, idle 19, ok 27. Zero-diff and the Rulebearing timin
 | [jellyfin/jellyfin](https://github.com/jellyfin/jellyfin/tree/fd75964da853765d63101b4889f23a4161e2758b) | scale | none | idle |  |  |  |  |
 | [n8n-io/n8n](https://github.com/n8n-io/n8n/tree/f89687fd8751970cdf8b9cb76761a1258728ca62) | scale | none | idle |  |  |  |  |
 <!-- testbeds:end -->
+
+### Scale: wall-clock and peak memory on large repositories
+
+Each night the scale repositories are built at their pinned commits, given the configuration `rulebearing init` writes, and cruised three times; the median run's wall-clock time and peak resident memory are below, aspnetcore read both from its compiled assemblies and from source, with the Stop hook's p95 on aspnetcore ([testbeds/bench/scale_table.py](testbeds/bench/scale_table.py), [plan 0003 Step 24](docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#27-steps-for-sub-wave-3g-the-rule-library-the-scale-table-adoption)). The runner is GitHub's standard Linux runner: 4 CPUs, 16 GB of memory. A row more than 20% slower or larger than the previous published one, on the same commit, fails the night; a row that did not complete keeps its last measurement, marked. The nightly rewrites this table by pull request.
+
+<!-- scale-table:start -->
+| Repository | .NET read as | Wall-clock | Peak memory | Modules | Measured in run |
+| --- | --- | --- | --- | --- | --- |
+| n8n-io/n8n | - | - | - | - | not measured yet |
+| grafana/grafana | - | - | - | - | not measured yet |
+| elastic/kibana | - | - | - | - | not measured yet |
+| [dotnet/aspnetcore](https://github.com/dotnet/aspnetcore/tree/b4be275a3b4fd83c304e7377403561a73eb4249e) | compiled | 799.76 s | 14954 MB | dotnet 11487, javascript 268, typescript 207, unknown 69 | [37862902868](https://github.com/benbahrenburg/rulebearing/actions/runs/37862902868) |
+| dotnet/aspnetcore | source | - | - | - | not measured yet |
+| [jellyfin/jellyfin](https://github.com/jellyfin/jellyfin/tree/fd75964da853765d63101b4889f23a4161e2758b) | compiled | 12.81 s | 5120 MB | dotnet 2311 | [37880270909](https://github.com/benbahrenburg/rulebearing/actions/runs/37880270909) |
+| [home-assistant/core](https://github.com/home-assistant/core/tree/f50d777440e878554ef6872062341d24c6da0289) | - | 11.72 s | 3973 MB | javascript 3, python 22920, typescript 2, unknown 1 | [37880270909](https://github.com/benbahrenburg/rulebearing/actions/runs/37880270909) |
+
+Stop hook on dotnet/aspnetcore in source mode: p95 1.896 s over 200 edits on 4 CPUs, run [37880270909](https://github.com/benbahrenburg/rulebearing/actions/runs/37880270909).
+<!-- scale-table:end -->
 
 ### Oracle agreement: migrated rules against the incumbent
 

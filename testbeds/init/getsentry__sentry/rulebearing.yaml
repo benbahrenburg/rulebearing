@@ -1,0 +1,70 @@
+# testbeds/init: `rulebearing init --dry-run` on getsentry/sentry at 813bab919d13177e71d444b187473ee3cd881ae4
+# (a cruise of src with this configuration exits 0 (16986 findings baselined)). Regenerate with testbeds/init/run.sh.
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: TypeScript, Python, jest.
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: rulebearing:recommended
+languages:
+  typescript:
+    tsConfig: { fileName: tsconfig.json }
+    tsPreCompilationDeps: true
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "(^|/)(Program|Startup|AssemblyInfo)\\.cs$"
+            - "(^|/)Migrations/"
+            - "(^|/)__main__\\.py$"
+            - "(^|/)conftest\\.py$"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+            - "\\.(spec|test)\\.[cm]?[jt]sx?$"
+            - "(^|/)__tests__/"
+      - name: bitfield-not-to-its-dependents
+        comment: "apigw, flagpole, sentry, social_auth import bitfield, so it sits below them: bitfield importing one of them back would make a cycle between top-level packages."
+        fix: "Move what bitfield needs from them down into bitfield (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^src/bitfield/" }
+        to: { path: "^(src/apigw|src/flagpole|src/sentry|src/social_auth)/" }
+      - name: django_picklefield-not-to-its-dependents
+        comment: "apigw, flagpole, sentry, social_auth import django_picklefield, so it sits below them: django_picklefield importing one of them back would make a cycle between top-level packages."
+        fix: "Move what django_picklefield needs from them down into django_picklefield (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^src/django_picklefield/" }
+        to: { path: "^(src/apigw|src/flagpole|src/sentry|src/social_auth)/" }
+      - name: flagpole-not-to-its-dependents
+        comment: "apigw import flagpole, so it sits below them: flagpole importing one of them back would make a cycle between top-level packages."
+        fix: "Move what flagpole needs from them down into flagpole (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^src/flagpole/" }
+        to: { path: "^src/apigw/" }
+      - name: sentry-not-to-its-dependents
+        comment: "apigw import sentry, so it sits below them: sentry importing one of them back would make a cycle between top-level packages."
+        fix: "Move what sentry needs from them down into sentry (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^src/sentry/" }
+        to: { path: "^src/apigw/" }
+      - name: social_auth-not-to-its-dependents
+        comment: "apigw import social_auth, so it sits below them: social_auth importing one of them back would make a cycle between top-level packages."
+        fix: "Move what social_auth needs from them down into social_auth (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^src/social_auth/" }
+        to: { path: "^src/apigw/" }
+      - name: sudo-not-to-its-dependents
+        comment: "apigw, flagpole, sentry, social_auth import sudo, so it sits below them: sudo importing one of them back would make a cycle between top-level packages."
+        fix: "Move what sudo needs from them down into sudo (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^src/sudo/" }
+        to: { path: "^(src/apigw|src/flagpole|src/sentry|src/social_auth)/" }
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    # no-circular: 8219, no-orphans: 365, not-to-unresolvable: 8402 (entries elided)

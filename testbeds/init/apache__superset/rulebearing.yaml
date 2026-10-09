@@ -1,0 +1,40 @@
+# testbeds/init: `rulebearing init --dry-run` on apache/superset at 4c229cb66a7b6401113ca81f49ee617ad8426e64
+# (a cruise of . with this configuration exits 0 (20838 findings baselined)). Regenerate with testbeds/init/run.sh.
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: Python.
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: [rulebearing:python, rulebearing:recommended]
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)__main__\\.py$"
+            - "(^|/)conftest\\.py$"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+      - name: scripts-not-to-its-dependents
+        comment: "docker, tests import scripts, so it sits below them: scripts importing one of them back would make a cycle between top-level packages."
+        fix: "Move what scripts needs from them down into scripts (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^scripts/" }
+        to: { path: "^(docker|tests)/" }
+      - name: superset-not-to-its-dependents
+        comment: "docker, scripts, tests import superset, so it sits below them: superset importing one of them back would make a cycle between top-level packages."
+        fix: "Move what superset needs from them down into superset (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^superset/" }
+        to: { path: "^(docker|scripts|tests)/" }
+      - name: tests-not-to-its-dependents
+        comment: "docker import tests, so it sits below them: tests importing one of them back would make a cycle between top-level packages."
+        fix: "Move what tests needs from them down into tests (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^tests/" }
+        to: { path: "^docker/" }
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    # no-circular: 2863, no-orphans: 465, not-to-unresolvable: 17510 (entries elided)

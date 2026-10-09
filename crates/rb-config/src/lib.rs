@@ -19,6 +19,7 @@
 //! | [`js`] | the sandboxed QuickJS evaluator and `--config-via-node` |
 //! | [`native`] | the native shape onto dependency-cruiser's and back |
 //! | [`extends`] | `extends` resolution and dependency-cruiser's merge |
+//! | [`packages`] | a package `extends` names, in the NuGet global packages folder and `site-packages` |
 //! | [`defines`] | `defines` and `${name}` substitution |
 //! | [`shorthands`] | `layers` and `independence` |
 //! | [`normalize`] | key checks and dependency-cruiser's rule-set normalisation |
@@ -40,6 +41,7 @@ pub mod load;
 pub mod model;
 pub mod native;
 pub mod normalize;
+pub mod packages;
 pub mod pattern;
 pub mod read;
 pub mod schema;

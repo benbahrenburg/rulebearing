@@ -1,0 +1,36 @@
+# testbeds/init: `rulebearing init --dry-run` on abpframework/abp at e402e7e305002ebdd3a5befef743c65bd9ac9c92
+# (a cruise of . with this configuration exits 0 (2805 findings baselined)). Regenerate with testbeds/init/run.sh.
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: .NET (project files, no solution).
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: [rulebearing:dotnet, rulebearing:recommended]
+languages:
+  dotnet: {}
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)(Program|Startup|AssemblyInfo)\\.cs$"
+            - "(^|/)Migrations/"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+      - name: domain-not-to-outer-layers-in-volo-abp
+        comment: "Domain is an inner layer: it never depends on Application, which depend on it."
+        fix: "Declare what Domain needs as an abstraction in Domain and implement it in the outer layer; never add a ProjectReference from Domain to Application."
+        severity: error
+        from: { language: dotnet, namespace: "^Volo\\.Abp\\.Domain(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+        to: { namespace: "^Volo\\.Abp\\.Application(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+      - name: domain-not-to-outer-layers-in-volo-abp-testapp
+        comment: "Domain is an inner layer: it never depends on Application, which depend on it."
+        fix: "Declare what Domain needs as an abstraction in Domain and implement it in the outer layer; never add a ProjectReference from Domain to Application."
+        severity: error
+        from: { language: dotnet, namespace: "^Volo\\.Abp\\.TestApp\\.Domain(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+        to: { namespace: "^Volo\\.Abp\\.TestApp\\.Application(\\.|$)", namespaceNot: "(^|\\.)[A-Za-z0-9_]*Tests?(\\.|$)" }
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    # no-circular: 222, no-orphans: 295, not-to-unresolvable: 2288 (entries elided)

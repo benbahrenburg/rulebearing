@@ -311,7 +311,8 @@ fn beside_assemblies(
             match read {
                 Ok(loaded) => {
                     queue.push((folder.clone(), refs(&loaded)));
-                    found.push(loaded);
+                    // Only described: kept whole, these held most of a large run's memory.
+                    found.push(loaded.described());
                 }
                 Err(e) => warnings.push(Warning::about(
                     &dll,

@@ -110,6 +110,20 @@ const EXTENSIONS: &[&str] = &[
 /// # Errors
 /// [`ConfigError::Extends`] naming the entry when nothing matches.
 pub fn resolve(spec: &str, base_dir: &Path) -> Result<Target, ConfigError> {
+    resolve_in(spec, base_dir, &crate::packages::Environment::current())
+}
+
+/// [`resolve`] with the environment the package lookups read: a package is looked for in
+/// `node_modules/` in `base_dir` or a folder above it, then in the NuGet global packages folder,
+/// then in a Python environment's `site-packages` ([`crate::packages`]).
+///
+/// # Errors
+/// See [`resolve`].
+pub fn resolve_in(
+    spec: &str,
+    base_dir: &Path,
+    env: &crate::packages::Environment,
+) -> Result<Target, ConfigError> {
     let not_found = |reason: &str| ConfigError::Extends {
         spec: spec.to_owned(),
         reason: reason.to_owned(),
@@ -144,11 +158,16 @@ pub fn resolve(spec: &str, base_dir: &Path) -> Result<Target, ConfigError> {
     let candidates: Vec<PathBuf> = if spec.starts_with('.') || Path::new(spec).is_absolute() {
         vec![base_dir.join(spec)]
     } else {
-        // An npm package: `node_modules/<spec>` in this folder or any above it.
-        base_dir
+        // A package: `node_modules/<spec>` in this folder or any above it, then NuGet's and
+        // Python's layouts of the same package.
+        let mut candidates: Vec<PathBuf> = base_dir
             .ancestors()
             .map(|dir| dir.join("node_modules").join(spec))
-            .collect()
+            .collect();
+        let root = crate::load::repository_root(base_dir);
+        candidates.extend(crate::packages::nuget(spec, &root, env).map_err(|e| not_found(&e))?);
+        candidates.extend(crate::packages::site_packages(spec, base_dir, env));
+        candidates
     };
     for candidate in &candidates {
         if let Some(found) = find_file(candidate) {
