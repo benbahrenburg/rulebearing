@@ -1681,3 +1681,24 @@ fn the_configuration_files_follow_extends_and_references() {
     );
     assert!(rb_extract_ts::configuration_files(&TypeScriptOptions::default(), &root).is_empty());
 }
+
+/// A tsconfig that sets `jsx` makes upstream compile every `.ts` file as TSX when it compiles
+/// TypeScript for acorn: `transpileModule` is given no file name and names the input
+/// `module.tsx`. A `.ts` generic arrow (`<T>(x: T): T => x`) is then a JSX parse error, and what
+/// tsc's error recovery swallows decides which imports are elided: 18.2.0's
+/// `cruise(["src/generic.ts"], {tsConfig})` on this fixture keeps `src/b.ts` and drops
+/// `src/a.ts`. Rulebearing parses a file by its extension and keeps both
+/// ([ADR-0064](../../../docs/adr/0064-a-ts-file-is-parsed-as-typescript-when-jsx-is-set.md)).
+#[test]
+fn a_ts_file_is_typescript_whatever_the_tsconfig_jsx() -> Result<(), ExtractError> {
+    for tsconfig in ["tsconfig.json", "tsconfig.nojsx.json"] {
+        let options = format!(r#"{{"tsConfig": {{"fileName": "{tsconfig}"}}}}"#);
+        let found = run("ts-jsx", &options, &["src/generic.ts"])?;
+        assert_eq!(
+            resolved(&found, "src/generic.ts"),
+            ["src/a.ts", "src/b.ts"],
+            "{tsconfig}"
+        );
+    }
+    Ok(())
+}
