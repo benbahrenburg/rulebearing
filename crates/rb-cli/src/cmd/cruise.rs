@@ -638,6 +638,15 @@ fn render(
     output_type: &str,
     options: &ReportOptions,
 ) -> Result<(String, Option<u64>), RunError> {
+    // `json` as written is the document itself: serialised straight to text, never held as a
+    // value first, which on a compiled .NET graph is several times the output's size (plan 0003,
+    // 3G, peak memory). The bytes are the value's, key for key (`value::document`).
+    if output_type == "json" && !options.strict_schema {
+        let mut output = serde_json::to_string_pretty(&verdict.document)
+            .map_err(|e| RunError::Engine(e.into()))?;
+        output.push('\n');
+        return Ok((output, None));
+    }
     let mut value =
         crate::value::document(&verdict.document).map_err(|e| RunError::Engine(e.into()))?;
     if let Some(name) = rb_config::js::plugin::plugin_name(output_type) {
