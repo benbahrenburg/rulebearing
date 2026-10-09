@@ -207,7 +207,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        repo: [dotnet/aspnetcore, jellyfin/jellyfin, home-assistant/core]
+        repo:
+          - n8n-io/n8n
+          - grafana/grafana
+          - elastic/kibana
+          - dotnet/aspnetcore
+          - jellyfin/jellyfin
+          - home-assistant/core
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -484,8 +490,11 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # contents: write publishes the testbeds-results branch and the scale-table branch;
+    # pull-requests: write opens the scale table's pull request (plan 0003, Step 24).
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -575,6 +584,18 @@ jobs:
             while IFS= read -r repo; do testbeds/run.sh "$repo" testbeds/out; done
       - run: node testbeds/summarise.mjs testbeds/out --layer5 target/conformance/layer5
       - run: cat testbeds/out/summary.md >> "$GITHUB_STEP_SUMMARY"
+      # The scale table (plan 0003, Step 24): tonight's scale rows and the Stop-hook p95 against the
+      # committed testbeds/results/scale.json, written there and into the README. A regression
+      # fails the night, after the table is published below.
+      - id: scale
+        if: always()
+        run: |
+          status=0
+          python3 testbeds/bench/scale_table.py measure --rows testbeds/out \
+            --stop-hook testbeds/results/stop-hook.json --run "$GITHUB_RUN_ID" || status=$?
+          python3 testbeds/bench/scale_table.py --readme README.md
+          cat testbeds/results/scale.md >> "$GITHUB_STEP_SUMMARY"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
       - run: testbeds/check-regression.sh testbeds/out/summary.json 20
       - name: publish to the testbeds-results branch
         if: github.ref == 'refs/heads/main'
@@ -597,6 +618,33 @@ jobs:
           git add -A
           git commit -qm "Test beds, nightly run ${GITHUB_RUN_ID} of ${GITHUB_SHA}"
           git push --force origin HEAD:testbeds-results
+      # The scale table's three files on a branch of their own, and a pull request for them when
+      # none is open; nothing else the night changed is committed.
+      - name: open or update the scale table pull request
+        if: always() && github.ref == 'refs/heads/main' && steps.scale.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          files=(README.md testbeds/results/scale.json testbeds/results/scale.md)
+          if git diff --quiet HEAD -- "${files[@]}" && git ls-files --error-unmatch "${files[@]}" > /dev/null 2>&1; then
+            echo "scale table: unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898729+github-actions[bot]@users.noreply.github.com"
+          git add -- "${files[@]}"
+          git commit -qm "testbeds: the scale table, nightly run ${GITHUB_RUN_ID}" -- "${files[@]}"
+          git push --force origin HEAD:refs/heads/testbeds/scale-table
+          if [ "$(gh pr list --head testbeds/scale-table --state open --json number --jq length)" = "0" ]; then
+            gh pr create --base main --head testbeds/scale-table \
+              --title "testbeds: the scale table, nightly run ${GITHUB_RUN_ID}" \
+              --body "The scale table from nightly run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}, written by testbeds/bench/scale_table.py (plan 0003, Step 24). Later nights push to this branch while it is open."
+          fi
+      - name: scale regression
+        if: always() && steps.scale.outputs.status == '1'
+        run: |
+          echo "::error::the scale table regressed by more than 20%; see the scale step"
+          exit 1
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: testbeds-summary

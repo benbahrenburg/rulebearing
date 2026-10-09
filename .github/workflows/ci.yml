@@ -521,6 +521,8 @@ jobs:
       # that does not match the committed results fails here
       # (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11).
       - run: python3 testbeds/oracles/table.py --check README.md
+      # The scale table in the README is the one testbeds/results/scale.json renders (plan 0003, Step 24).
+      - run: python3 testbeds/bench/scale_table.py --check README.md
 
   docs-links:
     name: docs-links

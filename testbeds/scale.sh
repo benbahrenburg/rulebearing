@@ -10,6 +10,10 @@
 # The binary is $RULEBEARING_BIN, else target/release/rulebearing; checkouts go to
 # $RB_TESTBED_CHECKOUTS as for testbeds/run.sh.
 #
+# A .NET row is also cruised three times in source mode (`--mode source`, plan 0003 Step 14), its
+# median kept as rulebearing-source-timing.json beside the compiled one: the scale table
+# (testbeds/bench/scale_table.py, plan 0003 Step 24) has a row for each mode.
+#
 # Writes <out-dir>/<owner>__<repo>/result.json (the shape testbeds/run.sh writes) with status:
 #   ok      the cruises completed; the detail counts the modules per language
 #   failed  init could not write a configuration, or a cruise did not complete (see the logs)
@@ -50,6 +54,16 @@ while IFS= read -r path; do paths+=("$path"); done < <(init_paths)
 if ! median_cruise --output-type json "${paths[@]}"; then
   row_result failed "a cruise did not complete (see cruise.out.time)"
   exit 0
+fi
+if [[ " $(manifest_field languages) " == *dotnet* ]]; then
+  mv "$out/rulebearing-timing.json" "$out/rulebearing-compiled-timing.json"
+  if ! median_cruise --output-type json --mode source "${paths[@]}"; then
+    mv "$out/rulebearing-compiled-timing.json" "$out/rulebearing-timing.json"
+    row_result failed "a source-mode cruise did not complete (see cruise.out.time)"
+    exit 0
+  fi
+  mv "$out/rulebearing-timing.json" "$out/rulebearing-source-timing.json"
+  mv "$out/rulebearing-compiled-timing.json" "$out/rulebearing-timing.json"
 fi
 modules="$(python3 -c '
 import collections, json, sys
