@@ -645,20 +645,65 @@ pub fn package_manifests<'a>(
     found
 }
 
+/// When a run started, read before it looked at anything: by the system's precise clock, and by
+/// the clock that stamps files ([`Start::now`]). Windows stamps a file with a clock that ticks
+/// about every 16 ms, so a file edited just after a run started can carry a time before the
+/// precise start; it carries one no earlier than a file written at the start, which is what
+/// `file_clock` is ([plan 0003, 3G](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#wave-3g-the-rule-library-the-scale-table-adoption-action-5)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Start {
+    /// The system clock, nanoseconds since the epoch.
+    pub system: u64,
+    /// A probe file's modification time, written at the start; none when it could not be.
+    pub file_clock: Option<u64>,
+}
+
+impl Start {
+    /// Both readings, now. The probe is a file of its own in the system's temporary folder,
+    /// removed as soon as its time is read.
+    pub fn now() -> Self {
+        Self::probed_in(&std::env::temp_dir())
+    }
+
+    /// Both readings, the probe written in `folder`.
+    fn probed_in(folder: &Path) -> Self {
+        static PROBES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let system = nanos(Some(std::time::SystemTime::now()));
+        let probe = folder.join(format!(
+            "rulebearing-clock-{}-{}",
+            std::process::id(),
+            PROBES.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        ));
+        let file_clock = std::fs::write(&probe, system.to_string())
+            .ok()
+            .and_then(|()| stamp(&probe))
+            .map(|(_, modified)| modified)
+            .filter(|m| *m > 0);
+        let _ = std::fs::remove_file(&probe);
+        Self { system, file_clock }
+    }
+
+    /// A start read by the system clock alone.
+    pub fn at(system: u64) -> Self {
+        Self {
+            system,
+            file_clock: None,
+        }
+    }
+}
+
 /// The digests and stamps of `inputs`, recorded after the extraction that read them: taken from
 /// `known` (what [`detect`] verified before the run) where it has them, hashed otherwise. An
 /// input in `optional` that does not exist is recorded as [`ABSENT`]; any other input that cannot
-/// be read, or whose modification time is after `started` (nanoseconds since the epoch, taken
-/// before the run looked at anything), or whose size or time moved while it was being recorded,
-/// is recorded as [`UNSETTLED`], so the next run reads it again. On a file system that keeps
-/// whole seconds only, a time within two seconds of `started` counts as after it.
+/// be read, or that was modified after the run started ([`Start`]), or whose size or time moved
+/// while it was being recorded, is recorded as [`UNSETTLED`], so the next run reads it again.
 pub fn record(
     scope: &Scope,
     inputs: &BTreeSet<String>,
     optional: &BTreeSet<String>,
     known: &BTreeMap<String, String>,
     strategy: CacheStrategy,
-    started: u64,
+    started: Start,
 ) -> (BTreeMap<String, String>, BTreeMap<String, (u64, u64)>) {
     let recorded: Vec<Recorded> = inputs
         .union(optional)
@@ -697,15 +742,18 @@ pub fn record(
     (hashes, stamps)
 }
 
-/// Whether a modification time is after `started`: strictly after it, or, when the time has no
-/// fraction of a second (a file system that keeps whole seconds), within two seconds before it.
-fn after_start(modified: u64, started: u64) -> bool {
+/// Whether a modification time is after the run started: after the system clock's start; at or
+/// after the file clock's, which a file edited in the same tick as the start shares (it cannot be
+/// told apart, so it is read again); or, when the time has no fraction of a second (a file system
+/// that keeps whole seconds), within two seconds before the system clock's start.
+fn after_start(modified: u64, started: Start) -> bool {
     const SECOND: u64 = 1_000_000_000;
-    if modified.is_multiple_of(SECOND) {
-        modified.saturating_add(2 * SECOND) > started
+    let system = if modified.is_multiple_of(SECOND) {
+        modified.saturating_add(2 * SECOND) > started.system
     } else {
-        modified > started
-    }
+        modified > started.system
+    };
+    system || started.file_clock.is_some_and(|clock| modified >= clock)
 }
 
 #[cfg(test)]
@@ -728,8 +776,9 @@ mod tests {
     }
 
     /// Now, as `record` takes it.
-    fn now() -> u64 {
-        nanos(Some(std::time::SystemTime::now()))
+    /// A run's start, read as a run reads it.
+    fn now() -> Start {
+        Start::now()
     }
 
     /// No probes.
@@ -1089,10 +1138,10 @@ mod tests {
                 "a.ts".to_owned(),
                 hash_file(&dir.join("a.ts")).unwrap_or_default(),
             )]);
-            // The edit lands while the run extracts: after it started, before it records. A
-            // file's time is stamped with a clock that can tick as rarely as every 16 ms
-            // (Windows), so the edit is made a clear tick after the start.
-            std::thread::sleep(std::time::Duration::from_millis(50));
+            // The edit lands while the run extracts: after it started, before it records, at
+            // once, so on Windows, whose file clock ticks about every 16 ms, it usually lands in
+            // the start's tick, stamped before the precise start; the file clock's start
+            // (`Start::file_clock`) still sees it.
             write(&dir.join("a.ts"), "after!\n");
             let inputs = BTreeSet::from(["a.ts".to_owned(), "b.ts".to_owned()]);
             let (hashes, stamps) =
@@ -1115,17 +1164,62 @@ mod tests {
     #[test]
     fn a_whole_second_time_counts_as_after_a_start_less_than_two_seconds_later() {
         const SECOND: u64 = 1_000_000_000;
-        assert!(after_start(10 * SECOND + 1, 10 * SECOND));
-        assert!(!after_start(10 * SECOND - 1, 10 * SECOND));
-        assert!(!after_start(10 * SECOND + 1, 10 * SECOND + 1));
+        let at = Start::at;
+        assert!(after_start(10 * SECOND + 1, at(10 * SECOND)));
+        assert!(!after_start(10 * SECOND - 1, at(10 * SECOND)));
+        assert!(!after_start(10 * SECOND + 1, at(10 * SECOND + 1)));
         assert!(
-            after_start(10 * SECOND, 11 * SECOND),
+            after_start(10 * SECOND, at(11 * SECOND)),
             "a coarse time a second before"
         );
         assert!(
-            !after_start(10 * SECOND, 12 * SECOND),
+            !after_start(10 * SECOND, at(12 * SECOND)),
             "two seconds before is settled"
         );
+    }
+
+    #[test]
+    fn a_time_at_or_after_the_file_clocks_start_is_after_the_run_started() {
+        const TICK: u64 = 15_625_000;
+        // Windows: the run starts 10 ms into a tick; an edit 2 ms later is stamped with the
+        // tick's start, before the precise start, and the file clock's start is that tick too.
+        let tick = 1_000 * TICK + 1;
+        let started = Start {
+            system: tick + 10_000_000,
+            file_clock: Some(tick),
+        };
+        assert!(
+            after_start(tick, started),
+            "an edit in the start's tick is read again"
+        );
+        assert!(after_start(tick + TICK, started));
+        assert!(
+            !after_start(tick - TICK, started),
+            "a tick before the start is settled"
+        );
+        assert!(
+            !after_start(tick, Start::at(started.system)),
+            "the system clock alone misses it"
+        );
+    }
+
+    #[test]
+    fn the_file_clock_is_read_from_a_probe_that_is_removed() {
+        let dir = scratch("clock");
+        let started = Start::probed_in(&dir);
+        assert!(started.system > 0);
+        let clock = started.file_clock.unwrap_or(0);
+        assert!(clock > 0, "the folder can be written");
+        // The two clocks agree to well within a second.
+        assert!(clock.abs_diff(started.system) < 1_000_000_000);
+        assert_eq!(std::fs::read_dir(&dir).map(Iterator::count).ok(), Some(0));
+        let unwritable = Start::probed_in(&dir.join("absent"));
+        assert_eq!(
+            unwritable.file_clock, None,
+            "no probe, the system clock alone"
+        );
+        assert!(Start::now().file_clock.is_some());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

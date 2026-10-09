@@ -715,9 +715,8 @@ struct Pending {
     manifest: manifest::Manifest,
     verified: BTreeMap<String, String>,
     parts: Parts,
-    /// When the run started, nanoseconds since the epoch: an input modified after it is
-    /// recorded as unsettled.
-    started: u64,
+    /// When the run started: an input modified after it is recorded as unsettled.
+    started: changes::Start,
 }
 
 impl Pending {
@@ -828,9 +827,7 @@ pub fn extract_cached(
     evaluation: Option<&str>,
 ) -> Result<Cached, ExtractError> {
     // Before anything is looked at: an input modified after this is recorded as unsettled.
-    let started = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| u64::try_from(d.as_nanos()).unwrap_or(u64::MAX));
+    let started = changes::Start::now();
     let folder = ctx.resolve(&options.folder);
     let scope = scope_of(ctx, config, &folder);
     let (root, head) = (scope.root.clone(), scope.head.clone());
