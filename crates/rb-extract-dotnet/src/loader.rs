@@ -390,6 +390,37 @@ fn sorted_rows(mut entries: Vec<(u32, usize, usize)>) -> Vec<(u32, usize, usize)
 }
 
 impl Loaded {
+    /// The assembly as describing a type it defines needs it, and no more: every type, its name,
+    /// flags, nesting, generic parameters, base and interfaces, the `TypeRef`, `TypeSpec` and
+    /// `AssemblyRef` rows its base chain resolves through, and of its methods only the `<Clone>$`
+    /// that marks a record. A dependency the extraction only describes is kept this way: with
+    /// every member, body and attribute, the assemblies beside a large solution's output held
+    /// most of a compiled run's memory (plan 0003, 3G, peak memory on compiled .NET graphs).
+    #[must_use]
+    pub fn described(mut self) -> Self {
+        for ty in &mut self.types {
+            ty.fields = Vec::new();
+            ty.properties = Vec::new();
+            ty.events = Vec::new();
+            ty.attributes = Vec::new();
+            ty.generic_constraints = Vec::new();
+            ty.methods.retain(|m| m.name == "<Clone>$");
+            for method in &mut ty.methods {
+                method.body = None;
+                method.locals = Vec::new();
+                method.strings = Vec::new();
+                method.attributes = Vec::new();
+                method.parameters = Vec::new();
+            }
+        }
+        self.member_refs = Vec::new();
+        self.method_specs = Vec::new();
+        self.assembly_attributes = Vec::new();
+        self.debug = Vec::new();
+        self.reindex();
+        self
+    }
+
     /// Rebuilds [`Loaded::index`] from [`Loaded::types`]; the loader calls it, and a caller that
     /// builds or edits the types by hand calls it after.
     pub fn reindex(&mut self) {
@@ -2143,6 +2174,61 @@ mod tests {
             decode(&fine, &[TypeSig::Primitive("System.Object")]).map(|d| d.0),
             Ok(vec!["[5]".to_owned()])
         );
+    }
+
+    #[test]
+    fn a_described_assembly_keeps_its_types_and_the_record_marker_only() {
+        let mut loaded = testing::empty("Dependency");
+        let method = |row: u32, name: &str| Method {
+            row,
+            name: name.to_owned(),
+            flags: 0,
+            sig: MethodSig {
+                has_this: false,
+                generic_params: 0,
+                ret: TypeSig::Primitive("System.Void"),
+                params: Vec::new(),
+            },
+            parameters: vec!["p".into()],
+            generic_params: Vec::new(),
+            generic_constraints: Vec::new(),
+            body: None,
+            locals: vec![TypeSig::Primitive("System.Int32")],
+            strings: vec![(1, "s".into())],
+            attributes: Vec::new(),
+        };
+        let mut record = testing::ty(1, "N", "Record");
+        record.methods = vec![method(1, "Run"), method(2, "<Clone>$")];
+        record.generic_params = vec!["T".into()];
+        record.fields = vec![Field {
+            row: 1,
+            name: "f".into(),
+            flags: 0,
+            ty: TypeSig::Primitive("System.Int32"),
+            attributes: Vec::new(),
+        }];
+        let mut nested = testing::ty(2, "N", "Inner");
+        nested.enclosing = Some(1);
+        loaded.types = vec![record, nested];
+        loaded.reindex();
+        let described = loaded.described();
+        assert_eq!(described.types.len(), 2, "every type, in row order");
+        let record = &described.types[0];
+        assert_eq!(record.methods.len(), 1);
+        assert_eq!(record.methods[0].name, "<Clone>$");
+        assert!(record.methods[0].locals.is_empty() && record.methods[0].strings.is_empty());
+        assert!(record.fields.is_empty());
+        assert_eq!(record.generic_params, ["T"]);
+        assert_eq!(described.types[1].enclosing, Some(1));
+        assert_eq!(
+            described
+                .method_at(2)
+                .map(|(t, m)| (t.name.as_str(), m.name.as_str())),
+            Some(("Record", "<Clone>$")),
+            "reindexed"
+        );
+        assert!(described.method_at(1).is_none());
+        assert!(described.field_at(1).is_none());
     }
 
     #[test]
