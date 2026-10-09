@@ -424,8 +424,9 @@ jobs:
   # 0.0.1 package already on nuget.org with --skip-duplicate. nuget.org checks the key and its
   # package scope before it reports the duplicate, so a missing, expired or wrongly scoped key
   # fails this job, and the duplicate means nothing new is published. The seven
-  # `Rulebearing.TestAdapter*` packages are not on nuget.org yet; the key's glob must cover them
-  # with "push new packages", which no push can prove without creating one (docs/release.md § NuGet).
+  # `Rulebearing.TestAdapter*` packages and `Rulebearing.Analyzer` are not on nuget.org yet; the
+  # key's glob must cover them with "push new packages", which no push can prove without creating
+  # one (docs/release.md § NuGet).
   nuget-credentials:
     name: NuGet credentials
     if: github.event_name == 'workflow_dispatch'
@@ -482,7 +483,7 @@ jobs:
           if-no-files-found: error
 
   # The smoke job of plan 0002 Step 14 for NuGet: install the tool from the built package into a
-  # tool path on each host and run it.
+  # tool path on each host and run it; then build against the analyzer package.
   nuget-install-check:
     name: dotnet tool install Rulebearing (${{ matrix.os }})
     needs: [nuget-pack, version]
@@ -519,6 +520,34 @@ jobs:
           out="$("$tools/rulebearing" --version | tr -d '\r')"
           echo "$out"
           test "$out" = "rulebearing $VERSION"
+      # Rulebearing.Analyzer (plan 0003, Step 21) from the same built packages: a class library
+      # outside any checkout references it with a rule its one class breaks, so the build must
+      # fail with RB0002 and the rule's fix as the message.
+      - name: analyzer reports in a build
+        shell: bash
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          work="$RUNNER_TEMP/analyzer-consumer"
+          mkdir -p "$work"
+          source="$PWD/nuget"
+          if [ "$RUNNER_OS" = "Windows" ]; then source="$(cygpath -w "$source")"; fi
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<configuration>\n  <packageSources>\n    <clear />\n    <add key="built" value="%s" />\n  </packageSources>\n</configuration>\n' "$source" > "$work/nuget.config"
+          printf '<Project Sdk="Microsoft.NET.Sdk">\n  <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>\n  <ItemGroup>\n    <PackageReference Include="Rulebearing.Analyzer" Version="%s" PrivateAssets="all" />\n    <AdditionalFiles Include="rulebearing.yaml" />\n  </ItemGroup>\n</Project>\n' "$VERSION" > "$work/Consumer.csproj"
+          printf 'rules:\n  elements:\n    - name: sealed\n      fix: Seal the class.\n      select: { kind: class }\n      should: { beSealed: true }\n' > "$work/rulebearing.yaml"
+          printf 'namespace Consumer { public class Open { } }\n' > "$work/Open.cs"
+          export NUGET_PACKAGES="$RUNNER_TEMP/nuget-packages-analyzer"
+          if out="$(dotnet build "$work/Consumer.csproj" --configfile "$work/nuget.config" 2>&1)"; then
+            echo "$out"
+            echo "::error::Rulebearing.Analyzer $VERSION did not fail a build that breaks a rule"
+            exit 1
+          fi
+          if ! grep -q "error RB0002: Seal the class." <<<"$out"; then
+            echo "$out"
+            echo "::error::Rulebearing.Analyzer $VERSION reported no RB0002"
+            exit 1
+          fi
+          echo "Rulebearing.Analyzer $VERSION reported RB0002"
 
   nuget-publish:
     name: NuGet publish
