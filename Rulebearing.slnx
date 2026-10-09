@@ -1,6 +1,6 @@
 <!-- Every C# project in the repository, so `cargo xtask lint` runs one `dotnet format` over all of
-     them (docs/adr/0023-documentation-link-and-lint-gates.md). Wave 2 adds the test adapter and the
-     analyzer here (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md). -->
+     them (docs/adr/0023-documentation-link-and-lint-gates.md). Wave 2 added the test adapter and
+     wave 3 the analyzer (docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21). -->
 <Solution>
   <Folder Name="/adapters/">
     <Project Path="adapters/dotnet/Rulebearing.TestAdapter/Rulebearing.TestAdapter.csproj" />
@@ -19,6 +19,10 @@
     <Project Path="adapters/dotnet/tests/Rulebearing.TestAdapter.MSTestV2.Tests/Rulebearing.TestAdapter.MSTestV2.Tests.csproj" />
     <Project Path="adapters/dotnet/tests/Rulebearing.TestAdapter.MSTestV4.Tests/Rulebearing.TestAdapter.MSTestV4.Tests.csproj" />
     <Project Path="adapters/dotnet/tests/Rulebearing.TestAdapter.TUnit.Tests/Rulebearing.TestAdapter.TUnit.Tests.csproj" />
+  </Folder>
+  <Folder Name="/frontends/">
+    <Project Path="frontends/Rulebearing.Analyzer/src/Rulebearing.Analyzer/Rulebearing.Analyzer.csproj" />
+    <Project Path="frontends/Rulebearing.Analyzer/tests/Rulebearing.Analyzer.Tests/Rulebearing.Analyzer.Tests.csproj" />
   </Folder>
   <Folder Name="/wrappers/">
     <Project Path="wrappers/nuget/Rulebearing.csproj" />

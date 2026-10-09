@@ -5,6 +5,8 @@ Cargo.lock.orig
 /coverage/
 /wrappers/npm/coverage/
 /frontends/eslint-plugin-rulebearing/coverage/
+# coverlet's report from `dotnet test` in the C# test projects.
+coverage.info
 /adapters/vitest/coverage/
 # pytest-cov data (pyproject.toml, [tool.pytest.ini_options])
 .coverage

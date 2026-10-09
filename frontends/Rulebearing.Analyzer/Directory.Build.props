@@ -1,0 +1,27 @@
+<!--
+  Rulebearing.Analyzer and its test project. Imports the root Directory.Build.props (analyzers,
+  warnings as errors, the coverlet 70% line floor of docs/adr/0018-test-coverage-threshold.md) and
+  the shared package metadata and version of eng/Rulebearing.Packages.props.
+  Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21 (3F).
+  Conventions: CLAUDE.md, C# conventions.
+-->
+<Project>
+  <!-- A project named *.Tests is a test project, set before the root props so their coverlet
+       block (CollectCoverage, Threshold 70, line) applies to it. -->
+  <PropertyGroup>
+    <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
+  </PropertyGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..'))" />
+  <Import Project="$(MSBuildThisFileDirectory)../../eng/Rulebearing.Packages.props" />
+
+  <PropertyGroup>
+    <!-- The Roslyn the analyzer compiles against: the oldest it supports, so the .NET 8 SDK and
+         Visual Studio 2022 17.8 load it. -->
+    <RoslynVersion>4.8.0</RoslynVersion>
+    <YamlDotNetVersion>16.3.0</YamlDotNetVersion>
+    <XunitVersion>2.9.3</XunitVersion>
+    <XunitRunnerVersion>3.1.5</XunitRunnerVersion>
+    <TestSdkVersion>18.10.1</TestSdkVersion>
+    <CoverletVersion>10.0.1</CoverletVersion>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,356 @@
+{
+  "cases": [
+    {
+      "matches": true,
+      "pattern": "^\\d+$",
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
+      "subject": "123"
+    },
+    {
+      "matches": false,
+      "pattern": "^\\d$",
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
+      "subject": "٣"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\D$",
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
+      "subject": "٣"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\w+$",
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
+      "subject": "a_Z9"
+    },
+    {
+      "matches": false,
+      "pattern": "^\\w$",
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
+      "subject": "é"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\W$",
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
+      "subject": "é"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\s$",
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
+      "subject": "﻿"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\S$",
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
+      "subject": "a"
+    },
+    {
+      "matches": true,
+      "pattern": "a\\bb|a\\b",
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
+      "subject": "a b"
+    },
+    {
+      "matches": true,
+      "pattern": "\\Bb",
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
+      "subject": "ab"
+    },
+    {
+      "matches": true,
+      "pattern": "[\\d]",
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
+      "subject": "5"
+    },
+    {
+      "matches": true,
+      "pattern": "[^\\D]",
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
+      "subject": "5"
+    },
+    {
+      "matches": true,
+      "pattern": "^a.b$",
+      "row": "dot_excludes_the_javascript_line_terminators",
+      "subject": "axb"
+    },
+    {
+      "matches": false,
+      "pattern": "^a.b$",
+      "row": "dot_excludes_the_javascript_line_terminators",
+      "subject": "a\nb"
+    },
+    {
+      "matches": false,
+      "pattern": "^a.b$",
+      "row": "dot_excludes_the_javascript_line_terminators",
+      "subject": "a b"
+    },
+    {
+      "matches": true,
+      "pattern": "^a[.]b$",
+      "row": "dot_excludes_the_javascript_line_terminators",
+      "subject": "a.b"
+    },
+    {
+      "matches": true,
+      "pattern": "^src\\/a\\-b$",
+      "row": "escaped_punctuation_and_letters_are_literals",
+      "subject": "src/a-b"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\p$",
+      "row": "escaped_punctuation_and_letters_are_literals",
+      "subject": "p"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\a\\e$",
+      "row": "escaped_punctuation_and_letters_are_literals",
+      "subject": "ae"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\.$",
+      "row": "escaped_punctuation_and_letters_are_literals",
+      "subject": "."
+    },
+    {
+      "matches": false,
+      "pattern": "^\\.$",
+      "row": "escaped_punctuation_and_letters_are_literals",
+      "subject": "x"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\@$",
+      "row": "escaped_punctuation_and_letters_are_literals",
+      "subject": "@"
+    },
+    {
+      "matches": true,
+      "pattern": "^é\\é$",
+      "row": "escaped_punctuation_and_letters_are_literals",
+      "subject": "éé"
+    },
+    {
+      "matches": true,
+      "pattern": "^a{2}$",
+      "row": "braces_that_are_not_quantifiers_are_literal",
+      "subject": "aa"
+    },
+    {
+      "matches": true,
+      "pattern": "^a{1,}$",
+      "row": "braces_that_are_not_quantifiers_are_literal",
+      "subject": "aaa"
+    },
+    {
+      "matches": true,
+      "pattern": "^a{1,2}$",
+      "row": "braces_that_are_not_quantifiers_are_literal",
+      "subject": "aa"
+    },
+    {
+      "matches": true,
+      "pattern": "^{foo}$",
+      "row": "braces_that_are_not_quantifiers_are_literal",
+      "subject": "{foo}"
+    },
+    {
+      "matches": true,
+      "pattern": "^a{$",
+      "row": "braces_that_are_not_quantifiers_are_literal",
+      "subject": "a{"
+    },
+    {
+      "matches": true,
+      "pattern": "^a{,2}$",
+      "row": "braces_that_are_not_quantifiers_are_literal",
+      "subject": "a{,2}"
+    },
+    {
+      "matches": true,
+      "pattern": "^x]$",
+      "row": "braces_that_are_not_quantifiers_are_literal",
+      "subject": "x]"
+    },
+    {
+      "matches": true,
+      "pattern": "^[[]$",
+      "row": "classes_keep_javascript_meaning",
+      "subject": "["
+    },
+    {
+      "matches": true,
+      "pattern": "^[a&&b]$",
+      "row": "classes_keep_javascript_meaning",
+      "subject": "&"
+    },
+    {
+      "matches": true,
+      "pattern": "^[~~]$",
+      "row": "classes_keep_javascript_meaning",
+      "subject": "~"
+    },
+    {
+      "matches": true,
+      "pattern": "^[a\\-]$",
+      "row": "classes_keep_javascript_meaning",
+      "subject": "-"
+    },
+    {
+      "matches": true,
+      "pattern": "^[\\b]$",
+      "row": "classes_keep_javascript_meaning",
+      "subject": "\b"
+    },
+    {
+      "matches": true,
+      "pattern": "^[^]$",
+      "row": "classes_keep_javascript_meaning",
+      "subject": "\n"
+    },
+    {
+      "matches": false,
+      "pattern": "^[]$",
+      "row": "classes_keep_javascript_meaning",
+      "subject": ""
+    },
+    {
+      "matches": false,
+      "pattern": "a[]",
+      "row": "classes_keep_javascript_meaning",
+      "subject": "a"
+    },
+    {
+      "matches": false,
+      "pattern": "^[]]$",
+      "row": "classes_keep_javascript_meaning",
+      "subject": "]"
+    },
+    {
+      "matches": true,
+      "pattern": "^[\\8]$",
+      "row": "classes_keep_javascript_meaning",
+      "subject": "8"
+    },
+    {
+      "matches": true,
+      "pattern": "^[^a]$",
+      "row": "classes_keep_javascript_meaning",
+      "subject": "b"
+    },
+    {
+      "matches": false,
+      "pattern": "^[^a]$",
+      "row": "classes_keep_javascript_meaning",
+      "subject": "a"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\x41\\u0042$",
+      "row": "character_escapes",
+      "subject": "AB"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\t\\n\\v\\f\\r$",
+      "row": "character_escapes",
+      "subject": "\t\n\u000b\f\r"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\0$",
+      "row": "character_escapes",
+      "subject": "\u0000"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\cJ$",
+      "row": "character_escapes",
+      "subject": "\n"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\xZZ$",
+      "row": "character_escapes",
+      "subject": "xZZ"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\uZZ$",
+      "row": "character_escapes",
+      "subject": "uZZ"
+    },
+    {
+      "matches": true,
+      "pattern": "^[\\101]$",
+      "row": "character_escapes",
+      "subject": "A"
+    },
+    {
+      "matches": true,
+      "pattern": "^\\c1$",
+      "row": "character_escapes",
+      "subject": "\\c1"
+    },
+    {
+      "matches": true,
+      "pattern": "^(?:ab)+?$",
+      "row": "groups_and_quantifiers",
+      "subject": "abab"
+    },
+    {
+      "matches": true,
+      "pattern": "^(?<name>x)$",
+      "row": "groups_and_quantifiers",
+      "subject": "x"
+    },
+    {
+      "matches": true,
+      "pattern": "^a*b+c?$",
+      "row": "groups_and_quantifiers",
+      "subject": "aabbb"
+    }
+  ],
+  "refused": [
+    {
+      "construct": "(?=...) lookahead",
+      "pattern": "a(?=b)"
+    },
+    {
+      "construct": "(?!...) lookahead",
+      "pattern": "a(?!b)"
+    },
+    {
+      "construct": "(?<=...) lookbehind",
+      "pattern": "(?<=a)b"
+    },
+    {
+      "construct": "(?<!...) lookbehind",
+      "pattern": "(?<!a)b"
+    },
+    {
+      "construct": "invalid",
+      "pattern": "a\\"
+    },
+    {
+      "construct": "invalid",
+      "pattern": "[a"
+    },
+    {
+      "construct": "invalid",
+      "pattern": "(?i)a"
+    },
+    {
+      "construct": "invalid",
+      "pattern": "(a"
+    }
+  ]
+}
