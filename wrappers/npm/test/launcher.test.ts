@@ -275,8 +275,9 @@ describe('launch', () => {
 });
 
 describe('the package entry point', () => {
-  // eslint-plugin-rulebearing imports resolveBinary from `rulebearing` (plan 0002, Step 13), so
-  // the export map must name the compiled launcher and its declarations, and the package ship both.
+  // eslint-plugin-rulebearing imports resolveBinary from `rulebearing/launcher` (plan 0002, Step 13;
+  // the main export is the programmatic API from plan 0003, Step 22), so the export map must name
+  // the compiled launcher and its declarations there, and the package ship both.
   it('exports the launcher with its declarations, and ships what it exports', () => {
     const manifest = JSON.parse(
       readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
@@ -284,7 +285,7 @@ describe('the package entry point', () => {
       exports: Record<string, unknown>;
       files: string[];
     };
-    expect(manifest.exports['.']).toEqual({
+    expect(manifest.exports['./launcher']).toEqual({
       types: './dist/launcher.d.ts',
       default: './dist/launcher.js',
     });

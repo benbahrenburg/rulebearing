@@ -124,9 +124,77 @@ pub fn merged(path: &Path, opts: &LoadOptions) -> Result<Map<String, Value>, Con
         &file.dir,
         &file.root,
         opts,
-        &mut Vec::new(),
+        (&mut Vec::new(), &mut Vec::new()),
         &mut file.files,
     )
+}
+
+/// [`merged`] for the configuration `spec` names, resolved as an `extends` entry written in
+/// `base_dir` is (a path, a package under `node_modules`, or a bundled preset), by a caller that
+/// has already read the configurations in `visited` (the keys [`extends::Target::key`] gives;
+/// absolute paths for files): reaching one of them again, `spec` itself or anything it extends,
+/// is circular. Returns the canonical shape and every configuration read, `spec`'s first and
+/// then each it extends, depth first: dependency-cruiser's `extractDepcruiseConfig(fileName,
+/// alreadyVisited, baseDirectory)` adds each to its set.
+///
+/// # Errors
+/// See [`load`]; [`ConfigError::Extends`] for a circular chain or a `spec` nothing matches.
+pub fn merged_after(
+    spec: &str,
+    base_dir: &Path,
+    opts: &LoadOptions,
+    visited: &[String],
+) -> Result<(Map<String, Value>, Vec<String>), ConfigError> {
+    let target = extends::resolve(spec, base_dir)?;
+    let key = match &target {
+        Target::File(path) => path.canonicalize().map_or_else(
+            |_| target.key(),
+            |p| {
+                rb_model::without_verbatim(&p)
+                    .to_string_lossy()
+                    .into_owned()
+            },
+        ),
+        _ => target.key(),
+    };
+    if visited.contains(&key) {
+        return Err(ConfigError::Extends {
+            spec: spec.to_owned(),
+            reason: format!("the chain is circular: {} -> {key}", visited.join(" -> ")),
+        });
+    }
+    let mut visiting = visited.to_vec();
+    let mut read = Vec::new();
+    let canonical = if let Target::File(path) = target {
+        let mut file = read_canonical(&path, opts)?;
+        visiting.push(key.clone());
+        read.push(key);
+        resolve_extends(
+            file.canonical,
+            &file.dir,
+            &file.root,
+            opts,
+            (&mut visiting, &mut read),
+            &mut file.files,
+        )?
+    } else {
+        // A preset is read as the one `extends` entry of an empty configuration.
+        let mut canonical = Map::new();
+        canonical.insert("extends".into(), Value::String(spec.to_owned()));
+        let root = opts
+            .root
+            .clone()
+            .unwrap_or_else(|| repository_root(base_dir));
+        resolve_extends(
+            canonical,
+            base_dir,
+            &root,
+            opts,
+            (&mut visiting, &mut read),
+            &mut BTreeSet::new(),
+        )?
+    };
+    Ok((canonical, read))
 }
 
 /// A configuration file read and mapped onto the canonical shape, before `extends`.
@@ -212,7 +280,7 @@ fn resolve_extends(
     base_dir: &Path,
     root: &Path,
     opts: &LoadOptions,
-    visiting: &mut Vec<String>,
+    (visiting, read): (&mut Vec<String>, &mut Vec<String>),
     files: &mut BTreeSet<PathBuf>,
 ) -> Result<Map<String, Value>, ConfigError> {
     let entries = extends::entries(&canonical)?;
@@ -226,7 +294,8 @@ fn resolve_extends(
                 reason: format!("the chain is circular: {} -> {key}", visiting.join(" -> ")),
             });
         }
-        visiting.push(key);
+        visiting.push(key.clone());
+        read.push(key);
         let (value, dir) = match &target {
             Target::File(path) => {
                 let syntax = Syntax::of(path).unwrap_or(Syntax::JavaScript);
@@ -249,7 +318,7 @@ fn resolve_extends(
             }
         };
         let (loaded, _) = canonical_of(as_object(value, Path::new(&entry))?, None)?;
-        let loaded = resolve_extends(loaded, &dir, root, opts, visiting, files)?;
+        let loaded = resolve_extends(loaded, &dir, root, opts, (visiting, read), files)?;
         visiting.pop();
         canonical = extends::merge(&canonical, &loaded)?;
     }
@@ -360,7 +429,14 @@ fn assemble(
         .get("$schema")
         .and_then(Value::as_str)
         .map(str::to_owned);
-    let mut canonical = resolve_extends(canonical, base_dir, root, opts, &mut Vec::new(), files)?;
+    let mut canonical = resolve_extends(
+        canonical,
+        base_dir,
+        root,
+        opts,
+        (&mut Vec::new(), &mut Vec::new()),
+        files,
+    )?;
     defines::apply_defines(&mut canonical, base_dir)?;
     let merged = canonical.clone();
     let expanded = shorthands::expand(&mut canonical)?;

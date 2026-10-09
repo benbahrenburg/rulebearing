@@ -163,7 +163,11 @@ fn find_file(candidate: &Path) -> Option<PathBuf> {
     for ext in EXTENSIONS {
         let path = PathBuf::from(format!("{text}{ext}"));
         if path.is_file() {
-            return Some(path.canonicalize().unwrap_or(path));
+            // Without Windows' verbatim prefix: the path is a key callers compare and report.
+            return Some(
+                path.canonicalize()
+                    .map_or(path, |canonical| rb_model::without_verbatim(&canonical)),
+            );
         }
     }
     let manifest = candidate.join("package.json");

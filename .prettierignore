@@ -59,3 +59,6 @@ fuzz/corpus/
 .claude/worktrees/
 # grimp's import cache, written when import-linter runs in this tree.
 .grimp_cache/
+# dependency-cruiser 18.2.0's type declarations and extractor fixtures, verbatim (plan 0003, Step 22).
+wrappers/npm/types/dependency-cruiser/
+crates/rb-node/__tests__/fixtures/

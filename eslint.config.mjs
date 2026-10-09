@@ -35,6 +35,11 @@ export default defineConfig([
         // The ESLint plugin's fixture repository, linted by the plugin's own tests against the gate
         // (plan 0002, Step 13), not by the repository's configuration.
         'frontends/eslint-plugin-rulebearing/test/fixture/**',
+        // dependency-cruiser 18.2.0's own type declarations (MIT), vendored verbatim so the
+        // programmatic API is typed by them, and its extractor fixtures, copied verbatim for rb-node's
+        // tests (plan 0003, Step 22).
+        'wrappers/npm/types/dependency-cruiser/**',
+        'crates/rb-node/__tests__/fixtures/**',
         // Local only: fuzzing corpora (fuzz/README.md) and the worktrees of parallel agent sessions.
         'fuzz/corpus/**',
         '.claude/worktrees/**',

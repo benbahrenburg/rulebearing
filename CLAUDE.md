@@ -110,9 +110,9 @@ The workspace lints in `Cargo.toml` are the rule; `cargo clippy --workspace --al
 ## TypeScript conventions (wrappers, vitest reporter, ESLint plugin)
 
 - `strict: true`, ESM, Node 22 LTS, `vitest` for tests, `eslint` with `typescript-eslint` strict-type-checked, `prettier` for formatting.
-- The npm wrapper carries the platform binary under `optionalDependencies` and nothing else; it never re-implements a subcommand.
+- The npm wrapper carries the platform binary and the `rb-node` addon under `optionalDependencies` and nothing else; it never re-implements a subcommand. Its main export is dependency-cruiser's programmatic API over the addon ([ADR-0062](docs/adr/0062-the-node-binding-reads-typescript-and-babel-configs-with-the-callers-packages.md)); the launcher is `rulebearing/launcher`.
 - The ESLint rule `rulebearing/boundaries` asks the cached graph through `can-import` and must report the same finding the gate would, with the `fix` text as the message.
-- Match dependency-cruiser's API signatures exactly where the coverage tab says Parity (`cruise()`, `format()`, the `extract*` functions).
+- Match dependency-cruiser's API signatures exactly where the coverage tab says Parity (`cruise()`, `format()`, the `extract*` functions): the API is typed by dependency-cruiser's own declarations, vendored in `wrappers/npm/types/dependency-cruiser/`.
 
 ## C# conventions (test adapter, Roslyn analyzer, fallback extractor if invoked)
 
@@ -160,6 +160,8 @@ testbeds/oracles/python.sh <owner/repo>                 # the Python oracle: imp
 adapters/dotnet/test.sh && wrappers/nuget/smoke.sh      # the .NET adapters at their coverage floor; the dotnet tool installs and runs
 rulebearing docs --format reference --out docs/reference/element-rules.md   # the generated element-rule reference
 cargo test -p rb-extract-ts --test extract_fixtures -- --nocapture   # layer 1 alone: prints passed/total/ratio
+(cd crates/rb-node && npm test)                         # the npm API over the addon: cruise()/format() equal the CLI, the extractors under upstream's specs
+crates/rb-node/coverage.sh                              # rb-node's Rust coverage, measured through those tests (scripts/coverage-per-crate.sh calls it)
 conformance/archunitnet/scripts/spike-b-attribution.sh # .NET attribution over the oracles (needs the .NET SDK)
 fuzz/run.sh metadata_reader 600                         # fuzz the metadata reader (nightly toolchain, cargo-fuzz)
 wrappers/publish-placeholders.sh --dry-run              # package the four 0.0.1 name reservations (docs/release.md)

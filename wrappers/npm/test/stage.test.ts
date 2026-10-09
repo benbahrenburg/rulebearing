@@ -37,12 +37,15 @@ function readJson(path: string): Record<string, unknown> {
   return JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
 }
 
-/** Writes `rulebearing-<target>.tar.gz` holding the binary, LICENSE and README.md, as release.yml does. */
-function archive(target: string, binary: string, withBinary = true): void {
+/** Writes `rulebearing-<target>.tar.gz` holding the binary, the addon, LICENSE and README.md, as release.yml does. */
+function archive(target: string, binary: string, withBinary = true, withAddon = true): void {
   const content = join(scratch, `content-${target}`);
   mkdirSync(content, { recursive: true });
   if (withBinary) {
     writeFileSync(join(content, binary), `binary for ${target}\n`);
+  }
+  if (withAddon) {
+    writeFileSync(join(content, 'rulebearing.node'), `addon for ${target}\n`);
   }
   writeFileSync(join(content, 'LICENSE'), 'MIT from the archive\n');
   writeFileSync(join(content, 'README.md'), 'readme\n');
@@ -67,6 +70,14 @@ function fakeSource(): void {
   mkdirSync(join(source, 'dist', 'vitest'), { recursive: true });
   writeFileSync(join(source, 'dist', 'vitest', 'index.js'), '// compiled adapter\n');
   writeFileSync(join(source, 'dist', 'vitest', 'index.d.ts'), '// declarations\n');
+  // The programmatic API and the dependency-cruiser declarations it is typed by (plan 0003, Step 22).
+  mkdirSync(join(source, 'dist', 'api'), { recursive: true });
+  writeFileSync(join(source, 'dist', 'api', 'index.js'), '// compiled api\n');
+  mkdirSync(join(source, 'types', 'dependency-cruiser'), { recursive: true });
+  writeFileSync(
+    join(source, 'types', 'dependency-cruiser', 'dependency-cruiser.d.mts'),
+    '// upstream\n',
+  );
   // The licence is read from the repository root, two levels above the package.
   writeFileSync(join(scratch, 'LICENSE'), 'MIT from the repository\n');
 }
@@ -112,7 +123,7 @@ describe('platformManifest', () => {
       expect(manifest.os).toEqual([pkg.os]);
       expect(manifest.cpu).toEqual([pkg.cpu]);
       expect(manifest.libc).toEqual(pkg.libc === undefined ? undefined : [pkg.libc]);
-      expect(manifest.files).toEqual(['bin/']);
+      expect(manifest.files).toEqual(['bin/', 'rulebearing.node']);
       expect(manifest).not.toHaveProperty('bin');
       expect(manifest).not.toHaveProperty('scripts');
     },
@@ -145,13 +156,26 @@ describe('the committed package.json', () => {
     expect(manifest.scripts).not.toHaveProperty('preinstall');
   });
 
-  it('exports rulebearing/vitest, with vitest as an optional peer only', () => {
+  it("exports the programmatic API, dependency-cruiser's config-utl paths, the launcher and rulebearing/vitest, with vitest as an optional peer only", () => {
+    const api = (path: string): { types: string; default: string } => ({
+      types: `./dist/api/${path}.d.ts`,
+      default: `./dist/api/${path}.js`,
+    });
     expect(manifest.exports).toEqual({
-      '.': { types: './dist/launcher.d.ts', default: './dist/launcher.js' },
+      '.': api('index'),
+      './config-utl/extract-babel-config': api('config-utl/extract-babel-config'),
+      './config-utl/extract-depcruise-config': api('config-utl/extract-depcruise-config'),
+      './config-utl/extract-ts-config': api('config-utl/extract-ts-config'),
+      './config-utl/extract-webpack-resolve-config': api(
+        'config-utl/extract-webpack-resolve-config',
+      ),
+      './launcher': { types: './dist/launcher.d.ts', default: './dist/launcher.js' },
       './package.json': './package.json',
       './vitest': { types: './dist/vitest/index.d.ts', default: './dist/vitest/index.js' },
     });
     expect(manifest.files).toContain('dist/vitest/');
+    expect(manifest.files).toContain('dist/api/');
+    expect(manifest.files).toContain('types/dependency-cruiser/');
     expect(manifest.peerDependencies).toEqual({ vitest: '>=5' });
     expect(manifest.peerDependenciesMeta).toEqual({ vitest: { optional: true } });
   });
@@ -190,6 +214,7 @@ describe('stage', () => {
       if (unix && !pkg.binary.endsWith('.exe')) {
         expect(statSync(binary).mode & 0o777).toBe(0o755);
       }
+      expect(readFileSync(join(dir, 'rulebearing.node'), 'utf8')).toBe(`addon for ${pkg.target}\n`);
       expect(readJson(join(dir, 'package.json'))).toEqual(platformManifest(pkg, '0.2.0'));
       expect(readFileSync(join(dir, 'LICENSE'), 'utf8')).toBe('MIT from the archive\n');
       expect(readFileSync(join(dir, 'README.md'), 'utf8')).toContain(pkg.target);
@@ -261,6 +286,13 @@ describe('stage', () => {
     expect(() =>
       stage({ distDir: dist, version: '1.0.0', outDir: out, partial: true, packageDir: source }),
     ).toThrow(/does not contain rulebearing\.exe/);
+  });
+
+  it('fails on an archive without the addon', () => {
+    archive('x86_64-pc-windows-msvc', 'rulebearing.exe', true, false);
+    expect(() =>
+      stage({ distDir: dist, version: '1.0.0', outDir: out, partial: true, packageDir: source }),
+    ).toThrow(/does not contain rulebearing\.node/);
   });
 
   it('fails when the launcher has not been built', () => {

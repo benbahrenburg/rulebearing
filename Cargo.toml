@@ -109,6 +109,12 @@ ruff_text_size = "=0.0.15"
 tree-sitter = "=0.27.0"
 tree-sitter-c-sharp = "=0.23.5"
 
+# `rb-node`, the Node binding (plan 0003, Step 22): the N-API glue and its build script. Pinned to
+# exact versions. All MIT.
+napi = { version = "=3.14.2", default-features = false, features = ["napi8", "serde-json"] }
+napi-derive = "=3.6.12"
+napi-build = "=2.6.0"
+
 [workspace.lints.rust]
 unsafe_code = "forbid"
 missing_docs = "warn"

@@ -5,7 +5,8 @@
 // Procedure: docs/release.md.
 //
 // Given a directory of `rulebearing-<target>.tar.gz` archives and a version, writes one folder per
-// platform package (package.json, README.md, LICENSE and bin/<binary>, executable on Unix) and the
+// platform package (package.json, README.md, LICENSE, bin/<binary>, executable on Unix, and the
+// programmatic API's addon rulebearing.node, plan 0003 Step 22) and the
 // main package with the version stamped into it and into its optionalDependencies. The source
 // tree is never modified; `npm pack` or `npm publish` runs on the staged folders.
 //
@@ -27,6 +28,7 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ADDON_FILE } from './api/addon.js';
 import { PLATFORM_PACKAGES } from './platforms.js';
 import type { PlatformPackage } from './platforms.js';
 
@@ -97,14 +99,14 @@ export function platformManifest(pkg: PlatformPackage, version: string): Record<
   return {
     name: pkg.name,
     version,
-    description: `The rulebearing binary for ${pkg.label}. Installed by the rulebearing package; depend on that instead.`,
+    description: `The rulebearing binary and Node addon for ${pkg.label}. Installed by the rulebearing package; depend on that instead.`,
     license: 'MIT',
     repository: REPOSITORY,
     homepage: 'https://github.com/benbahrenburg/rulebearing',
     os: [pkg.os],
     cpu: [pkg.cpu],
     ...(pkg.libc === undefined ? {} : { libc: [pkg.libc] }),
-    files: ['bin/'],
+    files: ['bin/', ADDON_FILE],
     preferUnplugged: true,
   };
 }
@@ -113,7 +115,7 @@ function platformReadme(pkg: PlatformPackage): string {
   return [
     `# ${pkg.name}`,
     '',
-    `The \`rulebearing\` binary for ${pkg.label} (\`${pkg.target}\`). Install \`rulebearing\`, not this package: it lists every platform package under \`optionalDependencies\` and npm installs only the one that matches the machine.`,
+    `The \`rulebearing\` binary and the Node addon behind its programmatic API for ${pkg.label} (\`${pkg.target}\`). Install \`rulebearing\`, not this package: it lists every platform package under \`optionalDependencies\` and npm installs only the one that matches the machine.`,
     '',
     'Source, documentation and licence: https://github.com/benbahrenburg/rulebearing',
     '',
@@ -131,8 +133,14 @@ function stagePlatform(
   try {
     execFileSync('tar', ['-xzf', archive, '-C', scratch], { stdio: 'pipe' });
     const binary = join(scratch, pkg.binary);
-    if (!existsSync(binary)) {
-      throw new StageError(`${archive} does not contain ${pkg.binary}`);
+    const addon = join(scratch, ADDON_FILE);
+    for (const [path, name] of [
+      [binary, pkg.binary],
+      [addon, ADDON_FILE],
+    ] as const) {
+      if (!existsSync(path)) {
+        throw new StageError(`${archive} does not contain ${name}`);
+      }
     }
     const dir = join(outDir, pkg.name);
     rmSync(dir, { recursive: true, force: true });
@@ -142,6 +150,7 @@ function stagePlatform(
     if (!pkg.binary.endsWith('.exe')) {
       chmodSync(target, 0o755);
     }
+    copyFileSync(addon, join(dir, ADDON_FILE));
     const archivedLicense = join(scratch, 'LICENSE');
     copyFileSync(existsSync(archivedLicense) ? archivedLicense : license, join(dir, 'LICENSE'));
     writeFileSync(join(dir, 'README.md'), platformReadme(pkg));
