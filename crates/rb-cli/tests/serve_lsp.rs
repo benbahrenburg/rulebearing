@@ -167,10 +167,17 @@ fn diagnostics_for(uri: &str) -> impl Fn(&Value) -> bool + '_ {
 /// Compares every message the server sent, the scratch folder written `<root>`, with the
 /// recorded transcript; `RB_UPDATE_SNAPSHOTS=1` records it.
 fn compare_transcript(dir: &Path, received: &[Value]) -> Result<(), Box<dyn Error>> {
+    // The root's URI first (`file:///C:/...` on Windows, `file:///tmp/...` elsewhere), then any
+    // bare path, so the recording reads the same on every platform.
+    let root_uri = uri(dir, "").trim_end_matches('/').to_owned();
     let root = dir.to_string_lossy().replace('\\', "/");
     let mut transcript = String::new();
     for message in received {
-        transcript.push_str(&message.to_string().replace(&root, "<root>"));
+        let text = message
+            .to_string()
+            .replace(&root_uri, "file://<root>")
+            .replace(&root, "<root>");
+        transcript.push_str(&text);
         transcript.push('\n');
     }
     let expected_file = fixtures().join("lsp-expected.jsonl");
