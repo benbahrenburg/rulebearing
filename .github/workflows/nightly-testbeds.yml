@@ -160,6 +160,7 @@ jobs:
           - microsoft/autogen
           - jasontaylordev/CleanArchitecture
           - umbraco/Umbraco-CMS
+          - abpframework/abp
           - apache/superset
           - getsentry/sentry
           - zulip/zulip
