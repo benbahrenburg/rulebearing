@@ -67,9 +67,15 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
+      # cargo-deny as a release binary, not EmbarkStudios/cargo-deny-action: that action builds a
+      # Docker image from Docker Hub on every run, and Docker Hub's limit on anonymous pulls from
+      # shared runner addresses failed this job with 429 Too Many Requests (PR #89, twice). The
+      # version is the one that action ran.
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      - uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2
         with:
-          command: check licenses advisories bans sources
+          tool: cargo-deny@0.20.2
+      - run: cargo deny check licenses advisories bans sources
 
   test:
     name: test (${{ matrix.os }})
