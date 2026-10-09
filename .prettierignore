@@ -62,3 +62,9 @@ fuzz/corpus/
 # dependency-cruiser 18.2.0's type declarations and extractor fixtures, verbatim (plan 0003, Step 22).
 wrappers/npm/types/dependency-cruiser/
 crates/rb-node/__tests__/fixtures/
+# The guard catalogue: fixture graphs and what the binary prints for them, compared byte for byte
+# by cookbook/guards/run.sh and regenerated with RB_UPDATE_SNAPSHOTS=1 (plan 0005, Step 1).
+cookbook/guards/*/graph.json
+cookbook/guards/*/expected.json
+cookbook/guards/*/converted/
+cookbook/guards/*/negative/

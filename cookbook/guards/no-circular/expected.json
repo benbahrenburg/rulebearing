@@ -1,0 +1,45 @@
+{
+  "violations": [
+    {
+      "from": "src/order/discount.ts",
+      "to": "src/order/order.ts",
+      "unresolvedTo": "./order",
+      "dependencyTypes": [
+        "local",
+        "import"
+      ],
+      "type": "cycle",
+      "rule": {
+        "name": "no-circular",
+        "severity": "error"
+      },
+      "cycle": [
+        {
+          "name": "src/order/order.ts",
+          "dependencyTypes": [
+            "local",
+            "import"
+          ]
+        },
+        {
+          "name": "src/order/pricing.ts",
+          "dependencyTypes": [
+            "local",
+            "import"
+          ]
+        },
+        {
+          "name": "src/order/discount.ts",
+          "dependencyTypes": [
+            "local",
+            "import"
+          ]
+        }
+      ],
+      "id": "RB-03a7bc47",
+      "fix": "Break the cycle: move the shared code into a module both sides import, or invert one edge behind an interface. Type-only imports do not count.",
+      "decision": "plan:0005-guard-catalogue"
+    }
+  ],
+  "vacuousRules": []
+}
