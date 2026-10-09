@@ -20,5 +20,11 @@ eval "$(cargo llvm-cov show-env --sh 2>/dev/null)"
 # addon writes its profile when vitest's workers exit (__tests__/flush-coverage.ts).
 unset RULEBEARING_ADDON RULEBEARING_BINARY
 cargo llvm-cov clean --workspace >&2
-(cd "$here" && "$root/node_modules/.bin/vitest" run) >&2
+# One test file at a time: vitest gives a stopping worker 500 ms before SIGKILL, and a worker
+# killed before its profile is written takes its share of the coverage with it, which several
+# exiting together on a busy runner can take.
+(cd "$here" && "$root/node_modules/.bin/vitest" run --no-file-parallelism) >&2
+profiles=("$CARGO_TARGET_DIR"/*.profraw)
+echo "rb-node coverage: ${#profiles[@]} profiles" >&2
+cargo llvm-cov report --package rb-node --summary-only >&2
 cargo llvm-cov report --package rb-node --summary-only --json
