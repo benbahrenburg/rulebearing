@@ -10,10 +10,11 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | `fmt <result.json>` | Re-report a saved result without extracting | `depcruise-fmt`, with its short forms (`-T`, `-f`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-e`, `-p`) |
 | `rules [--json]` | Every rule with its family, severity, lifecycle fields and match counts | |
 | `rules --unused [--releases N]` | The rules that matched nothing on either side in each of the last `N` snapshots; [below](#snapshots-changelog-and-unused-rules) | |
-| `explain <rule> [--plain]` | One rule in a sentence, with its reason, `fix` and first edges | |
+| `explain <rule> [--plain] [--json]` | One rule in a sentence, with its reason, `fix` and first edges; `--json` prints it as `rules --json` lists it, with `sentence` and `firstEdges` | |
 | `test` | Each rule's `examples` checked against the rule | |
 | `can-import <from> <to>` | Would this import be allowed, from the saved graph | |
-| `count --from --to [--budget] [--write]` | Direct edges that match, against a ratchet budget that may only fall | |
+| `count --from --to [--budget] [--write] [--json]` | Direct edges that match, against a ratchet budget that may only fall; `--json` prints `count`, and with a budget `ceiling` and `headroom` or `excess` | |
+| `query --from --to [--json]` | The direct edges `count` counts, one `from -> to` per line | |
 | `config convert <file> [--to native\|dependency-cruiser]` | Translate between the formats; says what a lossy conversion dropped | |
 | `config expand <file>` | A native file with `defines` substituted and shorthands expanded | |
 | `config lint` | Rules that can never match, shadowed rules, missing `fix` text | |
@@ -27,13 +28,14 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | `diff <old.json> <new.json>`, `diff --base <ref> [paths]` | Added and removed edges, new and resolved violations and moved ratchets, as `json`, `markdown` or `agent`; [below](#diff) | |
 | `snapshot [--version V]` | A summary of the architecture at a release, under `.graph/snapshots/`; [below](#snapshots-changelog-and-unused-rules) | |
 | `changelog --since V [--to V]` | New edges across boundaries, retired rules and ratchets that fell between two snapshots, as `markdown` or `json`; [below](#snapshots-changelog-and-unused-rules) | |
+| `serve --mcp`, `serve --lsp` | The query commands as MCP tools, or the findings as editor diagnostics, over standard input and output from one warm graph; [serve.md](serve.md) | |
 | `wrap-html` | An SVG read from stdin, written between the header and the footer of the page `x-dot-webpage` writes; [below](#wrap-html) | `depcruise-wrap-stream-in-html` |
 
 `cruise --init [oneshot]` is `depcruise --init` without the questions: it writes what `init` writes, to `--config FILE` or `rulebearing.yaml`, with `--preset typescript,dotnet,python` naming the languages instead of detecting them. `yes`, a bare `--init` and any other name write the configuration; `x-scripts` also adds `rulebearing`, `rulebearing:text` and `rulebearing:focus` run scripts to `package.json` after the existing ones and, as dependency-cruiser does, leaves an existing configuration be. dependency-cruiser's graph and HTML scripts need the `dot`, `archi` and `err-html` reporters and `wrap-html`, and are not written until those exist. One language extends its own preset first, `[rulebearing:python, rulebearing:recommended]`, so its exclusions win; several extend `rulebearing:recommended` ([config.md](config.md#presets)).
 
 `--preset` also takes the framework presets, which are opinions and off unless named ([presets/frameworks](../presets/frameworks/README.md)): `init --preset nextjs` keeps the languages found and adds `rulebearing:nextjs` after them, `init --preset python,django` names both. A framework preset's rules get init's usual treatment: a rule whose `from` side matches nothing in the repository is left out with a `severity: ignore` entry that names it (delete the entry to turn it on), and every current finding is baselined, so the configuration passes on its first run.
 
-`guard` and `serve` arrive later in wave 3. Each exits 2 now and names its wave.
+`guard` keeps the Stop hook's answer current as files are saved ([agents.md](agents.md#the-hook-without-the-wait-guard---watch)); `serve` answers MCP tool calls or LSP requests over standard input and output ([serve.md](serve.md)).
 
 ## Baselines
 

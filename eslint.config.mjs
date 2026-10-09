@@ -29,6 +29,9 @@ export default defineConfig([
         'crates/rb-extract-ts/tests/fixtures/**',
         // The framework-preset fixture repositories, inputs to `init --preset` (plan 0003, Step 11).
         'crates/rb-cli/tests/fixtures/presets/**',
+        // The serve fixture repository and its MCP and LSP transcripts, compared byte for byte
+        // (plan 0003, Steps 19 and 20).
+        'crates/rb-cli/tests/fixtures/serve/**',
         // The ESLint plugin's fixture repository, linted by the plugin's own tests against the gate
         // (plan 0002, Step 13), not by the repository's configuration.
         'frontends/eslint-plugin-rulebearing/test/fixture/**',

@@ -230,14 +230,46 @@ jobs:
       # aspnetcore's managed build outgrows the runner's free disk: the hosted image's Android,
       # GHC, CodeQL and Boost toolchains, which no row uses, are removed first, and the disk and
       # memory are logged before and after the build so a runner that still stops says why.
+      # Its build also outgrows the runner's 16 GB of memory: every night from 2026-09-29 the
+      # runner was shut down about eight minutes into it, with no line of the build logged. So a
+      # 24 GB swap file goes on the temporary disk, and the runner's own processes are the last
+      # the kernel's out-of-memory killer picks, so a build that still runs out fails the row
+      # with its log instead of taking the runner down.
       - if: matrix.repo == 'dotnet/aspnetcore'
         run: |
           df -h / && free -m
           sudo rm -rf /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost
-          df -h /
+          swap=/mnt/rulebearing.swap
+          [ -d /mnt ] || swap=/rulebearing.swap
+          sudo fallocate -l 24G "$swap"
+          sudo chmod 600 "$swap"
+          sudo mkswap "$swap"
+          sudo swapon "$swap"
+          for pid in $(pgrep -f 'Runner\.(Listener|Worker)'); do
+            echo -1000 | sudo tee "/proc/$pid/oom_score_adj" > /dev/null
+          done
+          df -h / && free -m
       - env:
           REPO: ${{ matrix.repo }}
-        run: testbeds/scale.sh "$REPO" testbeds/out
+        run: |
+          # The build and the cruises log to files the artifact carries; a runner that stops
+          # before the upload loses them, so memory and each log's last line go to the console
+          # every minute while the row runs.
+          out="testbeds/out/${REPO//\//__}"
+          (
+            while sleep 60; do
+              printf 'scale: %s; ' "$(free -m | awk '/Mem:/ {print "memory " $3 "/" $2 " MB"} /Swap:/ {print "swap " $3 " MB"}' | paste -sd ' ' -)"
+              for log in "$out"/*.log; do
+                [ -s "$log" ] && printf '%s: %s; ' "$(basename "$log")" "$(tail -n 1 "$log" | cut -c1-160)"
+              done
+              echo
+            done
+          ) &
+          monitor=$!
+          status=0
+          testbeds/scale.sh "$REPO" testbeds/out || status=$?
+          kill "$monitor" 2> /dev/null || true
+          exit "$status"
       - if: always() && matrix.repo == 'dotnet/aspnetcore'
         run: df -h / && free -m
       - if: always()

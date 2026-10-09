@@ -26,6 +26,7 @@
 //! | [`graphviz`] | GraphViz' `dot`, for `x-dot-webpage` only ([ADR-0053](../../../docs/adr/0053-x-dot-webpage-draws-with-graphviz-dot.md)) |
 //! | [`progress`] | `--progress` |
 //! | [`protocol`] | the conformance harness's `validate` and `report` |
+//! | [`serve`] | `serve --mcp` and `serve --lsp` over one warm graph |
 
 pub mod affected;
 pub mod cache;
@@ -41,6 +42,7 @@ pub mod plugin;
 pub mod progress;
 pub mod protocol;
 pub mod ratchets;
+pub mod serve;
 pub mod value;
 
 use std::fmt::Write as _;
@@ -53,7 +55,7 @@ pub use crate::exit::RunExit;
 
 /// Subcommands later waves deliver, with the wave. Asking for one says so and exits 2, so no
 /// pipeline mistakes a missing command for a passing gate.
-pub const LATER: &[(&str, u8)] = &[("serve", 3)];
+pub const LATER: &[(&str, u8)] = &[];
 
 /// What a run printed and how it exited; separated from `main` so the dispatch is unit-tested.
 #[derive(Debug, PartialEq, Eq)]
@@ -146,6 +148,19 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         Command::Test(a) => cmd::test_rules::run(ctx, &a),
         Command::CanImport(a) => cmd::can_import::run(ctx, &a),
         Command::Count(a) => cmd::count::run(ctx, &a),
+        Command::Serve(a) => {
+            let mut output = Vec::new();
+            let mut log = Vec::new();
+            let origin = serve::Origin::of(ctx);
+            let mut input = std::io::BufReader::new(&mut *ctx.stdin);
+            let code = serve::run(origin, &a, &mut input, &mut output, &mut log);
+            Outcome {
+                stdout: String::from_utf8_lossy(&output).into_owned(),
+                stderr: String::from_utf8_lossy(&log).into_owned(),
+                code,
+            }
+        }
+        Command::Query(a) => cmd::query::run(ctx, &a),
         Command::Config(c) => cmd::config::run(ctx, &c),
         Command::Hooks(c) => cmd::hooks::run(ctx, &c),
         Command::Guard(a) => cmd::guard::once(ctx, &a),
@@ -202,6 +217,16 @@ pub fn run_streaming(
 ) -> Option<u8> {
     let command_line = std::iter::once("rulebearing".to_owned()).chain(args.iter().cloned());
     match Cli::try_parse_from(command_line).ok()?.command {
+        Command::Serve(serve) => {
+            let (today, timestamp) = context::clock();
+            let origin = serve::Origin {
+                cwd: std::env::current_dir().unwrap_or_default(),
+                today,
+                timestamp,
+            };
+            let mut input = std::io::BufReader::new(stdin);
+            Some(serve::run(origin, &serve, &mut input, stdout, stderr))
+        }
         Command::WrapHtml(_) => Some(match cmd::wrap_html::stream(stdin, stdout) {
             Ok(()) => RunExit::Violations(0).code(),
             Err(e) => {
@@ -243,6 +268,7 @@ pub fn run_daemon(args: &[String]) -> Option<u8> {
         today,
         timestamp,
         color_terminal: std::io::stdout().is_terminal(),
+        warm: None,
     };
     let stop = || closed.load(Ordering::SeqCst);
     Some(cmd::guard::run(
@@ -269,6 +295,7 @@ pub fn run_with_input(args: &[String], stdin: &mut dyn std::io::Read) -> Outcome
         today,
         timestamp,
         color_terminal: std::io::stdout().is_terminal(),
+        warm: None,
     };
     run_in(&mut ctx, args)
 }
@@ -344,10 +371,12 @@ mod tests {
     }
 
     #[test]
-    fn later_subcommands_name_their_wave() {
+    fn serve_is_a_subcommand_now() {
+        // Wave 3 delivered serve: with no input it ends at once, having answered nothing.
         let o = run(&args(&["serve", "--mcp"]));
-        assert_eq!(o.code, 2);
-        assert!(o.stderr.contains("wave 3"));
+        assert_eq!(o.code, 0, "{}", o.stderr);
+        assert!(o.stdout.is_empty());
+        assert!(LATER.is_empty());
         assert!(subcommands().contains(&"cruise".to_owned()));
         assert!(subcommands().contains(&"serve".to_owned()));
     }

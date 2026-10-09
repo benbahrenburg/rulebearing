@@ -4,11 +4,17 @@
 //!   [design § The agentic engineering hat](../../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two) (`explain --plain`)
 //! - Decision: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md)
 //! - Plan: [Wave 1, Step 14](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-14-rules---json-explain-explain---plain-test-can-import-1e)
-//! - Requirement: [FR-CLI-01](../../../../docs/prd.md#fr-cli-01)
+//! - Plan: [Wave 3, Step 19](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)
+//!   (`--json`, the MCP tool's answer)
+//! - Requirement: [FR-CLI-01](../../../../docs/prd.md#fr-cli-01), [FR-CLI-06](../../../../docs/prd.md#fr-cli-06)
+//!
+//! `--json` prints the rule as `rules --json` lists it (with its statistics, or without them under
+//! `--plain`), plus its `sentence` and, unless `--plain`, the `firstEdges` the text lists.
 
 use std::fmt::Write as _;
 
 use clap::Args;
+use serde_json::{Value, json};
 
 use crate::cli::{ConfigArgs, GraphArgs};
 use crate::cmd::{plain, rules};
@@ -23,6 +29,9 @@ pub struct ExplainArgs {
     /// One English sentence per rule, no graph needed
     #[arg(long)]
     pub plain: bool,
+    /// Print JSON
+    #[arg(long)]
+    pub json: bool,
     /// Configuration
     #[command(flatten)]
     pub config: ConfigArgs,
@@ -55,14 +64,38 @@ pub fn run(ctx: &mut Context<'_>, args: &ExplainArgs) -> Outcome {
         );
     };
     let (family, rule) = listed[index];
+    let sentence = plain::sentence(family, rule);
     if args.plain {
-        return Outcome::printed(format!("{}\n", plain::sentence(family, rule)));
+        if args.json {
+            return Outcome::printed(json_text(
+                rules::rule_json(family, rule, None),
+                &sentence,
+                None,
+            ));
+        }
+        return Outcome::printed(format!("{sentence}\n"));
     }
     let evaluation = match rules::statistics(ctx, &config, &args.graph) {
         Ok(e) => e,
         Err(o) => return o,
     };
     let stats = evaluation.rule_stats.get(index);
+    let first: Vec<(&str, &str)> = evaluation
+        .document
+        .summary
+        .violations
+        .iter()
+        .filter(|v| v.rule.name == rule.name())
+        .take(10)
+        .map(|v| (v.from.as_str(), v.to.as_str()))
+        .collect();
+    if args.json {
+        return Outcome::printed(json_text(
+            rules::rule_json(family, rule, stats),
+            &sentence,
+            Some(&first),
+        ));
+    }
     let mut out = String::new();
     let _ = writeln!(
         out,
@@ -71,7 +104,7 @@ pub fn run(ctx: &mut Context<'_>, args: &ExplainArgs) -> Outcome {
         family.as_str(),
         rule.severity()
     );
-    let _ = writeln!(out, "  {}", plain::sentence(family, rule));
+    let _ = writeln!(out, "  {sentence}");
     if let Some(comment) = &rule.meta.comment {
         let _ = writeln!(out, "  why: {comment}");
     }
@@ -89,17 +122,30 @@ pub fn run(ctx: &mut Context<'_>, args: &ExplainArgs) -> Outcome {
             stats.from_matches, stats.to_matches, stats.violations
         );
     }
-    let edges: Vec<String> = evaluation
-        .document
-        .summary
-        .violations
+    let edges: Vec<String> = first
         .iter()
-        .filter(|v| v.rule.name == rule.name())
-        .take(10)
-        .map(|v| format!("    {} -> {}", v.from, v.to))
+        .map(|(from, to)| format!("    {from} -> {to}"))
         .collect();
     if !edges.is_empty() {
         let _ = writeln!(out, "  first edges:\n{}", edges.join("\n"));
     }
     Outcome::printed(out)
+}
+
+/// `explain --json`: the rule as `rules --json` lists it, its sentence and, when the graph was
+/// read, the first edges it flagged.
+fn json_text(mut value: Value, sentence: &str, first: Option<&[(&str, &str)]>) -> String {
+    if let Some(object) = value.as_object_mut() {
+        object.insert("sentence".into(), json!(sentence));
+        if let Some(first) = first {
+            let edges: Vec<Value> = first
+                .iter()
+                .map(|(from, to)| json!({ "from": from, "to": to }))
+                .collect();
+            object.insert("firstEdges".into(), Value::Array(edges));
+        }
+    }
+    let mut text = serde_json::to_string_pretty(&value).unwrap_or_default();
+    text.push('\n');
+    text
 }

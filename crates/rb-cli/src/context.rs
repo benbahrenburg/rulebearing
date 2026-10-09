@@ -21,6 +21,9 @@ pub struct Context<'a> {
     pub timestamp: String,
     /// Whether stdout is a terminal that takes colour (`--color auto`).
     pub color_terminal: bool,
+    /// The graph a server holds warm ([`crate::serve::graph::WarmGraph`]): a command given no
+    /// `--graph` and no paths answers from it instead of reading a file.
+    pub warm: Option<&'a crate::serve::graph::WarmGraph>,
 }
 
 impl Context<'_> {
@@ -85,6 +88,7 @@ mod tests {
             today: NaiveDate::default(),
             timestamp: String::new(),
             color_terminal: false,
+            warm: None,
         };
         assert_eq!(ctx.resolve("a/b"), PathBuf::from("/repo/a/b"));
         assert_eq!(ctx.resolve("/x"), PathBuf::from("/x"));

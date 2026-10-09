@@ -110,6 +110,27 @@ fn rules_explain_and_test_describe_the_rule_set() -> Result<(), Box<dyn Error>> 
     assert!(!explained.contains("null"), "{explained}");
     let unknown = run(&dir, &["explain", "no-such-rule"])?;
     assert_eq!(unknown.status.code(), Some(3));
+    // --json carries what the text says: the rule as `rules --json` lists it, its sentence and
+    // the first edges; with --plain, no statistics and no edges.
+    let as_json = json(&run(&dir, &["explain", "domain-not-to-web", "--json"])?)?;
+    assert_eq!(as_json["name"], "domain-not-to-web");
+    assert_eq!(as_json["violations"], listed["rules"][0]["violations"]);
+    assert_eq!(as_json["fix"], listed["rules"][0]["fix"]);
+    assert_eq!(
+        as_json["sentence"],
+        "Files matching `src/domain/` may not import files matching `src/web/`."
+    );
+    assert_eq!(
+        as_json["firstEdges"],
+        serde_json::json!([{ "from": "src/domain/model.ts", "to": "src/web/view.ts" }])
+    );
+    let plain_json = json(&run(
+        &dir,
+        &["explain", "domain-not-to-web", "--plain", "--json"],
+    )?)?;
+    assert_eq!(plain_json["sentence"], as_json["sentence"]);
+    assert!(plain_json["violations"].is_null());
+    assert!(plain_json.get("firstEdges").is_none());
 
     let tested = run(&dir, &["test"])?;
     assert_eq!(tested.status.code(), Some(0), "{}", stdout(&tested));
@@ -509,6 +530,32 @@ fn count_writes_and_holds_the_budget() -> Result<(), Box<dyn Error>> {
     std::fs::write(dir.join("budgets/domain-web.json"), "{\"ceiling\":0}\n")?;
     let over = run(&dir, &budget)?;
     assert_eq!(over.status.code(), Some(1), "over the ceiling is one error");
+    // --json: the same answers as one object, with the same exit codes.
+    let over_json = run(&dir, &[&budget[..], &["--json"]].concat())?;
+    assert_eq!(over_json.status.code(), Some(1));
+    assert_eq!(
+        json(&over_json)?,
+        serde_json::json!({ "count": 1, "ceiling": 0, "excess": 1 })
+    );
+    std::fs::write(dir.join("budgets/domain-web.json"), "{\"ceiling\":3}\n")?;
+    assert_eq!(
+        json(&run(&dir, &[&budget[..], &["--json"]].concat())?)?,
+        serde_json::json!({ "count": 1, "ceiling": 3, "headroom": 2 })
+    );
+    assert_eq!(
+        json(&run(&dir, &[&budget[..], &["--write", "--json"]].concat())?)?,
+        serde_json::json!({ "count": 1, "ceiling": 1 })
+    );
+    assert_eq!(
+        json(&run(&dir, &[&count[..], &["--json"]].concat())?)?,
+        serde_json::json!({ "count": 1 })
+    );
+    // query lists the edge count counts.
+    let queried = run(
+        &dir,
+        &["query", "--from", "^src/domain/", "--to", "^src/web/"],
+    )?;
+    assert_eq!(stdout(&queried), "src/domain/model.ts -> src/web/view.ts\n");
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
@@ -543,6 +590,36 @@ fn config_commands_convert_expand_and_lint() -> Result<(), Box<dyn Error>> {
     let untokened = run(&dir, &["config", "lint", "--require-comment-token"])?;
     assert_ne!(untokened.status.code(), Some(0));
     assert!(stdout(&untokened).contains("domain-not-to-web"));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn hooks_install_registers_the_mcp_server_on_request() -> Result<(), Box<dyn Error>> {
+    let dir = tree("hooks-mcp")?;
+    assert_eq!(
+        run(&dir, &["hooks", "install", "--claude-code"])?
+            .status
+            .code(),
+        Some(0)
+    );
+    assert!(
+        !dir.join(".mcp.json").exists(),
+        "only --mcp registers the server"
+    );
+    let registered = run(&dir, &["hooks", "install", "--claude-code", "--mcp"])?;
+    assert_eq!(registered.status.code(), Some(0));
+    assert!(stdout(&registered).contains("rulebearing serve --mcp"));
+    let mcp: Value = serde_json::from_str(&std::fs::read_to_string(dir.join(".mcp.json"))?)?;
+    assert_eq!(
+        mcp["mcpServers"]["rulebearing"],
+        serde_json::json!({ "command": "rulebearing", "args": ["serve", "--mcp"] })
+    );
+    assert_eq!(
+        run(&dir, &["hooks", "install", "--mcp"])?.status.code(),
+        Some(3),
+        "--mcp goes with --claude-code"
+    );
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }

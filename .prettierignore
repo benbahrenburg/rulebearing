@@ -33,6 +33,9 @@ crates/rb-cli/tests/fixtures/wrap-html/
 crates/rb-cli/tests/fixtures/diff/
 crates/rb-cli/tests/fixtures/lifecycle/
 crates/rb-cli/tests/fixtures/presets/
+# The serve fixture repository and the MCP and LSP transcripts, compared byte for byte (plan 0003,
+# Steps 19 and 20).
+crates/rb-cli/tests/fixtures/serve/
 # Extractor option fixtures: mini-repositories kept byte for byte, since line and column are asserted.
 crates/rb-extract-ts/tests/options/
 # The code-layer fixture tree and its expectation, compared byte for byte (plan 0002, 2C).

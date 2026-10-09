@@ -92,8 +92,8 @@ pub struct Graph {
     pub origin: Origin,
 }
 
-/// The graph a query command answers from: `file` when given, else the cache entry, else a fresh
-/// extraction that is written to the entry unless `no_cache`.
+/// The graph a query command answers from: `file` when given, else a server's warm graph, else
+/// the cache entry, else a fresh extraction that is written to the entry unless `no_cache`.
 ///
 /// # Errors
 /// A message naming the file that cannot be read, or why the extraction cannot be trusted.
@@ -110,6 +110,18 @@ pub fn graph(
         return Ok(Graph {
             text,
             origin: Origin::File(file.to_owned()),
+        });
+    }
+    if let Some(warm) = ctx.warm
+        && let Some(text) = warm.text()
+    {
+        let name = match warm.source() {
+            Some(crate::serve::graph::Source::File(name)) => name.clone(),
+            _ => "the graph the server re-checked".to_owned(),
+        };
+        return Ok(Graph {
+            text: text.to_owned(),
+            origin: Origin::File(name),
         });
     }
     let extract = || -> Result<String, String> {
@@ -942,6 +954,7 @@ mod tests {
             today: chrono::NaiveDate::default(),
             timestamp: String::new(),
             color_terminal: false,
+            warm: None,
         }
     }
 

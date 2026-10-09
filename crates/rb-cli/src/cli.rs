@@ -62,6 +62,8 @@ pub enum Command {
     CanImport(crate::cmd::can_import::CanImportArgs),
     /// The edges a ratchet counts, against its budget
     Count(crate::cmd::count::CountArgs),
+    /// The edges matching a from and to pair, as count counts them
+    Query(crate::cmd::query::QueryArgs),
     /// Convert, expand or lint a configuration
     #[command(subcommand)]
     Config(crate::cmd::config::ConfigCommand),
@@ -73,6 +75,9 @@ pub enum Command {
     /// Answer the Stop hook ahead of time into .graph/guard/findings.json; with --watch, keep
     /// the answer current as files are saved until standard input closes
     Guard(crate::cmd::guard::GuardArgs),
+    /// The query commands as MCP tools, or the findings as editor diagnostics over LSP, from one
+    /// warm graph over standard input and output
+    Serve(crate::serve::ServeArgs),
     /// What a file is subject to, before an edit
     Impact(crate::cmd::impact::ImpactArgs),
     /// Where a new module with these imports would be legal

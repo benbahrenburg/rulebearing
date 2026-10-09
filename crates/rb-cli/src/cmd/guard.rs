@@ -41,6 +41,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use clap::Args;
@@ -60,6 +61,10 @@ use crate::{Outcome, configure};
 /// The findings file, relative to the working directory.
 pub const FINDINGS: &str = ".graph/guard/findings.json";
 
+/// The graph `guard --watch` rewrites when a save changed it: the merged document it answers
+/// for, unevaluated, which a server's warm graph takes when it is newer than the saved one
+/// ([`crate::serve::graph`]).
+pub const GUARD_GRAPH: &str = ".graph/guard/graph.json";
 /// The file a hook writes to ask a running guard to confirm it has seen every change until then.
 pub const REQUEST: &str = ".graph/guard/request";
 
@@ -651,7 +656,7 @@ struct State {
 
 /// A merged document, the extractors' warnings and the answer given for them.
 struct Answered {
-    document: rb_model::GraphDocument,
+    document: Arc<rb_model::GraphDocument>,
     warnings: Vec<rb_model::Warning>,
     answer: Result<String, String>,
 }
@@ -694,18 +699,32 @@ fn build(ctx: &mut Context<'_>, hook: &CruiseArgs) -> Result<State, (RunExit, St
 /// configuration stands, so it is given again without evaluating. That holds only where nothing
 /// else feeds the answer: not with `--affected`, whose closure follows what git calls changed,
 /// and not with ratchets, whose budgets are files read on every run.
-fn answer(ctx: &mut Context<'_>, hook: &CruiseArgs, state: &mut State) -> Result<String, String> {
-    let (document, warnings) =
-        pipeline::merge(&state.effective, &state.parts).map_err(|e| e.to_string())?;
+///
+/// With `publish`, a document answered anew is also returned, for [`GUARD_GRAPH`]; one answered
+/// as before is not, since the file already holds it.
+fn answer(
+    ctx: &mut Context<'_>,
+    hook: &CruiseArgs,
+    state: &mut State,
+    publish: bool,
+) -> (Result<String, String>, Option<Arc<rb_model::GraphDocument>>) {
+    let (document, warnings) = match pipeline::merge(&state.effective, &state.parts) {
+        Ok(merged) => merged,
+        Err(e) => return (Err(e.to_string()), None),
+    };
     let repeatable = hook.affected.is_none() && state.effective.rules.ratchets.is_empty();
     if repeatable
         && let Some(last) = &state.answered
         && last.warnings == warnings
-        && last.document == document
+        && *last.document == document
     {
-        return last.answer.clone();
+        return (last.answer.clone(), None);
     }
-    let kept = repeatable.then(|| (crate::value::copy(&document), warnings.clone()));
+    let copy = (repeatable || publish).then(|| Arc::new(crate::value::copy(&document)));
+    let published = copy.clone().filter(|_| publish);
+    let kept = copy
+        .filter(|_| repeatable)
+        .map(|document| (document, warnings.clone()));
     let outcome = cruise::hook_answer(ctx, hook, Given { document, warnings });
     let answer = match outcome
         .stderr
@@ -720,7 +739,51 @@ fn answer(ctx: &mut Context<'_>, hook: &CruiseArgs, state: &mut State) -> Result
         warnings,
         answer: answer.clone(),
     });
-    answer
+    (answer, published)
+}
+
+/// Writes each document it is sent to [`GUARD_GRAPH`] through a temporary file, on a thread of its
+/// own so the check that produced it does not wait; when several are waiting, only the newest is
+/// written. Dropping the writer stops the thread once it has written the last.
+struct GraphWriter {
+    send: std::sync::mpsc::Sender<Arc<rb_model::GraphDocument>>,
+    thread: std::thread::JoinHandle<()>,
+}
+
+impl GraphWriter {
+    fn start(path: PathBuf) -> Self {
+        let (send, receive) = std::sync::mpsc::channel::<Arc<rb_model::GraphDocument>>();
+        let thread = std::thread::spawn(move || {
+            while let Ok(mut document) = receive.recv() {
+                while let Ok(newer) = receive.try_recv() {
+                    document = newer;
+                }
+                let _ = write_graph(&path, &document);
+            }
+        });
+        Self { send, thread }
+    }
+
+    fn publish(&self, document: Option<Arc<rb_model::GraphDocument>>) {
+        if let Some(document) = document {
+            let _ = self.send.send(document);
+        }
+    }
+
+    fn stop(self) {
+        drop(self.send);
+        let _ = self.thread.join();
+    }
+}
+
+/// Writes `document` to `path` through a temporary file in the same folder.
+fn write_graph(path: &Path, document: &rb_model::GraphDocument) -> Result<(), String> {
+    let folder = path.parent().unwrap_or(path);
+    std::fs::create_dir_all(folder).map_err(|e| e.to_string())?;
+    let text = serde_json::to_string(document).map_err(|e| e.to_string())?;
+    let temporary = folder.join(format!("graph.{}.tmp", std::process::id()));
+    std::fs::write(&temporary, text).map_err(|e| e.to_string())?;
+    std::fs::rename(&temporary, path).map_err(|e| e.to_string())
 }
 
 /// Writes the findings file through a temporary file in the same folder, so a reader never
@@ -742,6 +805,8 @@ fn write(ctx: &Context<'_>, findings: &Findings) -> Result<(), String> {
 /// read) with the newest modification time among them, and the stages' times.
 struct Check {
     answered: Result<String, String>,
+    /// The document answered anew, for [`GUARD_GRAPH`].
+    published: Option<Arc<rb_model::GraphDocument>>,
     rechecked: Vec<String>,
     newest: Option<u64>,
     timings: Timings,
@@ -759,6 +824,7 @@ fn check(
     plans: Option<Plans>,
     (rechecked, newest): (Vec<String>, Option<u64>),
     scanned: u64,
+    publish: bool,
 ) -> Check {
     let started = Instant::now();
     let since = now_ns();
@@ -794,9 +860,13 @@ fn check(
         },
     };
     let extract = millis(started.elapsed());
-    let answered = extracted.and_then(|()| answer(ctx, hook, state));
+    let (answered, published) = match extracted {
+        Ok(()) => answer(ctx, hook, state, publish),
+        Err(message) => (Err(message), None),
+    };
     Check {
         answered,
+        published,
         rechecked,
         newest,
         timings: Timings {
@@ -804,6 +874,42 @@ fn check(
             answer: millis(started.elapsed()).saturating_sub(extract),
         },
         scanned,
+    }
+}
+
+/// Checks again what `change` names: everything for a structural change, else the changed
+/// sources alone. Never called with [`Change::None`].
+fn recheck(
+    ctx: &mut Context<'_>,
+    hook: &CruiseArgs,
+    state: &mut State,
+    change: Change,
+    scanned: u64,
+    log: &mut dyn Write,
+) -> Check {
+    match change {
+        Change::None | Change::Structural(_) => {
+            if let Change::Structural(reason) = &change {
+                let _ = writeln!(log, "guard: {reason}; reading everything again");
+            }
+            check(ctx, hook, state, None, (Vec::new(), None), scanned, true)
+        }
+        Change::Sources(changed, newest) => {
+            let plans = plans(&mut state.parts, &changed);
+            let rechecked = changed
+                .iter()
+                .map(|(_, _, path)| key::slashed(path.strip_prefix(&ctx.cwd).unwrap_or(path)))
+                .collect();
+            check(
+                ctx,
+                hook,
+                state,
+                Some(plans),
+                (rechecked, Some(newest)),
+                scanned,
+                true,
+            )
+        }
     }
 }
 
@@ -884,27 +990,34 @@ pub fn run(
         }
     };
     let extract = millis(started.elapsed());
-    let answered = answer(ctx, &hook, &mut state);
+    let (answered, published) = answer(ctx, &hook, &mut state, args.watch);
     let timings = Timings {
         extract,
         answer: millis(started.elapsed()).saturating_sub(extract),
     };
     let first = Check {
         answered,
+        published,
         rechecked: Vec::new(),
         newest: None,
         timings,
         scanned,
     };
+    let writer = args
+        .watch
+        .then(|| GraphWriter::start(ctx.resolve(GUARD_GRAPH)));
+    if let Some(writer) = &writer {
+        writer.publish(first.published.clone());
+    }
     let mut current = findings(&hook, &state, first);
     if let Err(message) = write(ctx, &current) {
         let _ = writeln!(log, "rulebearing guard: {message}");
         return RunExit::Untrustworthy.code();
     }
     let _ = writeln!(log, "{}", describe(&current));
-    if !args.watch {
+    let Some(writer) = writer else {
         return 0;
-    }
+    };
     let _ = writeln!(
         log,
         "guard: watching {} source(s) and {} other file(s); {FINDINGS} stays current until standard input closes",
@@ -935,26 +1048,9 @@ pub fn run(
                 }
                 continue;
             }
-            Change::Structural(reason) => {
-                let _ = writeln!(log, "guard: {reason}; reading everything again");
-                check(ctx, &hook, &mut state, None, (Vec::new(), None), scanned)
-            }
-            Change::Sources(changed, newest) => {
-                let plans = plans(&mut state.parts, &changed);
-                let rechecked = changed
-                    .iter()
-                    .map(|(_, _, path)| key::slashed(path.strip_prefix(&ctx.cwd).unwrap_or(path)))
-                    .collect();
-                check(
-                    ctx,
-                    &hook,
-                    &mut state,
-                    Some(plans),
-                    (rechecked, Some(newest)),
-                    scanned,
-                )
-            }
+            change => recheck(ctx, &hook, &mut state, change, scanned, log),
         };
+        writer.publish(done.published.clone());
         current = findings(&hook, &state, done);
         if let Err(message) = write(ctx, &current) {
             let _ = writeln!(log, "rulebearing guard: {message}");
@@ -962,8 +1058,10 @@ pub fn run(
         let _ = writeln!(log, "{}", describe(&current));
         beat = Instant::now();
     }
+    writer.stop();
     let _ = std::fs::remove_file(ctx.resolve(FINDINGS));
     let _ = std::fs::remove_file(ctx.resolve(REQUEST));
+    let _ = std::fs::remove_file(ctx.resolve(GUARD_GRAPH));
     let _ = writeln!(log, "guard: standard input closed; stopped");
     0
 }
@@ -997,6 +1095,7 @@ mod tests {
             today: chrono::NaiveDate::default(),
             timestamp: String::new(),
             color_terminal: false,
+            warm: None,
         }
     }
 
@@ -1089,7 +1188,12 @@ mod tests {
         let mut ctx = context(&dir, &mut stdin);
         let hook = GuardArgs::default().hook();
         let mut state = build(&mut ctx, &hook).map_err(|(_, e)| std::io::Error::other(e))?;
-        let first = answer(&mut ctx, &hook, &mut state);
+        let (first, published) = answer(&mut ctx, &hook, &mut state, true);
+        let published = published.ok_or_else(|| std::io::Error::other("nothing published"))?;
+        assert!(
+            published.modules.iter().any(|m| m.source == "src/a.ts"),
+            "a document answered anew is published"
+        );
         assert!(
             first
                 .as_ref()
@@ -1100,14 +1204,23 @@ mod tests {
             assert_eq!(kept.answer, first);
             kept.answer = Ok("as before".into());
         }
-        assert_eq!(answer(&mut ctx, &hook, &mut state), Ok("as before".into()));
+        let (again, republished) = answer(&mut ctx, &hook, &mut state, true);
+        assert_eq!(again, Ok("as before".into()));
+        assert!(
+            republished.is_none(),
+            "the file already holds an unchanged graph"
+        );
         // A graph that differs by one edge is evaluated.
         if let Some(typescript) = state.parts.typescript.as_mut() {
             for module in &mut typescript.modules {
                 module.dependencies.clear();
             }
         }
-        let changed = answer(&mut ctx, &hook, &mut state);
+        let (changed, unpublished) = answer(&mut ctx, &hook, &mut state, false);
+        assert!(
+            unpublished.is_none(),
+            "nothing is published without --watch"
+        );
         assert_ne!(changed, Ok("as before".into()));
         assert_ne!(changed, first);
         // With --affected the answer follows what git calls changed, so none is kept.
@@ -1116,8 +1229,12 @@ mod tests {
             ..hook.clone()
         };
         state.answered = None;
-        let _ = answer(&mut ctx, &affected, &mut state);
+        let (_, published) = answer(&mut ctx, &affected, &mut state, true);
         assert!(state.answered.is_none());
+        assert!(
+            published.is_some(),
+            "a graph that is not kept is still published"
+        );
         std::fs::remove_dir_all(&dir)
     }
 
@@ -1143,8 +1260,13 @@ mod tests {
             None,
             (Vec::new(), None),
             now_ms(),
+            true,
         );
         assert!(failed.answered.is_err());
+        assert!(
+            failed.published.is_none(),
+            "a failed read publishes nothing"
+        );
         assert_eq!(
             state.watched.check(&dir),
             Change::Structural("the last full read failed".into())

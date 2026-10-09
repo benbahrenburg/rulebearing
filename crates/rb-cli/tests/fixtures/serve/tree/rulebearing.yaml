@@ -1,0 +1,15 @@
+# The fixture for serve --mcp and serve --lsp (crates/rb-cli/tests/serve_mcp.rs and serve_lsp.rs):
+# one violation, src/domain/model.ts importing src/web/view.ts, and a ratchet over it.
+forbidden:
+  - name: domain-not-to-web
+    severity: error
+    comment: "The domain stays independent of the web layer (decision: adr:0010)"
+    fix: Move the shared type into src/domain
+    from: { path: "^src/domain/" }
+    to: { path: "^src/web/" }
+rules:
+  ratchets:
+    - name: domain-web-edges
+      from: { path: "^src/domain/" }
+      to: { path: "^src/web/" }
+      budget: budgets/domain-web.json
