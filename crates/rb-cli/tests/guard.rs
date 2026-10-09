@@ -24,6 +24,9 @@ const BIN: &str = env!("CARGO_BIN_EXE_rulebearing");
 
 const FINDINGS: &str = ".graph/guard/findings.json";
 
+/// How many graph-changing saves the latency test takes.
+const SAVES: usize = 3;
+
 const CONFIG: &str = "rules:
   dependencies:
     forbidden:
@@ -247,6 +250,43 @@ fn watch(dir: &Path) -> Result<Daemon> {
     Ok(Daemon(child))
 }
 
+/// Saves that remove the violating import and then change which service the page uses: each
+/// changes the graph and is checked again alone. The fastest of them is within 100 ms. One
+/// save taken beside the rest of the suite is not a timing (ADR-0059); the p95 is the `bench`
+/// workflow's (testbeds/synth/guard.sh, ADR-0060), and this proves the check can meet it.
+/// Returns the contents the page was left with.
+fn checked_within_100_ms(dir: &Path) -> Result<String> {
+    let clean = |service: usize| {
+        format!(
+            "import {{ s{service} }} from \"../services/s{service}\";\nexport const page = s{service};\n"
+        )
+    };
+    let mut latencies = Vec::new();
+    for service in 0..SAVES {
+        let saved_ms = now_ms();
+        std::fs::write(dir.join("src/ui/page.ts"), clean(service))?;
+        let after = until(dir, Duration::from_secs(10), |f| {
+            f["rechecked"] == serde_json::json!(["src/ui/page.ts"])
+                && f["latencyMs"].as_u64().is_some_and(|ms| {
+                    // The answer for this save, not one carried from the last: the newest file
+                    // it read was written at or after this save.
+                    f["writtenAt"]
+                        .as_u64()
+                        .is_some_and(|at| at.saturating_sub(ms) >= saved_ms)
+                })
+        })?;
+        assert_eq!(after["answer"], "", "the fix clears the finding: {after}");
+        latencies.push(after["latencyMs"].as_u64().unwrap_or(u64::MAX));
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    let fastest = latencies.iter().copied().min().unwrap_or(u64::MAX);
+    assert!(
+        fastest < 100,
+        "from save to findings written, the fastest of {SAVES} saves: {latencies:?} ms"
+    );
+    Ok(clean(SAVES - 1))
+}
+
 #[test]
 fn a_saved_file_is_checked_again_within_100_ms_and_stdin_closing_stops_it() -> Result {
     let dir = tree("watch", 200)?;
@@ -262,20 +302,7 @@ fn a_saved_file_is_checked_again_within_100_ms_and_stdin_closing_stops_it() -> R
         f["writtenAt"].as_u64() > first["writtenAt"].as_u64()
     })?;
     assert_eq!(beat["answer"], first["answer"]);
-    // A save that removes the violating import: checked again alone, within 100 ms.
-    let page = "import { s0 } from \"../services/s0\";\nexport const page = s0;\n";
-    std::fs::write(dir.join("src/ui/page.ts"), page)?;
-    let saved = Instant::now();
-    let after = until(&dir, Duration::from_secs(10), |f| {
-        f["rechecked"] == serde_json::json!(["src/ui/page.ts"])
-    })?;
-    let observed = saved.elapsed();
-    assert_eq!(after["answer"], "", "the fix clears the finding: {after}");
-    let latency = after["latencyMs"].as_u64().unwrap_or(u64::MAX);
-    assert!(
-        latency < 100,
-        "from save to findings written: {latency} ms (observed {observed:?})"
-    );
+    let page = checked_within_100_ms(&dir)?;
     // The hook serves it, once the guard confirms it has seen every change.
     let asked = Instant::now();
     assert_eq!(hook(&dir, &[])?.stdout, b"");
@@ -294,7 +321,7 @@ fn a_saved_file_is_checked_again_within_100_ms_and_stdin_closing_stops_it() -> R
         String::from_utf8_lossy(&answer.stdout).contains("ui-not-to-db"),
         "a stale answer was served"
     );
-    std::fs::write(dir.join("src/ui/page.ts"), page)?;
+    std::fs::write(dir.join("src/ui/page.ts"), &page)?;
     until(&dir, Duration::from_secs(10), |f| f["answer"] == "")?;
     // A new file is structural: everything is read again, and its violation found.
     std::fs::write(

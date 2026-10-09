@@ -23,5 +23,6 @@
     <XunitRunnerVersion>3.1.5</XunitRunnerVersion>
     <TestSdkVersion>18.10.1</TestSdkVersion>
     <CoverletVersion>10.0.1</CoverletVersion>
+    <AnalyzerTestingVersion>1.1.4</AnalyzerTestingVersion>
   </PropertyGroup>
 </Project>
