@@ -153,7 +153,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        repo: [microsoft/semantic-kernel, microsoft/autogen]
+        # semantic-kernel and autogen are the wave 2 proof; the Python and TypeScript greenfield
+        # beds join them with their fixtures (plan 0003, Step 25).
+        repo:
+          - microsoft/semantic-kernel
+          - microsoft/autogen
+          - apache/superset
+          - getsentry/sentry
+          - zulip/zulip
+          - PostHog/posthog
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
