@@ -294,7 +294,7 @@ pub fn extract_with_warnings(
     paths: &[String],
 ) -> Result<(GraphDocument, Vec<rb_model::Warning>), ExtractError> {
     let parts = extract_parts(ctx, config, paths, Plans::default())?;
-    merge(config, &parts)
+    merge_owned(config, parts)
 }
 
 /// Runs each extractor as `plans` says, in the order [`merge`] joins them; the first error that
@@ -533,32 +533,47 @@ pub fn merge(
     config: &Config,
     parts: &Parts,
 ) -> Result<(GraphDocument, Vec<rb_model::Warning>), ExtractError> {
+    merge_owned(config, parts.clone())
+}
+
+/// [`merge`] for a caller that has no further use for `parts`: their modules and code layers are
+/// moved into the document, not copied, so a large compiled graph is never held twice (plan 0003,
+/// 3G, peak memory on compiled .NET graphs).
+///
+/// # Errors
+/// As [`merge`].
+pub fn merge_owned(
+    config: &Config,
+    parts: Parts,
+) -> Result<(GraphDocument, Vec<rb_model::Warning>), ExtractError> {
     let mut modules = Vec::new();
     let mut code: Option<rb_model::CodeLayer> = None;
     let mut inspected = Inspected::new();
     let mut warnings = Vec::new();
-    if let Some(typescript) = &parts.typescript {
-        modules.extend(typescript.modules.iter().cloned());
-        warnings.extend(typescript.warnings.iter().cloned());
-        if let Some(layer) = &typescript.code {
-            code.get_or_insert_with(Default::default)
-                .merge(layer.clone());
+    let Parts {
+        typescript,
+        dotnet,
+        python,
+    } = parts;
+    let mut sidecar = None;
+    if let Some(typescript) = typescript {
+        modules.extend(typescript.modules);
+        warnings.extend(typescript.warnings);
+        if let Some(layer) = typescript.code {
+            code.get_or_insert_with(Default::default).merge(layer);
         }
+        sidecar = typescript.sidecar;
     }
-    for (language, part) in [
-        (Language::Dotnet, &parts.dotnet),
-        (Language::Python, &parts.python),
-    ] {
+    for (language, part) in [(Language::Dotnet, dotnet), (Language::Python, python)] {
         let Some(extraction) = part else {
             continue;
         };
-        modules.extend(filter_paths(config, extraction.modules.clone()));
-        if let Some(layer) = &extraction.code {
-            code.get_or_insert_with(Default::default)
-                .merge(layer.clone());
+        modules.extend(filter_paths(config, extraction.modules));
+        if let Some(layer) = extraction.code {
+            code.get_or_insert_with(Default::default).merge(layer);
         }
-        inspected.insert(language, extraction.inspected.clone());
-        warnings.extend(extraction.warnings.iter().cloned());
+        inspected.insert(language, extraction.inspected);
+        warnings.extend(extraction.warnings);
     }
     if modules.is_empty() {
         return Err(ExtractError::NoModulesFound);
@@ -576,7 +591,7 @@ pub fn merge(
     if !inspected.is_empty() {
         document.summary.inspected = Some(inspected);
     }
-    document.summary.sidecar = parts.typescript.as_ref().and_then(|t| t.sidecar.clone());
+    document.summary.sidecar = sidecar;
     Ok((document, warnings))
 }
 

@@ -353,7 +353,7 @@ fn finish(
                 ctx,
                 effective,
                 &tail,
-                (&output, None),
+                (output, None),
                 finishing,
                 progress,
                 stderr,
@@ -364,18 +364,28 @@ fn finish(
             let tail = verdict.tail();
             match render(ctx, &verdict, output_type, report_options) {
                 Ok((output, count)) => {
+                    // The rendered output is kept for the next run with the same report, so the
+                    // run's copy is a clone only when the cache stores it.
+                    let kept = match (cache, report_part) {
+                        (Some(cache), Some(report_part)) => Some((cache, report_part)),
+                        _ => None,
+                    };
+                    let (printed, stored) = if kept.is_some() {
+                        (output.clone(), Some(output))
+                    } else {
+                        (output, None)
+                    };
                     let outcome = conclude(
                         ctx,
                         effective,
                         &tail,
-                        (&output, count),
+                        (printed, count),
                         finishing,
                         progress,
                         stderr,
                     );
-                    // The rendered output is kept for the next run with the same report.
-                    let writing = match (cache, report_part) {
-                        (Some(cache), Some(report_part)) => writing.then_render(
+                    let writing = match (kept, stored) {
+                        (Some((cache, report_part)), Some(output)) => writing.then_render(
                             ctx.resolve(&cache.folder),
                             crate::cache::evaluated::render_key(&key, report_part),
                             output,
@@ -398,7 +408,7 @@ fn finish(
                     ctx,
                     effective,
                     &tail,
-                    (&output, count),
+                    (output, count),
                     finishing,
                     progress,
                     stderr,
@@ -647,9 +657,15 @@ fn render(
         output.push('\n');
         return Ok((output, None));
     }
-    let mut value =
-        crate::value::document(&verdict.document).map_err(|e| RunError::Engine(e.into()))?;
-    if let Some(name) = rb_config::js::plugin::plugin_name(output_type) {
+    let plugin = rb_config::js::plugin::plugin_name(output_type);
+    // A reporter that does not read the code layer is not handed one (rb_report::READS_CODE).
+    let mut value = if plugin.is_none() && !rb_report::reads_code(output_type) {
+        crate::value::without_code(&verdict.document)
+    } else {
+        crate::value::document(&verdict.document)
+    }
+    .map_err(|e| RunError::Engine(e.into()))?;
+    if let Some(name) = plugin {
         let rendered = crate::plugin::render(&ctx.cwd, name, &mut value, options.strict_schema)?;
         crate::value::release(value);
         return Ok((rendered.output, Some(rendered.exit_code)));
@@ -693,7 +709,7 @@ fn conclude(
     ctx: &Context<'_>,
     config: &Config,
     tail: &Tail,
-    (output, plugin_count): (&str, Option<u64>),
+    (output, plugin_count): (String, Option<u64>),
     finishing: Finishing<'_>,
     mut progress: Progress,
     mut stderr: String,
@@ -724,10 +740,12 @@ fn conclude(
         };
     }
     progress.stage("report");
+    // The output moves into stdout rather than being copied: a large graph's report is hundreds
+    // of megabytes (plan 0003, 3G, peak memory on compiled .NET graphs).
     let mut stdout = String::new();
-    if api.is_some() {
-        output.clone_into(&mut stdout);
-    } else if let Err(message) = write_output(ctx, output_to, output, &mut stdout) {
+    if api.is_some() || output_to == "-" || output_to.is_empty() {
+        stdout = output;
+    } else if let Err(message) = write_output(ctx, output_to, &output, &mut stdout) {
         let _ = writeln!(stderr, "rulebearing cruise: {message}");
         return Outcome {
             stdout,

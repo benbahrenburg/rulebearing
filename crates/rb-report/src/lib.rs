@@ -53,6 +53,19 @@ pub(crate) mod utl;
 
 use serde_json::Value;
 
+/// The output types that read the code layer (`code`): `json` and `anon` print it, `sarif`,
+/// `junit` and `trx` place an element violation at its type's declaration, and `plantuml` draws
+/// types. Every other reporter renders the same result with or without it, so the command line
+/// hands them a result without it: on a compiled .NET graph the code layer is most of the
+/// document (plan 0003, 3G, peak memory on compiled .NET graphs). A plugin reporter always gets
+/// the whole result.
+pub const READS_CODE: &[&str] = &["json", "anon", "sarif", "junit", "trx", "plantuml"];
+
+/// Whether `output_type` reads the code layer ([`READS_CODE`]).
+pub fn reads_code(output_type: &str) -> bool {
+    READS_CODE.contains(&output_type)
+}
+
 /// Every output type, with the wave it lands in, from
 /// [coverage § Output types](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types)
 /// and [design § Reporters](../../../docs/artifacts/design.md#reporters).
@@ -477,6 +490,17 @@ pub(crate) fn decision(comment: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_reporters_that_read_the_code_layer_are_output_types() {
+        for output_type in READS_CODE {
+            assert!(is_output_type(output_type), "{output_type}");
+            assert!(reads_code(output_type));
+        }
+        assert!(!reads_code("err"));
+        assert!(!reads_code("dot"));
+        assert!(!reads_code("plugin:x.js"));
+    }
     use serde_json::json;
 
     /// A GraphViz that is there and draws every program as `<svg/>`.

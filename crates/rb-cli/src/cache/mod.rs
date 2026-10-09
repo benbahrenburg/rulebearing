@@ -914,7 +914,7 @@ pub fn extract_cached(
         Decided::Extract(decision) => return extract(*decision, found.hashes),
         Decided::Hit(parts) => *parts,
     };
-    let (document, warnings) = pipeline::merge(config, &parts)?;
+    let (document, warnings) = pipeline::merge_owned(config, parts)?;
     Ok(Cached {
         content: Content::Extracted(Box::new(document), warnings),
         summary: summary(&Served::Hit),
