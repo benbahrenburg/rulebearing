@@ -158,6 +158,7 @@ jobs:
         repo:
           - microsoft/semantic-kernel
           - microsoft/autogen
+          - jasontaylordev/CleanArchitecture
           - apache/superset
           - getsentry/sentry
           - zulip/zulip
