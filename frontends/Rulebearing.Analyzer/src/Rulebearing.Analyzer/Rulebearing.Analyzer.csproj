@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Rulebearing.Analyzer: dependency and element rules from rulebearing.yaml, evaluated on the
+    semantic model at compile time and reported as RB0001 and RB0002 with the rule's fix.
+    Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21.
+    Requirement: docs/prd.md#fr-dist-04. Decision: docs/adr/0021-agent-surface-cli-first.md.
+  -->
+  <PropertyGroup>
+    <!-- A Roslyn component loads into every compiler host, which needs netstandard2.0. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsPackable>true</IsPackable>
+    <PackageId>Rulebearing.Analyzer</PackageId>
+    <Description>Rulebearing's architecture rules (rulebearing.yaml) as Roslyn diagnostics: a forbidden dependency or a broken element rule fails dotnet build with the line and the rule's fix.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <!-- An analyzer package ships no lib/: the analyzer and its YAML reader go to analyzers/. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <!-- The YAML reader lands beside the analyzer in the build output, so a build can be pointed
+         at that folder (testbeds/oracles/analyzer-parity.py) as a package's analyzers/ folder. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
+    <PackageReference Include="YamlDotNet" Version="$(YamlDotNetVersion)" PrivateAssets="all" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(PkgYamlDotNet)/lib/netstandard2.0/YamlDotNet.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rulebearing.Analyzer.Tests" />
+  </ItemGroup>
+</Project>

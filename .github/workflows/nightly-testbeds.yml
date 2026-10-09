@@ -447,8 +447,12 @@ jobs:
         env:
           REPO: ${{ matrix.repo }}
         run: echo "slug=${REPO//\//__}" >> "$GITHUB_OUTPUT"
+      # Rulebearing.Analyzer, which dotnet.sh attaches to a rebuild of the oracle's test project and
+      # holds to the gate's element findings (plan 0003, Step 21; testbeds/oracles/analyzer_parity.py).
+      - run: dotnet build frontends/Rulebearing.Analyzer/src/Rulebearing.Analyzer/Rulebearing.Analyzer.csproj -c Release --nologo
       - env:
           REPO: ${{ matrix.repo }}
+          RULEBEARING_ANALYZER: ${{ github.workspace }}/frontends/Rulebearing.Analyzer/src/Rulebearing.Analyzer/bin/Release/netstandard2.0
         run: |
           status=0
           testbeds/oracles/dotnet.sh "$REPO" testbeds/out || status=$?
@@ -464,8 +468,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: oracle-${{ steps.slug.outputs.slug }}
-          # The row's result, its plantuml round trip (.plantuml.json) and source mode's
-          # precision (.source-mode.json).
+          # The row's result, its plantuml round trip (.plantuml.json), source mode's precision
+          # (.source-mode.json) and the analyzer's agreement with the gate (.analyzer.json).
           path: |
             testbeds/results/${{ steps.slug.outputs.slug }}*.json
             testbeds/out/${{ steps.slug.outputs.slug }}/*.yaml

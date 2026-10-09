@@ -156,6 +156,19 @@ if [ -s "$out/graph.json" ]; then
   fi
   rm -f "$out/source.json"
 fi
+# Rulebearing.Analyzer against the gate (plan 0003, Step 21): the imported rules as written and
+# with every `should` negated, the analyzer's RB0002 findings on a rebuild of the test project
+# against cruise's over this graph (testbeds/oracles/analyzer_parity.py). Run when
+# RULEBEARING_ANALYZER names the folder holding Rulebearing.Analyzer.dll and YamlDotNet.dll; a
+# difference fails the row. Written to <results>/<owner>__<repo>.analyzer.json.
+analyzer_status=0
+if [ -n "${RULEBEARING_ANALYZER:-}" ] && [ -s "$out/graph.json" ]; then
+  python3 "$here/analyzer_parity.py" --repo "$repo" --sha "$sha" --checkout "$checkout" \
+    --config "$out/imported.yaml" --graph "$out/graph.json" --binary "$bin" \
+    --analyzer "$RULEBEARING_ANALYZER" --project "$test_project" \
+    "--msbuild=${msbuild_args[*]-}" --work "$out/analyzer" --out "$results/$slug.analyzer.json" ||
+    analyzer_status=1
+fi
 rm -f "$out/graph.json"
 rm -f "$out/rulebearing.xml"
 # Without an active rule there is nothing to cruise and no report: compare.py then gives every test
@@ -175,6 +188,11 @@ python3 "$here/compare.py" dotnet --trx "$out/incumbent.trx" --imported "$out/im
 compare_status=$?
 if [ "$compare_status" = 0 ] && [ "$plantuml_status" != 0 ]; then
   echo "dotnet-oracle: the plantuml round trip failed; see $results/$slug.plantuml.json and $out/plantuml" >&2
+  exit 1
+fi
+# The analyzer's disagreement fails the row whatever the tests compared, nothing-compared included.
+if [ "$analyzer_status" != 0 ]; then
+  echo "dotnet-oracle: Rulebearing.Analyzer disagrees with the gate; see $results/$slug.analyzer.json and $out/analyzer" >&2
   exit 1
 fi
 exit "$compare_status"

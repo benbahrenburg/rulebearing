@@ -21,6 +21,357 @@ use std::fmt::Write as _;
 use regex::Regex;
 use regex_syntax::ast::{self, Ast};
 
+/// One proven case of the compatibility table: a pattern, a subject, and whether JavaScript's
+/// `new RegExp(pattern).test(subject)` is true, which [`compile`] must agree with. Exported to
+/// `frontends/Rulebearing.Analyzer` as `regex-compatibility.json`, so the Roslyn analyzer's
+/// matcher is held to the same cases ([Wave 3, Step 21](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CompatCase {
+    /// The group of table rows the case proves.
+    pub row: &'static str,
+    /// The pattern, JavaScript syntax.
+    pub pattern: &'static str,
+    /// The string tested.
+    pub subject: &'static str,
+    /// Whether the pattern matches it.
+    pub matches: bool,
+}
+
+/// Every case that proves a supported row of [`COMPATIBILITY`].
+pub const COMPATIBILITY_CASES: &[CompatCase] = &[
+    CompatCase {
+        row: "digit_word_and_space_are_ascii_as_in_javascript",
+        pattern: r"^\d+$",
+        subject: "123",
+        matches: true,
+    },
+    CompatCase {
+        row: "digit_word_and_space_are_ascii_as_in_javascript",
+        pattern: r"^\d$",
+        subject: "٣",
+        matches: false,
+    },
+    CompatCase {
+        row: "digit_word_and_space_are_ascii_as_in_javascript",
+        pattern: r"^\D$",
+        subject: "٣",
+        matches: true,
+    },
+    CompatCase {
+        row: "digit_word_and_space_are_ascii_as_in_javascript",
+        pattern: r"^\w+$",
+        subject: "a_Z9",
+        matches: true,
+    },
+    CompatCase {
+        row: "digit_word_and_space_are_ascii_as_in_javascript",
+        pattern: r"^\w$",
+        subject: "é",
+        matches: false,
+    },
+    CompatCase {
+        row: "digit_word_and_space_are_ascii_as_in_javascript",
+        pattern: r"^\W$",
+        subject: "é",
+        matches: true,
+    },
+    CompatCase {
+        row: "digit_word_and_space_are_ascii_as_in_javascript",
+        pattern: r"^\s$",
+        subject: "\u{FEFF}",
+        matches: true,
+    },
+    CompatCase {
+        row: "digit_word_and_space_are_ascii_as_in_javascript",
+        pattern: r"^\S$",
+        subject: "a",
+        matches: true,
+    },
+    CompatCase {
+        row: "digit_word_and_space_are_ascii_as_in_javascript",
+        pattern: r"a\bb|a\b",
+        subject: "a b",
+        matches: true,
+    },
+    CompatCase {
+        row: "digit_word_and_space_are_ascii_as_in_javascript",
+        pattern: r"\Bb",
+        subject: "ab",
+        matches: true,
+    },
+    CompatCase {
+        row: "digit_word_and_space_are_ascii_as_in_javascript",
+        pattern: r"[\d]",
+        subject: "5",
+        matches: true,
+    },
+    CompatCase {
+        row: "digit_word_and_space_are_ascii_as_in_javascript",
+        pattern: r"[^\D]",
+        subject: "5",
+        matches: true,
+    },
+    CompatCase {
+        row: "dot_excludes_the_javascript_line_terminators",
+        pattern: "^a.b$",
+        subject: "axb",
+        matches: true,
+    },
+    CompatCase {
+        row: "dot_excludes_the_javascript_line_terminators",
+        pattern: "^a.b$",
+        subject: "a\nb",
+        matches: false,
+    },
+    CompatCase {
+        row: "dot_excludes_the_javascript_line_terminators",
+        pattern: "^a.b$",
+        subject: "a\u{2028}b",
+        matches: false,
+    },
+    CompatCase {
+        row: "dot_excludes_the_javascript_line_terminators",
+        pattern: "^a[.]b$",
+        subject: "a.b",
+        matches: true,
+    },
+    CompatCase {
+        row: "escaped_punctuation_and_letters_are_literals",
+        pattern: r"^src\/a\-b$",
+        subject: "src/a-b",
+        matches: true,
+    },
+    CompatCase {
+        row: "escaped_punctuation_and_letters_are_literals",
+        pattern: r"^\p$",
+        subject: "p",
+        matches: true,
+    },
+    CompatCase {
+        row: "escaped_punctuation_and_letters_are_literals",
+        pattern: r"^\a\e$",
+        subject: "ae",
+        matches: true,
+    },
+    CompatCase {
+        row: "escaped_punctuation_and_letters_are_literals",
+        pattern: r"^\.$",
+        subject: ".",
+        matches: true,
+    },
+    CompatCase {
+        row: "escaped_punctuation_and_letters_are_literals",
+        pattern: r"^\.$",
+        subject: "x",
+        matches: false,
+    },
+    CompatCase {
+        row: "escaped_punctuation_and_letters_are_literals",
+        pattern: r"^\@$",
+        subject: "@",
+        matches: true,
+    },
+    CompatCase {
+        row: "escaped_punctuation_and_letters_are_literals",
+        pattern: "^é\\é$",
+        subject: "éé",
+        matches: true,
+    },
+    CompatCase {
+        row: "braces_that_are_not_quantifiers_are_literal",
+        pattern: "^a{2}$",
+        subject: "aa",
+        matches: true,
+    },
+    CompatCase {
+        row: "braces_that_are_not_quantifiers_are_literal",
+        pattern: "^a{1,}$",
+        subject: "aaa",
+        matches: true,
+    },
+    CompatCase {
+        row: "braces_that_are_not_quantifiers_are_literal",
+        pattern: "^a{1,2}$",
+        subject: "aa",
+        matches: true,
+    },
+    CompatCase {
+        row: "braces_that_are_not_quantifiers_are_literal",
+        pattern: "^{foo}$",
+        subject: "{foo}",
+        matches: true,
+    },
+    CompatCase {
+        row: "braces_that_are_not_quantifiers_are_literal",
+        pattern: "^a{$",
+        subject: "a{",
+        matches: true,
+    },
+    CompatCase {
+        row: "braces_that_are_not_quantifiers_are_literal",
+        pattern: "^a{,2}$",
+        subject: "a{,2}",
+        matches: true,
+    },
+    CompatCase {
+        row: "braces_that_are_not_quantifiers_are_literal",
+        pattern: "^x]$",
+        subject: "x]",
+        matches: true,
+    },
+    CompatCase {
+        row: "classes_keep_javascript_meaning",
+        pattern: "^[[]$",
+        subject: "[",
+        matches: true,
+    },
+    CompatCase {
+        row: "classes_keep_javascript_meaning",
+        pattern: "^[a&&b]$",
+        subject: "&",
+        matches: true,
+    },
+    CompatCase {
+        row: "classes_keep_javascript_meaning",
+        pattern: "^[~~]$",
+        subject: "~",
+        matches: true,
+    },
+    CompatCase {
+        row: "classes_keep_javascript_meaning",
+        pattern: r"^[a\-]$",
+        subject: "-",
+        matches: true,
+    },
+    CompatCase {
+        row: "classes_keep_javascript_meaning",
+        pattern: r"^[\b]$",
+        subject: "\u{8}",
+        matches: true,
+    },
+    CompatCase {
+        row: "classes_keep_javascript_meaning",
+        pattern: "^[^]$",
+        subject: "\n",
+        matches: true,
+    },
+    CompatCase {
+        row: "classes_keep_javascript_meaning",
+        pattern: "^[]$",
+        subject: "",
+        matches: false,
+    },
+    CompatCase {
+        row: "classes_keep_javascript_meaning",
+        pattern: "a[]",
+        subject: "a",
+        matches: false,
+    },
+    CompatCase {
+        row: "classes_keep_javascript_meaning",
+        pattern: "^[]]$",
+        subject: "]",
+        matches: false,
+    },
+    CompatCase {
+        row: "classes_keep_javascript_meaning",
+        pattern: r"^[\8]$",
+        subject: "8",
+        matches: true,
+    },
+    CompatCase {
+        row: "classes_keep_javascript_meaning",
+        pattern: "^[^a]$",
+        subject: "b",
+        matches: true,
+    },
+    CompatCase {
+        row: "classes_keep_javascript_meaning",
+        pattern: "^[^a]$",
+        subject: "a",
+        matches: false,
+    },
+    CompatCase {
+        row: "character_escapes",
+        pattern: r"^\x41\u0042$",
+        subject: "AB",
+        matches: true,
+    },
+    CompatCase {
+        row: "character_escapes",
+        pattern: r"^\t\n\v\f\r$",
+        subject: "\t\n\u{B}\u{C}\r",
+        matches: true,
+    },
+    CompatCase {
+        row: "character_escapes",
+        pattern: r"^\0$",
+        subject: "\0",
+        matches: true,
+    },
+    CompatCase {
+        row: "character_escapes",
+        pattern: r"^\cJ$",
+        subject: "\n",
+        matches: true,
+    },
+    CompatCase {
+        row: "character_escapes",
+        pattern: r"^\xZZ$",
+        subject: "xZZ",
+        matches: true,
+    },
+    CompatCase {
+        row: "character_escapes",
+        pattern: r"^\uZZ$",
+        subject: "uZZ",
+        matches: true,
+    },
+    CompatCase {
+        row: "character_escapes",
+        pattern: r"^[\101]$",
+        subject: "A",
+        matches: true,
+    },
+    CompatCase {
+        row: "character_escapes",
+        pattern: r"^\c1$",
+        subject: "\\c1",
+        matches: true,
+    },
+    CompatCase {
+        row: "groups_and_quantifiers",
+        pattern: "^(?:ab)+?$",
+        subject: "abab",
+        matches: true,
+    },
+    CompatCase {
+        row: "groups_and_quantifiers",
+        pattern: "^(?<name>x)$",
+        subject: "x",
+        matches: true,
+    },
+    CompatCase {
+        row: "groups_and_quantifiers",
+        pattern: "^a*b+c?$",
+        subject: "aabbb",
+        matches: true,
+    },
+];
+
+/// Patterns that are refused, with what each is refused for: lookaround, which has no
+/// linear-time equivalent, and malformed patterns.
+pub const REFUSED_PATTERNS: &[(&str, &str)] = &[
+    ("a(?=b)", "(?=...) lookahead"),
+    ("a(?!b)", "(?!...) lookahead"),
+    ("(?<=a)b", "(?<=...) lookbehind"),
+    ("(?<!a)b", "(?<!...) lookbehind"),
+    ("a\\", "invalid"),
+    ("[a", "invalid"),
+    ("(?i)a", "invalid"),
+    ("(a", "invalid"),
+];
+
 /// One row of the JavaScript-to-Rust compatibility table.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CompatRow {
@@ -841,90 +1192,84 @@ mod tests {
     }
 
     #[test]
-    fn digit_word_and_space_are_ascii_as_in_javascript() {
-        assert!(matches(r"^\d+$", "123"));
-        assert!(
-            !matches(r"^\d$", "٣"),
-            "Arabic-Indic digit is not \\d in JavaScript"
+    fn every_compatibility_case_holds() {
+        for case in COMPATIBILITY_CASES {
+            assert_eq!(
+                matches(case.pattern, case.subject),
+                case.matches,
+                "{}: {:?} on {:?}",
+                case.row,
+                case.pattern,
+                case.subject
+            );
+        }
+        let rows: std::collections::BTreeSet<&str> =
+            COMPATIBILITY_CASES.iter().map(|c| c.row).collect();
+        assert_eq!(rows.len(), 7, "every group of rows is proven: {rows:?}");
+    }
+
+    #[test]
+    fn refused_patterns_are_refused() {
+        for (pattern, construct) in REFUSED_PATTERNS {
+            assert!(compile(pattern).is_err(), "{pattern} ({construct})");
+        }
+    }
+
+    /// The cases as the Roslyn analyzer's tests read them, compared byte for byte with the
+    /// committed copy; `RB_UPDATE_SNAPSHOTS=1` rewrites it.
+    #[test]
+    fn the_cases_are_exported_for_the_analyzer() -> Result<(), Box<dyn std::error::Error>> {
+        // Structs, not `json!`: the field order must not depend on whether a workspace build
+        // unifies serde_json's `preserve_order` feature in.
+        #[derive(serde::Serialize)]
+        struct Case<'a> {
+            row: &'a str,
+            pattern: &'a str,
+            subject: &'a str,
+            matches: bool,
+        }
+        #[derive(serde::Serialize)]
+        struct Refused<'a> {
+            pattern: &'a str,
+            construct: &'a str,
+        }
+        #[derive(serde::Serialize)]
+        struct Table<'a> {
+            cases: Vec<Case<'a>>,
+            refused: Vec<Refused<'a>>,
+        }
+        let table = Table {
+            cases: COMPATIBILITY_CASES
+                .iter()
+                .map(|c| Case {
+                    row: c.row,
+                    pattern: c.pattern,
+                    subject: c.subject,
+                    matches: c.matches,
+                })
+                .collect(),
+            refused: REFUSED_PATTERNS
+                .iter()
+                .map(|&(pattern, construct)| Refused { pattern, construct })
+                .collect(),
+        };
+        let mut text = serde_json::to_string_pretty(&table)?;
+        text.push('\n');
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
+            "../../frontends/Rulebearing.Analyzer/tests/Rulebearing.Analyzer.Tests/regex-compatibility.json",
         );
-        assert!(matches(r"^\D$", "٣"));
-        assert!(matches(r"^\w+$", "a_Z9"));
-        assert!(!matches(r"^\w$", "é"));
-        assert!(matches(r"^\W$", "é"));
-        assert!(matches(r"^\s$", "\u{FEFF}"));
-        assert!(matches(r"^\S$", "a"));
-        assert!(matches(r"a\bb|a\b", "a b"));
-        assert!(matches(r"\Bb", "ab"));
-        assert!(matches(r"[\d]", "5"));
-        assert!(matches(r"[^\D]", "5"));
-    }
-
-    #[test]
-    fn dot_excludes_the_javascript_line_terminators() {
-        assert!(matches("^a.b$", "axb"));
-        assert!(!matches("^a.b$", "a\nb"));
-        assert!(!matches("^a.b$", "a\u{2028}b"));
-        assert!(matches("^a[.]b$", "a.b"));
-    }
-
-    #[test]
-    fn escaped_punctuation_and_letters_are_literals() {
-        assert!(matches(r"^src\/a\-b$", "src/a-b"));
-        assert!(matches(r"^\p$", "p"), "no u flag: \\p is p");
-        assert!(matches(r"^\a\e$", "ae"));
-        assert!(matches(r"^\.$", "."));
-        assert!(!matches(r"^\.$", "x"));
-        assert!(matches(r"^\@$", "@"));
-        assert!(matches("^é\\é$", "éé"));
-    }
-
-    #[test]
-    fn braces_that_are_not_quantifiers_are_literal() {
-        assert!(matches("^a{2}$", "aa"));
-        assert!(matches("^a{1,}$", "aaa"));
-        assert!(matches("^a{1,2}$", "aa"));
-        assert!(matches("^{foo}$", "{foo}"));
-        assert!(matches("^a{$", "a{"));
-        assert!(matches("^a{,2}$", "a{,2}"));
-        assert!(matches("^x]$", "x]"));
-    }
-
-    #[test]
-    fn classes_keep_javascript_meaning() {
-        assert!(matches("^[[]$", "["));
-        assert!(matches("^[a&&b]$", "&"));
-        assert!(matches("^[~~]$", "~"));
-        assert!(matches(r"^[a\-]$", "-"));
-        assert!(matches(r"^[\b]$", "\u{8}"));
-        assert!(matches("^[^]$", "\n"));
-        assert!(!matches("^[]$", ""));
-        assert!(!matches("a[]", "a"));
-        assert!(
-            !matches("^[]]$", "]"),
-            "[] matches nothing, then a literal ]"
+        if std::env::var_os("RB_UPDATE_SNAPSHOTS").is_some() {
+            if let Some(folder) = path.parent() {
+                std::fs::create_dir_all(folder)?;
+            }
+            std::fs::write(&path, &text)?;
+        }
+        assert_eq!(
+            std::fs::read_to_string(&path)?,
+            text,
+            "regenerate with RB_UPDATE_SNAPSHOTS=1"
         );
-        assert!(matches(r"^[\8]$", "8"));
-        assert!(matches("^[^a]$", "b"));
-        assert!(!matches("^[^a]$", "a"));
-    }
-
-    #[test]
-    fn character_escapes() {
-        assert!(matches(r"^\x41\u0042$", "AB"));
-        assert!(matches(r"^\t\n\v\f\r$", "\t\n\u{B}\u{C}\r"));
-        assert!(matches(r"^\0$", "\0"));
-        assert!(matches(r"^\cJ$", "\n"));
-        assert!(matches(r"^\xZZ$", "xZZ"));
-        assert!(matches(r"^\uZZ$", "uZZ"));
-        assert!(matches(r"^[\101]$", "A"));
-        assert!(matches(r"^\c1$", "\\c1"));
-    }
-
-    #[test]
-    fn groups_and_quantifiers() {
-        assert!(matches("^(?:ab)+?$", "abab"));
-        assert!(matches("^(?<name>x)$", "x"));
-        assert!(matches("^a*b+c?$", "aabbb"));
+        Ok(())
     }
 
     #[test]

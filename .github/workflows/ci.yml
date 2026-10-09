@@ -258,6 +258,16 @@ jobs:
       - run: wrappers/nuget/smoke.sh
         env:
           RULEBEARING_BINARY: ${{ github.workspace }}/target/release/rulebearing
+      # Rulebearing.Analyzer: its tests at the coverage floor, then its findings against the gate's
+      # on the extractor's sample fixture (plan 0003, Step 21); the nightly does the same per oracle.
+      - run: dotnet test frontends/Rulebearing.Analyzer/tests/Rulebearing.Analyzer.Tests --nologo -p:Threshold=70 -p:ThresholdType=line -p:ThresholdStat=total
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python3 -m pip install --quiet pyyaml
+      - run: frontends/Rulebearing.Analyzer/parity/run.sh
+        env:
+          RULEBEARING_BIN: ${{ github.workspace }}/target/release/rulebearing
 
   # Mutation testing runs in eight shards so the rule engine's mutants fit the time limit; the
   # `mutants` job below is the required check and passes only when every shard did.
