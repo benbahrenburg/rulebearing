@@ -159,6 +159,7 @@ jobs:
           - microsoft/semantic-kernel
           - microsoft/autogen
           - jasontaylordev/CleanArchitecture
+          - umbraco/Umbraco-CMS
           - apache/superset
           - getsentry/sentry
           - zulip/zulip
