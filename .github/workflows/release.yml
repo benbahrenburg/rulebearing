@@ -12,11 +12,12 @@
 # artefacts without releasing or publishing. Only a `vX.Y.Z` tag releases, and only once the
 # version check and all three install checks have passed.
 # Plans: docs/plans/pending/0000-wave-0-spike.md, Step 11 (binaries);
-# docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 19 (npm);
+# docs/plans/implemented/0001-wave-1-typescript-parity.md, Steps 19 (npm) and 22 (schema on Pages);
 # docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Steps 13 (eslint-plugin-rulebearing)
 # and 14 (PyPI, NuGet).
-# Hardening: docs/adr/0025. Only the npm publish job holds id-token: write (provenance); the PyPI
-# and NuGet publish jobs push with repository secrets and keep contents: read.
+# Hardening: docs/adr/0025. The npm publish job holds id-token: write (provenance) and the schema
+# Pages job holds pages: write and id-token: write (deploy-pages); the PyPI and NuGet publish jobs
+# push with repository secrets and keep contents: read.
 name: release
 
 on:
@@ -544,3 +545,33 @@ jobs:
           for package in nuget/*.nupkg; do
             dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
           done
+
+  # The two schemas at the `$id` they carry, https://benbahrenburg.github.io/rulebearing/schema/
+  # (schema/README.md; plan 0001, Step 22). Served from the tag, so the URL holds the released
+  # contract and not work in progress on main. The repository's Pages source must be "GitHub
+  # Actions" and the github-pages environment must admit `v*` tags.
+  schema-pages:
+    name: schema on Pages
+    needs: [release]
+    # Only a real tag deploys: not a manual run, not a pre-release tag (the same rule as `release`).
+    if: github.event_name == 'push' && !contains(github.ref_name, '-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # deploy-pages authenticates with the job's OIDC token and writes the Pages site, so this job
+    # alone holds pages: write (docs/adr/0025 keeps every other job at contents: read).
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}schema/v1.json
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: mkdir -p site/schema && cp schema/v1.json schema/config-v1.json site/schema/
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
