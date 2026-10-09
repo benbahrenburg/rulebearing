@@ -1,60 +1,76 @@
 {
-  "run": "37880270909",
+  "run": "37932262082",
   "rows": [
     {
       "repo": "n8n-io/n8n",
       "mode": "",
-      "stale": true
+      "sha": "f89687fd8751970cdf8b9cb76761a1258728ca62",
+      "detail": "modules: javascript 1500, python 168, typescript 21244, unknown 4102",
+      "seconds": 11.55,
+      "peakMb": 2270,
+      "run": "37932262082"
     },
     {
       "repo": "grafana/grafana",
       "mode": "",
-      "stale": true
+      "sha": "423f85091b0a63a21fb571122a933133da1652cd",
+      "detail": "modules: javascript 52, typescript 2077, unknown 351",
+      "seconds": 0.78,
+      "peakMb": 233,
+      "run": "37932262082"
     },
     {
       "repo": "elastic/kibana",
       "mode": "",
-      "stale": true
+      "sha": "b502e688526bca862855361abf0081d84e65c547",
+      "detail": "modules: javascript 271, typescript 6825, unknown 390",
+      "seconds": 7.16,
+      "peakMb": 720,
+      "run": "37932262082"
     },
     {
       "repo": "dotnet/aspnetcore",
       "mode": "compiled",
       "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
-      "detail": "modules: dotnet 11487, javascript 268, typescript 207, unknown 69",
-      "seconds": 799.76,
-      "peakMb": 14954,
-      "run": "37862902868"
+      "detail": "modules: dotnet 10131, javascript 268, typescript 207, unknown 69",
+      "seconds": 104.05,
+      "peakMb": 14808,
+      "run": "37932262082"
     },
     {
       "repo": "dotnet/aspnetcore",
       "mode": "source",
-      "stale": true
+      "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
+      "detail": "modules: dotnet 10131, javascript 268, typescript 207, unknown 69",
+      "seconds": 8.9,
+      "peakMb": 654,
+      "run": "37932262082"
     },
     {
       "repo": "jellyfin/jellyfin",
       "mode": "compiled",
       "sha": "fd75964da853765d63101b4889f23a4161e2758b",
-      "detail": "modules: dotnet 2311",
-      "seconds": 12.81,
-      "peakMb": 5120,
-      "run": "37880270909"
+      "detail": "modules: dotnet 2317",
+      "seconds": 10.39,
+      "peakMb": 1940,
+      "run": "37932262082"
     },
     {
       "repo": "home-assistant/core",
       "mode": "",
       "sha": "f50d777440e878554ef6872062341d24c6da0289",
       "detail": "modules: javascript 3, python 22920, typescript 2, unknown 1",
-      "seconds": 11.72,
-      "peakMb": 3973,
-      "run": "37880270909"
+      "seconds": 9.28,
+      "peakMb": 2517,
+      "run": "37932262082"
     }
   ],
   "stopHook": {
     "repo": "dotnet/aspnetcore",
     "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
-    "p95": 1.896,
+    "p95": 1.555,
     "edits": 200,
     "cpus": 4,
-    "run": "37880270909"
+    "run": "37932262082"
   }
 }
