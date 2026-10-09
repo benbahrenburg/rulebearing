@@ -1,0 +1,74 @@
+# testbeds/init: `rulebearing init --dry-run` on zulip/zulip at 370f7b66fca175e66f9545330f4534290cc9f9db
+# (a cruise of . with this configuration exits 0 (8653 findings baselined)). Regenerate with testbeds/init/run.sh.
+# rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
+# Found: TypeScript, Python.
+# Every rule says why it exists (comment) and what to do when it fires (fix);
+# `rulebearing explain <rule>` prints both. The rules of rulebearing:recommended apply too.
+extends: rulebearing:recommended
+languages:
+  typescript:
+    tsConfig: { fileName: tsconfig.json }
+    tsPreCompilationDeps: true
+rules:
+  dependencies:
+    forbidden:
+      - name: no-orphans
+        from:
+          orphan: true
+          pathNot:
+            - "(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "\\.d\\.(c|m)?ts$"
+            - "(^|/)tsconfig\\.json$"
+            - "(^|/)(babel|webpack|vite|vitest|jest|eslint|prettier|next|rollup|tsup)\\.config\\.(js|cjs|mjs|ts|cts|mts|json)$"
+            - "(^|/)(Program|Startup|AssemblyInfo)\\.cs$"
+            - "(^|/)Migrations/"
+            - "(^|/)__main__\\.py$"
+            - "(^|/)conftest\\.py$"
+            - "(^|/)(src/)?(main|index|cli|server|app)\\.[cm]?[jt]sx?$"
+            - "(^|/)(scripts|tools|bin)/"
+      - name: analytics-not-to-its-dependents
+        comment: "pgroonga, tools import analytics, so it sits below them: analytics importing one of them back would make a cycle between top-level packages."
+        fix: "Move what analytics needs from them down into analytics (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^analytics/" }
+        to: { path: "^(pgroonga|tools)/" }
+      - name: confirmation-not-to-its-dependents
+        comment: "pgroonga, tools import confirmation, so it sits below them: confirmation importing one of them back would make a cycle between top-level packages."
+        fix: "Move what confirmation needs from them down into confirmation (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^confirmation/" }
+        to: { path: "^(pgroonga|tools)/" }
+      - name: corporate-not-to-its-dependents
+        comment: "pgroonga, tools import corporate, so it sits below them: corporate importing one of them back would make a cycle between top-level packages."
+        fix: "Move what corporate needs from them down into corporate (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^corporate/" }
+        to: { path: "^(pgroonga|tools)/" }
+      - name: scripts-not-to-its-dependents
+        comment: "pgroonga, tools import scripts, so it sits below them: scripts importing one of them back would make a cycle between top-level packages."
+        fix: "Move what scripts needs from them down into scripts (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^scripts/" }
+        to: { path: "^(pgroonga|tools)/" }
+      - name: zerver-not-to-its-dependents
+        comment: "pgroonga, tools import zerver, so it sits below them: zerver importing one of them back would make a cycle between top-level packages."
+        fix: "Move what zerver needs from them down into zerver (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^zerver/" }
+        to: { path: "^(pgroonga|tools)/" }
+      - name: zilencer-not-to-its-dependents
+        comment: "pgroonga, tools import zilencer, so it sits below them: zilencer importing one of them back would make a cycle between top-level packages."
+        fix: "Move what zilencer needs from them down into zilencer (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^zilencer/" }
+        to: { path: "^(pgroonga|tools)/" }
+      - name: zproject-not-to-its-dependents
+        comment: "pgroonga, tools import zproject, so it sits below them: zproject importing one of them back would make a cycle between top-level packages."
+        fix: "Move what zproject needs from them down into zproject (or a package below it), or have the caller pass it in."
+        severity: error
+        from: { path: "^zproject/" }
+        to: { path: "^(pgroonga|tools)/" }
+options:
+  # Findings present when this file was written. Each expires; fix it before then.
+  knownViolations:
+    # no-circular: 2587, no-orphans: 137, not-to-unresolvable: 5929 (entries elided)
