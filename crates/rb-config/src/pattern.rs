@@ -1219,19 +1219,41 @@ mod tests {
     /// committed copy; `RB_UPDATE_SNAPSHOTS=1` rewrites it.
     #[test]
     fn the_cases_are_exported_for_the_analyzer() -> Result<(), Box<dyn std::error::Error>> {
-        let cases: Vec<serde_json::Value> = COMPATIBILITY_CASES
-            .iter()
-            .map(|c| {
-                serde_json::json!({ "row": c.row, "pattern": c.pattern, "subject": c.subject, "matches": c.matches })
-            })
-            .collect();
-        let refused: Vec<serde_json::Value> = REFUSED_PATTERNS
-            .iter()
-            .map(|(p, c)| serde_json::json!({ "pattern": p, "construct": c }))
-            .collect();
-        let mut text = serde_json::to_string_pretty(
-            &serde_json::json!({ "cases": cases, "refused": refused }),
-        )?;
+        // Structs, not `json!`: the field order must not depend on whether a workspace build
+        // unifies serde_json's `preserve_order` feature in.
+        #[derive(serde::Serialize)]
+        struct Case<'a> {
+            row: &'a str,
+            pattern: &'a str,
+            subject: &'a str,
+            matches: bool,
+        }
+        #[derive(serde::Serialize)]
+        struct Refused<'a> {
+            pattern: &'a str,
+            construct: &'a str,
+        }
+        #[derive(serde::Serialize)]
+        struct Table<'a> {
+            cases: Vec<Case<'a>>,
+            refused: Vec<Refused<'a>>,
+        }
+        let table = Table {
+            cases: COMPATIBILITY_CASES
+                .iter()
+                .map(|c| Case {
+                    row: c.row,
+                    pattern: c.pattern,
+                    subject: c.subject,
+                    matches: c.matches,
+                })
+                .collect(),
+            refused: REFUSED_PATTERNS
+                .iter()
+                .map(|&(pattern, construct)| Refused { pattern, construct })
+                .collect(),
+        };
+        let mut text = serde_json::to_string_pretty(&table)?;
         text.push('\n');
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
             "../../frontends/Rulebearing.Analyzer/tests/Rulebearing.Analyzer.Tests/regex-compatibility.json",

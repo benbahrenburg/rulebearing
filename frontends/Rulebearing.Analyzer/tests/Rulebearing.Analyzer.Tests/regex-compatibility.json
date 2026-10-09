@@ -1,356 +1,356 @@
 {
   "cases": [
     {
-      "matches": true,
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
       "pattern": "^\\d+$",
-      "row": "digit_word_and_space_are_ascii_as_in_javascript",
-      "subject": "123"
+      "subject": "123",
+      "matches": true
     },
     {
-      "matches": false,
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
       "pattern": "^\\d$",
-      "row": "digit_word_and_space_are_ascii_as_in_javascript",
-      "subject": "٣"
+      "subject": "٣",
+      "matches": false
     },
     {
-      "matches": true,
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
       "pattern": "^\\D$",
-      "row": "digit_word_and_space_are_ascii_as_in_javascript",
-      "subject": "٣"
+      "subject": "٣",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
       "pattern": "^\\w+$",
-      "row": "digit_word_and_space_are_ascii_as_in_javascript",
-      "subject": "a_Z9"
+      "subject": "a_Z9",
+      "matches": true
     },
     {
-      "matches": false,
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
       "pattern": "^\\w$",
-      "row": "digit_word_and_space_are_ascii_as_in_javascript",
-      "subject": "é"
+      "subject": "é",
+      "matches": false
     },
     {
-      "matches": true,
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
       "pattern": "^\\W$",
-      "row": "digit_word_and_space_are_ascii_as_in_javascript",
-      "subject": "é"
+      "subject": "é",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
       "pattern": "^\\s$",
-      "row": "digit_word_and_space_are_ascii_as_in_javascript",
-      "subject": "﻿"
+      "subject": "﻿",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
       "pattern": "^\\S$",
-      "row": "digit_word_and_space_are_ascii_as_in_javascript",
-      "subject": "a"
+      "subject": "a",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
       "pattern": "a\\bb|a\\b",
-      "row": "digit_word_and_space_are_ascii_as_in_javascript",
-      "subject": "a b"
+      "subject": "a b",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
       "pattern": "\\Bb",
-      "row": "digit_word_and_space_are_ascii_as_in_javascript",
-      "subject": "ab"
+      "subject": "ab",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
       "pattern": "[\\d]",
-      "row": "digit_word_and_space_are_ascii_as_in_javascript",
-      "subject": "5"
+      "subject": "5",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "digit_word_and_space_are_ascii_as_in_javascript",
       "pattern": "[^\\D]",
-      "row": "digit_word_and_space_are_ascii_as_in_javascript",
-      "subject": "5"
+      "subject": "5",
+      "matches": true
     },
     {
-      "matches": true,
-      "pattern": "^a.b$",
       "row": "dot_excludes_the_javascript_line_terminators",
-      "subject": "axb"
-    },
-    {
-      "matches": false,
       "pattern": "^a.b$",
-      "row": "dot_excludes_the_javascript_line_terminators",
-      "subject": "a\nb"
+      "subject": "axb",
+      "matches": true
     },
     {
-      "matches": false,
+      "row": "dot_excludes_the_javascript_line_terminators",
       "pattern": "^a.b$",
-      "row": "dot_excludes_the_javascript_line_terminators",
-      "subject": "a b"
+      "subject": "a\nb",
+      "matches": false
     },
     {
-      "matches": true,
+      "row": "dot_excludes_the_javascript_line_terminators",
+      "pattern": "^a.b$",
+      "subject": "a b",
+      "matches": false
+    },
+    {
+      "row": "dot_excludes_the_javascript_line_terminators",
       "pattern": "^a[.]b$",
-      "row": "dot_excludes_the_javascript_line_terminators",
-      "subject": "a.b"
+      "subject": "a.b",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "escaped_punctuation_and_letters_are_literals",
       "pattern": "^src\\/a\\-b$",
-      "row": "escaped_punctuation_and_letters_are_literals",
-      "subject": "src/a-b"
+      "subject": "src/a-b",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "escaped_punctuation_and_letters_are_literals",
       "pattern": "^\\p$",
-      "row": "escaped_punctuation_and_letters_are_literals",
-      "subject": "p"
+      "subject": "p",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "escaped_punctuation_and_letters_are_literals",
       "pattern": "^\\a\\e$",
-      "row": "escaped_punctuation_and_letters_are_literals",
-      "subject": "ae"
+      "subject": "ae",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "escaped_punctuation_and_letters_are_literals",
       "pattern": "^\\.$",
-      "row": "escaped_punctuation_and_letters_are_literals",
-      "subject": "."
+      "subject": ".",
+      "matches": true
     },
     {
-      "matches": false,
+      "row": "escaped_punctuation_and_letters_are_literals",
       "pattern": "^\\.$",
-      "row": "escaped_punctuation_and_letters_are_literals",
-      "subject": "x"
+      "subject": "x",
+      "matches": false
     },
     {
-      "matches": true,
+      "row": "escaped_punctuation_and_letters_are_literals",
       "pattern": "^\\@$",
-      "row": "escaped_punctuation_and_letters_are_literals",
-      "subject": "@"
+      "subject": "@",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "escaped_punctuation_and_letters_are_literals",
       "pattern": "^é\\é$",
-      "row": "escaped_punctuation_and_letters_are_literals",
-      "subject": "éé"
+      "subject": "éé",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "braces_that_are_not_quantifiers_are_literal",
       "pattern": "^a{2}$",
-      "row": "braces_that_are_not_quantifiers_are_literal",
-      "subject": "aa"
+      "subject": "aa",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "braces_that_are_not_quantifiers_are_literal",
       "pattern": "^a{1,}$",
-      "row": "braces_that_are_not_quantifiers_are_literal",
-      "subject": "aaa"
+      "subject": "aaa",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "braces_that_are_not_quantifiers_are_literal",
       "pattern": "^a{1,2}$",
-      "row": "braces_that_are_not_quantifiers_are_literal",
-      "subject": "aa"
+      "subject": "aa",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "braces_that_are_not_quantifiers_are_literal",
       "pattern": "^{foo}$",
-      "row": "braces_that_are_not_quantifiers_are_literal",
-      "subject": "{foo}"
+      "subject": "{foo}",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "braces_that_are_not_quantifiers_are_literal",
       "pattern": "^a{$",
-      "row": "braces_that_are_not_quantifiers_are_literal",
-      "subject": "a{"
+      "subject": "a{",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "braces_that_are_not_quantifiers_are_literal",
       "pattern": "^a{,2}$",
-      "row": "braces_that_are_not_quantifiers_are_literal",
-      "subject": "a{,2}"
+      "subject": "a{,2}",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "braces_that_are_not_quantifiers_are_literal",
       "pattern": "^x]$",
-      "row": "braces_that_are_not_quantifiers_are_literal",
-      "subject": "x]"
+      "subject": "x]",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "classes_keep_javascript_meaning",
       "pattern": "^[[]$",
-      "row": "classes_keep_javascript_meaning",
-      "subject": "["
+      "subject": "[",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "classes_keep_javascript_meaning",
       "pattern": "^[a&&b]$",
-      "row": "classes_keep_javascript_meaning",
-      "subject": "&"
+      "subject": "&",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "classes_keep_javascript_meaning",
       "pattern": "^[~~]$",
-      "row": "classes_keep_javascript_meaning",
-      "subject": "~"
+      "subject": "~",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "classes_keep_javascript_meaning",
       "pattern": "^[a\\-]$",
-      "row": "classes_keep_javascript_meaning",
-      "subject": "-"
+      "subject": "-",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "classes_keep_javascript_meaning",
       "pattern": "^[\\b]$",
-      "row": "classes_keep_javascript_meaning",
-      "subject": "\b"
+      "subject": "\b",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "classes_keep_javascript_meaning",
       "pattern": "^[^]$",
-      "row": "classes_keep_javascript_meaning",
-      "subject": "\n"
+      "subject": "\n",
+      "matches": true
     },
     {
-      "matches": false,
+      "row": "classes_keep_javascript_meaning",
       "pattern": "^[]$",
-      "row": "classes_keep_javascript_meaning",
-      "subject": ""
+      "subject": "",
+      "matches": false
     },
     {
-      "matches": false,
+      "row": "classes_keep_javascript_meaning",
       "pattern": "a[]",
-      "row": "classes_keep_javascript_meaning",
-      "subject": "a"
+      "subject": "a",
+      "matches": false
     },
     {
-      "matches": false,
+      "row": "classes_keep_javascript_meaning",
       "pattern": "^[]]$",
-      "row": "classes_keep_javascript_meaning",
-      "subject": "]"
+      "subject": "]",
+      "matches": false
     },
     {
-      "matches": true,
+      "row": "classes_keep_javascript_meaning",
       "pattern": "^[\\8]$",
-      "row": "classes_keep_javascript_meaning",
-      "subject": "8"
+      "subject": "8",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "classes_keep_javascript_meaning",
       "pattern": "^[^a]$",
-      "row": "classes_keep_javascript_meaning",
-      "subject": "b"
+      "subject": "b",
+      "matches": true
     },
     {
-      "matches": false,
+      "row": "classes_keep_javascript_meaning",
       "pattern": "^[^a]$",
-      "row": "classes_keep_javascript_meaning",
-      "subject": "a"
+      "subject": "a",
+      "matches": false
     },
     {
-      "matches": true,
+      "row": "character_escapes",
       "pattern": "^\\x41\\u0042$",
-      "row": "character_escapes",
-      "subject": "AB"
+      "subject": "AB",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "character_escapes",
       "pattern": "^\\t\\n\\v\\f\\r$",
-      "row": "character_escapes",
-      "subject": "\t\n\u000b\f\r"
+      "subject": "\t\n\u000b\f\r",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "character_escapes",
       "pattern": "^\\0$",
-      "row": "character_escapes",
-      "subject": "\u0000"
+      "subject": "\u0000",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "character_escapes",
       "pattern": "^\\cJ$",
-      "row": "character_escapes",
-      "subject": "\n"
+      "subject": "\n",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "character_escapes",
       "pattern": "^\\xZZ$",
-      "row": "character_escapes",
-      "subject": "xZZ"
+      "subject": "xZZ",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "character_escapes",
       "pattern": "^\\uZZ$",
-      "row": "character_escapes",
-      "subject": "uZZ"
+      "subject": "uZZ",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "character_escapes",
       "pattern": "^[\\101]$",
-      "row": "character_escapes",
-      "subject": "A"
+      "subject": "A",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "character_escapes",
       "pattern": "^\\c1$",
-      "row": "character_escapes",
-      "subject": "\\c1"
+      "subject": "\\c1",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "groups_and_quantifiers",
       "pattern": "^(?:ab)+?$",
-      "row": "groups_and_quantifiers",
-      "subject": "abab"
+      "subject": "abab",
+      "matches": true
     },
     {
-      "matches": true,
+      "row": "groups_and_quantifiers",
       "pattern": "^(?<name>x)$",
-      "row": "groups_and_quantifiers",
-      "subject": "x"
+      "subject": "x",
+      "matches": true
     },
     {
-      "matches": true,
-      "pattern": "^a*b+c?$",
       "row": "groups_and_quantifiers",
-      "subject": "aabbb"
+      "pattern": "^a*b+c?$",
+      "subject": "aabbb",
+      "matches": true
     }
   ],
   "refused": [
     {
-      "construct": "(?=...) lookahead",
-      "pattern": "a(?=b)"
+      "pattern": "a(?=b)",
+      "construct": "(?=...) lookahead"
     },
     {
-      "construct": "(?!...) lookahead",
-      "pattern": "a(?!b)"
+      "pattern": "a(?!b)",
+      "construct": "(?!...) lookahead"
     },
     {
-      "construct": "(?<=...) lookbehind",
-      "pattern": "(?<=a)b"
+      "pattern": "(?<=a)b",
+      "construct": "(?<=...) lookbehind"
     },
     {
-      "construct": "(?<!...) lookbehind",
-      "pattern": "(?<!a)b"
+      "pattern": "(?<!a)b",
+      "construct": "(?<!...) lookbehind"
     },
     {
-      "construct": "invalid",
-      "pattern": "a\\"
+      "pattern": "a\\",
+      "construct": "invalid"
     },
     {
-      "construct": "invalid",
-      "pattern": "[a"
+      "pattern": "[a",
+      "construct": "invalid"
     },
     {
-      "construct": "invalid",
-      "pattern": "(?i)a"
+      "pattern": "(?i)a",
+      "construct": "invalid"
     },
     {
-      "construct": "invalid",
-      "pattern": "(a"
+      "pattern": "(a",
+      "construct": "invalid"
     }
   ]
 }
