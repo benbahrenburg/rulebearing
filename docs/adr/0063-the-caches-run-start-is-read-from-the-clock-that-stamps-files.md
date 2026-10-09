@@ -12,7 +12,7 @@
 
 A cached run records each input's digest and stamp after its extraction. An input whose modification time is after the run started is recorded as unsettled, so the next run reads it again rather than trusting a digest taken before the edit. The start was read from the system clock, to the nanosecond.
 
-Windows stamps a file with a clock that ticks about every 16 ms. A file edited a few milliseconds after the run started can therefore carry a time a few milliseconds before the start. It is recorded settled, with the digest of the content the run read before the edit. The next run sees the stamp unchanged and serves the stale extraction.
+File systems stamp a file with a coarse clock: Windows' ticks about every 16 ms, and Linux stamps from the kernel's coarse clock, which advances once a jiffy (1 to 10 ms). A file edited a few milliseconds after the run started can therefore carry a time a few milliseconds before the start. It is recorded settled, with the digest of the content the run read before the edit. The next run sees the stamp unchanged and serves the stale extraction.
 
 Pull request 53's Windows job found this. The unit test was then made to edit 50 ms after the start, so that it would not depend on the tick. The plan recorded that the fix needed a design: a slack on the comparison closes the gap, but it also marks every file written within the slack before a run as unsettled. Five cache tests that write and then run at once would then miss.
 
@@ -31,7 +31,8 @@ Same clock, same tick: an edit after the start can never carry a time earlier th
 
 ## Consequences
 
-- On Windows, a file written in the same tick as a run's start, at most about 16 ms before it, is read again by the next run. It is never trusted on a stamp that could be stale. A file written earlier than that is settled, as before. On Linux and macOS, whose files carry nanosecond times, the probe's time is effectively the start.
+- On Windows and Linux, a file written in the same tick as a run's start (at most about 16 ms, or a jiffy, before it) is read again by the next run. It is never trusted on a stamp that could be stale. A file written earlier than that is settled, as before. On macOS, whose file times are fine-grained, the probe's time is effectively the start.
+- Tests that write files and then start a run wait 25 ms between the two, longer than any of these ticks, as a real run starts some time after the files it reads were saved.
 - The unit test edits at once, with no wait, so the Windows job checks the case this decision closes.
 - Each cached run writes and removes one small file in the temporary folder.
 - The probe measures the system's clock as file times use it. A file system that keeps whole seconds is still covered by the whole-second rule, wherever the probe is written.
