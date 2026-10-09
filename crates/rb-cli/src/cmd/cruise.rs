@@ -167,15 +167,54 @@ pub struct Given {
 pub fn hook_answer(ctx: &mut Context<'_>, args: &CruiseArgs, given: Given) -> Outcome {
     let mut args = args.clone();
     args.from_hook = true;
-    let outcome = cruise_with(ctx, &args, Some(given));
+    let outcome = cruise_with(ctx, &args, Some(given), None, None);
     Outcome { code: 0, ..outcome }
 }
 
-fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
-    cruise_with(ctx, args, None)
+/// What a library call to `cruise` answers ([`answer`]): the reporter's output, never written to
+/// `outputTo`, and the run's verdict, with the count uncapped.
+#[derive(Debug, Clone)]
+pub struct Answer {
+    /// The reporter's output.
+    pub output: String,
+    /// The error-severity count the reporter gates on (expired rules and exceeded ratchets
+    /// included), or 0 for a reporter that does not gate.
+    pub violations: u64,
+    /// The warnings and messages the command line prints on stderr.
+    pub stderr: String,
 }
 
-fn cruise_with(ctx: &mut Context<'_>, args: &CruiseArgs, given: Option<Given>) -> Outcome {
+/// A cruise of `args.paths` under `config`, a configuration the caller built in memory: the
+/// command line's run, reporter and verdict, with the output returned rather than written. The
+/// Node binding's `cruise()` ([Wave 3, Step 22](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)).
+///
+/// # Errors
+/// The command line's [`Outcome`] when the run cannot be trusted or the configuration is invalid
+/// (exit 2 or 3), with the reason on its stderr.
+pub fn answer(ctx: &mut Context<'_>, args: &CruiseArgs, config: Config) -> Result<Answer, Outcome> {
+    let verdict = std::cell::Cell::new(None);
+    let outcome = cruise_with(ctx, args, None, Some(config), Some(&verdict));
+    match verdict.get() {
+        Some(RunExit::Violations(violations)) => Ok(Answer {
+            output: outcome.stdout,
+            violations,
+            stderr: outcome.stderr,
+        }),
+        _ => Err(outcome),
+    }
+}
+
+fn cruise(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
+    cruise_with(ctx, args, None, None, None)
+}
+
+fn cruise_with(
+    ctx: &mut Context<'_>,
+    args: &CruiseArgs,
+    given: Option<Given>,
+    preset: Option<Config>,
+    api: Option<&std::cell::Cell<Option<RunExit>>>,
+) -> Outcome {
     if args.info {
         return Outcome {
             stdout: info(),
@@ -186,15 +225,12 @@ fn cruise_with(ctx: &mut Context<'_>, args: &CruiseArgs, given: Option<Given>) -
     if let Some(oneshot) = &args.init {
         return crate::cmd::init::oneshot(ctx, oneshot, args);
     }
-    let mut progress = Progress::new(if args.no_progress {
-        None
-    } else {
-        args.progress
-    });
-    let mut config = match configure::load(ctx, &args.config) {
-        Ok(config) => config,
-        Err(e) => return failed(&RunError::Config(e), ""),
-    };
+    let mut progress = Progress::new(args.progress.filter(|_| !args.no_progress));
+    let mut config =
+        match preset.map_or_else(|| configure::load(ctx, &args.config), |c| Ok(Some(c))) {
+            Ok(config) => config,
+            Err(e) => return failed(&RunError::Config(e), ""),
+        };
     let has_config = config.is_some();
     let liveness = Liveness::of(args.liveness, args.no_liveness, config.as_ref());
     let mut effective = config.take().unwrap_or_default();
@@ -259,6 +295,7 @@ fn cruise_with(ctx: &mut Context<'_>, args: &CruiseArgs, given: Option<Given>) -
         liveness,
         output_type: &output_type,
         output_to: &output_to,
+        api,
     };
     let reporting = Reporting {
         cache: cache.as_ref(),
@@ -635,6 +672,9 @@ struct Finishing<'a> {
     liveness: Liveness,
     output_type: &'a str,
     output_to: &'a str,
+    /// For a library call ([`answer`]): where the verdict goes; the output is returned, not
+    /// written to `output_to`.
+    api: Option<&'a std::cell::Cell<Option<RunExit>>>,
 }
 
 /// The finished run from a rendered output (with a plugin's count, when a plugin rendered it) and
@@ -654,6 +694,7 @@ fn conclude(
         liveness,
         output_type,
         output_to,
+        api,
     } = finishing;
     for warning in &tail.warnings {
         let _ = writeln!(stderr, "warning: {warning}");
@@ -675,7 +716,9 @@ fn conclude(
     }
     progress.stage("report");
     let mut stdout = String::new();
-    if let Err(message) = write_output(ctx, output_to, output, &mut stdout) {
+    if api.is_some() {
+        output.clone_into(&mut stdout);
+    } else if let Err(message) = write_output(ctx, output_to, output, &mut stdout) {
         let _ = writeln!(stderr, "rulebearing cruise: {message}");
         return Outcome {
             stdout,
@@ -721,6 +764,9 @@ fn conclude(
     if let Some(refused) = gate(code, decides, tail.approximate, args.allow_approximate_gate) {
         let _ = writeln!(stderr, "warning: {APPROXIMATE_REASON}");
         code = refused;
+    }
+    if let Some(verdict) = api {
+        verdict.set(Some(code));
     }
     Outcome {
         stdout,

@@ -11,7 +11,7 @@
 // evaluates a rule itself.
 
 import { spawnSync } from 'node:child_process';
-import { detectHost, resolveBinary } from 'rulebearing';
+import { detectHost, resolveBinary } from 'rulebearing/launcher';
 
 /** How the binary is asked: where, with which configuration and which graph. */
 export interface Invocation {

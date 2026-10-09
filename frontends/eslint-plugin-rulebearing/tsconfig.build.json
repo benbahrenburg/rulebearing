@@ -8,7 +8,7 @@
     "sourceMap": false,
     "types": ["node"],
     "paths": {
-      "rulebearing": ["../../wrappers/npm/dist/launcher.d.ts"]
+      "rulebearing/launcher": ["../../wrappers/npm/dist/launcher.d.ts"]
     }
   },
   "include": ["src/**/*.ts"]

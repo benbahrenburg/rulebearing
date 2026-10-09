@@ -29,7 +29,7 @@ Registry tokens stay in the maintainer's keychain in wave 0. None is stored in G
 
 ## Binaries (from wave 0)
 
-[`.github/workflows/release.yml`](../.github/workflows/release.yml) builds `rulebearing` for the six targets of [architecture § Distribution](architecture.md#distribution): Linux x86-64 (glibc and musl) and ARM64, macOS ARM64 and x86-64, Windows x86-64.
+[`.github/workflows/release.yml`](../.github/workflows/release.yml) builds `rulebearing` for the six targets of [architecture § Distribution](architecture.md#distribution): Linux x86-64 (glibc and musl) and ARM64, macOS ARM64 and x86-64, Windows x86-64. Each target's archive, `rulebearing-<target>.tar.gz`, holds the binary and the npm API's addon, `rulebearing.node` (`crates/rb-node`; the musl one links the C runtime dynamically, as a shared library must).
 
 | Trigger | What happens |
 | --- | --- |
@@ -45,7 +45,7 @@ The npm wrapper (wave 1) and the NuGet and PyPI wrappers (wave 2) replace the pl
 
 | Registry | Packages | Pack | Install check (macOS arm64, Linux x64, Windows x64) | Publish (a `vX.Y.Z` tag only) | Credential |
 | --- | --- | --- | --- | --- | --- |
-| npm | `rulebearing` (with `rulebearing/vitest`), six `rulebearing-cli-<platform>` | `npm-pack` | `npm-install-check` | `npm-publish`, with provenance | `NPM_TOKEN`; the job alone holds `id-token: write` |
+| npm | `rulebearing` (with the programmatic API, `rulebearing/vitest` and `rulebearing/launcher`), six `rulebearing-cli-<platform>`, each with the binary and the API's addon | `npm-pack` | `npm-install-check` | `npm-publish`, with provenance | `NPM_TOKEN`; the job alone holds `id-token: write` |
 | PyPI | six `rulebearing` wheels, `pytest-rulebearing` | `pypi-build` | `pypi-install-check` | `pypi-publish`, with twine | `PYPI_TOKEN`; `contents: read` |
 | NuGet | `Rulebearing` (dotnet tool), and what `wrappers/nuget/pack.sh` packs | `nuget-pack` | `nuget-install-check` | `nuget-publish`, with `dotnet nuget push` | `NUGET_API_KEY`; `contents: read` |
 
@@ -53,14 +53,14 @@ The GitHub `release` job needs the `version` job and all three install checks, a
 
 ## The npm wrapper (from wave 1)
 
-[`wrappers/npm/`](../wrappers/npm/README.md) is the `rulebearing` package: a launcher that runs the binary from one of six unscoped platform packages, `rulebearing-cli-<platform>`, listed under `optionalDependencies` ([plan 0001 Step 19](plans/implemented/0001-wave-1-typescript-parity.md#step-19-npm-package-github-action-release-1g), [ADR-0020](adr/0020-single-name-across-registries.md); the `@rulebearing` scope is not held). The committed `package.json` carries the workspace version; the release version is stamped at staging time and the source tree is never edited.
+[`wrappers/npm/`](../wrappers/npm/README.md) is the `rulebearing` package: a launcher that runs the binary, and dependency-cruiser's programmatic API over the addon `rulebearing.node` ([plan 0003 Step 22](plans/pending/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node), [ADR-0062](adr/0062-the-node-binding-reads-typescript-and-babel-configs-with-the-callers-packages.md)), both from one of six unscoped platform packages, `rulebearing-cli-<platform>`, listed under `optionalDependencies` ([plan 0001 Step 19](plans/implemented/0001-wave-1-typescript-parity.md#step-19-npm-package-github-action-release-1g), [ADR-0020](adr/0020-single-name-across-registries.md); the `@rulebearing` scope is not held). The committed `package.json` carries the workspace version; the release version is stamped at staging time and the source tree is never edited.
 
 [`release.yml`](../.github/workflows/release.yml) adds three jobs after `binaries`:
 
 | Job | Runs on | What it does |
 | --- | --- | --- |
 | `npm-pack` | every trigger | checks that a tag carries the workspace version, builds the launcher, runs `wrappers/npm/scripts/stage.mjs` over the six archives, builds and stages [`eslint-plugin-rulebearing`](../frontends/eslint-plugin-rulebearing/README.md) with the version stamped into it and its `rulebearing` dependency ([plan 0002 Step 13](plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)), and packs the eight packages with `npm pack` into the `npm-packages` artefact |
-| `npm-install-check` | every trigger | on macOS arm64, Linux x64 and Windows x64, installs `rulebearing` and the host's platform package from those tarballs into an empty project and asserts that `npx rulebearing --version` prints `rulebearing <version>` |
+| `npm-install-check` | every trigger | on macOS arm64, Linux x64 and Windows x64, installs `rulebearing` and the host's platform package from those tarballs into an empty project and asserts that `npx rulebearing --version` prints `rulebearing <version>`, that `rulebearing/vitest` loads, and that the API's `cruise()` reads a two-file project through the platform package's addon |
 | `npm-publish` | a `vX.Y.Z` tag only, after `release` and the install check | `npm publish --provenance --access public` for the six platform packages, then `rulebearing`, then `eslint-plugin-rulebearing`, from the same tarballs |
 
 A dry run (a manual run, or a tag with a pre-release suffix) therefore packs and install-checks exactly what a release would publish, and publishes nothing. `npm-publish` alone holds `id-token: write`, which provenance needs; every other job keeps `contents: read` ([ADR-0025](adr/0025-ci-and-supply-chain-hardening.md)). It reads the `NPM_TOKEN` repository secret, an npm automation token with publish rights on the eight package names; the platform names and `eslint-plugin-rulebearing` are created by their first publish.

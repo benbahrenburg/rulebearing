@@ -70,6 +70,11 @@ pub const EXTENSIONS: &[&str] = &["js", "mjs", "cjs", "jsx", "ts", "tsx", "mts",
 /// CoffeeScript under a double extension, is one too.
 pub const SIDECAR_EXTENSIONS: &[&str] = &["coffee", "litcoffee", "ls", "cjsx", "csx"];
 
+/// The parser that reads every native extension, with the version the workspace pins
+/// ([ADR-0012](../../../docs/adr/0012-oxc-for-typescript.md)): what `getAvailableTranspilers`
+/// reports as the current version of each transpiler the extractor stands in for.
+pub const PARSER: &str = "oxc 0.153.0";
+
 /// Whether a path is one this extractor parses natively.
 pub fn owns(path: &str) -> bool {
     extension(path).is_some_and(|e| EXTENSIONS.contains(&e))
@@ -803,6 +808,16 @@ impl Extractor for TypeScriptExtractor {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_parser_is_the_version_the_workspace_pins() {
+        let manifest = include_str!("../../../Cargo.toml");
+        let pin = manifest
+            .lines()
+            .find_map(|l| l.strip_prefix("oxc_parser = \"="))
+            .and_then(|rest| rest.strip_suffix('"'));
+        assert_eq!(pin.map(|v| format!("oxc {v}")).as_deref(), Some(PARSER));
+    }
 
     #[test]
     fn owns_typescript_and_javascript() {

@@ -14,6 +14,7 @@
 //! | Module | Does |
 //! | --- | --- |
 //! | [`affected`] | `--affected`: the changed files and the modules that reach them |
+//! | [`api`] | dependency-cruiser's programmatic API, for the Node binding |
 //! | [`cache`] | the worktree-aware graph cache the query commands read, and `cruise --cache` |
 //! | [`cli`] | every flag, declared once |
 //! | [`cmd`] | one module per subcommand |
@@ -29,6 +30,7 @@
 //! | [`serve`] | `serve --mcp` and `serve --lsp` over one warm graph |
 
 pub mod affected;
+pub mod api;
 pub mod cache;
 pub mod cli;
 pub mod cmd;

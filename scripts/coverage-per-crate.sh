@@ -11,8 +11,14 @@ log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 for crate in crates/*/ xtask/; do
   name="$(basename "$crate")"
-  # rb-cli and xtask are binary crates; llvm-cov measures them through their unit tests.
-  if ! json="$(cargo llvm-cov --package "$name" --all-features --summary-only --json 2>"$log")"; then
+  # rb-cli and xtask are binary crates; llvm-cov measures them through their unit tests. rb-node
+  # is measured through its JavaScript tests, the only ones that can load it (crates/rb-node/coverage.sh).
+  if [ "$name" = "rb-node" ]; then
+    measure=("$crate/coverage.sh")
+  else
+    measure=(cargo llvm-cov --package "$name" --all-features --summary-only --json)
+  fi
+  if ! json="$("${measure[@]}" 2>"$log")"; then
     printf '%-20s %s\n' "$name" "not measured"
     echo "::error::$name: cargo llvm-cov failed, so its coverage was not measured (ADR-0018)"
     tail -n 20 "$log"

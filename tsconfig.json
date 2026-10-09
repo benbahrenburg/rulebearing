@@ -1,9 +1,10 @@
 {
-  "//": "Root project for the type-aware eslint rules. Each package keeps its own tsconfig.json for building; this one only tells the eslint project service which files exist. `rulebearing` maps to the npm wrapper's source, which eslint-plugin-rulebearing imports as the published package.",
+  "//": "Root project for the type-aware eslint rules. Each package keeps its own tsconfig.json for building; this one only tells the eslint project service which files exist. `rulebearing/launcher` maps to the npm wrapper's launcher source, which eslint-plugin-rulebearing imports from the published package, and `rulebearing` to its programmatic API.",
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "paths": {
-      "rulebearing": ["./wrappers/npm/src/launcher.ts"]
+      "rulebearing/launcher": ["./wrappers/npm/src/launcher.ts"],
+      "rulebearing": ["./wrappers/npm/src/api/index.ts"]
     }
   },
   "include": [
@@ -12,7 +13,8 @@
     "frontends/**/*.ts",
     "wrappers/**/*.mts",
     "adapters/**/*.mts",
-    "frontends/**/*.mts"
+    "frontends/**/*.mts",
+    "crates/rb-node/**/*.ts"
   ],
   "exclude": ["node_modules", "dist", "target", "**/node_modules"]
 }

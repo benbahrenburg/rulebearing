@@ -8,7 +8,8 @@
     "dependencies",
     "boundaries",
     "lint",
-    "vitest"
+    "vitest",
+    "api"
   ],
   "license": "MIT",
   "homepage": "https://github.com/benbahrenburg/rulebearing",
@@ -27,6 +28,26 @@
   },
   "exports": {
     ".": {
+      "types": "./dist/api/index.d.ts",
+      "default": "./dist/api/index.js"
+    },
+    "./config-utl/extract-babel-config": {
+      "types": "./dist/api/config-utl/extract-babel-config.d.ts",
+      "default": "./dist/api/config-utl/extract-babel-config.js"
+    },
+    "./config-utl/extract-depcruise-config": {
+      "types": "./dist/api/config-utl/extract-depcruise-config.d.ts",
+      "default": "./dist/api/config-utl/extract-depcruise-config.js"
+    },
+    "./config-utl/extract-ts-config": {
+      "types": "./dist/api/config-utl/extract-ts-config.d.ts",
+      "default": "./dist/api/config-utl/extract-ts-config.js"
+    },
+    "./config-utl/extract-webpack-resolve-config": {
+      "types": "./dist/api/config-utl/extract-webpack-resolve-config.d.ts",
+      "default": "./dist/api/config-utl/extract-webpack-resolve-config.js"
+    },
+    "./launcher": {
       "types": "./dist/launcher.d.ts",
       "default": "./dist/launcher.js"
     },
@@ -42,7 +63,9 @@
     "dist/launcher.d.ts",
     "dist/platforms.js",
     "dist/platforms.d.ts",
-    "dist/vitest/"
+    "dist/api/",
+    "dist/vitest/",
+    "types/dependency-cruiser/"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && tsc -p ../../adapters/vitest/tsconfig.build.json",

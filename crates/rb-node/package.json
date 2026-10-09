@@ -1,0 +1,12 @@
+{
+  "name": "rb-node-tests",
+  "private": true,
+  "description": "The tests of rb-node, the Node binding behind the rulebearing package's programmatic API (plan 0003, Step 22). Not published: the binding ships in wrappers/npm and its platform packages.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "vitest run --coverage"
+  }
+}

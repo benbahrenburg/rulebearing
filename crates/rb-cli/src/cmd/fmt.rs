@@ -149,7 +149,51 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         Ok(t) => t,
         Err(e) => return failed(RunExit::Untrustworthy, &e),
     };
-    let mut document = match rb_ingest::dependency_cruiser::read(&text) {
+    formatted(ctx, args, &text, None)
+}
+
+/// What a library call to `format` answers ([`answer`]): the reporter's output, never written to
+/// `outputTo`, and the count the reporter gates on.
+#[derive(Debug, Clone)]
+pub struct Answer {
+    /// The reporter's output.
+    pub output: String,
+    /// What `fmt --exit-code` would exit with for this reporter, uncapped: the error count for a
+    /// reporter that gates (expired rules and exceeded ratchets included), a plugin's own count,
+    /// 0 otherwise.
+    pub violations: u64,
+}
+
+/// `text`, a saved cruise result, formatted as `args` ask, with `--exit-code`'s count and the
+/// output returned rather than written. The Node binding's `format()`
+/// ([Wave 3, Step 22](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)).
+///
+/// # Errors
+/// The command line's [`Outcome`] when the result cannot be read or reported (exit 2 or 3), with
+/// the reason on its stderr.
+pub fn answer(ctx: &Context<'_>, args: &FmtArgs, text: &str) -> Result<Answer, Outcome> {
+    let mut args = args.clone();
+    args.exit_code = true;
+    let verdict = std::cell::Cell::new(None);
+    let outcome = formatted(ctx, &args, text, Some(&verdict));
+    match verdict.get() {
+        Some(RunExit::Violations(violations)) => Ok(Answer {
+            output: outcome.stdout,
+            violations,
+        }),
+        _ => Err(outcome),
+    }
+}
+
+/// Formats `text`; for a library call (`api`), the output is returned rather than written and
+/// the verdict set.
+fn formatted(
+    ctx: &Context<'_>,
+    args: &FmtArgs,
+    text: &str,
+    api: Option<&std::cell::Cell<Option<RunExit>>>,
+) -> Outcome {
+    let mut document = match rb_ingest::dependency_cruiser::read(text) {
         Ok(d) => d,
         Err(e) => {
             return failed(
@@ -193,7 +237,9 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         Err((code, message)) => return failed(code, &message),
     };
     let mut stdout = String::new();
-    if let Err(message) = write_output(ctx, &args.output_to, &rendered.output, &mut stdout) {
+    if api.is_some() {
+        rendered.output.clone_into(&mut stdout);
+    } else if let Err(message) = write_output(ctx, &args.output_to, &rendered.output, &mut stdout) {
         return failed(RunExit::Untrustworthy, &message);
     }
     let (exceeded, no_budget) = ratchets::from_summary(document.summary.ratchets.as_deref());
@@ -221,7 +267,11 @@ pub fn run(ctx: &mut Context<'_>, args: &FmtArgs) -> Outcome {
         RunExit::Violations(0)
     };
     // A saved result read in source mode never gates (ADR-0011).
-    match gate(code, decides, approximate, args.allow_approximate_gate) {
+    let refused = gate(code, decides, approximate, args.allow_approximate_gate);
+    if let Some(verdict) = api {
+        verdict.set(Some(refused.unwrap_or(code)));
+    }
+    match refused {
         Some(refused) => Outcome {
             stdout,
             stderr: format!("warning: {APPROXIMATE_REASON}\n"),

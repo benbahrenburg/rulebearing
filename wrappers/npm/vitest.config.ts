@@ -8,6 +8,9 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
+      // The programmatic API is tested, at the same floor, with the addon it calls: crates/rb-node
+      // (plan 0003, Step 22).
+      exclude: ['src/api/**'],
       reporter: ['text', 'lcov'],
       thresholds: { lines: 70 },
     },

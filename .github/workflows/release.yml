@@ -59,6 +59,18 @@ jobs:
       - if: runner.os != 'Linux'
         run: rustup target add ${{ matrix.target }}
       - run: cargo build --release --locked -p rb-cli --target ${{ matrix.target }}
+      # The Node addon behind the npm package's programmatic API (plan 0003, Step 22). A shared
+      # library cannot link musl statically, so that target links the C runtime dynamically, as
+      # Node on Alpine does.
+      - name: build the Node addon
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          if [ "$TARGET" = "x86_64-unknown-linux-musl" ]; then
+            export RUSTFLAGS="${RUSTFLAGS:-} -C target-feature=-crt-static"
+          fi
+          cargo build --release --locked -p rb-node --target "$TARGET"
       - name: package
         shell: bash
         env:
@@ -66,8 +78,14 @@ jobs:
         run: |
           binary="rulebearing"
           [ "$RUNNER_OS" = "Windows" ] && binary="rulebearing.exe"
+          case "$RUNNER_OS" in
+            Windows) library="rb_node.dll" ;;
+            macOS) library="librb_node.dylib" ;;
+            *) library="librb_node.so" ;;
+          esac
           mkdir -p dist
           cp "target/$TARGET/release/$binary" "dist/$binary"
+          cp "target/$TARGET/release/$library" dist/rulebearing.node
           cp LICENSE README.md dist/
           (cd dist && tar -czf "../rulebearing-$TARGET.tar.gz" .)
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -220,6 +238,11 @@ jobs:
           # its peer (plan 0002, Step 14: `npm install rulebearing/vitest` works).
           npm install --no-audit --no-fund vitest@5
           node --input-type=module -e "const m = await import('rulebearing/vitest'); if (typeof m.defineArchitectureTests !== 'function' || typeof m.RulebearingReporter !== 'function') { console.error('rulebearing/vitest exports are missing'); process.exit(1); }"
+          # The programmatic API loads the platform package's addon and cruises (plan 0003, Step 22).
+          mkdir -p src
+          printf 'export const a = 1;\n' > src/a.js
+          printf "import { a } from './a.js';\nexport const b = a;\n" > src/b.js
+          node --input-type=module -e "const { cruise, allExtensions } = await import('rulebearing'); const r = await cruise(['src'], {}); if (r.output.summary.totalCruised !== 2 || !allExtensions.some((e) => e.extension === '.ts' && e.available)) { console.error(JSON.stringify(r.output.summary)); process.exit(1); }"
 
   npm-publish:
     name: npm publish
