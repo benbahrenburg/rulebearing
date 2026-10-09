@@ -23,6 +23,14 @@ None. The table's shape, for when one is needed:
 | Repository | Match | What differs | Reason | Link |
 | --- | --- | --- | --- | --- |
 
+## Gate 1: configurations no oracle runs
+
+Differences found outside the oracles' own configurations, so layer 5 never sees them. This table is not read by layer 5 (its second column is not a match expression). An oracle that adopts one of these configurations needs a gate row above that names the affected files.
+
+| Kind | Configuration | dependency-cruiser | Rulebearing | Reason |
+| --- | --- | --- | --- | --- |
+| permanent | tsPreCompilationDeps not `true`, parser not `tsc` or `swc`, and a tsconfig that sets `jsx` | parses every `.ts` file as TSX (`transpileModule` is given no file name, so TypeScript names the input `module.tsx`). A generic arrow or an angle-bracket assertion becomes a JSX parse error, and imports used only in what tsc's recovery swallows are dropped: 14 edges in 6 files on langfuse; on the fixture `crates/rb-extract-ts/tests/options/ts-jsx`, `src/a.ts` | parses a file by its extension and reports every import (`a_ts_file_is_typescript_whatever_the_tsconfig_jsx`) | [ADR-0064](../docs/adr/0064-a-ts-file-is-parsed-as-typescript-when-jsx-is-set.md): matching it would mean reproducing tsc's error recovery to drop edges that exist |
+
 ## Gate 2: .NET extractor divergences
 
 Conformance gate 2 compares the element engine with ArchUnitNET over the committed graphs of its test assemblies ([conformance/README.md](README.md), [ADR-0009](../docs/adr/0009-conformance-suites-as-specification.md)). Every ported case reproduces upstream; the rows below are what the .NET extractor (`crates/rb-extract-dotnet`) reads differently from ArchUnitNET's loader where no ported case asserts it. They surface in the PlantUML generator's case `PlantUmlFileBuilderTest.BuildUmlByTypesIncludingDependenciesToOtherTest#1` (`archunitnet/ported/PlantUmlFileBuilderTest.yaml`, `graphDiffers`), which proves these lines and only these are the difference. This table is not read by layer 5 (its second column is not a match expression).
