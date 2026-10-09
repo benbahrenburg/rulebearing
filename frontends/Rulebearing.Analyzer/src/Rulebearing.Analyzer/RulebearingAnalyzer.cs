@@ -32,10 +32,13 @@ public sealed class RulebearingAnalyzer : DiagnosticAnalyzer
     /// <summary>An element rule's id.</summary>
     public const string ElementId = "RB0002";
 
+    /// <summary>A rule the analyzer leaves to <c>cruise</c>.</summary>
+    public const string LeftId = "RB0003";
+
     /// <summary>A rule file that cannot be read.</summary>
     public const string ConfigId = "RB0009";
 
-    /// <summary>Where a rule's help link points, the rule's name its fragment.</summary>
+    /// <summary>Where every diagnostic's help link points: the rule language.</summary>
     public const string HelpBase = "https://github.com/benbahrenburg/rulebearing/blob/main/docs/rules.md";
 
     private const string Category = "Architecture";
@@ -48,12 +51,16 @@ public sealed class RulebearingAnalyzer : DiagnosticAnalyzer
         ElementId, "An element rule is broken", "{0}", Category, DiagnosticSeverity.Error, isEnabledByDefault: true,
         description: "A type that an element rule of rulebearing.yaml selects and that does not meet it.", helpLinkUri: HelpBase, customTags: WellKnownDiagnosticTags.CompilationEnd);
 
+    private static readonly DiagnosticDescriptor Left = new(
+        LeftId, "A rule is left to cruise", "Rule `{0}` is not checked at compile time: {1}; `rulebearing cruise` checks it", Category, DiagnosticSeverity.Info, isEnabledByDefault: true,
+        description: "A rule of rulebearing.yaml the analyzer does not evaluate, because it needs the whole graph or a fact the analyzer does not read.", helpLinkUri: HelpBase, customTags: WellKnownDiagnosticTags.CompilationEnd);
+
     private static readonly DiagnosticDescriptor Config = new(
         ConfigId, "The rule file cannot be read", "rulebearing.yaml cannot be read: {0}", Category, DiagnosticSeverity.Error, isEnabledByDefault: true,
         description: "The analyzer reads the native rulebearing.yaml given as an AdditionalFiles item.", helpLinkUri: HelpBase, customTags: WellKnownDiagnosticTags.CompilationEnd);
 
     /// <inheritdoc />
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(Dependency, Element, Config);
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(Dependency, Element, Left, Config);
 
     /// <inheritdoc />
     public override void Initialize(AnalysisContext context)
@@ -62,7 +69,9 @@ public sealed class RulebearingAnalyzer : DiagnosticAnalyzer
         {
             throw new ArgumentNullException(nameof(context));
         }
-        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+        // A type a source generator writes is a type of the assembly, and the gate judges it: its
+        // finding is reported where the generator put it.
+        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
         context.EnableConcurrentExecution();
         context.RegisterCompilationAction(Analyze);
     }
@@ -84,16 +93,26 @@ public sealed class RulebearingAnalyzer : DiagnosticAnalyzer
             context.ReportDiagnostic(Diagnostic.Create(Config, Location.None, e.Message));
             return;
         }
+        // A rule file that names the assemblies it judges judges no other: a test project beside
+        // them is not part of the gate's graph.
+        if (!rules.Judges(context.Compilation.AssemblyName ?? string.Empty))
+        {
+            return;
+        }
         Report(context, rules, Path.GetDirectoryName(Path.GetFullPath(file.Path)) ?? string.Empty);
     }
 
     private static void Report(CompilationAnalysisContext context, RuleFile rules, string root)
     {
+        foreach (var skipped in rules.Skipped)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Left, Location.None, ImmutableDictionary<string, string?>.Empty.Add("rule", skipped.Name), skipped.Name, skipped.Reason));
+        }
         if (rules.Elements.Count == 0 && rules.Forbidden.Count == 0)
         {
             return;
         }
-        var universe = Build(context.Compilation);
+        var universe = Build(context.Compilation, rules.Assemblies.Count == 0 ? null : rules.Judges);
         var evaluator = new ElementEvaluator(universe);
         foreach (var rule in rules.Elements)
         {
@@ -110,19 +129,21 @@ public sealed class RulebearingAnalyzer : DiagnosticAnalyzer
         }
     }
 
-    /// <summary>The facts of every type the compilation defines, and of the types they depend on.</summary>
-    internal static Universe Build(Compilation compilation)
+    /// <summary>The facts of every type the compilation defines, and of the types they depend on. A referenced assembly whose name <paramref name="loads"/> accepts is one the gate loads too, so the base chain and the interfaces run on through its types; with none, the chain stops at the compilation's edge.</summary>
+    internal static Universe Build(Compilation compilation, Func<string, bool>? loads = null)
     {
+        bool Loaded(IAssemblySymbol? assembly) =>
+            assembly is not null && (SymbolEqualityComparer.Default.Equals(assembly, compilation.Assembly) || (loads is not null && loads(assembly.Identity.Name)));
         var targets = new Dictionary<string, INamedTypeSymbol>(StringComparer.Ordinal);
         var defined = Types(compilation.Assembly.GlobalNamespace)
-            .Select(t => Facts.Of(t, compilation, local: true, targets))
+            .Select(t => Facts.Of(t, compilation, local: true, Loaded, targets))
             .OrderBy(t => t.FullName, StringComparer.Ordinal)
             .ToList();
         var known = new HashSet<string>(defined.Select(t => t.FullName), StringComparer.Ordinal);
         var scratch = new Dictionary<string, INamedTypeSymbol>(StringComparer.Ordinal);
         var referenced = targets
             .Where(t => !known.Contains(t.Key))
-            .Select(t => Facts.Of(t.Value, compilation, local: false, scratch))
+            .Select(t => Facts.Of(t.Value, compilation, local: false, Loaded, scratch))
             .OrderBy(t => t.FullName, StringComparer.Ordinal)
             .ToList();
         return new Universe { Defined = defined, Referenced = referenced };
@@ -301,7 +322,7 @@ public sealed class RulebearingAnalyzer : DiagnosticAnalyzer
         };
         var descriptor = new DiagnosticDescriptor(
             template.Id, template.Title, template.MessageFormat, template.Category, level, isEnabledByDefault: true,
-            description: template.Description, helpLinkUri: HelpBase + "#" + rule, customTags: WellKnownDiagnosticTags.CompilationEnd);
+            description: template.Description, helpLinkUri: HelpBase, customTags: WellKnownDiagnosticTags.CompilationEnd);
         var properties = ImmutableDictionary<string, string?>.Empty.Add("rule", rule).Add("to", to);
         if (id is not null)
         {

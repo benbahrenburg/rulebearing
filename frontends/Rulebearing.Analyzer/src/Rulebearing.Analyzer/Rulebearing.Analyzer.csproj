@@ -19,6 +19,9 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <!-- The YAML reader lands beside the analyzer in the build output, so a build can be pointed
+         at that folder (testbeds/oracles/analyzer-parity.py) as a package's analyzers/ folder. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>

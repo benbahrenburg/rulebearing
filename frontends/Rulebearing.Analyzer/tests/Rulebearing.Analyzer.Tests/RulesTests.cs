@@ -130,7 +130,7 @@ public sealed class RulesTests
         Assert.Equal(RulebearingAnalyzer.ElementId, diagnostic.Id);
         Assert.Equal("Seal the class.", diagnostic.GetMessage(System.Globalization.CultureInfo.InvariantCulture));
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
-        Assert.EndsWith("#sealed-domain", diagnostic.Descriptor.HelpLinkUri, StringComparison.Ordinal);
+        Assert.Equal(RulebearingAnalyzer.HelpBase, diagnostic.Descriptor.HelpLinkUri);
         Assert.Equal("App.Domain.Order", diagnostic.Properties["to"]);
         Assert.Equal(RulebearingAnalyzer.ViolationId("sealed-domain", "src/domain/Order.cs", "App.Domain.Order", "beSealed"), diagnostic.Properties["violationId"]);
         Assert.Equal(0, diagnostic.Location.GetLineSpan().StartLinePosition.Line);
@@ -168,6 +168,34 @@ public sealed class RulesTests
         Assert.Equal(RulebearingAnalyzer.ConfigId, refused.Id);
         Assert.Empty(Support.Analyze(compilation, "rules: [", fileName: "other.yaml"));
         Assert.Empty(Support.Analyze(compilation, "rules: {}"));
+        var left = Assert.Single(Support.Analyze(compilation, "forbidden:\n  - name: no-cycles\n    from: {}\n    to: { circular: true }\n"));
+        Assert.Equal((RulebearingAnalyzer.LeftId, DiagnosticSeverity.Info, "no-cycles"), (left.Id, left.Severity, left.Properties["rule"]));
+        Assert.Contains("a condition other than `path` and `pathNot`", left.GetMessage(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        var extended = Support.Analyze(compilation, "extends: [rulebearing:recommended, ./base.yaml]\n");
+        Assert.Equal(["rulebearing:recommended", "./base.yaml"], extended.Select(d => d.Properties["rule"]));
+        Assert.Single(RuleFile.Parse("extends: ./base.yaml").Skipped);
+    }
+
+    /// <summary>A rule file that names its assemblies judges only those.</summary>
+    [Fact]
+    public void ARuleFileThatNamesItsAssembliesJudgesOnlyThose()
+    {
+        var rules = RuleFile.Parse("""
+            languages:
+              dotnet:
+                assemblies:
+                  - "src/App/bin/**/Sample.dll"
+                  - 'src\Other\bin\Other.*.dll'
+            """);
+        Assert.Equal(["Sample.dll", "Other.*.dll"], rules.Assemblies);
+        Assert.True(rules.Judges("Sample"));
+        Assert.True(rules.Judges("other.core"));
+        Assert.False(rules.Judges("Sample.Tests"));
+        Assert.True(RuleFile.Parse("rules: {}").Judges("Anything"));
+        var compilation = Support.Compile("namespace App { public class Open { } }");
+        const string Elements = "\n  elements:\n    - name: sealed\n      select: { kind: class }\n      should: { beSealed: true }\n";
+        Assert.Single(Support.Analyze(compilation, "languages: { dotnet: { assemblies: [Sample.dll] } }\nrules:" + Elements));
+        Assert.Empty(Support.Analyze(compilation, "languages: { dotnet: { assemblies: [Other.dll] } }\nrules:" + Elements));
     }
 
     /// <summary>The message is the fix else the comment else the name.</summary>

@@ -23,14 +23,18 @@ internal static class Support
     public static readonly string Root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "rulebearing-analyzer-tests");
 
     /// <summary>A compilation of <paramref name="files"/>, each a (path relative to <see cref="Root"/>, source) pair.</summary>
-    public static CSharpCompilation Compile(params (string Path, string Source)[] files)
+    public static CSharpCompilation Compile(params (string Path, string Source)[] files) => CompileAssembly("Sample", [], files);
+
+    /// <summary>A compilation named <paramref name="name"/> of <paramref name="files"/> that also references <paramref name="libraries"/>.</summary>
+    public static CSharpCompilation CompileAssembly(string name, IEnumerable<MetadataReference> libraries, params (string Path, string Source)[] files)
     {
         var trees = files.Select(f => CSharpSyntaxTree.ParseText(f.Source, new CSharpParseOptions(LanguageVersion.Latest), System.IO.Path.Combine(Root, f.Path))).ToList();
         var references = ((string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") ?? string.Empty)
             .Split(System.IO.Path.PathSeparator)
             .Where(p => p.Length > 0)
-            .Select(p => MetadataReference.CreateFromFile(p));
-        var compilation = CSharpCompilation.Create("Sample", trees, references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
+            .Concat(libraries);
+        var compilation = CSharpCompilation.Create(name, trees, references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         var errors = compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
         Assert.True(errors.Count == 0, string.Join("\n", errors));
         return compilation;

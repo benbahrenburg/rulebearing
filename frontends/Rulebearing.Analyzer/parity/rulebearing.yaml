@@ -1,0 +1,59 @@
+# Rules over crates/rb-extract-dotnet/tests/fixtures/sample that touch every concept the analyzer
+# evaluates, for the pull-request parity check (run.sh): the analyzer's findings must equal the
+# gate's, as written and with each rule negated. Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21.
+languages:
+  dotnet:
+    assemblies:
+      - "built/Sample.dll"
+      - "built/Sample.Core.dll"
+rules:
+  elements:
+    - name: orders-are-sealed
+      select: { kind: class, where: { resideInNamespace: sample.orders } }
+      should: { beSealed: true }
+    - name: everything-is-public
+      select: { kind: type, where: { haveFullNameStartingWith: SAMPLE. } }
+      should: { bePublic: true }
+    - name: names
+      select: { kind: class, where: { haveNameMatching: "^[A-Z]" } }
+      should: { any: [{ haveNameEndingWith: [er, ock] }, { haveNameContaining: oney }, { haveNameStartingWith: Li }] }
+    - name: nested-only-line
+      select: { kind: type, where: { areNested: true } }
+      should: { haveName: line }
+    - name: no-core
+      select: { kind: type, where: { resideInAssembly: Sample } }
+      should: { notDependOnAny: { kind: type, where: { resideInNamespace: Sample.Core } } }
+    - name: async-everywhere
+      select: { kind: class }
+      should: { dependOnAny: ["System.Threading.Tasks.Task`1"] }
+    - name: customers-immutable
+      select: { kind: type, where: { resideInNamespace: Sample.Customers } }
+      should: { beImmutable: true }
+    - name: shapes
+      select: { kind: class }
+      should: { any: [{ beAbstract: true }, { beStatic: true }, { beRecord: true }] }
+    - name: equatable
+      select: { kind: type }
+      should: { implementInterface: ["System.IEquatable`1"] }
+    - name: value-types
+      select: { kind: type }
+      should: { beAssignableTo: [System.ValueType] }
+    - name: not-in-order
+      select: { kind: type }
+      should: { notBeNestedIn: [Sample.Orders.Order] }
+    - name: not-internal
+      select: { kind: type }
+      should: { notBeInternal: true }
+    - name: not-the-order
+      select: { kind: class }
+      should: { notBe: [Sample.Orders.Order] }
+    - name: clock-sealed
+      select: { kind: type, where: { haveFullName: Sample.Core.Clock } }
+      should: { beSealed: true }
+    - name: matching
+      select: { kind: type, where: { resideInNamespaceMatching: "^Sample\\.(Orders|Customers)$" } }
+      should: { all: [{ haveFullNameMatching: "\\.[A-Z]\\w+$" }, { resideInAssemblyMatching: "^Sample," }, { notBeNested: true }] }
+    - name: interfaces-and-attributes
+      select: { kind: interface }
+      allowEmpty: true
+      should: { haveNameStartingWith: I }

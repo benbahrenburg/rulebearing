@@ -246,12 +246,23 @@ internal sealed class RuleFile
         "name", "comment", "fix", "severity", "expires", "owner", "since", "deprecated", "replacedBy", "allowEmpty", "because", "from", "to",
     };
 
-    private RuleFile(IReadOnlyList<ElementRule> elements, IReadOnlyList<DependencyRule> forbidden, IReadOnlyList<Skipped> skipped)
+    private RuleFile(IReadOnlyList<ElementRule> elements, IReadOnlyList<DependencyRule> forbidden, IReadOnlyList<Skipped> skipped, IReadOnlyList<string> assemblies)
     {
         Elements = elements;
         Forbidden = forbidden;
         Skipped = skipped;
+        Assemblies = assemblies;
     }
+
+    /// <summary>The file names of <c>languages.dotnet.assemblies</c>, the assemblies the rules judge; empty when the file names none.</summary>
+    public IReadOnlyList<string> Assemblies { get; }
+
+    /// <summary>Whether the rules judge the assembly named <paramref name="assemblyName"/>: every assembly when the file names none, else one whose file name matches.</summary>
+    public bool Judges(string assemblyName) =>
+        Assemblies.Count == 0 || Assemblies.Any(glob => System.Text.RegularExpressions.Regex.IsMatch(
+            assemblyName + ".dll",
+            "^" + System.Text.RegularExpressions.Regex.Escape(glob).Replace("\\*", ".*").Replace("\\?", ".") + "$",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant));
 
     /// <summary>The element rules the analyzer evaluates.</summary>
     public IReadOnlyList<ElementRule> Elements { get; }
@@ -312,7 +323,22 @@ internal sealed class RuleFile
                 }
             }
         }
-        return new RuleFile(elements, forbidden, skipped);
+        var extended = Child(root, "extends") switch
+        {
+            YamlScalarNode one => [one.Value ?? string.Empty],
+            YamlSequenceNode many => many.Children.OfType<YamlScalarNode>().Select(s => s.Value ?? string.Empty).ToList(),
+            _ => new List<string>(),
+        };
+        foreach (var name in extended)
+        {
+            skipped.Add(new Skipped(name, "extends", "the rules of an extended configuration are read by the gate's loader"));
+        }
+        var languages = Child(root, "languages") as YamlMappingNode;
+        var dotnet = languages is null ? null : Child(languages, "dotnet") as YamlMappingNode;
+        var assemblies = (dotnet is null ? null : Child(dotnet, "assemblies")) is YamlSequenceNode listed
+            ? listed.Children.OfType<YamlScalarNode>().Select(s => (s.Value ?? string.Empty).Replace('\\', '/').Split('/').Last()).ToList()
+            : [];
+        return new RuleFile(elements, forbidden, skipped, assemblies);
     }
 
     private static YamlNode? Child(YamlMappingNode map, string key) =>

@@ -143,9 +143,10 @@ internal static class Facts
         _ => "internal",
     };
 
-    /// <summary>The facts of <paramref name="type"/>; <paramref name="local"/> says whether it is defined in the compilation being analysed. Every dependency's symbol is added to <paramref name="targets"/>.</summary>
-    public static TypeFacts Of(INamedTypeSymbol type, Compilation compilation, bool local, IDictionary<string, INamedTypeSymbol> targets)
+    /// <summary>The facts of <paramref name="type"/>; <paramref name="local"/> says whether it is defined in the compilation being analysed, <paramref name="loaded"/> whether an assembly is one the gate loads, whose types' bases and interfaces it follows. Every dependency's symbol is added to <paramref name="targets"/>.</summary>
+    public static TypeFacts Of(INamedTypeSymbol type, Compilation compilation, bool local, Func<IAssemblySymbol?, bool> loaded, IDictionary<string, INamedTypeSymbol> targets)
     {
+        var known = local || loaded(type.ContainingAssembly);
         var kind = Kind(type);
         var isClass = kind is "class" or "attribute";
         var isStaticClass = type.IsStatic && type.TypeKind == TypeKind.Class;
@@ -156,7 +157,7 @@ internal static class Facts
         var collector = new Collector(targets);
         if (local)
         {
-            Collect(type, compilation, collector);
+            Collect(type, compilation, loaded, collector);
         }
         return new TypeFacts
         {
@@ -171,8 +172,8 @@ internal static class Facts
             Record = isClass && type.IsRecord,
             Nested = type.ContainingType is not null,
             Immutable = Immutable(type),
-            BaseTypes = local ? BaseChain(type, compilation) : [],
-            Interfaces = local ? Interfaces(type, compilation) : [],
+            BaseTypes = known ? BaseChain(type, loaded) : [],
+            Interfaces = known ? Interfaces(type, loaded) : [],
             Assembly = assembly?.Identity.Name ?? string.Empty,
             AssemblyFullName = assembly?.Identity.GetDisplayName() ?? string.Empty,
             Dependencies = collector.Found,
@@ -195,16 +196,13 @@ internal static class Facts
     public static bool IsBuildOutput(string path) =>
         path.Split('/', '\\').Any(segment => segment is "bin" or "obj" or "node_modules" or ".git" or ".vs" or "artifacts");
 
-    private static bool InCompilation(INamedTypeSymbol type, Compilation compilation) =>
-        SymbolEqualityComparer.Default.Equals(type.ContainingAssembly, compilation.Assembly);
-
-    private static List<string> BaseChain(INamedTypeSymbol type, Compilation compilation)
+    private static List<string> BaseChain(INamedTypeSymbol type, Func<IAssemblySymbol?, bool> loaded)
     {
         var chain = new List<string>();
         for (var b = type.BaseType; b is not null; b = b.BaseType)
         {
             chain.Add(FullName(b));
-            if (!InCompilation(b, compilation))
+            if (!loaded(b.ContainingAssembly))
             {
                 break;
             }
@@ -212,7 +210,7 @@ internal static class Facts
         return chain;
     }
 
-    private static List<string> Interfaces(INamedTypeSymbol type, Compilation compilation)
+    private static List<string> Interfaces(INamedTypeSymbol type, Func<IAssemblySymbol?, bool> loaded)
     {
         var names = new List<string>();
         void Add(INamedTypeSymbol owner)
@@ -229,7 +227,7 @@ internal static class Facts
             }
         }
         Add(type);
-        for (var b = type.BaseType; b is not null && InCompilation(b, compilation); b = b.BaseType)
+        for (var b = type.BaseType; b is not null && loaded(b.ContainingAssembly); b = b.BaseType)
         {
             Add(b);
         }
@@ -238,6 +236,12 @@ internal static class Facts
 
     private static bool Immutable(INamedTypeSymbol type)
     {
+        if (type.TypeKind == TypeKind.Enum)
+        {
+            // Metadata gives an enum the writable instance field `value__` (ECMA-335 II.14.3),
+            // which the extractor keeps and Roslyn does not show.
+            return false;
+        }
         foreach (var member in type.GetMembers())
         {
             switch (member)
@@ -265,14 +269,14 @@ internal static class Facts
     }
 
     /// <summary>Collects every type <paramref name="type"/>'s declarations and bodies name.</summary>
-    private static void Collect(INamedTypeSymbol type, Compilation compilation, Collector collector)
+    private static void Collect(INamedTypeSymbol type, Compilation compilation, Func<IAssemblySymbol?, bool> loaded, Collector collector)
     {
         collector.At = Attribution(type).Item1;
         if (type.BaseType is { } baseType)
         {
             collector.Type(baseType);
         }
-        var local = new HashSet<string>(Interfaces(type, compilation), StringComparer.Ordinal);
+        var local = new HashSet<string>(Interfaces(type, loaded), StringComparer.Ordinal);
         foreach (var i in type.AllInterfaces.Where(i => local.Contains(FullName(i))))
         {
             collector.Type(i);

@@ -130,6 +130,34 @@ public sealed class FactsTests
         Assert.Contains(universe.Referenced, t => t.FullName == "System.Uri" && t.Kind == "class" && t.Referenced);
     }
 
+    /// <summary>Bases and interfaces run on through an assembly the gate loads.</summary>
+    [Fact]
+    public void BasesAndInterfacesRunOnThroughAnAssemblyTheGateLoads()
+    {
+        var library = Support.CompileAssembly("Lib", [], ("lib/Base.cs", """
+            namespace Lib
+            {
+                public interface IRequest<T> { }
+                public abstract record CommandBase(System.Guid Id) : IRequest<int>;
+            }
+            """));
+        var compilation = Support.CompileAssembly("Sample", [library.ToMetadataReference()], ("src/Command.cs", """
+            namespace App { public sealed record Command(System.Guid Id) : Lib.CommandBase(Id); }
+            """));
+        var alone = Support.Type(RulebearingAnalyzer.Build(compilation), "App.Command");
+        Assert.Equal(["Lib.CommandBase"], alone.BaseTypes);
+        Assert.DoesNotContain("Lib.IRequest`1", alone.Interfaces);
+        var universe = RulebearingAnalyzer.Build(compilation, name => name == "Lib");
+        var command = Support.Type(universe, "App.Command");
+        Assert.Equal(["Lib.CommandBase", "System.Object"], command.BaseTypes);
+        Assert.Contains("Lib.IRequest`1", command.Interfaces);
+        Assert.Contains("Lib.IRequest`1", command.Dependencies);
+        Assert.Contains("Lib.IRequest`1", universe.Referenced.Single(t => t.FullName == "Lib.CommandBase").Interfaces);
+        var rules = "languages: { dotnet: { assemblies: [Sample.dll, Lib.dll] } }\nrules:\n  elements:\n    - name: requests-are-classes\n      select: { kind: class, where: { implementInterface: [Lib.IRequest`1] } }\n      should: { not: { beRecord: true } }\n";
+        Assert.Equal("App.Command", Assert.Single(Support.Analyze(compilation, rules)).Properties["to"]);
+        Assert.Empty(Support.Analyze(compilation, rules.Replace(", Lib.dll", string.Empty, StringComparison.Ordinal)));
+    }
+
     /// <summary>Immutability reads instance fields and setters.</summary>
     [Fact]
     public void ImmutabilityReadsInstanceFieldsAndSetters()
@@ -141,6 +169,7 @@ public sealed class FactsTests
                 public class Thawed { public int A; }
                 public class Settable { public int B { get; set; } }
                 public class Evented { public event System.Action? Changed; }
+                public enum Level { Low }
             }
             """;
         var universe = Support.Universe(Support.Compile(source));
@@ -148,6 +177,7 @@ public sealed class FactsTests
         Assert.False(Support.Type(universe, "App.Thawed").Immutable);
         Assert.False(Support.Type(universe, "App.Settable").Immutable);
         Assert.False(Support.Type(universe, "App.Evented").Immutable);
+        Assert.False(Support.Type(universe, "App.Level").Immutable);
     }
 
     /// <summary>A type is attributed to a file its developer wrote.</summary>

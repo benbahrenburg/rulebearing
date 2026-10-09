@@ -6,8 +6,9 @@
 # Usage:
 #   wrappers/nuget/pack.sh <dist-dir> <version> <out-dir>
 #       the release: the contract release.yml's nuget-pack job calls (docs/release.md). Packs the
-#       tool from the six archives rulebearing-<target>.tar.gz, and the seven
-#       Rulebearing.TestAdapter packages of adapters/dotnet, all at <version>, into <out-dir>.
+#       tool from the six archives rulebearing-<target>.tar.gz, the seven
+#       Rulebearing.TestAdapter packages of adapters/dotnet and the Rulebearing.Analyzer package of
+#       frontends/ (plan 0003, Step 21), all at <version>, into <out-dir>.
 #   wrappers/nuget/pack.sh --archives <dist-dir> --version <version> --out <dir> [--partial]
 #       the tool alone from the archives; all six targets are required unless --partial is given.
 #   wrappers/nuget/pack.sh --binary <path> --rid <rid> --version <version> --out <dir>
@@ -96,6 +97,10 @@ if $adapters; then
       --nologo --verbosity quiet -p:Version="$version" >&2
     [ -f "$out/$project.$version.nupkg" ] || { echo "pack.sh: dotnet pack wrote no $out/$project.$version.nupkg" >&2; exit 1; }
   done
+  # The Roslyn analyzer, at the same version.
+  dotnet pack "$root/frontends/Rulebearing.Analyzer/src/Rulebearing.Analyzer/Rulebearing.Analyzer.csproj" \
+    --configuration Release --output "$out" --nologo --verbosity quiet -p:Version="$version" >&2
+  [ -f "$out/Rulebearing.Analyzer.$version.nupkg" ] || { echo "pack.sh: dotnet pack wrote no $out/Rulebearing.Analyzer.$version.nupkg" >&2; exit 1; }
 fi
 package="$out/Rulebearing.$version.nupkg"
 [ -f "$package" ] || { echo "pack.sh: dotnet pack wrote no $package" >&2; exit 1; }
