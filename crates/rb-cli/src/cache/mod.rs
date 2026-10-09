@@ -1095,6 +1095,9 @@ mod tests {
                         };
                     }),
                 ));
+            // The run starts a clear tick after the files were written, so only the edit made
+            // during it is in the start's tick of the coarse file clock (ADR-0063).
+            std::thread::sleep(std::time::Duration::from_millis(25));
             let first = extract_cached(&ctx, &config, &paths, &options, None)?;
             assert!(matches!(first.served, Served::Full(_)));
             assert!(first.writing.wait()?.is_some(), "the entry is written");

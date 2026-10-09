@@ -776,8 +776,11 @@ mod tests {
     }
 
     /// Now, as `record` takes it.
-    /// A run's start, read as a run reads it.
+    /// A run's start, read as a run reads it, a clear tick after the test wrote its files: file
+    /// systems stamp files with a coarse clock (a jiffy on Linux, about 16 ms on Windows), and a
+    /// file stamped in the start's own tick is, rightly, read again (ADR-0063).
     fn now() -> Start {
+        std::thread::sleep(std::time::Duration::from_millis(25));
         Start::now()
     }
 
