@@ -275,26 +275,32 @@ fn output_folder(project: &Project) -> PathBuf {
         .to_path_buf()
 }
 
+/// The names of the assemblies `loaded` references.
+fn refs(loaded: &loader::Loaded) -> Vec<String> {
+    loaded
+        .assembly_refs
+        .iter()
+        .map(|a| a.identity.name.clone())
+        .collect()
+}
+
 /// The assemblies beside the analysed ones that their references name, transitively, read only
 /// to describe the types the analysed code references: `ArchUnitNET` resolves a reference from
-/// the same folders. One that cannot be read is a warning, and its types stay unavailable.
+/// the same folders. `queue` starts as each analysed assembly's output folder and the names it
+/// references. One that cannot be read is a warning, and its types stay unavailable.
 fn beside_assemblies(
-    reads: &[Read],
+    mut queue: Vec<(PathBuf, Vec<String>)>,
     seen: &BTreeSet<PathBuf>,
     warnings: &mut Vec<Warning>,
 ) -> Vec<loader::Loaded> {
-    let refs = |loaded: &loader::Loaded| -> Vec<String> {
-        loaded
-            .assembly_refs
-            .iter()
-            .map(|a| a.identity.name.clone())
-            .collect()
-    };
     let mut visited = seen.clone();
-    let mut queue: Vec<(PathBuf, Vec<String>)> = reads
-        .iter()
-        .map(|r| (output_folder(&r.project), refs(&r.loaded)))
-        .collect();
+    // Each project's output folder holds its own copy of the assemblies it references, so a
+    // solution of hundreds of projects names the same file hundreds of times. A copy whose bytes
+    // are a loaded one's adds nothing (the universe finds the first), and is neither kept nor
+    // parsed again: abp's 268 projects read 9,444 of them (plan 0003, 3G, peak memory). Its
+    // references are still followed from its own folder, which may hold assemblies the first
+    // copy's did not; the same bytes name the same references.
+    let mut contents: BTreeMap<(usize, u64), Vec<String>> = BTreeMap::new();
     let mut found = Vec::new();
     let mut next = 0;
     while next < queue.len() {
@@ -305,11 +311,28 @@ fn beside_assemblies(
             if !dll.is_file() || !visited.insert(dll.clone()) {
                 continue;
             }
-            let read = std::fs::read(&dll)
-                .map_err(|e| read_error(&dll, &e))
-                .and_then(|bytes| loader::Loaded::read(&bytes).map_err(|e| read_error(&dll, &e)));
+            let bytes = match std::fs::read(&dll) {
+                Ok(bytes) => bytes,
+                Err(e) => {
+                    warnings.push(Warning::about(
+                        &dll,
+                        format!(
+                            "not read, so the types it defines are unavailable: {}",
+                            read_error(&dll, &e)
+                        ),
+                    ));
+                    continue;
+                }
+            };
+            let key = (bytes.len(), content_hash(&bytes));
+            if let Some(names) = contents.get(&key) {
+                queue.push((folder.clone(), names.clone()));
+                continue;
+            }
+            let read = loader::Loaded::read(&bytes).map_err(|e| read_error(&dll, &e));
             match read {
                 Ok(loaded) => {
+                    contents.insert(key, refs(&loaded));
                     queue.push((folder.clone(), refs(&loaded)));
                     // Only described: kept whole, these held most of a large run's memory.
                     found.push(loaded.described());
@@ -322,6 +345,15 @@ fn beside_assemblies(
         }
     }
     found
+}
+
+/// A file's bytes as a fixed-key hash, so equal files are told apart from different ones; the
+/// first copy is kept whatever the value, so the value never reaches the output.
+fn content_hash(bytes: &[u8]) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::hash::DefaultHasher::new();
+    bytes.hash(&mut hasher);
+    hasher.finish()
 }
 
 /// Every assembly and PDB an extraction under `root` with `options` can read, sorted: each
@@ -576,7 +608,11 @@ impl Extractor for DotnetExtractor {
             })
             .collect();
         let mut built = codelayer::Builder::new(&universe, &sources).build();
-        let beside = beside_assemblies(&reads, &seen, &mut warnings);
+        let starts = reads
+            .iter()
+            .map(|r| (output_folder(&r.project), refs(&r.loaded)))
+            .collect();
+        let beside = beside_assemblies(starts, &seen, &mut warnings);
         let beside_names: BTreeSet<String> = beside
             .iter()
             .map(|l| l.identity.name.to_ascii_lowercase())
@@ -728,6 +764,45 @@ mod tests {
         assert_eq!(repository_prefix(crate_root), "crates/rb-extract-dotnet/");
         assert_eq!(repository_prefix(&crate_root.join("../..")), "");
         assert_eq!(repository_prefix(Path::new("/")), "");
+    }
+
+    /// Each project's output folder carries its own copy of what it references: a copy with a
+    /// loaded one's bytes is not kept again, but what it references from its own folder is.
+    #[test]
+    fn a_copy_of_a_loaded_assembly_is_not_kept_but_its_folder_is_followed()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let built = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/sample/built");
+        let dir = std::env::temp_dir().join(format!("rb-beside-copies-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let (first, second) = (dir.join("a/bin"), dir.join("b/bin"));
+        for folder in [&first, &second] {
+            std::fs::create_dir_all(folder)?;
+            std::fs::copy(
+                built.join("Sample.Core.dll"),
+                folder.join("Sample.Core.dll"),
+            )?;
+        }
+        // Sample.Core references System.Runtime; only the second folder has one, standing in
+        // as a copy of Sample.dll, so it is reached through the copy alone.
+        std::fs::copy(built.join("Sample.dll"), second.join("System.Runtime.dll"))?;
+        let core = vec!["Sample.Core".to_owned()];
+        let mut warnings = Vec::new();
+        let found = beside_assemblies(
+            vec![(first, core.clone()), (second, core)],
+            &BTreeSet::new(),
+            &mut warnings,
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+        let names: Vec<&str> = found.iter().map(|l| l.identity.name.as_str()).collect();
+        assert_eq!(names, ["Sample.Core", "Sample"]);
+        assert!(warnings.is_empty(), "{warnings:?}");
+        Ok(())
+    }
+
+    #[test]
+    fn equal_bytes_hash_equal_and_different_bytes_do_not() {
+        assert_eq!(content_hash(b"assembly"), content_hash(b"assembly"));
+        assert_ne!(content_hash(b"assembly"), content_hash(b"assemblz"));
     }
 
     #[test]

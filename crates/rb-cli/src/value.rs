@@ -24,8 +24,8 @@ struct Shell<'a> {
     summary: &'a Summary,
     #[serde(skip_serializing_if = "absent")]
     revision_data: &'a Option<RevisionData>,
-    #[serde(skip_serializing_if = "absent")]
-    code: &'a Option<CodeLayer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    code: Option<&'a CodeLayer>,
 }
 
 #[expect(
@@ -42,6 +42,20 @@ fn absent<T>(value: &&Option<T>) -> bool {
 /// # Errors
 /// As `serde_json::to_value`.
 pub fn document(document: &GraphDocument) -> serde_json::Result<Value> {
+    with_code(document, true)
+}
+
+/// [`document`] without the code layer, for a reporter that does not read it
+/// ([`rb_report::reads_code`]): the code layer is most of a compiled .NET graph, and is not
+/// converted when nothing reads it.
+///
+/// # Errors
+/// As `serde_json::to_value`.
+pub fn without_code(document: &GraphDocument) -> serde_json::Result<Value> {
+    with_code(document, false)
+}
+
+fn with_code(document: &GraphDocument, include_code: bool) -> serde_json::Result<Value> {
     // Every field is named, so a field added to the document does not compile until it is here.
     let GraphDocument {
         modules,
@@ -57,7 +71,7 @@ pub fn document(document: &GraphDocument) -> serde_json::Result<Value> {
                 folders,
                 summary,
                 revision_data,
-                code,
+                code: code.as_ref().filter(|_| include_code),
             })
         },
         || {
@@ -102,6 +116,22 @@ mod tests {
     use super::*;
     use rb_model::{Dependency, Module, ModuleSystem};
     use serde_json::json;
+
+    #[test]
+    fn without_code_is_the_document_less_its_code_layer() -> serde_json::Result<()> {
+        let document = GraphDocument {
+            code: Some(CodeLayer::default()),
+            ..GraphDocument::default()
+        };
+        let full = super::document(&document)?;
+        assert!(full.get("code").is_some());
+        let mut expected = full.clone();
+        if let Some(map) = expected.as_object_mut() {
+            map.remove("code");
+        }
+        assert_eq!(without_code(&document)?, expected);
+        Ok(())
+    }
 
     fn module(source: &str, to: &[&str]) -> Module {
         Module {
