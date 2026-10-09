@@ -1,5 +1,5 @@
 # testbeds/init: `rulebearing init --dry-run` on umbraco/Umbraco-CMS at e81538b0400677a2fc319e6b1600b51645be3497
-# (a cruise of src with this configuration exits 0 (13466 findings baselined)). Regenerate with testbeds/init/run.sh.
+# (a cruise of src with this configuration exits 0 (18345 findings baselined)). Regenerate with testbeds/init/run.sh.
 # rulebearing.yaml, written by `rulebearing init` on 2026-09-21.
 # Found: .NET.
 # Every rule says why it exists (comment) and what to do when it fires (fix);
@@ -25,4 +25,4 @@ rules:
 options:
   # Findings present when this file was written. Each expires; fix it before then.
   knownViolations:
-    # no-circular: 733, no-orphans: 29, not-to-unresolvable: 12704 (entries elided)
+    # no-circular: 1081, no-non-package-json: 625, no-orphans: 103, not-to-unresolvable: 16536 (entries elided)

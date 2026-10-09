@@ -6,7 +6,7 @@
 
 Hi! I maintain [Rulebearing](https://github.com/benbahrenburg/rulebearing), an open-source (MIT) tool that checks a repository's import graph against architecture rules, for TypeScript, .NET and Python in one rule file. As part of validating it against real projects, I ran its `init` command on umbraco/Umbraco-CMS at `e81538b04006`, and it proposed a rule set from what the repository already does. I'm sharing it in case it's useful; there is nothing to install unless you want to try it.
 
-**What the proposal is.** 2 rules over .NET, extending `[rulebearing:dotnet, rulebearing:recommended]`. Each rule records a boundary the code already keeps, for example that a top-level package never imports the packages that already import it (which would make a cycle), so a change that crosses one is flagged in review. The rules derived from the code carry a comment saying why and a fix saying what to do. Existing violations (13466 at this commit) are baselined, so the check passes on today's code and fails only on new crossings. The full file is attached (`rulebearing.yaml`).
+**What the proposal is.** 2 rules over .NET, extending `[rulebearing:dotnet, rulebearing:recommended]`. Each rule records a boundary the code already keeps, for example that a top-level package never imports the packages that already import it (which would make a cycle), so a change that crosses one is flagged in review. The rules derived from the code carry a comment saying why and a fix saying what to do. Existing violations (18345 at this commit) are baselined, so the check passes on today's code and fails only on new crossings. The full file is attached (`rulebearing.yaml`).
 
 **Trying it** takes one command from the repository root, and changes nothing else:
 
