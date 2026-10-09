@@ -147,9 +147,14 @@ pub fn merged_after(
 ) -> Result<(Map<String, Value>, Vec<String>), ConfigError> {
     let target = extends::resolve(spec, base_dir)?;
     let key = match &target {
-        Target::File(path) => path
-            .canonicalize()
-            .map_or_else(|_| target.key(), |p| p.to_string_lossy().into_owned()),
+        Target::File(path) => path.canonicalize().map_or_else(
+            |_| target.key(),
+            |p| {
+                rb_model::without_verbatim(&p)
+                    .to_string_lossy()
+                    .into_owned()
+            },
+        ),
         _ => target.key(),
     };
     if visited.contains(&key) {
