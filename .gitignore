@@ -13,6 +13,8 @@ coverage.info
 .coverage
 .coverage.*
 /lcov.info
+# LLVM profiles an instrumented build writes where it runs (crates/rb-node/coverage.sh).
+*.profraw
 # cargo-mutants working output (docs/adr/0024-test-quality-gates.md)
 /mutants.out/
 /mutants.out.old/
