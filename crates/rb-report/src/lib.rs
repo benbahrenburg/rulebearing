@@ -391,10 +391,12 @@ pub(crate) fn truthy(value: Option<&Value>) -> bool {
     rb_rules::js::truthy(value)
 }
 
-/// `findRuleByName(ruleSetUsed, name)`.
+/// `findRuleByName(ruleSetUsed, name)`, which searches `forbidden` and `required`; then the
+/// element, slice and diagram rules Rulebearing adds to `ruleSetUsed`, so a reporter prints their
+/// comment and `fix` as it does a dependency rule's.
 pub(crate) fn find_rule<'a>(rule_set: Option<&'a Value>, name: &str) -> Option<&'a Value> {
     let rule_set = rule_set?;
-    ["forbidden", "required"]
+    ["forbidden", "required", "elements", "slices", "diagrams"]
         .iter()
         .filter_map(|k| rule_set.get(*k).and_then(Value::as_array))
         .flatten()
@@ -490,6 +492,31 @@ pub(crate) fn decision(comment: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_rule_is_found_by_name_in_every_family() {
+        let rule_set = serde_json::json!({
+            "forbidden": [{ "name": "shared", "comment": "dependency" }],
+            "required": [{ "name": "req" }],
+            "elements": [{ "name": "sealed", "fix": "Seal it." }, { "name": "shared", "comment": "element" }],
+            "slices": [{ "name": "apart" }],
+            "diagrams": [{ "name": "drawn" }]
+        });
+        for name in ["req", "sealed", "apart", "drawn"] {
+            assert_eq!(
+                find_rule(Some(&rule_set), name).and_then(|r| r.get("name")),
+                Some(&serde_json::json!(name)),
+                "{name}"
+            );
+        }
+        assert_eq!(
+            find_rule(Some(&rule_set), "shared").and_then(|r| r.get("comment")),
+            Some(&serde_json::json!("dependency")),
+            "a dependency rule is found first, as upstream finds it"
+        );
+        assert_eq!(find_rule(Some(&rule_set), "missing"), None);
+        assert_eq!(find_rule(None, "sealed"), None);
+    }
 
     #[test]
     fn the_reporters_that_read_the_code_layer_are_output_types() {

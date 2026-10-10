@@ -74,6 +74,17 @@ fn violation(
     v
 }
 
+/// An element rule's comment as a reporter prints it: `because` appended, as `ArchUnitNET`
+/// appends `Because(reason)` to a rule's description, so every reporter that prints the comment
+/// prints the reason ([design § Element rules](../../../docs/artifacts/design.md#element-rules-archunitnet-declarative)).
+fn element_comment(rule: &ElementRule) -> Option<String> {
+    match (rule.comment.as_deref(), rule.because.as_deref()) {
+        (Some(comment), Some(because)) => Some(format!("{comment} (because {because})")),
+        (None, Some(because)) => Some(format!("because {because}")),
+        (comment, None) => comment.map(str::to_owned),
+    }
+}
+
 fn element_violations(
     architecture: &Architecture<'_>,
     rule: &ElementRule,
@@ -85,6 +96,7 @@ fn element_violations(
     }
     let outcome = crate::elements::evaluate(architecture, rule)?;
     let key = condition_key(&rule.should);
+    let comment = element_comment(rule);
     if outcome.vacuous {
         empty.push(VacuousRule::new(rule.name.clone(), "select"));
     }
@@ -92,7 +104,7 @@ fn element_violations(
         found.push(violation(
             &rule.name,
             rule.severity,
-            rule.comment.as_deref(),
+            comment.as_deref(),
             rule.fix.as_deref(),
             "element",
             "",
@@ -105,7 +117,7 @@ fn element_violations(
         found.push(violation(
             &rule.name,
             rule.severity,
-            rule.comment.as_deref(),
+            comment.as_deref(),
             rule.fix.as_deref(),
             "element",
             from,
@@ -144,7 +156,18 @@ pub fn rule_set_used(rules: &rb_config::model::Rules) -> serde_json::Map<String,
     let elements: Vec<Value> = rules
         .elements
         .iter()
-        .map(|r| used(&r.name, r.severity, r.comment.as_deref(), r.fix.as_deref()))
+        .map(|r| {
+            let mut entry = used(
+                &r.name,
+                r.severity,
+                element_comment(r).as_deref(),
+                r.fix.as_deref(),
+            );
+            if let Some(because) = &r.because {
+                entry["because"] = json!(because);
+            }
+            entry
+        })
         .collect();
     let slices: Vec<Value> = rules
         .slices
@@ -387,6 +410,44 @@ mod tests {
             cycle[1].0,
             violation_id("apart", "a", "b", "beFreeOfCycles")
         );
+    }
+
+    #[test]
+    fn because_is_appended_to_the_comment_every_reporter_prints()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let rules = rb_config::elements::parse_elements(&json!([
+            { "name": "both", "comment": "Seal it. adr:0001", "because": "nothing extends a service",
+              "select": { "kind": "type" }, "should": { "beSealed": true } },
+            { "name": "reason", "because": "nothing extends a service",
+              "select": { "kind": "type" }, "should": { "beSealed": true } },
+            { "name": "plain", "comment": "Seal it.", "select": { "kind": "type" }, "should": { "beSealed": true } },
+            { "name": "bare", "select": { "kind": "type" }, "should": { "beSealed": true } }
+        ]))?;
+        let comments: Vec<Option<String>> = rules.iter().map(element_comment).collect();
+        assert_eq!(
+            comments,
+            [
+                Some("Seal it. adr:0001 (because nothing extends a service)".to_owned()),
+                Some("because nothing extends a service".to_owned()),
+                Some("Seal it.".to_owned()),
+                None
+            ]
+        );
+        let used = rule_set_used(&rb_config::model::Rules {
+            elements: rules,
+            ..rb_config::model::Rules::default()
+        });
+        assert_eq!(
+            used["elements"][0],
+            json!({ "name": "both", "severity": "error",
+                    "comment": "Seal it. adr:0001 (because nothing extends a service)",
+                    "because": "nothing extends a service" })
+        );
+        assert_eq!(
+            used["elements"][2],
+            json!({ "name": "plain", "severity": "error", "comment": "Seal it." })
+        );
+        Ok(())
     }
 
     #[test]
