@@ -16,6 +16,7 @@ The primary language is Rust (a Cargo workspace under `crates/`). TypeScript, C#
 | `crates/rb-config`, `rb-rules`, `rb-report`, `rb-ingest`, `rb-cli`, `rb-node` | Config, engine, reporters, ingest, CLI, Node binding | [architecture § Crate layout](docs/architecture.md#crate-layout) |
 | `crates/rb-extract-ts`, `rb-extract-dotnet`, `rb-extract-python` | The only crates that read files other than the config | [ADR-0010](docs/adr/0010-crate-layout-and-extractor-boundary.md), [ADR-0011](docs/adr/0011-read-dotnet-assemblies-not-source.md), [ADR-0012](docs/adr/0012-oxc-for-typescript.md), [ADR-0013](docs/adr/0013-ruff-parser-for-python.md) |
 | `conformance/` | The two conformance gates; the upstream test suites are the specification. Gate 2 has an ArchUnitNET half (`archunitnet/`) and a NetArchTest half (`netarchtest/`), each with fixtures, committed graphs, `ported/` cases and `unported.json` | [ADR-0009](docs/adr/0009-conformance-suites-as-specification.md), [conformance/README.md](conformance/README.md) |
+| `cookbook/` | The guard catalogue: one fixture per recipe under `guards/<slug>/`, run by `cookbook/guards/run.sh` in the `guards` job with the public commands only | [plan 0005](docs/plans/pending/0005-guard-catalogue.md), [cookbook/README.md](cookbook/README.md) |
 | `testbeds/` | Pinned open-source repositories for the nightly proof; `oracles/` compares each .NET and Python oracle's own tests with the imported rules, `results/` holds the agreement tables | [design § Test beds](docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against) |
 | `docs/adr/` | Decisions, numbered. Rules cite them as `adr:NNNN`. | [ADR-0001](docs/adr/0001-record-architecture-decisions.md) |
 | `docs/plans/pending/` and `implemented/` | One plan per wave; moved when its exit criteria are met | [docs/plans/README.md](docs/plans/README.md) |
@@ -156,6 +157,7 @@ scripts/gate2-check.sh && scripts/ratchets.sh && scripts/gate2-ratchet.sh   # ga
 cargo test -p rb-rules --test gate2 --test gate2_netarchtest -- --nocapture   # gate 2: every ported ArchUnitNET and NetArchTest case
 RB_UPDATE_SNAPSHOTS=1 cargo test -p rb-extract-dotnet --test gate2_graphs --test netarchtest_graphs   # regenerate the gate 2 graphs
 python3 conformance/archunitnet/tools/port.py          # regenerate the ported ArchUnitNET cases and counts
+cookbook/guards/run.sh --all                            # the guard catalogue: every recipe fixture, byte-compared (RB_UPDATE_SNAPSHOTS=1 rewrites)
 testbeds/oracles/python.sh <owner/repo>                 # the Python oracle: import-linter against the imported contracts
 adapters/dotnet/test.sh && wrappers/nuget/smoke.sh      # the .NET adapters at their coverage floor; the dotnet tool installs and runs
 rulebearing docs --format reference --out docs/reference/element-rules.md   # the generated element-rule reference

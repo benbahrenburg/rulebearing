@@ -39,6 +39,7 @@ pub const MARKDOWN_ROOTS: &[&str] = &[
     "fuzz",
     "scripts",
     "eng",
+    "cookbook",
 ];
 
 /// Directories scanned for Rust doc comments, relative to the repository root.

@@ -1,0 +1,3 @@
+dropped 2 item(s) dependency-cruiser cannot hold:
+  forbidden[no-circular].fix: a Rulebearing rule field
+  forbidden[no-circular].examples: a Rulebearing rule field

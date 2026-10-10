@@ -1,0 +1,18 @@
+{
+  "forbidden": [
+    {
+      "name": "no-circular",
+      "comment": "A module on a cycle cannot be changed, tested or moved on its own. plan:0005-guard-catalogue",
+      "to": {
+        "circular": true,
+        "viaOnly": {
+          "dependencyTypesNot": [
+            "type-only"
+          ]
+        }
+      },
+      "severity": "error",
+      "from": {}
+    }
+  ]
+}
