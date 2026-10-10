@@ -32,7 +32,7 @@ Contributions this repository makes elsewhere are limited to ordinary bug report
 - [NFR-ADOPT-02](../prd.md#nfr-adopt-02) keeps its adoption order as the order in which Rulebearing is proven against each ecosystem's test beds. It drops the offers, and the wave 1 acceptance clause that asked for one.
 - Plan 0002 drops its four oracle-offer rows and the step that opened them. Plan 0004's closing review no longer decides whether to make them.
 - The second-maintainer criterion stays published in [CONTRIBUTING.md](../../CONTRIBUTING.md). Nobody is invited through another project's issue tracker.
-- NFR-ADOPT-02's wave 4 acceptance clause and plan 0004's exit criterion still ask for "one greenfield maintainer accepting a proposed rule set". Without an offer, that can only happen if a maintainer adopts the tool unprompted. The clause is left for the owner to restate or drop with plan 0004.
+- NFR-ADOPT-02's wave 4 acceptance clause and plan 0004's exit criterion drop "one greenfield maintainer accepting a proposed rule set" (the owner, 2026-10-09). Without an offer it could only be met by a maintainer adopting the tool unprompted, which is not something this project works toward. Plan 0004 exits on the six adoption signals alone.
 - The design document is a dated export and is not edited ([docs/artifacts/README.md](../artifacts/README.md)). Where it describes offers, this ADR governs.
 
 ## Alternatives considered

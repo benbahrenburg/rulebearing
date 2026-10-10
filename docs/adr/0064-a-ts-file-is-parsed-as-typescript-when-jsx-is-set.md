@@ -1,6 +1,6 @@
 # ADR-0064: A `.ts` file is parsed as TypeScript when the tsconfig sets `jsx`
 
-- **Status:** Proposed (2026-10-09)
+- **Status:** Accepted (2026-10-09, by the owner)
 - **Date:** 2026-10-09
 - **Derives from:** [plan 0002, 2D](../plans/pending/0002-wave-2-dotnet-python-element-rules.md#wave-2d-cross-language-rule-additions-presets-vue-svelte-markdown-and-the-remaining-wave-2-option-rows) (the row carried from [plan 0001, Wave 1C](../plans/implemented/0001-wave-1-typescript-parity.md#wave-1c-rb-extract-ts-completion)); [design § Test beds](../artifacts/design.md#test-beds-open-source-repositories-to-validate-against), item 1 (a difference is allowed only as a documented divergence)
 - **Constrains:** `crates/rb-extract-ts` (a file's syntax comes from its extension), [conformance/divergences.md](../../conformance/divergences.md)
