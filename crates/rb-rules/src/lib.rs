@@ -53,7 +53,7 @@ pub mod slices;
 pub mod summarize;
 pub mod validate;
 
-pub use evaluate::{EngineError, EvalOptions, Evaluation, Expired, RuleStats, evaluate};
+pub use evaluate::{EngineError, EvalOptions, Evaluation, Expired, RuleStats, evaluate, reset};
 /// The JavaScript-to-Rust pattern compatibility table
 /// ([ADR-0016](../../../docs/adr/0016-linear-time-regex-and-strict-compat.md)).
 pub use rb_config::pattern::COMPATIBILITY;

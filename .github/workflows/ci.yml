@@ -518,6 +518,32 @@ jobs:
       - run: cargo build --release -p rb-cli
       - run: cookbook/guards/run.sh --all
 
+  # The playground's wasm module (plan 0004, Step 2): rb-wasm built for wasm32-unknown-unknown,
+  # bound for Node with wasm-bindgen, and run against every guard fixture's CLI output; the size
+  # under 8 MB compressed. rb-config without its JavaScript engine is tested here too, since the
+  # module is built that way (QuickJS does not link for the target).
+  wasm:
+    name: wasm
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2
+        with:
+          tool: wasm-bindgen@0.2.128
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - run: cargo test -p rb-config --no-default-features
+      - run: cargo test -p rb-wasm
+      - run: cargo build --release -p rb-wasm --target wasm32-unknown-unknown
+      - run: wasm-bindgen --target nodejs --out-dir target/rb-wasm-node target/wasm32-unknown-unknown/release/rb_wasm.wasm
+      - run: node crates/rb-wasm/tests/wasm.mjs target/rb-wasm-node
+
   schema-check:
     name: schema-check
     runs-on: ubuntu-latest

@@ -39,6 +39,28 @@ pub struct FormatOptions {
     pub options: Map<String, Value>,
 }
 
+/// The report's filters and collapse a configuration asks for: `reaches` and `highlight` as path
+/// filters (upstream's reportWrap tags every module `matchesHighlight` from the cruise options),
+/// and `collapse` as a pattern. The command line and the playground both build the report from
+/// it.
+pub fn report_format(config: &rb_config::Config) -> FormatOptions {
+    let path_only = |option: Option<&rb_config::model::FilterOption>| {
+        option.map(|o| crate::graph::filters::Filter {
+            path: o.path.clone(),
+            depth: None,
+        })
+    };
+    FormatOptions {
+        filters: Filters {
+            reaches: path_only(config.options.reaches.as_ref()),
+            highlight: path_only(config.options.highlight.as_ref()),
+            ..Filters::default()
+        },
+        collapse: config.options.collapse.as_ref().and_then(collapse_pattern),
+        options: Map::new(),
+    }
+}
+
 /// `normalizeCollapse`: a depth `n` becomes `node_modules/[^/]+|^([^/]+/){n}`.
 pub fn collapse_pattern(value: &Value) -> Option<String> {
     let depth = match value {
@@ -267,6 +289,46 @@ mod tests {
         doc
     }
 
+    #[test]
+    fn the_report_format_is_the_configuration_s_filters_and_collapse() {
+        let config = rb_config::load::from_canonical(
+            json!({ "options": {
+                "reaches": { "path": "^src/a" },
+                "highlight": { "path": "^src/b" },
+                "collapse": 2
+            } })
+            .as_object()
+            .cloned()
+            .unwrap_or_default(),
+            rb_config::CompatMode::Native,
+        )
+        .unwrap_or_default();
+        let format = report_format(&config);
+        assert_eq!(
+            format.filters.reaches,
+            Some(Filter {
+                path: Some("^src/a".into()),
+                depth: None
+            })
+        );
+        assert_eq!(
+            format.filters.highlight,
+            Some(Filter {
+                path: Some("^src/b".into()),
+                depth: None
+            })
+        );
+        assert_eq!(
+            format.collapse.as_deref(),
+            Some("node_modules/[^/]+|^[^/]+/[^/]+/")
+        );
+        assert!(format.filters.exclude.is_none() && format.options.is_empty());
+        assert_eq!(
+            report_format(&rb_config::Config::default()),
+            FormatOptions::default(),
+            "no options, nothing to rewrap"
+        );
+    }
     #[test]
     fn filters_resummarise_and_keep_additions() -> Result<(), EngineError> {
         let format = FormatOptions {

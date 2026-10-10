@@ -1,7 +1,8 @@
 //! The crate dependency direction, asserted from `cargo metadata`.
 //!
 //! - Decision: [ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md) (the
-//!   table and rules 1 and 2)
+//!   table and rules 1 and 2), [ADR-0067](../../../docs/adr/0067-the-playground-facade-and-an-optional-javascript-engine.md)
+//!   (the `rb-wasm` row)
 //! - Plan: [Wave 0, Step 2](../../../docs/plans/pending/0000-wave-0-spike.md#step-2-cargo-workspace-and-the-ten-crates-0a)
 //!   item 4
 //! - Requirement: [FR-CORE-01](../../../docs/prd.md#fr-core-01)
@@ -39,6 +40,18 @@ const ALLOWED: &[(&str, &[&str])] = &[
         ],
     ),
     ("rb-node", &["rb-cli"]),
+    // The playground's facade (ADR-0067, amending ADR-0010's table): the library crates only,
+    // never rb-cli, and nothing depends on it.
+    (
+        "rb-wasm",
+        &[
+            "rb-model",
+            "rb-config",
+            "rb-rules",
+            "rb-report",
+            "rb-ingest",
+        ],
+    ),
 ];
 
 /// Normal dependencies on other workspace members, per workspace member.
