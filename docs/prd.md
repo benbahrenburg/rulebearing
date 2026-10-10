@@ -652,12 +652,12 @@ Source: [design § The agentic engineering hat](artifacts/design.md#the-agentic-
 
 #### FR-REACH-04
 
-**Public rule library and framework presets.** `rulebearing-rules` MUST be a public repository published to all three registries that any repo `extends`, versioned with a changelog. Framework presets `rulebearing:nextjs`, `rulebearing:clean-architecture`, `rulebearing:django`, `rulebearing:fastapi` and `rulebearing:vertical-slices` MUST be off by default, each a documented opinion.
+**Public rule library and framework presets.** `rulebearing-rules` MUST be a public rule library, published to all three registries from this repository at the release version, that any repo `extends`, with each release's notes listing the presets it changed ([ADR-0071](adr/0071-the-rule-library-ships-from-this-repository.md)). Framework presets `rulebearing:nextjs`, `rulebearing:clean-architecture`, `rulebearing:django`, `rulebearing:fastapi` and `rulebearing:vertical-slices` MUST be off by default, each a documented opinion.
 
 Acceptance:
 - `extends: [rulebearing:clean-architecture]` on jasontaylordev/CleanArchitecture passes with non-vacuous rules.
 
-Source: [design § The developer relations hat](artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo) | Wave: 3 | ADRs: [0005](adr/0005-native-config-superset-and-compat.md)
+Source: [design § The developer relations hat](artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo) | Wave: 3 | ADRs: [0005](adr/0005-native-config-superset-and-compat.md), [0071](adr/0071-the-rule-library-ships-from-this-repository.md)
 
 ## Non-functional requirements
 
