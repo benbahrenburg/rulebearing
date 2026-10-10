@@ -533,7 +533,43 @@ pub fn merge(
     config: &Config,
     parts: &Parts,
 ) -> Result<(GraphDocument, Vec<rb_model::Warning>), ExtractError> {
-    merge_owned(config, parts.clone())
+    merge_owned(config, merged_fields(parts))
+}
+
+/// The part of `parts` that [`merge_owned`] reads, copied: each extraction less its per-file
+/// states ([`Extraction::files`]) and its walk ([`Extraction::walk`]), which the document does not
+/// carry. Those are kept for `guard --watch` and the cache, a code layer per file, and copying
+/// them on every merge made `guard`'s answer to a saved file several times slower
+/// ([NFR-PERF-03](../../../docs/prd.md#nfr-perf-03), [docs/perf.md](../../../docs/perf.md)).
+fn merged_fields(parts: &Parts) -> Parts {
+    let copy = |part: &Option<Extraction>| {
+        part.as_ref().map(|extraction| {
+            // Every field is named, so a field added to an extraction is decided on here.
+            let Extraction {
+                modules,
+                code,
+                inspected,
+                warnings,
+                files: _,
+                sidecar,
+                walk: _,
+            } = extraction;
+            Extraction {
+                modules: modules.clone(),
+                code: code.clone(),
+                inspected: inspected.clone(),
+                warnings: warnings.clone(),
+                files: std::collections::BTreeMap::new(),
+                sidecar: sidecar.clone(),
+                walk: None,
+            }
+        })
+    };
+    Parts {
+        typescript: copy(&parts.typescript),
+        dotnet: copy(&parts.dotnet),
+        python: copy(&parts.python),
+    }
 }
 
 /// [`merge`] for a caller that has no further use for `parts`: their modules and code layers are
@@ -909,6 +945,62 @@ mod tests {
         for (error, exit) in table {
             assert_eq!(error.exit(), exit, "{error}");
         }
+        Ok(())
+    }
+
+    /// An extraction as `guard --watch` keeps one: with each file's state and the walk.
+    fn kept(source: &str) -> Extraction {
+        Extraction {
+            modules: vec![rb_model::Module::new(source)],
+            code: Some(rb_model::CodeLayer::default()),
+            inspected: Receipt::counts(1, 0, 1),
+            warnings: vec![rb_model::Warning::about(source, "a warning")],
+            files: std::collections::BTreeMap::from([(
+                source.to_owned(),
+                rb_model::FileState {
+                    code: Some(serde_json::json!({ "types": [source] })),
+                    warnings: Vec::new(),
+                },
+            )]),
+            sidecar: None,
+            walk: Some(rb_model::Walk {
+                sources: vec![source.to_owned()],
+                folders: vec![std::path::PathBuf::from("src")],
+            }),
+        }
+    }
+
+    #[test]
+    fn a_merge_copies_what_the_document_carries_and_never_the_per_file_states()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let parts = Parts {
+            typescript: Some(kept("src/a.ts")),
+            dotnet: Some(kept("Lib/A.cs")),
+            python: Some(kept("pkg/a.py")),
+        };
+        // The per-file states and the walk are what `guard` keeps between checks; copying them
+        // on every check made its answer several times slower (NFR-PERF-03).
+        let copied = merged_fields(&parts);
+        for (copy, original) in [
+            (&copied.typescript, &parts.typescript),
+            (&copied.dotnet, &parts.dotnet),
+            (&copied.python, &parts.python),
+        ] {
+            let expected = original.clone().map(|extraction| Extraction {
+                files: std::collections::BTreeMap::new(),
+                walk: None,
+                ..extraction
+            });
+            assert!(expected.is_some());
+            assert_eq!(copy, &expected);
+        }
+        assert_eq!(merged_fields(&Parts::default()), Parts::default());
+        // The document is the one the parts themselves give.
+        let config = Config::default();
+        let borrowed = merge(&config, &parts)?;
+        assert_eq!(borrowed, merge_owned(&config, parts.clone())?);
+        assert_eq!(borrowed.0.modules.len(), 3);
+        assert_eq!(borrowed.1.len(), 3);
         Ok(())
     }
 }
