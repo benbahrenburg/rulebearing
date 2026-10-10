@@ -39,7 +39,7 @@ The first repository to switch will be a heavy dependency-cruiser user, and it w
 | Replacing the compiler | The Roslyn analyzer is an inner-loop front-end, not a replacement for the metadata extractor, which sees IL and every assembly; `--mode source` is approximate and never the gate. | [design § Where it would be ignored](artifacts/design.md#where-it-would-be-ignored), [ADR-0011](adr/0011-read-dotnet-assemblies-not-source.md) |
 | Reading C# source for the .NET edge set | All three .NET tools read assemblies; the compiler has already resolved every reference. | [design § Prior art](artifacts/design.md#prior-art) |
 | A product-owned rule file or graph | NDepend keeps its graph; Rulebearing emits a plain JSON other scripts consume. | [design § Prior art](artifacts/design.md#prior-art) |
-| Modifying test-bed repositories | Test beds are cloned at a pinned SHA, never modified; a pull request is offered only where a contributing guide invites it, via an issue first. | [design § Test beds](artifacts/design.md#test-beds-open-source-repositories-to-validate-against), [design § Open questions](artifacts/design.md#open-questions) |
+| Modifying test-bed repositories | Test beds are cloned at a pinned SHA, never modified; no issue or pull request proposing Rulebearing is opened on them ([ADR-0065](adr/0065-no-unsolicited-offers-to-other-projects.md)). | [design § Test beds](artifacts/design.md#test-beds-open-source-repositories-to-validate-against), [design § Open questions](artifacts/design.md#open-questions) |
 
 ## Users and personas
 
@@ -781,10 +781,10 @@ Source: [design § How to know, rather than believe](artifacts/design.md#how-to-
 
 #### NFR-ADOPT-02
 
-**Adoption order and upstream etiquette.** Adoption MUST proceed: own repositories (wave 0); TypeScript oracle repos as a drop-in offered upstream, dependency-cruiser's maintainer first (wave 1); .NET oracle repos through `import archunit`, starting with evolutionary-architecture-by-example and RiverBooks (wave 2); Python oracle repos through `import import-linter`, starting with kedro and sqlfluff (wave 2); greenfield mixed-language repos through `init` and `propose` (wave 3). Each offer MUST go to an issue first with the zero-diff result attached, and MUST be withdrawn without argument if declined.
+**Adoption order and upstream etiquette.** Rulebearing MUST be proven in this order: own repositories (wave 0); the TypeScript oracle repos as a drop-in (wave 1); the .NET oracle repos through `import archunit` (wave 2); the Python oracle repos through `import import-linter` (wave 2); greenfield mixed-language repos through `init` and `propose` (wave 3). The results MUST be published in this repository. Rulebearing MUST NOT make an unsolicited offer: no issue or pull request proposing adoption is opened on another project, and no maintainer is approached about it ([ADR-0065](adr/0065-no-unsolicited-offers-to-other-projects.md)).
 
 Acceptance:
-- Wave 1 exit: the drop-in offered upstream to at least one oracle repo; wave 4 exit: one greenfield maintainer accepting a proposed rule set.
+- Each wave's proof is published: the zero-diff results (wave 1), the agreement tables (wave 2) and the `init` fixtures (waves 2 and 3). The wave 4 clause asking for a greenfield maintainer to accept a proposed rule set is dropped ([ADR-0065](adr/0065-no-unsolicited-offers-to-other-projects.md)).
 
 Source: [design § Adoption order](artifacts/design.md#adoption-order), [§ Open questions](artifacts/design.md#open-questions) | Wave: 0-3 | ADRs: [0021](adr/0021-agent-surface-cli-first.md)
 
@@ -839,10 +839,10 @@ Five waves of part-time work at roughly ten hours a week, TypeScript first becau
 | Wave | Weeks | Plan | Exit criterion |
 | --- | --- | --- | --- |
 | 0 spike | 4 | [0000-wave-0-spike](plans/pending/0000-wave-0-spike.md) | `test/extract` fixtures pass at 95% or better; 99% of the oracle repos' types attributed to a source file, or the C# extractor fallback is invoked |
-| 1 TypeScript parity, the native format, the first-run experience | 10 | [0001-wave-1-typescript-parity](plans/implemented/0001-wave-1-typescript-parity.md) | Gate 1 layers 1 to 5 green; zero-diff on dependency-cruiser's own repo, langfuse and FluidFramework at pinned commits; `adopt` opens a green pull request on a repo with a non-empty baseline; the drop-in offered upstream to at least one oracle repo |
+| 1 TypeScript parity, the native format, the first-run experience | 10 | [0001-wave-1-typescript-parity](plans/implemented/0001-wave-1-typescript-parity.md) | Gate 1 layers 1 to 5 green; zero-diff on dependency-cruiser's own repo, langfuse and FluidFramework at pinned commits; `adopt` opens a green pull request on a repo with a non-empty baseline; the drop-in offered upstream to at least one oracle repo (dropped by [ADR-0065](adr/0065-no-unsolicited-offers-to-other-projects.md)) |
 | 2 .NET, Python, element rules, migration | 10 | [0002-wave-2-dotnet-python-element-rules](plans/pending/0002-wave-2-dotnet-python-element-rules.md) | Gate 2 unported count at zero except custom predicates; every .NET oracle's imported tests agree with `dotnet test`; every Python oracle's contracts reproduce; `init` produces a passing config on semantic-kernel and autogen |
 | 3 operations, the rest of the surface, the inner loop | 8 | [0003-wave-3-operations-surface-inner-loop](plans/pending/0003-wave-3-operations-surface-inner-loop.md) | `conformance/excluded.json` empty; all twenty-one dependency-cruiser output types byte-compared; Stop hook p95 under 2 s on aspnetcore in source mode; the scale table published |
-| 4 reach, funded on the numbers | 8 | [0004-wave-4-reach](plans/pending/0004-wave-4-reach.md) | The six adoption signals met for two consecutive months on the repos where they can be measured; one greenfield test bed maintainer accepting a proposed rule set |
+| 4 reach, funded on the numbers | 8 | [0004-wave-4-reach](plans/pending/0004-wave-4-reach.md) | The six adoption signals met for two consecutive months on the repos where they can be measured (the greenfield-maintainer clause dropped by [ADR-0065](adr/0065-no-unsolicited-offers-to-other-projects.md)) |
 
 Wave 4 is funded on the adoption numbers ([NFR-ADOPT-01](#nfr-adopt-01)), not in advance. Both conformance gates are required checks from the first pull request and ratchet ([NFR-CONF-01](#nfr-conf-01), [NFR-CONF-02](#nfr-conf-02)).
 
@@ -879,7 +879,7 @@ If the first two numbers do not move, the tool is a better dependency-cruiser an
 | .NET Framework projects: how many oracle projects lack a portable PDB, and can `DebugType=portable` be set? | Ben Bahrenburg | Wave 0 | Measured in the spike; `attribution: none` handled |
 | The sidecar: is it exercised by anything but dependency-cruiser's own fixtures? | Ben Bahrenburg | Wave 3 | No oracle repo uses CoffeeScript or LiveScript; the coverage tab says so ([ADR-0017](adr/0017-coffeescript-livescript-sidecar.md)) |
 | Custom predicates: does any test bed's imported test need one the declarative vocabulary cannot express? | Ben Bahrenburg | Wave 2 | Revisit only on evidence; record the gap in the coverage tab |
-| Upstream etiquette: how is a drop-in offered without costing maintainer time? | Ben Bahrenburg | Wave 1 | An issue first with the zero-diff result attached; withdrawn without argument if declined |
+| Upstream etiquette: how is a drop-in offered without costing maintainer time? | Ben Bahrenburg | Wave 1 | It is not offered: no unsolicited issue or pull request on another project; the results are published here ([ADR-0065](adr/0065-no-unsolicited-offers-to-other-projects.md)) |
 
 Source: [design § Open questions](artifacts/design.md#open-questions).
 

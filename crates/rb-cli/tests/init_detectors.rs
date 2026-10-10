@@ -3,7 +3,7 @@
 //! from the top-level packages; a project in a folder below the root is found and named in
 //! `languages`. Each proposal is cruised back and exits 0.
 //!
-//! - Plan: [Wave 2, Step 15](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-upstream-offers-second-maintainer-2i)
+//! - Plan: [Wave 2, Step 15](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-second-maintainer-2i)
 //! - Source: [design § Test beds](../../../docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against)
 //!   item 2 (greenfield `init` produces a config that passes)
 //! - Requirements: [FR-CLI-03](../../../docs/prd.md#fr-cli-03), [NFR-ADOPT-02](../../../docs/prd.md#nfr-adopt-02)

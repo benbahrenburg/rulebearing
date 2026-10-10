@@ -65,7 +65,7 @@ Two parts of the tree are the safest first pull request, because a committed spe
 | A Python engineer | [`crates/rb-extract-python`](crates/rb-extract-python/src/lib.rs) | It depends on `rb-model` only ([ADR-0010](docs/adr/0010-crate-layout-and-extractor-boundary.md)), so a change cannot reach the engine; its fixture package is compared byte for byte with a committed expectation, and the import-linter oracles in [the test beds](testbeds/README.md) say whether a graph agrees with the tool Python teams already run |
 | A C# engineer | the adapters under [`adapters/dotnet`](adapters/dotnet/README.md) | They never evaluate a rule, only report what the binary found, and each of the seven packages has its own test project at the 70% line floor; gate 2's ported cases fix what a finding looks like |
 
-The invitation is made in the upstream-offer issues of [plan 0002, Step 15](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-upstream-offers-second-maintainer-2i): the ones that offer evolutionary-architecture-by-example, RiverBooks, kedro and sqlfluff a pull request adding Rulebearing beside their incumbent tool. Whether the criterion is met by the end of wave 2 is recorded in that plan's status table; not meeting it does not block the plan, and it is carried to wave 3.
+Nobody is invited through another project's issue tracker ([ADR-0065](docs/adr/0065-no-unsolicited-offers-to-other-projects.md)): this section is the invitation. Whether the criterion is met is recorded in the plans' status tables; not meeting it blocks no plan.
 
 ## Reporting
 

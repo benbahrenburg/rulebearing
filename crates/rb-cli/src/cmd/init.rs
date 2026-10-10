@@ -29,7 +29,7 @@
 //! The proposal adds one fence per boundary found, each with a `comment` and a `fix`. A cruise
 //! then runs over it, and the rules its graph calls for are added: the layers the .NET namespaces
 //! name and the order of the top-level Python packages ([`crate::cmd::init_graph`], plan
-//! [Wave 2, Step 15](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-upstream-offers-second-maintainer-2i)).
+//! [Wave 2, Step 15](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-second-maintainer-2i)).
 //! A rule that would be vacuous is dropped (a framework preset's, which is extended rather than
 //! written, is left out with a `severity: ignore` entry naming it), and every current finding is
 //! written into the baseline ([`crate::cmd::adopt::baseline`]), so the file is written only when
