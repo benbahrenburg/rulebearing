@@ -339,6 +339,8 @@ vocabulary! {
         Instability => "instability",
         /// A folder-scope rule.
         Folder => "folder",
+        /// A project-scope rule: one .NET project, or Python package, to another (additive).
+        Project => "project",
         /// An element or diagram rule's object failed its condition (additive).
         Element => "element",
         /// A slice rule's slice or cycle (additive).

@@ -273,6 +273,13 @@ fn check_rule(
             return Err(unknown(at, key, &all));
         }
     }
+    if compat == CompatMode::DependencyCruiser
+        && map.get("scope").and_then(Value::as_str) == Some("project")
+    {
+        return Err(ConfigError::Invalid(format!(
+            "`{at}.scope: project` is a Rulebearing addition for native configurations; a dependency-cruiser configuration never sees it. Move the rule into rulebearing.yaml (`rulebearing config convert` writes one) or use `scope: folder`"
+        )));
+    }
     if let Some(from) = map.get("from") {
         if let Some(key) = EDGE_KEYS.iter().find(|k| from.get(**k).is_some()) {
             return Err(ConfigError::Invalid(format!(
@@ -409,6 +416,8 @@ fn check_cross_language_placement(rule: &Rule, family: &str) -> Result<(), Confi
         Some(
             "a folder-scoped rule compares folders, which carry no language, namespace, project or edge kind",
         )
+    } else if rule.is_project_scope() {
+        Some("a project-scoped rule compares projects by name; select them with `path`")
     } else if rule.to.reachable.is_some() {
         Some(
             "a reachability rule selects through `reachable`, which the cross-language keys do not narrow",
@@ -445,6 +454,10 @@ fn check_graph_placement(rule: &Rule, family: &str) -> Result<(), ConfigError> {
         )
     } else if rule.is_folder_scope() {
         Some("a folder-scoped rule compares folders, whose edges are built from every module edge")
+    } else if rule.is_project_scope() {
+        Some(
+            "a project-scoped rule compares projects, whose edges are built from every module edge",
+        )
     } else if rule.from.orphan.is_some() || rule.module.is_some() {
         Some("an orphan or dependents rule reads a derivation of the whole graph")
     } else if graph.chains_through.is_some() && rule.to.reachable.is_none() {
@@ -1371,6 +1384,10 @@ mod tests {
                 "a folder-scoped rule",
             ),
             (
+                json!({ "forbidden": [{ "name": "p", "scope": "project", "from": {}, "to": { "circular": true }, "graph": { "modulesNot": "x" } }] }),
+                "a project-scoped rule compares projects, whose edges",
+            ),
+            (
                 json!({ "forbidden": [{ "name": "o", "from": { "orphan": true }, "to": {}, "graph": { "modulesNot": "x" } }] }),
                 "an orphan or dependents rule",
             ),
@@ -1530,6 +1547,26 @@ mod tests {
         ] {
             assert!(warned(quiet.clone())?.is_empty(), "{quiet}");
         }
+        Ok(())
+    }
+
+    #[test]
+    fn a_project_scoped_rule_takes_paths_not_cross_language_keys() -> Result<(), ConfigError> {
+        let error = rule_set(&object(json!({ "forbidden": [
+            { "name": "p", "scope": "project", "from": { "namespace": "^App" }, "to": {} }
+        ] })))
+        .err()
+        .map(|e| e.to_string())
+        .unwrap_or_default();
+        assert!(
+            error.contains("`from.namespace` cannot apply here: a project-scoped rule compares projects by name"),
+            "{error}"
+        );
+        let rules = rule_set(&object(json!({ "forbidden": [
+            { "name": "p", "scope": "project", "from": { "path": "^Web" }, "to": { "moreUnstable": true } }
+        ] })))?;
+        assert!(rules.forbidden[0].is_project_scope());
+        assert!(!rules.forbidden[0].is_folder_scope());
         Ok(())
     }
 }

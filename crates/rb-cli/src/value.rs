@@ -21,6 +21,8 @@ struct Shell<'a> {
     modules: [(); 0],
     #[serde(skip_serializing_if = "absent")]
     folders: &'a Option<Vec<Folder>>,
+    #[serde(skip_serializing_if = "absent")]
+    projects: &'a Option<Vec<Folder>>,
     summary: &'a Summary,
     #[serde(skip_serializing_if = "absent")]
     revision_data: &'a Option<RevisionData>,
@@ -60,6 +62,7 @@ fn with_code(document: &GraphDocument, include_code: bool) -> serde_json::Result
     let GraphDocument {
         modules,
         folders,
+        projects,
         summary,
         revision_data,
         code,
@@ -69,6 +72,7 @@ fn with_code(document: &GraphDocument, include_code: bool) -> serde_json::Result
             serde_json::to_value(Shell {
                 modules: [],
                 folders,
+                projects,
                 summary,
                 revision_data,
                 code: code.as_ref().filter(|_| include_code),
@@ -93,6 +97,7 @@ pub fn copy(document: &GraphDocument) -> GraphDocument {
     let GraphDocument {
         modules,
         folders,
+        projects,
         summary,
         revision_data,
         code,
@@ -100,6 +105,7 @@ pub fn copy(document: &GraphDocument) -> GraphDocument {
     GraphDocument {
         modules: modules.par_iter().cloned().collect(),
         folders: folders.clone(),
+        projects: projects.clone(),
         summary: summary.clone(),
         revision_data: revision_data.clone(),
         code: code.clone(),

@@ -452,7 +452,7 @@ pub struct Examples {
     pub forbidden: Vec<String>,
 }
 
-/// `scope`: module or folder.
+/// `scope`: module, folder, or (an addition) project.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum Scope {
@@ -461,6 +461,10 @@ pub enum Scope {
     Module,
     /// The rule compares folders.
     Folder,
+    /// The rule compares projects: the `.csproj` or package each module belongs to, aggregated
+    /// as folders are ([ADR-0066](../../../docs/adr/0066-project-scope-and-the-project-layer.md)).
+    /// A native configuration's addition.
+    Project,
 }
 
 /// One dependency rule, in dependency-cruiser's shape plus the native metadata.
@@ -470,7 +474,7 @@ pub struct Rule {
     /// Name, comment, severity and the native metadata.
     #[serde(flatten)]
     pub meta: RuleMeta,
-    /// `module` or `folder`. Default `module`.
+    /// `module`, `folder` or `project`. Default `module`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub scope: Option<Scope>,
     /// The selecting side of a dependency rule.
@@ -575,6 +579,11 @@ impl Rule {
     /// Whether the rule compares folders.
     pub fn is_folder_scope(&self) -> bool {
         self.scope == Some(Scope::Folder)
+    }
+
+    /// Whether the rule compares projects.
+    pub fn is_project_scope(&self) -> bool {
+        self.scope == Some(Scope::Project)
     }
 }
 

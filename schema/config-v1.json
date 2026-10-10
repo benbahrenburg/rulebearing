@@ -5172,7 +5172,7 @@
               "type": "null"
             }
           ],
-          "description": "`module` or `folder`. Default `module`."
+          "description": "`module`, `folder` or `project`. Default `module`."
         },
         "severity": {
           "anyOf": [
@@ -5201,7 +5201,7 @@
       "type": "object"
     },
     "Scope": {
-      "description": "`scope`: module or folder.",
+      "description": "`scope`: module, folder, or (an addition) project.",
       "oneOf": [
         {
           "const": "module",
@@ -5211,6 +5211,11 @@
         {
           "const": "folder",
           "description": "The rule compares folders.",
+          "type": "string"
+        },
+        {
+          "const": "project",
+          "description": "The rule compares projects: the `.csproj` or package each module belongs to, aggregated\nas folders are ([ADR-0066](../../../docs/adr/0066-project-scope-and-the-project-layer.md)).\nA native configuration's addition.",
           "type": "string"
         }
       ]

@@ -10,6 +10,11 @@
 //! - Plan: [Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
 //!
+//! A result with `projects` (Rulebearing's project layer,
+//! [ADR-0066](../../../docs/adr/0066-project-scope-and-the-project-layer.md)) lists them too, as
+//! rows of type `project`, which `hideProjects` hides; the `type` column then widens to fit. A
+//! result without projects renders as upstream's does.
+//!
 //! A result without `folders` was cruised without metrics, and the reporter says so with exit 1,
 //! as upstream's does. Rows sort by name, then by `orderBy` (default `instability`) descending,
 //! with a stable sort, so equal figures stay in name order.
@@ -35,7 +40,7 @@ struct Column {
     format: Format,
 }
 
-fn columns(name_width: usize) -> Vec<Column> {
+fn columns(name_width: usize, type_width: usize) -> Vec<Column> {
     let column = |key, title, width, format| Column {
         key,
         title,
@@ -43,7 +48,7 @@ fn columns(name_width: usize) -> Vec<Column> {
         format,
     };
     vec![
-        column("type", "type", 6, Format::Text),
+        column("type", "type", type_width, Format::Text),
         column("name", "name", name_width, Format::Text),
         column("moduleCount", "N", METRIC_WIDTH, Format::Integer),
         column("afferentCouplings", "Ca", METRIC_WIDTH, Format::Integer),
@@ -99,6 +104,15 @@ fn folder_row(folder: &Value) -> Row {
         ("instability", folder.get("instability").cloned()),
     ];
     with_stats(row, folder)
+}
+
+/// A project's row: the folder record's figures under type `project`.
+fn project_row(project: &Value) -> Row {
+    let mut row = folder_row(project);
+    if let Some(kind) = row.iter_mut().find(|(key, _)| *key == "type") {
+        kind.1 = Some(json!("project"));
+    }
+    row
 }
 
 /// `getMetricsFromModule`.
@@ -167,10 +181,12 @@ fn by_number(attribute: &str, left: &Row, right: &Row) -> f64 {
 fn table(result: &Value, options: &Map<String, Value>, color: bool) -> String {
     let flag = |key: &str| js::truthy(options.get(key));
     let folders = rb_rules::js::array(result, "folders");
+    let projects = rb_rules::js::array(result, "projects");
     let modules = rb_rules::js::array(result, "modules");
     let rows: Vec<Row> = folders
         .iter()
         .map(folder_row)
+        .chain(projects.iter().map(project_row))
         .chain(
             modules
                 .iter()
@@ -185,14 +201,25 @@ fn table(result: &Value, options: &Map<String, Value>, color: bool) -> String {
         .chain(std::iter::once(js::length("name")))
         .max()
         .unwrap_or(4);
-    let columns = columns(name_width);
-    let (hide_modules, hide_folders) = (flag("hideModules"), flag("hideFolders"));
+    let (hide_modules, hide_folders, hide_projects) = (
+        flag("hideModules"),
+        flag("hideFolders"),
+        flag("hideProjects"),
+    );
+    let type_width = if projects.is_empty() || hide_projects {
+        6
+    } else {
+        "project".len()
+    };
+    let columns = columns(name_width, type_width);
     let mut shown: Vec<Row> = rows
         .into_iter()
         .filter(|r| {
             let kind = get(r, "type");
             let kind = kind.as_ref().and_then(Value::as_str);
-            (!hide_modules && kind == Some("module")) || (!hide_folders && kind == Some("folder"))
+            (!hide_modules && kind == Some("module"))
+                || (!hide_folders && kind == Some("folder"))
+                || (!hide_projects && kind == Some("project"))
         })
         .collect();
     rb_rules::js::sort(&mut shown, |a, b| {
@@ -312,12 +339,39 @@ mod tests {
     }
 
     #[test]
+    fn projects_are_rows_of_their_own_type() {
+        let result = json!({ "modules": [], "folders": [
+            { "name": "src", "moduleCount": 3, "afferentCouplings": 1, "efferentCouplings": 1, "instability": 0.5 }
+        ], "projects": [
+            { "name": "Core", "moduleCount": 2, "afferentCouplings": 3, "efferentCouplings": 1, "instability": 0.25 },
+            { "name": "Newtonsoft.Json", "moduleCount": -1 }
+        ] });
+        let r = render(&result, None, false);
+        assert_eq!(
+            r.output,
+            concat!(
+                "type     name       N     Ca     Ce  I (%)        size   #tls\n",
+                "-------- ----- ------ ------ ------ ------ ----------- ------\n",
+                "folder   src        3      1      1    50%\n",
+                "project  Core       2      3      1    25%\n"
+            ),
+            "a sink is not calculable, and the type column fits `project`"
+        );
+        let hidden = render(&result, Some(&json!({ "hideProjects": true })), false);
+        assert!(!hidden.output.contains("project"), "{}", hidden.output);
+        assert!(
+            hidden.output.starts_with("type    name"),
+            "without project rows the column is upstream's width"
+        );
+    }
+
+    #[test]
     fn integers_group_like_intl() {
         assert_eq!(format_integer(0.0), "0");
         assert_eq!(format_integer(1234.0), "1,234");
         assert_eq!(format_integer(-1_234_567.0), "-1,234,567");
         let folder = json!({ "name": "x", "moduleCount": 1, "instability": "junk" });
-        let columns = columns(4);
+        let columns = columns(4, 6);
         assert_eq!(cell(&columns[5], folder.get("instability")), "  NaN%");
         assert_eq!(cell(&columns[2], Some(&json!(1.5))), "      ");
         assert!(!calculable(&folder_row(&json!({ "moduleCount": -1 }))));

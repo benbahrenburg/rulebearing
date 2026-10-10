@@ -45,6 +45,11 @@ pub struct GraphDocument {
     /// The folder layer, present when metrics or folder rules asked for it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub folders: Option<Vec<Folder>>,
+    /// Additive: the project layer, the folder layer's records over the projects modules belong
+    /// to (`Module::project`), present when metrics are on and a module has a project
+    /// ([FR-RULE-08](../../../docs/prd.md#fr-rule-08), [ADR-0066](../../../docs/adr/0066-project-scope-and-the-project-layer.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub projects: Option<Vec<Folder>>,
     /// Counts, violations and the options the run used.
     pub summary: Summary,
     /// The cache key: the git revision and the changes since it.

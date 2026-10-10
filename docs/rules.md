@@ -13,11 +13,27 @@ The rule language is dependency-cruiser 18.2.0's, whole: every rule shape and at
 
 `forbidden` has three variants beside the plain `from` and `to` edge rule:
 
-- **Cycles**: `to.circular: true`, optionally narrowed with `via`, `viaOnly`, `viaNot` or `viaSomeNot`, and `dependencyTypesNot: [type-only]` to ignore type imports.
+- **Cycles**: `to.circular: true`, optionally narrowed with `via`, `viaOnly`, `viaNot` or `viaSomeNot`. To ignore cycles that close only through type imports, write `viaOnly: { dependencyTypesNot: [type-only] }`; `dependencyTypesNot` on `to` itself filters only the edge reported, not the cycle it is on ([the guard catalogue's `no-circular`](../cookbook/guards/no-circular/README.md)).
 - **Reachability**: `to.reachable: true` forbids reaching a module through any chain; `to.reachable: false` requires every matching module to be reachable from `from`.
 - **Dependents**: `module` with `numberOfDependentsLessThan` or `numberOfDependentsMoreThan`, for "a shared module used by fewer than two others" and the like.
 
 `from.orphan: true` matches modules that import nothing and are imported by nothing. `scope: folder` applies `circular` to folders rather than modules.
+
+`scope: project` (native configurations only) compares projects: the `.csproj`, or Python package, each module belongs to. `from.path` and `to.path` match project names, and `to.circular` and `to.moreUnstable` read the project layer, `projects[]`, which a run writes beside `folders[]` when metrics are on. A dependency on a package or a framework assembly counts toward the project's efferent coupling, as a folder's does, and appears as a sink. A violation that is neither a cycle nor an instability has type `project`. In a dependency-cruiser configuration the scope is exit 3, and `config convert` leaves such a rule out and says so ([ADR-0066](adr/0066-project-scope-and-the-project-layer.md)).
+
+```yaml
+rules:
+  dependencies:
+    forbidden:
+      - name: stable-projects-depend-on-stable-projects
+        comment: "adr:0066"
+        severity: warn
+        scope: project
+        from: { path: "^src/Domain/" }
+        to: { moreUnstable: true }
+```
+
+The `metrics` reporter lists projects as rows of type `project`; `reporterOptions.metrics.hideProjects: true` hides them.
 
 ## Element, slice and diagram rules
 

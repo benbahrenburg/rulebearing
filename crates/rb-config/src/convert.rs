@@ -115,6 +115,7 @@ pub fn to_dependency_cruiser(
     for list in ["forbidden", "allowed", "required"] {
         if let Some(Value::Array(rules)) = canonical.get_mut(list) {
             drop_cross_language_rules(rules, list, &mut dropped);
+            drop_project_scope_rules(rules, list, &mut dropped);
             for rule in rules.iter_mut() {
                 let Value::Object(rule) = rule else { continue };
                 let name = rule
@@ -134,6 +135,22 @@ pub fn to_dependency_cruiser(
         }
     }
     Ok((canonical, dropped))
+}
+
+/// Leaves out every project-scoped rule: dependency-cruiser's `scope` is `module` or `folder`,
+/// and a project is neither ([ADR-0066](../../../docs/adr/0066-project-scope-and-the-project-layer.md)).
+fn drop_project_scope_rules(rules: &mut Vec<Value>, list: &str, dropped: &mut Vec<Dropped>) {
+    rules.retain(|rule| {
+        if rule.get("scope").and_then(Value::as_str) != Some("project") {
+            return true;
+        }
+        let name = rule.get("name").and_then(Value::as_str).unwrap_or("unnamed");
+        dropped.push(Dropped {
+            at: format!("{list}[{name}]"),
+            reason: "`scope: project` is a Rulebearing addition; dependency-cruiser compares modules or folders, so the whole rule is left out".into(),
+        });
+        false
+    });
 }
 
 /// Leaves out every rule a cross-language key narrows: without the key the rule would match
@@ -354,6 +371,27 @@ mod tests {
                 .starts_with("narrowed by from.language, graph,"),
             "{}",
             described[1].1
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_project_scope_rule_is_dropped_whole() -> Result<(), ConfigError> {
+        let native_file = object(json!({ "rules": { "dependencies": { "forbidden": [
+            { "name": "projects", "scope": "project", "from": { "path": "^Web" }, "to": { "path": "^Core" } },
+            { "name": "folders", "scope": "folder", "from": { "path": "^a" }, "to": { "circular": true } }
+        ] } } }));
+        let (dc, dropped) = to_dependency_cruiser(&native_file, Path::new("."))?;
+        assert_eq!(
+            dc["forbidden"],
+            json!([{ "name": "folders", "scope": "folder", "from": { "path": "^a" }, "to": { "circular": true } }])
+        );
+        assert_eq!(dropped.len(), 1);
+        assert_eq!(dropped[0].at, "forbidden[projects]");
+        assert!(
+            dropped[0]
+                .reason
+                .starts_with("`scope: project` is a Rulebearing addition")
         );
         Ok(())
     }
