@@ -645,8 +645,10 @@ jobs:
     timeout-minutes: 15
     # Trusted publishing (docs/adr/0068): the job's OIDC token is exchanged for a NuGet key that
     # lasts an hour, under the nuget.org policy for this repository and release.yml, whose glob is
-    # Rulebearing*. No long-lived key is stored. id-token: write is this job's only addition to
-    # contents: read (docs/adr/0025).
+    # Rulebearing*. That key pushes new versions of packages the policy's owner already owns, but
+    # nuget.org refuses it (403) for a package ID that does not exist yet, so a package's first push
+    # falls back to the NUGET_API_KEY secret (docs/adr/0070). id-token: write is this job's only
+    # addition to contents: read (docs/adr/0025).
     permissions:
       contents: read
       id-token: write
@@ -667,9 +669,25 @@ jobs:
       - name: publish
         env:
           NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+          NUGET_FIRST_PUSH_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
+          source=https://api.nuget.org/v3/index.json
           for package in nuget/*.nupkg; do
-            dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+            if out="$(dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source "$source" --skip-duplicate 2>&1)"; then
+              echo "$out"
+              continue
+            fi
+            echo "$out"
+            if ! grep -q "403" <<< "$out"; then
+              exit 1
+            fi
+            # A 403 on a valid trusted-publishing key is a package ID nuget.org does not have yet.
+            if [ -z "$NUGET_FIRST_PUSH_KEY" ]; then
+              echo "::error::$(basename "$package") is a new package ID: its first push needs the NUGET_API_KEY secret (docs/adr/0070)"
+              exit 1
+            fi
+            echo "::notice::$(basename "$package"): first push of a new package ID, with NUGET_API_KEY"
+            dotnet nuget push "$package" --api-key "$NUGET_FIRST_PUSH_KEY" --source "$source" --skip-duplicate
           done
 
   # The two schemas at the `$id` they carry, https://benbahrenburg.github.io/rulebearing/schema/
