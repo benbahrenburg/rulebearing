@@ -543,7 +543,8 @@ jobs:
       - run: cargo build --release -p rb-wasm --target wasm32-unknown-unknown
       - run: wasm-bindgen --target nodejs --out-dir target/rb-wasm-node target/wasm32-unknown-unknown/release/rb_wasm.wasm
       # wasm-bindgen's nodejs output is CommonJS; the repository's package.json says "module".
-      - run: printf '{ "type": "commonjs" }\n' > target/rb-wasm-node/package.json
+      - run: |
+          printf '{ "type": "commonjs" }\n' > target/rb-wasm-node/package.json
       - run: node crates/rb-wasm/tests/wasm.mjs target/rb-wasm-node
 
   schema-check:
