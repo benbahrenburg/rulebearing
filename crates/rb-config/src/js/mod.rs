@@ -19,16 +19,33 @@
 pub mod plugin;
 pub mod via_node;
 
+// QuickJS runs only with the `js-config` feature, on by default. A build without it (the
+// playground's wasm facade, where the engine does not link: plan 0004, Step 2) keeps every type,
+// constant and policy here, and refuses a JavaScript configuration with
+// [`JsError::Unavailable`], exit 3.
+
+#[cfg(feature = "js-config")]
 use std::cell::RefCell;
+#[cfg(feature = "js-config")]
 use std::collections::BTreeSet;
 use std::path::{Component, Path, PathBuf};
+#[cfg(feature = "js-config")]
 use std::rc::Rc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+#[cfg(feature = "js-config")]
+use std::time::Instant;
 
+#[cfg(feature = "js-config")]
 use rquickjs::loader::{ImportAttributes, Loader, Resolver};
+#[cfg(feature = "js-config")]
 use rquickjs::{Context, Ctx, Exception, Function, Module, Runtime, Value};
 
+/// Whether this build carries the JavaScript engine (the `js-config` feature). Without it a
+/// JavaScript configuration is [`JsError::Unavailable`].
+pub const JS_ENGINE: bool = cfg!(feature = "js-config");
+
 /// The module system the sandbox installs.
+#[cfg(feature = "js-config")]
 const SHIM: &str = include_str!("shim.js");
 
 /// The bundled dependency-cruiser presets, vendored from 18.2.0 with its licence
@@ -79,10 +96,12 @@ pub const DEPENDENCY_CRUISER_PRESETS: &[(&str, &str)] = &[
 ];
 
 /// The prefix of a bundled preset target.
+#[cfg(feature = "js-config")]
 const PRESET_PREFIX: &str = "rb:dc-preset/";
 
 /// Node's built-in module names; asking for one is refused with a pointer to
 /// `--config-via-node`.
+#[cfg(feature = "js-config")]
 const NODE_BUILTINS: &[&str] = &[
     "assert",
     "async_hooks",
@@ -190,6 +209,15 @@ pub enum JsError {
         /// The I/O error.
         reason: String,
     },
+    /// This build has no JavaScript engine: the `js-config` feature is off, as in the
+    /// playground, where QuickJS does not link for `wasm32-unknown-unknown`.
+    #[error(
+        "{file}: this build has no JavaScript engine, so a JavaScript configuration cannot be evaluated; write it as YAML or JSON (`rulebearing config convert` writes one)"
+    )]
+    Unavailable {
+        /// The configuration file.
+        file: PathBuf,
+    },
 }
 
 /// How a file is evaluated.
@@ -204,6 +232,7 @@ pub enum Kind {
 }
 
 /// What the sandbox is evaluating, which decides how a refusal explains itself.
+#[cfg(feature = "js-config")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Purpose {
     /// A configuration (or a webpack configuration): `--config-via-node` is the way out.
@@ -213,6 +242,7 @@ enum Purpose {
 }
 
 /// The resolution policy shared by `require`, `import` and the loader.
+#[cfg(feature = "js-config")]
 #[derive(Debug)]
 struct Policy {
     root: PathBuf,
@@ -225,6 +255,7 @@ struct Policy {
     refused: RefCell<BTreeSet<String>>,
 }
 
+#[cfg(feature = "js-config")]
 impl Policy {
     fn new(root: &Path) -> Self {
         Self::for_purpose(root, Purpose::Config)
@@ -410,6 +441,7 @@ impl Policy {
 }
 
 /// A bare specifier's package name and its subpath as `exports` keys it (`.` or `./rest`).
+#[cfg(feature = "js-config")]
 fn split_package(specifier: &str) -> (&str, String) {
     let slashes = if specifier.starts_with('@') { 2 } else { 1 };
     let end = specifier
@@ -427,6 +459,7 @@ fn split_package(specifier: &str) -> (&str, String) {
 
 /// The `package.json` in `dir`, parsed, when there is one. Only [`Policy::package_json`] calls
 /// it, after confining `dir` to the repository.
+#[cfg(feature = "js-config")]
 fn package_json(dir: &Path) -> Option<serde_json::Map<String, serde_json::Value>> {
     let text = std::fs::read_to_string(dir.join("package.json")).ok()?;
     match serde_json::from_str(&text).ok()? {
@@ -438,10 +471,12 @@ fn package_json(dir: &Path) -> Option<serde_json::Map<String, serde_json::Value>
 /// The conditions the sandbox answers to, in the order it prefers them. The sandbox both imports
 /// and requires, runs no browser, and reads no types; the order is fixed rather than the
 /// manifest's key order so a resolution does not depend on how the manifest was parsed.
+#[cfg(feature = "js-config")]
 const CONDITIONS: &[&str] = &["import", "require", "node", "default"];
 
 /// The file `exports` maps `subpath` to (Node's `PACKAGE_EXPORTS_RESOLVE`, with the conditions
 /// of [`CONDITIONS`] and one `*` per pattern key), relative to the package, or `None`.
+#[cfg(feature = "js-config")]
 fn exports_target(exports: &serde_json::Value, subpath: &str) -> Option<String> {
     use serde_json::Value;
     fn conditional(value: &Value) -> Option<String> {
@@ -487,6 +522,7 @@ fn exports_target(exports: &serde_json::Value, subpath: &str) -> Option<String> 
 /// Whether `path` has a segment Node's `invalidSegmentRegEx` refuses in an `exports` target or
 /// a pattern match: empty, `.`, `..` or `node_modules`, in any case and percent-encoded or not,
 /// split on `/` and `\`.
+#[cfg(feature = "js-config")]
 fn has_invalid_segment(path: &str) -> bool {
     path.split(['/', '\\']).any(|segment| {
         let decoded = decode_letters(
@@ -500,6 +536,7 @@ fn has_invalid_segment(path: &str) -> bool {
 }
 
 /// `%XX` escapes of ASCII letters decoded, lowercase, so `%6Eode_modules` reads as a word.
+#[cfg(feature = "js-config")]
 fn decode_letters(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
@@ -521,6 +558,7 @@ fn decode_letters(text: &str) -> String {
     out
 }
 
+#[cfg(feature = "js-config")]
 fn preset_target(name: &str) -> Option<String> {
     let name = name.trim_start_matches("./");
     [name.to_owned(), format!("{name}.cjs")]
@@ -554,6 +592,7 @@ pub fn root_refusal(root: &Path, home: Option<&Path>) -> Option<String> {
 }
 
 /// [`root_refusal`] for the evaluation of `entry`, against the environment's home directory.
+#[cfg(feature = "js-config")]
 fn confined(entry: &Path, root: &Path) -> Result<(), JsError> {
     match root_refusal(root, home_dir().as_deref()) {
         Some(reason) => Err(JsError::Root {
@@ -636,8 +675,10 @@ fn has_module_syntax(text: &str) -> bool {
     })
 }
 
+#[cfg(feature = "js-config")]
 struct SandboxResolver(Rc<Policy>);
 
+#[cfg(feature = "js-config")]
 impl Resolver for SandboxResolver {
     fn resolve<'js>(
         &mut self,
@@ -652,8 +693,10 @@ impl Resolver for SandboxResolver {
     }
 }
 
+#[cfg(feature = "js-config")]
 struct SandboxLoader(Rc<Policy>);
 
+#[cfg(feature = "js-config")]
 impl Loader for SandboxLoader {
     fn load<'js>(
         &mut self,
@@ -682,12 +725,14 @@ impl Loader for SandboxLoader {
     }
 }
 
+#[cfg(feature = "js-config")]
 fn has_extension(name: &str, extension: &str) -> bool {
     Path::new(name)
         .extension()
         .is_some_and(|e| e.eq_ignore_ascii_case(extension))
 }
 
+#[cfg(feature = "js-config")]
 fn is_module_file(policy: &Policy, name: &str) -> bool {
     let path = Path::new(name);
     let text = std::fs::read_to_string(path).unwrap_or_default();
@@ -695,6 +740,7 @@ fn is_module_file(policy: &Policy, name: &str) -> bool {
 }
 
 /// Replaces `import.meta.url`, `import.meta.dirname` and `import.meta.filename` with literals.
+#[cfg(feature = "js-config")]
 fn with_import_meta(text: &str, file: &str) -> String {
     let url = serde_json::to_string(&format!("file://{file}")).unwrap_or_default();
     let dir = Path::new(file)
@@ -801,7 +847,24 @@ pub fn evaluate_webpack(
     run(&entry, &text, kind, root, limits, Some(call))
 }
 
+/// The evaluation behind [`evaluate_text`] and [`evaluate_webpack`], in a build without the
+/// engine: every JavaScript configuration is refused, naming the file and the way out.
+#[cfg(not(feature = "js-config"))]
+fn run(
+    entry: &Path,
+    _text: &str,
+    _kind: Kind,
+    _root: &Path,
+    _limits: Limits,
+    _webpack: Option<WebpackCall<'_>>,
+) -> Result<Evaluated, JsError> {
+    Err(JsError::Unavailable {
+        file: entry.to_path_buf(),
+    })
+}
+
 /// The evaluation behind [`evaluate_text`] and [`evaluate_webpack`].
+#[cfg(feature = "js-config")]
 fn run(
     entry: &Path,
     text: &str,
@@ -908,6 +971,7 @@ fn run(
     Ok(Evaluated { value, files })
 }
 
+#[cfg(feature = "js-config")]
 fn exception_message(value: &Value<'_>) -> String {
     if let Some(exception) = value.as_exception() {
         return exception
@@ -921,6 +985,7 @@ fn exception_message(value: &Value<'_>) -> String {
 }
 
 /// Installs the host primitives and the module system.
+#[cfg(feature = "js-config")]
 fn install(ctx: &Ctx<'_>, policy: &Rc<Policy>, root: &Path) -> rquickjs::Result<()> {
     let globals = ctx.globals();
     let resolver = Rc::clone(policy);
@@ -951,7 +1016,7 @@ fn install(ctx: &Ctx<'_>, policy: &Rc<Policy>, root: &Path) -> rquickjs::Result<
     ctx.eval::<(), _>(SHIM)
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "js-config"))]
 mod tests {
     use super::*;
     use std::error::Error;

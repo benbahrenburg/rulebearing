@@ -129,7 +129,12 @@ pub fn parse_text(
             // unquoted keys. JSON5 is a subset of a JavaScript expression.
             Err(strict) => js::evaluate_text(name, text, Kind::Json5, root, limits)
                 .map(|e| e.value)
-                .map_err(|_| parse(strict.to_string())),
+                .map_err(|e| match e {
+                    js::JsError::Unavailable { .. } => parse(format!(
+                        "{strict}; JSON5 (comments, trailing commas, unquoted keys) is read by the JavaScript engine, which this build lacks: write strict JSON or YAML"
+                    )),
+                    _ => parse(strict.to_string()),
+                }),
         },
         Syntax::Jsonc => serde_json::from_str(&strip_jsonc(text)).map_err(|e| parse(e.to_string())),
         Syntax::Toml => toml::from_str(text).map_err(|e| parse(e.to_string())),
@@ -217,17 +222,46 @@ mod tests {
         assert_eq!(parse("a: 1\nb: [x]", Syntax::Yaml)?["b"][0], "x");
         assert_eq!(parse("", Syntax::Yaml)?, serde_json::json!({}));
         assert_eq!(parse(r#"{"a": 1}"#, Syntax::Json)?["a"], 1);
-        assert_eq!(parse("{a: 1, /* c */ b: 'x',}", Syntax::Json)?["b"], "x");
         assert_eq!(
             parse("{ // c\n \"a\": \"//not\", \"b\": [1,], }", Syntax::Jsonc)?["a"],
             "//not"
         );
         assert_eq!(parse("a = 1\n[b]\nc = \"x\"", Syntax::Toml)?["b"]["c"], "x");
+        Ok(())
+    }
+
+    /// JSON5 and JavaScript go through the engine.
+    #[cfg(feature = "js-config")]
+    #[test]
+    fn json5_and_javascript_read_with_the_engine() -> Result<(), ConfigError> {
+        assert_eq!(parse("{a: 1, /* c */ b: 'x',}", Syntax::Json)?["b"], "x");
         assert_eq!(
             parse("module.exports = { a: 2 };", Syntax::JavaScript)?["a"],
             2
         );
         Ok(())
+    }
+
+    /// Without the engine, JSON5 and JavaScript are refused with the reason and the way out.
+    #[cfg(not(feature = "js-config"))]
+    #[test]
+    fn json5_and_javascript_are_refused_without_the_engine() {
+        let message = |text: &str, syntax: Syntax| {
+            parse(text, syntax)
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default()
+        };
+        let json5 = message("{a: 1}", Syntax::Json);
+        assert!(
+            json5.contains("JSON5") && json5.contains("write strict JSON or YAML"),
+            "{json5}"
+        );
+        let javascript = message("module.exports = { a: 2 };", Syntax::JavaScript);
+        assert!(
+            javascript.contains("this build has no JavaScript engine"),
+            "{javascript}"
+        );
     }
 
     #[test]

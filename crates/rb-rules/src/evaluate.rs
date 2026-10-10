@@ -163,6 +163,35 @@ impl Evaluation {
     }
 }
 
+/// Clears what an earlier evaluation wrote, so a saved graph is evaluated as if just extracted:
+/// the validity, rule matches, derivations, filters' marks, the folder and project layers and the
+/// summary. Shared by the command line's `--graph` and the playground, so both read a pasted
+/// graph alike ([plan 0004, Step 2](../../../docs/plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables)).
+pub fn reset(document: &mut GraphDocument) {
+    for module in &mut document.modules {
+        module.valid = true;
+        module.rules = None;
+        module.dependents = None;
+        module.orphan = None;
+        module.reachable = None;
+        module.reaches = None;
+        module.instability = None;
+        module.matches_focus = None;
+        module.matches_reaches = None;
+        module.matches_highlight = None;
+        for dependency in &mut module.dependencies {
+            dependency.valid = true;
+            dependency.rules = None;
+            dependency.circular = false;
+            dependency.cycle = None;
+            dependency.instability = None;
+        }
+    }
+    document.folders = None;
+    document.projects = None;
+    document.summary = rb_model::Summary::default();
+}
+
 /// Whether a rule needs metrics: `to.moreUnstable`, `scope: folder` or `scope: project`.
 pub fn needs_metrics(rules: &DependencyRules) -> bool {
     rules
@@ -731,6 +760,52 @@ pub fn evaluate(
 mod tests {
     use super::*;
     use rb_model::{Dependency, DependencyKind, DependencyType, ModuleSystem, Severity};
+
+    #[test]
+    fn reset_clears_every_earlier_evaluation() {
+        let rule = rb_model::RuleSummary {
+            name: "r".into(),
+            severity: rb_model::Severity::Error,
+        };
+        let mut dependency = Dependency::new("b", "b", ModuleSystem::Es6);
+        dependency.valid = false;
+        dependency.rules = Some(vec![rule.clone()]);
+        dependency.circular = true;
+        dependency.cycle = Some(Vec::new());
+        dependency.instability = Some(0.5);
+        let mut module = Module::new("a");
+        module.valid = false;
+        module.rules = Some(vec![rule]);
+        module.dependents = Some(vec!["c".into()]);
+        module.orphan = Some(true);
+        module.reachable = Some(Vec::new());
+        module.reaches = Some(Vec::new());
+        module.instability = Some(1.0);
+        module.matches_focus = Some(true);
+        module.matches_reaches = Some(true);
+        module.matches_highlight = Some(true);
+        module.dependencies = vec![dependency];
+        let mut document = GraphDocument {
+            modules: vec![module],
+            folders: Some(Vec::new()),
+            projects: Some(Vec::new()),
+            summary: rb_model::Summary {
+                error: 3,
+                ..rb_model::Summary::default()
+            },
+            ..GraphDocument::default()
+        };
+        reset(&mut document);
+        let mut expected_dependency = Dependency::new("b", "b", ModuleSystem::Es6);
+        expected_dependency.valid = true;
+        let mut expected = Module::new("a");
+        expected.valid = true;
+        expected.dependencies = vec![expected_dependency];
+        assert_eq!(document.modules, [expected]);
+        assert_eq!(document.folders, None);
+        assert_eq!(document.projects, None);
+        assert_eq!(document.summary, rb_model::Summary::default());
+    }
 
     fn config(value: Value) -> Config {
         let map = match value {

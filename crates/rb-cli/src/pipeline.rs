@@ -18,7 +18,7 @@ use rb_model::{
     ExtractError, ExtractRequest, Extraction, GraphDocument, Inspected, Language, Receipt,
 };
 use rb_rules::graph::filters::{Filter, Filters};
-use rb_rules::rewrap::{FormatOptions, collapse_pattern, rewrap};
+use rb_rules::rewrap::{FormatOptions, rewrap};
 use rb_rules::{EngineError, EvalOptions, Evaluation, evaluate};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -598,25 +598,13 @@ pub fn merge_owned(
 /// The report filters `cruise` applies after evaluation: `reaches` and `highlight` (the rest were
 /// applied while extracting and evaluating, and reapplying them changes nothing).
 fn cruise_filters(config: &Config) -> Filters {
-    let path_only = |option: Option<&rb_config::model::FilterOption>| {
-        option.map(|o| Filter {
-            path: o.path.clone(),
-            depth: None,
-        })
-    };
-    Filters {
-        reaches: path_only(config.options.reaches.as_ref()),
-        // `highlight` marks every module `matchesHighlight: true` or `false`, as upstream's
-        // reportWrap tags it from the cruise options.
-        highlight: path_only(config.options.highlight.as_ref()),
-        ..Filters::default()
-    }
+    rb_rules::rewrap::report_format(config).filters
 }
 
 /// `collapse` from the configuration or `--collapse`: a folder depth (a single digit) becomes
 /// upstream's pattern, anything else is the pattern itself.
 pub(crate) fn cruise_collapse(config: &Config) -> Option<String> {
-    config.options.collapse.as_ref().and_then(collapse_pattern)
+    rb_rules::rewrap::report_format(config).collapse
 }
 
 /// Runs the stages over `paths`.
@@ -760,29 +748,7 @@ pub fn evaluate_document(
 pub const SAVED_GRAPH: &str = ".graph/cruise.json";
 
 /// Clears what an earlier evaluation wrote, so a saved graph is evaluated as if just extracted.
-pub fn reset(document: &mut GraphDocument) {
-    for module in &mut document.modules {
-        module.valid = true;
-        module.rules = None;
-        module.dependents = None;
-        module.orphan = None;
-        module.reachable = None;
-        module.reaches = None;
-        module.instability = None;
-        module.matches_focus = None;
-        module.matches_reaches = None;
-        module.matches_highlight = None;
-        for dependency in &mut module.dependencies {
-            dependency.valid = true;
-            dependency.rules = None;
-            dependency.circular = false;
-            dependency.cycle = None;
-            dependency.instability = None;
-        }
-    }
-    document.folders = None;
-    document.summary = rb_model::Summary::default();
-}
+pub use rb_rules::reset;
 
 /// Reads a saved graph (a Rulebearing or dependency-cruiser result).
 ///

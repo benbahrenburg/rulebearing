@@ -124,6 +124,7 @@ mod tests {
     use super::*;
     use serde_json::json;
 
+    #[cfg(feature = "js-config")]
     fn dir(name: &str, files: &[(&str, &str)]) -> Result<PathBuf, std::io::Error> {
         let dir = std::env::temp_dir().join(format!("rb-webpack-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
@@ -134,6 +135,7 @@ mod tests {
         Ok(dir)
     }
 
+    #[cfg(feature = "js-config")]
     #[test]
     fn a_function_config_is_called_with_env_and_arguments() -> Result<(), Box<dyn std::error::Error>>
     {
@@ -166,6 +168,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(feature = "js-config")]
     #[test]
     fn a_typescript_config_is_refused_in_the_sandbox() -> Result<(), Box<dyn std::error::Error>> {
         let dir = dir("ts", &[("webpack.config.ts", "export default {};")])?;

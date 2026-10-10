@@ -123,7 +123,7 @@ flowchart BT
 | Crate | Owns | Wave |
 | --- | --- | --- |
 | `rb-model` | Graph document types (module layer = `cruise-result` schema, code layer), the published JSON schema, serde, the violation-id hash, per-language option structs | 0 |
-| `rb-config` | Native and dependency-cruiser config parsing, `extends`, presets, `defines`, `$0`–`$9` captures, the QuickJS evaluator, `config lint` / `convert` / `expand` | 1 |
+| `rb-config` | Native and dependency-cruiser config parsing, `extends`, presets, `defines`, `$0`–`$9` captures, the QuickJS evaluator (the `js-config` feature, which `rb-cli` turns on), `config lint` / `convert` / `expand` | 1 |
 | `rb-rules` | Matchers, Tarjan cycles, breadth-first reachability, dependents, instability, element predicates and conditions, slices, PlantUML adherence, ratchets, liveness, violation summary | 1, 2 |
 | `rb-extract-ts` | Workspace discovery, `oxc_parser`, `oxc_resolver`, npm classification, licence and deprecation from `package.json`, Vue / Svelte splitting, JSDoc and triple-slash parsing, sidecar dispatch | 0, 1, 2, 3 |
 | `rb-extract-dotnet` | MSBuild discovery, ECMA-335 and portable PDB readers, IL operand scan, edge projection to files, `--mode source` | 0, 2, 3 |
@@ -132,6 +132,7 @@ flowchart BT
 | `rb-report` | Every dependency-cruiser reporter plus `sarif`, `github-annotations`, `junit`, `trx`, `agent`, `plantuml` | 1, 2, 3 |
 | `rb-cli` | `cruise`, `fmt`, `baseline`, `rules`, `count`, `diff`, `explain`, `can-import`, `place`, `impact`, `test`, `docs`, `config`, `init`, `adopt`, `hooks`, `attest`, `import`, `propose`, `decisions`, `guard`, `snapshot`, `changelog`, `serve`; cache; `--affected` | 1, 2, 3 |
 | `rb-node` | napi-rs binding exposing `cruise()` and `format()` with dependency-cruiser's signatures | 3 |
+| `rb-wasm` | The playground's facade: the library crates compiled to `wasm32-unknown-unknown`, `evaluate` and `version` exported as strings in and out; no crate depends on it, and it never links `rb-cli` ([ADR-0067](adr/0067-the-playground-facade-and-an-optional-javascript-engine.md)) | 4 |
 
 Outside the workspace: `wrappers/npm`, `wrappers/nuget`, `wrappers/pip`; `adapters/dotnet` (`Rulebearing.TestAdapter`), `adapters/python` (`pytest-rulebearing`), `adapters/vitest`; `frontends/eslint-plugin-rulebearing`, `frontends/Rulebearing.Analyzer`; `conformance/`; `testbeds/`.
 
@@ -357,7 +358,7 @@ rulebearing/
 ├── crates/
 │   ├── rb-model/  rb-config/  rb-rules/
 │   ├── rb-extract-ts/  rb-extract-dotnet/  rb-extract-python/
-│   ├── rb-ingest/  rb-report/  rb-cli/  rb-node/
+│   ├── rb-ingest/  rb-report/  rb-cli/  rb-node/  rb-wasm/
 ├── wrappers/    npm/  nuget/  pip/
 ├── adapters/    dotnet/  python/  vitest/
 ├── frontends/   eslint-plugin-rulebearing/  Rulebearing.Analyzer/

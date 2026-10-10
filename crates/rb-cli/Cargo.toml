@@ -29,7 +29,7 @@ extract-python = ["dep:rb-extract-python"]
 
 [dependencies]
 rb-model = { workspace = true }
-rb-config = { workspace = true }
+rb-config = { workspace = true, features = ["js-config"] }
 rb-rules = { workspace = true }
 rb-ingest = { workspace = true }
 rb-report = { workspace = true }

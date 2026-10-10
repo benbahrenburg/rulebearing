@@ -80,7 +80,7 @@ export default defineConfig([
     {
         // Plain Node scripts run by hand or by CI: no TypeScript project, Node's globals, and stdout
         // is their output, so console.log is how they report.
-        files: ['conformance/**/*.mjs', 'testbeds/**/*.mjs'],
+        files: ['conformance/**/*.mjs', 'testbeds/**/*.mjs', 'crates/rb-wasm/tests/*.mjs'],
         extends: [tseslint.configs.disableTypeChecked],
         languageOptions: { globals: globals.node },
         rules: { 'no-console': 'off' },

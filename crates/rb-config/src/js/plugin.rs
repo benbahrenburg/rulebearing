@@ -23,14 +23,20 @@
 //! and a reference to a host global are [`PluginError::Sandbox`], named as such.
 
 use std::path::{Path, PathBuf};
+#[cfg(feature = "js-config")]
 use std::rc::Rc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+#[cfg(feature = "js-config")]
+use std::time::Instant;
 
+#[cfg(feature = "js-config")]
 use rquickjs::{Context, Ctx, Function, Module, Object, Runtime, Value};
 
+use super::Limits;
+#[cfg(feature = "js-config")]
 use super::{
-    Kind, Limits, Policy, Purpose, SandboxLoader, SandboxResolver, canonical, exception_message,
-    install, kind_of, normalise, with_import_meta,
+    Kind, Policy, Purpose, SandboxLoader, SandboxResolver, canonical, exception_message, install,
+    kind_of, normalise, with_import_meta,
 };
 
 /// The prefix of a plugin output type.
@@ -45,6 +51,7 @@ pub fn plugin_name(output_type: &str) -> Option<&str> {
 /// Globals a Node or browser plugin may reach for that the sandbox does not have. A reference to
 /// one is a sandbox refusal, not a bug in the plugin. `require`, `module` and `__dirname` are not
 /// here: an ES module has none of them under Node either.
+#[cfg(feature = "js-config")]
 const HOST_GLOBALS: &[&str] = &[
     "process",
     "global",
@@ -66,6 +73,7 @@ const HOST_GLOBALS: &[&str] = &[
 
 /// Upstream's `isValidPlugin`, then the call: returns `{ valid, reason }` for an invalid plugin,
 /// `{ valid: true }` when only checking, and the report's shape otherwise.
+#[cfg(feature = "js-config")]
 const CALL: &str = r"(function rbPlugin(plugin, result, checkOnly) {
   const minimal = {
     modules: [],
@@ -191,6 +199,7 @@ impl PluginOutput {
 
 /// The sandbox a plugin reporter runs in: the repository it may read, the directory relative
 /// plugin paths start from, and its limits.
+#[cfg(feature = "js-config")]
 #[derive(Debug, Clone)]
 pub struct Sandbox {
     root: PathBuf,
@@ -202,6 +211,7 @@ pub struct Sandbox {
 
 /// Where a failure happened: loading the module is upstream's `import()`; checking and calling
 /// it are the plugin's own code.
+#[cfg(feature = "js-config")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Stage {
     Load,
@@ -209,12 +219,14 @@ enum Stage {
 }
 
 /// What one run of [`CALL`] produced.
+#[cfg(feature = "js-config")]
 enum Called {
     Valid,
     Invalid(String),
     Report(PluginOutput),
 }
 
+#[cfg(feature = "js-config")]
 impl Sandbox {
     /// A sandbox over the repository at `root`, resolving relative plugin paths from `cwd`.
     pub fn new(root: &Path, cwd: &Path, limits: Limits) -> Self {
@@ -442,6 +454,7 @@ impl Sandbox {
 }
 
 /// Runs [`CALL`] over the default export and the result (`undefined` when only checking).
+#[cfg(feature = "js-config")]
 fn invoke<'js>(
     ctx: &Ctx<'js>,
     exported: Value<'js>,
@@ -458,6 +471,7 @@ fn invoke<'js>(
 }
 
 /// Reads [`CALL`]'s answer.
+#[cfg(feature = "js-config")]
 fn read_answer(answer: &Object<'_>, called: bool) -> rquickjs::Result<Called> {
     if !answer.get::<_, bool>("valid")? {
         return Ok(Called::Invalid(
@@ -487,6 +501,7 @@ fn read_answer(answer: &Object<'_>, called: bool) -> rquickjs::Result<Called> {
 }
 
 /// `a number`, `an object`, `undefined`.
+#[cfg(feature = "js-config")]
 fn article(type_name: &str) -> String {
     match type_name {
         "undefined" => "undefined".to_owned(),
@@ -496,6 +511,7 @@ fn article(type_name: &str) -> String {
 }
 
 /// What a failed run is classified by.
+#[cfg(feature = "js-config")]
 struct Failure<'a> {
     plugin: &'a Plugin,
     policy: &'a Policy,
@@ -503,6 +519,7 @@ struct Failure<'a> {
     limits: Limits,
 }
 
+#[cfg(feature = "js-config")]
 impl Failure<'_> {
     /// A sandbox refusal when the sandbox caused the failure, else what upstream would say.
     fn of(&self, ctx: &Ctx<'_>, stage: Stage, error: rquickjs::Error) -> PluginError {
@@ -549,6 +566,7 @@ impl Failure<'_> {
 }
 
 /// The host global a `ReferenceError` names, when it is one the sandbox withholds.
+#[cfg(feature = "js-config")]
 fn host_global(message: &str) -> Option<&'static str> {
     let subject = message.strip_suffix(" is not defined")?;
     let subject = subject.trim_matches(['\'', '"', '`']);
@@ -556,6 +574,7 @@ fn host_global(message: &str) -> Option<&'static str> {
 }
 
 /// `5-second`, `200 ms`.
+#[cfg(feature = "js-config")]
 fn duration(limit: Duration) -> String {
     if limit.subsec_millis() == 0 && limit.as_secs() > 0 {
         format!("{}-second", limit.as_secs())
@@ -565,6 +584,7 @@ fn duration(limit: Duration) -> String {
 }
 
 /// A `file://` URL's path with `%XX` escapes decoded; an escape that is not one is kept.
+#[cfg(feature = "js-config")]
 fn percent_decode(text: &str) -> String {
     let bytes = text.as_bytes();
     let mut out = Vec::with_capacity(bytes.len());
@@ -603,7 +623,7 @@ impl Limits {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "js-config"))]
 mod review;
-#[cfg(test)]
+#[cfg(all(test, feature = "js-config"))]
 mod tests;

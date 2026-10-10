@@ -622,6 +622,7 @@ pub fn known_violations_file(file: &Path) -> Result<Vec<KnownViolation>, ConfigE
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "js-config")]
     use rb_model::Severity;
     use std::error::Error;
 
@@ -787,6 +788,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(feature = "js-config")]
     #[test]
     fn merged_is_the_file_with_extends_and_nothing_else() -> Result<(), Box<dyn Error>> {
         let repo = Repo::new(
@@ -820,6 +822,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(feature = "js-config")]
     #[test]
     fn a_dependency_cruiser_config_with_extends_and_presets() -> Result<(), Box<dyn Error>> {
         let repo = Repo::new(
