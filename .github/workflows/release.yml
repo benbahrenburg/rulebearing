@@ -15,9 +15,10 @@
 # docs/plans/implemented/0001-wave-1-typescript-parity.md, Steps 19 (npm) and 22 (schema on Pages);
 # docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Steps 13 (eslint-plugin-rulebearing)
 # and 14 (PyPI, NuGet).
-# Hardening: docs/adr/0025. The npm publish job holds id-token: write (provenance) and the schema
-# Pages job holds pages: write and id-token: write (deploy-pages); the PyPI and NuGet publish jobs
-# push with repository secrets and keep contents: read.
+# Hardening: docs/adr/0025. The npm publish job holds id-token: write (provenance), the NuGet
+# credentials and publish jobs hold id-token: write (trusted publishing, docs/adr/0068) and the
+# schema Pages job holds pages: write and id-token: write (deploy-pages); the PyPI publish job
+# pushes with a repository secret and keeps contents: read.
 name: release
 
 on:
@@ -443,27 +444,38 @@ jobs:
             echo "::warning::pytest-rulebearing is not on PyPI (HTTP $code): a token scoped to projects cannot cover it yet, so the first release needs an account-wide token or the name reserved first (docs/release.md)"
           fi
 
-  # A manual run proves NUGET_API_KEY without publishing anything: it pushes the `Rulebearing`
-  # 0.0.1 package already on nuget.org with --skip-duplicate. nuget.org checks the key and its
-  # package scope before it reports the duplicate, so a missing, expired or wrongly scoped key
-  # fails this job, and the duplicate means nothing new is published. The seven
-  # `Rulebearing.TestAdapter*` packages and `Rulebearing.Analyzer` are not on nuget.org yet; the
-  # key's glob must cover them with "push new packages", which no push can prove without creating
-  # one (docs/release.md § NuGet).
+  # A manual run proves trusted publishing without publishing anything: it exchanges the job's
+  # OIDC token for a short-lived key exactly as nuget-publish does, then pushes the `Rulebearing`
+  # 0.0.1 package already on nuget.org with --skip-duplicate. The exchange fails when no policy on
+  # nuget.org matches this repository and workflow or NUGET_USER names the wrong account, and
+  # nuget.org checks the key's package scope before it reports the duplicate, so the duplicate
+  # means nothing new is published. The seven `Rulebearing.TestAdapter*` packages and
+  # `Rulebearing.Analyzer` are not on nuget.org yet; the policy's glob must cover them with "push
+  # new packages", which no push can prove without creating one (docs/release.md § NuGet,
+  # docs/adr/0068).
   nuget-credentials:
     name: NuGet credentials
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # The OIDC token is exchanged for the short-lived key that nuget-publish uses (docs/adr/0068).
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.x
+      - name: exchange the OIDC token for a short-lived NuGet key
+        id: nuget-login
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ${{ secrets.NUGET_USER }}
       - name: push the published Rulebearing 0.0.1 package again
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: |
-          test -n "$NUGET_API_KEY" || { echo "::error::the NUGET_API_KEY secret is not set"; exit 1; }
+          test -n "$NUGET_API_KEY" || { echo "::error::the trusted-publishing exchange returned no key"; exit 1; }
           curl -fsSL -o rulebearing.0.0.1.nupkg https://api.nuget.org/v3-flatcontainer/rulebearing/0.0.1/rulebearing.0.0.1.nupkg
           dotnet nuget push rulebearing.0.0.1.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
@@ -579,8 +591,13 @@ jobs:
     if: github.event_name == 'push' && !contains(github.ref_name, '-')
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # dotnet nuget push with the NUGET_API_KEY repository secret, scoped to the Rulebearing package
-    # prefix; no OIDC token is requested, so this job keeps contents: read (docs/adr/0025).
+    # Trusted publishing (docs/adr/0068): the job's OIDC token is exchanged for a NuGet key that
+    # lasts an hour, under the nuget.org policy for this repository and release.yml, whose glob is
+    # Rulebearing*. No long-lived key is stored. id-token: write is this job's only addition to
+    # contents: read (docs/adr/0025).
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -589,10 +606,15 @@ jobs:
         with:
           name: nuget-packages
           path: nuget
+      - name: exchange the OIDC token for a short-lived NuGet key
+        id: nuget-login
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ${{ secrets.NUGET_USER }}
       # --skip-duplicate lets a rerun after a partial push finish the release.
       - name: publish
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: |
           for package in nuget/*.nupkg; do
             dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
