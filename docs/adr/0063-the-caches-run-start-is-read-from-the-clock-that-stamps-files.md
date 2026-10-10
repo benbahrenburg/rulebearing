@@ -1,6 +1,6 @@
 # ADR-0063: The cache's run start is also read from the clock that stamps files
 
-- **Status:** Proposed (2026-10-09)
+- **Status:** Accepted (2026-10-10, by the owner)
 - **Date:** 2026-10-09
 - **Derives from:** [plan 0003, Steps 1 and 2](../plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict) (the cache: an input modified during a run is recorded unsettled and read again by the next)
 - **Supersedes:** nothing. It replaces how the start that rule compares with is read.
