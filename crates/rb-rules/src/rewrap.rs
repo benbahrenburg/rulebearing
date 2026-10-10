@@ -116,6 +116,7 @@ pub fn rewrap(
     let GraphDocument {
         modules,
         folders,
+        projects,
         summary,
         revision_data,
         code,
@@ -207,6 +208,7 @@ pub fn rewrap(
     Ok(GraphDocument {
         modules,
         folders,
+        projects,
         summary,
         revision_data,
         code,

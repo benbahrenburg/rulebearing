@@ -2348,6 +2348,7 @@
         "cycle",
         "instability",
         "folder",
+        "project",
         "element",
         "slice"
       ],
@@ -2383,6 +2384,16 @@
         "$ref": "#/definitions/Module"
       },
       "type": "array"
+    },
+    "projects": {
+      "description": "Additive: the project layer, the folder layer's records over the projects modules belong\nto (`Module::project`), present when metrics are on and a module has a project\n([FR-RULE-08](../../../docs/prd.md#fr-rule-08), [ADR-0066](../../../docs/adr/0066-project-scope-and-the-project-layer.md)).",
+      "items": {
+        "$ref": "#/definitions/Folder"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
     },
     "revisionData": {
       "anyOf": [

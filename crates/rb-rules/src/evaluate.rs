@@ -46,7 +46,8 @@ use crate::known::KnownSet;
 use crate::matchers::{ModuleFacts, matches_from_cross_language, pattern_ref};
 use crate::patterns;
 use crate::summarize::{
-    options_used, rule_set_used, summarize_folders, summarize_modules, violation_stats,
+    options_used, rule_set_used, summarize_folders, summarize_modules, summarize_projects,
+    violation_stats,
 };
 use crate::validate::{validate_dependency, validate_module};
 
@@ -162,13 +163,13 @@ impl Evaluation {
     }
 }
 
-/// Whether a rule needs metrics: `to.moreUnstable` or `scope: folder`.
+/// Whether a rule needs metrics: `to.moreUnstable`, `scope: folder` or `scope: project`.
 pub fn needs_metrics(rules: &DependencyRules) -> bool {
     rules
         .forbidden
         .iter()
         .chain(&rules.allowed)
-        .any(|r| r.to.more_unstable.is_some() || r.is_folder_scope())
+        .any(|r| r.to.more_unstable.is_some() || r.is_folder_scope() || r.is_project_scope())
 }
 
 /// Whether any dependency rule carries a cross-language key, so the module facts are needed.
@@ -259,14 +260,32 @@ fn match_counts(
     facts: &ModuleFacts,
 ) -> Vec<(usize, usize)> {
     let zero = || vec![(0, 0); probes.len()];
+    // A project-scoped rule's patterns name projects, so it counts each module by its project
+    // and each edge by its target's ([ADR-0066](../../../docs/adr/0066-project-scope-and-the-project-layer.md)).
+    let project_of: std::collections::HashMap<&str, &str> =
+        if probes.iter().any(|p| p.rule.is_project_scope()) {
+            modules
+                .iter()
+                .filter_map(|m| Some((js::str_of(m, "source")?, js::str_of(m, "project")?)))
+                .collect()
+        } else {
+            std::collections::HashMap::new()
+        };
     modules
         .par_iter()
         .fold(zero, |mut counts, module| {
             let source = js::text(module, "source");
+            let project = js::str_of(module, "project");
             for (probe, count) in probes.iter().zip(counts.iter_mut()) {
-                count.0 += usize::from(probe.selects(module, &source, facts));
+                let subject = if probe.rule.is_project_scope() {
+                    project
+                } else {
+                    Some(source.as_ref())
+                };
+                let Some(subject) = subject else { continue };
+                count.0 += usize::from(probe.selects(module, subject, facts));
                 if probe.on_modules {
-                    count.1 += usize::from(probe.counts(&source));
+                    count.1 += usize::from(probe.counts(subject));
                 }
             }
             // A probe without `to.path` counts nothing here at once, so every module's
@@ -274,8 +293,16 @@ fn match_counts(
             for dependency in js::array(module, "dependencies") {
                 let resolved = js::text(dependency, "resolved");
                 for (probe, count) in probes.iter().zip(counts.iter_mut()) {
-                    if !probe.on_modules {
-                        count.1 += usize::from(probe.counts(&resolved));
+                    if probe.on_modules {
+                        continue;
+                    }
+                    let target = if probe.rule.is_project_scope() {
+                        project_of.get(resolved.as_ref()).copied()
+                    } else {
+                        Some(resolved.as_ref())
+                    };
+                    if let Some(target) = target {
+                        count.1 += usize::from(probe.counts(target));
                     }
                 }
             }
@@ -611,8 +638,15 @@ pub fn evaluate(
     } else {
         Vec::new()
     };
+    // The project layer, when metrics are on and some module belongs to a project (ADR-0066).
+    let project_values = if metrics {
+        crate::projects::projects(&modules, skip, rules)
+    } else {
+        Vec::new()
+    };
     let mut violations = summarize_modules(&modules, Some(rules));
     violations.extend(summarize_folders(&folder_values, Some(rules)));
+    violations.extend(summarize_projects(&project_values, Some(rules)));
     violations.sort_by(crate::compare::compare_violations);
     annotate(&mut violations, &modules, rules);
     let (rule_stats, mut vacuous) =
@@ -667,10 +701,21 @@ pub fn evaluate(
     } else {
         None
     };
+    let projects: Option<Vec<Folder>> = if project_values.is_empty() {
+        None
+    } else {
+        Some(
+            project_values
+                .into_iter()
+                .map(serde_json::from_value)
+                .collect::<Result<_, _>>()?,
+        )
+    };
     Ok(Evaluation {
         document: GraphDocument {
             modules,
             folders,
+            projects,
             summary,
             revision_data,
             code,
@@ -1214,6 +1259,10 @@ mod tests {
         let unstable =
             config(json!({ "allowed": [{ "from": {}, "to": { "moreUnstable": true } }] }));
         assert!(needs_metrics(&unstable.rules.dependencies));
+        let project = config(
+            json!({ "forbidden": [{ "name": "p", "scope": "project", "from": {}, "to": { "circular": true } }] }),
+        );
+        assert!(needs_metrics(&project.rules.dependencies));
     }
 
     #[test]

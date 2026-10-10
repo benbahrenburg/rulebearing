@@ -21,16 +21,31 @@ use crate::graph::consolidate::dirname;
 use crate::js;
 use crate::validate::validate_folder;
 
+/// One folder's (or project's) couplings and counts, before its record is written.
 #[derive(Default)]
-struct Aggregate {
+pub(crate) struct Aggregate {
     /// Name to count, in first-seen order.
-    dependents: Vec<(String, usize)>,
-    dependencies: Vec<(String, usize)>,
-    module_count: i64,
-    stats: Option<(u64, u64)>,
+    pub(crate) dependents: Vec<(String, usize)>,
+    pub(crate) dependencies: Vec<(String, usize)>,
+    pub(crate) module_count: i64,
+    pub(crate) stats: Option<(u64, u64)>,
 }
 
-fn upsert(list: &mut Vec<(String, usize)>, name: &str) {
+impl Aggregate {
+    /// Adds a module's `experimentalStats`, when it has them.
+    pub(crate) fn add_stats(&mut self, module: &Value) {
+        if let Some(stats) = module.get("experimentalStats") {
+            let (size, statements) = self.stats.get_or_insert((0, 0));
+            *size += stats.get("size").and_then(Value::as_u64).unwrap_or(0);
+            *statements += stats
+                .get("topLevelStatementCount")
+                .and_then(Value::as_u64)
+                .unwrap_or(0);
+        }
+    }
+}
+
+pub(crate) fn upsert(list: &mut Vec<(String, usize)>, name: &str) {
     if let Some(entry) = list.iter_mut().find(|(n, _)| n == name) {
         entry.1 += 1;
     } else {
@@ -85,14 +100,7 @@ fn aggregate(modules: &[Value]) -> (Vec<String>, HashMap<String, Aggregate>) {
                 }
             }
             entry.module_count += 1;
-            if let Some(stats) = module.get("experimentalStats") {
-                let (size, statements) = entry.stats.get_or_insert((0, 0));
-                *size += stats.get("size").and_then(Value::as_u64).unwrap_or(0);
-                *statements += stats
-                    .get("topLevelStatementCount")
-                    .and_then(Value::as_u64)
-                    .unwrap_or(0);
-            }
+            entry.add_stats(module);
         }
     }
     (order, all)
@@ -100,17 +108,26 @@ fn aggregate(modules: &[Value]) -> (Vec<String>, HashMap<String, Aggregate>) {
 
 /// One folder's record: couplings, module count, stats and instability.
 fn folder_record(name: &str, aggregate: &Aggregate) -> Value {
+    record(name, aggregate, folder_level)
+}
+
+/// One aggregate's record, its coupled names listed by `level`.
+pub(crate) fn record(
+    name: &str,
+    aggregate: &Aggregate,
+    level: fn(&[(String, usize)]) -> Vec<Value>,
+) -> Value {
     let afferent: usize = aggregate.dependents.iter().map(|(_, c)| c).sum();
     let efferent: usize = aggregate.dependencies.iter().map(|(_, c)| c).sum();
     let mut folder = Map::new();
     folder.insert("name".into(), json!(name));
     folder.insert(
         "dependencies".into(),
-        Value::Array(folder_level(&aggregate.dependencies)),
+        Value::Array(level(&aggregate.dependencies)),
     );
     folder.insert(
         "dependents".into(),
-        Value::Array(folder_level(&aggregate.dependents)),
+        Value::Array(level(&aggregate.dependents)),
     );
     folder.insert("moduleCount".into(), json!(aggregate.module_count));
     if let Some((size, statements)) = aggregate.stats {
@@ -127,7 +144,7 @@ fn folder_record(name: &str, aggregate: &Aggregate) -> Value {
 
 /// Copies each target folder's instability onto the folder dependencies that point at it, and
 /// returns the names of the folders known so far.
-fn add_dependency_instability(result: &mut [Value]) -> HashSet<String> {
+pub(crate) fn add_dependency_instability(result: &mut [Value]) -> HashSet<String> {
     let by_name: HashMap<String, f64> = result
         .iter()
         .map(|f| {
@@ -153,7 +170,7 @@ fn add_dependency_instability(result: &mut [Value]) -> HashSet<String> {
 }
 
 /// Sinks: folders depended on that hold no calculable module, once each, in first-met order.
-fn sinks(result: &[Value], known: &HashSet<String>) -> Vec<Value> {
+pub(crate) fn sinks(result: &[Value], known: &HashSet<String>) -> Vec<Value> {
     let mut sinks = Vec::new();
     let mut seen = HashSet::new();
     for folder in result {
@@ -169,11 +186,20 @@ fn sinks(result: &[Value], known: &HashSet<String>) -> Vec<Value> {
 
 /// `addFolderDependencyViolations`: each folder dependency validated against the folder rules.
 fn add_violations(result: &mut [Value], rules: &DependencyRules) {
+    add_validations(result, rules, validate_folder);
+}
+
+/// Each aggregate dependency validated by `validate`, its verdict merged into the dependency.
+pub(crate) fn add_validations(
+    result: &mut [Value],
+    rules: &DependencyRules,
+    validate: fn(&DependencyRules, &Value, &Value) -> Value,
+) {
     for folder in result.iter_mut() {
         let from = folder.clone();
         if let Some(Value::Array(dependencies)) = folder.get_mut("dependencies") {
             for dependency in dependencies.iter_mut() {
-                let verdict = validate_folder(rules, &from, dependency);
+                let verdict = validate(rules, &from, dependency);
                 if let (Value::Object(target), Value::Object(verdict)) = (dependency, verdict) {
                     target.extend(verdict);
                 }

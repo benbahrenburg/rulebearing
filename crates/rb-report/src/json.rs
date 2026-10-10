@@ -55,9 +55,27 @@ fn each(value: &mut Value, key: &str, f: &mut dyn FnMut(&mut Value)) {
     }
 }
 
-/// Removes every Rulebearing addition.
+/// The names of the project-scoped rules in `ruleSetUsed`, which only a native configuration has
+/// ([ADR-0066](../../../docs/adr/0066-project-scope-and-the-project-layer.md)).
+fn project_rules(result: &Value) -> Vec<String> {
+    let Some(rules) = result.get("summary").and_then(|s| s.get("ruleSetUsed")) else {
+        return Vec::new();
+    };
+    ["forbidden", "allowed", "required"]
+        .iter()
+        .filter_map(|list| rules.get(*list).and_then(Value::as_array))
+        .flatten()
+        .filter(|r| r.get("scope").and_then(Value::as_str) == Some("project"))
+        .filter_map(|r| r.get("name").and_then(Value::as_str).map(str::to_owned))
+        .collect()
+}
+
+/// Removes every Rulebearing addition: the additive keys, the project layer, and the
+/// project-scoped rules with the violations they found, since upstream's `scope` is `module` or
+/// `folder`.
 pub fn strip(result: &mut Value) {
-    remove(result, &["code"]);
+    let project_rules = project_rules(result);
+    remove(result, &["code", "projects"]);
     each(result, "modules", &mut |module| {
         remove(module, MODULE_ADDITIONS);
         each(module, "dependencies", &mut |d| {
@@ -66,12 +84,25 @@ pub fn strip(result: &mut Value) {
     });
     if let Some(summary) = result.get_mut("summary") {
         remove(summary, SUMMARY_ADDITIONS);
+        if let Some(Value::Array(violations)) = summary.get_mut("violations") {
+            violations.retain(|v| {
+                let rule = v
+                    .get("rule")
+                    .and_then(|r| r.get("name"))
+                    .and_then(Value::as_str);
+                v.get("type").and_then(Value::as_str) != Some("project")
+                    && rule.is_none_or(|name| !project_rules.iter().any(|p| p == name))
+            });
+        }
         each(summary, "violations", &mut |v| {
             remove(v, VIOLATION_ADDITIONS);
         });
         if let Some(rules) = summary.get_mut("ruleSetUsed") {
             remove(rules, RULE_SET_ADDITIONS);
             for list in ["forbidden", "allowed", "required"] {
+                if let Some(Value::Array(items)) = rules.get_mut(list) {
+                    items.retain(|r| r.get("scope").and_then(Value::as_str) != Some("project"));
+                }
                 each(rules, list, &mut |r| remove(r, RULE_ADDITIONS));
             }
         }
@@ -100,6 +131,32 @@ pub fn render(result: &Value, strict_schema: bool) -> Rendered {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn strict_schema_strips_the_project_layer_and_its_rules() {
+        let result = json!({
+            "modules": [],
+            "projects": [{ "name": "CoreProject", "moduleCount": 1 }],
+            "summary": {
+                "violations": [
+                    { "type": "project", "from": "Web", "to": "Core", "rule": { "name": "projectRule" } },
+                    { "type": "cycle", "from": "Core", "to": "Web", "rule": { "name": "projectCycles" } },
+                    { "type": "folder", "from": "src/a", "to": "src/b", "rule": { "name": "keptFolder" } }
+                ],
+                "ruleSetUsed": { "forbidden": [
+                    { "name": "projectRule", "scope": "project" },
+                    { "name": "projectCycles", "scope": "project" },
+                    { "name": "keptFolder", "scope": "folder" }
+                ] }
+            }
+        });
+        let stripped = render(&result, true).output;
+        for gone in ["CoreProject", "projectRule", "projectCycles", "\"project\""] {
+            assert!(!stripped.contains(gone), "{gone}");
+        }
+        assert_eq!(stripped.matches("keptFolder").count(), 2, "{stripped}");
+        assert!(render(&result, false).output.contains("CoreProject"));
+    }
 
     #[test]
     fn strict_schema_strips_every_addition() {

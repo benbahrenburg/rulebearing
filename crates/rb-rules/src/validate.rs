@@ -45,6 +45,17 @@ pub fn is_folder_scope(rule: &Rule) -> bool {
     rule.is_folder_scope()
 }
 
+/// Whether the rule compares projects, Rulebearing's addition
+/// ([ADR-0066](../../../docs/adr/0066-project-scope-and-the-project-layer.md)).
+pub fn is_project_scope(rule: &Rule) -> bool {
+    rule.is_project_scope()
+}
+
+/// Whether the rule compares aggregates, folders or projects, rather than modules.
+fn is_aggregate_scope(rule: &Rule) -> bool {
+    is_folder_scope(rule) || is_project_scope(rule)
+}
+
 /// Which matcher a validation uses, as upstream's `pMatchModule` object.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Matcher {
@@ -54,15 +65,18 @@ pub enum Matcher {
     Dependency,
     /// `match-folder-dependency-rule`.
     Folder,
+    /// The same match over the project layer.
+    Project,
 }
 
 impl Matcher {
     /// `isInteresting`.
     pub fn is_interesting(self, rule: &Rule) -> bool {
         match self {
-            Self::Module => is_module_only_rule(rule) && !is_folder_scope(rule),
-            Self::Dependency => !is_module_only_rule(rule) && !is_folder_scope(rule),
+            Self::Module => is_module_only_rule(rule) && !is_aggregate_scope(rule),
+            Self::Dependency => !is_module_only_rule(rule) && !is_aggregate_scope(rule),
             Self::Folder => is_folder_scope(rule) && !is_module_only_rule(rule),
+            Self::Project => is_project_scope(rule) && !is_module_only_rule(rule),
         }
     }
 
@@ -71,7 +85,7 @@ impl Matcher {
         match self {
             Self::Module => module_match(rule, from, facts),
             Self::Dependency => dependency_match(rule, from, to, facts),
-            Self::Folder => folder_match(rule, from, to),
+            Self::Folder | Self::Project => folder_match(rule, from, to),
         }
     }
 }
@@ -352,6 +366,11 @@ pub fn validate_dependency(
 /// loader refuses those keys on a folder-scoped rule.
 pub fn validate_folder(rules: &DependencyRules, from: &Value, to: &Value) -> Value {
     validate(rules, from, to, Matcher::Folder, &ModuleFacts::default())
+}
+
+/// `validateFolder` over the project layer: the project-scoped rules, matched by project name.
+pub fn validate_project(rules: &DependencyRules, from: &Value, to: &Value) -> Value {
+    validate(rules, from, to, Matcher::Project, &ModuleFacts::default())
 }
 
 #[cfg(test)]
@@ -820,6 +839,15 @@ mod tests {
             rule(json!({ "scope": "folder", "from": { "orphan": true }, "to": {} }));
         assert!(!Matcher::Folder.is_interesting(&folder_orphans));
         assert!(!Matcher::Module.is_interesting(&folder_orphans));
+        let project = rule(json!({ "scope": "project", "from": {}, "to": { "circular": true } }));
+        assert!(Matcher::Project.is_interesting(&project));
+        assert!(!Matcher::Folder.is_interesting(&project));
+        assert!(!Matcher::Dependency.is_interesting(&project));
+        assert!(!Matcher::Project.is_interesting(&plain));
+        let project_orphans =
+            rule(json!({ "scope": "project", "from": { "orphan": true }, "to": {} }));
+        assert!(!Matcher::Project.is_interesting(&project_orphans));
+        assert!(!Matcher::Module.is_interesting(&project_orphans));
     }
 
     #[test]

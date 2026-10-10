@@ -21,7 +21,7 @@
 //!
 //! | File | Holds |
 //! | --- | --- |
-//! | `<version>.json` | the snapshot: `version`, `sha`, `counts` (`modules`, `dependencies`, `violations` by severity), `instability` per folder, `rules` (`fromMatches`, `toMatches`, `violations` per dependency rule, as `rules --json` counts them) and `ratchets` (the edge count per ratchet) |
+//! | `<version>.json` | the snapshot: `version`, `sha`, `counts` (`modules`, `dependencies`, `violations` by severity), `instability` per folder, `projectInstability` per project when the run has projects ([ADR-0066](../../../../docs/adr/0066-project-scope-and-the-project-layer.md), additive), `rules` (`fromMatches`, `toMatches`, `violations` per dependency rule, as `rules --json` counts them) and `ratchets` (the edge count per ratchet) |
 //! | `<version>.cruise.json` | the cruise result, as `cruise -T json` writes it, from which `changelog` takes the edges |
 //!
 //! **The version** is `--version` when given; otherwise the git tag at `HEAD` (the latest by
@@ -144,6 +144,14 @@ pub struct Snapshot {
     /// Instability per folder.
     #[serde(default)]
     pub instability: BTreeMap<String, Metric>,
+    /// Instability per project, when the run has a project layer; omitted otherwise, so a
+    /// snapshot of a run without projects keeps the frozen shape.
+    #[serde(
+        rename = "projectInstability",
+        default,
+        skip_serializing_if = "BTreeMap::is_empty"
+    )]
+    pub project_instability: BTreeMap<String, Metric>,
     /// Statistics per dependency rule.
     #[serde(default)]
     pub rules: BTreeMap<String, RuleCounts>,
@@ -191,6 +199,12 @@ impl Snapshot {
                 .iter()
                 .flatten()
                 .filter_map(|f| f.instability.map(|i| (f.name.clone(), Metric(i))))
+                .collect(),
+            project_instability: document
+                .projects
+                .iter()
+                .flatten()
+                .filter_map(|p| p.instability.map(|i| (p.name.clone(), Metric(i))))
                 .collect(),
             rules,
             ratchets: summary
@@ -537,6 +551,37 @@ mod tests {
             }),
             ..GraphDocument::default()
         })
+    }
+
+    #[test]
+    fn a_run_with_projects_records_their_instability() -> Result<(), serde_json::Error> {
+        let mut with_projects = document()?;
+        with_projects.projects = Some(vec![
+            Folder {
+                name: "Web".into(),
+                instability: Some(0.75),
+                ..Folder::default()
+            },
+            Folder {
+                name: "Newtonsoft.Json".into(),
+                module_count: -1,
+                ..Folder::default()
+            },
+        ]);
+        let snapshot = Snapshot::of("1.3.0", None, &with_projects, &[]);
+        let text = snapshot.to_text();
+        assert!(
+            text.contains("\"projectInstability\": {\n    \"Web\": 0.75\n  }"),
+            "{text}"
+        );
+        let back: Snapshot = serde_json::from_str(&text)?;
+        assert_eq!(back, snapshot);
+        let without = Snapshot::of("1.3.0", None, &document()?, &[]).to_text();
+        assert!(
+            !without.contains("projectInstability"),
+            "the frozen shape is kept"
+        );
+        Ok(())
     }
 
     #[test]

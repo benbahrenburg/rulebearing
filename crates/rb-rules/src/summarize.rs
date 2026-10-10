@@ -316,6 +316,20 @@ fn unique_violations(violations: Vec<Value>) -> Vec<Value> {
 
 /// `summarizeFolders`.
 pub fn summarize_folders(folders: &[Value], rules: Option<&DependencyRules>) -> Vec<Value> {
+    summarize_aggregates(folders, rules, "folder")
+}
+
+/// `summarizeFolders` over the project layer: a violation that is neither a cycle nor an
+/// instability is a `project` one ([ADR-0066](../../../docs/adr/0066-project-scope-and-the-project-layer.md)).
+pub fn summarize_projects(projects: &[Value], rules: Option<&DependencyRules>) -> Vec<Value> {
+    summarize_aggregates(projects, rules, "project")
+}
+
+fn summarize_aggregates(
+    folders: &[Value],
+    rules: Option<&DependencyRules>,
+    scope: &str,
+) -> Vec<Value> {
     let mut out = Vec::new();
     for folder in folders {
         for dependency in js::array(folder, "dependencies") {
@@ -329,7 +343,7 @@ pub fn summarize_folders(folders: &[Value], rules: Option<&DependencyRules>) -> 
                 } else if found.is_some_and(|r| r.to.circular.is_some()) {
                     "cycle"
                 } else {
-                    "folder"
+                    scope
                 };
                 let mut v = json!({ "type": kind, "from": js::text(folder, "name"), "to": js::text(dependency, "name"), "rule": rule });
                 match kind {
@@ -617,6 +631,26 @@ mod tests {
         assert_eq!(v[1]["metrics"]["from"]["instability"], 0.1);
         assert_eq!(v[0]["cycle"], json!([{ "name": "b" }, { "name": "a" }]));
         assert!(!js::has(&v[2], "cycle"));
+    }
+
+    #[test]
+    fn project_violations_are_of_type_project() {
+        let set = rules(json!({ "forbidden": [
+            { "name": "c", "scope": "project", "from": {}, "to": { "circular": true } },
+            { "name": "p", "scope": "project", "from": {}, "to": { "path": "Core" } }
+        ] }));
+        let projects = vec![json!({ "name": "Web", "dependencies": [
+            { "name": "Core", "valid": false, "cycle": [{ "name": "Core" }, { "name": "Web" }], "rules": [{ "name": "c" }, { "name": "p" }] }
+        ] })];
+        let v = summarize_projects(&projects, Some(&set));
+        let found: Vec<(&str, &str, &str)> = v
+            .iter()
+            .filter_map(|x| Some((x["type"].as_str()?, x["from"].as_str()?, x["to"].as_str()?)))
+            .collect();
+        assert_eq!(
+            found,
+            [("cycle", "Web", "Core"), ("project", "Web", "Core")]
+        );
     }
 
     #[test]

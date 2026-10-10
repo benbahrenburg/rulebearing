@@ -46,6 +46,7 @@ pub mod matchers;
 pub mod patterns;
 pub mod plantuml;
 pub mod plantuml_export;
+pub mod projects;
 pub mod ratchet;
 pub mod rewrap;
 pub mod slices;

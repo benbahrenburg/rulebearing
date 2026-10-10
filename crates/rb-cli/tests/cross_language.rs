@@ -222,3 +222,76 @@ rules:
     );
     Ok(())
 }
+
+/// The project layer over the fixture's one project, and a `scope: project` rule over it
+/// ([ADR-0066](../../../docs/adr/0066-project-scope-and-the-project-layer.md)): `projects[]`
+/// carries the project's couplings and instability, its packages are sinks, the rule's `from`
+/// is counted against projects (so it is not vacuous), and its violation has type `project`.
+#[test]
+fn a_project_scope_rule_compares_projects() -> Result<()> {
+    let config = r#"languages:
+  dotnet: {}
+rules:
+  dependencies:
+    forbidden:
+      - name: app-not-to-the-core-package
+        comment: "adr:0066"
+        severity: error
+        scope: project
+        from: { path: "^app/Sample\\.csproj$" }
+        to: { path: "^Sample\\.Core$" }
+"#;
+    let run = cruise("project", "rulebearing.yaml", config)?;
+    assert_eq!(run.code, Some(0), "{}", run.stderr);
+    let projects = run.json["projects"].as_array().cloned().unwrap_or_default();
+    let app = projects
+        .iter()
+        .find(|p| p["name"] == "app/Sample.csproj")
+        .ok_or("no project record")?;
+    assert_eq!(app["afferentCouplings"], 0);
+    assert!(app["efferentCouplings"].as_i64().unwrap_or(0) > 0, "{app}");
+    assert_eq!(app["instability"], 1);
+    assert!(
+        projects
+            .iter()
+            .any(|p| p["name"] == "Sample.Core" && p["moduleCount"] == -1),
+        "the package is a sink: {projects:?}"
+    );
+    let found: Vec<(String, String, String)> = run.json["summary"]["violations"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|v| {
+            let text = |key: &str| v[key].as_str().unwrap_or_default().to_owned();
+            (text("type"), text("from"), text("to"))
+        })
+        .collect();
+    assert_eq!(
+        found,
+        [(
+            "project".to_owned(),
+            "app/Sample.csproj".to_owned(),
+            "Sample.Core".to_owned()
+        )]
+    );
+    assert!(
+        run.json["summary"]["vacuousRules"].is_null(),
+        "{}",
+        run.json["summary"]["vacuousRules"]
+    );
+    Ok(())
+}
+
+#[test]
+fn a_dependency_cruiser_config_refuses_project_scope() -> Result<()> {
+    let config = r#"{ "forbidden": [{ "name": "p", "scope": "project", "from": {}, "to": { "path": "x" } }] }"#;
+    let run = cruise("dc-project", ".dependency-cruiser.json", config)?;
+    assert_eq!(run.code, Some(3), "{}", run.stderr);
+    assert!(
+        run.stderr
+            .contains("`forbidden[0].scope: project` is a Rulebearing addition"),
+        "{}",
+        run.stderr
+    );
+    Ok(())
+}
