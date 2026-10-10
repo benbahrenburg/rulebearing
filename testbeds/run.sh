@@ -23,6 +23,8 @@
 set -uo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=testbeds/github-files.sh
+. "$here/github-files.sh"
 repo="${1:?usage: testbeds/run.sh <owner/repo> [out-dir]}"
 out_root="${2:-$here/out}"
 slug="${repo//\//__}"

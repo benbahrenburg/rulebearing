@@ -8,6 +8,9 @@
 # out (the row's output folder), checkout and bin (the rulebearing binary). Each function names
 # what it reads, so a missing one stops it with the name rather than reading an empty string.
 
+# shellcheck source=testbeds/github-files.sh
+. "$(dirname "${BASH_SOURCE[0]}")/github-files.sh"
+
 # A manifest field of $repo; a list is joined with commas.
 manifest_field() { # field
   : "${here:?}" "${repo:?}"
