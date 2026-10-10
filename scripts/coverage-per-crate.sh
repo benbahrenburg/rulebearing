@@ -29,6 +29,8 @@ for crate in crates/*/ xtask/; do
   printf '%-20s %6.2f%%\n' "$name" "$pct"
   if python3 -c "import sys; sys.exit(0 if float('$pct') >= float('$floor') else 1)"; then :; else
     echo "::error::$name is below the ${floor}% line-coverage floor (ADR-0018)"
+    # What the measurement printed: which tests ran, how many profiles, which files are short.
+    tail -n 60 "$log"
     fail=1
   fi
 done
