@@ -7,6 +7,9 @@
 // committed CLI JSON"; "a size check"). Requirement: docs/prd.md#fr-reach-01.
 //
 //   node crates/rb-wasm/tests/wasm.mjs <wasm-bindgen --target nodejs output dir>
+//
+// The output is CommonJS: inside this repository, whose package.json says "module", the output
+// directory needs a package.json of `{ "type": "commonjs" }` (the `wasm` CI job writes one).
 
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
