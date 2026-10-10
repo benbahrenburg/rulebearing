@@ -15,7 +15,8 @@
 # docs/plans/implemented/0001-wave-1-typescript-parity.md, Steps 19 (npm) and 22 (schema on Pages);
 # docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Steps 13 (eslint-plugin-rulebearing)
 # and 14 (PyPI, NuGet).
-# Hardening: docs/adr/0025. The npm publish job holds id-token: write (provenance), the NuGet
+# Hardening: docs/adr/0025. The npm credentials and publish jobs hold id-token: write (trusted
+# publishing and provenance, docs/adr/0069), the NuGet
 # credentials and publish jobs hold id-token: write (trusted publishing, docs/adr/0068) and the
 # schema Pages job holds pages: write and id-token: write (deploy-pages); the PyPI publish job
 # pushes with a repository secret and keeps contents: read.
@@ -144,6 +145,52 @@ jobs:
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
+  # A manual run proves npm trusted publishing without publishing anything (docs/adr/0069). The
+  # first step republishes the `rulebearing` 0.0.1 tarball already on npm with no token configured:
+  # npm exchanges the job's OIDC token for a publish token only when the package's trust setting
+  # names this repository and release.yml, and the registry then refuses the version as already
+  # published. Without a matching trust setting npm has no credential and fails with ENEEDAUTH
+  # instead, so the error tells the two apart, and nothing new is published. Provenance is off so
+  # the failed attempt leaves no transparency-log entry. The second step checks NPM_TOKEN, which
+  # only a package without a trust setting needs: one the release creates for the first time.
+  npm-credentials:
+    name: npm credentials
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      # Trusted publishing needs npm 11.5.1 or later; Node 22 ships npm 10.
+      - run: npm install --global --no-audit --no-fund npm@11.21.0
+      - name: republish the published rulebearing 0.0.1 through the trust setting
+        run: |
+          npm pack --silent rulebearing@0.0.1 > /dev/null
+          if out="$(npm publish ./rulebearing-0.0.1.tgz --access public --provenance=false 2>&1)"; then
+            echo "$out"
+            echo "::error::rulebearing 0.0.1 was accepted as a new publish"
+            exit 1
+          fi
+          echo "$out"
+          if ! grep -q "previously published" <<< "$out"; then
+            echo "::error::npm did not reach the publish check: no trust setting on rulebearing matches benbahrenburg/rulebearing and release.yml (npm trust list rulebearing)"
+            exit 1
+          fi
+      - name: NPM_TOKEN, for packages with no trust setting yet
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::notice::NPM_TOKEN is not set: every package the release publishes must have a trust setting"
+            exit 0
+          fi
+          printf '//registry.npmjs.org/:_authToken=%s\n' "$NODE_AUTH_TOKEN" > "$RUNNER_TEMP/.npmrc"
+          npm whoami --userconfig "$RUNNER_TEMP/.npmrc"
+
   npm-pack:
     name: npm packages
     needs: [binaries, version]
@@ -252,8 +299,11 @@ jobs:
     if: github.event_name == 'push' && !contains(github.ref_name, '-')
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # `npm publish --provenance` signs with the job's OIDC token, so this job alone may request
-    # one (plan 0001, Step 19; docs/adr/0025 keeps every other job at contents: read).
+    # The job's OIDC token does two things (plan 0001, Step 19; docs/adr/0069): npm exchanges it
+    # for a publish token for every package whose trust setting names this repository and
+    # release.yml, and `--provenance` signs with it. A package with no trust setting yet, which is
+    # one this release creates, falls back to NPM_TOKEN. Every other job stays at contents: read
+    # (docs/adr/0025).
     permissions:
       contents: read
       id-token: write
@@ -262,6 +312,8 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm 11.5.1 or later; Node 22 ships npm 10.
+      - run: npm install --global --no-audit --no-fund npm@11.21.0
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: npm-packages

@@ -45,7 +45,7 @@ The npm wrapper (wave 1) and the NuGet and PyPI wrappers (wave 2) replace the pl
 
 | Registry | Packages | Pack | Install check (macOS arm64, Linux x64, Windows x64) | Publish (a `vX.Y.Z` tag only) | Credential |
 | --- | --- | --- | --- | --- | --- |
-| npm | `rulebearing` (with the programmatic API, `rulebearing/vitest` and `rulebearing/launcher`), six `rulebearing-cli-<platform>`, each with the binary and the API's addon | `npm-pack` | `npm-install-check` | `npm-publish`, with provenance | `NPM_TOKEN`; the job alone holds `id-token: write` |
+| npm | `rulebearing` (with the programmatic API, `rulebearing/vitest` and `rulebearing/launcher`), six `rulebearing-cli-<platform>`, each with the binary and the API's addon | `npm-pack` | `npm-install-check` | `npm-publish`, with provenance | trusted publishing per package, `NPM_TOKEN` for a package with no trust setting yet; `npm-credentials` and `npm-publish` hold `id-token: write` ([ADR-0069](adr/0069-npm-publishes-by-trusted-publishing.md)) |
 | PyPI | six `rulebearing` wheels, `pytest-rulebearing` | `pypi-build` | `pypi-install-check` | `pypi-publish`, with twine | `PYPI_TOKEN`; `contents: read` |
 | NuGet | `Rulebearing` (dotnet tool), and what `wrappers/nuget/pack.sh` packs | `nuget-pack` | `nuget-install-check` | `nuget-publish`, with `dotnet nuget push` | trusted publishing through `NuGet/login` with `NUGET_USER`; the job alone adds `id-token: write` ([ADR-0068](adr/0068-nuget-publishes-by-trusted-publishing.md)) |
 
@@ -63,7 +63,32 @@ The GitHub `release` job needs the `version` job and all three install checks, a
 | `npm-install-check` | every trigger | on macOS arm64, Linux x64 and Windows x64, installs `rulebearing` and the host's platform package from those tarballs into an empty project and asserts that `npx rulebearing --version` prints `rulebearing <version>`, that `rulebearing/vitest` loads, and that the API's `cruise()` reads a two-file project through the platform package's addon |
 | `npm-publish` | a `vX.Y.Z` tag only, after `release` and the install check | `npm publish --provenance --access public` for the six platform packages, then `rulebearing`, then `eslint-plugin-rulebearing`, from the same tarballs |
 
-A dry run (a manual run, or a tag with a pre-release suffix) therefore packs and install-checks exactly what a release would publish, and publishes nothing. `npm-publish` alone holds `id-token: write`, which provenance needs; every other job keeps `contents: read` ([ADR-0025](adr/0025-ci-and-supply-chain-hardening.md)). It reads the `NPM_TOKEN` repository secret, an npm automation token with publish rights on the eight package names; the platform names and `eslint-plugin-rulebearing` are created by their first publish.
+A dry run (a manual run, or a tag with a pre-release suffix) therefore packs and install-checks exactly what a release would publish, and publishes nothing. `npm-publish` and `npm-credentials` hold `id-token: write`; every other job keeps `contents: read` ([ADR-0025](adr/0025-ci-and-supply-chain-hardening.md)).
+
+`npm-publish` uses trusted publishing ([ADR-0069](adr/0069-npm-publishes-by-trusted-publishing.md)). It installs npm 11.21.0, because trusted publishing needs 11.5.1 or later and Node 22 ships npm 10. For each package whose trust setting on npm names `benbahrenburg/rulebearing` and `release.yml`, npm exchanges the job's OIDC token for a publish token; `--provenance` signs with the same OIDC token. A package with no trust setting falls back to the `NPM_TOKEN` repository secret. Only `rulebearing` exists on npm, and its trust setting was made on 2026-10-10, so the first release creates the six platform packages and `eslint-plugin-rulebearing` with `NPM_TOKEN`. That token needs read and write on all packages and must bypass 2FA, or the publish fails with `EOTP`, as the `v0.1.0` tag's did. npm ends direct publishing for tokens that bypass 2FA in January 2027, so the first release has to come before then ([ADR-0069](adr/0069-npm-publishes-by-trusted-publishing.md)). The CLI creates one:
+
+```sh
+npm token create --name rulebearing-first-release --packages-all \
+  --packages-and-scopes-permission read-write --bypass-2fa --expires 30
+pbpaste | gh secret set NPM_TOKEN -R benbahrenburg/rulebearing   # after copying the printed token
+```
+
+After that release, the maintainer gives the seven new packages the same trust setting from the CLI, deletes the secret and revokes the token:
+
+```sh
+npm login   # 2FA must be on: npm profile get "two-factor auth"
+for p in eslint-plugin-rulebearing rulebearing-cli-darwin-arm64 rulebearing-cli-darwin-x64 \
+         rulebearing-cli-linux-arm64-gnu rulebearing-cli-linux-x64-gnu \
+         rulebearing-cli-linux-x64-musl rulebearing-cli-win32-x64-msvc; do
+  npm trust github "$p" --repo benbahrenburg/rulebearing --file release.yml --allow-publish --yes
+  sleep 2
+done
+npm trust list rulebearing
+gh secret delete NPM_TOKEN -R benbahrenburg/rulebearing
+npm token list   # then npm token revoke <id>
+```
+
+A manual run of the release workflow proves the trust setting without publishing: its `npm-credentials` job republishes the `rulebearing` 0.0.1 tarball already on npm with no token configured and provenance off. The registry refuses it as already published only when npm exchanged the OIDC token, which needs a matching trust setting; without one npm has no credential and fails with `ENEEDAUTH`, which fails the job. The same job checks `NPM_TOKEN` with `npm whoami` when the secret is set. Renaming `release.yml` or moving the repository needs every package's trust setting replaced (`npm trust revoke`, then `npm trust github`); npm keeps one per package.
 
 To stage and install the packages by hand on one machine, without publishing:
 
