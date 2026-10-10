@@ -1,0 +1,14 @@
+{
+  "repo": "elastic/kibana",
+  "sha": "b502e688526bca862855361abf0081d84e65c547",
+  "role": "scale",
+  "tool": "none",
+  "status": "ok",
+  "detail": "modules: javascript 271, typescript 6825, unknown 390",
+  "incumbent": null,
+  "rulebearing": {
+    "wall_seconds": 5.79,
+    "max_rss_kb": 626204,
+    "exit_code": 0
+  }
+}

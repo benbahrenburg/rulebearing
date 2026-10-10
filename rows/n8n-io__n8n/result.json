@@ -1,0 +1,14 @@
+{
+  "repo": "n8n-io/n8n",
+  "sha": "f89687fd8751970cdf8b9cb76761a1258728ca62",
+  "role": "scale",
+  "tool": "none",
+  "status": "ok",
+  "detail": "modules: javascript 1500, python 168, typescript 21244, unknown 4102",
+  "incumbent": null,
+  "rulebearing": {
+    "wall_seconds": 12.1,
+    "max_rss_kb": 2019336,
+    "exit_code": 0
+  }
+}

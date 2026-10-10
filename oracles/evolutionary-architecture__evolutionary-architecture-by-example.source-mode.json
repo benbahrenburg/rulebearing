@@ -1,0 +1,29 @@
+{
+  "repo": "evolutionary-architecture/evolutionary-architecture-by-example",
+  "sha": "441a7cd94d3acfbac7d210a95ea8e78429fc9f47",
+  "files": 87,
+  "sourceEdges": 115,
+  "compiledEdges": 125,
+  "agreeing": 113,
+  "precision": 0.9826,
+  "recall": 0.904,
+  "target": 0.9,
+  "onlySource": [
+    "Chapter-1-initial-architecture/Src/Fitnet/Common/Validation/Requests/EndpointBuilderExtensions.cs -> Chapter-1-initial-architecture/Src/Fitnet/Common/Validation/Requests/RequestValidationApiFilter.cs",
+    "Chapter-1-initial-architecture/Src/Fitnet/Reports/ReportsModule.cs -> Chapter-1-initial-architecture/Src/Fitnet/Reports/DataAccess/DatabaseAccessModule.cs"
+  ],
+  "onlyCompiled": [
+    "Chapter-1-initial-architecture/Src/Fitnet/Contracts/Data/Database/Migrations/20230503180334_CreateContractsTable.cs -> Chapter-1-initial-architecture/Src/Fitnet/Contracts/Data/Database/ContractsPersistence.cs",
+    "Chapter-1-initial-architecture/Src/Fitnet/Contracts/Data/Database/Migrations/20230503180335_AddSignedAtDateColumnToContractsTable.cs -> Chapter-1-initial-architecture/Src/Fitnet/Contracts/Data/Database/ContractsPersistence.cs",
+    "Chapter-1-initial-architecture/Src/Fitnet/Contracts/Data/Database/Migrations/20230503180336_AddPreparedAtDateColumnToContractsTable.cs -> Chapter-1-initial-architecture/Src/Fitnet/Contracts/Data/Database/ContractsPersistence.cs",
+    "Chapter-1-initial-architecture/Src/Fitnet/Contracts/Data/Database/Migrations/20230608060456_MakeSignedAtColumnNotRequired.cs -> Chapter-1-initial-architecture/Src/Fitnet/Contracts/Data/Database/ContractsPersistence.cs",
+    "Chapter-1-initial-architecture/Src/Fitnet/Contracts/Data/Database/Migrations/20230608060545_AddCustomerIdColumntoContractsTable.cs -> Chapter-1-initial-architecture/Src/Fitnet/Contracts/Data/Database/ContractsPersistence.cs",
+    "Chapter-1-initial-architecture/Src/Fitnet/Contracts/Data/Database/Migrations/20230618131127_ContractsAddColumnsToSupportContractExpiration.cs -> Chapter-1-initial-architecture/Src/Fitnet/Contracts/Data/Database/ContractsPersistence.cs",
+    "Chapter-1-initial-architecture/Src/Fitnet/Contracts/SignContract/SignContractEndpoint.cs -> Chapter-1-initial-architecture/Src/Fitnet/Contracts/Data/Contract.cs",
+    "Chapter-1-initial-architecture/Src/Fitnet/Offers/Data/Database/Migrations/20230503180337_Create_Offers_table.cs -> Chapter-1-initial-architecture/Src/Fitnet/Offers/Data/Database/OffersPersistence.cs",
+    "Chapter-1-initial-architecture/Src/Fitnet/Passes/Data/Database/Migrations/20230503180338_CreatePassesTable.cs -> Chapter-1-initial-architecture/Src/Fitnet/Passes/Data/Database/PassesPersistence.cs",
+    "Chapter-1-initial-architecture/Src/Fitnet/Passes/GetAllPasses/GetAllPassesEndpoint.cs -> Chapter-1-initial-architecture/Src/Fitnet/Passes/Data/Pass.cs",
+    "Chapter-1-initial-architecture/Src/Fitnet/Passes/MarkPassAsExpired/MarkPassAsExpiredEndpoint.cs -> Chapter-1-initial-architecture/Src/Fitnet/Passes/Data/Pass.cs",
+    "Chapter-1-initial-architecture/Src/Fitnet/Reports/GenerateNewPassesRegistrationsPerMonthReport/GenerateNewPassesPerMonthReportEndpoint.cs -> Chapter-1-initial-architecture/Src/Fitnet/Reports/GenerateNewPassesRegistrationsPerMonthReport/Dtos/NewPassesRegistrationsPerMonthDto.cs"
+  ]
+}

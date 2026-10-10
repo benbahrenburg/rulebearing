@@ -1,0 +1,14 @@
+{
+  "repo": "openedx/openedx-platform",
+  "sha": "23f45c133cf8e5074a723e6f6685137c87c01780",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "ok",
+  "detail": "import-linter contracts kept",
+  "incumbent": {
+    "wall_seconds": 0.83,
+    "max_rss_kb": 78560,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

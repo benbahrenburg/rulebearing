@@ -1,0 +1,14 @@
+{
+  "repo": "abpframework/abp",
+  "sha": "e402e7e305002ebdd3a5befef743c65bd9ac9c92",
+  "role": "greenfield",
+  "tool": "none",
+  "status": "ok",
+  "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+  "incumbent": null,
+  "rulebearing": {
+    "wall_seconds": 7.06,
+    "max_rss_kb": 1209296,
+    "exit_code": 0
+  }
+}

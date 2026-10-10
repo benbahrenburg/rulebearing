@@ -1,0 +1,14 @@
+{
+  "repo": "kedro-org/kedro",
+  "sha": "8d9abdf02b1ce93fbe9079cff6f696fb230facc4",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "ok",
+  "detail": "import-linter contracts kept",
+  "incumbent": {
+    "wall_seconds": 0.19,
+    "max_rss_kb": 33848,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

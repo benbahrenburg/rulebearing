@@ -1,0 +1,45 @@
+{
+  "repo": "ardalis/RiverBooks",
+  "sha": "0938f187f3963e225fa25e31bc10a5213932ddf4",
+  "tool": "archunitnet",
+  "tests": "src/RiverBooks.OrderProcessingTests",
+  "status": "nothing-compared",
+  "detail": "every test stays or is not imported: nothing to compare",
+  "summary": {
+    "total": 2,
+    "agree": 0,
+    "disagree": 0,
+    "stays": 2,
+    "not-imported": 0,
+    "error": 0
+  },
+  "rules": {
+    "imported": 0,
+    "commentedOut": 2,
+    "withoutTest": []
+  },
+  "outOfScope": 9,
+  "results": [
+    {
+      "test": "RiverBooks.OrderProcessingTests.Arch.InfrastructureDependencyTests.DomainTypesShouldNotReferenceInfrastructure",
+      "dotnet": "passed",
+      "rules": [
+        "domain-types-should-not-reference-infrastructure"
+      ],
+      "rulebearing": null,
+      "verdict": "stays",
+      "reason": "stays in ArchUnitNET: the test checks the architecture in C#, not with a rule"
+    },
+    {
+      "test": "RiverBooks.OrderProcessingTests.Arch.InfrastructureDependencyTests.UseCaseTypesShouldNotReferenceInfrastructure",
+      "dotnet": "passed",
+      "rules": [
+        "use-case-types-should-not-reference-infrastructure"
+      ],
+      "rulebearing": null,
+      "verdict": "stays",
+      "reason": "stays in ArchUnitNET: the test checks the architecture in C#, not with a rule"
+    }
+  ],
+  "agrees": false
+}

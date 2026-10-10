@@ -1,0 +1,75 @@
+{
+  "repo": "karaoke-dev/karaoke",
+  "sha": "8012c1a854e6d68ba8bdbe1d3fd7101ff61c7e3d",
+  "tool": "archunitnet",
+  "tests": "osu.Game.Rulesets.Karaoke.Architectures",
+  "status": "nothing-compared",
+  "detail": "every test stays or is not imported: nothing to compare",
+  "summary": {
+    "total": 5,
+    "agree": 0,
+    "disagree": 0,
+    "stays": 5,
+    "not-imported": 0,
+    "error": 0
+  },
+  "rules": {
+    "imported": 0,
+    "commentedOut": 5,
+    "withoutTest": []
+  },
+  "outOfScope": 0,
+  "results": [
+    {
+      "test": "CheckCheckClassNamingAndInherit",
+      "dotnet": "passed",
+      "rules": [
+        "check-check-class-naming-and-inherit"
+      ],
+      "rulebearing": null,
+      "verdict": "stays",
+      "reason": "stays in ArchUnitNET: the test checks the architecture in C#, not with a rule"
+    },
+    {
+      "test": "CheckShouldContainsTest",
+      "dotnet": "passed",
+      "rules": [
+        "check-should-contains-test"
+      ],
+      "rulebearing": null,
+      "verdict": "stays",
+      "reason": "stays in ArchUnitNET: the test checks the architecture in C#, not with a rule"
+    },
+    {
+      "test": "CheckTestClassAndMethod",
+      "dotnet": "passed",
+      "rules": [
+        "check-test-class-and-method"
+      ],
+      "rulebearing": null,
+      "verdict": "stays",
+      "reason": "stays in ArchUnitNET: the test checks the architecture in C#, not with a rule"
+    },
+    {
+      "test": "CheckAbstractClassLocation",
+      "dotnet": "passed",
+      "rules": [
+        "check-abstract-class-location"
+      ],
+      "rulebearing": null,
+      "verdict": "stays",
+      "reason": "stays in ArchUnitNET: the test checks the architecture in C#, not with a rule"
+    },
+    {
+      "test": "CheckTestClassAndMethodNaming",
+      "dotnet": "passed",
+      "rules": [
+        "check-test-class-and-method-naming"
+      ],
+      "rulebearing": null,
+      "verdict": "stays",
+      "reason": "stays in ArchUnitNET: the test checks the architecture in C#, not with a rule"
+    }
+  ],
+  "agrees": false
+}

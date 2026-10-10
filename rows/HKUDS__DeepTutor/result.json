@@ -1,0 +1,14 @@
+{
+  "repo": "HKUDS/DeepTutor",
+  "sha": "11f9c15f6d2727ce07ff8d66e511b1e7ae2f8463",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "ok",
+  "detail": "import-linter contracts kept",
+  "incumbent": {
+    "wall_seconds": 0.21,
+    "max_rss_kb": 43488,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

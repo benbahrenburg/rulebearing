@@ -1,0 +1,14 @@
+{
+  "repo": "langfuse/langfuse",
+  "sha": "17c3e9d97ca93603fe448436083e20c44ac1822a",
+  "role": "oracle",
+  "tool": "dependency-cruiser",
+  "status": "ok",
+  "detail": "dependency-cruiser@18.1.0",
+  "incumbent": {
+    "wall_seconds": 0.68,
+    "max_rss_kb": 96972,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

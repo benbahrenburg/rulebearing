@@ -1,0 +1,22 @@
+{
+  "repo": "onebeyond/monaco",
+  "sha": "5700abab4d735e7accdcd0d1fde823845e8c99c3",
+  "as-written": {
+    "gate": 0,
+    "analyzer": 0,
+    "agreeing": 0,
+    "onlyGate": [],
+    "onlyAnalyzer": [],
+    "differences": 0
+  },
+  "negated": {
+    "gate": 45,
+    "analyzer": 45,
+    "agreeing": 45,
+    "onlyGate": [],
+    "onlyAnalyzer": [],
+    "differences": 0
+  },
+  "leftToCruise": [],
+  "agrees": true
+}

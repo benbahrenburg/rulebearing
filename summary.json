@@ -1,0 +1,777 @@
+[
+  {
+    "repo": "abpframework/abp",
+    "sha": "e402e7e305002ebdd3a5befef743c65bd9ac9c92",
+    "role": "greenfield",
+    "tool": "none",
+    "status": "ok",
+    "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 7.06,
+      "max_rss_kb": 1209296,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "apache/superset",
+    "sha": "4c229cb66a7b6401113ca81f49ee617ad8426e64",
+    "role": "greenfield",
+    "tool": "none",
+    "status": "ok",
+    "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 4.82,
+      "max_rss_kb": 843636,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "getsentry/sentry",
+    "sha": "813bab919d13177e71d444b187473ee3cd881ae4",
+    "role": "greenfield",
+    "tool": "none",
+    "status": "ok",
+    "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 27.68,
+      "max_rss_kb": 8402312,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "jasontaylordev/CleanArchitecture",
+    "sha": "1d71eefc5ccf9a5e9b2db86e4cf08070148c7bb4",
+    "role": "greenfield",
+    "tool": "none",
+    "status": "ok",
+    "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 1.07,
+      "max_rss_kb": 201868,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "microsoft/autogen",
+    "sha": "027ecf0a379bcc1d09956d46d12d44a3ad9cee14",
+    "role": "greenfield",
+    "tool": "none",
+    "status": "ok",
+    "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 3.58,
+      "max_rss_kb": 592528,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "microsoft/semantic-kernel",
+    "sha": "ca40aa7226531d28a721d0ca0e451d0aaf86dafc",
+    "role": "greenfield",
+    "tool": "none",
+    "status": "ok",
+    "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 12.32,
+      "max_rss_kb": 1964256,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "PostHog/posthog",
+    "sha": "3ad9f699e53d824e424514f521a9432b27faa347",
+    "role": "greenfield",
+    "tool": "none",
+    "status": "ok",
+    "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 0.14,
+      "max_rss_kb": 42188,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "umbraco/Umbraco-CMS",
+    "sha": "e81538b0400677a2fc319e6b1600b51645be3497",
+    "role": "greenfield",
+    "tool": "none",
+    "status": "ok",
+    "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 16.73,
+      "max_rss_kb": 2847872,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "zulip/zulip",
+    "sha": "370f7b66fca175e66f9545330f4534290cc9f9db",
+    "role": "greenfield",
+    "tool": "none",
+    "status": "ok",
+    "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 2.75,
+      "max_rss_kb": 778932,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "ag-grid/ag-grid",
+    "sha": "1a7979c4106fba6c9149f3b8cc13e5c7f4543323",
+    "role": "oracle",
+    "tool": "dependency-cruiser",
+    "status": "ok",
+    "detail": "dependency-cruiser@17.3.10",
+    "incumbent": {
+      "wall_seconds": 0.26,
+      "max_rss_kb": 87440,
+      "exit_code": 0
+    },
+    "rulebearing": {
+      "wall_seconds": 0.55,
+      "max_rss_kb": 169088,
+      "exit_code": 0
+    },
+    "regression": {
+      "current": 0.55,
+      "baseline": 0.52,
+      "baseline_sha": "c2c925adf9fcc0684dce34dc6375eadc7f5d97f3"
+    }
+  },
+  {
+    "repo": "ardalis/RiverBooks",
+    "sha": "0938f187f3963e225fa25e31bc10a5213932ddf4",
+    "role": "oracle",
+    "tool": "archunitnet",
+    "status": "ok",
+    "detail": "archunitnet tests passed",
+    "incumbent": {
+      "wall_seconds": 3.43,
+      "max_rss_kb": 148512,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "aws/aws-toolkit-vscode",
+    "sha": "36ad9035f4b921e12a9135f07a5f5134b71f704b",
+    "role": "oracle",
+    "tool": "dependency-cruiser",
+    "status": "ok",
+    "detail": "dependency-cruiser@18.2.0",
+    "incumbent": {
+      "wall_seconds": 0.73,
+      "max_rss_kb": 98480,
+      "exit_code": 0
+    },
+    "rulebearing": {
+      "wall_seconds": 0.51,
+      "max_rss_kb": 186364,
+      "exit_code": 0
+    },
+    "regression": {
+      "current": 0.51,
+      "baseline": 0.57,
+      "baseline_sha": "c2c925adf9fcc0684dce34dc6375eadc7f5d97f3"
+    }
+  },
+  {
+    "repo": "BenMorris/NetArchTest",
+    "sha": "a761f63b694a6facd4be01fbc8fe2ae26579572e",
+    "role": "oracle",
+    "tool": "netarchtest",
+    "status": "failed",
+    "detail": "netarchtest tests failed (exit 1)",
+    "incumbent": {
+      "wall_seconds": 1.54,
+      "max_rss_kb": 125608,
+      "exit_code": 1
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "bridgecrewio/checkov",
+    "sha": "92ca0101e39e7f575c8182b5b1fd7c89b04e136b",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "ok",
+    "detail": "import-linter contracts kept",
+    "incumbent": {
+      "wall_seconds": 0.34,
+      "max_rss_kb": 47356,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "DrJohnMelville/Pdf",
+    "sha": "2e9eef3d4af15391809d9a79253e6fff0058d668",
+    "role": "oracle",
+    "tool": "netarchtest",
+    "status": "ok",
+    "detail": "netarchtest tests passed",
+    "incumbent": {
+      "wall_seconds": 5.5,
+      "max_rss_kb": 148572,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "evolutionary-architecture/evolutionary-architecture-by-example",
+    "sha": "441a7cd94d3acfbac7d210a95ea8e78429fc9f47",
+    "role": "oracle",
+    "tool": "netarchtest",
+    "status": "ok",
+    "detail": "netarchtest tests passed",
+    "incumbent": {
+      "wall_seconds": 2.76,
+      "max_rss_kb": 125852,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "google/langextract",
+    "sha": "62b933a2c757fd2bbb100498571b8d1692db4344",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "ok",
+    "detail": "import-linter contracts kept",
+    "incumbent": {
+      "wall_seconds": 0.17,
+      "max_rss_kb": 32060,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "HKUDS/DeepTutor",
+    "sha": "11f9c15f6d2727ce07ff8d66e511b1e7ae2f8463",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "ok",
+    "detail": "import-linter contracts kept",
+    "incumbent": {
+      "wall_seconds": 0.21,
+      "max_rss_kb": 43488,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "infinitered/ignite",
+    "sha": "e829d2f922c5568a59a77bfb6232aeb500be3f13",
+    "role": "oracle",
+    "tool": "dependency-cruiser",
+    "status": "ok",
+    "detail": "dependency-cruiser@17.0.2",
+    "incumbent": {
+      "wall_seconds": 0.49,
+      "max_rss_kb": 98856,
+      "exit_code": 0
+    },
+    "rulebearing": {
+      "wall_seconds": 0.06,
+      "max_rss_kb": 21900,
+      "exit_code": 0
+    },
+    "regression": {
+      "current": 0.06,
+      "baseline": 0.06,
+      "baseline_sha": "c2c925adf9fcc0684dce34dc6375eadc7f5d97f3"
+    }
+  },
+  {
+    "repo": "invertase/react-native-firebase",
+    "sha": "fa3f29d815bdb6e4ee31aacf154a91c749b7c9a1",
+    "role": "oracle",
+    "tool": "dependency-cruiser",
+    "status": "ok",
+    "detail": "dependency-cruiser@17.3.9",
+    "incumbent": {
+      "wall_seconds": 0.38,
+      "max_rss_kb": 90084,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "karaoke-dev/karaoke",
+    "sha": "8012c1a854e6d68ba8bdbe1d3fd7101ff61c7e3d",
+    "role": "oracle",
+    "tool": "archunitnet",
+    "status": "ok",
+    "detail": "archunitnet tests passed",
+    "incumbent": {
+      "wall_seconds": 11.44,
+      "max_rss_kb": 623932,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "kedro-org/kedro",
+    "sha": "8d9abdf02b1ce93fbe9079cff6f696fb230facc4",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "ok",
+    "detail": "import-linter contracts kept",
+    "incumbent": {
+      "wall_seconds": 0.19,
+      "max_rss_kb": 33848,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "langfuse/langfuse",
+    "sha": "17c3e9d97ca93603fe448436083e20c44ac1822a",
+    "role": "oracle",
+    "tool": "dependency-cruiser",
+    "status": "ok",
+    "detail": "dependency-cruiser@18.1.0",
+    "incumbent": {
+      "wall_seconds": 0.68,
+      "max_rss_kb": 96972,
+      "exit_code": 0
+    },
+    "rulebearing": {
+      "wall_seconds": 1.44
+    },
+    "zeroDiff": "yes"
+  },
+  {
+    "repo": "langgenius/dify",
+    "sha": "3a017e8cccb316f23f601af65d2e8ce92e68f788",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "error",
+    "detail": "installing the package or import-linter failed (see install.log)",
+    "incumbent": null,
+    "rulebearing": null
+  },
+  {
+    "repo": "liveblocks/liveblocks",
+    "sha": "1e3a117a1a2020806b90c16cd4cd5171c00c232c",
+    "role": "oracle",
+    "tool": "dependency-cruiser",
+    "status": "ok",
+    "detail": "dependency-cruiser@17.3.10",
+    "incumbent": {
+      "wall_seconds": 0.32,
+      "max_rss_kb": 90484,
+      "exit_code": 0
+    },
+    "rulebearing": {
+      "wall_seconds": 0.07,
+      "max_rss_kb": 31372,
+      "exit_code": 0
+    },
+    "regression": {
+      "current": 0.07,
+      "baseline": 0.07,
+      "baseline_sha": "c2c925adf9fcc0684dce34dc6375eadc7f5d97f3"
+    }
+  },
+  {
+    "repo": "microsoft/FluidFramework",
+    "sha": "235654550d165d0da3a40c1b6fb1c6ec2bea676b",
+    "role": "oracle",
+    "tool": "dependency-cruiser",
+    "status": "ok",
+    "detail": "dependency-cruiser@17.3.2",
+    "incumbent": {
+      "wall_seconds": 0.26,
+      "max_rss_kb": 105136,
+      "exit_code": 0
+    },
+    "rulebearing": {
+      "wall_seconds": 0.22
+    },
+    "regression": {
+      "current": 0.14,
+      "baseline": 0.15,
+      "baseline_sha": "c2c925adf9fcc0684dce34dc6375eadc7f5d97f3"
+    },
+    "zeroDiff": "yes"
+  },
+  {
+    "repo": "microsoft/promptflow",
+    "sha": "3928a727b406e66d64ff42621534bb58e0ca18ce",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "ok",
+    "detail": "import-linter contracts kept",
+    "incumbent": {
+      "wall_seconds": 0.14,
+      "max_rss_kb": 42296,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "nager/Nager.Date",
+    "sha": "e2734bcfad2397957a5fe18a4f22fb145e87c1e0",
+    "role": "oracle",
+    "tool": "archunitnet",
+    "status": "ok",
+    "detail": "archunitnet tests passed",
+    "incumbent": {
+      "wall_seconds": 2.84,
+      "max_rss_kb": 125604,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "napari/napari",
+    "sha": "5ef58e212af1af11737bc005048cfd0fb7a1aefd",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "ok",
+    "detail": "import-linter contracts kept",
+    "incumbent": {
+      "wall_seconds": 0.27,
+      "max_rss_kb": 43536,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "NeVeSpl/NetArchTest.eNhancedEdition",
+    "sha": "7f29bdf5f24368dccad27b8e3ec52a807e813504",
+    "role": "oracle",
+    "tool": "netarchtest",
+    "status": "ok",
+    "detail": "netarchtest tests passed",
+    "incumbent": {
+      "wall_seconds": 7.11,
+      "max_rss_kb": 265720,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "nolar/kopf",
+    "sha": "e63c29c374cde63b6afa7378ae4486bb92062c0f",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "failed",
+    "detail": "import-linter reported broken contracts",
+    "incumbent": {
+      "wall_seconds": 0.12,
+      "max_rss_kb": 28632,
+      "exit_code": 1
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "onebeyond/monaco",
+    "sha": "5700abab4d735e7accdcd0d1fde823845e8c99c3",
+    "role": "oracle",
+    "tool": "archunitnet",
+    "status": "failed",
+    "detail": "archunitnet tests failed (exit 1)",
+    "incumbent": {
+      "wall_seconds": 1.95,
+      "max_rss_kb": 161108,
+      "exit_code": 1
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "online-ml/river",
+    "sha": "d7085cde5bf90898b338d1ad522c71b9b9aa26f8",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "ok",
+    "detail": "import-linter contracts kept",
+    "incumbent": {
+      "wall_seconds": 0.22,
+      "max_rss_kb": 34588,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "open-metadata/OpenMetadata",
+    "sha": "325c3ee7af5176f615f48b89747f027018d6d61a",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "failed",
+    "detail": "import-linter reported broken contracts",
+    "incumbent": {
+      "wall_seconds": 0.46,
+      "max_rss_kb": 54288,
+      "exit_code": 1
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "openedx/openedx-platform",
+    "sha": "23f45c133cf8e5074a723e6f6685137c87c01780",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "ok",
+    "detail": "import-linter contracts kept",
+    "incumbent": {
+      "wall_seconds": 0.83,
+      "max_rss_kb": 78560,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "phongnguyend/Practical.CleanArchitecture",
+    "sha": "033acecd44b6981d7d418d0fdab356c053e1b1d3",
+    "role": "oracle",
+    "tool": "netarchtest",
+    "status": "ok",
+    "detail": "netarchtest tests passed",
+    "incumbent": {
+      "wall_seconds": 2.35,
+      "max_rss_kb": 125204,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "remult/remult",
+    "sha": "f3ff339959ac19bdedb64161be8722d9a3ef8213",
+    "role": "oracle",
+    "tool": "dependency-cruiser",
+    "status": "ok",
+    "detail": "dependency-cruiser@13.1.5",
+    "incumbent": {
+      "wall_seconds": 0.53,
+      "max_rss_kb": 101008,
+      "exit_code": 0
+    },
+    "rulebearing": {
+      "wall_seconds": 0.03,
+      "max_rss_kb": 16772,
+      "exit_code": 0
+    },
+    "regression": {
+      "current": 0.03,
+      "baseline": 0.03,
+      "baseline_sha": "c2c925adf9fcc0684dce34dc6375eadc7f5d97f3"
+    }
+  },
+  {
+    "repo": "seddonym/import-linter",
+    "sha": "31927f1457e3df673912cb5efb0afa6dbc37585f",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "ok",
+    "detail": "import-linter contracts kept",
+    "incumbent": {
+      "wall_seconds": 0.25,
+      "max_rss_kb": 31072,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "sqlfluff/sqlfluff",
+    "sha": "0532c99e27811edb644f0afea13ade46182b72b2",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "ok",
+    "detail": "import-linter contracts kept",
+    "incumbent": {
+      "wall_seconds": 0.22,
+      "max_rss_kb": 40504,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "sverweij/dependency-cruiser",
+    "sha": "7c22858071cc4491321c735ff11894d90648ee6e",
+    "role": "oracle",
+    "tool": "dependency-cruiser",
+    "status": "ok",
+    "detail": "dependency-cruiser@18.4.0",
+    "incumbent": {
+      "wall_seconds": 1.32,
+      "max_rss_kb": 172720,
+      "exit_code": 0
+    },
+    "rulebearing": {
+      "wall_seconds": 0.05
+    },
+    "regression": {
+      "current": 0.06,
+      "baseline": 0.06,
+      "baseline_sha": "c2c925adf9fcc0684dce34dc6375eadc7f5d97f3"
+    },
+    "zeroDiff": "yes"
+  },
+  {
+    "repo": "TNG/ArchUnitNET",
+    "sha": "28b62ec0d98f9babb4ccdb6d8a1c3673a0497bcb",
+    "role": "oracle",
+    "tool": "archunitnet",
+    "status": "failed",
+    "detail": "archunitnet tests failed (exit 1)",
+    "incumbent": {
+      "wall_seconds": 24.53,
+      "max_rss_kb": 2152708,
+      "exit_code": 1
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "tsparticles/tsparticles",
+    "sha": "d92ba4b96524f57921cdfbd3d4a60d31c897a149",
+    "role": "oracle",
+    "tool": "dependency-cruiser",
+    "status": "ok",
+    "detail": "dependency-cruiser@18.2.0",
+    "incumbent": {
+      "wall_seconds": 0.51,
+      "max_rss_kb": 91232,
+      "exit_code": 0
+    },
+    "rulebearing": {
+      "wall_seconds": 0.02,
+      "max_rss_kb": 15732,
+      "exit_code": 0
+    },
+    "regression": {
+      "current": 0.02,
+      "baseline": 0.07,
+      "baseline_sha": "c2c925adf9fcc0684dce34dc6375eadc7f5d97f3"
+    }
+  },
+  {
+    "repo": "wemake-services/wemake-python-styleguide",
+    "sha": "b4d0171879edc9a6a71a1506a2ee5554f634e0ea",
+    "role": "oracle",
+    "tool": "import-linter",
+    "status": "ok",
+    "detail": "import-linter contracts kept",
+    "incumbent": {
+      "wall_seconds": 0.2,
+      "max_rss_kb": 33396,
+      "exit_code": 0
+    },
+    "rulebearing": null
+  },
+  {
+    "repo": "benbahrenburg/ai-sdk-otel-logger",
+    "sha": "b3072ce0cb125ccd3b184c05cda6bbf9de1cdca6",
+    "role": "own",
+    "tool": "none",
+    "status": "idle",
+    "detail": "no incumbent tool; the Rulebearing column starts in wave 1",
+    "incumbent": null,
+    "rulebearing": null
+  },
+  {
+    "repo": "benbahrenburg/rulebearing",
+    "sha": "06768cbcbf80b2efc25585a21cea56b2abcc6fbb",
+    "role": "own",
+    "tool": "none",
+    "status": "idle",
+    "detail": "no incumbent tool; the Rulebearing column starts in wave 1",
+    "incumbent": null,
+    "rulebearing": null
+  },
+  {
+    "repo": "dotnet/aspnetcore",
+    "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
+    "role": "scale",
+    "tool": "none",
+    "status": "ok",
+    "detail": "modules: dotnet 10131, javascript 268, typescript 207, unknown 69",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 34.87,
+      "max_rss_kb": 5748436,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "elastic/kibana",
+    "sha": "b502e688526bca862855361abf0081d84e65c547",
+    "role": "scale",
+    "tool": "none",
+    "status": "ok",
+    "detail": "modules: javascript 271, typescript 6825, unknown 390",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 5.79,
+      "max_rss_kb": 626204,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "grafana/grafana",
+    "sha": "423f85091b0a63a21fb571122a933133da1652cd",
+    "role": "scale",
+    "tool": "none",
+    "status": "ok",
+    "detail": "modules: javascript 52, typescript 2077, unknown 351",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 0.49,
+      "max_rss_kb": 186504,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "home-assistant/core",
+    "sha": "f50d777440e878554ef6872062341d24c6da0289",
+    "role": "scale",
+    "tool": "none",
+    "status": "ok",
+    "detail": "modules: javascript 3, python 22920, typescript 2, unknown 1",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 9.87,
+      "max_rss_kb": 2308328,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "jellyfin/jellyfin",
+    "sha": "fd75964da853765d63101b4889f23a4161e2758b",
+    "role": "scale",
+    "tool": "none",
+    "status": "ok",
+    "detail": "modules: dotnet 2317",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 4.02,
+      "max_rss_kb": 995876,
+      "exit_code": 0
+    }
+  },
+  {
+    "repo": "n8n-io/n8n",
+    "sha": "f89687fd8751970cdf8b9cb76761a1258728ca62",
+    "role": "scale",
+    "tool": "none",
+    "status": "ok",
+    "detail": "modules: javascript 1500, python 168, typescript 21244, unknown 4102",
+    "incumbent": null,
+    "rulebearing": {
+      "wall_seconds": 12.1,
+      "max_rss_kb": 2019336,
+      "exit_code": 0
+    }
+  }
+]

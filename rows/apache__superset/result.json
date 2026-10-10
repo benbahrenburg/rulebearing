@@ -1,0 +1,14 @@
+{
+  "repo": "apache/superset",
+  "sha": "4c229cb66a7b6401113ca81f49ee617ad8426e64",
+  "role": "greenfield",
+  "tool": "none",
+  "status": "ok",
+  "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+  "incumbent": null,
+  "rulebearing": {
+    "wall_seconds": 4.82,
+    "max_rss_kb": 843636,
+    "exit_code": 0
+  }
+}

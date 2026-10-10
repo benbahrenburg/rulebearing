@@ -1,0 +1,14 @@
+{
+  "repo": "microsoft/promptflow",
+  "sha": "3928a727b406e66d64ff42621534bb58e0ca18ce",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "ok",
+  "detail": "import-linter contracts kept",
+  "incumbent": {
+    "wall_seconds": 0.14,
+    "max_rss_kb": 42296,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

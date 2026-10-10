@@ -1,0 +1,14 @@
+{
+  "repo": "getsentry/sentry",
+  "sha": "813bab919d13177e71d444b187473ee3cd881ae4",
+  "role": "greenfield",
+  "tool": "none",
+  "status": "ok",
+  "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+  "incumbent": null,
+  "rulebearing": {
+    "wall_seconds": 27.68,
+    "max_rss_kb": 8402312,
+    "exit_code": 0
+  }
+}

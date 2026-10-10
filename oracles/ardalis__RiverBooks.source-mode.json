@@ -1,0 +1,26 @@
+{
+  "repo": "ardalis/RiverBooks",
+  "sha": "0938f187f3963e225fa25e31bc10a5213932ddf4",
+  "files": 33,
+  "sourceEdges": 47,
+  "compiledEdges": 59,
+  "agreeing": 47,
+  "precision": 1.0,
+  "recall": 0.7966,
+  "target": 0.9,
+  "onlySource": [],
+  "onlyCompiled": [
+    "src/RiverBooks.OrderProcessing/Domain/OrdersByUserIdSpec.cs -> src/RiverBooks.OrderProcessing/Domain/OrderItem.cs",
+    "src/RiverBooks.OrderProcessing/Domain/SendConfirmationEmailOrderCreatedEventHandler.cs -> src/RiverBooks.OrderProcessing/Domain/Order.cs",
+    "src/RiverBooks.OrderProcessing/Domain/SendConfirmationEmailOrderCreatedEventHandler.cs -> src/RiverBooks.OrderProcessing/Domain/OrderItem.cs",
+    "src/RiverBooks.OrderProcessing/Endpoints/ListOrdersForUser.cs -> src/RiverBooks.OrderProcessing/UseCases/OrderSummary.cs",
+    "src/RiverBooks.OrderProcessing/Infrastructure/Data/EfOrderRepository.cs -> src/RiverBooks.OrderProcessing/Domain/OrderItem.cs",
+    "src/RiverBooks.OrderProcessing/Infrastructure/Data/Migrations/20240212204600_Initial_OrderProcessing.cs -> src/RiverBooks.OrderProcessing/Infrastructure/Data/OrderProcessingDbContext.cs",
+    "src/RiverBooks.OrderProcessing/Infrastructure/Data/OrderConfiguration.cs -> src/RiverBooks.OrderProcessing/Domain/Address.cs",
+    "src/RiverBooks.OrderProcessing/Integrations/CreateOrderCommandHandler.cs -> src/RiverBooks.OrderProcessing/Domain/OrderAddress.cs",
+    "src/RiverBooks.OrderProcessing/Integrations/PublishCreatedOrderIntegrationEventHandler.cs -> src/RiverBooks.OrderProcessing/Domain/Order.cs",
+    "src/RiverBooks.OrderProcessing/Integrations/PublishCreatedOrderIntegrationEventHandler.cs -> src/RiverBooks.OrderProcessing/Domain/OrderItem.cs",
+    "src/RiverBooks.OrderProcessing/UseCases/Orders/ListForUser/ListOrdersForUserQueryHandler.cs -> src/RiverBooks.OrderProcessing/Domain/Order.cs",
+    "src/RiverBooks.OrderProcessing/UseCases/Orders/ListForUser/ListOrdersForUserQueryHandler.cs -> src/RiverBooks.OrderProcessing/Domain/OrderItem.cs"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "repo": "jellyfin/jellyfin",
+  "sha": "fd75964da853765d63101b4889f23a4161e2758b",
+  "role": "scale",
+  "tool": "none",
+  "status": "ok",
+  "detail": "modules: dotnet 2317",
+  "incumbent": null,
+  "rulebearing": {
+    "wall_seconds": 4.02,
+    "max_rss_kb": 995876,
+    "exit_code": 0
+  }
+}

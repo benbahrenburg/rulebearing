@@ -1,0 +1,14 @@
+{
+  "repo": "umbraco/Umbraco-CMS",
+  "sha": "e81538b0400677a2fc319e6b1600b51645be3497",
+  "role": "greenfield",
+  "tool": "none",
+  "status": "ok",
+  "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+  "incumbent": null,
+  "rulebearing": {
+    "wall_seconds": 16.73,
+    "max_rss_kb": 2847872,
+    "exit_code": 0
+  }
+}

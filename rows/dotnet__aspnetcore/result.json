@@ -1,0 +1,14 @@
+{
+  "repo": "dotnet/aspnetcore",
+  "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
+  "role": "scale",
+  "tool": "none",
+  "status": "ok",
+  "detail": "modules: dotnet 10131, javascript 268, typescript 207, unknown 69",
+  "incumbent": null,
+  "rulebearing": {
+    "wall_seconds": 34.87,
+    "max_rss_kb": 5748436,
+    "exit_code": 0
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "repo": "karaoke-dev/karaoke",
+  "sha": "8012c1a854e6d68ba8bdbe1d3fd7101ff61c7e3d",
+  "role": "oracle",
+  "tool": "archunitnet",
+  "status": "ok",
+  "detail": "archunitnet tests passed",
+  "incumbent": {
+    "wall_seconds": 11.44,
+    "max_rss_kb": 623932,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

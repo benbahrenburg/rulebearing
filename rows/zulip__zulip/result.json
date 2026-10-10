@@ -1,0 +1,14 @@
+{
+  "repo": "zulip/zulip",
+  "sha": "370f7b66fca175e66f9545330f4534290cc9f9db",
+  "role": "greenfield",
+  "tool": "none",
+  "status": "ok",
+  "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+  "incumbent": null,
+  "rulebearing": {
+    "wall_seconds": 2.75,
+    "max_rss_kb": 778932,
+    "exit_code": 0
+  }
+}

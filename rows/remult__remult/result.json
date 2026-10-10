@@ -1,0 +1,23 @@
+{
+  "repo": "remult/remult",
+  "sha": "f3ff339959ac19bdedb64161be8722d9a3ef8213",
+  "role": "oracle",
+  "tool": "dependency-cruiser",
+  "status": "ok",
+  "detail": "dependency-cruiser@13.1.5",
+  "incumbent": {
+    "wall_seconds": 0.53,
+    "max_rss_kb": 101008,
+    "exit_code": 0
+  },
+  "rulebearing": {
+    "wall_seconds": 0.03,
+    "max_rss_kb": 16772,
+    "exit_code": 0
+  },
+  "regression": {
+    "current": 0.03,
+    "baseline": 0.03,
+    "baseline_sha": "c2c925adf9fcc0684dce34dc6375eadc7f5d97f3"
+  }
+}

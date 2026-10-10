@@ -1,0 +1,14 @@
+{
+  "repo": "PostHog/posthog",
+  "sha": "3ad9f699e53d824e424514f521a9432b27faa347",
+  "role": "greenfield",
+  "tool": "none",
+  "status": "ok",
+  "detail": "init's proposal cruises back with exit 0; the fixture is unchanged",
+  "incumbent": null,
+  "rulebearing": {
+    "wall_seconds": 0.14,
+    "max_rss_kb": 42188,
+    "exit_code": 0
+  }
+}

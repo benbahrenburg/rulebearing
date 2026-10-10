@@ -1,0 +1,14 @@
+{
+  "repo": "ardalis/RiverBooks",
+  "sha": "0938f187f3963e225fa25e31bc10a5213932ddf4",
+  "role": "oracle",
+  "tool": "archunitnet",
+  "status": "ok",
+  "detail": "archunitnet tests passed",
+  "incumbent": {
+    "wall_seconds": 3.43,
+    "max_rss_kb": 148512,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

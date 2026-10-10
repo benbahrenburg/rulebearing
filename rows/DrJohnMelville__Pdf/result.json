@@ -1,0 +1,14 @@
+{
+  "repo": "DrJohnMelville/Pdf",
+  "sha": "2e9eef3d4af15391809d9a79253e6fff0058d668",
+  "role": "oracle",
+  "tool": "netarchtest",
+  "status": "ok",
+  "detail": "netarchtest tests passed",
+  "incumbent": {
+    "wall_seconds": 5.5,
+    "max_rss_kb": 148572,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

@@ -1,0 +1,14 @@
+{
+  "repo": "napari/napari",
+  "sha": "5ef58e212af1af11737bc005048cfd0fb7a1aefd",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "ok",
+  "detail": "import-linter contracts kept",
+  "incumbent": {
+    "wall_seconds": 0.27,
+    "max_rss_kb": 43536,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

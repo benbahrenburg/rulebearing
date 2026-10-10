@@ -1,0 +1,14 @@
+{
+  "repo": "sqlfluff/sqlfluff",
+  "sha": "0532c99e27811edb644f0afea13ade46182b72b2",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "ok",
+  "detail": "import-linter contracts kept",
+  "incumbent": {
+    "wall_seconds": 0.22,
+    "max_rss_kb": 40504,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

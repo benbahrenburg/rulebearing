@@ -1,0 +1,22 @@
+{
+  "repo": "ardalis/RiverBooks",
+  "sha": "0938f187f3963e225fa25e31bc10a5213932ddf4",
+  "as-written": {
+    "gate": 0,
+    "analyzer": 0,
+    "agreeing": 0,
+    "onlyGate": [],
+    "onlyAnalyzer": [],
+    "differences": 0
+  },
+  "negated": {
+    "gate": 0,
+    "analyzer": 0,
+    "agreeing": 0,
+    "onlyGate": [],
+    "onlyAnalyzer": [],
+    "differences": 0
+  },
+  "leftToCruise": [],
+  "agrees": true
+}

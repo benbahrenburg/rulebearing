@@ -1,0 +1,14 @@
+{
+  "repo": "wemake-services/wemake-python-styleguide",
+  "sha": "b4d0171879edc9a6a71a1506a2ee5554f634e0ea",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "ok",
+  "detail": "import-linter contracts kept",
+  "incumbent": {
+    "wall_seconds": 0.2,
+    "max_rss_kb": 33396,
+    "exit_code": 0
+  },
+  "rulebearing": null
+}

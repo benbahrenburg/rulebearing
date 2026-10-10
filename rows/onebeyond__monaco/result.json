@@ -1,0 +1,14 @@
+{
+  "repo": "onebeyond/monaco",
+  "sha": "5700abab4d735e7accdcd0d1fde823845e8c99c3",
+  "role": "oracle",
+  "tool": "archunitnet",
+  "status": "failed",
+  "detail": "archunitnet tests failed (exit 1)",
+  "incumbent": {
+    "wall_seconds": 1.95,
+    "max_rss_kb": 161108,
+    "exit_code": 1
+  },
+  "rulebearing": null
+}

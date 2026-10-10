@@ -1,0 +1,14 @@
+{
+  "repo": "TNG/ArchUnitNET",
+  "sha": "28b62ec0d98f9babb4ccdb6d8a1c3673a0497bcb",
+  "role": "oracle",
+  "tool": "archunitnet",
+  "status": "failed",
+  "detail": "archunitnet tests failed (exit 1)",
+  "incumbent": {
+    "wall_seconds": 24.53,
+    "max_rss_kb": 2152708,
+    "exit_code": 1
+  },
+  "rulebearing": null
+}

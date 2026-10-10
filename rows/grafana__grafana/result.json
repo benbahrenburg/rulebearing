@@ -1,0 +1,14 @@
+{
+  "repo": "grafana/grafana",
+  "sha": "423f85091b0a63a21fb571122a933133da1652cd",
+  "role": "scale",
+  "tool": "none",
+  "status": "ok",
+  "detail": "modules: javascript 52, typescript 2077, unknown 351",
+  "incumbent": null,
+  "rulebearing": {
+    "wall_seconds": 0.49,
+    "max_rss_kb": 186504,
+    "exit_code": 0
+  }
+}

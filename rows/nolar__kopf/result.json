@@ -1,0 +1,14 @@
+{
+  "repo": "nolar/kopf",
+  "sha": "e63c29c374cde63b6afa7378ae4486bb92062c0f",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "failed",
+  "detail": "import-linter reported broken contracts",
+  "incumbent": {
+    "wall_seconds": 0.12,
+    "max_rss_kb": 28632,
+    "exit_code": 1
+  },
+  "rulebearing": null
+}
