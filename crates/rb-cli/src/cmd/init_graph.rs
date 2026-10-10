@@ -2,7 +2,7 @@
 //! the built assemblies' namespaces (or, when no namespace names a layer, the project names), and
 //! Python rules from the top-level packages under each import root.
 //!
-//! - Plan: [Wave 2, Step 15](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-upstream-offers-second-maintainer-2i)
+//! - Plan: [Wave 2, Step 15](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-second-maintainer-2i)
 //!   ("a `.sln` / `.slnx` or `.csproj` selects `rulebearing:dotnet` and proposes rules from layered
 //!   namespaces (`Domain`, `Application`, `Infrastructure`, `Web` when present); a `pyproject.toml`
 //!   selects `rulebearing:python` and proposes rules from the top-level packages")

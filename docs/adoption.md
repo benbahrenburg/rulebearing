@@ -28,10 +28,6 @@ What the baseline can and cannot see:
 - **The private monorepo**, where dependency-cruiser runs today and the design's evidence comes from, is the baseline that matters most. Only the maintainer can run the script there, with `--gate` naming its current dependency-cruiser job.
 - **The Stop hook's p95** needs `--affected`, which is wave 3.
 
-## The upstream offer
+## No offers to other projects
 
-[NFR-ADOPT-02](prd.md#nfr-adopt-02) and the wave 1 exit criterion ask for the drop-in to be offered upstream to at least one oracle repository, as an issue first, with the zero-diff result attached, and withdrawn without argument if declined. The evidence it would attach: layer 5 on dependency-cruiser's own repository, langfuse and FluidFramework at their pinned commits, zero differences each, with exit codes equal ([conformance/divergences.md](../conformance/divergences.md) is empty). Opening that issue is the maintainer's decision and has not been made.
-
-| Date | Repository | Issue | Outcome |
-| --- | --- | --- | --- |
-| | | | |
+Rulebearing makes no unsolicited offer to another project: no issue or pull request proposing it is opened on a test bed or any other repository ([ADR-0065](adr/0065-no-unsolicited-offers-to-other-projects.md), [NFR-ADOPT-02](prd.md#nfr-adopt-02)). The evidence is published here instead. Layer 5 shows zero differences on dependency-cruiser's own repository, langfuse and FluidFramework at their pinned commits, with equal exit codes ([conformance/divergences.md](../conformance/divergences.md) lists no gate divergence). The agreement tables and the scale table are in the [README](../README.md).

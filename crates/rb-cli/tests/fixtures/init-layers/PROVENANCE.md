@@ -1,6 +1,6 @@
 # init-layers fixture
 
-A four-project clean-architecture solution written for `rulebearing init`'s .NET detector ([plan 0002, Step 15](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-upstream-offers-second-maintainer-2i)): `Shop.Domain`, `Shop.Application`, `Shop.Infrastructure` and `Shop.Web`, whose namespaces name the layers. `Shop.Application` uses `Shop.Infrastructure`'s `OrderStore` directly, the one finding `init` baselines. It is this repository's own code, under its MIT licence.
+A four-project clean-architecture solution written for `rulebearing init`'s .NET detector ([plan 0002, Step 15](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-second-maintainer-2i)): `Shop.Domain`, `Shop.Application`, `Shop.Infrastructure` and `Shop.Web`, whose namespaces name the layers. `Shop.Application` uses `Shop.Infrastructure`'s `OrderStore` directly, the one finding `init` baselines. It is this repository's own code, under its MIT licence.
 
 | Item | Value |
 | --- | --- |
