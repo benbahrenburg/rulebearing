@@ -1,0 +1,245 @@
+{
+  "modules": [
+    {
+      "source": "src/main.ts",
+      "dependencies": [
+        {
+          "module": "./order/order",
+          "resolved": "src/order/order.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "./user/user",
+          "resolved": "src/user/user.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 1,
+          "column": 40,
+          "dependencyKind": "import"
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true,
+      "language": "typescript"
+    },
+    {
+      "source": "src/order/discount.ts",
+      "dependencies": [
+        {
+          "module": "./order",
+          "resolved": "src/order/order.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-circular",
+              "severity": "error"
+            },
+            {
+              "name": "no-circular-via",
+              "severity": "error"
+            }
+          ],
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true,
+      "language": "typescript"
+    },
+    {
+      "source": "src/order/order.ts",
+      "dependencies": [
+        {
+          "module": "./pricing",
+          "resolved": "src/order/pricing.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-circular",
+              "severity": "error"
+            },
+            {
+              "name": "no-circular-via",
+              "severity": "error"
+            }
+          ],
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true,
+      "language": "typescript"
+    },
+    {
+      "source": "src/order/pricing.ts",
+      "dependencies": [
+        {
+          "module": "./discount",
+          "resolved": "src/order/discount.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-circular",
+              "severity": "error"
+            },
+            {
+              "name": "no-circular-via",
+              "severity": "error"
+            }
+          ],
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true,
+      "language": "typescript"
+    },
+    {
+      "source": "src/user/profile.ts",
+      "dependencies": [
+        {
+          "module": "./user",
+          "resolved": "src/user/user.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true,
+      "language": "typescript"
+    },
+    {
+      "source": "src/user/user.ts",
+      "dependencies": [
+        {
+          "module": "./profile",
+          "resolved": "src/user/profile.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-circular",
+              "severity": "error"
+            }
+          ],
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true,
+      "language": "typescript"
+    }
+  ],
+  "summary": {
+    "violations": [],
+    "error": 0,
+    "warn": 0,
+    "info": 0,
+    "ignore": 0,
+    "totalCruised": 6,
+    "totalDependenciesCruised": 7,
+    "optionsUsed": {}
+  }
+}

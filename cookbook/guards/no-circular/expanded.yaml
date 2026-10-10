@@ -1,0 +1,18 @@
+rules:
+  dependencies:
+    forbidden:
+    - name: no-circular
+      comment: A module on a cycle cannot be changed, tested or moved on its own. plan:0005-guard-catalogue
+      fix: 'Break the cycle: move the shared code into a module both sides import, or invert one edge behind an interface. Type-only imports do not count.'
+      severity: error
+      from: {}
+      to:
+        circular: true
+        viaOnly:
+          dependencyTypesNot:
+          - type-only
+      examples:
+        forbidden:
+        - src/order/order.ts -> src/order/order.ts
+        allowed:
+        - src/main.ts -> src/order/order.ts

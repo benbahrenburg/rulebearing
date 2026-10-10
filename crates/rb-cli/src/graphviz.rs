@@ -198,21 +198,16 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn spawn_errors_are_named_as_node_names_them() -> Result<(), Box<dyn std::error::Error>> {
-        use std::os::unix::fs::PermissionsExt as _;
         let dir = std::env::temp_dir().join(format!("rb-cli-fake-dot-{}", std::process::id()));
         std::fs::create_dir_all(&dir)?;
         // A dot that exits at once without reading its input: writing a program larger than a
-        // pipe holds meets a closed pipe.
-        let early = dir.join("dot");
-        std::fs::write(&early, "#!/bin/sh\nexit 3\n")?;
-        std::fs::set_permissions(&early, std::fs::Permissions::from_mode(0o755))?;
+        // pipe holds meets a closed pipe. The shell stands in for it rather than a script written
+        // here, which Linux can refuse to run with ETXTBSY while another test's forked child still
+        // holds the script open for writing.
         let program = "digraph {}\n".repeat(200_000);
-        let spawned = spawn_sync(&early.to_string_lossy(), &["-Tsvg"], Some(&program));
-        assert_eq!(spawned.status, Some(3));
-        assert_eq!(
-            spawned.error,
-            Some(format!("spawnSync {} EPIPE", early.display()))
-        );
+        let spawned = spawn_sync("/bin/sh", &["-c", "exit 3"], Some(&program));
+        assert_eq!(spawned.status, Some(3), "{spawned:?}");
+        assert_eq!(spawned.error.as_deref(), Some("spawnSync /bin/sh EPIPE"));
         let missing = spawn_sync("rulebearing-no-such-program", &["-V"], None);
         assert_eq!(
             missing.error.as_deref(),
