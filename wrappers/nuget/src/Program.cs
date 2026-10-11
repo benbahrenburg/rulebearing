@@ -1,5 +1,5 @@
 // The `rulebearing` command of the dotnet tool: runs the packaged binary for this machine
-// (src/Launcher.cs; docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14).
+// (src/Launcher.cs; docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14).
 
 using System.Runtime.InteropServices;
 

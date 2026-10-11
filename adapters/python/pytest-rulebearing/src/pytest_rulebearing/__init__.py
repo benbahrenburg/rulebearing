@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT License.
 """pytest-rulebearing: each Rulebearing architecture rule as a test in the pytest run.
 
-- Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
+- Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
 - Coverage: docs/artifacts/archunitnet-0.13.4-coverage.md § Test framework adapters.
 - Requirement: FR-DIST-03 (docs/prd.md).
 

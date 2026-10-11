@@ -1,6 +1,6 @@
 // The launcher: which binary it picks, what it says when there is none, and that it runs the
 // binary with the arguments unchanged and passes the exit code through
-// (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14).
+// (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14).
 
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;

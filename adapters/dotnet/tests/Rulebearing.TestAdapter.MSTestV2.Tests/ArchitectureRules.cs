@@ -1,6 +1,6 @@
 // The fixture repository as an MSTest V2 user writes it: one data row per rule. The failing rule
 // is expected to fail, so the test asserts its message instead of letting it fail the suite
-// (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14).
+// (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14).
 
 using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;

@@ -50,7 +50,7 @@ NetArchTest cases are written by `conformance/netarchtest/tools/Port`, which run
 
 ## A second maintainer
 
-The project has one maintainer, and a second is the goal by the end of wave 2 ([design § Open questions](docs/artifacts/design.md#open-questions)). The criterion is fixed in advance ([plan 0002 § 1.7](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#17-decisions-this-wave-must-make), "Second maintainer"):
+The project has one maintainer, and a second is the goal by the end of wave 2 ([design § Open questions](docs/artifacts/design.md#open-questions)). The criterion is fixed in advance ([plan 0002 § 1.7](docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#17-decisions-this-wave-must-make), "Second maintainer"):
 
 | Criterion | What counts |
 | --- | --- |

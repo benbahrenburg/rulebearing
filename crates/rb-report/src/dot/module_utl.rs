@@ -7,7 +7,7 @@
 //!   ([ADR-0009](../../../../docs/adr/0009-conformance-suites-as-specification.md))
 //! - Coverage: [coverage § Output types](../../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types),
 //!   row `dot`, `ddot`, `cdot` / `archi`, `fdot` / `flat`
-//! - Plan: [Wave 2, Step 10](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //! - Requirement: [FR-OUT-01](../../../../docs/prd.md#fr-out-01)
 //!
 //! Each step takes a module as JSON and returns it with keys added, as upstream's object spreads

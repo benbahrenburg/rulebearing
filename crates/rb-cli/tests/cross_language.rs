@@ -2,7 +2,7 @@
 //! facts reaching the rules, the refusal of the keys in a dependency-cruiser configuration, and
 //! the `type-only` warning on a .NET rule.
 //!
-//! - Plan: [Wave 2, Step 8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)
+//! - Plan: [Wave 2, Step 8](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)
 //!   ("the exit 3 test for a dependency-cruiser-format config carrying `namespace`; the
 //!   `type-only` warning test")
 //! - Source: [design § Dependency rules](../../../docs/artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820)

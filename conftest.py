@@ -3,7 +3,7 @@
 
 One file at the root rather than one per package: ``mypy .`` checks the whole tree and would report
 two ``conftest`` modules as a duplicate. Plan:
-docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
+docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
 //! Attribute-argument tests over an attribute whose arguments the .NET extractor could not
 //! decode (`argumentsUnknown`): the test is refused, never answered true or false.
 //!
-//! - Plan: [Wave 2, Step 5](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
+//! - Plan: [Wave 2, Step 5](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
 //! - Decision: [ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md) (no silent
 //!   false for a question the document cannot answer)
 //! - Requirement: [FR-RULE-03](../../../docs/prd.md#fr-rule-03)

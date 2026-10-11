@@ -1,6 +1,6 @@
 // The binary the agreement tests run: RULEBEARING_BINARY when set (CI builds it first), else a
 // debug build of rb-cli, built here with cargo when it is missing or stale.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 13.
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 13.
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';

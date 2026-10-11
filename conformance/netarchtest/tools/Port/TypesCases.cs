@@ -1,7 +1,7 @@
 // NetArchTest 1.3.2 test/NetArchTest.Rules.UnitTests/{TypesTests,PolicyDefinitionTests}.cs: the
 // tests that assert over the test structure become cases, the ones that assert NetArchTest's own
 // loading and policy API are unported with the reason, and Gaps holds the vocabulary-gap texts.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7.
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7.
 // The chains are upstream's C#, which is not nullable-annotated (Assembly.GetAssembly returns a
 // nullable reference), so nullable analysis is off for this transcription only.
 #nullable disable

@@ -4,7 +4,7 @@
 - **Date:** 2026-09-24
 - **Derives from:** [ADR-0015](0015-stable-violation-id.md) (the stable violation id), [ADR-0031](0031-a-saved-result-carries-what-the-exit-code-counts.md) (`summary.expired[]`), [ADR-0009](0009-conformance-suites-as-specification.md)
 - **Constrains:** `crates/rb-cli/src/cmd/baseline.rs`, `crates/rb-rules/src/known.rs`, `crates/rb-report/src/baseline.rs`
-- **Implemented by:** [Wave 2 plan](../plans/pending/0002-wave-2-dotnet-python-element-rules.md), [Step 10](../plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+- **Implemented by:** [Wave 2 plan](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md), [Step 10](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 - **Requirements:** [FR-RULE-09](../prd.md#fr-rule-09)
 
 ## Context

@@ -4,7 +4,7 @@
 # moved to docs/plans/implemented/ no entry may still be `not-yet`. Every other reason is
 # custom-predicate or one argued in review.
 #
-# Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7 (the `gate2-ratchet`
+# Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7 (the `gate2-ratchet`
 # check). Decision: docs/adr/0009-conformance-suites-as-specification.md.
 # Usage: scripts/gate2-ratchet.sh [base-ref]   (default: origin/$GITHUB_BASE_REF, else origin/main)
 #

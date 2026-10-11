@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Stages the rulebearing binaries under runtimes/<rid>/native/ and packs the `Rulebearing` dotnet
 # tool at one version (docs/release.md; docs/adr/0020-single-name-across-registries.md).
-# Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
+# Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
 #
 # Usage:
 #   wrappers/nuget/pack.sh <dist-dir> <version> <out-dir>

@@ -1,5 +1,5 @@
 # import-linter's own .importlinter contracts, translated by hand before `rulebearing import
-# import-linter` existed (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11),
+# import-linter` existed (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 11),
 # and kept as the reference crates/rb-cli/tests/import.rs holds the importer's output to. `layers` (containers: importlinter, exhaustive): each lower layer may not reach a higher
 # one, directly or through other modules, as import-linter checks chains. `acyclic_siblings`
 # (ancestors: importlinter): under each package, its children, each with everything below it, may

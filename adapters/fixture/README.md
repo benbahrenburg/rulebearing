@@ -1,6 +1,6 @@
 # adapters/fixture
 
-The one repository every test adapter runs against, so the Python and TypeScript adapters prove the same thing: that the failure message of each rule is the `junit` reporter's message for that rule ([crates/rb-report/src/junit.rs](../../crates/rb-report/src/junit.rs), [Wave 2 plan § 1.5](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes), [Step 14](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h)).
+The one repository every test adapter runs against, so the Python and TypeScript adapters prove the same thing: that the failure message of each rule is the `junit` reporter's message for that rule ([crates/rb-report/src/junit.rs](../../crates/rb-report/src/junit.rs), [Wave 2 plan § 1.5](../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes), [Step 14](../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h)).
 
 The Python files under `py/` are extractor input, not code: they exist to produce edges and one badly named class, and are excluded from `ruff` and `mypy` in the root [pyproject.toml](../../pyproject.toml).
 

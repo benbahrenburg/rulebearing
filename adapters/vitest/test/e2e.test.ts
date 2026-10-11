@@ -1,7 +1,7 @@
 // End to end: a real vitest run over a test file that calls defineArchitectureTests, with
 // RulebearingReporter beside vitest's JSON reporter. Each rule is a vitest test whose failure
 // message is the junit message; the reporter prints its block on standard error.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

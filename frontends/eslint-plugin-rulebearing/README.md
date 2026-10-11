@@ -1,6 +1,6 @@
 # eslint-plugin-rulebearing
 
-One ESLint rule, `rulebearing/boundaries`, that reports an import the rulebearing gate would fail, at the import, with the rule's name, its `fix` and the violation id. Agents run ESLint on every edit, so a boundary violation is fixed before the cruise runs ([design § Two front-ends that will matter more than the MCP server](../../docs/artifacts/design.md#two-front-ends-that-will-matter-more-than-the-mcp-server), [ADR-0021](../../docs/adr/0021-agent-surface-cli-first.md), [FR-DIST-04](../../docs/prd.md#fr-dist-04), [plan 0002, Step 13](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)).
+One ESLint rule, `rulebearing/boundaries`, that reports an import the rulebearing gate would fail, at the import, with the rule's name, its `fix` and the violation id. Agents run ESLint on every edit, so a boundary violation is fixed before the cruise runs ([design § Two front-ends that will matter more than the MCP server](../../docs/artifacts/design.md#two-front-ends-that-will-matter-more-than-the-mcp-server), [ADR-0021](../../docs/adr/0021-agent-surface-cli-first.md), [FR-DIST-04](../../docs/prd.md#fr-dist-04), [plan 0002, Step 13](../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)).
 
 ```sh
 npm install --save-dev eslint-plugin-rulebearing

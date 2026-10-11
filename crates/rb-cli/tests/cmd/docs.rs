@@ -1,6 +1,6 @@
 //! `docs --format agents-md | contributing | skill`, `--out`, `--verify`.
 //!
-//! - Plan: [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
+//! - Plan: [Wave 2, Step 12](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //! - Source: [design § Docs derived from the rules](../../../../docs/artifacts/design.md#docs-derived-from-the-rules-never-written-beside-them)
 
 use crate::common::{Result, clean, code, read, run, stderr, stdout, tree, write};

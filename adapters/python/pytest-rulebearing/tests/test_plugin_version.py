@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT License.
 """The plugin's metadata hook: the release version, and ``rulebearing`` pinned to exactly it.
 
-Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
+Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
 Decision: docs/adr/0020-single-name-across-registries.md (one version on every registry).
 """
 

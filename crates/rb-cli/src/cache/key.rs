@@ -1,7 +1,7 @@
 //! The cache key: which worktree, at which commit, under which configuration, with which edits,
 //! read by which build.
 //!
-//! - Plan: [Wave 2, Step 13](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)
+//! - Plan: [Wave 2, Step 13](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)
 //!   (`cache/<sha256(worktree root, HEAD, config hash)[..16]>/`)
 //! - Source: [design § The agentic engineering hat](../../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two)
 //!   ("parallel agents in separate worktrees do not invalidate each other's caches or share

@@ -4,7 +4,7 @@
 - **Date:** 2026-09-24
 - **Derives from:** [design § Why](../artifacts/design.md#why) ("superset, precisely; nothing is dropped"), [ADR-0009](0009-conformance-suites-as-specification.md) (the upstream suites are the specification), [ADR-0032](0032-liveness-follows-the-configuration-format.md) (a behaviour that would break a drop-in follows the configuration's format)
 - **Constrains:** `crates/rb-extract-ts` (`md.rs`, `Settings::markdown_fences`), `crates/rb-cli` (which configurations turn it on)
-- **Implemented by:** [Wave 2 plan, Step 9](../plans/pending/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
+- **Implemented by:** [Wave 2 plan, Step 9](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
 - **Requirements:** [FR-EXT-TS-04](../prd.md#fr-ext-ts-04)
 
 ## Context

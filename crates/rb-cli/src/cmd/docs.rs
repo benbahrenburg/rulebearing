@@ -2,7 +2,7 @@
 //! documentation an agent or a contributor reads, rendered from the rules so it cannot drift.
 //!
 //! - Source: [design § Docs derived from the rules, never written beside them](../../../../docs/artifacts/design.md#docs-derived-from-the-rules-never-written-beside-them)
-//! - Plan: [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
+//! - Plan: [Wave 2, Step 12](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //! - Decision: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md) decision 2
 //! - Coverage: [`ArchUnitNET` coverage tab](../../../../docs/artifacts/archunitnet-0.13.4-coverage.md)
 //!   (the "Stays" note: both rule styles are taught when both exist)
@@ -418,7 +418,7 @@ const fn value_words(kind: ValueKind) -> &'static str {
 /// The element-rule reference: one row per concept of the vocabulary, with its spellings on each
 /// side, the value it takes and how each language answers it. It depends on this build only, so
 /// `--verify` in CI holds the committed file to the code
-/// ([plan 0002, section 2.16](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#216-documentation-to-update)).
+/// ([plan 0002, section 2.16](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#216-documentation-to-update)).
 pub fn reference() -> String {
     let mut keys: Vec<(Concept, Side, String)> = Vec::new();
     for side in [Side::Where, Side::Should] {

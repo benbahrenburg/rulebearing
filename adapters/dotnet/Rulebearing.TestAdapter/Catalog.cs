@@ -6,7 +6,7 @@
 // `unnamed`), so each rule has an Id, the test's name (`unnamed`, `unnamed#2`, ...), and each
 // violation goes to one rule of its name, exactly as catalog.rs's `identify` and `rule_index` do.
 //
-// Contract: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, section 1.5 (the test
+// Contract: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, section 1.5 (the test
 // adapters' message is the junit text). Proof: tests/Rulebearing.TestAdapter.Tests/JunitEqualityTests.cs
 // compares every message with `rulebearing cruise -T junit` over the same inputs.
 

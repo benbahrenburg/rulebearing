@@ -1,7 +1,7 @@
 //! The .NET code layer: types, members, attributes and calls with every property the element
 //! predicates read, and each type's and member's dependencies, as `ArchUnitNET` builds them.
 //!
-//! - Plan: [Wave 2, Step 3](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#23-step-3-attribution-edge-projection-the-net-code-layer-and-defaults-2a)
+//! - Plan: [Wave 2, Step 3](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#23-step-3-attribution-edge-projection-the-net-code-layer-and-defaults-2a)
 //!   (`codelayer.rs`), § 1.4.2 (the edge set), § 1.7 (`record` and `immutable` follow
 //!   `ArchUnitNET` 0.13.4's own detection)
 //! - Requirement: [FR-EXT-DN-03](../../../docs/prd.md#fr-ext-dn-03)

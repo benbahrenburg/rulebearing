@@ -1,7 +1,7 @@
 //! Single-file components: the `<script>` blocks of `.vue` and `.svelte` files, split out for
 //! `oxc` with every byte offset kept.
 //!
-//! - Plan: [Wave 2, Step 9](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
+//! - Plan: [Wave 2, Step 9](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
 //!   (`sfc.rs`: "split `.vue` and `.svelte` files to their `<script>` and `<script setup>` /
 //!   `<script context="module">` blocks, offset line and column so findings point into the
 //!   original file, and hand the text to `oxc` with the `lang` attribute selecting TS or JS")

@@ -1,6 +1,6 @@
 // RulebearingReporter: the architecture rules of a vitest run, as one block an agent can act on.
 //
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
 // Source: design § Hooks, test runners, an MCP server, an LSP (docs/artifacts/design.md): "an agent
 // already knows how to read a failing test". Requirement: FR-DIST-03.
 //

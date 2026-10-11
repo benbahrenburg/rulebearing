@@ -1,8 +1,8 @@
 //! The fixture package against its committed expectation, byte for byte.
 //!
-//! - Plan: [Wave 2, Step 4](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#24-step-4-the-python-extractor-2b)
+//! - Plan: [Wave 2, Step 4](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#24-step-4-the-python-extractor-2b)
 //!   (the fixture package, the expectation JSON, the byte-identity repeated run)
-//! - Quality attribute: [plan § 1.8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#18-quality-attributes)
+//! - Quality attribute: [plan § 1.8](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#18-quality-attributes)
 //!   (reliability: a repeated-run byte-identity test per extractor; observability: the receipt)
 //!
 //! `tests/fixtures/pkg/` is a `src/` layout project: absolute and relative imports, `__all__`,

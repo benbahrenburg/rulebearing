@@ -4,7 +4,7 @@
 - **Date:** 2026-09-24
 - **Derives from:** [ADR-0019](0019-mit-licence.md) (licence policy), [ADR-0013](0013-ruff-parser-for-python.md) (`ruff_python_parser` for Python), [ADR-0025](0025-ci-and-supply-chain-hardening.md) (`cargo deny` gates the supply chain), [ADR-0026](0026-bsl-exception-for-dragonbox.md) (the precedent for a crate-scoped exception)
 - **Constrains:** `deny.toml`
-- **Implemented by:** [Wave 2 plan](../plans/pending/0002-wave-2-dotnet-python-element-rules.md), [sub-wave 2B](../plans/pending/0002-wave-2-dotnet-python-element-rules.md#wave-2b-rb-extract-python)
+- **Implemented by:** [Wave 2 plan](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md), [sub-wave 2B](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md#wave-2b-rb-extract-python)
 - **Requirements:** [FR-EXT-PY-01](../prd.md#fr-ext-py-01)
 
 ## Context

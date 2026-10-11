@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT licence: see LICENSE.
 """import-linter's verdict on each contract, and grimp's import graph, as JSON.
 
-Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11 (the oracle
+Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 11 (the oracle
 harness) and section 1.4.5. Requirement: docs/prd.md#nfr-conf-03. Run by
 testbeds/oracles/python.sh with the virtual environment's interpreter, in the folder that holds
 the settings, with the repository's roots on PYTHONPATH.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Shared by testbeds/oracles/python.sh and dotnet.sh: a manifest row's fields and its clone.
 #
-# Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11 (the oracle
+# Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 11 (the oracle
 # harness). Requirement: docs/prd.md#nfr-conf-03. Sourced, not run.
 
 # oracle_field <manifest> <owner/repo> <field>: the field's value, a list joined with commas, empty

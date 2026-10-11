@@ -2,7 +2,7 @@
 # Builds the PyPI packages of one release from the archives release.yml builds: one `rulebearing`
 # wheel per release target (wrappers/pip/hatch_build.py bundles the binary and tags the wheel) and
 # the `pytest-rulebearing` wheel, all at the release version.
-# Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
+# Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
 # Procedure: docs/release.md. Decision: docs/adr/0020-single-name-across-registries.md.
 #
 # Usage: wrappers/pip/scripts/build-wheels.sh <dist-dir> <version> <out-dir> [--partial]

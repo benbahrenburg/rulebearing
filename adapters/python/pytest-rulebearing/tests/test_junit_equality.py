@@ -4,7 +4,7 @@
 On the shared fixture (adapters/fixture), ``rulebearing cruise -T junit`` writes one test case
 per rule. For each, the ``message`` attribute of its ``<failure>`` and then of each ``<error>``,
 joined by newlines, must equal the failure text pytest reports for that rule's item; a case with
-neither must pass. Contract: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 1.5;
+neither must pass. Contract: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 1.5;
 Step 14 (2H); ADR-0007 for the vacuous rule.
 """
 

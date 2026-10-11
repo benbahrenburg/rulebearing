@@ -2,7 +2,7 @@
 //! into violations beside the dependency rules'.
 //!
 //! - Architecture: [The rule engine](../../../docs/architecture.md#the-rule-engine)
-//! - Plan: [Wave 2, Steps 5 and 6](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
+//! - Plan: [Wave 2, Steps 5 and 6](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
 //! - Decisions: [ADR-0015](../../../docs/adr/0015-stable-violation-id.md) (the id hashes the
 //!   rule, the object's file, the object and the condition key),
 //!   [ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md) (an empty selection is
@@ -149,7 +149,7 @@ fn used(
 /// The additive `summary.ruleSetUsed` keys `elements`, `slices` and `diagrams`, each present
 /// only when the configuration has such rules, so the `junit`, `trx` and `sarif` reporters and
 /// the test adapters list every rule
-/// ([Wave 2 plan § 1.5](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes),
+/// ([Wave 2 plan § 1.5](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes),
 /// the test adapter contract). `--strict-schema` removes them with the other additions.
 pub fn rule_set_used(rules: &rb_config::model::Rules) -> serde_json::Map<String, Value> {
     let mut out = serde_json::Map::new();

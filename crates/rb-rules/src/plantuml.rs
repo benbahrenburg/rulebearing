@@ -3,7 +3,7 @@
 //!
 //! - Source: [design § Diagram rules](../../../docs/artifacts/design.md#diagram-rules)
 //! - Coverage: [`ArchUnitNET` § `PlantUML`](../../../docs/artifacts/archunitnet-0.13.4-coverage.md#plantuml)
-//! - Plan: [Wave 2, Step 6](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#26-step-6-slice-and-diagram-rules-2c)
+//! - Plan: [Wave 2, Step 6](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#26-step-6-slice-and-diagram-rules-2c)
 //! - Decision: [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md) (the
 //!   upstream suite is the specification; the ported cases are in
 //!   `conformance/archunitnet/ported/PlantUml*.yaml`)

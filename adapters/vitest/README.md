@@ -23,7 +23,7 @@ export default defineConfig({ test: { reporters: ['default', new RulebearingRepo
 
 ## What it does
 
-`defineArchitectureTests(options)` runs `rulebearing cruise --output-type json` once, while vitest collects the file, and registers a `describe('rulebearing')` with one `test` per rule, in the order the `junit` reporter lists them. It never evaluates a rule ([ADR-0010](../../docs/adr/0010-crate-layout-and-extractor-boundary.md) rule 4). A failing rule throws `ArchitectureRuleError`, whose message is exactly the `junit` reporter's message for that rule ([crates/rb-report/src/junit.rs](../../crates/rb-report/src/junit.rs), [Wave 2 plan § 1.5](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)): the `fix`, the first five violations with id, from, to, line and column, then `... and N more`. A vacuous rule fails with the liveness reason ([ADR-0007](../../docs/adr/0007-vacuous-rules-fail-by-default.md)); warn, info and known findings pass and ride along as metadata. A run that writes no result registers one failing test, `cruise`, with the command, its exit code and its stderr.
+`defineArchitectureTests(options)` runs `rulebearing cruise --output-type json` once, while vitest collects the file, and registers a `describe('rulebearing')` with one `test` per rule, in the order the `junit` reporter lists them. It never evaluates a rule ([ADR-0010](../../docs/adr/0010-crate-layout-and-extractor-boundary.md) rule 4). A failing rule throws `ArchitectureRuleError`, whose message is exactly the `junit` reporter's message for that rule ([crates/rb-report/src/junit.rs](../../crates/rb-report/src/junit.rs), [Wave 2 plan § 1.5](../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)): the `fix`, the first five violations with id, from, to, line and column, then `... and N more`. A vacuous rule fails with the liveness reason ([ADR-0007](../../docs/adr/0007-vacuous-rules-fail-by-default.md)); warn, info and known findings pass and ride along as metadata. A run that writes no result registers one failing test, `cruise`, with the command, its exit code and its stderr.
 
 | Option | Meaning |
 | --- | --- |
@@ -46,4 +46,4 @@ npm ci                                           # at the repository root
 (cd adapters/vitest && npm test)                 # vitest run --coverage
 ```
 
-Plan: [Wave 2, Step 14](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h). Release: [docs/release.md](../../docs/release.md).
+Plan: [Wave 2, Step 14](../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h). Release: [docs/release.md](../../docs/release.md).

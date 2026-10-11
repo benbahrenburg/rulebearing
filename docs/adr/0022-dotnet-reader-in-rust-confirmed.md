@@ -4,7 +4,7 @@
 - **Date:** 2026-09-22
 - **Supersedes:** the "otherwise" branch of [ADR-0003](0003-dotnet-extractor-fallback.md)
 - **Derives from:** [ADR-0003](0003-dotnet-extractor-fallback.md) (the trigger), [wave 0 plan § 1.6](../plans/pending/0000-wave-0-spike.md#16-decisions-applied-and-decisions-to-make) (the denominator rule, fixed before measuring), [design § The fallback, decided now rather than under pressure](../artifacts/design.md#the-fallback-decided-now-rather-than-under-pressure)
-- **Constrains:** `rb-extract-dotnet`, [Wave 2 plan](../plans/pending/0002-wave-2-dotnet-python-element-rules.md) (its .NET sub-waves stay on the Rust reader)
+- **Constrains:** `rb-extract-dotnet`, [Wave 2 plan](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md) (its .NET sub-waves stay on the Rust reader)
 - **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md), sub-waves 0D and 0E
 - **Requirements:** [FR-EXT-DN-02](../prd.md#fr-ext-dn-02)
 

@@ -4,7 +4,7 @@
 - Architecture: docs/architecture.md#distribution.
 - Decisions: docs/adr/0020-single-name-across-registries.md (one name on every registry),
   docs/adr/0008-exit-code-contract.md (2 when no binary can be found or started).
-- Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
+- Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
 - Requirement: FR-DIST-01 (docs/prd.md).
 
 The wheel for each platform carries the binary at ``rulebearing/bin/rulebearing`` (``.exe`` on

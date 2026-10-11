@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- A second project for the extraction fixture: project references, `project` dependency types
-       and includeDependencies (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Steps 1 and 3). -->
+       and includeDependencies (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Steps 1 and 3). -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>disable</Nullable>

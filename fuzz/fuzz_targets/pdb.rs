@@ -1,7 +1,7 @@
 //! Fuzzes the portable PDB reader: documents, every method's sequence points, the type documents
 //! record and SourceLink. Arbitrary bytes must produce an error, never a panic.
 //!
-//! - Plan: [Wave 2, Step 2](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
+//! - Plan: [Wave 2, Step 2](../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
 //!   (`fuzz/fuzz_targets/pdb.rs`, run nightly)
 //! - Architecture: [Security posture](../../docs/architecture.md#security-posture)
 //! - Requirement: [NFR-SEC-01](../../docs/prd.md#nfr-sec-01)

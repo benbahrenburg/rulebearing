@@ -1,6 +1,6 @@
 # ArchUnitNET PlantUML diagrams
 
-The `.puml` files the hand-ported PlantUML cases of conformance gate 2 read, through `adhereTo` in `family: diagram` cases and `file:` in `family: plantuml` cases ([plan 0002, Step 6](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#26-step-6-slice-and-diagram-rules-2c), [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md)). The engine that reads them is `crates/rb-rules/src/plantuml.rs`; the cases are `../ported/PlantUml*.yaml`.
+The `.puml` files the hand-ported PlantUML cases of conformance gate 2 read, through `adhereTo` in `family: diagram` cases and `file:` in `family: plantuml` cases ([plan 0002, Step 6](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#26-step-6-slice-and-diagram-rules-2c), [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md)). The engine that reads them is `crates/rb-rules/src/plantuml.rs`; the cases are `../ported/PlantUml*.yaml`.
 
 | File | Provenance |
 | --- | --- |

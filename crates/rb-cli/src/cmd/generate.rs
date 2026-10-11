@@ -3,7 +3,7 @@
 //!
 //! - Source: [design § The agentic engineering hat](../../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two)
 //!   ("an agent that proposes a rule gets its fixtures for free and the rule ships with proof")
-//! - Plan: [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
+//! - Plan: [Wave 2, Step 12](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //!   (a bounded sample of each; refuses to overwrite non-empty examples without `--force`)
 //! - Decision: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md) decision 2
 //! - Requirement: [FR-CLI-01](../../../../docs/prd.md#fr-cli-01) (`test --generate`)

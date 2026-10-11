@@ -7,7 +7,7 @@
 //! - Decisions: [ADR-0005](../../../docs/adr/0005-native-config-superset-and-compat.md) (keys are
 //!   `ArchUnitNET`'s method names in camelCase, nothing renamed),
 //!   [ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md) (`allowEmpty`)
-//! - Plan: [Wave 2, Steps 5 and 6](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
+//! - Plan: [Wave 2, Steps 5 and 6](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
 //! - Requirements: [FR-RULE-03](../../../docs/prd.md#fr-rule-03), [FR-RULE-04](../../../docs/prd.md#fr-rule-04),
 //!   [FR-RULE-05](../../../docs/prd.md#fr-rule-05)
 //!

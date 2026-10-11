@@ -2,7 +2,7 @@
 """The metadata hook of ``pytest-rulebearing``: the release version, ``rulebearing`` pinned to it.
 
 - Decision: docs/adr/0020-single-name-across-registries.md (one version on every registry).
-- Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
+- Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
 - Procedure: docs/release.md.
 
 The plugin runs the binary the ``rulebearing`` wheel carries, so it depends on exactly the

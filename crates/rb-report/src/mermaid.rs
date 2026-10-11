@@ -6,7 +6,7 @@
 //! - Coverage: [coverage § Output types](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types),
 //!   row `mermaid`, `d2`; [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),
 //!   row `reporterOptions.mermaid.minify`
-//! - Plan: [Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
 //!
 //! `minify` (the default) names nodes by a base-36 counter in first-seen order; otherwise each

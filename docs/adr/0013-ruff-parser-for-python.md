@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § The five stages](../artifacts/design.md#the-five-stages) (stage 2), [§ What each extractor has to get right](../artifacts/design.md#what-each-extractor-has-to-get-right) (Python), [§ What stays honest across the boundary](../artifacts/design.md#what-stays-honest-across-the-boundary), [§ import-linter contracts](../artifacts/design.md#import-linter-contracts-for-the-python-teams-who-know-them)
 - **Constrains:** [architecture.md § Extractors](../architecture.md#extractors)
-- **Implemented by:** [Wave 2 plan](../plans/pending/0002-wave-2-dotnet-python-element-rules.md)
+- **Implemented by:** [Wave 2 plan](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md)
 
 ## Context
 

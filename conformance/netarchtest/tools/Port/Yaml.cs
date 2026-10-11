@@ -1,6 +1,6 @@
 // A small YAML writer for the ported case files: block mappings, flow lists of scalars, and every
 // string that is not a plain identifier written as a JSON (and so YAML) double-quoted scalar.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7.
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7.
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;

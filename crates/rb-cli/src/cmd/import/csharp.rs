@@ -2,9 +2,9 @@
 //! using directives, the namespaces, the type declarations with their fields, properties and
 //! constructor assignments, and every method's statements as a small expression tree.
 //!
-//! - Plan: [Wave 2, § 1.7](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#17-decisions-this-wave-must-make)
+//! - Plan: [Wave 2, § 1.7](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#17-decisions-this-wave-must-make)
 //!   ("How `import archunit` reads C#": `tree-sitter-c-sharp`, the wave 3 `--mode source` parser),
-//!   [Step 11](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
+//!   [Step 11](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
 //! - Source: [architecture § Technology choices](../../../../../docs/architecture.md#technology-choices)
 //! - Requirement: [FR-CLI-04](../../../../../docs/prd.md#fr-cli-04)
 //!

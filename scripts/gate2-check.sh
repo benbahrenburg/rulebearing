@@ -4,7 +4,7 @@
 # counts the cases in ported/*.yaml (all three written by conformance/archunitnet/tools/port.py).
 #
 # Plans: docs/plans/pending/0000-wave-0-spike.md, Step 6 item 3 (the `conformance-gate-2` job);
-# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7 (the TestAssemblies and
+# docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7 (the TestAssemblies and
 # the ported cases).
 # Decisions: docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0019-mit-licence.md.
 # The reader's own end-to-end test over the fixture is crates/rb-extract-dotnet/tests/test_assembly.rs.

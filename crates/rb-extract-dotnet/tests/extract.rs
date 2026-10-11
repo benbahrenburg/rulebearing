@@ -1,7 +1,7 @@
 //! The extractor end to end: both layers over two committed assemblies, compared with reviewed
 //! expectations, and the attribution, determinism and failure cases.
 //!
-//! - Plan: [Wave 2, Step 3](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#23-step-3-attribution-edge-projection-the-net-code-layer-and-defaults-2a)
+//! - Plan: [Wave 2, Step 3](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#23-step-3-attribution-edge-projection-the-net-code-layer-and-defaults-2a)
 //!   ("`tests/extract.rs` runs the extractor over the fixture assembly and compares the module
 //!   layer and the code layer against a committed JSON expectation"; the partial-class, no-PDB
 //!   and repeated-run cases)

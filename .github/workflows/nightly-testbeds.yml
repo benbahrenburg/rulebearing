@@ -140,7 +140,7 @@ jobs:
           path: testbeds/out
           if-no-files-found: error
 
-  # The greenfield init proof (design § Test beds, item 2; docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md,
+  # The greenfield init proof (design § Test beds, item 2; docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md,
   # Step 15). Each row is built with its manifest `build` command, its init fixture regenerated and
   # compared with testbeds/init/<owner>__<name>/rulebearing.yaml, and init's full proposal cruised
   # back (testbeds/greenfield.sh). The job fails when the proof does: the fixture changed, or the
@@ -356,7 +356,7 @@ jobs:
           path: target/conformance/layer5
           if-no-files-found: ignore
 
-  # The oracle harness (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11 and
+  # The oracle harness (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 11 and
   # § 1.4.5): each .NET and Python oracle's own tests or contracts against the same rules imported
   # into Rulebearing. TNG/ArchUnitNET and BenMorris/NetArchTest are conformance gate 2's suites,
   # compared case by case in ci.yml, so they are not oracle rows here.

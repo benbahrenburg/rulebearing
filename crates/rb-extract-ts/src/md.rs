@@ -1,7 +1,7 @@
 //! Markdown: the JavaScript and TypeScript code fences of a `.md` file, when
 //! `extraExtensionsToScan` lists `.md`.
 //!
-//! - Plan: [Wave 2, Step 9](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
+//! - Plan: [Wave 2, Step 9](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
 //!   (`md.rs`: "when `extraExtensionsToScan` includes `.md`, extract fenced blocks tagged `js`,
 //!   `ts`, `jsx`, `tsx`, `javascript`, `typescript`, with the same offsetting")
 //! - Source: [coverage § Extraction and resolution](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution),

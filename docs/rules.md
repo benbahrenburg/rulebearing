@@ -37,7 +37,7 @@ The `metrics` reporter lists projects as rows of type `project`; `reporterOption
 
 ## Element, slice and diagram rules
 
-Native configurations have three more families under `rules`, which carry ArchUnitNET's vocabulary to every language ([plan 0002, Steps 5 and 6](plans/pending/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)). Gate 2 holds them to ArchUnitNET's and NetArchTest's own tests ([conformance/README.md](../conformance/README.md)).
+Native configurations have three more families under `rules`, which carry ArchUnitNET's vocabulary to every language ([plan 0002, Steps 5 and 6](plans/implemented/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)). Gate 2 holds them to ArchUnitNET's and NetArchTest's own tests ([conformance/README.md](../conformance/README.md)).
 
 ```yaml
 rules:
@@ -67,7 +67,7 @@ rules:
 
 ## Keys across languages
 
-A native dependency rule may also narrow `from` and `to` by `language`, `namespace` / `namespaceNot`, `project` / `projectNot` and `assembly` / `assemblyNot`, and `to` by `dependencyKind` / `dependencyKindNot` (`inherits`, `implements`, `attribute`, ...). They read what the extractors record on each module and edge, and a `.dependency-cruiser.*` configuration that uses one is exit 3 ([plan 0002, Step 8](plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)). `to.license` reads npm, NuGet and Python licences alike.
+A native dependency rule may also narrow `from` and `to` by `language`, `namespace` / `namespaceNot`, `project` / `projectNot` and `assembly` / `assemblyNot`, and `to` by `dependencyKind` / `dependencyKindNot` (`inherits`, `implements`, `attribute`, ...). They read what the extractors record on each module and edge, and a `.dependency-cruiser.*` configuration that uses one is exit 3 ([plan 0002, Step 8](plans/implemented/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)). `to.license` reads npm, NuGet and Python licences alike.
 
 Not every extractor records every property:
 

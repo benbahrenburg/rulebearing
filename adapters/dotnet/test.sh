@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs the Rulebearing.TestAdapter core tests and the six framework fixture projects, each held to
 # the 70% line floor of docs/adr/0018-test-coverage-threshold.md for its own package.
-# Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
+# Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
 #
 # Usage: adapters/dotnet/test.sh [--configuration Debug|Release]
 #   RULEBEARING_BINARY  the binary the tests run; default target/release/rulebearing, built with

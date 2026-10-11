@@ -1,6 +1,6 @@
 //! The Python code layer: classes, module-level functions, methods, properties and decorators.
 //!
-//! - Plan: [Wave 2, Step 4](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#24-step-4-the-python-extractor-2b)
+//! - Plan: [Wave 2, Step 4](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#24-step-4-the-python-extractor-2b)
 //!   (`codelayer.rs`)
 //! - Decision: [ADR-0013](../../../docs/adr/0013-ruff-parser-for-python.md) (classes, functions,
 //!   methods, decorators, bases, `@property`, `@staticmethod`, `@classmethod`, `@dataclass`,

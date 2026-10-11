@@ -7,7 +7,7 @@
 //! - Coverage: [coverage § Options](../../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),
 //!   row `reporterOptions.archi` / `dot` / `ddot` / `flat`, `theme` (`graph`, `node`, `edge`,
 //!   `modules[]`, `dependencies[]`, `replace`)
-//! - Plan: [Wave 2, Step 10](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //! - Requirement: [FR-OUT-01](../../../../docs/prd.md#fr-out-01)
 //!
 //! Attribute order is part of the output, so every object here keeps insertion order (the crate

@@ -1,7 +1,7 @@
 //! The parser walk: every import form a Python file can hold, with its position and whether it
 //! is type-only or dynamic.
 //!
-//! - Plan: [Wave 2, Step 4](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#24-step-4-the-python-extractor-2b)
+//! - Plan: [Wave 2, Step 4](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#24-step-4-the-python-extractor-2b)
 //!   (`parse.rs`)
 //! - Decision: [ADR-0013](../../../docs/adr/0013-ruff-parser-for-python.md) (`ruff_python_parser`;
 //!   `type-only` for a `TYPE_CHECKING`-guarded import, `dynamic` for a literal

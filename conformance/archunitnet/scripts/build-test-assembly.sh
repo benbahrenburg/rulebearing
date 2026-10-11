@@ -5,7 +5,7 @@
 # element tests' snapshots were recorded against, and ArchUnitNETTests itself.
 #
 # Plans: docs/plans/pending/0000-wave-0-spike.md, Step 6 item 1 (TestAssembly);
-# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7 (the TestAssemblies).
+# docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7 (the TestAssemblies).
 # Decisions: docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0019-mit-licence.md (only
 # the binary fixtures and the notice are committed; the C# source is fetched here, never committed).
 #

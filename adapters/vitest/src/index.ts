@@ -2,7 +2,7 @@
 //
 // Architecture: docs/architecture.md#distribution (`rulebearing/vitest` ships inside the npm
 // package). Decision: docs/adr/0020-single-name-across-registries.md (a subpath of `rulebearing`,
-// since the @rulebearing scope is not held). Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md
+// since the @rulebearing scope is not held). Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md
 // § 2.14, Step 14 (2H). Coverage: docs/artifacts/archunitnet-0.13.4-coverage.md § Test framework
 // adapters. Requirement: FR-DIST-03 (docs/prd.md).
 

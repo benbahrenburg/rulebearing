@@ -6,7 +6,7 @@
 //!   (`depcruise-baseline`, `--baseline-mode`)
 //! - Source: [design § import-linter contracts](../../../../docs/artifacts/design.md#import-linter-contracts-for-the-python-teams-who-know-them)
 //!   (`shrink-only` replaces import-linter's unmatched-ignore alerting)
-//! - Plan: [Wave 2, Step 10](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //! - Decisions: [ADR-0015](../../../../docs/adr/0015-stable-violation-id.md) (entries are keyed by
 //!   the stable id), [ADR-0008](../../../../docs/adr/0008-exit-code-contract.md)
 //! - Requirements: [FR-RULE-09](../../../../docs/prd.md#fr-rule-09), [FR-CLI-01](../../../../docs/prd.md#fr-cli-01)

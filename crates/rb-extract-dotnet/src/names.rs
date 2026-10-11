@@ -1,7 +1,7 @@
 //! Names: resolving a type reference across the loaded assemblies and spelling it as `ArchUnitNET`
 //! does.
 //!
-//! - Plan: [Wave 2, Step 3](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#23-step-3-attribution-edge-projection-the-net-code-layer-and-defaults-2a)
+//! - Plan: [Wave 2, Step 3](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#23-step-3-attribution-edge-projection-the-net-code-layer-and-defaults-2a)
 //!   ("`fullName` and `assemblyQualifiedName` in `ArchUnitNET`'s spelling (verified by the ported
 //!   name tests)")
 //! - Specification: `ArchUnitNET` 0.13.4 reads assemblies with Mono.Cecil, so its names are Cecil's:

@@ -1,6 +1,6 @@
 # Conformance gate 2: NetArchTest
 
-NetArchTest's own test project, treated as the design says: "NetArchTest's own test project is treated the same way" as ArchUnitNET's ([design § Conformance gate 2](../../docs/artifacts/design.md#conformance-gate-2-archunitnets-test-assemblies-validate-the-element-rules)). Each upstream assertion over the test structure becomes a data-driven case: the element rule that expresses the same selection and condition, and the exact passing and failing types ([plan 0002, Step 7](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c); [ADR-0009](../../docs/adr/0009-conformance-suites-as-specification.md)). NetArchTest is MIT, pinned at [1.3.2](PIN) (tag `v1.3.2`).
+NetArchTest's own test project, treated as the design says: "NetArchTest's own test project is treated the same way" as ArchUnitNET's ([design § Conformance gate 2](../../docs/artifacts/design.md#conformance-gate-2-archunitnets-test-assemblies-validate-the-element-rules)). Each upstream assertion over the test structure becomes a data-driven case: the element rule that expresses the same selection and condition, and the exact passing and failing types ([plan 0002, Step 7](../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c); [ADR-0009](../../docs/adr/0009-conformance-suites-as-specification.md)). NetArchTest is MIT, pinned at [1.3.2](PIN) (tag `v1.3.2`).
 
 | Path | What |
 | --- | --- |

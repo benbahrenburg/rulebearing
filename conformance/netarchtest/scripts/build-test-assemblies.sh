@@ -4,7 +4,7 @@
 # (every predicate, condition and dependency-search test) and the two CrossAssemblyTest projects
 # (`Inherit` across an assembly boundary).
 #
-# Plans: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7 (NetArchTest's
+# Plans: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7 (NetArchTest's
 # `Types.InAssembly(...)` tests mapped through the element rules).
 # Decisions: docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0019-mit-licence.md (only
 # the binary fixtures and the licence are committed; the C# source is fetched here, never committed).

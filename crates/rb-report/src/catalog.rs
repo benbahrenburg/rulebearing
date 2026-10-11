@@ -1,9 +1,9 @@
 //! What the `sarif`, `junit` and `trx` reporters share: every rule of the run with its family,
 //! severity, comment and `fix`, the violations of each, and where a violation sits.
 //!
-//! - Contract: [Wave 2 plan § 1.5](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Contract: [Wave 2 plan § 1.5](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)
 //!   (one SARIF rule and one test case per configuration rule)
-//! - Plan: [Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //! - Source: [design § Reporters](../../../docs/artifacts/design.md#reporters)
 //! - Requirement: [FR-OUT-02](../../../docs/prd.md#fr-out-02)
 //!

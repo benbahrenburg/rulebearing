@@ -1,7 +1,7 @@
 //! The bundled Rulebearing presets: what each resolves to, as a committed snapshot, and the
 //! composition `rulebearing:recommended` promises.
 //!
-//! - Plan: [Wave 2, Step 9](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
+//! - Plan: [Wave 2, Step 9](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
 //!   ("a preset snapshot test")
 //! - Source: [design § What stays honest across the boundary](../../../docs/artifacts/design.md#what-stays-honest-across-the-boundary)
 //!   ("Per-language defaults are presets ... composed by `rulebearing:recommended`, so a repo with

@@ -1,9 +1,9 @@
 // The message of a finding: the rule's name, then the text the `junit` reporter gives the same edge.
 //
-// Contract: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 1.5 (the junit failure
+// Contract: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 1.5 (the junit failure
 // message: the `fix`, then each violation as `<id> <from> -> <to> (line L, column C)`), rendered by
 // crates/rb-report/src/catalog.rs. Decision: docs/adr/0015-stable-violation-id.md.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 13. Requirement: FR-DIST-04.
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 13. Requirement: FR-DIST-04.
 //
 // The front-ends cannot disagree with the gate, so the words are the gate's: an agent that has
 // seen the junit failure in CI sees the same text in its editor, with the rule's name in front.

@@ -1,5 +1,5 @@
 // The exception RuleResult.Assert throws when no framework package supplied its own
-// (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14).
+// (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14).
 
 namespace Rulebearing.TestAdapter;
 

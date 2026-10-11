@@ -1,6 +1,6 @@
 //! Discovery: the import roots, the files under them, and each file's dotted module name.
 //!
-//! - Plan: [Wave 2, Step 4](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#24-step-4-the-python-extractor-2b)
+//! - Plan: [Wave 2, Step 4](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#24-step-4-the-python-extractor-2b)
 //!   (`discover.rs`)
 //! - Decision: [ADR-0013](../../../docs/adr/0013-ruff-parser-for-python.md) (roots from
 //!   `pyproject.toml`, the `src/` layout and a `setup.cfg` fallback; the default excludes)

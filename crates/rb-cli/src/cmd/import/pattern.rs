@@ -1,7 +1,7 @@
 //! Patterns the importers write: globs and module expressions translated to the regular
 //! expressions a `rulebearing.yaml` path condition takes.
 //!
-//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
+//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
 //!   ("wildcards translated to regex", "the globs converted to regex")
 //! - Decision: [ADR-0016](../../../../../docs/adr/0016-linear-time-regex-and-strict-compat.md)
 //!   (every pattern must run on the linear-time engine)

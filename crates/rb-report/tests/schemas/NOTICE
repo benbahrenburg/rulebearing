@@ -1,5 +1,5 @@
 Vendored schemas the rb-report tests validate the sarif and junit reporters against. Tests read
-these files and never the network (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md,
+these files and never the network (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md,
 Step 10). The files are byte-for-byte copies; do not edit them.
 
 sarif-schema-2.1.0.json

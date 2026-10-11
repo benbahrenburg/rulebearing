@@ -1,6 +1,6 @@
 //! The portable PDB reader against System.Reflection.Metadata's reading of the same file.
 //!
-//! - Plan: [Wave 2, Step 2](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
+//! - Plan: [Wave 2, Step 2](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
 //!   ("`tests/pdb.rs` asserts the document list and the sequence points of the same three methods")
 //! - Expected values: `conformance/archunitnet/tools/MetadataDump`
 

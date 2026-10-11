@@ -6,7 +6,7 @@
 //! - Decision: [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
 //! - Source: [design § The five stages](../../../docs/artifacts/design.md#the-five-stages), stage 3
 //! - Plan: [Wave 0, Step 3](../../../docs/plans/pending/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
-//!   freezes the shape; [Wave 2](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md)
+//!   freezes the shape; [Wave 2](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md)
 //!   fills it
 //! - Requirement: [FR-EXT-DN-03](../../../docs/prd.md#fr-ext-dn-03)
 //!

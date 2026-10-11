@@ -1,7 +1,7 @@
 // Where the configuration, graph, saved result and binary are: a relative path is looked up from
 // the test assembly's directory upwards, then from the current directory upwards; the binary from
 // the option, then RULEBEARING_BINARY, then PATH
-// (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14).
+// (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14).
 
 namespace Rulebearing.TestAdapter;
 

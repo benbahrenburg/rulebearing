@@ -3,7 +3,7 @@
 //! - Source: the mapping table in [conformance/netarchtest/README.md](../../../../../conformance/netarchtest/README.md#the-mapping),
 //!   proven by the 326 gate 2 cases; this is a port of its C# source,
 //!   `conformance/netarchtest/tools/Port/Rules.cs`, so a chain imports to the rule gate 2 checks
-//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
+//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
 //! - Decision: [ADR-0009](../../../../../docs/adr/0009-conformance-suites-as-specification.md)
 //! - Requirement: [FR-CLI-04](../../../../../docs/prd.md#fr-cli-04)
 //!

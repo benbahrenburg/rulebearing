@@ -1,5 +1,5 @@
 // What to run: the configuration, a graph to evaluate instead of extracting, or a saved result
-// (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14: "runs `rulebearing
+// (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14: "runs `rulebearing
 // cruise --output-type json` (or reads a `--graph` path)").
 
 namespace Rulebearing.TestAdapter;

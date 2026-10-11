@@ -59,7 +59,7 @@ When the platform package is missing, for example after `npm install --omit=opti
 
 ## Finding the binary from another package
 
-`rulebearing/launcher` exports the launcher's resolution, typed, so a Node tool that calls the binary directly finds the same one `npx rulebearing` would run, `RULEBEARING_BINARY` included. [eslint-plugin-rulebearing](../../frontends/eslint-plugin-rulebearing/README.md) locates the binary this way ([plan 0002, Step 13](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)).
+`rulebearing/launcher` exports the launcher's resolution, typed, so a Node tool that calls the binary directly finds the same one `npx rulebearing` would run, `RULEBEARING_BINARY` included. [eslint-plugin-rulebearing](../../frontends/eslint-plugin-rulebearing/README.md) locates the binary this way ([plan 0002, Step 13](../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)).
 
 ```javascript
 import { detectHost, resolveBinary } from 'rulebearing/launcher';

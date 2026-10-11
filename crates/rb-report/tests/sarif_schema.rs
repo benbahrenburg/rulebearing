@@ -1,9 +1,9 @@
 //! The `sarif` reporter's output validates against the OASIS SARIF 2.1.0 schema, vendored in
 //! `tests/schemas/` (provenance and licence in `tests/schemas/NOTICE`); no test reads the network.
 //!
-//! - Plan: [Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //!   (schema validation of `sarif`)
-//! - Contract: [Wave 2 plan § 1.5](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Contract: [Wave 2 plan § 1.5](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)
 //! - Requirement: [FR-OUT-02](../../../docs/prd.md#fr-out-02)
 //!
 //! The inputs are every dependency-cruiser `test/report` result the conformance fixtures hold

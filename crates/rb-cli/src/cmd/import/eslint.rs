@@ -2,7 +2,7 @@
 //! element types as `forbidden` rules.
 //!
 //! - Source: [design § The developer relations hat](../../../../../docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo)
-//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
+//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
 //! - Decisions: [ADR-0006](../../../../../docs/adr/0006-embedded-quickjs-config-evaluator.md) (the
 //!   configuration is evaluated in the QuickJS sandbox, never by Node),
 //!   [ADR-0016](../../../../../docs/adr/0016-linear-time-regex-and-strict-compat.md)

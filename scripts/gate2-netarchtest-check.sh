@@ -4,7 +4,7 @@
 # valid, and ported.json counts the cases in ported/*.yaml (all three written by
 # conformance/netarchtest/tools/Port). scripts/gate2-check.sh runs it after the ArchUnitNET half.
 #
-# Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7 (NetArchTest's
+# Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7 (NetArchTest's
 # `Types.InAssembly(...)` tests mapped through the element rules).
 # Decisions: docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0019-mit-licence.md.
 # The cases themselves run in crates/rb-rules/tests/gate2_netarchtest.rs.

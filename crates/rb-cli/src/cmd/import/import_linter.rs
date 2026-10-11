@@ -2,7 +2,7 @@
 //!
 //! - Source: [design § import-linter contracts](../../../../../docs/artifacts/design.md#import-linter-contracts-for-the-python-teams-who-know-them),
 //!   [§ The developer relations hat](../../../../../docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo)
-//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
+//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
 //! - Decisions: [ADR-0013](../../../../../docs/adr/0013-ruff-parser-for-python.md) (the import-linter
 //!   mapping), [ADR-0034](../../../../../docs/adr/0034-slices-group-types-or-modules-and-segments.md) (`segments`),
 //!   [ADR-0038](../../../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md) (`graph`: the

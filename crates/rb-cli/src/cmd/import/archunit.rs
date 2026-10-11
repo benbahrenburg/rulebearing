@@ -4,8 +4,8 @@
 //! - Source: [design § The developer relations hat](../../../../../docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo),
 //!   the [ArchUnitNET 0.13.4 coverage tab](../../../../../docs/artifacts/archunitnet-0.13.4-coverage.md)
 //!   (each fluent method's key), [conformance/netarchtest/README.md](../../../../../conformance/netarchtest/README.md#the-mapping)
-//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f),
-//!   and "How `import archunit` reads C#" in [§ 1.7](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#17-decisions-this-wave-must-make)
+//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f),
+//!   and "How `import archunit` reads C#" in [§ 1.7](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#17-decisions-this-wave-must-make)
 //! - Decisions: [ADR-0005](../../../../../docs/adr/0005-native-config-superset-and-compat.md) (keys
 //!   are ArchUnitNET's method names in camelCase), [ADR-0007](../../../../../docs/adr/0007-vacuous-rules-fail-by-default.md)
 //! - Requirement: [FR-CLI-04](../../../../../docs/prd.md#fr-cli-04)

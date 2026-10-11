@@ -18,7 +18,7 @@ rulebearing_args = ["src"]                # optional; what to cruise
 
 When `--rulebearing` is passed or `rulebearing = true` is set, the plugin runs `rulebearing cruise --output-type json` once, during collection, and adds one item per rule, named `rulebearing::<rule>` and marked `rulebearing` (so `-m rulebearing` and `-k` select them). It never evaluates a rule: the binary decides, the plugin reports ([ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md) rule 4).
 
-The failure message is exactly the message the `junit` reporter writes for that rule ([crates/rb-report/src/junit.rs](../../../crates/rb-report/src/junit.rs), [Wave 2 plan § 1.5](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)):
+The failure message is exactly the message the `junit` reporter writes for that rule ([crates/rb-report/src/junit.rs](../../../crates/rb-report/src/junit.rs), [Wave 2 plan § 1.5](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)):
 
 | Rule outcome | Item | Message |
 | --- | --- | --- |
@@ -50,4 +50,4 @@ pip install pytest pytest-cov hatchling packaging
 pytest adapters/python --cov=adapters/python          # from the repository root
 ```
 
-Plan: [Wave 2, Step 14](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h). Release: [docs/release.md](../../../docs/release.md).
+Plan: [Wave 2, Step 14](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h). Release: [docs/release.md](../../../docs/release.md).

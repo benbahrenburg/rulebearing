@@ -26,8 +26,8 @@ The primary language is Rust (a Cargo workspace under `crates/`). TypeScript, C#
 | `.githooks/`, `.cargo/` | Opt-in git hooks; the cargo aliases and the mutation-testing scope | [ADR-0025](docs/adr/0025-ci-and-supply-chain-hardening.md), [ADR-0024](docs/adr/0024-test-quality-gates.md) |
 | `fuzz/` | cargo-fuzz targets, a workspace of its own; run nightly | [fuzz/README.md](fuzz/README.md) |
 | `wrappers/` | The npm, PyPI and NuGet wrappers (the binary for each platform, never a re-implemented subcommand), the rule library's three packages packed from `presets/` (`rules/`, [ADR-0071](docs/adr/0071-the-rule-library-ships-from-this-repository.md)), and the crates.io reservation | [docs/release.md](docs/release.md), [ADR-0020](docs/adr/0020-single-name-across-registries.md) |
-| `adapters/` | Test adapters: `Rulebearing.TestAdapter` and its six framework packages (`dotnet/`), `pytest-rulebearing` (`python/`), `rulebearing/vitest` (`vitest/`); each yields one test per rule with the `junit` message | [Wave 2 plan, Step 14](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h) |
-| `frontends/` | `eslint-plugin-rulebearing` and `Rulebearing.Analyzer`, which ask the binary and must agree with the gate | [Wave 2 plan, Step 13](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g) |
+| `adapters/` | Test adapters: `Rulebearing.TestAdapter` and its six framework packages (`dotnet/`), `pytest-rulebearing` (`python/`), `rulebearing/vitest` (`vitest/`); each yields one test per rule with the `junit` message | [Wave 2 plan, Step 14](docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h) |
+| `frontends/` | `eslint-plugin-rulebearing` and `Rulebearing.Analyzer`, which ask the binary and must agree with the gate | [Wave 2 plan, Step 13](docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g) |
 
 ## How work is organised
 

@@ -3,7 +3,7 @@
 //!
 //! - Source: [design § Conformance gate 2](../../../../docs/artifacts/design.md#conformance-gate-2-archunitnets-test-assemblies-validate-the-element-rules)
 //! - Decision: [ADR-0009](../../../../docs/adr/0009-conformance-suites-as-specification.md)
-//! - Plan: [Wave 2, Step 7](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c)
+//! - Plan: [Wave 2, Step 7](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c)
 //!
 //! A suite is a directory under `conformance/` holding `ported/<TestClass>.yaml`, `ported.json`
 //! and `graphs/<Assembly>.json`: `conformance/archunitnet` (`tests/gate2.rs`) and

@@ -4,7 +4,7 @@
 // Source: docs/artifacts/design.md#two-front-ends-that-will-matter-more-than-the-mcp-server
 // ("one rule (`rulebearing/boundaries`) that asks the cached graph `can-import` for each import
 // statement and reports inline"). Decision: docs/adr/0021-agent-surface-cli-first.md.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 13. Requirement: FR-DIST-04.
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 13. Requirement: FR-DIST-04.
 //
 // Import forms: `import`, `export * from`, `export { } from`, `import()` and `require()` with a
 // string. The target is resolved off the graph's `modules[]` (src/graph.ts), and a relative import

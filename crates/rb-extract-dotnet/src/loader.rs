@@ -2,7 +2,7 @@
 //! interfaces, generic parameters and attributes, and the references that name other assemblies.
 //!
 //! - Specification: ECMA-335 II.22 (the tables below), II.23.3 (custom attribute values)
-//! - Plan: [Wave 2, Step 2](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
+//! - Plan: [Wave 2, Step 2](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
 //!   and § 1.7 ("The exact ECMA-335 table set")
 //! - Decision: [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)
 //!

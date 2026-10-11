@@ -1,7 +1,7 @@
 //! Discovery and the loader options over committed solution layouts, with the extraction
 //! fixture's built assemblies placed where a build would put them.
 //!
-//! - Plan: [Wave 2, Step 1](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#21-step-1-net-discovery-and-the-loader-options-2a)
+//! - Plan: [Wave 2, Step 1](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#21-step-1-net-discovery-and-the-loader-options-2a)
 //!   ("`tests/discover.rs` over fixture solutions in `tests/fixtures/solutions/`"; done when every
 //!   row of the loader coverage has a fixture)
 //! - Coverage: [ArchUnitNET § Loader and caches](../../../docs/artifacts/archunitnet-0.13.4-coverage.md#loader-and-caches)

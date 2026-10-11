@@ -2,7 +2,7 @@
 //!
 //! - Specification: ECMA-335 II.25.4 (method header formats), III (the instruction set and each
 //!   opcode's operand)
-//! - Plan: [Wave 2, Step 2](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
+//! - Plan: [Wave 2, Step 2](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
 //!   (`il.rs`: a body walker over the fat and tiny header formats yielding the operand tokens of
 //!   `call`, `callvirt`, `newobj`, `ldfld`, `stfld`, `ldtoken`, `box`, `castclass`, `isinst`, and
 //!   the `ldstr` operand before a literal reflection load)

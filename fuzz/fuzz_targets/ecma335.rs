@@ -2,7 +2,7 @@
 //! attribute values and cross-assembly naming. Arbitrary bytes must produce an error, never a
 //! panic, an overflow or an unbounded allocation.
 //!
-//! - Plan: [Wave 2, Step 2](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
+//! - Plan: [Wave 2, Step 2](../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
 //!   (`fuzz/fuzz_targets/ecma335.rs`, run nightly)
 //! - Architecture: [Security posture](../../docs/architecture.md#security-posture)
 //! - Requirement: [NFR-SEC-01](../../docs/prd.md#nfr-sec-01)

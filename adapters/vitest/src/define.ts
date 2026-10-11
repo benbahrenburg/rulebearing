@@ -1,8 +1,8 @@
 // `defineArchitectureTests()`: one vitest `test` per rule of `rulebearing cruise`.
 //
-// Contract: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 1.5 (the adapters'
+// Contract: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 1.5 (the adapters'
 // failure message is the junit message text).
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
 // Decisions: docs/adr/0007-vacuous-rules-fail-by-default.md; docs/adr/0010 rule 4.
 // Requirement: FR-DIST-03.
 //

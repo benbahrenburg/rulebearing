@@ -4,7 +4,7 @@
 # and time three cruises of it with the JSON reporter; the median is the row's Rulebearing time,
 # which testbeds/check-regression.sh fails the night on when it grows by more than 20%.
 #
-# Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 15.
+# Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 15.
 # Source: docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against.
 # Usage: testbeds/scale.sh <owner/repo> [out-dir]   (default out-dir: testbeds/out)
 # The binary is $RULEBEARING_BIN, else target/release/rulebearing; checkouts go to

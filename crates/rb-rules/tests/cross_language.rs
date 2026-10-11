@@ -1,7 +1,7 @@
 //! The cross-language dependency-rule keys, `to.license` and `to.moreUnstable` over the graphs
 //! the .NET and Python extractors write.
 //!
-//! - Plan: [Wave 2, Step 8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)
+//! - Plan: [Wave 2, Step 8](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)
 //!   ("a fixture config over the `TestAssembly` graph with one rule per key that must fire")
 //! - Source: [design § Dependency rules](../../../docs/artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820)
 //!   (the cross-language additions), [dc coverage § Rules](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#rules)

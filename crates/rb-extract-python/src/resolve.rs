@@ -1,8 +1,8 @@
 //! Resolution: an [`ImportSpec`] to a local file, the standard library, an installed
 //! distribution, or `unresolved`, in that order.
 //!
-//! - Plan: [Wave 2 § 1.4.4](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#144-python-resolution-order)
-//!   (the order) and [Step 4](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#24-step-4-the-python-extractor-2b)
+//! - Plan: [Wave 2 § 1.4.4](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#144-python-resolution-order)
+//!   (the order) and [Step 4](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#24-step-4-the-python-extractor-2b)
 //!   (`resolve.rs`, the [`Resolution`] enum)
 //! - Decision: [ADR-0013](../../../docs/adr/0013-ruff-parser-for-python.md);
 //!   [ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md) (no heuristic

@@ -1,7 +1,7 @@
 //! The fixtures the command tests share: the wave 1 tree, the `TestAssembly` graph, and a way to
 //! run the binary in a folder.
 //!
-//! - Plan: [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
+//! - Plan: [Wave 2, Step 12](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 
 use std::error::Error;
 use std::path::{Path, PathBuf};

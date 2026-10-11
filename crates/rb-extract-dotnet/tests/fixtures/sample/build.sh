@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Rebuilds the extraction fixture: deterministic, CI path-mapped (documents become /_/..., relative
 # to the repository root), portable PDB. Commit built/ with the new hashes in PROVENANCE.md.
-# Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 3.
+# Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 3.
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 dotnet build "$here/src/Sample.csproj" --configuration Release --output "$here/built" \

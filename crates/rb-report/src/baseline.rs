@@ -1,9 +1,9 @@
 //! `baseline`: every violation as a `knownViolations[]` entry, the file `depcruise-baseline`
 //! writes, keyed by the stable id and carrying `expires`, `owner` and `reason` when they are given.
 //!
-//! - Contract: [Wave 2 plan § 1.5](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Contract: [Wave 2 plan § 1.5](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)
 //!   (the `knownViolations[]` entry)
-//! - Plan: [Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //! - Coverage: [dc coverage § Output types](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types)
 //!   (`baseline`, Parity+)
 //! - Decision: [ADR-0015](../../../docs/adr/0015-stable-violation-id.md) (the id is the key)

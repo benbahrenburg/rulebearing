@@ -1,6 +1,6 @@
 //! `decisions [--json]` and `decisions new --title T --rules r1,r2`.
 //!
-//! - Plan: [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
+//! - Plan: [Wave 2, Step 12](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //! - Source: [design § The agentic engineering hat](../../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two)
 
 use crate::common::{CONFIG, Result, clean, code, json, read, run, stderr, stdout, tree, write};

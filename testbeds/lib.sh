@@ -2,7 +2,7 @@
 # Shared by the test-bed rows that run Rulebearing without an incumbent: testbeds/greenfield.sh
 # (the init proof) and testbeds/scale.sh (the scale timings). Sourced, never run.
 #
-# Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 15.
+# Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 15.
 # Source: docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against, items 2 and 3.
 # The caller sets, before calling a function: here (testbeds/), repo, and for the rest sha, role,
 # out (the row's output folder), checkout and bin (the rulebearing binary). Each function names

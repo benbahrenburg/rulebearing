@@ -1,9 +1,9 @@
 //! Known violations: dependency-cruiser's `softenKnownViolations`, the id-keyed entries
 //! Rulebearing writes, expiry, and which entries still occur.
 //!
-//! - Contract: [Wave 2 plan § 1.5](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Contract: [Wave 2 plan § 1.5](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)
 //!   (the `knownViolations[]` entry)
-//! - Plan: [Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //! - Decisions: [ADR-0015](../../../docs/adr/0015-stable-violation-id.md) (the id is the baseline
 //!   key), [ADR-0031](../../../docs/adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)
 //!   (an expired entry is reported in `summary.expired[]`)

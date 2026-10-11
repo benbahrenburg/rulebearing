@@ -715,7 +715,7 @@ pub type Inspected = BTreeMap<Language, Receipt>;
 /// What one language's extractor inspected.
 ///
 /// The .NET and Python additions are the observability counts of
-/// [Wave 2 § 1.8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#18-quality-attributes):
+/// [Wave 2 § 1.8](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#18-quality-attributes):
 /// absent for a language that has no such thing, so a TypeScript receipt keeps its wave 1 shape.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

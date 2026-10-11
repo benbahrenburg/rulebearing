@@ -2,7 +2,7 @@
 //
 // Source: docs/artifacts/design.md#two-front-ends-that-will-matter-more-than-the-mcp-server.
 // Decision: docs/adr/0021-agent-surface-cli-first.md. Contract: docs/adr/0004-graph-document-is-cruise-result-superset.md.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 13. Requirement: FR-DIST-04.
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 13. Requirement: FR-DIST-04.
 //
 // There is no second resolver. A specifier resolves to the `resolved` path of the dependency the
 // graph already records for it; a relative specifier the graph has not seen yet (an import the

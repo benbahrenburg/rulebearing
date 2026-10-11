@@ -2,7 +2,7 @@
 """Port ArchUnitNET's element-rule snapshot tests to Rulebearing element rules (conformance gate 2).
 
 - Plan: Wave 2, Step 7 (2C),
-  ../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c
+  ../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c
 - Decision: [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md) (the upstream
   suite at the pinned tag is the specification)
 - Coverage: [ArchUnitNET 0.13.4 tab](../../../docs/artifacts/archunitnet-0.13.4-coverage.md)
@@ -98,7 +98,7 @@ HEADER = (
 PORTED_COMMENT = (
     "Conformance gate 2 ratchet (docs/adr/0009-conformance-suites-as-specification.md): `ported`"
     " may only rise. Written by conformance/archunitnet/tools/port.py"
-    " (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7). `total` counts the"
+    " (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7). `total` counts the"
     " distinct snapshot cases of the element tests (after the tool folds C# overloads with the"
     " same rule and expectation into one case), each unported snapshot block, each in-scope"
     " test with no snapshot as 1, and the cases of the hand-ported files in place of the tests"

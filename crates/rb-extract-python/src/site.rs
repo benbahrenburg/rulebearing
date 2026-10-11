@@ -1,10 +1,10 @@
 //! The installed-distributions index: which top-level names an environment's `site-packages`
 //! provides, and under which licence, read from metadata files only.
 //!
-//! - Plan: [Wave 2 § 1.7](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#17-decisions-this-wave-must-make),
+//! - Plan: [Wave 2 § 1.7](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#17-decisions-this-wave-must-make),
 //!   rows "Installed distributions for Python" and "`to.license` for .NET and Python";
 //!   resolution step four of
-//!   [§ 1.4.4](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#144-python-resolution-order)
+//!   [§ 1.4.4](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#144-python-resolution-order)
 //! - Decision: [ADR-0013](../../../docs/adr/0013-ruff-parser-for-python.md) (no interpreter is
 //!   ever executed)
 //! - Requirement: [FR-EXT-PY-01](../../../docs/prd.md#fr-ext-py-01)

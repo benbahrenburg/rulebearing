@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT licence: see LICENSE.
 """The join of an incumbent's verdicts with Rulebearing's, per contract or per test.
 
-Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11 (the oracle
+Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 11 (the oracle
 harness) and section 1.4.5. Requirement: docs/prd.md#nfr-conf-03. Design:
 docs/artifacts/design.md, "Test beds", item 1 (oracle zero-diff). Run by
 testbeds/oracles/python.sh and testbeds/oracles/dotnet.sh; writes testbeds/results/<slug>.json,

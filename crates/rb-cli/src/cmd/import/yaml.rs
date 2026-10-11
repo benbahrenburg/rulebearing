@@ -1,6 +1,6 @@
 //! The importers' output: an ordered YAML tree that carries comments, written deterministically.
 //!
-//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
+//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
 //!   (every emitted rule is preceded by the rule it came from as a `#` comment)
 //! - Requirement: [FR-CLI-04](../../../../../docs/prd.md#fr-cli-04)
 //! - Decision: [ADR-0005](../../../../../docs/adr/0005-native-config-superset-and-compat.md) (the native format)

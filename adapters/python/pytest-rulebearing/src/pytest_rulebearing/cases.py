@@ -1,9 +1,9 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT License.
 """One test case per rule, read from the JSON of ``rulebearing cruise --output-type json``.
 
-- Contract: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 1.5 (one test case
+- Contract: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 1.5 (one test case
   per rule; the adapters' failure message is the ``junit`` message text).
-- Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
+- Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
 - Decisions: docs/adr/0007-vacuous-rules-fail-by-default.md (a vacuous rule fails with the
   liveness reason), docs/adr/0010-crate-layout-and-extractor-boundary.md rule 4 (adapters report,
   they never evaluate).

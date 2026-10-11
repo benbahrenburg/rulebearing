@@ -3,7 +3,7 @@
 //!
 //! - Source: [design § Questions an agent can ask before it writes the import](../../../../docs/artifacts/design.md#questions-an-agent-can-ask-before-it-writes-the-import)
 //!   ("the answer to 'where should this code live' as a query rather than a document")
-//! - Plan: [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
+//! - Plan: [Wave 2, Step 12](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //!   (every rule against a synthetic module at each candidate directory; from the cache of Step 13)
 //! - Decisions: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md) decision 2,
 //!   [ADR-0014](../../../../docs/adr/0014-no-invented-cross-language-edges.md) (candidates come

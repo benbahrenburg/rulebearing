@@ -2,7 +2,7 @@
 """Smoke test: build the wheel with the local binary, install it in a new venv, run the command.
 
 The release workflow's ``pypi-install-check`` job does the same with the wheels it built, on each
-platform (docs/release.md). Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md
+platform (docs/release.md). Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md
 § 2.14, Step 14 (2H): "a smoke job installs each wrapper from the built package on each platform
 and runs ``rulebearing --version``".
 """

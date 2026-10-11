@@ -2,7 +2,7 @@
 //! `--collapse`, `--highlight`), `webpackConfig` (`fileName`, `env`, `arguments`,
 //! `--webpack-config`, `--webpack-config-json`) and Markdown fences by configuration format.
 //!
-//! - Plan: [Wave 2, Step 9](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
+//! - Plan: [Wave 2, Step 9](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
 //! - Coverage: [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)
 //!   (`collapse`, `highlight.path`, `webpackConfig`), [coverage § Command line](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)
 //! - Decisions: [ADR-0006](../../../docs/adr/0006-embedded-quickjs-config-evaluator.md),

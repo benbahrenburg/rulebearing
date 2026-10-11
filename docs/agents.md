@@ -51,7 +51,7 @@ A check of one saved file takes under 100 ms on the fixture the integration test
 | `rulebearing rules --json` | Every rule, its family, severity, `fix`, its lifecycle fields (`since`, `deprecated`, `replacedBy`), and how many modules each side matches |
 | `rulebearing count --from <regex> --to <regex>` | How many direct edges match, against a budget with `--budget` |
 
-The query commands (`can-import`, `impact`, `propose`, `place`) read `--graph FILE` when given; otherwise the worktree-aware cache under `.graph/cache/<key>/`, keyed by the worktree root, `HEAD` and the configuration's hash ([plan 0002, Step 13](plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)), so two worktrees of one repository never read each other's graph. A miss extracts the paths given and writes the cache; `--no-cache` neither reads nor writes it. The key follows commits, not uncommitted edits: pass `--no-cache` to see an edit before committing it.
+The query commands (`can-import`, `impact`, `propose`, `place`) read `--graph FILE` when given; otherwise the worktree-aware cache under `.graph/cache/<key>/`, keyed by the worktree root, `HEAD` and the configuration's hash ([plan 0002, Step 13](plans/implemented/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)), so two worktrees of one repository never read each other's graph. A miss extracts the paths given and writes the cache; `--no-cache` neither reads nor writes it. The key follows commits, not uncommitted edits: pass `--no-cache` to see an edit before committing it.
 
 ## The `agent` reporter
 

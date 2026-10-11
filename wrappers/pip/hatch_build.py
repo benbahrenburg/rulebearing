@@ -3,7 +3,7 @@
 
 - Architecture: docs/architecture.md#distribution (six release targets).
 - Decision: docs/adr/0020-single-name-across-registries.md (one version on every registry).
-- Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
+- Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
 - Procedure: docs/release.md.
 - Requirement: FR-DIST-01 (docs/prd.md).
 

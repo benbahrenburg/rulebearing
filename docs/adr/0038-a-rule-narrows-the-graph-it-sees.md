@@ -4,7 +4,7 @@
 - **Date:** 2026-09-24
 - **Derives from:** [ADR-0005](0005-native-config-superset-and-compat.md) (native additions are additive; a dependency-cruiser file never sees them), [ADR-0007](0007-vacuous-rules-fail-by-default.md) (liveness), [ADR-0010](0010-crate-layout-and-extractor-boundary.md) (the engine compares strings the document carries), [ADR-0013](0013-ruff-parser-for-python.md) (the import-linter mapping), [ADR-0037](0037-baseline-modes.md) (`shrink-only`)
 - **Constrains:** `crates/rb-config/src/model.rs` (`Rule`, the shorthands), `crates/rb-config/src/normalize.rs`, `crates/rb-config/src/elements.rs` (`SliceRule`), `crates/rb-rules/src/derive.rs`, `crates/rb-rules/src/validate.rs`, `crates/rb-rules/src/slices.rs`, `crates/rb-rules/src/graph/`, `crates/rb-cli/src/cmd/import/import_linter.rs`, `schema/config-v1.json`
-- **Implemented by:** [Wave 2 plan](../plans/pending/0002-wave-2-dotnet-python-element-rules.md), [Step 11](../plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
+- **Implemented by:** [Wave 2 plan](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md), [Step 11](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
 - **Requirements:** [FR-RULE-07](../prd.md#fr-rule-07), [FR-RULE-08](../prd.md#fr-rule-08), [NFR-CONF-03](../prd.md#nfr-conf-03)
 
 ## Context

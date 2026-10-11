@@ -12,7 +12,7 @@ The command-line surface is the binary's (`rulebearing --help`); the exit codes 
 
 ## How the package works
 
-The package is a launcher and nothing else ([architecture § Distribution](../../docs/architecture.md#distribution), [FR-DIST-01](../../docs/prd.md#fr-dist-01), [Wave 2, Step 14](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h)). There is one wheel per release target, each carrying that target's binary at `rulebearing/bin/rulebearing` (`.exe` on Windows), so pip installs the one that matches the machine. There is no source distribution: a build from source is `cargo build --release -p rb-cli`.
+The package is a launcher and nothing else ([architecture § Distribution](../../docs/architecture.md#distribution), [FR-DIST-01](../../docs/prd.md#fr-dist-01), [Wave 2, Step 14](../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h)). There is one wheel per release target, each carrying that target's binary at `rulebearing/bin/rulebearing` (`.exe` on Windows), so pip installs the one that matches the machine. There is no source distribution: a build from source is `cargo build --release -p rb-cli`.
 
 | Wheel platform tag | Release target | Installed on |
 | --- | --- | --- |

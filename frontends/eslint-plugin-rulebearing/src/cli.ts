@@ -4,7 +4,7 @@
 // Decisions: docs/adr/0021-agent-surface-cli-first.md (the CLI is the agent surface),
 // docs/adr/0015-stable-violation-id.md (the id), docs/adr/0008-exit-code-contract.md (0 yes, 1 no,
 // 2 untrustworthy, 3 invalid configuration).
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 13. Requirement: FR-DIST-04.
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 13. Requirement: FR-DIST-04.
 //
 // The binary is located through the npm wrapper (wrappers/npm), so the plugin runs the one
 // `npx rulebearing` runs, and `RULEBEARING_BINARY` points both at a local build. The plugin never
