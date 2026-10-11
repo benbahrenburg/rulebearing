@@ -283,15 +283,22 @@ pub fn lexical(path: &Path) -> PathBuf {
 
 /// Where an extractor's reads go: the disk ([`Files::disk`], the default) or a [`MemoryTree`]
 /// ([`Files::memory`]). Cloning shares the tree.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Files {
     tree: Option<Arc<MemoryTree>>,
+}
+
+/// The disk.
+impl Default for Files {
+    fn default() -> Self {
+        Self::disk()
+    }
 }
 
 impl Files {
     /// The disk, through `std::fs`.
     pub fn disk() -> Self {
-        Self::default()
+        Self { tree: None }
     }
 
     /// The files of `tree`, and nothing else.
@@ -559,6 +566,7 @@ mod tests {
         );
         tree.insert(Path::new("/p/src/a.ts"), "one")?;
         tree.insert(Path::new("/p/src/a.ts"), "two")?;
+        assert!(!tree.is_empty());
         assert_eq!(tree.len(), 1, "a second insert replaces the first");
         assert_eq!(
             tree.insert(Path::new("/p/src"), ""),
@@ -599,6 +607,14 @@ mod tests {
         std::fs::write(dir.join("a.txt"), "a")?;
         let files = Files::disk();
         assert!(!files.is_memory());
+        assert!(!Files::default().is_memory(), "the default is the disk");
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(dir.join("a.txt"), dir.join("link"))?;
+            assert!(files.symlink_metadata(&dir.join("link"))?.is_symlink());
+            assert!(!files.metadata(&dir.join("link"))?.is_symlink());
+            std::fs::remove_file(dir.join("link"))?;
+        }
         assert!(files.tree().is_none());
         assert_eq!(files.read(&dir.join("a.txt"))?, b"a");
         assert_eq!(files.read_to_string(&dir.join("a.txt"))?, "a");

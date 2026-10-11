@@ -271,6 +271,11 @@ mod tests {
             ),
             (
                 Family::Forbidden,
+                json!({ "from": { "path": "^apps/([^/]+)/" }, "to": { "path": "^lib/" } }),
+                "Files matching `apps/<x>/` may not import files matching `lib/`.",
+            ),
+            (
+                Family::Forbidden,
                 json!({ "from": { "path": "^src/" }, "to": { "couldNotResolve": true } }),
                 "Files matching `src/` may not import anything that does not resolve.",
             ),
