@@ -182,12 +182,32 @@ gh run rerun <run-id> -R benbahrenburg/rulebearing --failed
 
 That first version has no provenance statement, because it was not published from the workflow; every later one has. Once the first release has published the library on all three registries, the separate `benbahrenburg/rulebearing-rules` repository, which never published, is archived ([ADR-0071](adr/0071-the-rule-library-ships-from-this-repository.md)).
 
-## The schemas on Pages (from wave 1)
+## The docs site and the schemas on Pages (from wave 4)
 
-The graph document's and the configuration's JSON schemas carry `$id`s under `https://benbahrenburg.github.io/rulebearing/schema/` ([schema/README.md](../schema/README.md)), and `rulebearing import` writes that URL into every configuration it produces. The `schema-pages` job serves them there.
+The graph document's and the configuration's JSON schemas carry `$id`s under `https://benbahrenburg.github.io/rulebearing/schema/` ([schema/README.md](../schema/README.md)), and `rulebearing import` writes that URL into every configuration it produces. Since wave 4 they are served by the docs site, which is the only thing deployed to the repository's Pages site ([ADR-0072](adr/0072-the-docs-site-builds-from-docs-and-serves-the-released-schemas.md)). From wave 1 to wave 4, `release.yml`'s `schema-pages` job served them alone; that job is removed.
 
-| Job | Runs on | What it does |
+| Workflow and job | Runs on | What it does |
 | --- | --- | --- |
-| `schema-pages` | a `vX.Y.Z` tag only, after `release` | copies `schema/v1.json` and `schema/config-v1.json` to `schema/` on the Pages site with `actions/deploy-pages`; the job alone holds `pages: write` and `id-token: write` ([ADR-0025](adr/0025-ci-and-supply-chain-hardening.md)) |
+| `docs.yml`, `docs-site` | a pull request touching the site's inputs; a push to `main`; a manual run; the completion of a `release.yml` run started by a `vX.Y.Z` tag push | builds the site with `site/build.sh`: `rb-wasm` for the playground, a page for every tracked document under `docs/` and the root guides, and `schema/v1.json` and `schema/config-v1.json` read from the tag of the latest published release (`gh release view`), never from the checkout. Then the link check over the built site, the npm licence check, and the playground's browser test |
+| `docs.yml`, `docs-deploy` | after `docs-site`, on `main` only, never for a pull request | deploys the built site with `actions/deploy-pages`; the job alone holds `pages: write` and `id-token: write` ([ADR-0025](adr/0025-ci-and-supply-chain-hardening.md)) |
 
-The site is served from the tag, so the URLs hold the released contract, not the state of `main`. Two repository settings are needed once: Pages with the source "GitHub Actions", and a deployment rule on the `github-pages` environment that admits `v*` tags.
+The schema URLs hold the released contract, not the state of `main`, while the pages follow `main`. A release changes the schemas, and its completion starts `docs.yml`, which deploys the site from `main` with the new tag's schemas. A `workflow_run` runs in the default branch's context, so that deploy is a `main` deploy too.
+
+Two repository settings are needed once: Pages with the source "GitHub Actions", and a deployment rule on the `github-pages` environment that admits `main`. The rule admitting `v*` tags, which `schema-pages` needed, is no longer used.
+
+After a deploy, check:
+
+| URL | Expect |
+| --- | --- |
+| `https://benbahrenburg.github.io/rulebearing/` | the README as the home page, with the sidebar |
+| `https://benbahrenburg.github.io/rulebearing/playground.html` | "Ready: rulebearing X.Y.Z." under the playground; **Evaluate** prints the `no-circular` guard's finding |
+| `https://benbahrenburg.github.io/rulebearing/schema/v1.json` | the graph document schema of the latest release, `$id` equal to the URL |
+| `https://benbahrenburg.github.io/rulebearing/schema/config-v1.json` | the configuration schema of the latest release, `$id` equal to the URL |
+
+To build and serve the site locally:
+
+```sh
+npm ci && site/build.sh                # target/site; RB_SCHEMA_REF=vX.Y.Z picks the schemas' tag
+node site/dist/node/main.js serve target/site --port 8080
+npm --prefix site run test:e2e         # the playground in headless Chromium (npx playwright install chromium-headless-shell once)
+```

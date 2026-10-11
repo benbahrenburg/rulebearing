@@ -1,0 +1,12 @@
+{
+  "//": "Compiles the generator in src/ to dist/node (npm run build). Linting uses tsconfig.json.",
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist/node",
+    "declaration": false,
+    "sourceMap": false,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"]
+}

@@ -8,6 +8,7 @@ Cargo.lock.orig
 # coverlet's report from `dotnet test` in the C# test projects.
 coverage.info
 /adapters/vitest/coverage/
+/site/coverage/
 /crates/rb-node/coverage/
 # pytest-cov data (pyproject.toml, [tool.pytest.ini_options])
 .coverage
