@@ -193,6 +193,23 @@ jobs:
       - run: npm run build && npm test
         working-directory: wrappers/npm
 
+  # The docs site generator's vitest suite at the 70% line floor of site/vitest.config.ts
+  # (docs/adr/0018), its build, and the npm licence check over its packages (docs/adr/0019). The
+  # site itself, with the wasm module and the browser test, is built by docs.yml
+  # (docs/adr/0072-the-docs-site-builds-from-docs-and-serves-the-released-schemas.md).
+  site:
+    name: site
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund --ignore-scripts
+      - run: npm run build && npm test && node dist/node/main.js licences --repo ..
+        working-directory: site
+
   # rb-node, the addon behind the npm package's programmatic API, on each host the release ships
   # it for: its vitest suite (crates/rb-node/__tests__) builds the addon and the binary, holds
   # cruise() and format() to the command line's output and the extractors to dependency-cruiser's

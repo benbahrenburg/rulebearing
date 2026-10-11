@@ -1,0 +1,137 @@
+# The docs site on GitHub Pages (plan 0004, Step 3): built from `main` with the playground's wasm
+# module compiled in the same run, the two JSON schemas taken from the latest published release so
+# their `$id` URLs hold the released contract, a link check over the built site, the npm licence
+# check, and the playground's browser test.
+#
+# Pull request: build, link check, licence check and browser test, no deploy. Push to `main`, a
+# manual run on `main`, or a completed release run: the same, then deploy. One Pages site per
+# repository, so this is the only workflow that deploys it; release.yml starts it by finishing.
+#
+# Decision: docs/adr/0072-the-docs-site-builds-from-docs-and-serves-the-released-schemas.md.
+# Hardening: docs/adr/0025-ci-and-supply-chain-hardening.md (pinned actions, least privilege: only
+# the deploy job holds pages: write and id-token: write). Requirements: FR-REACH-01, NFR-DOC-01.
+name: docs
+
+on:
+  pull_request:
+    paths:
+      - "site/**"
+      - "docs/**"
+      - "schema/**"
+      - "cookbook/**"
+      - "README.md"
+      - "CONTRIBUTING.md"
+      - "SECURITY.md"
+      - "crates/rb-wasm/**"
+      - "crates/rb-model/**"
+      - "crates/rb-config/**"
+      - "crates/rb-rules/**"
+      - "crates/rb-report/**"
+      - "crates/rb-ingest/**"
+      - "Cargo.lock"
+      - "package.json"
+      - "package-lock.json"
+      - "deny.toml"
+      - ".github/workflows/docs.yml"
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "docs/**"
+      - "schema/**"
+      - "cookbook/**"
+      - "README.md"
+      - "CONTRIBUTING.md"
+      - "SECURITY.md"
+      - "crates/rb-wasm/**"
+      - "crates/rb-model/**"
+      - "crates/rb-config/**"
+      - "crates/rb-rules/**"
+      - "crates/rb-report/**"
+      - "crates/rb-ingest/**"
+      - "Cargo.lock"
+      - "package.json"
+      - "package-lock.json"
+      - "deny.toml"
+      - ".github/workflows/docs.yml"
+  # A release publishes new schemas: rebuild the site from `main` so the schema URLs serve them.
+  workflow_run:
+    workflows: [release]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.event_name == 'pull_request' && github.ref || 'pages' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: docs-site
+    # From release.yml, only a run started by pushing a `vX.Y.Z` tag: a manual or pre-release run
+    # publishes nothing.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.event == 'push' &&
+      !contains(github.event.workflow_run.head_branch, '-'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # The default branch's head for a release run, the pull request's merge for a pull request.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      - run: rustup target add wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2
+        with:
+          tool: wasm-bindgen@0.2.128
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund --ignore-scripts
+      # The latest published release (not a draft, not a pre-release) and its tag, which the
+      # schemas are read from.
+      - id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          git fetch --no-tags --depth=1 origin "refs/tags/$tag:refs/tags/$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - run: site/build.sh target/site
+        env:
+          RB_SCHEMA_REF: ${{ steps.release.outputs.tag }}
+      - run: node site/dist/node/main.js licences
+      - run: npx --no-install playwright install --with-deps chromium-headless-shell
+      - run: npm --prefix site run test:e2e
+      - if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: target/site
+
+  deploy:
+    name: docs-deploy
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # deploy-pages authenticates with the job's OIDC token and writes the Pages site, so this job
+    # alone holds pages: write (docs/adr/0025 keeps every other job at contents: read).
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

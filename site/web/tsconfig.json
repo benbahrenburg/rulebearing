@@ -1,0 +1,15 @@
+{
+  "//": "The page scripts the browser loads: ES modules with the DOM, compiled to site/dist/web and copied into the site's assets/ by the build.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "rootDir": ".",
+    "outDir": "../dist/web",
+    "declaration": false,
+    "sourceMap": false,
+    "types": []
+  },
+  "include": ["*.ts"]
+}
