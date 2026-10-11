@@ -1,0 +1,28 @@
+strict digraph "dependency-cruiser output"{
+    rankdir="LR" splines="true" overlap="false" nodesep="0.16" ranksep="0.18" fontname="Helvetica-bold" fontsize="9" style="rounded,bold,filled" fillcolor="#ffffff" compound="true"
+    node [shape="box" style="rounded, filled" height="0.2" color="black" fillcolor="#ffffcc" fontcolor="black" fontname="Helvetica" fontsize="9"]
+    edge [arrowhead="normal" arrowsize="0.6" penwidth="2.0" color="#00000033" fontname="Helvetica" fontsize="9"]
+
+    "importlib" [label=<./<BR/><B>importlib</B>> tooltip="importlib" URL="importlib" color="grey" fontcolor="grey"]
+    "missing_package" [label=<./<BR/><B>missing_package</B>> tooltip="missing_package" ]
+    "os" [label=<./<BR/><B>os</B>> tooltip="os" URL="os" color="grey" fontcolor="grey"]
+    "requests" [label=<./<BR/><B>requests</B>> tooltip="requests" URL="requests" ]
+    "src/shop/__init__.py" [label=<src/shop/<BR/><B>__init__.py</B>> tooltip="__init__.py" URL="src/shop/__init__.py" fillcolor="#ccffcc"]
+    "src/shop/main.py" [label=<src/shop/<BR/><B>main.py</B>> tooltip="main.py" URL="src/shop/main.py" ]
+    "src/shop/main.py" -> "os"
+    "src/shop/main.py" -> "requests"
+    "src/shop/main.py" -> "src/shop/models.py" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="red" color="red"]
+    "src/shop/main.py" -> "src/shop/ui/view.py" [arrowhead="normalnoneodot" penwidth="1.0"]
+    "src/shop/main.py" -> "src/shop/util.py" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="red" color="red"]
+    "src/shop/main.py" -> "typing"
+    "src/shop/models.py" [label=<src/shop/<BR/><B>models.py</B>> tooltip="models.py" URL="src/shop/models.py" ]
+    "src/shop/models.py" -> "src/shop/main.py" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="red" color="red"]
+    "src/shop/ui/__init__.py" [label=<src/shop/ui/<BR/><B>__init__.py</B>> tooltip="__init__.py" URL="src/shop/ui/__init__.py" fillcolor="#ccffcc"]
+    "src/shop/ui/view.py" [label=<src/shop/ui/<BR/><B>view.py</B>> tooltip="view.py" URL="src/shop/ui/view.py" ]
+    "src/shop/ui/view.py" -> "missing_package" [xlabel="no-unresolved" tooltip="no-unresolved" fontcolor="red" color="red"]
+    "src/shop/ui/view.py" -> "src/shop/models.py" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="red" color="red"]
+    "src/shop/util.py" [label=<src/shop/<BR/><B>util.py</B>> tooltip="util.py" URL="src/shop/util.py" ]
+    "src/shop/util.py" -> "importlib"
+    "src/shop/util.py" -> "src/shop/models.py" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="red" color="red"]
+    "typing" [label=<./<BR/><B>typing</B>> tooltip="typing" URL="typing" color="grey" fontcolor="grey"]
+}

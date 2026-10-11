@@ -1,0 +1,35 @@
+flowchart LR
+
+subgraph 0["node_modules"]
+subgraph 1["lodash"]
+2["index.js"]
+end
+end
+subgraph 3["src"]
+4["index.ts"]
+subgraph 8["order"]
+9["order.ts"]
+A["discount.ts"]
+end
+subgraph B["util"]
+C["format.ts"]
+end
+D["legacy.js"]
+subgraph F["ui"]
+G["view.ts"]
+end
+end
+subgraph 5["."]
+6["not-there"]
+end
+7["fs"]
+E["left-pad"]
+4-->6
+4-->9
+4-->C
+4-->7
+4-->2
+9-->A
+A-->9
+D-->C
+D-->E

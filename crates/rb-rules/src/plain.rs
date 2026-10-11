@@ -1,10 +1,13 @@
 //! `explain --plain`: one deterministic English sentence per rule shape.
 //!
-//! - Source: [design § The agentic engineering hat](../../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two)
+//! - Source: [design § The agentic engineering hat](../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two)
 //!   ("Files under `apps/<x>/` may not import files under `apps/<y>/` unless x = y")
-//! - Plan: [Wave 1, Step 14](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-14-rules---json-explain-explain---plain-test-can-import-1e)
+//! - Plan: [Wave 1, Step 14](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-14-rules---json-explain-explain---plain-test-can-import-1e)
 //!   (templates in `rb-cli/src/plain/`, here one module; one test per shape)
-//! - Requirement: [FR-CLI-01](../../../../docs/prd.md#fr-cli-01)
+//! - Requirement: [FR-CLI-01](../../../docs/prd.md#fr-cli-01)
+//! - Moved here from `rb-cli` so the command line and the playground's `explain` share it
+//!   ([Wave 4, Step 2](../../../docs/plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables),
+//!   [ADR-0073](../../../docs/adr/0073-extractors-read-files-through-rb-model.md))
 //!
 //! Patterns are shown as paths: the leading `^` and trailing `$` dropped, `\.` unescaped, and a
 //! capturing group named `<x>` (or `<y>` on the target side). A pattern that does not read as a
@@ -265,6 +268,11 @@ mod tests {
                 Family::Forbidden,
                 json!({ "from": { "orphan": true, "pathNot": "\\.d\\.ts$" }, "to": {} }),
                 "Every file (except `.d.ts`) must import another module or be imported by one.",
+            ),
+            (
+                Family::Forbidden,
+                json!({ "from": { "path": "^apps/([^/]+)/" }, "to": { "path": "^lib/" } }),
+                "Files matching `apps/<x>/` may not import files matching `lib/`.",
             ),
             (
                 Family::Forbidden,

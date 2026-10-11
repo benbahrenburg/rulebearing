@@ -1,0 +1,25 @@
+strict digraph "dependency-cruiser output"{
+    rankdir="LR" splines="true" overlap="false" nodesep="0.16" ranksep="0.18" fontname="Helvetica-bold" fontsize="9" style="rounded,bold,filled" fillcolor="#ffffff" compound="true"
+    node [shape="box" style="rounded, filled" height="0.2" color="black" fillcolor="#ffffcc" fontcolor="black" fontname="Helvetica" fontsize="9"]
+    edge [arrowhead="normal" arrowsize="0.6" penwidth="2.0" color="#00000033" fontname="Helvetica" fontsize="9"]
+
+    "./not-there" [label=<./<BR/><B>not-there</B>> tooltip="not-there" ]
+    "fs" [label=<./<BR/><B>fs</B>> tooltip="fs" URL="https://nodejs.org/api/fs.html" color="grey" fontcolor="grey"]
+    "left-pad" [label=<./<BR/><B>left-pad</B>> tooltip="left-pad" ]
+    "node_modules/lodash/index.js" [label=<node_modules/lodash/<BR/><B>index.js</B>> tooltip="index.js" URL="node_modules/lodash/index.js" fillcolor="#c40b0a1a" fontcolor="#c40b0a"]
+    "src/index.ts" [label=<src/<BR/><B>index.ts</B>> tooltip="index.ts" URL="src/index.ts" fillcolor="#ddfeff"]
+    "src/index.ts" -> "./not-there" [xlabel="no-unresolvable" tooltip="no-unresolvable" fontcolor="red" color="red"]
+    "src/index.ts" -> "src/order/order.ts"
+    "src/index.ts" -> "src/util/format.ts"
+    "src/index.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "src/index.ts" -> "node_modules/lodash/index.js" [penwidth="1.0"]
+    "src/legacy.js" [label=<src/<BR/><B>legacy.js</B>> tooltip="legacy.js" URL="src/legacy.js" ]
+    "src/legacy.js" -> "src/util/format.ts"
+    "src/legacy.js" -> "left-pad" [xlabel="no-unresolvable" tooltip="no-unresolvable" fontcolor="red" color="red"]
+    "src/order/discount.ts" [label=<src/order/<BR/><B>discount.ts</B>> tooltip="discount.ts" URL="src/order/discount.ts" fillcolor="#ddfeff"]
+    "src/order/discount.ts" -> "src/order/order.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="red" color="red"]
+    "src/order/order.ts" [label=<src/order/<BR/><B>order.ts</B>> tooltip="order.ts" URL="src/order/order.ts" fillcolor="#ddfeff"]
+    "src/order/order.ts" -> "src/order/discount.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="red" color="red"]
+    "src/ui/view.ts" [label=<src/ui/<BR/><B>view.ts</B>> tooltip="view.ts" URL="src/ui/view.ts" fillcolor="#ccffcc"]
+    "src/util/format.ts" [label=<src/util/<BR/><B>format.ts</B>> tooltip="format.ts" URL="src/util/format.ts" fillcolor="#ddfeff"]
+}

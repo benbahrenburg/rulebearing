@@ -1,0 +1,9 @@
+no-unresolvable  (forbidden, error)
+  Files may not import anything that does not resolve.
+  fix: Fix the specifier, or add the package to package.json.
+  from: {}
+  to: {"couldNotResolve":true}
+  matches: from 10 modules, to 0; 2 violations
+  first edges:
+    src/index.ts -> ./not-there
+    src/legacy.js -> left-pad

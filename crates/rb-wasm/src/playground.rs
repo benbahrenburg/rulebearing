@@ -1,9 +1,10 @@
 //! What the playground's exports do, in plain Rust so the native tests reach every line: a
-//! configuration and a cruise result in, a report out, through the same library calls the
-//! command line makes for `cruise --graph`.
+//! configuration and a cruise result in, a report or a rule's explanation out, through the same
+//! library calls the command line makes for `cruise --graph` and `explain --graph`.
 //!
 //! - Plan: [Wave 4, Step 2](../../../docs/plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables)
-//!   (`evaluate(config, cruise_json, output_type)`: "rules over a pasted graph document")
+//!   (`evaluate(config, cruise_json, output_type)`: "rules over a pasted graph document";
+//!   `explain(config, cruise_json, rule)`, through [`rb_rules::explain`] as the command line)
 //! - Contract: [plan 0004 § 1.6](../../../docs/plans/pending/0004-wave-4-reach.md#16-interfaces-and-contracts-this-wave-freezes)
 //! - Requirement: [FR-REACH-01](../../../docs/prd.md#fr-reach-01)
 //!
@@ -36,6 +37,16 @@ pub enum PlaygroundError {
     /// No reporter has this name (exit 3).
     #[error("{0}")]
     Report(String),
+    /// The dropped files cannot be a file tree (a path outside the folder, a file inside a file).
+    #[error("the files cannot be read: {0}")]
+    Files(String),
+    /// The extractor stopped: no module found, a file it cannot read, an option that needs the
+    /// disk or a process (exit 2).
+    #[error("the files could not be extracted: {0}")]
+    Extract(String),
+    /// `explain` was asked about a rule the configuration does not have (exit 3).
+    #[error("{0}")]
+    Rule(String),
 }
 
 /// The moment a playground run is evaluated at: the day `expires` and lifecycle dates are
@@ -93,16 +104,7 @@ pub fn evaluate(
     output_type: &str,
     now: &Now,
 ) -> Result<String, PlaygroundError> {
-    if !rb_report::OUTPUT_TYPES
-        .iter()
-        .any(|(name, _)| *name == output_type)
-    {
-        let names: Vec<&str> = rb_report::OUTPUT_TYPES.iter().map(|(n, _)| *n).collect();
-        return Err(PlaygroundError::Report(format!(
-            "no output type `{output_type}`; the output types are {}",
-            names.join(", ")
-        )));
-    }
+    check_output_type(output_type)?;
     let config = load_config(config)?;
     let mut document = rb_ingest::dependency_cruiser::read(cruise_json)
         .map_err(|e| PlaygroundError::Graph(e.to_string()))?;
@@ -142,6 +144,89 @@ pub fn evaluate(
     rb_report::render(output_type, &value, &report)
         .map(|rendered| rendered.output)
         .map_err(|e| PlaygroundError::Report(e.to_string()))
+}
+
+/// That `output_type` names a reporter.
+///
+/// # Errors
+/// [`PlaygroundError::Report`] listing the output types there are.
+pub fn check_output_type(output_type: &str) -> Result<(), PlaygroundError> {
+    if rb_report::OUTPUT_TYPES
+        .iter()
+        .any(|(name, _)| *name == output_type)
+    {
+        return Ok(());
+    }
+    let names: Vec<&str> = rb_report::OUTPUT_TYPES.iter().map(|(n, _)| *n).collect();
+    Err(PlaygroundError::Report(format!(
+        "no output type `{output_type}`; the output types are {}",
+        names.join(", ")
+    )))
+}
+
+/// A finished document as `cruise` prints it to standard output: `json` serialised as it is,
+/// any other reporter handed the document (without the code layer when it does not read it)
+/// with the configuration's collapse and the page's timestamp.
+///
+/// # Errors
+/// [`PlaygroundError::Report`] when the reporter fails.
+pub fn render(
+    document: &rb_model::GraphDocument,
+    output_type: &str,
+    config: &Config,
+    now: &Now,
+) -> Result<String, PlaygroundError> {
+    let report = |e: String| PlaygroundError::Report(e);
+    if output_type == "json" {
+        let mut text = serde_json::to_string_pretty(document).map_err(|e| report(e.to_string()))?;
+        text.push('\n');
+        return Ok(text);
+    }
+    let mut value = serde_json::to_value(document).map_err(|e| report(e.to_string()))?;
+    if !rb_report::reads_code(output_type)
+        && let Some(object) = value.as_object_mut()
+    {
+        object.remove("code");
+    }
+    let options = rb_report::ReportOptions {
+        timestamp: now.timestamp.clone(),
+        collapse_pattern: rb_rules::rewrap::report_format(config).collapse,
+        ..rb_report::ReportOptions::default()
+    };
+    rb_report::render(output_type, &value, &options)
+        .map(|rendered| rendered.output)
+        .map_err(|e| report(e.to_string()))
+}
+
+/// `explain(config, cruise_json, rule)`: the rule, its sentence, fix and selectors, what it
+/// matched in the pasted cruise result and the first ten edges it flagged, as
+/// `rulebearing explain <rule> --graph <file>` prints them ([`rb_rules::explain`]).
+///
+/// # Errors
+/// A [`PlaygroundError`]: the configuration, no such rule, a graph that is not a cruise result.
+pub fn explain(
+    config: &str,
+    cruise_json: &str,
+    rule: &str,
+    now: &Now,
+) -> Result<String, PlaygroundError> {
+    let config = load_config(config)?;
+    let explained =
+        rb_rules::explain::find(&config, rule).map_err(|e| PlaygroundError::Rule(e.to_string()))?;
+    let mut document = rb_ingest::dependency_cruiser::read(cruise_json)
+        .map_err(|e| PlaygroundError::Graph(e.to_string()))?;
+    reset(&mut document);
+    let options = EvalOptions {
+        liveness: false,
+        validate: true,
+        metrics: config.options.metrics.unwrap_or(false),
+        today: now.today,
+        args: Vec::new(),
+        options_used: serde_json::Map::new(),
+    };
+    let evaluation = evaluate_rules(document, &config, &options)
+        .map_err(|e| PlaygroundError::Engine(e.to_string()))?;
+    Ok(explained.with_graph(&evaluation, false))
 }
 
 /// `version()`: the Rulebearing version the playground was built from.

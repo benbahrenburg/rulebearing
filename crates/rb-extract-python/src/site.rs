@@ -24,6 +24,8 @@ use std::collections::BTreeMap;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use rb_model::Files;
+
 /// The folder names searched for an environment beside a root, in order.
 pub const ENV_DIRS: &[&str] = &[".venv", "venv", "env"];
 
@@ -100,13 +102,14 @@ impl SiteIndex {
 /// `lib/pythonX.Y/site-packages` matching `version` wins, then the highest version, then the
 /// Windows `Lib/site-packages`.
 pub fn find(
+    files: &Files,
     base: &Path,
     roots: &[String],
     virtual_env: Option<&Path>,
     version: &str,
 ) -> Option<PathBuf> {
     if let Some(env) = virtual_env
-        && let Some(found) = site_packages_in(env, version)
+        && let Some(found) = site_packages_in(files, env, version)
     {
         return Some(found);
     }
@@ -118,12 +121,13 @@ pub fn find(
     dirs.push(base.to_path_buf());
     dirs.iter()
         .flat_map(|dir| ENV_DIRS.iter().map(move |name| dir.join(name)))
-        .find_map(|env| site_packages_in(&env, version))
+        .find_map(|env| site_packages_in(files, &env, version))
 }
 
-fn site_packages_in(env: &Path, version: &str) -> Option<PathBuf> {
+fn site_packages_in(files: &Files, env: &Path, version: &str) -> Option<PathBuf> {
     let lib = env.join("lib");
-    let mut candidates: Vec<(Option<(u32, u32)>, PathBuf)> = std::fs::read_dir(&lib)
+    let mut candidates: Vec<(Option<(u32, u32)>, PathBuf)> = files
+        .read_dir(&lib)
         .into_iter()
         .flatten()
         .filter_map(Result::ok)
@@ -131,7 +135,7 @@ fn site_packages_in(env: &Path, version: &str) -> Option<PathBuf> {
             let name = entry.file_name().to_string_lossy().into_owned();
             let rest = name.strip_prefix("python")?;
             let site = entry.path().join("site-packages");
-            site.is_dir().then(|| (parse_version(rest), site))
+            files.is_dir(&site).then(|| (parse_version(rest), site))
         })
         .collect();
     let wanted = parse_version(version);
@@ -143,7 +147,7 @@ fn site_packages_in(env: &Path, version: &str) -> Option<PathBuf> {
         return Some(highest);
     }
     let windows = env.join("Lib").join("site-packages");
-    windows.is_dir().then_some(windows)
+    files.is_dir(&windows).then_some(windows)
 }
 
 fn parse_version(text: &str) -> Option<(u32, u32)> {
@@ -161,11 +165,17 @@ fn parse_version(text: &str) -> Option<(u32, u32)> {
 ///
 /// # Errors
 /// The folder cannot be listed. A single unreadable `dist-info` file is skipped, not an error.
-pub fn index(site_packages: &Path, shown: impl Into<String>) -> io::Result<SiteIndex> {
-    let mut dist_infos: Vec<PathBuf> = std::fs::read_dir(site_packages)?
+pub fn index(
+    files: &Files,
+    site_packages: &Path,
+    shown: impl Into<String>,
+) -> io::Result<SiteIndex> {
+    let mut dist_infos: Vec<PathBuf> = files
+        .read_dir(site_packages)?
+        .into_iter()
         .filter_map(Result::ok)
         .map(|e| e.path())
-        .filter(|p| p.is_dir() && p.extension().and_then(|e| e.to_str()) == Some("dist-info"))
+        .filter(|p| files.is_dir(p) && p.extension().and_then(|e| e.to_str()) == Some("dist-info"))
         .collect();
     dist_infos.sort();
     let mut site = SiteIndex {
@@ -177,7 +187,9 @@ pub fn index(site_packages: &Path, shown: impl Into<String>) -> io::Result<SiteI
             .file_stem()
             .map(|s| s.to_string_lossy().into_owned())
             .unwrap_or_default();
-        let metadata = std::fs::read_to_string(info.join("METADATA")).unwrap_or_default();
+        let metadata = files
+            .read_to_string(&info.join("METADATA"))
+            .unwrap_or_default();
         let headers = metadata_headers(&metadata);
         let name = headers
             .get("Name")
@@ -187,12 +199,12 @@ pub fn index(site_packages: &Path, shown: impl Into<String>) -> io::Result<SiteI
             name,
             license: license(&headers),
         };
-        if let Ok(text) = std::fs::read_to_string(info.join("top_level.txt")) {
+        if let Ok(text) = files.read_to_string(&info.join("top_level.txt")) {
             for line in text.lines().map(str::trim).filter(|l| !l.is_empty()) {
                 SiteIndex::add(&mut site.declared, line.replace('/', "."), &distribution);
             }
         }
-        if let Ok(text) = std::fs::read_to_string(info.join("RECORD")) {
+        if let Ok(text) = files.read_to_string(&info.join("RECORD")) {
             for prefix in text.lines().flat_map(record_prefixes) {
                 SiteIndex::add(&mut site.recorded, prefix, &distribution);
             }
@@ -362,7 +374,10 @@ mod tests {
     #[test]
     fn an_environment_is_found_and_indexed() -> io::Result<()> {
         let dir = scratch("find");
-        assert_eq!(find(&dir, &[".".to_owned()], None, "3.12"), None);
+        assert_eq!(
+            find(&Files::disk(), &dir, &[".".to_owned()], None, "3.12"),
+            None
+        );
         let site = "src/.venv/lib/python3.11/site-packages";
         write(
             &dir,
@@ -387,14 +402,14 @@ mod tests {
         write(&dir, "src/.venv/lib/python3.12/site-packages/.keep", "");
         write(&dir, "src/.venv/lib/pythonX/site-packages/.keep", "");
         let roots = ["src".to_owned()];
-        let found = find(&dir, &roots, None, "3.11");
+        let found = find(&Files::disk(), &dir, &roots, None, "3.11");
         assert_eq!(found, Some(dir.join(site)));
-        let highest = find(&dir, &roots, None, "3.13");
+        let highest = find(&Files::disk(), &dir, &roots, None, "3.13");
         assert_eq!(
             highest,
             Some(dir.join("src/.venv/lib/python3.12/site-packages"))
         );
-        let index = index(&dir.join(site), site)?;
+        let index = index(&Files::disk(), &dir.join(site), site)?;
         assert_eq!(index.path, site);
         let names: Vec<&str> = index.recorded.keys().map(String::as_str).collect();
         assert_eq!(names, ["bare", "fancy", "fancy.x", "fancy_extra"]);
@@ -408,7 +423,7 @@ mod tests {
         assert_eq!(one("fancy.x"), Some(("bare".to_owned(), None)));
         assert_eq!(one("bare"), Some(("bare".to_owned(), None)));
         assert!(index.lookup("missing").is_none());
-        assert!(super::index(&dir.join("nowhere"), "x").is_err());
+        assert!(super::index(&Files::disk(), &dir.join("nowhere"), "x").is_err());
         let _ = std::fs::remove_dir_all(&dir);
         Ok(())
     }
@@ -461,7 +476,7 @@ mod tests {
             "google/protobuf/__init__.py,,\n",
             "Name: protobuf\nLicense: BSD-3-Clause\n",
         );
-        let index = index(&dir, "site")?;
+        let index = index(&Files::disk(), &dir, "site")?;
         let protobuf = Distribution {
             name: "protobuf".into(),
             license: Some("BSD-3-Clause".into()),
@@ -489,11 +504,17 @@ mod tests {
         write(&dir, ".venv/lib/python3.12/site-packages/.keep", "");
         let active = dir.join("active");
         assert_eq!(
-            find(&dir, &[], Some(&active), "3.12"),
+            find(&Files::disk(), &dir, &[], Some(&active), "3.12"),
             Some(active.join("Lib/site-packages"))
         );
         assert_eq!(
-            find(&dir, &[], Some(&dir.join("missing")), "3.12"),
+            find(
+                &Files::disk(),
+                &dir,
+                &[],
+                Some(&dir.join("missing")),
+                "3.12"
+            ),
             Some(dir.join(".venv/lib/python3.12/site-packages"))
         );
         assert_eq!(parse_version("3.13t"), Some((3, 13)));

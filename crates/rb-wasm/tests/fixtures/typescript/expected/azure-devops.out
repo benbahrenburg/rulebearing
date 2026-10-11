@@ -1,0 +1,4 @@
+##vso[task.logissue type=error;sourcepath=src/order/discount.ts;code=no-circular;]src/order/discount.ts -> src/order/order.ts -> src/order/discount.ts
+##vso[task.logissue type=error;sourcepath=src/index.ts;code=no-unresolvable;]src/index.ts -> ./not-there
+##vso[task.logissue type=error;sourcepath=src/legacy.js;code=no-unresolvable;]src/legacy.js -> left-pad
+##vso[task.complete result=Failed;]3 dependency violations (3 error, 0 warning/ informational). 10 modules, 9 dependencies cruised

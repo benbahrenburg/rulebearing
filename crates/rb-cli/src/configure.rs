@@ -17,7 +17,7 @@ use rb_model::ModuleSystem;
 use rb_model::options::{
     FileReference, PathFilter, Patterns, SpecifyLiteral, TsPreCompilationDeps,
 };
-use serde_json::{Map, Value, json};
+use serde_json::{Map, Value};
 
 use crate::cli::{ConfigArgs, CruiseArgs, KnownArgs};
 use crate::context::Context;
@@ -389,134 +389,28 @@ pub fn known_violations(
     Ok(())
 }
 
-/// dependency-cruiser's option defaults, which `optionsUsed` carries.
-fn defaults(cwd: &str) -> Map<String, Value> {
-    let mut map = Map::new();
-    map.insert("baseDir".into(), json!(cwd));
-    map.insert("maxDepth".into(), json!(0));
-    map.insert("moduleSystems".into(), json!(["es6", "cjs", "tsd", "amd"]));
-    map.insert("detectJSDocImports".into(), json!(false));
-    map.insert("detectProcessBuiltinModuleCalls".into(), json!(false));
-    map.insert("skipAnalysisNotInRules".into(), json!(false));
-    map.insert("tsPreCompilationDeps".into(), json!(false));
-    map.insert("preserveSymlinks".into(), json!(false));
-    map.insert("combinedDependencies".into(), json!(false));
-    map.insert(
-        "externalModuleResolutionStrategy".into(),
-        json!("node_modules"),
-    );
-    map.insert("exoticRequireStrings".into(), json!([]));
-    map
-}
-
-/// `shouldCalculateMetrics`: metrics are computed when `--metrics` asks, when the reporter is
-/// `metrics`, when the reporter's own options set `showMetrics: true`, or when a rule needs them
-/// (`to.moreUnstable`, `scope: folder`), as dependency-cruiser's option normalisation decides.
-pub fn wants_metrics(config: &Config, flag: bool, output_type: &str) -> bool {
-    let reporter_shows = config
-        .options
-        .reporter_options
-        .as_ref()
-        .and_then(|r| r.get(output_type))
-        .and_then(|r| r.get("showMetrics"))
-        == Some(&Value::Bool(true));
-    flag || output_type == "metrics"
-        || reporter_shows
-        || rb_rules::evaluate::needs_metrics(&config.rules.dependencies)
-}
-
-/// The `reporterOptions` patterns dependency-cruiser's `normalizeReporterOptions` turns from an
-/// array into one alternation.
-const REPORTER_PATTERNS: &[&str] = &[
-    "archi.collapsePattern",
-    "archi.filters.includeOnly.path",
-    "archi.filters.focus.path",
-    "archi.filters.exclude.path",
-    "dot.collapsePattern",
-    "dot.filters.includeOnly.path",
-    "dot.filters.focus.path",
-    "dot.filters.exclude.path",
-    "ddot.collapsePattern",
-    "ddot.filters.includeOnly.path",
-    "ddot.filters.focus.path",
-    "ddot.filters.exclude.path",
-];
-
-/// `normalizeReporterOptions`: each pattern of `REPORTER_PATTERNS` given as an array becomes
-/// its items joined with `|`; anything else is kept as it is.
-pub fn normalize_reporter_options(reporter_options: &mut Value) {
-    for path in REPORTER_PATTERNS {
-        let pointer = format!("/{}", path.replace('.', "/"));
-        if let Some(at) = reporter_options.pointer_mut(&pointer)
-            && let Value::Array(items) = at
-        {
-            let joined = items
-                .iter()
-                .map(|i| match i {
-                    Value::String(s) => s.clone(),
-                    Value::Null => String::new(),
-                    other => other.to_string(),
-                })
-                .collect::<Vec<_>>()
-                .join("|");
-            *at = Value::String(joined);
-        }
-    }
-}
+/// `shouldCalculateMetrics` and `normalizeReporterOptions`, shared with the playground
+/// ([Wave 4, Step 2](../../../docs/plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables)).
+pub use rb_config::options_used::normalize_reporter_options;
+pub use rb_rules::evaluate::wants_metrics;
 
 /// The options `summary.optionsUsed` reports: dependency-cruiser's defaults, the configuration's
-/// options and the command line's, in that order of precedence.
+/// options and the command line's, in that order of precedence
+/// ([`rb_config::options_used::options_used`] in the working directory).
 pub fn options_used(
     config: Option<&Config>,
     ctx: &Context<'_>,
     output_type: &str,
     output_to: &str,
 ) -> Map<String, Value> {
-    let mut map = defaults(&ctx.cwd.to_string_lossy());
-    if let Some(config) = config {
-        if let Ok(Value::Object(ts)) = serde_json::to_value(&config.languages.typescript) {
-            map.extend(ts);
-        }
-        if let Ok(Value::Object(options)) = serde_json::to_value(&config.options) {
-            map.extend(options);
-        }
-        if !config.known_violations.is_empty() {
-            map.insert(
-                "knownViolations".into(),
-                serde_json::to_value(&config.known_violations).unwrap_or(Value::Null),
-            );
-        }
-        if let Some(origin) = &config.origin {
-            let cwd = ctx.cwd.canonicalize().unwrap_or_else(|_| ctx.cwd.clone());
-            map.insert(
-                "rulesFile".into(),
-                json!(
-                    origin
-                        .strip_prefix(&cwd)
-                        .unwrap_or(origin)
-                        .to_string_lossy()
-                ),
-            );
-        }
-        if config.via_node {
-            map.insert("viaNode".into(), json!(true));
-        }
-    }
-    for key in ["doNotFollow", "exclude"] {
-        map.entry(key).or_insert_with(|| json!({}));
-    }
-    if let Some(reporter_options) = map.get_mut("reporterOptions") {
-        normalize_reporter_options(reporter_options);
-    }
-    map.insert("outputType".into(), json!(output_type));
-    map.insert("outputTo".into(), json!(output_to));
-    map
+    rb_config::options_used::options_used(config, &ctx.cwd, output_type, output_to)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use chrono::NaiveDate;
+    use serde_json::json;
 
     fn ctx<'a>(dir: &std::path::Path, stdin: &'a mut dyn std::io::Read) -> Context<'a> {
         Context {

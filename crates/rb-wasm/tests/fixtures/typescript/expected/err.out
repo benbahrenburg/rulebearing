@@ -1,0 +1,9 @@
+
+  error no-unresolvable: src/legacy.js → left-pad
+  error no-unresolvable: src/index.ts → ./not-there
+  error no-circular: src/order/discount.ts → 
+      src/order/order.ts →
+      src/order/discount.ts
+
+x 3 dependency violations (3 errors, 0 warnings). 10 modules, 9 dependencies cruised.
+

@@ -1,0 +1,64 @@
+[
+  {
+    "from": "src/order/discount.ts",
+    "to": "src/order/order.ts",
+    "unresolvedTo": "./order",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "type": "cycle",
+    "rule": {
+      "name": "no-circular",
+      "severity": "error"
+    },
+    "cycle": [
+      {
+        "name": "src/order/order.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/order/discount.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ],
+    "id": "RB-03a7bc47",
+    "fix": "Move what both modules need into a third module both import."
+  },
+  {
+    "from": "src/index.ts",
+    "to": "./not-there",
+    "unresolvedTo": "./not-there",
+    "dependencyTypes": [
+      "unknown"
+    ],
+    "type": "dependency",
+    "rule": {
+      "name": "no-unresolvable",
+      "severity": "error"
+    },
+    "id": "RB-305f9783",
+    "fix": "Fix the specifier, or add the package to package.json."
+  },
+  {
+    "from": "src/legacy.js",
+    "to": "left-pad",
+    "unresolvedTo": "left-pad",
+    "dependencyTypes": [
+      "unknown"
+    ],
+    "type": "dependency",
+    "rule": {
+      "name": "no-unresolvable",
+      "severity": "error"
+    },
+    "id": "RB-57ba33a0",
+    "fix": "Fix the specifier, or add the package to package.json."
+  }
+]

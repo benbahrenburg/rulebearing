@@ -32,6 +32,9 @@ export default defineConfig([
         // The serve fixture repository and its MCP and LSP transcripts, compared byte for byte
         // (plan 0003, Steps 19 and 20).
         'crates/rb-cli/tests/fixtures/serve/**',
+        // The playground's fixture repositories and the command line's outputs over them, compared
+        // byte for byte (plan 0004, Step 2).
+        'crates/rb-wasm/tests/fixtures/**',
         // The ESLint plugin's fixture repository, linted by the plugin's own tests against the gate
         // (plan 0002, Step 13), not by the repository's configuration.
         'frontends/eslint-plugin-rulebearing/test/fixture/**',

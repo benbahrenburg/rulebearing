@@ -18,13 +18,22 @@
 //! ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
 //! every file unchanged, every file changed, and each file changed on its own must give the same
 //! extraction byte for byte, so each option fixture is also a fixture of incremental extraction.
+//!
+//! Every extraction through [`run_in`] and [`run_native`] is repeated once more from a copy of
+//! the fixture's files held in memory at the same paths ([`rb_model::Files::memory`],
+//! [ADR-0073](../../../docs/adr/0073-extractors-read-files-through-rb-model.md)), as the
+//! playground extracts a dropped folder: it must give the disk's extraction byte for byte, or
+//! refuse by name what needs the disk or a process.
 
 use std::path::{Path, PathBuf};
 
 use rb_extract_ts::pipeline::Settings;
 use rb_extract_ts::resolve::ResolveConfig;
-use rb_extract_ts::{TypeScriptExtractor, extract_incremental, extract_with, prepare};
-use rb_model::{ExtractError, ExtractRequest, Extraction, Extractor, Module, TypeScriptOptions};
+use rb_extract_ts::{TypeScriptExtractor, extract_incremental, extract_with, prepare, prepare_in};
+use rb_model::{
+    ExtractError, ExtractRequest, Extraction, Extractor, Files, MemoryTree, Module,
+    TypeScriptOptions,
+};
 
 /// Extracts in full with `setup`'s settings, then asserts every incremental variant over the
 /// files read gives the same extraction, and returns the full one.
@@ -99,7 +108,74 @@ fn run_in(cwd: &Path, options: &str, roots: &[&str]) -> Result<Extraction, Extra
             reason: e.to_string(),
         })?;
     let roots: Vec<PathBuf> = roots.iter().map(PathBuf::from).collect();
-    with_incremental(&|| prepare(&options, cwd), &roots)
+    let disk = with_incremental(&|| prepare(&options, cwd), &roots);
+    same_from_memory(cwd, &options, &roots, false, &disk);
+    disk
+}
+
+/// Every file under `dir`, at its own path, in memory; `None` when the folder holds a symbolic
+/// link, which a tree in memory cannot.
+fn memory_copy(dir: &Path) -> Option<MemoryTree> {
+    let mut tree = MemoryTree::new();
+    let mut stack = vec![dir.to_path_buf()];
+    while let Some(folder) = stack.pop() {
+        for entry in std::fs::read_dir(&folder).ok()? {
+            let entry = entry.ok()?;
+            let kind = entry.file_type().ok()?;
+            if kind.is_symlink() {
+                return None;
+            }
+            if kind.is_dir() {
+                stack.push(entry.path());
+            } else {
+                tree.insert(&entry.path(), std::fs::read(entry.path()).ok()?)
+                    .ok()?;
+            }
+        }
+    }
+    Some(tree)
+}
+
+/// The extraction of `roots` from `cwd`'s files held in memory equals `disk`'s, byte for byte;
+/// what needs the disk or a process (the sidecar, Yarn Plug'n'Play) is refused by name.
+fn same_from_memory(
+    cwd: &Path,
+    options: &TypeScriptOptions,
+    roots: &[PathBuf],
+    markdown_fences: bool,
+    disk: &Result<Extraction, ExtractError>,
+) {
+    let Some(tree) = memory_copy(cwd) else {
+        return;
+    };
+    let memory =
+        prepare_in(options, cwd, &Files::memory(tree)).and_then(|(mut settings, config)| {
+            settings.markdown_fences = markdown_fences;
+            extract_with(roots, &settings, &config)
+        });
+    let needs_the_disk = options.sidecar.is_some()
+        || options.external_module_resolution_strategy()
+            == rb_model::ExternalModuleResolutionStrategy::YarnPnp;
+    if needs_the_disk {
+        let refused = memory.err().map(|e| e.to_string()).unwrap_or_default();
+        assert!(
+            refused.contains("cannot be used: the files are held in memory"),
+            "{}: {refused}",
+            cwd.display()
+        );
+        return;
+    }
+    let json = |r: &Result<Extraction, ExtractError>| match r {
+        Ok(extraction) => serde_json::to_string_pretty(extraction).unwrap_or_default(),
+        Err(_) => "an error".to_owned(),
+    };
+    assert_eq!(
+        json(&memory),
+        json(disk),
+        "{}: the extraction from memory differs from the disk's ({:?})",
+        cwd.display(),
+        memory.as_ref().err()
+    );
 }
 
 fn run(name: &str, options: &str, roots: &[&str]) -> Result<Extraction, ExtractError> {
@@ -115,14 +191,16 @@ fn run_native(name: &str, options: &str, roots: &[&str]) -> Result<Extraction, E
             reason: e.to_string(),
         })?;
     let roots: Vec<PathBuf> = roots.iter().map(PathBuf::from).collect();
-    with_incremental(
+    let disk = with_incremental(
         &|| {
             let (mut settings, config) = prepare(&options, &fixture(name))?;
             settings.markdown_fences = true;
             Ok((settings, config))
         },
         &roots,
-    )
+    );
+    same_from_memory(&fixture(name), &options, &roots, true, &disk);
+    disk
 }
 
 /// `(module, line, column)` of every edge leaving `source`.

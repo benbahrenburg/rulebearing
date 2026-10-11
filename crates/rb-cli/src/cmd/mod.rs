@@ -33,7 +33,7 @@ pub mod import;
 pub mod init;
 pub mod init_graph;
 pub mod place;
-pub mod plain;
+pub use rb_rules::plain;
 pub mod propose;
 pub mod query;
 pub mod rules;

@@ -2137,6 +2137,8 @@ dependencies = [
  "chrono",
  "js-sys",
  "rb-config",
+ "rb-extract-python",
+ "rb-extract-ts",
  "rb-ingest",
  "rb-model",
  "rb-report",

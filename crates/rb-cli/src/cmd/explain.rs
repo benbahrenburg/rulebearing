@@ -9,15 +9,14 @@
 //! - Requirement: [FR-CLI-01](../../../../docs/prd.md#fr-cli-01), [FR-CLI-06](../../../../docs/prd.md#fr-cli-06)
 //!
 //! `--json` prints the rule as `rules --json` lists it (with its statistics, or without them under
-//! `--plain`), plus its `sentence` and, unless `--plain`, the `firstEdges` the text lists.
-
-use std::fmt::Write as _;
+//! `--plain`), plus its `sentence` and, unless `--plain`, the `firstEdges` the text lists. What
+//! is printed is [`rb_rules::explain`]'s, which the playground's `explain` prints too
+//! ([Wave 4, Step 2](../../../../docs/plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables)).
 
 use clap::Args;
-use serde_json::{Value, json};
 
 use crate::cli::{ConfigArgs, GraphArgs};
-use crate::cmd::{plain, rules};
+use crate::cmd::rules;
 use crate::context::Context;
 use crate::{Outcome, RunExit, configure};
 
@@ -46,106 +45,20 @@ pub fn run(ctx: &mut Context<'_>, args: &ExplainArgs) -> Outcome {
         Ok(c) => c,
         Err(o) => return o,
     };
-    let listed = rules::listed(&config);
-    let allowed_offset = config.rules.dependencies.forbidden.len();
-    let Some(index) = listed.iter().enumerate().position(|(i, (family, rule))| {
-        rule.name() == args.rule
-            || (*family == rb_config::Family::Allowed
-                && args.rule == format!("allowed[{}]", i - allowed_offset))
-    }) else {
-        let names: Vec<&str> = listed.iter().map(|(_, r)| r.name()).collect();
-        return Outcome::failed(
-            RunExit::InvalidConfig,
-            format!(
-                "rulebearing explain: no rule `{}`; the rules are {}\n",
-                args.rule,
-                names.join(", ")
-            ),
-        );
+    let explained = match rb_rules::explain::find(&config, &args.rule) {
+        Ok(explained) => explained,
+        Err(no_rule) => {
+            return Outcome::failed(
+                RunExit::InvalidConfig,
+                format!("rulebearing explain: {no_rule}\n"),
+            );
+        }
     };
-    let (family, rule) = listed[index];
-    let sentence = plain::sentence(family, rule);
     if args.plain {
-        if args.json {
-            return Outcome::printed(json_text(
-                rules::rule_json(family, rule, None),
-                &sentence,
-                None,
-            ));
-        }
-        return Outcome::printed(format!("{sentence}\n"));
+        return Outcome::printed(explained.plain(args.json));
     }
-    let evaluation = match rules::statistics(ctx, &config, &args.graph) {
-        Ok(e) => e,
-        Err(o) => return o,
-    };
-    let stats = evaluation.rule_stats.get(index);
-    let first: Vec<(&str, &str)> = evaluation
-        .document
-        .summary
-        .violations
-        .iter()
-        .filter(|v| v.rule.name == rule.name())
-        .take(10)
-        .map(|v| (v.from.as_str(), v.to.as_str()))
-        .collect();
-    if args.json {
-        return Outcome::printed(json_text(
-            rules::rule_json(family, rule, stats),
-            &sentence,
-            Some(&first),
-        ));
+    match rules::statistics(ctx, &config, &args.graph) {
+        Ok(evaluation) => Outcome::printed(explained.with_graph(&evaluation, args.json)),
+        Err(o) => o,
     }
-    let mut out = String::new();
-    let _ = writeln!(
-        out,
-        "{}  ({}, {})",
-        rule.name(),
-        family.as_str(),
-        rule.severity()
-    );
-    let _ = writeln!(out, "  {sentence}");
-    if let Some(comment) = &rule.meta.comment {
-        let _ = writeln!(out, "  why: {comment}");
-    }
-    let _ = writeln!(out, "  fix: {}", rule.meta.fix.as_deref().unwrap_or("-"));
-    let selectors = rules::rule_json(family, rule, None);
-    for side in ["from", "to", "module", "select"] {
-        if let Some(value) = selectors.get(side).filter(|v| !v.is_null()) {
-            let _ = writeln!(out, "  {side}: {value}");
-        }
-    }
-    if let Some(stats) = stats {
-        let _ = writeln!(
-            out,
-            "  matches: from {} modules, to {}; {} violations",
-            stats.from_matches, stats.to_matches, stats.violations
-        );
-    }
-    let edges: Vec<String> = first
-        .iter()
-        .map(|(from, to)| format!("    {from} -> {to}"))
-        .collect();
-    if !edges.is_empty() {
-        let _ = writeln!(out, "  first edges:\n{}", edges.join("\n"));
-    }
-    Outcome::printed(out)
-}
-
-/// `explain --json`: the rule as `rules --json` lists it, its sentence and, when the graph was
-/// read, the first edges it flagged.
-fn json_text(mut value: Value, sentence: &str, first: Option<&[(&str, &str)]>) -> String {
-    if let Some(object) = value.as_object_mut() {
-        object.insert("sentence".into(), json!(sentence));
-        if let Some(first) = first {
-            let edges: Vec<Value> = first
-                .iter()
-                .map(|(from, to)| json!({ "from": from, "to": to }))
-                .collect();
-            object.insert("firstEdges".into(), Value::Array(edges));
-        }
-    }
-    let mut text = serde_json::to_string_pretty(&value).unwrap_or_default();
-    text.push('\n');
-    text
 }

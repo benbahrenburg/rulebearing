@@ -1,0 +1,626 @@
+{
+  "modules": [
+    {
+      "source": "node_modules/lodash/index.js",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/index.ts"
+      ],
+      "orphan": false,
+      "language": "javascript"
+    },
+    {
+      "source": "src/index.ts",
+      "dependencies": [
+        {
+          "module": "./not-there",
+          "resolved": "./not-there",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unknown"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-unresolvable",
+              "severity": "error"
+            }
+          ],
+          "line": 5,
+          "column": 1,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "./order/order",
+          "resolved": "src/order/order.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 2,
+          "column": 1,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "@app/util/format",
+          "resolved": "src/util/format.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "fs",
+          "protocol": "node:",
+          "resolved": "fs",
+          "coreModule": true,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 4,
+          "column": 1,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "lodash",
+          "resolved": "node_modules/lodash/index.js",
+          "coreModule": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 3,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "./not-there",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/index.ts"
+      ],
+      "followable": false,
+      "matchesDoNotFollow": false,
+      "coreModule": false,
+      "couldNotResolve": true,
+      "dependencyTypes": [
+        "unknown"
+      ],
+      "orphan": false
+    },
+    {
+      "source": "fs",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/index.ts"
+      ],
+      "followable": false,
+      "matchesDoNotFollow": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "core",
+        "import"
+      ],
+      "orphan": false
+    },
+    {
+      "source": "src/order/order.ts",
+      "dependencies": [
+        {
+          "module": "./discount",
+          "resolved": "src/order/discount.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": true,
+          "cycle": [
+            {
+              "name": "src/order/discount.ts",
+              "dependencyTypes": [
+                "local",
+                "import"
+              ]
+            },
+            {
+              "name": "src/order/order.ts",
+              "dependencyTypes": [
+                "local",
+                "import"
+              ]
+            }
+          ],
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-circular",
+              "severity": "error"
+            }
+          ],
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "src/index.ts",
+        "src/order/discount.ts"
+      ],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/order/discount.ts",
+      "dependencies": [
+        {
+          "module": "./order",
+          "resolved": "src/order/order.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": true,
+          "cycle": [
+            {
+              "name": "src/order/order.ts",
+              "dependencyTypes": [
+                "local",
+                "import"
+              ]
+            },
+            {
+              "name": "src/order/discount.ts",
+              "dependencyTypes": [
+                "local",
+                "import"
+              ]
+            }
+          ],
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-circular",
+              "severity": "error"
+            }
+          ],
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "src/order/order.ts"
+      ],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/util/format.ts",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/index.ts",
+        "src/legacy.js"
+      ],
+      "orphan": false,
+      "language": "typescript"
+    },
+    {
+      "source": "src/legacy.js",
+      "dependencies": [
+        {
+          "module": "./util/format",
+          "resolved": "src/util/format.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "require"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "cjs",
+          "valid": true,
+          "line": 2,
+          "column": 20,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "left-pad",
+          "resolved": "left-pad",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unknown"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "cjs",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-unresolvable",
+              "severity": "error"
+            }
+          ],
+          "line": 1,
+          "column": 13,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [],
+      "orphan": false,
+      "language": "javascript"
+    },
+    {
+      "source": "left-pad",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/legacy.js"
+      ],
+      "followable": false,
+      "matchesDoNotFollow": false,
+      "coreModule": false,
+      "couldNotResolve": true,
+      "dependencyTypes": [
+        "unknown"
+      ],
+      "orphan": false
+    },
+    {
+      "source": "src/ui/view.ts",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [],
+      "orphan": true,
+      "language": "typescript"
+    }
+  ],
+  "summary": {
+    "violations": [
+      {
+        "from": "src/order/discount.ts",
+        "to": "src/order/order.ts",
+        "unresolvedTo": "./order",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ],
+        "type": "cycle",
+        "rule": {
+          "name": "no-circular",
+          "severity": "error"
+        },
+        "cycle": [
+          {
+            "name": "src/order/order.ts",
+            "dependencyTypes": [
+              "local",
+              "import"
+            ]
+          },
+          {
+            "name": "src/order/discount.ts",
+            "dependencyTypes": [
+              "local",
+              "import"
+            ]
+          }
+        ],
+        "id": "RB-03a7bc47",
+        "fix": "Move what both modules need into a third module both import."
+      },
+      {
+        "from": "src/index.ts",
+        "to": "./not-there",
+        "unresolvedTo": "./not-there",
+        "dependencyTypes": [
+          "unknown"
+        ],
+        "type": "dependency",
+        "rule": {
+          "name": "no-unresolvable",
+          "severity": "error"
+        },
+        "id": "RB-305f9783",
+        "fix": "Fix the specifier, or add the package to package.json."
+      },
+      {
+        "from": "src/legacy.js",
+        "to": "left-pad",
+        "unresolvedTo": "left-pad",
+        "dependencyTypes": [
+          "unknown"
+        ],
+        "type": "dependency",
+        "rule": {
+          "name": "no-unresolvable",
+          "severity": "error"
+        },
+        "id": "RB-57ba33a0",
+        "fix": "Fix the specifier, or add the package to package.json."
+      }
+    ],
+    "error": 3,
+    "warn": 0,
+    "info": 0,
+    "ignore": 0,
+    "totalCruised": 10,
+    "totalDependenciesCruised": 9,
+    "ruleSetUsed": {
+      "forbidden": [
+        {
+          "name": "no-circular",
+          "comment": "A cycle makes the order of initialisation an accident.",
+          "severity": "error",
+          "fix": "Move what both modules need into a third module both import.",
+          "scope": "module",
+          "from": {},
+          "to": {
+            "circular": true
+          }
+        },
+        {
+          "name": "no-unresolvable",
+          "severity": "error",
+          "fix": "Fix the specifier, or add the package to package.json.",
+          "scope": "module",
+          "from": {},
+          "to": {
+            "couldNotResolve": true
+          }
+        },
+        {
+          "name": "ui-not-from-order",
+          "severity": "warn",
+          "scope": "module",
+          "from": {
+            "path": "^src/ui/"
+          },
+          "to": {
+            "path": "^src/order/"
+          }
+        },
+        {
+          "name": "no-dev-deps-in-src",
+          "severity": "error",
+          "scope": "module",
+          "from": {
+            "path": "^src/"
+          },
+          "to": {
+            "dependencyTypes": [
+              "npm-dev"
+            ]
+          }
+        }
+      ]
+    },
+    "optionsUsed": {
+      "baseDir": "/playground",
+      "combinedDependencies": false,
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false,
+      "exoticRequireStrings": [],
+      "externalModuleResolutionStrategy": "node_modules",
+      "metrics": false,
+      "moduleSystems": [
+        "es6",
+        "cjs",
+        "tsd",
+        "amd"
+      ],
+      "outputTo": "-",
+      "outputType": "json",
+      "preserveSymlinks": false,
+      "skipAnalysisNotInRules": false,
+      "tsConfig": {
+        "fileName": "tsconfig.json"
+      },
+      "tsPreCompilationDeps": false,
+      "args": ""
+    },
+    "inspected": {
+      "typescript": {
+        "files": 5,
+        "assemblies": 0,
+        "modules": 5
+      },
+      "javascript": {
+        "files": 2,
+        "assemblies": 0,
+        "modules": 2
+      }
+    }
+  },
+  "code": {
+    "types": [
+      {
+        "fullName": "src/index.ts#main",
+        "name": "main",
+        "namespace": "src/index.ts",
+        "kind": "function",
+        "language": "typescript",
+        "file": "src/index.ts",
+        "line": 7,
+        "column": 14,
+        "visibility": "public",
+        "nested": false,
+        "generic": false
+      },
+      {
+        "fullName": "src/order/discount.ts#discount",
+        "name": "discount",
+        "namespace": "src/order/discount.ts",
+        "kind": "function",
+        "language": "typescript",
+        "file": "src/order/discount.ts",
+        "line": 3,
+        "column": 14,
+        "visibility": "public",
+        "nested": false,
+        "generic": false
+      },
+      {
+        "fullName": "src/order/order.ts#Shown",
+        "name": "Shown",
+        "namespace": "src/order/order.ts",
+        "kind": "type-alias",
+        "language": "typescript",
+        "file": "src/order/order.ts",
+        "line": 5,
+        "column": 13,
+        "visibility": "public",
+        "nested": false,
+        "generic": false,
+        "dependencies": [
+          {
+            "target": "src/ui/view.ts#View",
+            "kind": "signature",
+            "line": 5
+          }
+        ]
+      },
+      {
+        "fullName": "src/order/order.ts#total",
+        "name": "total",
+        "namespace": "src/order/order.ts",
+        "kind": "function",
+        "language": "typescript",
+        "file": "src/order/order.ts",
+        "line": 4,
+        "column": 14,
+        "visibility": "public",
+        "nested": false,
+        "generic": false
+      },
+      {
+        "fullName": "src/ui/view.ts#View",
+        "name": "View",
+        "namespace": "src/ui/view.ts",
+        "kind": "interface",
+        "language": "typescript",
+        "file": "src/ui/view.ts",
+        "line": 3,
+        "column": 18,
+        "visibility": "public",
+        "nested": false,
+        "generic": false,
+        "immutable": false
+      },
+      {
+        "fullName": "src/util/format.ts#format",
+        "name": "format",
+        "namespace": "src/util/format.ts",
+        "kind": "function",
+        "language": "typescript",
+        "file": "src/util/format.ts",
+        "line": 1,
+        "column": 14,
+        "visibility": "public",
+        "nested": false,
+        "generic": false
+      }
+    ],
+    "members": [
+      {
+        "declaringType": "src/ui/view.ts#View",
+        "name": "total",
+        "kind": "field",
+        "language": "typescript",
+        "file": "src/ui/view.ts",
+        "line": 4,
+        "column": 3,
+        "visibility": "public",
+        "static": false,
+        "readonly": false,
+        "returnType": "typeof total",
+        "fullName": "src/ui/view.ts#View.total"
+      }
+    ],
+    "attributes": [],
+    "calls": []
+  }
+}

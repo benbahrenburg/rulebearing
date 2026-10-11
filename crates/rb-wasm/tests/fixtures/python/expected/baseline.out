@@ -1,0 +1,131 @@
+[
+  {
+    "from": "src/shop/main.py",
+    "to": "src/shop/models.py",
+    "unresolvedTo": "shop.models",
+    "dependencyTypes": [
+      "local"
+    ],
+    "type": "cycle",
+    "rule": {
+      "name": "no-circular",
+      "severity": "error"
+    },
+    "cycle": [
+      {
+        "name": "src/shop/models.py",
+        "dependencyTypes": [
+          "local"
+        ]
+      },
+      {
+        "name": "src/shop/main.py",
+        "dependencyTypes": [
+          "local"
+        ]
+      }
+    ],
+    "id": "RB-bbbe0334",
+    "fix": "Move what both modules need into a third module both import."
+  },
+  {
+    "from": "src/shop/main.py",
+    "to": "src/shop/util.py",
+    "unresolvedTo": ".util",
+    "dependencyTypes": [
+      "local"
+    ],
+    "type": "cycle",
+    "rule": {
+      "name": "no-circular",
+      "severity": "error"
+    },
+    "cycle": [
+      {
+        "name": "src/shop/util.py",
+        "dependencyTypes": [
+          "local"
+        ]
+      },
+      {
+        "name": "src/shop/models.py",
+        "dependencyTypes": [
+          "local",
+          "dynamic"
+        ]
+      },
+      {
+        "name": "src/shop/main.py",
+        "dependencyTypes": [
+          "local"
+        ]
+      }
+    ],
+    "id": "RB-6d7fedbe",
+    "fix": "Move what both modules need into a third module both import."
+  },
+  {
+    "from": "src/shop/ui/view.py",
+    "to": "src/shop/models.py",
+    "unresolvedTo": "shop.models",
+    "dependencyTypes": [
+      "local"
+    ],
+    "type": "cycle",
+    "rule": {
+      "name": "no-circular",
+      "severity": "error"
+    },
+    "cycle": [
+      {
+        "name": "src/shop/models.py",
+        "dependencyTypes": [
+          "local"
+        ]
+      },
+      {
+        "name": "src/shop/main.py",
+        "dependencyTypes": [
+          "local"
+        ]
+      },
+      {
+        "name": "src/shop/ui/view.py",
+        "dependencyTypes": [
+          "local",
+          "type-only"
+        ]
+      }
+    ],
+    "id": "RB-ef2f9d4f",
+    "fix": "Move what both modules need into a third module both import."
+  },
+  {
+    "from": "src/shop/ui/view.py",
+    "to": "missing_package",
+    "unresolvedTo": "missing_package",
+    "dependencyTypes": [
+      "unresolved"
+    ],
+    "type": "dependency",
+    "rule": {
+      "name": "no-unresolved",
+      "severity": "error"
+    },
+    "id": "RB-7fa30725"
+  },
+  {
+    "from": "src/shop/ui/view.py",
+    "to": "src/shop/models.py",
+    "unresolvedTo": "shop.models",
+    "dependencyTypes": [
+      "local"
+    ],
+    "type": "dependency",
+    "rule": {
+      "name": "ui-not-to-models",
+      "severity": "warn"
+    },
+    "id": "RB-b3ebb750"
+  }
+]

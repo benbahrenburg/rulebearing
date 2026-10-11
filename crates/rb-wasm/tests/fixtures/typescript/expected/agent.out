@@ -1,0 +1,83 @@
+{
+  "inspected": {
+    "typescript": {
+      "files": 5,
+      "assemblies": 0,
+      "modules": 5
+    },
+    "javascript": {
+      "files": 2,
+      "assemblies": 0,
+      "modules": 2
+    }
+  },
+  "vacuousRules": [],
+  "rules": [
+    {
+      "name": "no-unresolvable",
+      "severity": "error",
+      "count": 2,
+      "shown": 2,
+      "fix": "Fix the specifier, or add the package to package.json.",
+      "decision": null,
+      "violations": [
+        {
+          "id": "RB-305f9783",
+          "from": "src/index.ts",
+          "to": "./not-there",
+          "line": 5,
+          "column": 1,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 1,
+            "targetFanIn": 1,
+            "score": 2
+          }
+        },
+        {
+          "id": "RB-57ba33a0",
+          "from": "src/legacy.js",
+          "to": "left-pad",
+          "line": 1,
+          "column": 13,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 1,
+            "targetFanIn": 1,
+            "score": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "no-circular",
+      "severity": "error",
+      "count": 1,
+      "shown": 1,
+      "fix": "Move what both modules need into a third module both import.",
+      "decision": null,
+      "violations": [
+        {
+          "id": "RB-03a7bc47",
+          "from": "src/order/discount.ts",
+          "to": "src/order/order.ts",
+          "line": 1,
+          "column": 1,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 2,
+            "targetFanIn": 2,
+            "score": 4
+          }
+        }
+      ]
+    }
+  ],
+  "budget": {
+    "maxFindings": 5,
+    "truncated": false
+  }
+}

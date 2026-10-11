@@ -12,12 +12,16 @@
 //! no root, and the code-layer file `src/app/shapes.py`. The expectation is
 //! `tests/fixtures/pkg.expected.json`; regenerate it deliberately with
 //! `RB_UPDATE_SNAPSHOTS=1 cargo test -p rb-extract-python` and review the diff.
+//!
+//! The same files held in memory at the same paths ([`rb_model::Files::memory`],
+//! [ADR-0073](../../../docs/adr/0073-extractors-read-files-through-rb-model.md)), as the
+//! playground extracts a dropped folder, give the same extraction byte for byte.
 
 use std::error::Error;
 use std::path::{Path, PathBuf};
 
-use rb_extract_python::{PythonExtractor, extract_at};
-use rb_model::{Extraction, Extractor, PythonOptions};
+use rb_extract_python::{PythonExtractor, extract_at, extract_with, prepare_in};
+use rb_model::{Extraction, Extractor, Files, MemoryTree, PythonOptions};
 use serde_json::{Value, json};
 
 fn fixture() -> PathBuf {
@@ -68,6 +72,38 @@ fn the_fixture_matches_its_expectation() -> Result<(), Box<dyn Error>> {
         serde_json::from_str::<serde_json::Value>(&actual)?,
         expected,
         "the extraction changed; if that was intended, regenerate with RB_UPDATE_SNAPSHOTS=1"
+    );
+    Ok(())
+}
+
+/// Every file under `dir`, at its own path, in memory.
+fn memory_copy(dir: &Path) -> Result<MemoryTree, Box<dyn Error>> {
+    let mut tree = MemoryTree::new();
+    let mut stack = vec![dir.to_path_buf()];
+    while let Some(folder) = stack.pop() {
+        for entry in std::fs::read_dir(&folder)? {
+            let path = entry?.path();
+            if path.is_dir() {
+                stack.push(path);
+            } else {
+                tree.insert(&path, std::fs::read(&path)?)?;
+            }
+        }
+    }
+    Ok(tree)
+}
+
+#[test]
+fn the_fixture_reads_the_same_from_memory() -> Result<(), Box<dyn Error>> {
+    let base = fixture();
+    let disk = serialise(&run(&base, &PythonOptions::default())?)?;
+    let files = Files::memory(memory_copy(&base)?);
+    let settings = prepare_in(&files, &base, &PythonOptions::default(), None)?;
+    let memory = serialise(&extract_with(&[], &settings)?)?;
+    assert_eq!(memory, disk);
+    assert!(
+        disk.contains("\"site\""),
+        "the fake environment was read: {disk}"
     );
     Ok(())
 }

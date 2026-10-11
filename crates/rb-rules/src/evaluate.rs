@@ -201,6 +201,22 @@ pub fn needs_metrics(rules: &DependencyRules) -> bool {
         .any(|r| r.to.more_unstable.is_some() || r.is_folder_scope() || r.is_project_scope())
 }
 
+/// `shouldCalculateMetrics`: metrics are computed when `--metrics` asks (`flag`), when the
+/// reporter is `metrics`, when the reporter's own options set `showMetrics: true`, or when a rule
+/// needs them ([`needs_metrics`]), as dependency-cruiser's option normalisation decides. Shared by
+/// the command line and the playground
+/// ([Wave 4, Step 2](../../../docs/plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables)).
+pub fn wants_metrics(config: &rb_config::Config, flag: bool, output_type: &str) -> bool {
+    let reporter_shows = config
+        .options
+        .reporter_options
+        .as_ref()
+        .and_then(|r| r.get(output_type))
+        .and_then(|r| r.get("showMetrics"))
+        == Some(&serde_json::Value::Bool(true));
+    flag || output_type == "metrics" || reporter_shows || needs_metrics(&config.rules.dependencies)
+}
+
 /// Whether any dependency rule carries a cross-language key, so the module facts are needed.
 pub fn uses_cross_language(rules: &DependencyRules) -> bool {
     rules
@@ -1338,6 +1354,23 @@ mod tests {
             json!({ "forbidden": [{ "name": "p", "scope": "project", "from": {}, "to": { "circular": true } }] }),
         );
         assert!(needs_metrics(&project.rules.dependencies));
+    }
+
+    #[test]
+    fn metrics_follow_the_flag_the_reporter_and_the_rules() {
+        let mut plain = config(
+            json!({ "forbidden": [{ "name": "p", "from": {}, "to": { "circular": true } }] }),
+        );
+        plain.options.reporter_options =
+            Some(json!({ "dot": { "showMetrics": true }, "ddot": { "showMetrics": "yes" } }));
+        assert!(wants_metrics(&plain, true, "err"), "the flag");
+        assert!(wants_metrics(&plain, false, "metrics"), "the reporter");
+        assert!(wants_metrics(&plain, false, "dot"), "showMetrics: true");
+        assert!(!wants_metrics(&plain, false, "ddot"), "only true counts");
+        assert!(!wants_metrics(&plain, false, "err"));
+        let unstable =
+            config(json!({ "allowed": [{ "from": {}, "to": { "moreUnstable": true } }] }));
+        assert!(wants_metrics(&unstable, false, "err"), "a rule needs them");
     }
 
     #[test]

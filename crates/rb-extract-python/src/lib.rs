@@ -45,7 +45,7 @@ use std::path::{Path, PathBuf};
 use rayon::prelude::*;
 use rb_model::{
     CodeLayer, Dependency, DependencyKind, DependencyType, ExtractError, Extraction, Extractor,
-    Language, Module, ModuleSystem, PythonOptions, Receipt, Warning,
+    Files, Language, Module, ModuleSystem, PythonOptions, Receipt, Warning,
 };
 
 use discover::Layout;
@@ -89,6 +89,9 @@ pub struct Settings {
     /// incremental run can reuse the file ([`extract_incremental`]). Off by default; the cache
     /// turns it on.
     pub keep_file_states: bool,
+    /// Where the layout, the sources and the environment are read from: the disk, or a tree in
+    /// memory ([ADR-0073](../../../docs/adr/0073-extractors-read-files-through-rb-model.md)).
+    pub files: Files,
 }
 
 fn version_tuple(version: &str) -> Option<(u32, u32)> {
@@ -158,28 +161,44 @@ pub fn prepare(
     options: &PythonOptions,
     virtual_env: Option<&Path>,
 ) -> Result<Settings, ExtractError> {
-    let layout = discover::discover(base, options.roots.as_deref()).map_err(|e| match e {
-        discover::DiscoverError::Io(io) => ExtractError::Io(io),
-        discover::DiscoverError::Toml { path, reason } => ExtractError::UnsupportedFile {
-            path,
-            reason: format!(
-                "not valid TOML ({reason}); fix the file or set languages.python.roots"
-            ),
-        },
-    })?;
+    prepare_in(&Files::disk(), base, options, virtual_env)
+}
+
+/// [`prepare`] reading through `files`: the layout, the environment and, through the settings
+/// it returns, every source ([ADR-0073](../../../docs/adr/0073-extractors-read-files-through-rb-model.md)).
+/// Over a tree in memory an environment is found only when the tree holds one, as on the disk.
+///
+/// # Errors
+/// As [`prepare`].
+pub fn prepare_in(
+    files: &Files,
+    base: &Path,
+    options: &PythonOptions,
+    virtual_env: Option<&Path>,
+) -> Result<Settings, ExtractError> {
+    let layout =
+        discover::discover(files, base, options.roots.as_deref()).map_err(|e| match e {
+            discover::DiscoverError::Io(io) => ExtractError::Io(io),
+            discover::DiscoverError::Toml { path, reason } => ExtractError::UnsupportedFile {
+                path,
+                reason: format!(
+                    "not valid TOML ({reason}); fix the file or set languages.python.roots"
+                ),
+            },
+        })?;
     let mut warnings = Vec::new();
     let stdlib = choose_stdlib(
         options.version.as_deref(),
         layout.requires_python.as_deref(),
         &mut warnings,
     )?;
-    let site = site::find(base, &layout.roots, virtual_env, stdlib.version()).and_then(|path| {
+    let site = site::find(files, base, &layout.roots, virtual_env, stdlib.version()).and_then(|path| {
         let shown = if path.starts_with(base) {
             discover::relative(base, &path)
         } else {
             path.to_string_lossy().replace('\\', "/")
         };
-        match site::index(&path, shown) {
+        match site::index(files, &path, shown) {
             Ok(index) => Some(index),
             Err(error) => {
                 warnings.push(Warning::about(
@@ -198,6 +217,7 @@ pub fn prepare(
         site,
         warnings,
         keep_file_states: false,
+        files: files.clone(),
     })
 }
 
@@ -216,18 +236,26 @@ pub fn environment(
     options: &PythonOptions,
     virtual_env: Option<&Path>,
 ) -> Result<String, ExtractError> {
-    let layout = discover::discover(base, options.roots.as_deref()).map_err(|e| match e {
-        discover::DiscoverError::Io(io) => ExtractError::Io(io),
-        discover::DiscoverError::Toml { path, reason } => {
-            ExtractError::UnsupportedFile { path, reason }
-        }
-    })?;
+    let layout = discover::discover(&Files::disk(), base, options.roots.as_deref()).map_err(
+        |e| match e {
+            discover::DiscoverError::Io(io) => ExtractError::Io(io),
+            discover::DiscoverError::Toml { path, reason } => {
+                ExtractError::UnsupportedFile { path, reason }
+            }
+        },
+    )?;
     let stdlib = choose_stdlib(
         options.version.as_deref(),
         layout.requires_python.as_deref(),
         &mut Vec::new(),
     )?;
-    let Some(site) = site::find(base, &layout.roots, virtual_env, stdlib.version()) else {
+    let Some(site) = site::find(
+        &Files::disk(),
+        base,
+        &layout.roots,
+        virtual_env,
+        stdlib.version(),
+    ) else {
         return Ok("none".to_owned());
     };
     let mut names: Vec<String> = std::fs::read_dir(&site)
@@ -300,7 +328,7 @@ fn read_and_parse(settings: &Settings, index: &ModuleIndex, file: &str) -> Parse
         code: CodeLayer::default(),
         warning: Some(Warning::about(file, message)),
     };
-    let source = match std::fs::read_to_string(settings.base.join(file)) {
+    let source = match settings.files.read_to_string(&settings.base.join(file)) {
         Ok(source) => source,
         Err(error) => {
             return failed(format!(
@@ -551,7 +579,7 @@ pub fn extract_incremental(
     settings: &Settings,
     request: &rb_model::ExtractRequest,
 ) -> Result<Extraction, ExtractError> {
-    let walked = discover::walk(&settings.base, inputs, settings.stubs)?;
+    let walked = discover::walk(&settings.files, &settings.base, inputs, settings.stubs)?;
     let files = walked.files;
     if files.is_empty() {
         return Err(ExtractError::NoModulesFound);

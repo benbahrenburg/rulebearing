@@ -1,0 +1,779 @@
+{
+  "modules": [
+    {
+      "source": "importlib",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/shop/util.py"
+      ],
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "orphan": false,
+      "language": "python"
+    },
+    {
+      "source": "missing_package",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/shop/ui/view.py"
+      ],
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": true,
+      "dependencyTypes": [
+        "unresolved"
+      ],
+      "orphan": false,
+      "language": "python"
+    },
+    {
+      "source": "os",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/shop/main.py"
+      ],
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "orphan": false,
+      "language": "python"
+    },
+    {
+      "source": "requests",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/shop/main.py"
+      ],
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "site"
+      ],
+      "license": "Apache-2.0",
+      "orphan": false,
+      "language": "python"
+    },
+    {
+      "source": "src/shop/__init__.py",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [],
+      "orphan": true,
+      "language": "python",
+      "project": "shop",
+      "namespaces": [
+        "shop"
+      ]
+    },
+    {
+      "source": "src/shop/main.py",
+      "dependencies": [
+        {
+          "module": "os",
+          "resolved": "os",
+          "coreModule": true,
+          "dependencyTypes": [
+            "stdlib"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "py",
+          "valid": true,
+          "line": 1,
+          "column": 8,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "requests",
+          "resolved": "requests",
+          "coreModule": false,
+          "dependencyTypes": [
+            "site"
+          ],
+          "license": "Apache-2.0",
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "py",
+          "valid": true,
+          "line": 4,
+          "column": 8,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "shop.models",
+          "resolved": "src/shop/models.py",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": true,
+          "cycle": [
+            {
+              "name": "src/shop/models.py",
+              "dependencyTypes": [
+                "local"
+              ]
+            },
+            {
+              "name": "src/shop/main.py",
+              "dependencyTypes": [
+                "local"
+              ]
+            }
+          ],
+          "moduleSystem": "py",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-circular",
+              "severity": "error"
+            }
+          ],
+          "line": 6,
+          "column": 18,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "shop.ui.view",
+          "resolved": "src/shop/ui/view.py",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "type-only"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "typeOnly": true,
+          "circular": true,
+          "cycle": [
+            {
+              "name": "src/shop/ui/view.py",
+              "dependencyTypes": [
+                "local",
+                "type-only"
+              ]
+            },
+            {
+              "name": "src/shop/models.py",
+              "dependencyTypes": [
+                "local"
+              ]
+            },
+            {
+              "name": "src/shop/main.py",
+              "dependencyTypes": [
+                "local"
+              ]
+            }
+          ],
+          "moduleSystem": "py",
+          "valid": true,
+          "line": 10,
+          "column": 25,
+          "dependencyKind": "import"
+        },
+        {
+          "module": ".util",
+          "resolved": "src/shop/util.py",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": true,
+          "cycle": [
+            {
+              "name": "src/shop/util.py",
+              "dependencyTypes": [
+                "local"
+              ]
+            },
+            {
+              "name": "src/shop/models.py",
+              "dependencyTypes": [
+                "local",
+                "dynamic"
+              ]
+            },
+            {
+              "name": "src/shop/main.py",
+              "dependencyTypes": [
+                "local"
+              ]
+            }
+          ],
+          "moduleSystem": "py",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-circular",
+              "severity": "error"
+            }
+          ],
+          "line": 7,
+          "column": 15,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "typing",
+          "resolved": "typing",
+          "coreModule": true,
+          "dependencyTypes": [
+            "stdlib"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "py",
+          "valid": true,
+          "line": 2,
+          "column": 20,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "src/shop/models.py"
+      ],
+      "orphan": false,
+      "language": "python",
+      "project": "shop",
+      "namespaces": [
+        "shop.main"
+      ]
+    },
+    {
+      "source": "src/shop/models.py",
+      "dependencies": [
+        {
+          "module": "shop.main",
+          "resolved": "src/shop/main.py",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": true,
+          "cycle": [
+            {
+              "name": "src/shop/main.py",
+              "dependencyTypes": [
+                "local"
+              ]
+            },
+            {
+              "name": "src/shop/models.py",
+              "dependencyTypes": [
+                "local"
+              ]
+            }
+          ],
+          "moduleSystem": "py",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-circular",
+              "severity": "error"
+            }
+          ],
+          "line": 1,
+          "column": 23,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "src/shop/main.py",
+        "src/shop/ui/view.py",
+        "src/shop/util.py"
+      ],
+      "orphan": false,
+      "language": "python",
+      "project": "shop",
+      "namespaces": [
+        "shop.models"
+      ]
+    },
+    {
+      "source": "src/shop/ui/__init__.py",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [],
+      "orphan": true,
+      "language": "python",
+      "project": "shop",
+      "namespaces": [
+        "shop.ui"
+      ]
+    },
+    {
+      "source": "src/shop/ui/view.py",
+      "dependencies": [
+        {
+          "module": "missing_package",
+          "resolved": "missing_package",
+          "coreModule": false,
+          "dependencyTypes": [
+            "unresolved"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": true,
+          "circular": false,
+          "moduleSystem": "py",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-unresolved",
+              "severity": "error"
+            }
+          ],
+          "line": 2,
+          "column": 8,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "shop.models",
+          "resolved": "src/shop/models.py",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": true,
+          "cycle": [
+            {
+              "name": "src/shop/models.py",
+              "dependencyTypes": [
+                "local"
+              ]
+            },
+            {
+              "name": "src/shop/main.py",
+              "dependencyTypes": [
+                "local"
+              ]
+            },
+            {
+              "name": "src/shop/ui/view.py",
+              "dependencyTypes": [
+                "local",
+                "type-only"
+              ]
+            }
+          ],
+          "moduleSystem": "py",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-circular",
+              "severity": "error"
+            },
+            {
+              "name": "ui-not-to-models",
+              "severity": "warn"
+            }
+          ],
+          "line": 1,
+          "column": 25,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "src/shop/main.py"
+      ],
+      "orphan": false,
+      "language": "python",
+      "project": "shop",
+      "namespaces": [
+        "shop.ui.view"
+      ]
+    },
+    {
+      "source": "src/shop/util.py",
+      "dependencies": [
+        {
+          "module": "importlib",
+          "resolved": "importlib",
+          "coreModule": true,
+          "dependencyTypes": [
+            "stdlib"
+          ],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "py",
+          "valid": true,
+          "line": 1,
+          "column": 8,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "shop.models",
+          "resolved": "src/shop/models.py",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "dynamic"
+          ],
+          "followable": true,
+          "dynamic": true,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": true,
+          "cycle": [
+            {
+              "name": "src/shop/models.py",
+              "dependencyTypes": [
+                "local",
+                "dynamic"
+              ]
+            },
+            {
+              "name": "src/shop/main.py",
+              "dependencyTypes": [
+                "local"
+              ]
+            },
+            {
+              "name": "src/shop/util.py",
+              "dependencyTypes": [
+                "local"
+              ]
+            }
+          ],
+          "moduleSystem": "py",
+          "valid": false,
+          "rules": [
+            {
+              "name": "no-circular",
+              "severity": "error"
+            }
+          ],
+          "line": 5,
+          "column": 53,
+          "dependencyKind": "import"
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "src/shop/main.py"
+      ],
+      "orphan": false,
+      "language": "python",
+      "project": "shop",
+      "namespaces": [
+        "shop.util"
+      ]
+    },
+    {
+      "source": "typing",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "src/shop/main.py"
+      ],
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "dependencyTypes": [
+        "stdlib"
+      ],
+      "orphan": false,
+      "language": "python"
+    }
+  ],
+  "summary": {
+    "violations": [
+      {
+        "from": "src/shop/main.py",
+        "to": "src/shop/models.py",
+        "unresolvedTo": "shop.models",
+        "dependencyTypes": [
+          "local"
+        ],
+        "type": "cycle",
+        "rule": {
+          "name": "no-circular",
+          "severity": "error"
+        },
+        "cycle": [
+          {
+            "name": "src/shop/models.py",
+            "dependencyTypes": [
+              "local"
+            ]
+          },
+          {
+            "name": "src/shop/main.py",
+            "dependencyTypes": [
+              "local"
+            ]
+          }
+        ],
+        "id": "RB-bbbe0334",
+        "fix": "Move what both modules need into a third module both import."
+      },
+      {
+        "from": "src/shop/main.py",
+        "to": "src/shop/util.py",
+        "unresolvedTo": ".util",
+        "dependencyTypes": [
+          "local"
+        ],
+        "type": "cycle",
+        "rule": {
+          "name": "no-circular",
+          "severity": "error"
+        },
+        "cycle": [
+          {
+            "name": "src/shop/util.py",
+            "dependencyTypes": [
+              "local"
+            ]
+          },
+          {
+            "name": "src/shop/models.py",
+            "dependencyTypes": [
+              "local",
+              "dynamic"
+            ]
+          },
+          {
+            "name": "src/shop/main.py",
+            "dependencyTypes": [
+              "local"
+            ]
+          }
+        ],
+        "id": "RB-6d7fedbe",
+        "fix": "Move what both modules need into a third module both import."
+      },
+      {
+        "from": "src/shop/ui/view.py",
+        "to": "src/shop/models.py",
+        "unresolvedTo": "shop.models",
+        "dependencyTypes": [
+          "local"
+        ],
+        "type": "cycle",
+        "rule": {
+          "name": "no-circular",
+          "severity": "error"
+        },
+        "cycle": [
+          {
+            "name": "src/shop/models.py",
+            "dependencyTypes": [
+              "local"
+            ]
+          },
+          {
+            "name": "src/shop/main.py",
+            "dependencyTypes": [
+              "local"
+            ]
+          },
+          {
+            "name": "src/shop/ui/view.py",
+            "dependencyTypes": [
+              "local",
+              "type-only"
+            ]
+          }
+        ],
+        "id": "RB-ef2f9d4f",
+        "fix": "Move what both modules need into a third module both import."
+      },
+      {
+        "from": "src/shop/ui/view.py",
+        "to": "missing_package",
+        "unresolvedTo": "missing_package",
+        "dependencyTypes": [
+          "unresolved"
+        ],
+        "type": "dependency",
+        "rule": {
+          "name": "no-unresolved",
+          "severity": "error"
+        },
+        "id": "RB-7fa30725"
+      },
+      {
+        "from": "src/shop/ui/view.py",
+        "to": "src/shop/models.py",
+        "unresolvedTo": "shop.models",
+        "dependencyTypes": [
+          "local"
+        ],
+        "type": "dependency",
+        "rule": {
+          "name": "ui-not-to-models",
+          "severity": "warn"
+        },
+        "id": "RB-b3ebb750"
+      }
+    ],
+    "error": 4,
+    "warn": 1,
+    "info": 0,
+    "ignore": 0,
+    "totalCruised": 11,
+    "totalDependenciesCruised": 11,
+    "ruleSetUsed": {
+      "forbidden": [
+        {
+          "name": "no-circular",
+          "severity": "error",
+          "fix": "Move what both modules need into a third module both import.",
+          "scope": "module",
+          "from": {},
+          "to": {
+            "circular": true,
+            "dependencyTypesNot": [
+              "type-only"
+            ]
+          }
+        },
+        {
+          "name": "no-unresolved",
+          "severity": "error",
+          "scope": "module",
+          "from": {},
+          "to": {
+            "dependencyTypes": [
+              "unresolved"
+            ]
+          }
+        },
+        {
+          "name": "ui-not-to-models",
+          "severity": "warn",
+          "scope": "module",
+          "from": {
+            "path": "^src/shop/ui/"
+          },
+          "to": {
+            "path": "^src/shop/models"
+          }
+        }
+      ]
+    },
+    "optionsUsed": {
+      "baseDir": "/playground",
+      "combinedDependencies": false,
+      "detectJSDocImports": false,
+      "detectProcessBuiltinModuleCalls": false,
+      "exoticRequireStrings": [],
+      "externalModuleResolutionStrategy": "node_modules",
+      "metrics": false,
+      "moduleSystems": [
+        "es6",
+        "cjs",
+        "tsd",
+        "amd"
+      ],
+      "outputTo": "-",
+      "outputType": "json",
+      "preserveSymlinks": false,
+      "skipAnalysisNotInRules": false,
+      "tsPreCompilationDeps": false,
+      "args": ""
+    },
+    "inspected": {
+      "python": {
+        "files": 6,
+        "assemblies": 0,
+        "modules": 11,
+        "roots": [
+          "src"
+        ],
+        "stdlibVersion": "3.11",
+        "site": ".venv/lib/python3.12/site-packages"
+      }
+    }
+  },
+  "code": {
+    "types": [
+      {
+        "fullName": "shop.main.run",
+        "name": "run",
+        "namespace": "shop.main",
+        "kind": "function",
+        "language": "python",
+        "file": "src/shop/main.py",
+        "line": 13,
+        "column": 5,
+        "assembly": "shop",
+        "visibility": "public"
+      },
+      {
+        "fullName": "shop.models.total",
+        "name": "total",
+        "namespace": "shop.models",
+        "kind": "function",
+        "language": "python",
+        "file": "src/shop/models.py",
+        "line": 4,
+        "column": 5,
+        "assembly": "shop",
+        "visibility": "public"
+      },
+      {
+        "fullName": "shop.util.fmt",
+        "name": "fmt",
+        "namespace": "shop.util",
+        "kind": "function",
+        "language": "python",
+        "file": "src/shop/util.py",
+        "line": 4,
+        "column": 5,
+        "assembly": "shop",
+        "visibility": "public"
+      }
+    ],
+    "members": [],
+    "attributes": [],
+    "calls": []
+  }
+}

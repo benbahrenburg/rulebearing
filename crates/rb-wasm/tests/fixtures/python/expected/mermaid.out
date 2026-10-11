@@ -1,0 +1,30 @@
+flowchart LR
+
+0["importlib"]
+1["missing_package"]
+2["os"]
+3["requests"]
+subgraph 4["src"]
+subgraph 5["shop"]
+6["__init__.py"]
+7["main.py"]
+8["models.py"]
+subgraph 9["ui"]
+A["__init__.py"]
+B["view.py"]
+end
+C["util.py"]
+end
+end
+D["typing"]
+7-->2
+7-->3
+7-->8
+7-->B
+7-->C
+7-->D
+8-->7
+B-->1
+B-->8
+C-->0
+C-->8

@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@app/*": ["src/*"] },
+    "module": "esnext",
+    "target": "es2022"
+  }
+}

@@ -1,0 +1,8 @@
+ui-not-to-models  (forbidden, warn)
+  Files matching `src/shop/ui/` may not import files matching `src/shop/models`.
+  fix: -
+  from: {"path":"^src/shop/ui/"}
+  to: {"path":"^src/shop/models"}
+  matches: from 2 modules, to 3; 1 violations
+  first edges:
+    src/shop/ui/view.py -> src/shop/models.py

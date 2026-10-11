@@ -439,7 +439,7 @@ pub fn workspace_members(root: &Path, dir: &str) -> Vec<String> {
 /// reads from its project files, else `src` when it exists, else the project folder.
 fn project_roots(dir: &Path) -> Vec<String> {
     #[cfg(feature = "extract-python")]
-    if let Ok(layout) = rb_extract_python::discover::discover(dir, None) {
+    if let Ok(layout) = rb_extract_python::discover::discover(&rb_model::Files::disk(), dir, None) {
         return layout.roots;
     }
     vec![if dir.join("src").is_dir() { "src" } else { "." }.to_owned()]

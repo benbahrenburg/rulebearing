@@ -1,0 +1,8 @@
+@startuml
+
+hide stereotype
+
+[shop.main] <<^shop\.main(?:\.(?:[^\x2E][^\x2E]*))?$>> as C1
+[shop.models] <<^shop\.models(?:\.(?:[^\x2E][^\x2E]*))?$>> as C2
+[shop.util] <<^shop\.util(?:\.(?:[^\x2E][^\x2E]*))?$>> as C3
+@enduml

@@ -1,0 +1,29 @@
+## Forbidden dependency check - results
+
+### :chart_with_upwards_trend: Summary
+
+**10** modules&nbsp;&nbsp;&nbsp;&nbsp;**9** dependencies&nbsp;&nbsp;&nbsp;&nbsp;**3** errors&nbsp;&nbsp;&nbsp;&nbsp;**0** warnings&nbsp;&nbsp;&nbsp;&nbsp;**0** informational&nbsp;&nbsp;&nbsp;&nbsp;**0** ignored
+
+
+|rule|violations|ignored|explanation
+|:---|:---:|:---:|:---|
+|:exclamation:&nbsp;_no-unresolvable_|**2**|**0**|undefined|
+|:exclamation:&nbsp;_no-circular_|**1**|**0**|A cycle makes the order of initialisation an accident.|
+
+
+### :fire: All violations
+
+<details><summary>Violations found - click to expand</summary>
+
+|violated rule|module|to|
+|:---|:---|:---|
+|:exclamation:&nbsp;_no-circular_|src/order/discount.ts|src/order/order.ts &rightarrow;<br/>src/order/discount.ts|
+|:exclamation:&nbsp;_no-unresolvable_|src/index.ts|./not-there|
+|:exclamation:&nbsp;_no-unresolvable_|src/legacy.js|left-pad|
+
+
+</details>
+
+---
+[dependency-cruiser@18.2.0](https://www.github.com/sverweij/dependency-cruiser) / 2026-10-10T12:00:00.000Z
+

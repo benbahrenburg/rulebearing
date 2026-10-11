@@ -1,0 +1,121 @@
+{
+  "inspected": {
+    "python": {
+      "files": 6,
+      "assemblies": 0,
+      "modules": 11,
+      "roots": [
+        "src"
+      ],
+      "stdlibVersion": "3.11",
+      "site": ".venv/lib/python3.12/site-packages"
+    }
+  },
+  "vacuousRules": [],
+  "rules": [
+    {
+      "name": "no-unresolved",
+      "severity": "error",
+      "count": 1,
+      "shown": 1,
+      "fix": null,
+      "decision": null,
+      "violations": [
+        {
+          "id": "RB-7fa30725",
+          "from": "src/shop/ui/view.py",
+          "to": "missing_package",
+          "line": 2,
+          "column": 8,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 1,
+            "targetFanIn": 1,
+            "score": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "no-circular",
+      "severity": "error",
+      "count": 3,
+      "shown": 3,
+      "fix": "Move what both modules need into a third module both import.",
+      "decision": null,
+      "violations": [
+        {
+          "id": "RB-6d7fedbe",
+          "from": "src/shop/main.py",
+          "to": "src/shop/util.py",
+          "line": 7,
+          "column": 15,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 3,
+            "targetFanIn": 1,
+            "score": 4
+          }
+        },
+        {
+          "id": "RB-bbbe0334",
+          "from": "src/shop/main.py",
+          "to": "src/shop/models.py",
+          "line": 6,
+          "column": 18,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 2,
+            "targetFanIn": 3,
+            "score": 5
+          }
+        },
+        {
+          "id": "RB-ef2f9d4f",
+          "from": "src/shop/ui/view.py",
+          "to": "src/shop/models.py",
+          "line": 1,
+          "column": 25,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 3,
+            "targetFanIn": 3,
+            "score": 6
+          }
+        }
+      ]
+    },
+    {
+      "name": "ui-not-to-models",
+      "severity": "warn",
+      "count": 1,
+      "shown": 1,
+      "fix": null,
+      "decision": null,
+      "violations": [
+        {
+          "id": "RB-b3ebb750",
+          "from": "src/shop/ui/view.py",
+          "to": "src/shop/models.py",
+          "line": 1,
+          "column": 25,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 1,
+            "targetFanIn": 3,
+            "score": 4
+          }
+        }
+      ]
+    }
+  ],
+  "budget": {
+    "maxFindings": 5,
+    "truncated": false
+  }
+}
