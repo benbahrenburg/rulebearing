@@ -98,7 +98,8 @@ HEADER = (
 PORTED_COMMENT = (
     "Conformance gate 2 ratchet (docs/adr/0009-conformance-suites-as-specification.md): `ported`"
     " may only rise. Written by conformance/archunitnet/tools/port.py"
-    " (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7). `total` counts the"
+    " (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7)."
+    " `total` counts the"
     " distinct snapshot cases of the element tests (after the tool folds C# overloads with the"
     " same rule and expectation into one case), each unported snapshot block, each in-scope"
     " test with no snapshot as 1, and the cases of the hand-ported files in place of the tests"
