@@ -1,6 +1,6 @@
 # ADR-0073: The extractors read files through `rb-model`'s `Files`, so the playground can extract from memory
 
-- **Status:** Proposed (2026-10-11)
+- **Status:** Accepted (2026-10-11, by the owner: "Accept ADRs 0067, 0072 and 0073"; proposed 2026-10-11)
 - **Date:** 2026-10-11
 - **Derives from:** [plan 0004, Step 2](../plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables) ("an in-memory file system adapter for `rb-extract-ts` and `rb-extract-python` (both already take a `Fs` trait from wave 1 for testing; if they do not, add it here as the smallest change)") and the exports [§ 1.6](../plans/pending/0004-wave-4-reach.md#16-interfaces-and-contracts-this-wave-freezes) freezes; [ADR-0067](0067-the-playground-facade-and-an-optional-javascript-engine.md) (the facade)
 - **Amends:** [ADR-0010](0010-crate-layout-and-extractor-boundary.md)'s crate table, as ADR-0067 does: `rb-wasm` may also depend on `rb-extract-ts` and `rb-extract-python`. ADR-0010's rules are unchanged: each extractor still depends on `rb-model` only.

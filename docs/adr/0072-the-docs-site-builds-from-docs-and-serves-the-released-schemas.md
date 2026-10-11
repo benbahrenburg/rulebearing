@@ -1,6 +1,6 @@
 # ADR-0072: The docs site is generated from `docs/` by a small Node generator, and one Pages deployment serves it with the released schemas
 
-- **Status:** Proposed (2026-10-11)
+- **Status:** Accepted (2026-10-11, by the owner: "Accept ADRs 0067, 0072 and 0073"; proposed 2026-10-11)
 - **Date:** 2026-10-11
 - **Derives from:** [plan 0004, Step 3](../plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables) ("a theme that embeds the playground component, pages generated from `docs/` ... and the schema at `/schema/v1.json` (the `$schema` URL the config names). A link checker runs in the build. Deployed to GitHub Pages from `main`."), its [§ 1.9](../plans/pending/0004-wave-4-reach.md#19-dependencies) (the generator row) and [§ 1.11](../plans/pending/0004-wave-4-reach.md#111-compliance-and-licence-review) (a content security policy); [ADR-0019](0019-mit-licence.md); [ADR-0039](0039-plans-and-design-kept-local.md); [ADR-0067](0067-the-playground-facade-and-an-optional-javascript-engine.md)
 - **Amends:** the delivery of the schemas to Pages that `release.yml`'s `schema-pages` job made since [plan 0001](../plans/implemented/0001-wave-1-typescript-parity.md) Step 22: the job is removed and `docs.yml` deploys instead. The schema URLs and what they serve are unchanged.

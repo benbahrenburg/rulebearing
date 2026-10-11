@@ -1,6 +1,6 @@
 # ADR-0067: The playground's wasm facade, and the JavaScript engine as an optional feature
 
-- **Status:** Proposed (2026-10-10)
+- **Status:** Accepted (2026-10-11, by the owner: "Accept ADRs 0067, 0072 and 0073"; proposed 2026-10-10)
 - **Date:** 2026-10-10
 - **Derives from:** [plan 0004, Step 2](../plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables) and its decision rule in [§ 1.7](../plans/pending/0004-wave-4-reach.md#17-decisions-applied-and-decisions-this-wave-must-make) ("Every crate that compiles to `wasm32-unknown-unknown` without a patch; one that does not (the candidates are `rquickjs` and any `notify` or process code in `rb-cli`) is feature-gated out of `rb-wasm`, and the playground page says which inputs it therefore cannot take"); [ADR-0002](0002-rust-as-implementation-language.md) (the playground as the consequence of Rust)
 - **Amends:** [ADR-0010](0010-crate-layout-and-extractor-boundary.md)'s crate table, by one row. ADR-0010's rules are unchanged.
