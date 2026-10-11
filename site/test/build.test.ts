@@ -6,7 +6,12 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { PLAYGROUND_FIXTURE, buildSite } from '../src/build.js';
+import {
+  PLAYGROUND_FIXTURE,
+  PLAYGROUND_REPOS,
+  buildSite,
+  playgroundExamples,
+} from '../src/build.js';
 import { main, parseArgs } from '../src/cli.js';
 import { SCHEMA_BASE } from '../src/schemas.js';
 
@@ -62,14 +67,22 @@ beforeEach(() => {
       readFileSync(join(realRepo, PLAYGROUND_FIXTURE, file), 'utf8'),
     );
   }
-  git('add', '.');
+  for (const { dir } of PLAYGROUND_REPOS) {
+    const files = execFileSync('git', ['ls-files', '-z', dir], { cwd: realRepo, encoding: 'utf8' })
+      .split('\0')
+      .filter((f) => f !== '');
+    for (const path of files) {
+      write(path, readFileSync(join(realRepo, path), 'utf8'));
+    }
+  }
+  git('add', '-f', '.');
   git('commit', '-qm', 'one');
   git('tag', 'v0.2.0');
   // Kept local, never tracked: it must not become a page.
   write('docs/plans/pending/p.md', '# Plan\n');
   for (const [dir, files] of [
     ['wasm', ['rb_wasm.js', 'rb_wasm_bg.wasm']],
-    ['web', ['playground.js', 'playground-core.js']],
+    ['web', ['playground.js', 'playground-core.js', 'playground-files.js']],
   ] as const) {
     for (const file of files) {
       mkdirSync(join(work, dir), { recursive: true });
@@ -118,8 +131,18 @@ describe('buildSite', () => {
     expect(existsSync(join(site, 'docs/plans'))).toBe(false);
     expect(readFileSync(join(site, 'index.html'), 'utf8')).toContain('href="docs/cli.html#usage"');
     expect(readFileSync(join(site, 'docs/cli.html'), 'utf8')).toContain('class="local-only"');
-    expect(readFileSync(join(site, 'playground.html'), 'utf8')).toContain('name: no-circular');
-    for (const file of ['assets/site.css', 'assets/playground.js', 'playground/rb_wasm_bg.wasm']) {
+    const playground = readFileSync(join(site, 'playground.html'), 'utf8');
+    expect(playground).toContain('name: no-circular');
+    for (const id of ['no-circular', 'typescript', 'python']) {
+      expect(playground).toContain(`data-example="${id}"`);
+      expect(playground).toContain(`data-example-data="${id}"`);
+    }
+    for (const file of [
+      'assets/site.css',
+      'assets/playground.js',
+      'assets/playground-files.js',
+      'playground/rb_wasm_bg.wasm',
+    ]) {
       expect(existsSync(join(site, file))).toBe(true);
     }
   });
@@ -148,6 +171,30 @@ describe('buildSite', () => {
         schemaRef: 'v0.2.0',
       }),
     ).toThrow(/rb_wasm.js is missing/u);
+  });
+});
+
+describe('playgroundExamples', () => {
+  it("embeds each fixture repository's tracked files by their path inside it", () => {
+    const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: repo, encoding: 'utf8' })
+      .split('\0')
+      .filter((f) => f !== '');
+    const [ts, py] = playgroundExamples(repo, tracked);
+    const files = (ts?.data.files ?? {}) as Record<string, string>;
+    expect(Object.keys(files)).toContain('node_modules/lodash/index.js');
+    expect(Object.keys(files)).toContain('src/order/discount.ts');
+    expect(ts?.data).toMatchObject({ mode: 'files', language: 'typescript', rule: 'no-circular' });
+    expect(ts?.data.config).toBe(files['rulebearing.yaml']);
+    expect(py?.data).toMatchObject({ language: 'python', rule: 'ui-not-to-models' });
+    expect(Object.keys((py?.data.files ?? {}) as Record<string, string>)).toContain(
+      '.venv/pyvenv.cfg',
+    );
+  });
+
+  it('needs the configuration of each repository', () => {
+    expect(() => playgroundExamples(repo, [])).toThrow(
+      /rulebearing.yaml is not tracked; the playground's typescript example needs it/u,
+    );
   });
 });
 

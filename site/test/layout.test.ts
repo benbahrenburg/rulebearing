@@ -67,6 +67,35 @@ describe('the playground component', () => {
     config: 'a: "<b>"',
     graph: '{}',
     outputType: 'json',
+    rule: 'no-"x"',
+    examples: [
+      {
+        id: 'ts',
+        title: 'A <TS> repository',
+        data: { id: 'ts', files: { 'a.ts': '</script><!-- x' } },
+      },
+    ],
+  });
+
+  it('embeds each example as a data block the page never runs, with nothing able to close it', () => {
+    expect(html).toContain(
+      '<script type="application/json" data-example-data="ts">{"id":"ts","files":{"a.ts":"\\u003c/script>\\u003c!-- x"}}</script>',
+    );
+    expect(html).toContain(
+      '<button type="button" data-example="ts" disabled>A &lt;TS&gt; repository</button>',
+    );
+    const block = /data-example-data="ts">([^<]*)<\/script>/u.exec(html)?.[1] ?? '';
+    expect(JSON.parse(block)).toEqual({ id: 'ts', files: { 'a.ts': '</script><!-- x' } });
+  });
+
+  it('offers both modes, the pickers and explain, all disabled until the module loads', () => {
+    expect(html).toContain('<select name="mode">');
+    expect(html).toContain('<div data-panel="files" class="playground-files" hidden>');
+    expect(html).toContain('<input type="file" name="folder" webkitdirectory multiple disabled>');
+    expect(html).toContain('<input type="file" name="files" multiple disabled>');
+    expect(html).toContain('value="no-&quot;x&quot;"');
+    expect(html).toContain('<button type="button" data-explain disabled>Explain</button>');
+    expect(html).toContain('nothing you paste, choose or drop is uploaded or sent anywhere');
   });
 
   it('loads the module and links the ADR relative to its page', () => {
@@ -84,7 +113,8 @@ describe('the playground component', () => {
 
   it('says which inputs it cannot take', () => {
     expect(html).toContain('A JavaScript configuration is not accepted');
-    expect(html).toContain('.NET assemblies are not accepted');
+    expect(html).toContain('assemblies are not accepted');
+    expect(html).toContain("Yarn Plug'n'Play");
   });
 
   it("offers every output type rb-report has, except x-dot-webpage, which needs GraphViz's dot", () => {

@@ -216,6 +216,53 @@ main {
     max-height: 32em;
 }
 
+.playground [hidden] {
+    display: none;
+}
+
+.playground input[type='text'],
+.playground select {
+    background: var(--panel);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-weight: 400;
+}
+
+.playground-files {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.playground-files input[type='file'] {
+    font-weight: 400;
+}
+
+.playground-drop {
+    border: 2px dashed var(--line);
+    border-radius: 8px;
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--muted);
+}
+
+.playground-drop.playground-drop-over {
+    border-color: var(--accent);
+    color: var(--fg);
+}
+
+.playground [data-files-note] {
+    margin: 0;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.playground-examples button {
+    margin: 4px 8px 4px 0;
+}
+
 @media (max-width: 800px) {
     .frame {
         flex-direction: column;

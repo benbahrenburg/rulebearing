@@ -188,7 +188,7 @@ The graph document's and the configuration's JSON schemas carry `$id`s under `ht
 
 | Workflow and job | Runs on | What it does |
 | --- | --- | --- |
-| `docs.yml`, `docs-site` | a pull request touching the site's inputs; a push to `main`; a manual run; the completion of a `release.yml` run started by a `vX.Y.Z` tag push | builds the site with `site/build.sh`: `rb-wasm` for the playground, a page for every tracked document under `docs/` and the root guides, and `schema/v1.json` and `schema/config-v1.json` read from the tag of the latest published release (`gh release view`), never from the checkout. Then the link check over the built site, the npm licence check, and the playground's browser test |
+| `docs.yml`, `docs-site` | a pull request touching the site's inputs; a push to `main`; a manual run; the completion of a `release.yml` run started by a `vX.Y.Z` tag push | builds the site with `site/build.sh`: `rb-wasm` for the playground, a page for every tracked document under `docs/` and the root guides, and `schema/v1.json` and `schema/config-v1.json` read from the tag of the latest published release (`gh release view`), never from the checkout. Then the link check over the built site, the npm licence check, and the playground's browser test, which drives all five `rb-wasm` exports through the page (`evaluate`, `cruise_ts`, `cruise_py`, `explain`, `version`) and compares their output with the command line's committed output |
 | `docs.yml`, `docs-deploy` | after `docs-site`, on `main` only, never for a pull request | deploys the built site with `actions/deploy-pages`; the job alone holds `pages: write` and `id-token: write` ([ADR-0025](adr/0025-ci-and-supply-chain-hardening.md)) |
 
 The schema URLs hold the released contract, not the state of `main`, while the pages follow `main`. A release changes the schemas, and its completion starts `docs.yml`, which deploys the site from `main` with the new tag's schemas. A `workflow_run` runs in the default branch's context, so that deploy is a `main` deploy too.
@@ -200,7 +200,7 @@ After a deploy, check:
 | URL | Expect |
 | --- | --- |
 | `https://benbahrenburg.github.io/rulebearing/` | the README as the home page, with the sidebar |
-| `https://benbahrenburg.github.io/rulebearing/playground.html` | "Ready: rulebearing X.Y.Z." under the playground; **Evaluate** prints the `no-circular` guard's finding |
+| `https://benbahrenburg.github.io/rulebearing/playground.html` | "Ready: rulebearing X.Y.Z." under the playground; **Run** prints the `no-circular` guard's finding; **A TypeScript repository** then **Run** prints `cruise_ts`'s report on `rb-wasm`'s fixture, and **Explain** the named rule |
 | `https://benbahrenburg.github.io/rulebearing/schema/v1.json` | the graph document schema of the latest release, `$id` equal to the URL |
 | `https://benbahrenburg.github.io/rulebearing/schema/config-v1.json` | the configuration schema of the latest release, `$id` equal to the URL |
 
