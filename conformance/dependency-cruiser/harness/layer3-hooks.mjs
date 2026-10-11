@@ -8,7 +8,7 @@
 // passes a `spawnFunction` (dot-webpage-forward.mjs).
 //
 // Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 12 (gate 1 layer 3);
-// docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 10 (the wave 2 reporters);
+// docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 10 (the wave 2 reporters);
 // docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 6 (the wave 3 reporters).
 // Protocol: `rulebearing report --output-type <type>` reads { result, options } on stdin and
 // answers { output, exitCode }, the value a dependency-cruiser reporter returns.

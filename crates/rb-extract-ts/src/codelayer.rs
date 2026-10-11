@@ -7,9 +7,9 @@
 //! - Decisions: [ADR-0012](../../../docs/adr/0012-oxc-for-typescript.md) (one parser, `oxc`);
 //!   [ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md) (a name that cannot be
 //!   resolved is kept as written, a property the language cannot express is absent)
-//! - Plan: [Wave 2C](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#wave-2c-element-slice-and-diagram-rules-the-capability-table-gate-2-to-zero)
+//! - Plan: [Wave 2C](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#wave-2c-element-slice-and-diagram-rules-the-capability-table-gate-2-to-zero)
 //!   (row "TypeScript and Python mappings over fixture packages");
-//!   [§ 1.4.3](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#143-element-rule-evaluation)
+//!   [§ 1.4.3](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#143-element-rule-evaluation)
 //!   (`arePublic` reads `export`, `haveAnyAttributes` reads decorators)
 //! - Source: [design § One engine, three languages](../../../docs/artifacts/design.md#one-engine-three-languages-one-monorepo)
 //!   (row "Code layer")

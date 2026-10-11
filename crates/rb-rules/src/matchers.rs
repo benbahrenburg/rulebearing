@@ -13,7 +13,7 @@
 //! combined with it; and `ancestor` compares directories resolved against a working directory,
 //! which here is a fixed virtual one deep enough that `../` never runs out of parents.
 //!
-//! **Cross-language keys** ([Wave 2, Step 8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d),
+//! **Cross-language keys** ([Wave 2, Step 8](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d),
 //! [FR-RULE-02](../../../docs/prd.md#fr-rule-02),
 //! [design § Dependency rules](../../../docs/artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820))
 //! have no upstream. [`ModuleFacts`] indexes what they read about each module, from the document

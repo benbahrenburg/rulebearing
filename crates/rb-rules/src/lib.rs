@@ -8,7 +8,7 @@
 //!   [ADR-0015](../../../docs/adr/0015-stable-violation-id.md),
 //!   [ADR-0016](../../../docs/adr/0016-linear-time-regex-and-strict-compat.md)
 //! - Plans: [Wave 1, sub-wave 1B](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#wave-1b-rb-rules)
-//!   (dependency rules), [Wave 2, sub-wave 2C](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md)
+//!   (dependency rules), [Wave 2, sub-wave 2C](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md)
 //!   (element, slice, diagram rules)
 //! - Requirements: [FR-RULE-01](../../../docs/prd.md#fr-rule-01) to [FR-RULE-10](../../../docs/prd.md#fr-rule-10)
 //! - Source: [design § The rule language](../../../docs/artifacts/design.md#the-rule-language)

@@ -1,9 +1,9 @@
 //! `trx`: the Visual Studio test results format, one unit test per rule, for Azure DevOps'
 //! test tab and `dotnet test` tooling.
 //!
-//! - Contract: [Wave 2 plan § 1.5](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Contract: [Wave 2 plan § 1.5](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)
 //!   (one test case per rule; the failure message carries the `fix` and the first violations)
-//! - Plan: [Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //!   (the receipt as a property; vacuous rules as errors, not failures)
 //! - Source: [design § Reporters](../../../docs/artifacts/design.md#reporters)
 //! - Decisions: [ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md),

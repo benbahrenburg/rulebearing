@@ -1,6 +1,6 @@
 //! Discovery: which projects a run reads and where their built assemblies are.
 //!
-//! - Plan: [Wave 2, Step 1](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#21-step-1-net-discovery-and-the-loader-options-2a)
+//! - Plan: [Wave 2, Step 1](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#21-step-1-net-discovery-and-the-loader-options-2a)
 //! - Requirement: [FR-EXT-DN-01](../../../../docs/prd.md#fr-ext-dn-01)
 //! - Coverage: [ArchUnitNET § Loader and caches](../../../../docs/artifacts/archunitnet-0.13.4-coverage.md#loader-and-caches)
 //! - Architecture: [Extractors](../../../../docs/architecture.md#extractors) (discovery row)

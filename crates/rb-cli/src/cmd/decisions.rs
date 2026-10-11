@@ -4,7 +4,7 @@
 //! - Source: [design § The agentic engineering hat](../../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two)
 //!   ("lists rule to decision-record links, fails a dangling one, and `decisions new` scaffolds a
 //!   record with the enforcement ids filled in")
-//! - Plan: [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
+//! - Plan: [Wave 2, Step 12](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //! - Decisions: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md) decision 2,
 //!   [ADR-0001](../../../../docs/adr/0001-record-architecture-decisions.md) (the record template),
 //!   [ADR-0008](../../../../docs/adr/0008-exit-code-contract.md)

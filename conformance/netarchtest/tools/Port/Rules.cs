@@ -1,7 +1,7 @@
 // NetArchTest 1.3.2's predicates and conditions, each written as the element-rule expression that
 // gives the same verdict. The keys are rb-config's (crates/rb-config/src/elements.rs, VOCABULARY);
 // the semantics each mapping reproduces are NetArchTest's FunctionDelegates.cs, cited per method.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7.
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7.
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;

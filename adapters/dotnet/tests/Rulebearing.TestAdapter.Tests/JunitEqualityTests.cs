@@ -1,7 +1,7 @@
 // The message-equality proof: for the same inputs, every RuleResult the adapter yields from
 // `rulebearing cruise -T json` carries exactly the text `rulebearing cruise -T junit` writes for
 // that rule: the test case names and order, each <failure> message and body, each <error> type and
-// message, and <system-out>. Contract: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md,
+// message, and <system-out>. Contract: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md,
 // section 1.5 ("the test adapters' message is this text") and Step 14.
 
 using System.Diagnostics;

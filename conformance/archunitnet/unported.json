@@ -1,5 +1,5 @@
 {
-  "$comment": "Upstream ArchUnitNET tests with no case in ported/, each with a reason, written by conformance/archunitnet/tools/port.py (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7). `block` is the 1-based snapshot block of `test`, or null for a whole test that has no snapshot. Reasons: custom-predicate (a C# predicate or condition, no data-driven case), not-yet: <method or construct> (the element-rule schema or the tool cannot express it yet), not-yet: non-snapshot (asserted in C#, ported separately); a non-snapshot test's reason written by hand (wave-3: ..., api-only: ...) is kept.",
+  "$comment": "Upstream ArchUnitNET tests with no case in ported/, each with a reason, written by conformance/archunitnet/tools/port.py (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7). `block` is the 1-based snapshot block of `test`, or null for a whole test that has no snapshot. Reasons: custom-predicate (a C# predicate or condition, no data-driven case), not-yet: <method or construct> (the element-rule schema or the tool cannot express it yet), not-yet: non-snapshot (asserted in C#, ported separately); a non-snapshot test's reason written by hand (wave-3: ..., api-only: ...) is kept.",
   "pin": "0.13.4",
   "entries": [
     {

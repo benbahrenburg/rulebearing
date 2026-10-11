@@ -1,7 +1,7 @@
 //! The module layer: each type-level dependency projected from a type pair to a file pair, and
 //! classified with the .NET `dependencyTypes`.
 //!
-//! - Plan: [Wave 2, Step 3](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#23-step-3-attribution-edge-projection-the-net-code-layer-and-defaults-2a)
+//! - Plan: [Wave 2, Step 3](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#23-step-3-attribution-edge-projection-the-net-code-layer-and-defaults-2a)
 //!   (`project.rs`: the edge table of § 1.4.2) and § 1.7 (`to.license` read from the `.nuspec`)
 //! - Source: [design § One engine, three languages](../../../docs/artifacts/design.md#one-engine-three-languages-one-monorepo)
 //!   (the .NET `dependencyTypes`)

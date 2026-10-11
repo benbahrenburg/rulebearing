@@ -1,5 +1,5 @@
 // Shared by the tests of rulebearing/vitest: the locally built binary and the shared fixture.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
 // The fixture repository is adapters/fixture (its README says what each rule proves).
 
 import { spawnSync } from 'node:child_process';

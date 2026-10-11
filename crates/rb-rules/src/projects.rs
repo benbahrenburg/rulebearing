@@ -1,7 +1,7 @@
 //! The project layer: modules aggregated into `projects[]` by the project each belongs to, with
 //! the folder layer's couplings, instability, cycles and validation.
 //!
-//! - Plan: [Wave 2, 2D](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#wave-2d-cross-language-rule-additions-presets-vue-svelte-markdown-and-the-remaining-wave-2-option-rows)
+//! - Plan: [Wave 2, 2D](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#wave-2d-cross-language-rule-additions-presets-vue-svelte-markdown-and-the-remaining-wave-2-option-rows)
 //!   (the coverage tab's `metrics` row: "module, folder, and for .NET project instability")
 //! - Decision: [ADR-0066](../../../docs/adr/0066-project-scope-and-the-project-layer.md)
 //! - Coverage: [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),

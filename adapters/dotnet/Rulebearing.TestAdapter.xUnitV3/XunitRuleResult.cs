@@ -1,5 +1,5 @@
 // A RuleResult xUnit v3 can serialize, so discovery lists one test per rule, and whose Assert
-// throws xUnit's own assertion exception (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md,
+// throws xUnit's own assertion exception (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md,
 // Step 14: "`rule.Assert()` throws the framework's assertion with the `junit` message text").
 
 using Xunit.Sdk;

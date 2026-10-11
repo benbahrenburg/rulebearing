@@ -1,7 +1,7 @@
 // The signals that stop a POSIX process, forwarded from the launcher to the binary it runs, so
 // `kill`, a container stop (SIGTERM to the launcher alone) or a closed terminal (SIGHUP) stop the
 // binary rather than orphan it, and the launcher still exits with the binary's own code.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H); exit codes
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H); exit codes
 // docs/adr/0008-exit-code-contract.md. Windows keeps Console.CancelKeyPress (src/Launcher.cs): its
 // console delivers Ctrl+C to the binary too, and it has no signals to forward.
 

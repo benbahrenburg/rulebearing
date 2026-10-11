@@ -2,7 +2,7 @@
 //! fixture assembly extracted, stored as JSON so `rb-rules` reads them without depending on an
 //! extractor.
 //!
-//! - Plan: [Wave 2, Step 7](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c)
+//! - Plan: [Wave 2, Step 7](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c)
 //! - Decisions: [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md),
 //!   [ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md) (the engine
 //!   depends on the document, never on an extractor)

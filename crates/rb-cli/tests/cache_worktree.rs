@@ -1,7 +1,7 @@
 //! Two worktrees of one repository at different commits keep separate cache entries, and a
 //! question asked in one is answered from its own graph.
 //!
-//! - Plan: [Wave 2, Step 13](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)
+//! - Plan: [Wave 2, Step 13](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)
 //!   (the two-worktree integration test)
 //! - Source: [design § The agentic engineering hat](../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two)
 //!   ("parallel agents in separate worktrees do not invalidate each other's caches or share stale

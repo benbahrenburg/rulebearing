@@ -4,8 +4,8 @@
 //! - Decisions: [ADR-0013](../../../docs/adr/0013-ruff-parser-for-python.md),
 //!   [ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md),
 //!   [ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md)
-//! - Plan: [Wave 2, sub-wave 2B](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#wave-2b-rb-extract-python),
-//!   [Step 4](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#24-step-4-the-python-extractor-2b)
+//! - Plan: [Wave 2, sub-wave 2B](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#wave-2b-rb-extract-python),
+//!   [Step 4](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#24-step-4-the-python-extractor-2b)
 //! - Requirements: [FR-EXT-PY-01](../../../docs/prd.md#fr-ext-py-01), [FR-EXT-PY-02](../../../docs/prd.md#fr-ext-py-02)
 //! - Specification: import-linter's contracts and tests on the Python oracle repositories
 //!   ([ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md))
@@ -29,7 +29,7 @@
 //! modules it does not follow, so every `resolved` names a module. Modules are sorted by
 //! `source`, each module's dependencies by `resolved`, then line and column. The receipt carries
 //! the Python observability fields of
-//! [plan § 1.8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#18-quality-attributes):
+//! [plan § 1.8](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#18-quality-attributes):
 //! `roots`, `stdlibVersion` and `site` (`none` when no environment was found).
 
 pub mod codelayer;

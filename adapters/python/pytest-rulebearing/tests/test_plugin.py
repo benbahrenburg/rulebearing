@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT License.
 """The plugin in a real pytest run: off by default, on by flag or ini, one item per rule.
 
-Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H):
+Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H):
 "collects one item per rule from ``rulebearing cruise --output-type json`` when ``--rulebearing``
 is passed or ``[tool.pytest.ini_options] rulebearing = true``".
 """

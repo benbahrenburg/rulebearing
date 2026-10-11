@@ -2,7 +2,7 @@
 // writes ported/<TestClass>.yaml, ported.json and unported.json under the directory it is given.
 // Each case's verdict is computed by NetArchTest itself over the committed fixtures (Oracle.cs), and
 // each rule is the mapping in Rules.cs. Output is deterministic: rerunning gives identical files.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7.
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7.
 // Decisions: docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0019-mit-licence.md.
 using System.Text;
 using System.Text.Encodings.Web;
@@ -99,7 +99,7 @@ var json = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScrip
 var customPredicate = unported.Count(e => e?["reason"]?.GetValue<string>() == "custom-predicate");
 File.WriteAllText(Path.Combine(gate, "unported.json"), new JsonObject
 {
-    ["$comment"] = "NetArchTest unit tests, or single searches of them, with no case in ported/, each with a reason, written by conformance/netarchtest/tools/Port (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7). `block` is the 1-based entry of `test` (its case or search), or null for a whole test. Reasons: custom-predicate (MeetCustomRule, a C# predicate); api-only: <what> (NetArchTest's own API, with no rule counterpart); constructed-type and vocabulary-gap: <what> (no element-rule key gives NetArchTest's verdict); dependency-definition: <what> (NetArchTest counts as a dependency something ArchUnitNET's definition, which the graph document follows, does not, or the reverse).",
+    ["$comment"] = "NetArchTest unit tests, or single searches of them, with no case in ported/, each with a reason, written by conformance/netarchtest/tools/Port (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7). `block` is the 1-based entry of `test` (its case or search), or null for a whole test. Reasons: custom-predicate (MeetCustomRule, a C# predicate); api-only: <what> (NetArchTest's own API, with no rule counterpart); constructed-type and vocabulary-gap: <what> (no element-rule key gives NetArchTest's verdict); dependency-definition: <what> (NetArchTest counts as a dependency something ArchUnitNET's definition, which the graph document follows, does not, or the reverse).",
     ["pin"] = Pin,
     ["entries"] = unported,
 }.ToJsonString(json) + "\n");

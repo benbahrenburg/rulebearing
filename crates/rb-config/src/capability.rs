@@ -1,6 +1,6 @@
 //! The capability table: which language can answer each element predicate, and how.
 //!
-//! - Plan: [Wave 2, Step 5](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
+//! - Plan: [Wave 2, Step 5](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
 //!   and § 1.4.3 ("cross-language behaviour comes from two data tables")
 //! - Decisions: [ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md) (a key a
 //!   language cannot answer is an error, never a silent false),
@@ -30,7 +30,7 @@
 //!
 //! A third table, [`records`], serves the cross-language keys of dependency rules
 //! ([design § Dependency rules](../../../docs/artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820),
-//! [Wave 2, Step 8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)):
+//! [Wave 2, Step 8](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)):
 //! which module and edge properties each language's extractor writes. `namespace(Not)` reads a
 //! module's `namespaces[]`, `project(Not)` its `project`, `assembly(Not)` the assembly of the
 //! code-layer types in its file, `dependencyKind(Not)` the edge's `dependencyKind`.

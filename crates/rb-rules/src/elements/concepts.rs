@@ -1,6 +1,6 @@
 //! What each element predicate and condition means, as `ArchUnitNET` 0.13.4 defines it.
 //!
-//! - Plan: [Wave 2, Step 5](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
+//! - Plan: [Wave 2, Step 5](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
 //!   ("semantics to get right, each proven by a ported test")
 //! - Specification: `ArchUnitNET` 0.13.4 `ObjectPredicatesDefinition`, `TypePredicatesDefinition`,
 //!   `MemberPredicatesDefinition`, `MethodMemberPredicatesDefinition`,

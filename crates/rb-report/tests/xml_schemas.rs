@@ -1,9 +1,9 @@
 //! The `junit` output validates against the Jenkins xUnit plugin's `junit-10.xsd`, and the `trx`
 //! output has the structure Visual Studio's `vstst.xsd` requires. No test reads the network.
 //!
-//! - Plan: [Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //!   (XSD validation of `junit` and `trx`)
-//! - Contract: [Wave 2 plan § 1.5](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Contract: [Wave 2 plan § 1.5](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)
 //! - Requirement: [FR-OUT-02](../../../docs/prd.md#fr-out-02)
 //!
 //! No XSD validator written in Rust passes `cargo deny` and covers XML Schema, so this file holds

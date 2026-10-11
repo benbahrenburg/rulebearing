@@ -1,6 +1,6 @@
 // The oracle: every ported case's verdict is what NetArchTest 1.3.2 itself returns over the
 // committed fixtures, and every upstream assertion is checked against it before it is written.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7.
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7.
 // Decision: docs/adr/0009-conformance-suites-as-specification.md (the pinned suite is the
 // specification; what the passing upstream code returns is by definition what it expects).
 using System.Reflection;

@@ -17,7 +17,7 @@
 //! exist, the directory itself otherwise, and its `tsconfig.json` is the `tsConfig` when present.
 //! Prints the module count, the edge count, the code layer's type count and the elapsed
 //! milliseconds; `--no-code-layer` skips the code layer
-//! ([Wave 2C](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#wave-2c-element-slice-and-diagram-rules-the-capability-table-gate-2-to-zero)),
+//! ([Wave 2C](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#wave-2c-element-slice-and-diagram-rules-the-capability-table-gate-2-to-zero)),
 //! so its cost can be read as the difference.
 
 use std::path::PathBuf;

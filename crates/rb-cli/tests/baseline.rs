@@ -1,7 +1,7 @@
 //! `baseline` end to end: the three modes, `expires`, `owner` and `reason`, `--ignore-known` and
 //! `--no-ignore-known` on `cruise` and `fmt`, and element rules under a baseline.
 //!
-//! - Plan: [Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //! - Decisions: [ADR-0015](../../../docs/adr/0015-stable-violation-id.md),
 //!   [ADR-0008](../../../docs/adr/0008-exit-code-contract.md),
 //!   [ADR-0031](../../../docs/adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)

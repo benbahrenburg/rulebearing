@@ -5,7 +5,7 @@
 - **Amends:** [ADR-0068](0068-nuget-publishes-by-trusted-publishing.md). Its decision that `NUGET_API_KEY` is deleted after the first release through the policy is withdrawn; the rest stands.
 - **Derives from:** [ADR-0025](0025-ci-and-supply-chain-hardening.md); release run [38085491053](https://github.com/benbahrenburg/rulebearing/actions/runs/38085491053) (`v0.1.1`)
 - **Constrains:** `.github/workflows/release.yml` (`nuget-publish`), [docs/release.md](../release.md)
-- **Implemented by:** [plan 0002, Step 14](../plans/pending/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h)
+- **Implemented by:** [plan 0002, Step 14](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h)
 - **Requirements:** [FR-DIST-01](../prd.md#fr-dist-01)
 
 ## Context

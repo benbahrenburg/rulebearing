@@ -1,9 +1,9 @@
 //! The element, slice and capability rules over TypeScript and Python code: the mappings the
 //! capability table states, proven over the extractors' own fixture packages.
 //!
-//! - Plan: [Wave 2, Step 5](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
+//! - Plan: [Wave 2, Step 5](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
 //!   ("the TypeScript and Python mappings over the fixture packages") and
-//!   [Step 6](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#26-step-6-slice-and-diagram-rules-2c)
+//!   [Step 6](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#26-step-6-slice-and-diagram-rules-2c)
 //!   ("a TypeScript path-pattern slice ...; a Python dotted-pattern slice")
 //! - Decisions: [ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md) (an
 //!   unanswerable key is an error), [ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md)

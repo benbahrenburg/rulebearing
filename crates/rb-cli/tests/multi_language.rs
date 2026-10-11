@@ -6,7 +6,7 @@
 //! - Source: [design § One engine, three languages](../../../docs/artifacts/design.md#one-engine-three-languages-one-monorepo)
 //! - Decision: [ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md) (no edge
 //!   joins two languages)
-//! - Plan: [Wave 2 § 1.3](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#13-requirements-traceability)
+//! - Plan: [Wave 2 § 1.3](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#13-requirements-traceability)
 
 use std::error::Error;
 use std::path::{Path, PathBuf};

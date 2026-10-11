@@ -4,7 +4,7 @@
 - **Date:** 2026-10-10
 - **Derives from:** [ADR-0025](0025-ci-and-supply-chain-hardening.md) ("the release workflow raises [the token] for the jobs that publish, and nowhere else"; actions pinned to a commit SHA); [docs/release.md § NuGet](../release.md#nuget-from-wave-2), which named trusted publishing as the replacement for the key
 - **Constrains:** `.github/workflows/release.yml` (`nuget-credentials`, `nuget-publish`), [docs/release.md](../release.md)
-- **Implemented by:** [plan 0002, Step 14](../plans/pending/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h) (the NuGet wrapper's publishing)
+- **Implemented by:** [plan 0002, Step 14](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h) (the NuGet wrapper's publishing)
 - **Requirements:** [FR-DIST-01](../prd.md#fr-dist-01), [NFR-SEC-01](../prd.md#nfr-sec-01)
 
 ## Context

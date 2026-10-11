@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The dotnet tool smoke test: packs `Rulebearing` with a locally built binary for this machine,
 # installs it into an empty tool path from that package alone, and asserts that `rulebearing
-# --version` prints `rulebearing <version>` (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md,
+# --version` prints `rulebearing <version>` (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md,
 # Step 14: "A smoke job installs each wrapper from the built package ... and runs
 # `rulebearing --version`"). Installs nothing outside a temporary directory.
 #

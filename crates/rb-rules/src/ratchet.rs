@@ -11,7 +11,7 @@
 //! line. `$1` in `to` takes the capture from `from.path`, as a dependency rule does, so
 //! "each app's routes into that same app's server code" is one ratchet. The cross-language keys
 //! of a native configuration narrow a ratchet as they narrow a dependency rule
-//! ([Wave 2, Step 8](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)).
+//! ([Wave 2, Step 8](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)).
 
 use rb_config::model::{FromRestriction, ToRestriction};
 use rb_config::pattern::replace_group_placeholders;

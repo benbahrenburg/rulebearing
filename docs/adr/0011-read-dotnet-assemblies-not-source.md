@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § Prior art](../artifacts/design.md#prior-art), [§ What each extractor has to get right](../artifacts/design.md#what-each-extractor-has-to-get-right) (.NET), [§ Where it would be ignored](../artifacts/design.md#where-it-would-be-ignored) (the build requirement), [§ Open questions](../artifacts/design.md#open-questions) (.NET Framework)
 - **Constrains:** [architecture.md § Extractors](../architecture.md#extractors)
-- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md), [Wave 2 plan](../plans/pending/0002-wave-2-dotnet-python-element-rules.md), [Wave 3 plan](../plans/pending/0003-wave-3-operations-surface-inner-loop.md) (`--mode source`)
+- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md), [Wave 2 plan](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md), [Wave 3 plan](../plans/pending/0003-wave-3-operations-surface-inner-loop.md) (`--mode source`)
 
 ## Context
 

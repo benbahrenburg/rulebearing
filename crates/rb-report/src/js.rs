@@ -6,7 +6,7 @@
 //!   and the ECMAScript `ToString`, `Number::toString` and `GetSubstitution` operations the
 //!   reporters lean on; byte-compared by conformance gate 1 layer 3
 //!   ([ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md))
-//! - Plan: [Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
 //!
 //! The reporters interpolate whatever the cruise result carries, so a missing value prints as

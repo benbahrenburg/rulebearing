@@ -4,7 +4,7 @@
 - **Date:** 2026-09-24
 - **Derives from:** [ADR-0009](0009-conformance-suites-as-specification.md) (the upstream suite is the specification), [ADR-0010](0010-crate-layout-and-extractor-boundary.md) (no `match language` in the engine), [ADR-0005](0005-native-config-superset-and-compat.md) (native additions are additive)
 - **Constrains:** `crates/rb-rules/src/slices.rs`, `crates/rb-config/src/capability.rs`, `crates/rb-config/src/elements.rs` (`SliceRule`), the `rb-extract-python` module layer
-- **Implemented by:** [Wave 2 plan](../plans/pending/0002-wave-2-dotnet-python-element-rules.md), [Step 6](../plans/pending/0002-wave-2-dotnet-python-element-rules.md#26-step-6-slice-and-diagram-rules-2c)
+- **Implemented by:** [Wave 2 plan](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md), [Step 6](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md#26-step-6-slice-and-diagram-rules-2c)
 - **Requirements:** [FR-RULE-04](../prd.md#fr-rule-04)
 
 ## Context

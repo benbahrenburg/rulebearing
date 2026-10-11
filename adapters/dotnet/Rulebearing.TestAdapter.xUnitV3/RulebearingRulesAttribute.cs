@@ -1,5 +1,5 @@
 // xUnit v3 data source: one theory row per rule of a Rulebearing run
-// (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14;
+// (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14;
 // docs/artifacts/archunitnet-0.13.4-coverage.md#test-framework-adapters, ArchUnitNET.xUnitV3).
 
 using System.Reflection;

@@ -1,7 +1,7 @@
 //! Signature blobs: the types of fields, methods, properties, locals and generic instantiations.
 //!
 //! - Specification: ECMA-335 II.23.2 (blobs and signatures), II.23.1.16 (element types)
-//! - Plan: [Wave 2, Step 2](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
+//! - Plan: [Wave 2, Step 2](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
 //!   (`sig.rs`: field, method, property and `TypeSpec` blobs yielding type chains with generic
 //!   arguments)
 //! - Decision: [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md) (the

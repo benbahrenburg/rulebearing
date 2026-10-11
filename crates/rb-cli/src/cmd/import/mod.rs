@@ -3,8 +3,8 @@
 //!
 //! - Source: [design § The developer relations hat](../../../../../docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo)
 //!   ("migration is a command, not a rewrite")
-//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f),
-//!   and the decision rule "How `import archunit` reads C#" in [§ 1.7](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#17-decisions-this-wave-must-make)
+//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f),
+//!   and the decision rule "How `import archunit` reads C#" in [§ 1.7](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#17-decisions-this-wave-must-make)
 //! - Decisions: [ADR-0005](../../../../../docs/adr/0005-native-config-superset-and-compat.md),
 //!   [ADR-0006](../../../../../docs/adr/0006-embedded-quickjs-config-evaluator.md) (`ESLint` configurations
 //!   are evaluated in the sandbox), [ADR-0013](../../../../../docs/adr/0013-ruff-parser-for-python.md)

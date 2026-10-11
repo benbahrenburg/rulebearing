@@ -1,7 +1,7 @@
 //! `config expand` output, byte-compared against a committed fixture: a native file that
 //! composes presets for one language, substitutes a define and uses both shorthands.
 //!
-//! - Plan: [Wave 2, Step 9](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
+//! - Plan: [Wave 2, Step 9](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
 //!   ("`config expand` output fixture")
 //! - Source: [design § Shorthands](../../../docs/artifacts/design.md#shorthands) ("`rulebearing
 //!   config expand` prints the expansion, so nothing is hidden")

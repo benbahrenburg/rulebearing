@@ -1,6 +1,6 @@
 //! `propose --from/--to`, `propose --select/--where/--should`, `propose --from-example`.
 //!
-//! - Plan: [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
+//! - Plan: [Wave 2, Step 12](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //! - Source: [design § Rules an agent writes](../../../../docs/artifacts/design.md#rules-an-agent-writes-held-to-the-same-bar)
 
 use crate::common::{

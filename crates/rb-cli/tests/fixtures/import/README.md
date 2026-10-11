@@ -1,6 +1,6 @@
 # Importer fixtures
 
-Inputs for `rulebearing import`, each folder with the `expected.yaml` the importer writes for it ([plan 0002, Step 11](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)). [`tests/import.rs`](../../import.rs) byte-compares each output and runs the import-linter and ESLint outputs against a tree; [`tests/import_corpus.rs`](../../import_corpus.rs) holds the ArchUnitNET and NetArchTest round trips. Regenerate the expected files with `RB_UPDATE_SNAPSHOTS=1 cargo test -p rb-cli --test import` and review the diff.
+Inputs for `rulebearing import`, each folder with the `expected.yaml` the importer writes for it ([plan 0002, Step 11](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)). [`tests/import.rs`](../../import.rs) byte-compares each output and runs the import-linter and ESLint outputs against a tree; [`tests/import_corpus.rs`](../../import_corpus.rs) holds the ArchUnitNET and NetArchTest round trips. Regenerate the expected files with `RB_UPDATE_SNAPSHOTS=1 cargo test -p rb-cli --test import` and review the diff.
 
 | Folder | What it covers |
 | --- | --- |

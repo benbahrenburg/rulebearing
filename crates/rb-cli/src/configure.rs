@@ -372,7 +372,7 @@ pub fn cache_flags(config: &mut Config, args: &CruiseArgs) {
 /// `--ignore-known [file]` replaces `options.knownViolations` with the file's entries, as
 /// dependency-cruiser sets `ruleSet.options.knownViolations` from it; `--no-ignore-known` drops
 /// every entry, the configuration's included, so each finding is reported at its rule's severity
-/// ([Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)).
+/// ([Wave 2, Step 10](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)).
 ///
 /// # Errors
 /// [`ConfigError`] naming the file when it cannot be read or is not a known-violations file.

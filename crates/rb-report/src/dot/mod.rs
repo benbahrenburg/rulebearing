@@ -8,7 +8,7 @@
 //! - Coverage: [coverage § Output types](../../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types),
 //!   row `dot`, `ddot`, `cdot` / `archi`, `fdot` / `flat`; [coverage § Options](../../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),
 //!   row `reporterOptions.archi` / `dot` / `ddot` / `flat`
-//! - Plan: [Wave 2, Step 10](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //! - Requirement: [FR-OUT-01](../../../../docs/prd.md#fr-out-01)
 //!
 //! The reporter options are the section the caller passes (`reporterOptions.<output type>`) and,

@@ -3,9 +3,9 @@
 //!
 //! - Architecture: [Agent surface](../../../../docs/architecture.md#agent-surface),
 //!   [Performance model](../../../../docs/architecture.md#performance-model)
-//! - Plan: [Wave 2, Step 13](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)
+//! - Plan: [Wave 2, Step 13](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)
 //!   (the key; `can-import`, `propose`, `place` and `impact` read it; a miss re-extracts),
-//!   [Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
+//!   [Step 12](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //!   ("`propose` and `place` read the worktree-aware cache ... so they answer in the same time
 //!   as `can-import`")
 //! - Plan: [Wave 3, Steps 1 and 2](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)

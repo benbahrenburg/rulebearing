@@ -2,7 +2,7 @@
 //!
 //! - Source: [design § Rules an agent writes, held to the same bar](../../../../docs/artifacts/design.md#rules-an-agent-writes-held-to-the-same-bar)
 //!   ("the starting point an agent should be given instead of a blank regex")
-//! - Plan: [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
+//! - Plan: [Wave 2, Step 12](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //!   (the three forms; read from the worktree-aware cache of Step 13)
 //! - Decisions: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md) decision 2,
 //!   [ADR-0016](../../../../docs/adr/0016-linear-time-regex-and-strict-compat.md) (patterns the

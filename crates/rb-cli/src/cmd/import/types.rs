@@ -1,7 +1,7 @@
 //! Which type a C# name means: the declarations `import archunit` has read, the assembly each
 //! belongs to, and C#'s lookup order for a name written in a namespace with using directives.
 //!
-//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
+//! - Plan: [Wave 2, Step 11](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
 //!   ("`typeof(X)` becomes the full name, resolved from using directives and namespace
 //!   declarations; a type whose namespace cannot be determined is emitted commented out")
 //! - Requirement: [FR-CLI-04](../../../../../docs/prd.md#fr-cli-04)

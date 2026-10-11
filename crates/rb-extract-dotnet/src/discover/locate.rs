@@ -1,6 +1,6 @@
 //! Where a project's build put its assembly.
 //!
-//! - Plan: [Wave 2, Step 1](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#21-step-1-net-discovery-and-the-loader-options-2a)
+//! - Plan: [Wave 2, Step 1](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#21-step-1-net-discovery-and-the-loader-options-2a)
 //!   (`locate.rs`: each project to its built assembly and PDB under `OutputPath` or
 //!   `bin/<Configuration>/<TargetFramework>/`)
 //! - Requirement: [FR-EXT-DN-01](../../../../docs/prd.md#fr-ext-dn-01)

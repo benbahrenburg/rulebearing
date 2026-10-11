@@ -1,5 +1,5 @@
 // Tests and the coverage floor of rulebearing/vitest: 70% of lines (docs/adr/0018-test-coverage-threshold.md).
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({

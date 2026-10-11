@@ -1,5 +1,5 @@
 // NUnit test case source: one test case per rule of a Rulebearing run
-// (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14;
+// (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14;
 // docs/artifacts/archunitnet-0.13.4-coverage.md#test-framework-adapters, ArchUnitNET.NUnit).
 
 using NUnit.Framework;

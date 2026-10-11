@@ -1,6 +1,6 @@
 //! The metadata and IL readers against what System.Reflection.Metadata reads from the same bytes.
 //!
-//! - Plan: [Wave 2, Step 2](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
+//! - Plan: [Wave 2, Step 2](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#22-step-2-the-metadata-il-and-pdb-readers-2a)
 //!   ("`tests/ecma335.rs` reads the committed `TestAssembly.dll` and asserts row counts, a
 //!   sample of decoded signatures and the IL operand stream of three known methods")
 //! - Expected values: printed once by `conformance/archunitnet/tools/MetadataDump`

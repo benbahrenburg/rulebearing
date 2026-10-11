@@ -1,6 +1,6 @@
 // Runs the binary once per set of options and turns its JSON result into one RuleResult per rule.
 //
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
 // Exit codes: docs/adr/0008-exit-code-contract.md. `-T json` exits 0 whatever it found, 2 when the
 // run cannot be trusted (a vacuous rule under strict liveness, docs/adr/0007) and 3 for an
 // invalid configuration. Exit 2 whose cause the result carries (a vacuous rule, an expired rule or

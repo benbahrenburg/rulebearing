@@ -1,7 +1,7 @@
 //! Validation against the capability table ([`rb_config::capability`]): which language can
 //! answer each element predicate, and how.
 //!
-//! - Plan: [Wave 2, Step 5](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
+//! - Plan: [Wave 2, Step 5](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
 //!   and § 1.4.3 ("cross-language behaviour comes from two data tables")
 //! - Decisions: [ADR-0014](../../../../docs/adr/0014-no-invented-cross-language-edges.md) (a key a
 //!   language cannot answer is an error, never a silent false),

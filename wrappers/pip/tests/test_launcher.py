@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT License.
 """The console script: resolve the binary, run it with the arguments unchanged, exit 2 without one.
 
-Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
+Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
 Exit codes: docs/adr/0008-exit-code-contract.md.
 """
 

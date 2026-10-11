@@ -32,7 +32,7 @@ Each test case is named after its rule. The packages target `net8.0`, so a test 
 
 ## What a test reports
 
-A rule's message is the text the `junit` reporter writes for the same rule, byte for byte ([plan 0002 § 1.5](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)): the rule's `fix` (or `N violation(s) of <rule>` when it has none), then the first five error-severity violations with their stable id ([ADR-0015](../../docs/adr/0015-stable-violation-id.md)), `from -> to` and line, then `... and N more`.
+A rule's message is the text the `junit` reporter writes for the same rule, byte for byte ([plan 0002 § 1.5](../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#15-interfaces-and-contracts-this-wave-freezes)): the rule's `fix` (or `N violation(s) of <rule>` when it has none), then the first five error-severity violations with their stable id ([ADR-0015](../../docs/adr/0015-stable-violation-id.md)), `from -> to` and line, then `... and N more`.
 
 | Result of the rule | `RuleResult.Outcome` | `rule.Assert()` |
 | --- | --- | --- |
@@ -66,4 +66,4 @@ adapters/dotnet/test.sh                               # every project, with the 
 dotnet pack adapters/dotnet/Rulebearing.TestAdapter.xUnit -c Release -o out -p:Version=<version>
 ```
 
-Plan: [Wave 2, Step 14 (2H)](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h). Requirement: [FR-DIST-03](../../docs/prd.md#fr-dist-03).
+Plan: [Wave 2, Step 14 (2H)](../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h). Requirement: [FR-DIST-03](../../docs/prd.md#fr-dist-03).

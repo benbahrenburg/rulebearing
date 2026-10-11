@@ -2,7 +2,7 @@
 //! to the case's rule, and imported ArchUnitNET tests reproduce upstream's verdicts over the
 //! fixture graphs.
 //!
-//! - Plan: [Wave 2, Step 11](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
+//! - Plan: [Wave 2, Step 11](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
 //!   ("a round-trip test that an imported ArchUnitNET rule over `TestAssembly` reproduces the
 //!   upstream expectation")
 //! - Decision: [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md) (the

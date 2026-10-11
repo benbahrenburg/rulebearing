@@ -1,6 +1,6 @@
 //! Solution files: the classic `.sln` project lines and the XML `.slnx`.
 //!
-//! - Plan: [Wave 2, Step 1](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#21-step-1-net-discovery-and-the-loader-options-2a)
+//! - Plan: [Wave 2, Step 1](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#21-step-1-net-discovery-and-the-loader-options-2a)
 //!   (`sln.rs`, `slnx.rs`)
 //! - Requirement: [FR-EXT-DN-01](../../../../docs/prd.md#fr-ext-dn-01)
 //!

@@ -2,7 +2,7 @@
 //!
 //! - Source: [design § Slice rules](../../../docs/artifacts/design.md#slice-rules)
 //! - Coverage: [`ArchUnitNET` § Slices](../../../docs/artifacts/archunitnet-0.13.4-coverage.md#slices-sliceruledefinition)
-//! - Plan: [Wave 2, Step 6](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#26-step-6-slice-and-diagram-rules-2c)
+//! - Plan: [Wave 2, Step 6](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#26-step-6-slice-and-diagram-rules-2c)
 //! - Decision: [ADR-0034](../../../docs/adr/0034-slices-group-types-or-modules-and-segments.md)
 //! - Requirement: [FR-RULE-04](../../../docs/prd.md#fr-rule-04)
 //! - Specification: `ArchUnitNET` 0.13.4 `Fluent/Slices/SliceRuleInitializer.cs` (`Matching`,

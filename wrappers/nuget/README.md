@@ -12,7 +12,7 @@ To run the rules as tests in an xUnit, NUnit, MSTest or TUnit project, add the m
 
 ## How the package works
 
-The package is a launcher and nothing else ([architecture § Distribution](../../docs/architecture.md#distribution), [FR-DIST-01](../../docs/prd.md#fr-dist-01), [plan 0002 Step 14](../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h)). It carries the binary for each release target of [release.yml](../../.github/workflows/release.yml) under `runtimes/<rid>/native/`, beside a small `net8.0` launcher that runs on any later runtime (`RollForward` `Major`).
+The package is a launcher and nothing else ([architecture § Distribution](../../docs/architecture.md#distribution), [FR-DIST-01](../../docs/prd.md#fr-dist-01), [plan 0002 Step 14](../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h)). It carries the binary for each release target of [release.yml](../../.github/workflows/release.yml) under `runtimes/<rid>/native/`, beside a small `net8.0` launcher that runs on any later runtime (`RollForward` `Major`).
 
 | Runtime identifier | Release target |
 | --- | --- |

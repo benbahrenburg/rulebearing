@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT licence: see LICENSE.
 """The oracle harness's join (compare.py) and table (table.py) on small, hand-written inputs.
 
-Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11 (the oracle
+Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 11 (the oracle
 harness). Requirement: docs/prd.md#nfr-conf-03. Run with ``pytest testbeds/oracles``.
 """
 

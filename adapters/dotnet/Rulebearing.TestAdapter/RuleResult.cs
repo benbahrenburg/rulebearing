@@ -1,6 +1,6 @@
 // One rule of a Rulebearing run, as the host test framework sees it.
 //
-// Contract: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, section 1.5 (one test
+// Contract: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, section 1.5 (one test
 // case per rule; the adapters' failure message is the junit reporter's text) and Step 14 (2H).
 // Decisions: docs/adr/0007-vacuous-rules-fail-by-default.md (a vacuous rule fails with the
 // liveness reason), docs/adr/0018-test-coverage-threshold.md.

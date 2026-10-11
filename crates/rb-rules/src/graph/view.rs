@@ -1,7 +1,7 @@
 //! A rule's narrowed graph: the edges and chains a rule's `graph` takes out.
 //!
 //! - Decision: [ADR-0038](../../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)
-//! - Plan: [Wave 2, Step 11](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
+//! - Plan: [Wave 2, Step 11](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
 //! - Requirements: [FR-RULE-07](../../../../docs/prd.md#fr-rule-07),
 //!   [FR-RULE-08](../../../../docs/prd.md#fr-rule-08)
 //!

@@ -4,7 +4,7 @@
 //! - Decision: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md)
 //! - Plan: [Wave 1, Step 14](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-14-rules---json-explain-explain---plain-test-can-import-1e)
 //!   (from the saved graph, in milliseconds), and
-//!   [Wave 2, Step 13](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)
+//!   [Wave 2, Step 13](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)
 //!   (the graph is the worktree-aware cache entry; a miss re-extracts)
 //! - Requirement: [FR-CLI-02](../../../../docs/prd.md#fr-cli-02)
 //!
@@ -17,7 +17,7 @@
 //! severity that the edge would also match). The `id` is the one the gate would give the edge
 //! ([ADR-0015](../../../../docs/adr/0015-stable-violation-id.md)): the edge's `dependencyKind` in the
 //! graph when it is already there, else `import`. This is what `eslint-plugin-rulebearing` reads
-//! ([Wave 2, Step 13](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)).
+//! ([Wave 2, Step 13](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)).
 //!
 //! Both paths are normalised the way the graph writes them (repository-relative, `/`, no `./`).
 //! The edge takes the attributes that describe its target (`license`, `coreModule`, and of the
@@ -30,14 +30,14 @@
 //! because answering `yes` for a module whose kind is unknown would be a silent false.
 //!
 //! The configuration's `options.knownViolations` apply as they do in the gate
-//! ([`rb_rules::known::KnownSet`], [Wave 2, Step 10](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)):
+//! ([`rb_rules::known::KnownSet`], [Wave 2, Step 10](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)):
 //! a rule an entry matches (by the edge's id, or by its shape, with the cycle the gate would find)
 //! is softened to `ignore`, so the verdict is `yes`, and it is listed among the `warnings` with
 //! severity `ignore` and `"known": true`. An entry past its `expires` date is not honoured, so the
 //! rule still blocks, as it fails the gate.
 //! The cross-language keys read each module's `language`, `namespaces`, `project` and the
 //! assemblies of its code-layer types from the same graph, and the hypothetical edge is an
-//! `import` ([Wave 2, Step 8](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)).
+//! `import` ([Wave 2, Step 8](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#28-step-8-cross-language-rule-additions-per-language-dependencytypes-license-moreunstable-2d)).
 
 use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 use std::fmt::Write as _;

@@ -1,6 +1,6 @@
 # NetArchTest test fixtures
 
-The assemblies NetArchTest's own unit tests load, built once and committed so the NetArchTest half of conformance gate 2 reads the same bytes on every machine: `NetArchTest.TestStructure` (every predicate, condition and dependency-search test) and the two `CrossAssemblyTest` projects (`Inherit` across an assembly boundary) ([plan 0002, Step 7](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c)) ([design § Conformance gate 2](../../../docs/artifacts/design.md#conformance-gate-2-archunitnets-test-assemblies-validate-the-element-rules), [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md)).
+The assemblies NetArchTest's own unit tests load, built once and committed so the NetArchTest half of conformance gate 2 reads the same bytes on every machine: `NetArchTest.TestStructure` (every predicate, condition and dependency-search test) and the two `CrossAssemblyTest` projects (`Inherit` across an assembly boundary) ([plan 0002, Step 7](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c)) ([design § Conformance gate 2](../../../docs/artifacts/design.md#conformance-gate-2-archunitnets-test-assemblies-validate-the-element-rules), [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md)).
 
 | Item | Value |
 | --- | --- |

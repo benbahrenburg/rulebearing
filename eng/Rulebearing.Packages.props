@@ -8,7 +8,7 @@
   one version and is never edited to release. `dotnet pack -p:Version=<version>` overrides it, as
   the release workflow's staging step does for the npm packages.
   Decisions: docs/adr/0020-single-name-across-registries.md (one name, one version),
-  docs/adr/0019-mit-licence.md (MIT). Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md,
+  docs/adr/0019-mit-licence.md (MIT). Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md,
   Step 14 (2H).
 -->
 <Project>

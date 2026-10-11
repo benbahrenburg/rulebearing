@@ -1,6 +1,6 @@
 //! `webpackConfig`: the `resolve` block of a webpack configuration, evaluated in the sandbox.
 //!
-//! - Plan: [Wave 2, Step 9](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
+//! - Plan: [Wave 2, Step 9](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
 //!   ("`webpackConfig.fileName`, `env`, `arguments`: evaluate in the wave 1 sandbox and read
 //!   `resolve.alias`, `resolve.modules`, `resolve.extensions` into `oxc_resolver` options;
 //!   `--webpack-config-json` accepts a pre-evaluated copy")

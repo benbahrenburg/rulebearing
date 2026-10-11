@@ -1,5 +1,5 @@
 // RulebearingReporter: the block it prints for the rule tests of a run, and nothing for others.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
 import { describe, expect, it } from 'vitest';
 import type { TestCase } from 'vitest/node';
 import type { RuleMeta } from '../src/define.js';

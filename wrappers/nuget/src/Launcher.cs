@@ -2,7 +2,7 @@
 // from runtimes/<rid>/native/ beside the tool, runs it with every argument unchanged and the
 // console inherited, and exits with its exit code. It never re-implements a subcommand
 // (CLAUDE.md, wrappers; docs/architecture.md#distribution; FR-DIST-01).
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14 (2H).
 // The six targets are the matrix of .github/workflows/release.yml, as the npm wrapper's
 // wrappers/npm/src/platforms.ts lists them.
 

@@ -2,7 +2,7 @@
 # The Python oracle harness: import-linter against Rulebearing, contract by contract, on one
 # pinned repository.
 #
-# Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11 (the oracle
+# Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 11 (the oracle
 # harness) and section 1.4.5. Requirement: docs/prd.md#nfr-conf-03. Design:
 # docs/artifacts/design.md, "Test beds", item 1.
 # Usage: testbeds/oracles/python.sh <owner/repo> [out-dir]   (default out-dir: testbeds/out)

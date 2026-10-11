@@ -1,7 +1,7 @@
 // NetArchTest 1.3.2 test/NetArchTest.Rules.UnitTests/ConditionTests.cs, test by test: the upstream
 // chain (verbatim), the predicates before Should() (the selection), and the element rule whose
 // `where` is the selection and whose `should` is the condition.
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7.
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7.
 // The chains are upstream's C#, which is not nullable-annotated (Assembly.GetAssembly returns a
 // nullable reference), so nullable analysis is off for this transcription only.
 #nullable disable

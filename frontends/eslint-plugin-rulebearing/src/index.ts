@@ -2,7 +2,7 @@
 //
 // Source: docs/artifacts/design.md#two-front-ends-that-will-matter-more-than-the-mcp-server.
 // Decision: docs/adr/0021-agent-surface-cli-first.md (decision 2 lists the plugin in wave 2).
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 13. Requirement: FR-DIST-04.
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 13. Requirement: FR-DIST-04.
 //
 // Usage, flat config:
 //   import rulebearing from 'eslint-plugin-rulebearing';

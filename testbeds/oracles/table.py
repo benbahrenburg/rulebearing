@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT licence: see LICENSE.
 """The oracle agreement table, rendered from testbeds/results/*.json.
 
-Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 11 ("writing
+Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 11 ("writing
 testbeds/results/<repo>.json with a per-test or per-contract agreement table that the README
 table reads") and the 2F status rows. Requirement: docs/prd.md#nfr-conf-03.
 

@@ -4,7 +4,7 @@
 //! - Decisions: [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md),
 //!   [ADR-0003](../../../docs/adr/0003-dotnet-extractor-fallback.md) (the C# fallback trigger)
 //! - Plans: [Wave 0, Spike B](../../../docs/plans/pending/0000-wave-0-spike.md),
-//!   [Wave 2, sub-wave 2A](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md),
+//!   [Wave 2, sub-wave 2A](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md),
 //!   [Wave 3](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md) (`--mode source`)
 //! - Requirements: [FR-EXT-DN-01](../../../docs/prd.md#fr-ext-dn-01) to [FR-EXT-DN-04](../../../docs/prd.md#fr-ext-dn-04)
 //! - Specification: ECMA-335 partition II; the portable PDB format; `ArchUnitNET`'s `TestAssembly`
@@ -15,7 +15,7 @@
 //! Wave 0 (Spike B) built the reader far enough to attribute every type to a source file and
 //! measure the share it attributes, the figure [ADR-0003](../../../docs/adr/0003-dotnet-extractor-fallback.md)
 //! decided on ([ADR-0022](../../../docs/adr/0022-dotnet-reader-in-rust-confirmed.md)). Wave 2
-//! ([Steps 1 to 3](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#21-step-1-net-discovery-and-the-loader-options-2a))
+//! ([Steps 1 to 3](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#21-step-1-net-discovery-and-the-loader-options-2a))
 //! completes it: discovery, the full table set, signatures, IL, the edge set and the code layer.
 //!
 //! | Module | Does |

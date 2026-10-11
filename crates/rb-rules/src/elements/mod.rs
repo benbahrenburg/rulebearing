@@ -2,7 +2,7 @@
 //!
 //! - Architecture: [The rule engine](../../../../docs/architecture.md#the-rule-engine)
 //! - Source: [design § Element rules](../../../../docs/artifacts/design.md#element-rules-archunitnet-declarative)
-//! - Plan: [Wave 2, Step 5](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
+//! - Plan: [Wave 2, Step 5](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c)
 //!   and § 1.4.3 (the evaluation flow)
 //! - Decisions: [ADR-0007](../../../../docs/adr/0007-vacuous-rules-fail-by-default.md) (an empty
 //!   selection is vacuous), [ADR-0010](../../../../docs/adr/0010-crate-layout-and-extractor-boundary.md)

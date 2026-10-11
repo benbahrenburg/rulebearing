@@ -3,7 +3,7 @@
      `dotnet tool install -g Rulebearing` puts `rulebearing` on the path. The 0.0.1 name
      reservation (docs/adr/0020-single-name-across-registries.md) was published from this path on
      2026-09-22; this is the package that replaces it. Staged and packed by wrappers/nuget/pack.sh
-     (docs/release.md). Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14. -->
+     (docs/release.md). Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14. -->
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>

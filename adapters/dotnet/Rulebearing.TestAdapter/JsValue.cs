@@ -1,7 +1,7 @@
 // How the reporters print a JSON value: the `text`, `js_number` and `severity` helpers of
 // crates/rb-report/src/lib.rs, which follow JavaScript's `${value}`. Ported so the adapter's
 // failure message is the junit reporter's, byte for byte
-// (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, section 1.5).
+// (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, section 1.5).
 
 using System.Globalization;
 using System.Text.Encodings.Web;

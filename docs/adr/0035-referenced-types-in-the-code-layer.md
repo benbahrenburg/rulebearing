@@ -4,7 +4,7 @@
 - **Date:** 2026-09-24
 - **Derives from:** [ADR-0004](0004-graph-document-is-cruise-result-superset.md) (additions are additive), [ADR-0009](0009-conformance-suites-as-specification.md), [ADR-0010](0010-crate-layout-and-extractor-boundary.md), [ADR-0011](0011-read-dotnet-assemblies-not-source.md)
 - **Constrains:** `crates/rb-model/src/code.rs` (`TypeElement.referenced`), `crates/rb-extract-dotnet`, `crates/rb-rules/src/elements/`, `select.includeReferenced` in `crates/rb-config/src/elements.rs`
-- **Implemented by:** [Wave 2 plan](../plans/pending/0002-wave-2-dotnet-python-element-rules.md), [Step 5](../plans/pending/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c) and [Step 7](../plans/pending/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c)
+- **Implemented by:** [Wave 2 plan](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md), [Step 5](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md#25-step-5-the-element-rule-engine-and-the-capability-table-2c) and [Step 7](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c)
 - **Requirements:** [FR-RULE-03](../prd.md#fr-rule-03), [NFR-CONF-02](../prd.md#nfr-conf-02)
 
 ## Context

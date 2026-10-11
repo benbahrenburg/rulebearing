@@ -4,7 +4,7 @@
 - **Date:** 2026-10-09
 - **Derives from:** [design § Adoption order](../artifacts/design.md#adoption-order) and [§ Open questions](../artifacts/design.md#open-questions) (upstream etiquette), which this decision departs from
 - **Supersedes:** nothing. It changes [NFR-ADOPT-02](../prd.md#nfr-adopt-02).
-- **Constrains:** [docs/prd.md](../prd.md), [docs/adoption.md](../adoption.md), [CONTRIBUTING.md](../../CONTRIBUTING.md), [plan 0002, Step 15](../plans/pending/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-second-maintainer-2i), [plan 0004, Step 14](../plans/pending/0004-wave-4-reach.md#25-steps-for-sub-wave-4e-usage-counts-and-the-adoption-review)
+- **Constrains:** [docs/prd.md](../prd.md), [docs/adoption.md](../adoption.md), [CONTRIBUTING.md](../../CONTRIBUTING.md), [plan 0002, Step 15](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md#215-step-15-greenfield-init-proof-the-nightly-tables-second-maintainer-2i), [plan 0004, Step 14](../plans/pending/0004-wave-4-reach.md#25-steps-for-sub-wave-4e-usage-counts-and-the-adoption-review)
 - **Requirements:** [NFR-ADOPT-02](../prd.md#nfr-adopt-02)
 
 ## Context

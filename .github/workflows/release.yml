@@ -15,7 +15,7 @@
 # version check and all three install checks have passed.
 # Plans: docs/plans/pending/0000-wave-0-spike.md, Step 11 (binaries);
 # docs/plans/implemented/0001-wave-1-typescript-parity.md, Steps 19 (npm) and 22 (schema on Pages);
-# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Steps 13 (eslint-plugin-rulebearing)
+# docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Steps 13 (eslint-plugin-rulebearing)
 # and 14 (PyPI, NuGet).
 # Hardening: docs/adr/0025. The npm credentials and publish jobs hold id-token: write (trusted
 # publishing and provenance, docs/adr/0069), the NuGet

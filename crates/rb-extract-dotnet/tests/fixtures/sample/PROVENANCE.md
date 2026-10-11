@@ -1,6 +1,6 @@
 # Extraction fixture
 
-A small C# project written for `rb-extract-dotnet`'s extraction tests ([plan 0002, Step 3](../../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#23-step-3-attribution-edge-projection-the-net-code-layer-and-defaults-2a)): partial types, `async` and iterator methods, a lambda, a record, `init` setters, generics, nesting, attributes with positional, named and `typeof` arguments, and a literal `Type.GetType` load. It is this repository's own code, under its MIT licence.
+A small C# project written for `rb-extract-dotnet`'s extraction tests ([plan 0002, Step 3](../../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#23-step-3-attribution-edge-projection-the-net-code-layer-and-defaults-2a)): partial types, `async` and iterator methods, a lambda, a record, `init` setters, generics, nesting, attributes with positional, named and `typeof` arguments, and a literal `Type.GetType` load. It is this repository's own code, under its MIT licence.
 
 | Item | Value |
 | --- | --- |

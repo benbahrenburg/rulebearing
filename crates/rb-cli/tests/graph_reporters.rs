@@ -2,7 +2,7 @@
 //! `d2`, `metrics` and `err-html` through `cruise` and `fmt`, with their `reporterOptions`, the
 //! `--metrics` / `--no-metrics` flags, and `fmt --collapse` reaching the reporter.
 //!
-//! - Plan: [Wave 2, Step 10](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
+//! - Plan: [Wave 2, Step 10](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e)
 //! - Coverage: [coverage § Output types](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types),
 //!   [coverage § Command line](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)
 //! - Contract: [ADR-0030](../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)

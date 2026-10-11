@@ -41,7 +41,7 @@ The workspace version in `Cargo.toml` is the release version; tag the commit tha
 
 ## Wrappers (from waves 1 and 2)
 
-The npm wrapper (wave 1) and the NuGet and PyPI wrappers (wave 2) replace the placeholders with packages that carry the platform binary and nothing else ([wrappers/README.md](../wrappers/README.md)). Their publishing steps are in `release.yml`, so one tag releases the binary and every wrapper at one version ([FR-DIST-01](prd.md#fr-dist-01), [plan 0002 Step 14](plans/pending/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h)). A `version` job reads the workspace version once, checks that a tag carries it, and hands it to every packing job.
+The npm wrapper (wave 1) and the NuGet and PyPI wrappers (wave 2) replace the placeholders with packages that carry the platform binary and nothing else ([wrappers/README.md](../wrappers/README.md)). Their publishing steps are in `release.yml`, so one tag releases the binary and every wrapper at one version ([FR-DIST-01](prd.md#fr-dist-01), [plan 0002 Step 14](plans/implemented/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h)). A `version` job reads the workspace version once, checks that a tag carries it, and hands it to every packing job.
 
 | Registry | Packages | Pack | Install check (macOS arm64, Linux x64, Windows x64) | Publish (a `vX.Y.Z` tag only) | Credential |
 | --- | --- | --- | --- | --- | --- |
@@ -59,7 +59,7 @@ The GitHub `release` job needs the `version` job and all three install checks, a
 
 | Job | Runs on | What it does |
 | --- | --- | --- |
-| `npm-pack` | every trigger | checks that a tag carries the workspace version, builds the launcher, runs `wrappers/npm/scripts/stage.mjs` over the six archives, builds and stages [`eslint-plugin-rulebearing`](../frontends/eslint-plugin-rulebearing/README.md) with the version stamped into it and its `rulebearing` dependency ([plan 0002 Step 13](plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)), packs the eight packages with `npm pack`, and packs the rule library `rulebearing-rules` with `wrappers/rules/pack.sh`, into the `npm-packages` artefact |
+| `npm-pack` | every trigger | checks that a tag carries the workspace version, builds the launcher, runs `wrappers/npm/scripts/stage.mjs` over the six archives, builds and stages [`eslint-plugin-rulebearing`](../frontends/eslint-plugin-rulebearing/README.md) with the version stamped into it and its `rulebearing` dependency ([plan 0002 Step 13](plans/implemented/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)), packs the eight packages with `npm pack`, and packs the rule library `rulebearing-rules` with `wrappers/rules/pack.sh`, into the `npm-packages` artefact |
 | `npm-install-check` | every trigger | on macOS arm64, Linux x64 and Windows x64, installs `rulebearing` and the host's platform package from those tarballs into an empty project and asserts that `npx rulebearing --version` prints `rulebearing <version>`, that `rulebearing/vitest` loads, and that the API's `cruise()` reads a two-file project through the platform package's addon; then that `extends: rulebearing-rules/nextjs` resolves once the library's tarball is installed ([the rule library](#the-rule-library-from-wave-3)) |
 | `npm-publish` | a `vX.Y.Z` tag only, after `release` and the install check | `npm publish --provenance --access public` for the six platform packages, then `rulebearing`, then `eslint-plugin-rulebearing`, then `rulebearing-rules`, from the same tarballs |
 
@@ -130,7 +130,7 @@ python -m venv /tmp/rb/venv && /tmp/rb/venv/bin/pip install --no-index --find-li
 
 ## NuGet (from wave 2)
 
-The `Rulebearing` dotnet tool, the `Rulebearing.TestAdapter` packages and the `Rulebearing.Analyzer` package are built under [`wrappers/nuget/`](../wrappers/nuget/README.md), `adapters/dotnet/` and [`frontends/Rulebearing.Analyzer/`](../frontends/Rulebearing.Analyzer/README.md) ([plan 0002 Step 14](plans/pending/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h), [plan 0003 Step 21](plans/pending/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)). `release.yml` depends on one entry point there, and on nothing else in the .NET tree:
+The `Rulebearing` dotnet tool, the `Rulebearing.TestAdapter` packages and the `Rulebearing.Analyzer` package are built under [`wrappers/nuget/`](../wrappers/nuget/README.md), `adapters/dotnet/` and [`frontends/Rulebearing.Analyzer/`](../frontends/Rulebearing.Analyzer/README.md) ([plan 0002 Step 14](plans/implemented/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h), [plan 0003 Step 21](plans/pending/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)). `release.yml` depends on one entry point there, and on nothing else in the .NET tree:
 
 ```sh
 wrappers/nuget/pack.sh <dist-dir> <version> <out-dir>

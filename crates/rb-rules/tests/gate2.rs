@@ -4,7 +4,7 @@
 //! - Source: [design § Conformance gate 2](../../../docs/artifacts/design.md#conformance-gate-2-archunitnets-test-assemblies-validate-the-element-rules)
 //! - Decision: [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md) (the
 //!   upstream suite is the specification; the unported count only falls)
-//! - Plan: [Wave 2, Step 7](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c)
+//! - Plan: [Wave 2, Step 7](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#27-step-7-gate-2-porting-to-completion-2c)
 //! - Requirements: [NFR-CONF-02](../../../docs/prd.md#nfr-conf-02), [FR-RULE-03](../../../docs/prd.md#fr-rule-03)
 //!
 //! Cases live in `conformance/archunitnet/ported/<TestClass>.yaml`, written by

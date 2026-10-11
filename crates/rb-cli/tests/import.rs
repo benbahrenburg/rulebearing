@@ -3,7 +3,7 @@
 //! determinism, loaded by the configuration loader, and, for import-linter, run against the
 //! fixture tree it came from.
 //!
-//! - Plan: [Wave 2, Step 11](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
+//! - Plan: [Wave 2, Step 11](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#211-step-11-the-three-importers-and-oracle-agreement-2f)
 //!   ("importer fixtures per contract kind and per fluent form ..., each with the expected YAML")
 //! - Source: [design § import-linter contracts](../../../docs/artifacts/design.md#import-linter-contracts-for-the-python-teams-who-know-them)
 //! - Decision: [ADR-0006](../../../docs/adr/0006-embedded-quickjs-config-evaluator.md) (the

@@ -4,7 +4,7 @@
 //! - Source: [design § Docs derived from the rules](../../../../docs/artifacts/design.md#docs-derived-from-the-rules-never-written-beside-them)
 //!   ("one line per rule with its fence in words, its `fix`, and its decision link, grouped by
 //!   the `from` tree")
-//! - Plan: [Wave 2, Step 12](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
+//! - Plan: [Wave 2, Step 12](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //! - Decision: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md)
 //! - Requirement: [FR-CLI-02](../../../../docs/prd.md#fr-cli-02)
 //!

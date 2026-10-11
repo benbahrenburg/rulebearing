@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § What stays honest across the boundary](../artifacts/design.md#what-stays-honest-across-the-boundary), [§ The architect's hat](../artifacts/design.md#the-architects-hat-across-repos-and-across-time) (declared edges)
 - **Constrains:** [architecture.md § The graph document](../architecture.md#the-graph-document), [§ The rule engine](../architecture.md#the-rule-engine)
-- **Implemented by:** [Wave 2 plan](../plans/pending/0002-wave-2-dotnet-python-element-rules.md); declared edges in [Wave 4](../plans/pending/0004-wave-4-reach.md)
+- **Implemented by:** [Wave 2 plan](../plans/implemented/0002-wave-2-dotnet-python-element-rules.md); declared edges in [Wave 4](../plans/pending/0004-wave-4-reach.md)
 
 ## Context
 

@@ -1,6 +1,6 @@
 // The proof the plan asks for: every rule test's failure message is the junit message for that
 // rule, on the shared fixture (adapters/fixture), with the locally built binary.
-// Contract: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 1.5; Step 14 (2H);
+// Contract: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 1.5; Step 14 (2H);
 // docs/adr/0007-vacuous-rules-fail-by-default.md for the vacuous rule.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';

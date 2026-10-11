@@ -1,6 +1,6 @@
 //! Method-body dependencies, as `ArchUnitNET`'s `TypeProcessor` phase 7 finds them.
 //!
-//! - Plan: [Wave 2, Step 3](../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#23-step-3-attribution-edge-projection-the-net-code-layer-and-defaults-2a)
+//! - Plan: [Wave 2, Step 3](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#23-step-3-attribution-edge-projection-the-net-code-layer-and-defaults-2a)
 //!   and § 1.4.2 (the `body`, `call`, `typeof` and `dynamic` rows)
 //! - Specification: `ArchUnitNET` 0.13.4 `TypeProcessor.CreateMethodBodyDependencies`,
 //!   `MonoCecilMemberExtensions.ScanMethodBody`, `HandleAsync`, `HandleIterator`

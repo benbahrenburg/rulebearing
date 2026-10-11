@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT License.
 """The wheel build hook: the version it stamps, the binary it bundles, the platform tag it writes.
 
-Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
+Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
 Targets: docs/architecture.md#distribution. Procedure: docs/release.md.
 """
 

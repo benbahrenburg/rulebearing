@@ -1,6 +1,6 @@
 // The fixture repository (tests/fixture) and what every framework's fixture project expects of it:
 // one rule that holds, one that fails with the junit reporter's message
-// (docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 14). Compiled into every
+// (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 14). Compiled into every
 // test project under adapters/dotnet/tests through Directory.Build.props.
 
 namespace Rulebearing.TestAdapter.Fixture;

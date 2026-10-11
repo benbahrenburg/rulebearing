@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Rebuilds the init-layers fixture: deterministic, CI path-mapped, portable PDBs, the four
 # assemblies copied to built/. Commit built/ with the new hashes in PROVENANCE.md.
-# Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 15.
+# Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 15.
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 rm -rf "$here/built"

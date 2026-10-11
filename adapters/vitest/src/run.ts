@@ -1,6 +1,6 @@
 // Runs `rulebearing cruise --output-type json` and reads what it wrote.
 //
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md § 2.14, Step 14 (2H).
 // Decisions: docs/adr/0008-exit-code-contract.md (exit 1 and 2 still write the JSON);
 // docs/adr/0010-crate-layout-and-extractor-boundary.md rule 4 (the binary evaluates; the adapter
 // reports). Requirement: FR-DIST-03.

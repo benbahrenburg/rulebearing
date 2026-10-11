@@ -1,7 +1,7 @@
 //! SDK-style project files and the `Directory.*.props` files above them, read without evaluating
 //! MSBuild.
 //!
-//! - Plan: [Wave 2, Step 1](../../../../docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#21-step-1-net-discovery-and-the-loader-options-2a)
+//! - Plan: [Wave 2, Step 1](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#21-step-1-net-discovery-and-the-loader-options-2a)
 //!   (`csproj.rs`: `Directory.Build.props` and `Directory.Packages.props` merged by MSBuild's
 //!   walk-up rule, `ProjectReference`, `PackageReference`, `IsTestProject`, `OutputPath`,
 //!   `TargetFramework(s)`, `AssemblyName`, `RootNamespace`)

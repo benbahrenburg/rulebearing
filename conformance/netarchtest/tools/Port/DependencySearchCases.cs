@@ -2,7 +2,7 @@
 // Utils.RunDependencyTest call is two searches (by the dependency's full name, then by its
 // namespace), and each search is one case, or one unported entry when it names a constructed type
 // (Oracle.cs says why).
-// Plan: docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 7.
+// Plan: docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7.
 // The chains are upstream's C#, which is not nullable-annotated (Assembly.GetAssembly returns a
 // nullable reference), so nullable analysis is off for this transcription only.
 #nullable disable

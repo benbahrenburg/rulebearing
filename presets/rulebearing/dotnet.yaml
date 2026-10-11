@@ -1,5 +1,5 @@
 # rulebearing:dotnet. Original to Rulebearing. The .NET defaults of
-# docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md, Step 3, and nothing else: build
+# docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 3, and nothing else: build
 # output and generated sources are not modules (the obj/ and bin/ exclusion is scoped to C#
 # sources, the only .NET modules, so a TypeScript bin/ folder beside them is kept), and the files
 # the runtime or the tooling enters by convention rather than by reference are not orphans.
