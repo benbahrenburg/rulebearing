@@ -1,6 +1,6 @@
 {
   "name": "rulebearing",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "One architecture rule set for TypeScript, .NET and Python: deterministic guardrails an agent can check its own changes against",
   "keywords": [
     "architecture",
@@ -73,12 +73,12 @@
     "stage": "npm run build && node scripts/stage.mjs"
   },
   "optionalDependencies": {
-    "rulebearing-cli-linux-x64-gnu": "0.1.2",
-    "rulebearing-cli-linux-x64-musl": "0.1.2",
-    "rulebearing-cli-linux-arm64-gnu": "0.1.2",
-    "rulebearing-cli-darwin-arm64": "0.1.2",
-    "rulebearing-cli-darwin-x64": "0.1.2",
-    "rulebearing-cli-win32-x64-msvc": "0.1.2"
+    "rulebearing-cli-linux-x64-gnu": "0.1.3",
+    "rulebearing-cli-linux-x64-musl": "0.1.3",
+    "rulebearing-cli-linux-arm64-gnu": "0.1.3",
+    "rulebearing-cli-darwin-arm64": "0.1.3",
+    "rulebearing-cli-darwin-x64": "0.1.3",
+    "rulebearing-cli-win32-x64-msvc": "0.1.3"
   },
   "peerDependencies": {
     "vitest": ">=5"

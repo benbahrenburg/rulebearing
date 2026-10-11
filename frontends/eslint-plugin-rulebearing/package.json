@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-rulebearing",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "One ESLint rule, rulebearing/boundaries, that reports an import the rulebearing gate would fail, with the rule, its fix and the violation id",
   "keywords": [
     "eslint",
@@ -38,7 +38,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "rulebearing": "0.1.2"
+    "rulebearing": "0.1.3"
   },
   "peerDependencies": {
     "eslint": ">=9"
