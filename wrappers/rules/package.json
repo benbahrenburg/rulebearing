@@ -1,0 +1,25 @@
+{
+  "name": "rulebearing-rules",
+  "description": "Rulebearing's framework presets as a versioned library: extends: rulebearing-rules/<preset>",
+  "keywords": [
+    "rulebearing",
+    "architecture",
+    "dependency-cruiser",
+    "boundaries",
+    "presets"
+  ],
+  "license": "MIT",
+  "author": "Ben Bahrenburg",
+  "homepage": "https://github.com/benbahrenburg/rulebearing/tree/main/wrappers/rules#readme",
+  "bugs": "https://github.com/benbahrenburg/rulebearing/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benbahrenburg/rulebearing.git",
+    "directory": "wrappers/rules"
+  },
+  "files": [
+    "*.yaml",
+    "README.md",
+    "LICENSE"
+  ]
+}

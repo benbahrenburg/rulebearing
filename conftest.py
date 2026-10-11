@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT License.
-"""Fixtures for the Python packages' tests (wrappers/pip, adapters/python).
+"""Fixtures for the Python packages' tests (wrappers/pip, wrappers/rules, adapters/python).
 
 One file at the root rather than one per package: ``mypy .`` checks the whole tree and would report
 two ``conftest`` modules as a duplicate. Plan:
@@ -60,6 +60,12 @@ def pip_hatch_build() -> ModuleType:
 def plugin_hatch_build() -> ModuleType:
     """``adapters/python/pytest-rulebearing/hatch_version.py``."""
     return load_hook(REPOSITORY / "adapters" / "python" / "pytest-rulebearing" / "hatch_version.py")
+
+
+@pytest.fixture(scope="session")
+def rules_hatch_build() -> ModuleType:
+    """``wrappers/rules/hatch_rules.py``, the rule library's hook (plan 0003, Step 23)."""
+    return load_hook(REPOSITORY / "wrappers" / "rules" / "hatch_rules.py")
 
 
 @pytest.fixture

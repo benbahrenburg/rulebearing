@@ -25,7 +25,7 @@ The primary language is Rust (a Cargo workspace under `crates/`). TypeScript, C#
 | `xtask/` | The documentation link check and the one lint entry point for all four languages | [ADR-0023](docs/adr/0023-documentation-link-and-lint-gates.md) |
 | `.githooks/`, `.cargo/` | Opt-in git hooks; the cargo aliases and the mutation-testing scope | [ADR-0025](docs/adr/0025-ci-and-supply-chain-hardening.md), [ADR-0024](docs/adr/0024-test-quality-gates.md) |
 | `fuzz/` | cargo-fuzz targets, a workspace of its own; run nightly | [fuzz/README.md](fuzz/README.md) |
-| `wrappers/` | The npm, PyPI and NuGet wrappers (the binary for each platform, never a re-implemented subcommand), and the crates.io reservation | [docs/release.md](docs/release.md), [ADR-0020](docs/adr/0020-single-name-across-registries.md) |
+| `wrappers/` | The npm, PyPI and NuGet wrappers (the binary for each platform, never a re-implemented subcommand), the rule library's three packages packed from `presets/` (`rules/`, [ADR-0071](docs/adr/0071-the-rule-library-ships-from-this-repository.md)), and the crates.io reservation | [docs/release.md](docs/release.md), [ADR-0020](docs/adr/0020-single-name-across-registries.md) |
 | `adapters/` | Test adapters: `Rulebearing.TestAdapter` and its six framework packages (`dotnet/`), `pytest-rulebearing` (`python/`), `rulebearing/vitest` (`vitest/`); each yields one test per rule with the `junit` message | [Wave 2 plan, Step 14](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h) |
 | `frontends/` | `eslint-plugin-rulebearing` and `Rulebearing.Analyzer`, which ask the binary and must agree with the gate | [Wave 2 plan, Step 13](docs/plans/pending/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g) |
 
@@ -167,11 +167,11 @@ crates/rb-node/coverage.sh                              # rb-node's Rust coverag
 conformance/archunitnet/scripts/spike-b-attribution.sh # .NET attribution over the oracles (needs the .NET SDK)
 fuzz/run.sh metadata_reader 600                         # fuzz the metadata reader (nightly toolchain, cargo-fuzz)
 wrappers/publish-placeholders.sh --dry-run              # package the four 0.0.1 name reservations (docs/release.md)
+wrappers/rules/pack.sh <version> <out-dir> [npm] [nuget] [pypi]   # the rule library's packages from presets/ (docs/release.md)
 scripts/cargo-graph.sh > target/cargo-graph.json && ./target/release/rulebearing cruise --config rulebearing.yaml --require-comment-token --graph target/cargo-graph.json   # the self-check CI runs
 testbeds/synth/bench.sh                                 # NFR-PERF-01: the 5,500-module synthetic benchmark (docs/perf.md)
 testbeds/synth/guard.sh                                 # NFR-PERF-03: guard --watch's check of a saved file on that tree, p95 under 100 ms
 testbeds/init/run.sh <checkout> <owner/name>            # regenerate an init fixture
-scripts/sync-rule-library.sh <rulebearing-rules checkout> [--check]   # presets/frameworks/ from the rule library
 python3 testbeds/bench/scale_table.py --readme README.md   # the README's scale table from testbeds/results/scale.json
 scripts/adoption-signals.sh <checkout> --repo <owner/name> --gate <check>   # NFR-ADOPT-01 signals (docs/adoption.md)
 ./target/release/rulebearing --help

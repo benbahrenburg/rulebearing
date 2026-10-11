@@ -1,0 +1,32 @@
+<!-- Rulebearing.Rules: the rule library as a NuGet package. A content package with no assembly and
+     no dependencies: restore puts the presets in the global packages folder at
+     rulebearing.rules/<version>/rulebearing-rules/<preset>.yaml, where
+     `extends: rulebearing-rules/<preset>` finds them (docs/config.md, "extends";
+     crates/rb-config/src/packages.rs). The files are packed from presets/frameworks/ and
+     presets/rulebearing/recommended.yaml, never copied into this folder, and the version is the
+     workspace version unless -p:Version is given, as for the other packages
+     (eng/Rulebearing.Packages.props). Packed by wrappers/rules/pack.sh (docs/release.md).
+     Decision: docs/adr/0071-the-rule-library-ships-from-this-repository.md.
+     Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 23. -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>Rulebearing.Rules</PackageId>
+    <Description>Rulebearing's framework presets as a versioned library: extends: rulebearing-rules/&lt;preset&gt;. Each preset is an opinion, off unless a configuration names it.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- NU5128: the package has no lib/ folder on purpose; it carries data, not an assembly. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <RulebearingPresets>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', 'presets'))</RulebearingPresets>
+  </PropertyGroup>
+  <Import Project="../../eng/Rulebearing.Packages.props" />
+  <ItemGroup>
+    <None Include="$(RulebearingPresets)frameworks/*.yaml" Pack="true" PackagePath="rulebearing-rules/" />
+    <None Include="$(RulebearingPresets)rulebearing/recommended.yaml" Pack="true" PackagePath="rulebearing-rules/" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+</Project>

@@ -1,4 +1,4 @@
-# Tooling configuration for the Python packages (wrappers/pip, adapters/python).
+# Tooling configuration for the Python packages (wrappers/pip, wrappers/rules, adapters/python).
 # This file configures linters only; each package carries its own build metadata.
 # Conventions: CLAUDE.md § Python conventions. Gate: docs/adr/0023-documentation-link-and-lint-gates.md.
 # Run through the one entry point: `cargo xtask lint`.
@@ -37,8 +37,9 @@ ignore = [
 # not an importable package.
 "conformance/*/tools/*.py" = ["INP001"]
 # Hatchling loads a package's hook by path (wrappers/pip/hatch_build.py,
-# adapters/python/pytest-rulebearing/hatch_version.py); it sits beside pyproject.toml, outside the
-# package it builds. The two names differ so that `mypy .` sees two modules, not one twice.
+# wrappers/rules/hatch_rules.py, adapters/python/pytest-rulebearing/hatch_version.py); it sits
+# beside pyproject.toml, outside the package it builds. The names differ so that `mypy .` sees
+# one module each, not one several times.
 "**/hatch_*.py" = ["INP001"]
 # The oracle harness's scripts, run by path from testbeds/oracles/*.sh (plan 0002, Step 11).
 "testbeds/oracles/*.py" = ["INP001"]
@@ -77,6 +78,7 @@ ignore_missing_imports = true
 # Each Python package is its own coverage gate at 70% of lines (docs/adr/0018): name the package
 # directory as the source, so one package cannot carry another over the floor.
 #   pytest wrappers/pip --cov=wrappers/pip
+#   pytest wrappers/rules --cov=wrappers/rules   (the rule library; packs it with npm, dotnet, build)
 #   pytest adapters/python --cov=adapters/python
 #   pytest testbeds/oracles   (the oracle harness; not a published package, so no floor)
 #   pytest testbeds/bench --cov=testbeds/bench   (the Stop-hook benchmark, at the floor)
@@ -84,9 +86,10 @@ ignore_missing_imports = true
 # and the plugin is loaded by the tests themselves, inside the measured window.
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib -p pytester --cov-report=term-missing --cov-fail-under=70"
-testpaths = ["wrappers/pip", "adapters/python", "testbeds/oracles", "testbeds/bench"]
+testpaths = ["wrappers/pip", "wrappers/rules", "adapters/python", "testbeds/oracles", "testbeds/bench"]
 pythonpath = [
     "wrappers/pip/src",
+    "wrappers/rules",
     "adapters/python/pytest-rulebearing/src",
     "testbeds/oracles",
     "testbeds/bench",

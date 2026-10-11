@@ -1,0 +1,48 @@
+# rulebearing-rules on PyPI: the rule library, the presets of presets/frameworks/ and
+# presets/rulebearing/recommended.yaml as package data at site-packages/rulebearing_rules/<preset>.yaml,
+# where `extends: rulebearing-rules/<preset>` finds them (docs/config.md, "extends").
+# hatch_rules.py stamps the release version and adds the presets at build time; the source tree
+# carries no copy of them and no version (docs/adr/0071-the-rule-library-ships-from-this-repository.md).
+# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 23. Procedure: docs/release.md.
+# Lint, type-check and test configuration is the root pyproject.toml.
+[build-system]
+requires = ["hatchling>=1.26", "packaging>=24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rulebearing-rules"
+dynamic = ["version"]
+description = "Rulebearing's framework presets as a versioned library: extends: rulebearing-rules/<preset>"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "Ben Bahrenburg" }]
+keywords = ["rulebearing", "architecture", "dependencies", "boundaries", "presets"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.urls]
+Homepage = "https://github.com/benbahrenburg/rulebearing"
+Repository = "https://github.com/benbahrenburg/rulebearing"
+Issues = "https://github.com/benbahrenburg/rulebearing/issues"
+
+[tool.hatch.metadata.hooks.custom]
+path = "hatch_rules.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["rulebearing_rules"]
+
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "hatch_rules.py"
+
+# The source distribution carries the presets inside the package and the hook, so a wheel built
+# from it alone has the same files and the same version.
+[tool.hatch.build.targets.sdist]
+include = ["rulebearing_rules", "hatch_rules.py", "README.md"]
+
+[tool.hatch.build.targets.sdist.hooks.custom]
+path = "hatch_rules.py"
