@@ -28,6 +28,7 @@ The primary language is Rust (a Cargo workspace under `crates/`). TypeScript, C#
 | `wrappers/` | The npm, PyPI and NuGet wrappers (the binary for each platform, never a re-implemented subcommand), the rule library's three packages packed from `presets/` (`rules/`, [ADR-0071](docs/adr/0071-the-rule-library-ships-from-this-repository.md)), and the crates.io reservation | [docs/release.md](docs/release.md), [ADR-0020](docs/adr/0020-single-name-across-registries.md) |
 | `adapters/` | Test adapters: `Rulebearing.TestAdapter` and its six framework packages (`dotnet/`), `pytest-rulebearing` (`python/`), `rulebearing/vitest` (`vitest/`); each yields one test per rule with the `junit` message | [Wave 2 plan, Step 14](docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#214-step-14-test-adapters-and-wrappers-2h) |
 | `frontends/` | `eslint-plugin-rulebearing` and `Rulebearing.Analyzer`, which ask the binary and must agree with the gate | [Wave 2 plan, Step 13](docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g) |
+| `site/` | The docs site: a TypeScript generator that renders every tracked page under `docs/` and the root guides with the link check's anchors, the playground page script that loads `rb-wasm`, and the link check over the built site; `site/build.sh` builds it into `target/site` with the released schemas, and `docs.yml` deploys it to GitHub Pages from `main`. Plans and the exported design are never published | [ADR-0072](docs/adr/0072-the-docs-site-builds-from-docs-and-serves-the-released-schemas.md), [docs/release.md](docs/release.md#the-docs-site-and-the-schemas-on-pages-from-wave-4) |
 
 ## How work is organised
 
@@ -162,6 +163,10 @@ testbeds/oracles/python.sh <owner/repo>                 # the Python oracle: imp
 adapters/dotnet/test.sh && wrappers/nuget/smoke.sh      # the .NET adapters at their coverage floor; the dotnet tool installs and runs
 rulebearing docs --format reference --out docs/reference/element-rules.md   # the generated element-rule reference
 cargo test -p rb-extract-ts --test extract_fixtures -- --nocapture   # layer 1 alone: prints passed/total/ratio
+site/build.sh                                           # the docs site into target/site: rb-wasm for the playground, every tracked doc, the released schemas, the link check
+(cd site && npm test)                                   # the site generator's tests at the 70% floor
+npm --prefix site run test:e2e                          # the playground in headless Chromium against the built site (npx playwright install chromium-headless-shell once)
+node site/dist/node/main.js serve target/site           # serve the built site at http://127.0.0.1:8080/
 (cd crates/rb-node && npm test)                         # the npm API over the addon: cruise()/format() equal the CLI, the extractors under upstream's specs
 crates/rb-node/coverage.sh                              # rb-node's Rust coverage, measured through those tests (scripts/coverage-per-crate.sh calls it)
 conformance/archunitnet/scripts/spike-b-attribution.sh # .NET attribution over the oracles (needs the .NET SDK)

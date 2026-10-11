@@ -1,0 +1,9 @@
+{
+  "//": "The project the eslint project service reads for the generator, its tests and the vitest configs (Node). The page scripts under web/ have their own, with the DOM. Building uses tsconfig.build.json.",
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "vitest.config.ts", "vitest.e2e.config.ts"]
+}

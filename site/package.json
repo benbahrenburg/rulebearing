@@ -1,0 +1,15 @@
+{
+  "name": "rulebearing-site",
+  "private": true,
+  "description": "The docs site generator and the playground's page script (plan 0004, Step 3; docs/adr/0072-the-docs-site-builds-from-docs-and-serves-the-released-schemas.md). Not published: build.sh writes the site to target/site, and docs.yml deploys it to GitHub Pages.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsc -p web/tsconfig.json",
+    "test": "vitest run --coverage",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "serve": "node dist/node/main.js serve ../target/site"
+  }
+}
