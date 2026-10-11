@@ -260,25 +260,65 @@ fn not_found(path: &Path) -> io::Error {
 /// `path` with `.` dropped and each `..` taking off the component before it, as a path with no
 /// symbolic link resolves; a `..` at the root stays at the root, and one at the start of a
 /// relative path is kept.
+///
+/// A Windows path has one spelling: a drive is `D:` in upper case, without the `\\?\` verbatim
+/// prefix `canonicalize` adds (`\\?\UNC\server\share` is `\\server\share`), and a `/` inside a
+/// verbatim path, where Windows does not split, separates components as it does elsewhere. So
+/// `\\?\d:\repo\src/a.ts` and `D:\repo\src\a.ts` are one file of a [`MemoryTree`], as they are
+/// one file on the disk.
 pub fn lexical(path: &Path) -> PathBuf {
     let mut out = PathBuf::new();
     for component in path.components() {
         match component {
+            Component::Prefix(prefix) => out.push(plain_prefix(prefix)),
+            Component::RootDir => out.push(Component::RootDir.as_os_str()),
             Component::CurDir => {}
-            Component::ParentDir => {
-                let last = out.components().next_back();
-                match last {
-                    Some(Component::Normal(_)) => {
-                        out.pop();
+            Component::ParentDir => parent(&mut out),
+            Component::Normal(name) => match name.to_str() {
+                Some(text) => {
+                    for part in text.split('/') {
+                        match part {
+                            "" | "." => {}
+                            ".." => parent(&mut out),
+                            part => out.push(part),
+                        }
                     }
-                    Some(Component::RootDir | Component::Prefix(_)) => {}
-                    Some(Component::ParentDir | Component::CurDir) | None => out.push(".."),
                 }
-            }
-            other => out.push(other.as_os_str()),
+                None => out.push(name),
+            },
         }
     }
     out
+}
+
+/// `..`: the last name taken off; nothing at a root; kept at the start of a relative path.
+fn parent(out: &mut PathBuf) {
+    match out.components().next_back() {
+        Some(Component::Normal(_)) => {
+            out.pop();
+        }
+        Some(Component::RootDir | Component::Prefix(_)) => {}
+        Some(Component::ParentDir | Component::CurDir) | None => out.push(".."),
+    }
+}
+
+/// A Windows prefix in its one spelling: `D:` for a drive, `\\server\share` for a share, verbatim
+/// or not; any other prefix as written.
+fn plain_prefix(prefix: std::path::PrefixComponent<'_>) -> OsString {
+    use std::path::Prefix;
+    match prefix.kind() {
+        Prefix::Disk(drive) | Prefix::VerbatimDisk(drive) => {
+            format!("{}:", char::from(drive).to_ascii_uppercase()).into()
+        }
+        Prefix::UNC(server, share) | Prefix::VerbatimUNC(server, share) => {
+            let mut text = OsString::from(r"\\");
+            text.push(server);
+            text.push(r"\");
+            text.push(share);
+            text
+        }
+        Prefix::Verbatim(_) | Prefix::DeviceNS(_) => prefix.as_os_str().to_owned(),
+    }
 }
 
 /// Where an extractor's reads go: the disk ([`Files::disk`], the default) or a [`MemoryTree`]
@@ -664,6 +704,45 @@ mod tests {
         }
     }
 
+    /// Windows spells one file several ways; the tree answers to each as the disk does.
+    #[cfg(windows)]
+    #[test]
+    fn a_windows_path_has_one_spelling() -> Result {
+        for (path, expected) in [
+            (r"\\?\d:\repo\src\a.ts", r"D:\repo\src\a.ts"),
+            (r"\\?\D:\repo\src/b/../a.ts", r"D:\repo\src\a.ts"),
+            (r"d:/repo/./src/a.ts", r"D:\repo\src\a.ts"),
+            (r"\\?\UNC\server\share\x", r"\\server\share\x"),
+            (r"\\server\share\y\..\x", r"\\server\share\x"),
+            (r"\\?\D:\..\a", r"D:\a"),
+        ] {
+            assert_eq!(lexical(Path::new(path)).as_os_str(), expected, "{path}");
+        }
+        let mut tree = MemoryTree::new();
+        tree.insert(Path::new(r"\\?\D:\repo\src\a.ts"), "a")?;
+        let files = Files::memory(tree);
+        for spelling in [
+            r"D:\repo\src\a.ts",
+            r"d:\repo\src\a.ts",
+            "D:/repo/src/a.ts",
+            r"\\?\D:\repo\src/a.ts",
+        ] {
+            assert_eq!(
+                files.read_to_string(Path::new(spelling))?,
+                "a",
+                "{spelling}"
+            );
+        }
+        assert!(files.is_dir(Path::new(r"D:\repo")));
+        assert_eq!(
+            files
+                .canonicalize(Path::new(r"\\?\D:\repo\src\..\src\a.ts"))?
+                .as_os_str(),
+            r"D:\repo\src\a.ts"
+        );
+        Ok(())
+    }
+
     proptest::proptest! {
         /// The lexical form is a fixed point, has no `.` and, for an absolute path, no `..`; and
         /// a segment followed by `..` is as if neither were there.
@@ -680,8 +759,9 @@ mod tests {
                 proptest::prop_assert!(once.has_root());
                 proptest::prop_assert!(!once.components().any(|c| c == Component::ParentDir));
             }
-            let detour = if text.is_empty() { "zz/..".to_owned() } else { format!("{text}/zz/..") };
-            proptest::prop_assert_eq!(lexical(Path::new(&detour)), once);
+            // Joined, not concatenated: `//zz` would be a Windows share.
+            let detour = Path::new(&text).join("zz").join("..");
+            proptest::prop_assert_eq!(lexical(&detour), once);
         }
     }
 }

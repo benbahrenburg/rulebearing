@@ -283,11 +283,14 @@ fn a_dropped_folder_is_a_tree_under_the_root() -> Result {
         ("src/a.ts".to_owned(), String::new()),
     ]);
     let refused = file_tree(&clash).err().map(|e| e.to_string());
+    // The path in the platform's spelling: `\playground\src` on Windows.
+    let src = rb_model::files::lexical(&Path::new(rb_wasm::playground::ROOT).join("src"));
     assert_eq!(
-        refused.as_deref(),
-        Some(
-            "the files cannot be read: /playground/src: is both a file and a folder of the file tree"
-        )
+        refused,
+        Some(format!(
+            "the files cannot be read: {}: is both a file and a folder of the file tree",
+            src.display()
+        ))
     );
     Ok(())
 }
