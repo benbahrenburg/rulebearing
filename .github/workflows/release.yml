@@ -3,8 +3,10 @@
 # npm (`rulebearing`, its six platform packages, and `rulebearing/vitest` inside it; wave 1;
 # `eslint-plugin-rulebearing`, wave 2 Step 13), PyPI
 # (the six `rulebearing` wheels and `pytest-rulebearing`) and NuGet (the `Rulebearing` dotnet tool
-# and whatever else wrappers/nuget/pack.sh packs) (wave 2). The 0.0.1 name reservations were a
-# manual, one-day procedure in docs/release.md (docs/adr/0020).
+# and whatever else wrappers/nuget/pack.sh packs) (wave 2), and the rule library from presets/ on all
+# three (`rulebearing-rules` on npm and PyPI, `Rulebearing.Rules` on NuGet; plan 0003, Step 23;
+# docs/adr/0071), packed by wrappers/rules/pack.sh. The 0.0.1 name reservations were a manual,
+# one-day procedure in docs/release.md (docs/adr/0020).
 #
 # Dry run: a tag with any pre-release suffix (`vX.Y.Z-<anything>`, for example v0.2.0-rc.1 or
 # v0.2.0-beta.1), or any manual run, builds every target, packs the npm, PyPI and NuGet packages,
@@ -190,6 +192,13 @@ jobs:
           fi
           printf '//registry.npmjs.org/:_authToken=%s\n' "$NODE_AUTH_TOKEN" > "$RUNNER_TEMP/.npmrc"
           npm whoami --userconfig "$RUNNER_TEMP/.npmrc"
+      # npm cannot set trust on a package that does not exist, so the rule library's first publish
+      # is made once from the maintainer's session (docs/adr/0071, docs/release.md).
+      - name: rulebearing-rules on npm
+        run: |
+          if ! npm view rulebearing-rules name > /dev/null 2>&1; then
+            echo "::warning::rulebearing-rules is not on npm: its first publish is from the maintainer's session with 2FA, then npm trust github (docs/release.md, the rule library)"
+          fi
 
   npm-pack:
     name: npm packages
@@ -231,9 +240,13 @@ jobs:
           cp "$plugin/package.json" "$plugin/README.md" LICENSE "$dir/"
           (cd "$dir" && npm pkg set "version=$VERSION" "dependencies.rulebearing=$VERSION" && npm pkg delete scripts)
       - name: pack
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
           mkdir packages
           for dir in staged/*/; do npm pack "./$dir" --pack-destination packages; done
+          # The rule library, rulebearing-rules, from presets/ (docs/adr/0071).
+          wrappers/rules/pack.sh "$VERSION" packages npm
           ls -l packages
       # The publish step's own command, as a dry run on every trigger (no credentials needed), so
       # a dry run proves the publish command line and not only the tarballs.
@@ -291,6 +304,30 @@ jobs:
           printf 'export const a = 1;\n' > src/a.js
           printf "import { a } from './a.js';\nexport const b = a;\n" > src/b.js
           node --input-type=module -e "const { cruise, allExtensions } = await import('rulebearing'); const r = await cruise(['src'], {}); if (r.output.summary.totalCruised !== 2 || !allExtensions.some((e) => e.extension === '.ts' && e.available)) { console.error(JSON.stringify(r.output.summary)); process.exit(1); }"
+      # The rule library (plan 0003, Step 23): `extends: rulebearing-rules/nextjs` is refused before
+      # rulebearing-rules is installed from the built tarball and resolves from node_modules after,
+      # so `rulebearing test` runs the preset's examples.
+      - name: rulebearing-rules resolves from node_modules
+        shell: bash
+        env:
+          VERSION: ${{ needs.npm-pack.outputs.version }}
+          PLATFORM_PACKAGE: ${{ matrix.package }}
+        run: |
+          packages="$PWD/packages"
+          project="$RUNNER_TEMP/rules-check"
+          mkdir -p "$project"
+          cd "$project"
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund "$packages/rulebearing-$VERSION.tgz" "$packages/$PLATFORM_PACKAGE-$VERSION.tgz"
+          printf 'extends: rulebearing-rules/nextjs\n' > rulebearing.yaml
+          status=0
+          npx --no-install rulebearing test > before.out 2>&1 || status=$?
+          cat before.out
+          test "$status" -eq 3
+          npm install --no-audit --no-fund "$packages/rulebearing-rules-$VERSION.tgz"
+          npx --no-install rulebearing test | tee after.out
+          grep -q "nextjs-no-import-of-route-entries" after.out
+          grep -q " 0 failing" after.out
 
   npm-publish:
     name: npm publish
@@ -347,13 +384,29 @@ jobs:
             publish "$tarball"
           done
           publish "./packages/rulebearing-$VERSION.tgz"
-          # The plugin last: it depends on `rulebearing` at the same version.
+          # The plugin next: it depends on `rulebearing` at the same version.
           publish "./packages/eslint-plugin-rulebearing-$VERSION.tgz"
+          # The rule library last (docs/adr/0071). npm cannot set trust on a package that does not
+          # exist, so the first rulebearing-rules publish is the maintainer's, from a session with
+          # 2FA; without NPM_TOKEN this fails until then, and says what to do.
+          library="./packages/rulebearing-rules-$VERSION.tgz"
+          if npm view "rulebearing-rules@$VERSION" version > /dev/null 2>&1; then
+            echo "rulebearing-rules@$VERSION is already published; skipped"
+          elif out="$(npm publish "$library" --provenance --access public 2>&1)"; then
+            echo "$out"
+          else
+            echo "$out"
+            if grep -qE "ENEEDAUTH|E404" <<< "$out"; then
+              echo "::error::rulebearing-rules has no trust setting on npm: npm cannot trust a package that does not exist, so its first publish is made once from the maintainer's session with 2FA (npm publish of rulebearing-rules-$VERSION.tgz from this run's npm-packages artefact, then npm trust github rulebearing-rules), after which this job is rerun (docs/release.md, the rule library; docs/adr/0071)"
+            fi
+            exit 1
+          fi
 
   # PyPI (plan 0002, Step 14): one `rulebearing` wheel per release target, the binary in the package
   # data, and the `pytest-rulebearing` wheel pinned to it, all at the release version
-  # (wrappers/pip/scripts/build-wheels.sh). Runs on every trigger; `twine check` validates the
-  # metadata PyPI will read.
+  # (wrappers/pip/scripts/build-wheels.sh), and the rule library's wheel and source distribution,
+  # `rulebearing-rules` (wrappers/rules/pack.sh; plan 0003, Step 23). Runs on every trigger;
+  # `twine check` validates the metadata PyPI will read.
   pypi-build:
     name: PyPI packages
     needs: [binaries, version]
@@ -374,6 +427,10 @@ jobs:
         env:
           VERSION: ${{ needs.version.outputs.version }}
           PYTHON: python
+      - run: wrappers/rules/pack.sh "$VERSION" pypi pypi
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          PYTHON: python
       - name: check
         run: |
           count="$(find pypi -name 'rulebearing-*.whl' | wc -l)"
@@ -381,11 +438,18 @@ jobs:
             echo "::error::expected 6 rulebearing wheels, found $count"
             exit 1
           fi
-          python -m twine check --strict pypi/*.whl
+          count="$(find pypi -name 'rulebearing_rules-*' | wc -l)"
+          if [ "$count" -ne 2 ]; then
+            echo "::error::expected the rulebearing-rules wheel and source distribution, found $count files"
+            exit 1
+          fi
+          python -m twine check --strict pypi/*.whl pypi/*.tar.gz
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pypi-packages
-          path: pypi/*.whl
+          path: |
+            pypi/*.whl
+            pypi/*.tar.gz
           if-no-files-found: error
 
   # The smoke job of plan 0002 Step 14 for PyPI: install the built wheels into a new virtual
@@ -436,6 +500,33 @@ jobs:
           test "$status" -eq 1
           grep -q "3 failed, 2 passed" pytest.out
           grep -q "is vacuous: its from side matched nothing" pytest.out
+      # The rule library (plan 0003, Step 23): `extends: rulebearing-rules/nextjs` is refused before
+      # rulebearing-rules is installed from the built wheel alone and resolves from the virtual
+      # environment's site-packages after, so `rulebearing test` runs the preset's examples.
+      - name: rulebearing-rules resolves from site-packages
+        shell: bash
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          scripts="$RUNNER_TEMP/venv/bin"
+          if [ "$RUNNER_OS" = "Windows" ]; then scripts="$RUNNER_TEMP/venv/Scripts"; fi
+          wheels="$PWD/pypi"
+          project="$RUNNER_TEMP/rules-check"
+          mkdir -p "$project"
+          printf 'extends: rulebearing-rules/nextjs\n' > "$project/rulebearing.yaml"
+          # The variable is read by the binary, not bash: on Windows it needs the native path.
+          VIRTUAL_ENV="$RUNNER_TEMP/venv"
+          if [ "$RUNNER_OS" = "Windows" ]; then VIRTUAL_ENV="$(cygpath -w "$VIRTUAL_ENV")"; fi
+          export VIRTUAL_ENV
+          cd "$project"
+          status=0
+          "$scripts/rulebearing" test > before.out 2>&1 || status=$?
+          cat before.out
+          test "$status" -eq 3
+          "$scripts/python" -m pip install --quiet --no-index --find-links "$wheels" "rulebearing-rules==$VERSION"
+          "$scripts/rulebearing" test | tee after.out
+          grep -q "nextjs-no-import-of-route-entries" after.out
+          grep -q " 0 failing" after.out
 
   pypi-publish:
     name: PyPI publish
@@ -444,8 +535,8 @@ jobs:
     if: github.event_name == 'push' && !contains(github.ref_name, '-')
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # twine with the PYPI_TOKEN repository secret, an API token scoped to the two projects; no
-    # OIDC token is requested, so this job keeps the workflow's contents: read (docs/adr/0025).
+    # twine with the PYPI_TOKEN repository secret; no OIDC token is requested, so this job keeps
+    # the workflow's contents: read (docs/adr/0025).
     steps:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -464,13 +555,15 @@ jobs:
         run: |
           python -m twine upload --non-interactive --skip-existing pypi/rulebearing-*.whl
           python -m twine upload --non-interactive --skip-existing pypi/pytest_rulebearing-*.whl
+          # The rule library, its wheel and source distribution (docs/adr/0071).
+          python -m twine upload --non-interactive --skip-existing pypi/rulebearing_rules-*
 
   # A manual run proves PYPI_TOKEN without publishing anything: it re-uploads the `rulebearing`
   # 0.0.1 wheel already on PyPI with --skip-existing. PyPI checks the token and its project scope
   # before it looks at the file, so a missing, revoked or wrongly scoped token fails this job,
-  # and the existing file means nothing new is published. `pytest-rulebearing` is not on PyPI
-  # yet, so no upload can prove the token covers it without creating the project; the job warns
-  # until it exists (docs/release.md § PyPI).
+  # and the existing file means nothing new is published. No upload can prove the token covers a
+  # project not on PyPI yet (`pytest-rulebearing`, `rulebearing-rules`) without creating it; the
+  # job warns until each exists (docs/release.md § PyPI).
   pypi-credentials:
     name: PyPI credentials
     if: github.event_name == 'workflow_dispatch'
@@ -489,12 +582,14 @@ jobs:
           test -n "$TWINE_PASSWORD" || { echo "::error::the PYPI_TOKEN secret is not set"; exit 1; }
           python -m pip download --quiet --no-deps --only-binary=:all: --dest existing rulebearing==0.0.1
           python -m twine upload --non-interactive --skip-existing existing/rulebearing-0.0.1-py3-none-any.whl
-      - name: pytest-rulebearing on PyPI
+      - name: pytest-rulebearing and rulebearing-rules on PyPI
         run: |
-          code="$(curl -s -o /dev/null -w '%{http_code}' https://pypi.org/pypi/pytest-rulebearing/json)"
-          if [ "$code" != 200 ]; then
-            echo "::warning::pytest-rulebearing is not on PyPI (HTTP $code): a token scoped to projects cannot cover it yet, so the first release needs an account-wide token or the name reserved first (docs/release.md)"
-          fi
+          for project in pytest-rulebearing rulebearing-rules; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/$project/json")"
+            if [ "$code" != 200 ]; then
+              echo "::warning::$project is not on PyPI (HTTP $code): a token scoped to projects cannot cover it yet, so the first release needs an account-wide token or the name reserved first (docs/release.md)"
+            fi
+          done
 
   # A manual run proves trusted publishing without publishing anything: it exchanges the job's
   # OIDC token for a short-lived key exactly as nuget-publish does, then pushes the `Rulebearing`
@@ -533,7 +628,8 @@ jobs:
 
   # NuGet (plan 0002, Step 14): wrappers/nuget/pack.sh turns the six release archives into the
   # `Rulebearing` dotnet tool (the binaries under runtimes/<rid>/native/ and the launcher) and any
-  # other package it owns, at the release version. Its contract is in docs/release.md.
+  # other package it owns, at the release version, the rule library `Rulebearing.Rules` among them
+  # (plan 0003, Step 23). Its contract is in docs/release.md.
   nuget-pack:
     name: NuGet packages
     needs: [binaries, version]
@@ -558,10 +654,12 @@ jobs:
             exit 1
           fi
           wrappers/nuget/pack.sh dist "$VERSION" nuget
-          if [ ! -f "nuget/Rulebearing.$VERSION.nupkg" ]; then
-            echo "::error::pack.sh did not write nuget/Rulebearing.$VERSION.nupkg"
-            exit 1
-          fi
+          for id in Rulebearing Rulebearing.Rules; do
+            if [ ! -f "nuget/$id.$VERSION.nupkg" ]; then
+              echo "::error::pack.sh did not write nuget/$id.$VERSION.nupkg"
+              exit 1
+            fi
+          done
           ls -l nuget
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -635,6 +733,38 @@ jobs:
             exit 1
           fi
           echo "Rulebearing.Analyzer $VERSION reported RB0002"
+      # The rule library (plan 0003, Step 23): `extends: rulebearing-rules/nextjs` is refused before
+      # a project outside any checkout restores Rulebearing.Rules from the built packages alone, and
+      # resolves from the global packages folder after, so `rulebearing test`, run by the tool
+      # installed above, runs the preset's examples.
+      - name: Rulebearing.Rules resolves from the global packages folder
+        shell: bash
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          tools="$RUNNER_TEMP/tools"
+          work="$RUNNER_TEMP/rules-consumer"
+          mkdir -p "$work"
+          source="$PWD/nuget"
+          if [ "$RUNNER_OS" = "Windows" ]; then source="$(cygpath -w "$source")"; fi
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<configuration>\n  <packageSources>\n    <clear />\n    <add key="built" value="%s" />\n  </packageSources>\n</configuration>\n' "$source" > "$work/nuget.config"
+          printf '<Project Sdk="Microsoft.NET.Sdk">\n  <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>\n  <ItemGroup>\n    <PackageReference Include="Rulebearing.Rules" Version="%s" />\n  </ItemGroup>\n</Project>\n' "$VERSION" > "$work/Consumer.csproj"
+          printf 'extends: rulebearing-rules/nextjs\n' > "$work/rulebearing.yaml"
+          packages="$RUNNER_TEMP/nuget-packages-rules"
+          # Read by dotnet and by the binary, not bash: on Windows it needs the native path.
+          NUGET_PACKAGES="$packages"
+          if [ "$RUNNER_OS" = "Windows" ]; then NUGET_PACKAGES="$(cygpath -w "$packages")"; fi
+          export NUGET_PACKAGES
+          cd "$work"
+          status=0
+          "$tools/rulebearing" test > before.out 2>&1 || status=$?
+          cat before.out
+          test "$status" -eq 3
+          dotnet restore Consumer.csproj --configfile nuget.config
+          test -f "$packages/rulebearing.rules/$VERSION/rulebearing-rules/nextjs.yaml"
+          "$tools/rulebearing" test | tee after.out
+          grep -q "nextjs-no-import-of-route-entries" after.out
+          grep -q " 0 failing" after.out
 
   nuget-publish:
     name: NuGet publish

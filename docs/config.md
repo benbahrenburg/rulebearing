@@ -27,6 +27,8 @@ A `.dependency-cruiser.js` that works with dependency-cruiser 18.2.0 works here 
 | NuGet | `<global packages>/rulebearing.rules/<version>/rulebearing-rules/nextjs.yaml`; the global packages folder is `$NUGET_PACKAGES`, else `~/.nuget/packages`; the version is the one installed, else the one a project under the repository root references, and several installed with none referenced is an error naming them |
 | PyPI | `<site-packages>/rulebearing_rules/nextjs.yaml`, in `$VIRTUAL_ENV`, else a `.venv` or `venv` folder in the configuration's folder or one above it |
 
+The rule library itself is `rulebearing-rules` on npm and PyPI and `Rulebearing.Rules` on NuGet, published with each release at the release version and built from the presets below ([wrappers/rules](../wrappers/rules/README.md), [ADR-0071](adr/0071-the-rule-library-ships-from-this-repository.md)).
+
 ### Presets
 
 | Preset | What it is |

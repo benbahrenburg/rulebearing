@@ -7,8 +7,9 @@
 #   wrappers/nuget/pack.sh <dist-dir> <version> <out-dir>
 #       the release: the contract release.yml's nuget-pack job calls (docs/release.md). Packs the
 #       tool from the six archives rulebearing-<target>.tar.gz, the seven
-#       Rulebearing.TestAdapter packages of adapters/dotnet and the Rulebearing.Analyzer package of
-#       frontends/ (plan 0003, Step 21), all at <version>, into <out-dir>.
+#       Rulebearing.TestAdapter packages of adapters/dotnet, the Rulebearing.Analyzer package of
+#       frontends/ (plan 0003, Step 21) and the rule library, Rulebearing.Rules, through
+#       wrappers/rules/pack.sh (plan 0003, Step 23; docs/adr/0071), all at <version>, into <out-dir>.
 #   wrappers/nuget/pack.sh --archives <dist-dir> --version <version> --out <dir> [--partial]
 #       the tool alone from the archives; all six targets are required unless --partial is given.
 #   wrappers/nuget/pack.sh --binary <path> --rid <rid> --version <version> --out <dir>
@@ -101,6 +102,8 @@ if $adapters; then
   dotnet pack "$root/frontends/Rulebearing.Analyzer/src/Rulebearing.Analyzer/Rulebearing.Analyzer.csproj" \
     --configuration Release --output "$out" --nologo --verbosity quiet -p:Version="$version" >&2
   [ -f "$out/Rulebearing.Analyzer.$version.nupkg" ] || { echo "pack.sh: dotnet pack wrote no $out/Rulebearing.Analyzer.$version.nupkg" >&2; exit 1; }
+  # The rule library, from presets/ at the same version (docs/adr/0071).
+  "$root/wrappers/rules/pack.sh" "$version" "$out" nuget >&2
 fi
 package="$out/Rulebearing.$version.nupkg"
 [ -f "$package" ] || { echo "pack.sh: dotnet pack wrote no $package" >&2; exit 1; }

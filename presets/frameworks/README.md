@@ -2,6 +2,8 @@
 
 Five bundled rule sets, one per framework or architecture style, that a configuration can `extends` ([design § The developer relations hat](../../docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo): "off by default, each a documented opinion"; [plan 0003, Step 11](../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog); [FR-REACH-04](../../docs/prd.md#fr-reach-04), [FR-CLI-08](../../docs/prd.md#fr-cli-08)).
 
+The same files, with [`recommended`](../rulebearing/recommended.yaml), are published with every release as the rule library, `rulebearing-rules` on npm and PyPI and `Rulebearing.Rules` on NuGet, so a repository can pin their version through its package manager and write `extends: rulebearing-rules/<name>` ([ADR-0071](../../docs/adr/0071-the-rule-library-ships-from-this-repository.md), [wrappers/rules](../../wrappers/rules/README.md)). This folder is their one source.
+
 Each is an opinion, not a default. Nothing extends one unless a configuration names it, `rulebearing init` proposes one only when `--preset` names it, and none is part of `rulebearing:recommended`. A preset states the architecture its framework is usually written in, conservatively: every rule reads module paths only, so it holds for any language whose folders follow the convention, and a boundary the graph cannot see (a `"use client"` directive, a runtime import) is left out rather than guessed. No pattern nests a quantifier, so extending a preset adds no safe-regex warning to a run.
 
 ```yaml
