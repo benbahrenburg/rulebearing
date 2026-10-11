@@ -1,0 +1,16 @@
+strict digraph "dependency-cruiser output"{
+    rankdir="LR" splines="true" overlap="false" nodesep="0.16" ranksep="0.18" fontname="Helvetica-bold" fontsize="9" style="rounded,bold,filled" fillcolor="#ffffff" compound="true"
+    node [shape="box" style="rounded, filled" height="0.2" color="black" fillcolor="#ffffcc" fontcolor="black" fontname="Helvetica" fontsize="9"]
+    edge [arrowhead="normal" arrowsize="0.6" penwidth="2.0" color="#00000033" fontname="Helvetica" fontsize="9"]
+
+    "." [label=<.> tooltip="." shape="box3d"]
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules" [width="0.05" shape="point" style="invis"] "node_modules/lodash" [label=<lodash> tooltip="lodash" URL="node_modules/lodash" fillcolor="#c40b0a1a" fontcolor="#c40b0a" shape="box3d"] }
+    "src" [label=<src> tooltip="src" URL="src" shape="box3d"]
+    "src" -> "." [xlabel="no-unresolvable" tooltip="no-unresolvable" fontcolor="red" color="red"]
+    "src" -> "src/order"
+    "src" -> "src/util"
+    "src" -> "node_modules/lodash" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] "src/order" [label=<order> tooltip="order" URL="src/order" shape="box3d"] }
+    subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] "src/ui" [label=<ui> tooltip="ui" URL="src/ui" fillcolor="#ccffcc" shape="box3d"] }
+    subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] "src/util" [label=<util> tooltip="util" URL="src/util" shape="box3d"] }
+}

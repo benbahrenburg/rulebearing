@@ -14,7 +14,7 @@
 
 use std::path::{Path, PathBuf};
 
-use rb_model::DependencyType;
+use rb_model::{DependencyType, Files};
 use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
 use serde_json::Value;
 
@@ -58,17 +58,17 @@ impl Manifest {
     }
 }
 
-fn read_manifest(folder: &Path) -> Option<Result<Manifest, ()>> {
-    let text = std::fs::read_to_string(folder.join("package.json")).ok()?;
+fn read_manifest(files: &Files, folder: &Path) -> Option<Result<Manifest, ()>> {
+    let text = files.read_to_string(&folder.join("package.json")).ok()?;
     Some(serde_json::from_str(&text).map_err(|_| ()))
 }
 
 /// The nearest `package.json` from `folder` upwards. A manifest that is not valid JSON stops the
 /// walk and counts as none, as upstream's does.
-pub fn nearest(folder: &Path) -> Option<Manifest> {
+pub fn nearest(files: &Files, folder: &Path) -> Option<Manifest> {
     let mut current = Some(folder);
     while let Some(dir) = current {
-        match read_manifest(dir) {
+        match read_manifest(files, dir) {
             Some(Ok(manifest)) => return Some(manifest),
             Some(Err(())) => return None,
             None => {
@@ -158,7 +158,7 @@ pub fn merge(closest: Manifest, further: Manifest) -> Manifest {
 
 /// The manifests from `file_dir` up to `base_dir`, merged closest first; `None` when there are
 /// none. Upstream refuses a `file_dir` outside `base_dir`, so that is `None` too.
-pub fn combined(file_dir: &Path, base_dir: &Path) -> Option<Manifest> {
+pub fn combined(files: &Files, file_dir: &Path, base_dir: &Path) -> Option<Manifest> {
     if !file_dir.starts_with(base_dir) {
         return None;
     }
@@ -173,7 +173,7 @@ pub fn combined(file_dir: &Path, base_dir: &Path) -> Option<Manifest> {
     }
     folders.push(base_dir.to_path_buf());
     let merged = folders.iter().fold(Manifest::default(), |all, folder| {
-        let next = read_manifest(folder)
+        let next = read_manifest(files, folder)
             .and_then(Result::ok)
             .unwrap_or_default();
         merge(all, next)
@@ -348,14 +348,14 @@ mod tests {
             root.join("a/package.json"),
             r#"{"dependencies": {"mid": "1"}}"#,
         );
-        let near = nearest(&root.join("a/b"));
+        let near = nearest(&Files::disk(), &root.join("a/b"));
         assert_eq!(near.as_ref().map(|m| find_in(m, "mid").len()), Some(1));
-        let all = combined(&root.join("a/b"), &root);
+        let all = combined(&Files::disk(), &root.join("a/b"), &root);
         assert_eq!(all.as_ref().map(|m| find_in(m, "top").len()), Some(1));
         assert_eq!(all.as_ref().map(|m| find_in(m, "mid").len()), Some(1));
-        assert_eq!(combined(&root, &root.join("a")), None);
+        assert_eq!(combined(&Files::disk(), &root, &root.join("a")), None);
         let _ = std::fs::write(root.join("a/package.json"), "not json");
-        assert_eq!(nearest(&root.join("a/b")), None);
+        assert_eq!(nearest(&Files::disk(), &root.join("a/b")), None);
         let _ = std::fs::remove_dir_all(&root);
     }
 }

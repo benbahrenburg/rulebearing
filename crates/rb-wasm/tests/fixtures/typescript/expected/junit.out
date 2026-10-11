@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="rulebearing" tests="4" failures="2" errors="0" time="0">
+  <testsuite name="rulebearing" tests="4" failures="2" errors="0" skipped="0" time="0" timestamp="2026-10-10T12:00:00.000">
+    <properties>
+      <property name="inspected.javascript.assemblies" value="0"/>
+      <property name="inspected.javascript.files" value="2"/>
+      <property name="inspected.javascript.modules" value="2"/>
+      <property name="inspected.typescript.assemblies" value="0"/>
+      <property name="inspected.typescript.files" value="5"/>
+      <property name="inspected.typescript.modules" value="5"/>
+      <property name="totalCruised" value="10"/>
+      <property name="totalDependenciesCruised" value="9"/>
+      <property name="error" value="3"/>
+      <property name="warn" value="0"/>
+      <property name="info" value="0"/>
+      <property name="ignore" value="0"/>
+    </properties>
+    <testcase name="no-circular" classname="rulebearing.forbidden" time="0">
+      <failure type="error" message="Move what both modules need into a third module both import.&#10;RB-03a7bc47 src/order/discount.ts -&gt; src/order/order.ts (line 1, column 1)">RB-03a7bc47 src/order/discount.ts -&gt; src/order/order.ts (line 1, column 1)</failure>
+    </testcase>
+    <testcase name="no-unresolvable" classname="rulebearing.forbidden" time="0">
+      <failure type="error" message="Fix the specifier, or add the package to package.json.&#10;RB-305f9783 src/index.ts -&gt; ./not-there (line 5, column 1)&#10;RB-57ba33a0 src/legacy.js -&gt; left-pad (line 1, column 13)">RB-305f9783 src/index.ts -&gt; ./not-there (line 5, column 1)
+RB-57ba33a0 src/legacy.js -&gt; left-pad (line 1, column 13)</failure>
+    </testcase>
+    <testcase name="ui-not-from-order" classname="rulebearing.forbidden" time="0"/>
+    <testcase name="no-dev-deps-in-src" classname="rulebearing.forbidden" time="0"/>
+  </testsuite>
+</testsuites>

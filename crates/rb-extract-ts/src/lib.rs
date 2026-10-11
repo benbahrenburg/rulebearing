@@ -22,6 +22,7 @@
 //! | [`resolve`] | resolves a specifier over `oxc_resolver` and classifies it |
 //! | [`npm`] | `package.json` lookup and the `npm*` dependency types |
 //! | [`core`] | runtime built-in modules |
+//! | [`files`] | the resolver's file system over [`rb_model::Files`]: the disk, or a tree in memory |
 //! | [`babel`] | `babelConfig`'s module-resolver aliases |
 //! | [`sfc`] | the `<script>` blocks of `.vue` and `.svelte` components |
 //! | [`md`] | the JavaScript and TypeScript fences of Markdown, when `extraExtensionsToScan` lists `.md` |
@@ -39,6 +40,7 @@ pub mod codelayer;
 /// JavaScript's `localeCompare` order, shared with the engine through `rb-model`.
 pub use rb_model::collate;
 pub mod core;
+pub mod files;
 pub mod incremental;
 pub mod jsdoc;
 pub mod md;
@@ -53,7 +55,7 @@ use std::path::{Path, PathBuf};
 
 use rb_model::ExternalModuleResolutionStrategy;
 use rb_model::{
-    Dependency, DependencyKind, ExtractError, Extraction, Extractor, Module, Receipt,
+    Dependency, DependencyKind, ExtractError, Extraction, Extractor, Files, Module, Receipt,
     TypeScriptOptions,
 };
 
@@ -242,7 +244,7 @@ pub fn configuration_files(options: &TypeScriptOptions, cwd: &Path) -> Vec<PathB
 /// relative to the tsconfig's folder (with `.json` added when the name has none and the bare
 /// name is not a file), an absolute path, or a package's file.
 fn extended_tsconfig(
-    resolver: &oxc_resolver::Resolver,
+    resolver: &resolve::Resolver,
     directory: &Path,
     specifier: &str,
 ) -> Option<PathBuf> {
@@ -407,8 +409,49 @@ pub fn prepare(
     options: &TypeScriptOptions,
     cwd: &Path,
 ) -> Result<(Settings, ResolveConfig), ExtractError> {
+    prepare_in(options, cwd, &Files::disk())
+}
+
+/// What a tree of files in memory cannot do, by the option that asks for it: the sidecar runs
+/// Node, and Yarn Plug'n'Play's manifest reader reads the disk itself. Each is refused by name,
+/// never quietly skipped.
+const NEEDS_THE_DISK: &str = "the files are held in memory (the playground), where no process \
+     runs and no disk is read";
+
+/// [`prepare`] reading every file through `files`: the tsconfig, the Babel configuration, and,
+/// through the settings and the resolver configuration it returns, the walk, the sources and
+/// the `package.json` files ([ADR-0073](../../../docs/adr/0073-extractors-read-files-through-rb-model.md)).
+///
+/// # Errors
+/// As [`prepare`]; and, for files in memory, `--sidecar node` or
+/// `externalModuleResolutionStrategy: yarn-pnp`, which need a process or the disk.
+pub fn prepare_in(
+    options: &TypeScriptOptions,
+    cwd: &Path,
+    files: &Files,
+) -> Result<(Settings, ResolveConfig), ExtractError> {
     let mut settings = Settings::new(options, cwd)?;
+    settings.files = files.clone();
     let mut config = resolve_config(options);
+    config.files = files.clone();
+    if files.is_memory() {
+        let refused = |option: &str, what: &str| ExtractError::UnsupportedFile {
+            path: PathBuf::from(option),
+            reason: format!("{what} cannot be used: {NEEDS_THE_DISK}; run the command line"),
+        };
+        if settings.sidecar.is_some() {
+            return Err(refused(
+                "languages.typescript.sidecar",
+                "the Node sidecar (CoffeeScript and LiveScript)",
+            ));
+        }
+        if config.yarn_pnp {
+            return Err(refused(
+                "languages.typescript.externalModuleResolutionStrategy",
+                "Yarn Plug'n'Play",
+            ));
+        }
+    }
     settings.compiler_options = load_tsconfig(&mut config, cwd)?;
     check_module(&settings, config.tsconfig.as_deref())?;
     if let Some(file) = options
@@ -417,13 +460,12 @@ pub fn prepare(
         .and_then(|b| b.file_name.as_ref())
     {
         let path = absolute(cwd, Path::new(file));
-        settings.babel =
-            Some(
-                BabelAliases::load(&path, cwd).map_err(|e| ExtractError::UnsupportedFile {
-                    path: e.path.clone(),
-                    reason: e.to_string(),
-                })?,
-            );
+        settings.babel = Some(BabelAliases::load(files, &path, cwd).map_err(|e| {
+            ExtractError::UnsupportedFile {
+                path: e.path.clone(),
+                reason: e.to_string(),
+            }
+        })?);
     }
     if config.yarn_pnp {
         // In the spelling the resolver gives importing files: a verbatim `\\?\` root would never
@@ -808,6 +850,53 @@ impl Extractor for TypeScriptExtractor {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn files_in_memory_refuse_what_needs_a_process_or_the_disk() -> Result<(), ExtractError> {
+        let mut tree = rb_model::MemoryTree::new();
+        tree.insert(Path::new("/m/src/a.ts"), "import './b';\n")
+            .map_err(|e| ExtractError::UnsupportedFile {
+                path: PathBuf::from("/m"),
+                reason: e.to_string(),
+            })?;
+        let files = Files::memory(tree);
+        let refused =
+            |options: &TypeScriptOptions| match prepare_in(options, Path::new("/m"), &files) {
+                Err(ExtractError::UnsupportedFile { path, reason }) => (path, reason),
+                other => (PathBuf::new(), format!("{other:?}")),
+            };
+        let sidecar = TypeScriptOptions {
+            sidecar: Some(rb_model::SidecarRuntime::Node),
+            ..TypeScriptOptions::default()
+        };
+        let (path, reason) = refused(&sidecar);
+        assert_eq!(path, PathBuf::from("languages.typescript.sidecar"));
+        assert_eq!(
+            reason,
+            "the Node sidecar (CoffeeScript and LiveScript) cannot be used: the files are held \
+             in memory (the playground), where no process runs and no disk is read; run the \
+             command line"
+        );
+        let pnp: TypeScriptOptions =
+            serde_json::from_str(r#"{"externalModuleResolutionStrategy": "yarn-pnp"}"#)
+                .unwrap_or_default();
+        let (path, reason) = refused(&pnp);
+        assert_eq!(
+            path,
+            PathBuf::from("languages.typescript.externalModuleResolutionStrategy")
+        );
+        assert!(
+            reason.starts_with("Yarn Plug'n'Play cannot be used"),
+            "{reason}"
+        );
+        // The same options over the disk are not refused for the files being on the disk.
+        let (settings, config) =
+            prepare_in(&TypeScriptOptions::default(), Path::new("/m"), &files)?;
+        assert!(settings.files.is_memory() && config.files.is_memory());
+        let (settings, config) = prepare(&TypeScriptOptions::default(), Path::new("/m"))?;
+        assert!(!settings.files.is_memory() && !config.files.is_memory());
+        Ok(())
+    }
 
     #[test]
     fn the_parser_is_the_version_the_workspace_pins() {

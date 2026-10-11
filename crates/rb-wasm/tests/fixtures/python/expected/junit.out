@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="rulebearing" tests="3" failures="2" errors="0" time="0">
+  <testsuite name="rulebearing" tests="3" failures="2" errors="0" skipped="0" time="0" timestamp="2026-10-10T12:00:00.000">
+    <properties>
+      <property name="inspected.python.assemblies" value="0"/>
+      <property name="inspected.python.files" value="6"/>
+      <property name="inspected.python.modules" value="11"/>
+      <property name="inspected.python.roots" value="[&quot;src&quot;]"/>
+      <property name="inspected.python.site" value=".venv/lib/python3.12/site-packages"/>
+      <property name="inspected.python.stdlibVersion" value="3.11"/>
+      <property name="totalCruised" value="11"/>
+      <property name="totalDependenciesCruised" value="11"/>
+      <property name="error" value="4"/>
+      <property name="warn" value="1"/>
+      <property name="info" value="0"/>
+      <property name="ignore" value="0"/>
+    </properties>
+    <testcase name="no-circular" classname="rulebearing.forbidden" time="0">
+      <failure type="error" message="Move what both modules need into a third module both import.&#10;RB-bbbe0334 src/shop/main.py -&gt; src/shop/models.py (line 6, column 18)&#10;RB-6d7fedbe src/shop/main.py -&gt; src/shop/util.py (line 7, column 15)&#10;RB-ef2f9d4f src/shop/ui/view.py -&gt; src/shop/models.py (line 1, column 25)">RB-bbbe0334 src/shop/main.py -&gt; src/shop/models.py (line 6, column 18)
+RB-6d7fedbe src/shop/main.py -&gt; src/shop/util.py (line 7, column 15)
+RB-ef2f9d4f src/shop/ui/view.py -&gt; src/shop/models.py (line 1, column 25)</failure>
+    </testcase>
+    <testcase name="no-unresolved" classname="rulebearing.forbidden" time="0">
+      <failure type="error" message="1 violation(s) of `no-unresolved`&#10;RB-7fa30725 src/shop/ui/view.py -&gt; missing_package (line 2, column 8)">RB-7fa30725 src/shop/ui/view.py -&gt; missing_package (line 2, column 8)</failure>
+    </testcase>
+    <testcase name="ui-not-to-models" classname="rulebearing.forbidden" time="0">
+      <system-out>warn: RB-b3ebb750 src/shop/ui/view.py -&gt; src/shop/models.py (line 1, column 25)</system-out>
+    </testcase>
+  </testsuite>
+</testsuites>

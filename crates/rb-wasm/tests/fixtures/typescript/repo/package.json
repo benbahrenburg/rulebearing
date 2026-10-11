@@ -1,0 +1,6 @@
+{
+  "name": "shop",
+  "private": true,
+  "dependencies": { "lodash": "4.17.21" },
+  "devDependencies": { "left-pad": "1.3.0" }
+}

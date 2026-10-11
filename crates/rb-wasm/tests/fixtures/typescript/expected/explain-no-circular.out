@@ -1,0 +1,9 @@
+no-circular  (forbidden, error)
+  Files may not be part of an import cycle.
+  why: A cycle makes the order of initialisation an accident.
+  fix: Move what both modules need into a third module both import.
+  from: {}
+  to: {"circular":true}
+  matches: from 10 modules, to 0; 1 violations
+  first edges:
+    src/order/discount.ts -> src/order/order.ts

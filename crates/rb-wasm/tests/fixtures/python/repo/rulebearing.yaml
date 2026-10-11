@@ -1,0 +1,20 @@
+# The playground's Python fixture: cruise_py over these files must print what
+# `rulebearing cruise -T <type>` prints here (crates/rb-wasm/tests/cruise.rs).
+languages:
+  python: {}
+rules:
+  dependencies:
+    forbidden:
+      - name: no-circular
+        severity: error
+        fix: Move what both modules need into a third module both import.
+        from: {}
+        to: { circular: true, dependencyTypesNot: [type-only] }
+      - name: no-unresolved
+        severity: error
+        from: {}
+        to: { dependencyTypes: [unresolved] }
+      - name: ui-not-to-models
+        severity: warn
+        from: { path: "^src/shop/ui/" }
+        to: { path: "^src/shop/models" }

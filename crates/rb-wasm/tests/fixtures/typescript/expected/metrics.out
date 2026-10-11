@@ -1,0 +1,15 @@
+type    name                               N     Ca     Ce  I (%)        size   #tls
+------- ----------------------------- ------ ------ ------ ------ ----------- ------
+folder  src                                6      0      4   100%
+module  src/index.ts                       1      0      5   100%
+module  src/legacy.js                      1      0      2   100%
+module  src/order/discount.ts              1      1      1    50%
+module  src/order/order.ts                 1      2      1    33%
+folder  node_modules                       1      1      0     0%
+folder  node_modules/lodash                1      1      0     0%
+module  node_modules/lodash/index.js       1      1      0     0%
+folder  src/order                          2      1      0     0%
+folder  src/ui                             1      0      0     0%
+module  src/ui/view.ts                     1      0      0     0%
+folder  src/util                           1      2      0     0%
+module  src/util/format.ts                 1      2      0     0%

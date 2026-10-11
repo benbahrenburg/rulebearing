@@ -1,0 +1,17 @@
+
+  warn ui-not-to-models: src/shop/ui/view.py → src/shop/models.py
+  error no-unresolved: src/shop/ui/view.py → missing_package
+  error no-circular: src/shop/ui/view.py → 
+      src/shop/models.py →
+      src/shop/main.py →
+      src/shop/ui/view.py
+  error no-circular: src/shop/main.py → 
+      src/shop/util.py →
+      src/shop/models.py →
+      src/shop/main.py
+  error no-circular: src/shop/main.py → 
+      src/shop/models.py →
+      src/shop/main.py
+
+x 5 dependency violations (4 errors, 1 warnings). 11 modules, 11 dependencies cruised.
+

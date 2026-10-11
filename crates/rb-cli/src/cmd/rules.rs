@@ -25,7 +25,6 @@ use std::fmt::Write as _;
 
 use clap::Args;
 use rb_config::{Config, Family, Rule};
-use rb_rules::RuleStats;
 use serde_json::{Value, json};
 
 use crate::cli::{ConfigArgs, GraphArgs};
@@ -56,36 +55,9 @@ pub struct RulesArgs {
     pub releases: u32,
 }
 
-/// Every dependency rule with its list, in evaluation order.
-pub fn listed(config: &Config) -> Vec<(Family, &Rule)> {
-    config.rules.all_dependency_rules().collect()
-}
-
-/// A rule as `rules --json` prints it.
-pub fn rule_json(family: Family, rule: &Rule, stats: Option<&RuleStats>) -> Value {
-    let severity = if family == Family::Allowed {
-        Value::Null
-    } else {
-        json!(rule.severity())
-    };
-    json!({
-        "name": stats.map_or_else(|| rule.name().to_owned(), |s| s.name.clone()),
-        "family": family.as_str(),
-        "severity": severity,
-        "comment": rule.meta.comment,
-        "fix": rule.meta.fix,
-        "since": rule.meta.since,
-        "deprecated": rule.meta.deprecated,
-        "replacedBy": rule.meta.replaced_by,
-        "from": serde_json::to_value(&rule.from).unwrap_or(Value::Null),
-        "to": serde_json::to_value(&rule.to).unwrap_or(Value::Null),
-        "module": rule.module.as_ref().and_then(|m| serde_json::to_value(m).ok()),
-        "select": Value::Null,
-        "fromMatches": stats.map(|s| s.from_matches),
-        "toMatches": stats.map(|s| s.to_matches),
-        "violations": stats.map(|s| s.violations),
-    })
-}
+/// Every dependency rule with its list, and a rule as `rules --json` prints it: shared with
+/// `explain` and the playground ([`rb_rules::explain`]).
+pub use rb_rules::explain::{listed, rule_json};
 
 /// Evaluates the configuration over the query graph, for its per-rule statistics.
 ///

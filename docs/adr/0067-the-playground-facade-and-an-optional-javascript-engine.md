@@ -15,7 +15,7 @@ Every library crate builds for the target. One links badly: `rquickjs-sys` 0.14,
 
 ## Decision
 
-**`rb-wasm` joins ADR-0010's table as a facade.** It may depend on `rb-model`, `rb-config`, `rb-rules`, `rb-report` and `rb-ingest`, and no crate depends on it. It never links `rb-cli`. The logic it needs from `rb-cli`'s `cruise --graph` path moves into `rb-rules`, so both call the same code:
+**`rb-wasm` joins ADR-0010's table as a facade.** It may depend on `rb-model`, `rb-config`, `rb-rules`, `rb-report` and `rb-ingest`, and no crate depends on it. [ADR-0073](0073-extractors-read-files-through-rb-model.md) adds `rb-extract-ts` and `rb-extract-python` to the row, for `cruise_ts` and `cruise_py`. It never links `rb-cli`. The logic it needs from `rb-cli`'s `cruise --graph` path moves into `rb-rules`, so both call the same code:
 - `reset`, which clears an earlier evaluation from a saved graph;
 - `report_format`, the report's filters and collapse.
 

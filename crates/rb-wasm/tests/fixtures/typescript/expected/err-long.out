@@ -1,0 +1,18 @@
+
+  error no-unresolvable: src/legacy.js → left-pad
+    -
+    fix: Fix the specifier, or add the package to package.json.
+
+  error no-unresolvable: src/index.ts → ./not-there
+    -
+    fix: Fix the specifier, or add the package to package.json.
+
+  error no-circular: src/order/discount.ts → 
+      src/order/order.ts →
+      src/order/discount.ts
+    A cycle makes the order of initialisation an accident.
+    fix: Move what both modules need into a third module both import.
+
+
+x 3 dependency violations (3 errors, 0 warnings). 10 modules, 9 dependencies cruised.
+

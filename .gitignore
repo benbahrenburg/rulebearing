@@ -40,6 +40,8 @@ __pycache__/
 # rb-node's extractor fixtures, copied from dependency-cruiser's own tests, keep a package under
 # node_modules that an `extends` resolves to (plan 0003, Step 22).
 !/crates/rb-node/__tests__/fixtures/**
+# The playground fixtures carry node_modules and a tiny .venv as data the in-memory extraction reads (plan 0004, Step 2).
+!/crates/rb-wasm/tests/fixtures/**
 /conformance/dependency-cruiser/fixtures/extract/test/extract/__mocks__/symlinked
 /testbeds/out/
 /fuzz/corpus/

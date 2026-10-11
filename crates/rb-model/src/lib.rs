@@ -21,6 +21,7 @@
 //! | [`vocab`] | the closed string vocabularies, one declaration each |
 //! | [`options`] | the per-language options an extractor receives |
 //! | [`extract`] | the [`Extractor`] trait and its errors |
+//! | [`files`] | the files an extractor reads: the disk, or a tree held in memory ([ADR-0073](../../../docs/adr/0073-extractors-read-files-through-rb-model.md)) |
 //! | [`violation_id`] | the stable violation id |
 //! | [`schema`] | the generated JSON schema for `schema/v1.json` |
 
@@ -28,6 +29,7 @@ pub mod code;
 pub mod collate;
 pub mod document;
 pub mod extract;
+pub mod files;
 pub mod js_number;
 pub mod options;
 pub mod schema;
@@ -49,6 +51,7 @@ pub use extract::{
     ExtractError, ExtractRequest, Extraction, Extractor, FileState, Walk, Warning, source_name,
     without_verbatim,
 };
+pub use files::{DirEntry, FileKind, Files, MemoryTree, TreeError};
 pub use options::{
     CacheOptions, CacheStrategy, DirectoryFilter, DotnetMode, DotnetOptions, PythonOptions,
     SidecarRuntime, TypeScriptOptions,

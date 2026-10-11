@@ -20,6 +20,8 @@ rb-config = { workspace = true }
 rb-rules = { workspace = true }
 rb-report = { workspace = true }
 rb-ingest = { workspace = true }
+rb-extract-ts = { workspace = true }
+rb-extract-python = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
 thiserror = { workspace = true }

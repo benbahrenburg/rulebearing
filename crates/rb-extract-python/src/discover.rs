@@ -24,7 +24,7 @@
 use std::io;
 use std::path::{Path, PathBuf};
 
-use rb_model::Warning;
+use rb_model::{Files, Warning};
 
 /// Folder names never walked: virtual environments, installed packages, bytecode caches and
 /// version-control metadata. A folder holding `pyvenv.cfg` is a virtual environment whatever
@@ -63,12 +63,16 @@ pub enum DiscoverError {
 ///
 /// # Errors
 /// [`DiscoverError`] when `pyproject.toml` or `setup.cfg` exists but cannot be read.
-pub fn discover(base: &Path, configured: Option<&[String]>) -> Result<Layout, DiscoverError> {
+pub fn discover(
+    files: &Files,
+    base: &Path,
+    configured: Option<&[String]>,
+) -> Result<Layout, DiscoverError> {
     let mut layout = Layout::default();
     let pyproject = base.join("pyproject.toml");
     let mut from_pyproject = Vec::new();
-    if pyproject.is_file() {
-        let text = std::fs::read_to_string(&pyproject)?;
+    if files.is_file(&pyproject) {
+        let text = files.read_to_string(&pyproject)?;
         let value: toml::Table = toml::from_str(&text).map_err(|e| DiscoverError::Toml {
             path: pyproject.clone(),
             reason: e.message().to_owned(),
@@ -85,12 +89,12 @@ pub fn discover(base: &Path, configured: Option<&[String]>) -> Result<Layout, Di
         roots.iter().map(|r| normalise_root(r)).collect()
     } else if !from_pyproject.is_empty() {
         from_pyproject
-    } else if base.join("src").is_dir() {
+    } else if files.is_dir(&base.join("src")) {
         vec!["src".to_owned()]
     } else {
         let cfg = base.join("setup.cfg");
-        let from_cfg = if cfg.is_file() {
-            setup_cfg_roots(&std::fs::read_to_string(&cfg)?)
+        let from_cfg = if files.is_file(&cfg) {
+            setup_cfg_roots(&files.read_to_string(&cfg)?)
         } else {
             Vec::new()
         };
@@ -340,7 +344,7 @@ pub struct Walked {
 ///
 /// # Errors
 /// An input that does not exist, or a folder that cannot be read.
-pub fn walk(base: &Path, inputs: &[PathBuf], stubs: bool) -> io::Result<Walked> {
+pub fn walk(files: &Files, base: &Path, inputs: &[PathBuf], stubs: bool) -> io::Result<Walked> {
     let mut walked = Walked::default();
     let default_input = [PathBuf::from(".")];
     let inputs = if inputs.is_empty() {
@@ -354,9 +358,9 @@ pub fn walk(base: &Path, inputs: &[PathBuf], stubs: bool) -> io::Result<Walked> 
         } else {
             base.join(input)
         };
-        let meta = std::fs::metadata(&path)?;
+        let meta = files.metadata(&path)?;
         if meta.is_dir() {
-            walk_dir(base, &path, stubs, &mut walked)?;
+            walk_dir(files, base, &path, stubs, &mut walked)?;
         } else if is_source(&path, stubs) {
             walked.files.push(relative(base, &path));
         }
@@ -375,24 +379,30 @@ fn is_source(path: &Path, stubs: bool) -> bool {
     }
 }
 
-fn walk_dir(base: &Path, dir: &Path, stubs: bool, walked: &mut Walked) -> io::Result<()> {
-    let mut entries: Vec<_> = std::fs::read_dir(dir)?.collect::<Result<_, _>>()?;
-    entries.sort_by_key(std::fs::DirEntry::file_name);
+fn walk_dir(
+    files: &Files,
+    base: &Path,
+    dir: &Path,
+    stubs: bool,
+    walked: &mut Walked,
+) -> io::Result<()> {
+    let mut entries: Vec<_> = files.read_dir(dir)?.into_iter().collect::<Result<_, _>>()?;
+    entries.sort_by_key(rb_model::DirEntry::file_name);
     for entry in entries {
         let kind = entry.file_type()?;
         let path = entry.path();
         if kind.is_dir() {
             let name = entry.file_name();
             let excluded = name.to_str().is_some_and(|n| EXCLUDED_DIRS.contains(&n));
-            if !excluded && !path.join("pyvenv.cfg").is_file() {
-                walk_dir(base, &path, stubs, walked)?;
+            if !excluded && !files.is_file(&path.join("pyvenv.cfg")) {
+                walk_dir(files, base, &path, stubs, walked)?;
             }
         } else if kind.is_file() && is_source(&path, stubs) {
             walked.files.push(relative(base, &path));
         } else if kind.is_symlink() && is_source(&path, stubs) {
             // A link to a file is followed; a link to a folder is never entered, so a cycle
             // cannot be walked.
-            match std::fs::metadata(&path) {
+            match files.metadata(&path) {
                 Ok(target) if target.is_file() => walked.files.push(relative(base, &path)),
                 Ok(_) => {}
                 Err(error) => walked.warnings.push(Warning::about(
@@ -469,27 +479,30 @@ mod tests {
     #[test]
     fn roots_follow_the_documented_order() -> Result<(), DiscoverError> {
         let dir = scratch("order");
-        assert_eq!(discover(&dir, None)?.roots, ["."]);
+        assert_eq!(discover(&Files::disk(), &dir, None)?.roots, ["."]);
         write(
             &dir,
             "setup.cfg",
             "[metadata]\nname = x\n[options]\npackage_dir =\n    =lib\n",
         );
-        assert_eq!(discover(&dir, None)?.roots, ["lib"]);
+        assert_eq!(discover(&Files::disk(), &dir, None)?.roots, ["lib"]);
         std::fs::create_dir_all(dir.join("src"))?;
-        assert_eq!(discover(&dir, None)?.roots, ["src"]);
+        assert_eq!(discover(&Files::disk(), &dir, None)?.roots, ["src"]);
         write(
             &dir,
             "pyproject.toml",
             "[project]\nrequires-python = \">=3.10\"\n[project.scripts]\nb = \"pkg.cli:main\"\na = \"pkg.tool:run\"\n[project.gui-scripts]\ng = \"pkg.cli:gui\"\n[tool.setuptools.packages.find]\nwhere = [\"code\"]\n",
         );
-        let layout = discover(&dir, None)?;
+        let layout = discover(&Files::disk(), &dir, None)?;
         assert_eq!(layout.roots, ["code"]);
         assert_eq!(layout.entry_points, ["pkg.cli", "pkg.tool"]);
         assert_eq!(layout.requires_python.as_deref(), Some("3.10"));
         let configured = vec!["./a/".to_owned(), "a".to_owned(), "b".to_owned()];
-        assert_eq!(discover(&dir, Some(&configured))?.roots, ["a", "b"]);
-        assert_eq!(discover(&dir, Some(&[]))?.roots, ["code"]);
+        assert_eq!(
+            discover(&Files::disk(), &dir, Some(&configured))?.roots,
+            ["a", "b"]
+        );
+        assert_eq!(discover(&Files::disk(), &dir, Some(&[]))?.roots, ["code"]);
         let _ = std::fs::remove_dir_all(&dir);
         Ok(())
     }
@@ -527,7 +540,9 @@ mod tests {
     fn a_broken_pyproject_is_a_named_error() {
         let dir = scratch("broken");
         write(&dir, "pyproject.toml", "[project\n");
-        let error = discover(&dir, None).err().map(|e| e.to_string());
+        let error = discover(&Files::disk(), &dir, None)
+            .err()
+            .map(|e| e.to_string());
         assert!(
             error.as_deref().is_some_and(
                 |e| e.contains("pyproject.toml") && e.contains("languages.python.roots")
@@ -625,15 +640,16 @@ mod tests {
             write(&dir, file, "");
         }
         assert_eq!(
-            walk(&dir, &[], false)?.files,
+            walk(&Files::disk(), &dir, &[], false)?.files,
             ["src/pkg/__init__.py", "src/pkg/a.py", "top.py"]
         );
         assert_eq!(
-            walk(&dir, &[PathBuf::from("src")], true)?.files,
+            walk(&Files::disk(), &dir, &[PathBuf::from("src")], true)?.files,
             ["src/pkg/__init__.py", "src/pkg/a.py", "src/pkg/a.pyi"]
         );
         assert_eq!(
             walk(
+                &Files::disk(),
                 &dir,
                 &[dir.join("top.py"), PathBuf::from("notes.txt")],
                 false
@@ -641,7 +657,7 @@ mod tests {
             .files,
             ["top.py"]
         );
-        assert!(walk(&dir, &[PathBuf::from("missing")], false).is_err());
+        assert!(walk(&Files::disk(), &dir, &[PathBuf::from("missing")], false).is_err());
         assert_eq!(relative(Path::new("/a"), Path::new("/b/c.py")), "/b/c.py");
         let _ = std::fs::remove_dir_all(&dir);
         Ok(())
@@ -659,7 +675,7 @@ mod tests {
         symlink(dir.join("real/gone.txt"), dir.join("pkg/broken.txt"))?;
         symlink(dir.join("real"), dir.join("pkg/folder"))?;
         symlink(dir.join("pkg"), dir.join("pkg/cycle"))?;
-        let walked = walk(&dir, &[], false)?;
+        let walked = walk(&Files::disk(), &dir, &[], false)?;
         assert_eq!(
             walked.files,
             ["pkg/__init__.py", "pkg/linked.py", "real/x.py"]

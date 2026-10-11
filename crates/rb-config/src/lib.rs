@@ -23,6 +23,7 @@
 //! | [`defines`] | `defines` and `${name}` substitution |
 //! | [`shorthands`] | `layers` and `independence` |
 //! | [`normalize`] | key checks and dependency-cruiser's rule-set normalisation |
+//! | [`options_used`] | `summary.optionsUsed`: the defaults, the configuration's options, the output |
 //! | [`pattern`] | JavaScript patterns on the linear-time engine; the compatibility table |
 //! | [`convert`] | `config convert` and `config expand` |
 //! | [`lint`] | `config lint` |
@@ -41,6 +42,7 @@ pub mod load;
 pub mod model;
 pub mod native;
 pub mod normalize;
+pub mod options_used;
 pub mod packages;
 pub mod pattern;
 pub mod read;

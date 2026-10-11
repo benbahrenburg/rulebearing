@@ -1,0 +1,10 @@
+no-circular  (forbidden, error)
+  Files may not be part of an import cycle, ignoring type-only dependencies.
+  fix: Move what both modules need into a third module both import.
+  from: {}
+  to: {"circular":true,"dependencyTypesNot":["type-only"]}
+  matches: from 11 modules, to 0; 3 violations
+  first edges:
+    src/shop/main.py -> src/shop/models.py
+    src/shop/main.py -> src/shop/util.py
+    src/shop/ui/view.py -> src/shop/models.py

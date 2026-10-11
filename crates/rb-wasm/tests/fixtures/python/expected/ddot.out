@@ -1,0 +1,13 @@
+strict digraph "dependency-cruiser output"{
+    rankdir="LR" splines="true" overlap="false" nodesep="0.16" ranksep="0.18" fontname="Helvetica-bold" fontsize="9" style="rounded,bold,filled" fillcolor="#ffffff" compound="true"
+    node [shape="box" style="rounded, filled" height="0.2" color="black" fillcolor="#ffffcc" fontcolor="black" fontname="Helvetica" fontsize="9"]
+    edge [arrowhead="normal" arrowsize="0.6" penwidth="2.0" color="#00000033" fontname="Helvetica" fontsize="9"]
+
+    "." [label=<.> tooltip="." URL="." color="grey" fontcolor="grey" shape="box3d"]
+    subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] "src/shop" [label=<shop> tooltip="shop" URL="src/shop" shape="box3d"] }
+    "src/shop" -> "."
+    "src/shop" -> "src/shop/ui" [arrowhead="normalnoneodot" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shop" {label="shop" "src/shop" [width="0.05" shape="point" style="invis"] "src/shop/ui" [label=<ui> tooltip="ui" URL="src/shop/ui" shape="box3d"] } }
+    "src/shop/ui" -> "." [xlabel="no-unresolved" tooltip="no-unresolved" fontcolor="red" color="red"]
+    "src/shop/ui" -> "src/shop" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="red" color="red"]
+}

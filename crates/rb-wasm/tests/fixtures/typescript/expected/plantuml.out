@@ -1,0 +1,11 @@
+@startuml
+
+hide stereotype
+
+[src/index.ts] <<^src/index\.ts(?:\.(?:[^\x2E][^\x2E]*)|#[^\x2E]*)?$>> as C1
+[src/order/discount.ts] <<^src/order/discount\.ts(?:\.(?:[^\x2E][^\x2E]*)|#[^\x2E]*)?$>> as C2
+[src/order/order.ts] <<^src/order/order\.ts(?:\.(?:[^\x2E][^\x2E]*)|#[^\x2E]*)?$>> as C3
+[src/ui/view.ts] <<^src/ui/view\.ts(?:\.(?:[^\x2E][^\x2E]*)|#[^\x2E]*)?$>> as C4
+[src/util/format.ts] <<^src/util/format\.ts(?:\.(?:[^\x2E][^\x2E]*)|#[^\x2E]*)?$>> as C5
+C3 --> C4
+@enduml

@@ -1,0 +1,5 @@
+##teamcity[inspectionType id='no-circular' name='no-circular' description='A cycle makes the order of initialisation an accident.' category='dependency-cruiser' flowId='1249090487' timestamp='2026-10-10T12:00:00.000']
+##teamcity[inspectionType id='no-unresolvable' name='no-unresolvable' description='no-unresolvable' category='dependency-cruiser' flowId='1249090487' timestamp='2026-10-10T12:00:00.000']
+##teamcity[inspection typeId='no-circular' message='src/order/discount.ts -> src/order/order.ts -> src/order/discount.ts' file='src/order/discount.ts' SEVERITY='ERROR' flowId='1249090487' timestamp='2026-10-10T12:00:00.000']
+##teamcity[inspection typeId='no-unresolvable' message='src/index.ts -> ./not-there' file='src/index.ts' SEVERITY='ERROR' flowId='1249090487' timestamp='2026-10-10T12:00:00.000']
+##teamcity[inspection typeId='no-unresolvable' message='src/legacy.js -> left-pad' file='src/legacy.js' SEVERITY='ERROR' flowId='1249090487' timestamp='2026-10-10T12:00:00.000']

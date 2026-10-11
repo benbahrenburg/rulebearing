@@ -1,0 +1,32 @@
+## Forbidden dependency check - results
+
+### :chart_with_upwards_trend: Summary
+
+**11** modules&nbsp;&nbsp;&nbsp;&nbsp;**11** dependencies&nbsp;&nbsp;&nbsp;&nbsp;**4** errors&nbsp;&nbsp;&nbsp;&nbsp;**1** warnings&nbsp;&nbsp;&nbsp;&nbsp;**0** informational&nbsp;&nbsp;&nbsp;&nbsp;**0** ignored
+
+
+|rule|violations|ignored|explanation
+|:---|:---:|:---:|:---|
+|:exclamation:&nbsp;_no-circular_|**3**|**0**|undefined|
+|:exclamation:&nbsp;_no-unresolved_|**1**|**0**|undefined|
+|:warning:&nbsp;_ui-not-to-models_|**1**|**0**|undefined|
+
+
+### :fire: All violations
+
+<details><summary>Violations found - click to expand</summary>
+
+|violated rule|module|to|
+|:---|:---|:---|
+|:exclamation:&nbsp;_no-circular_|src/shop/main.py|src/shop/models.py &rightarrow;<br/>src/shop/main.py|
+|:exclamation:&nbsp;_no-circular_|src/shop/main.py|src/shop/util.py &rightarrow;<br/>src/shop/models.py &rightarrow;<br/>src/shop/main.py|
+|:exclamation:&nbsp;_no-circular_|src/shop/ui/view.py|src/shop/models.py &rightarrow;<br/>src/shop/main.py &rightarrow;<br/>src/shop/ui/view.py|
+|:exclamation:&nbsp;_no-unresolved_|src/shop/ui/view.py|missing_package|
+|:warning:&nbsp;_ui-not-to-models_|src/shop/ui/view.py|src/shop/models.py|
+
+
+</details>
+
+---
+[dependency-cruiser@18.2.0](https://www.github.com/sverweij/dependency-cruiser) / 2026-10-10T12:00:00.000Z
+

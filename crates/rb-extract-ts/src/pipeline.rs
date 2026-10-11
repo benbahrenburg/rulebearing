@@ -32,7 +32,7 @@ use oxc_semantic::SemanticBuilder;
 use oxc_span::{SourceType, Span};
 use rb_model::options::{PathFilter, TsPreCompilationDeps};
 use rb_model::{
-    DependencyType, ExperimentalStats, ModuleSystem, Parser, Protocol, TypeScriptOptions,
+    DependencyType, ExperimentalStats, Files, ModuleSystem, Parser, Protocol, TypeScriptOptions,
 };
 use regex::Regex;
 
@@ -241,6 +241,10 @@ pub struct Settings {
     /// ([`crate::sidecar::options_block`]); `None` stops the run at the first CoffeeScript
     /// or LiveScript file the walk reads.
     pub sidecar: Option<serde_json::Map<String, serde_json::Value>>,
+    /// Where the walk lists folders and reads sources: the disk, or a tree in memory
+    /// ([ADR-0073](../../../docs/adr/0073-extractors-read-files-through-rb-model.md)). The
+    /// resolver reads through [`ResolveConfig::files`]; [`crate::prepare_in`] sets both.
+    pub files: Files,
 }
 
 impl Settings {
@@ -282,6 +286,7 @@ impl Settings {
             sidecar: options
                 .sidecar
                 .map(|_| crate::sidecar::options_block(options)),
+            files: Files::disk(),
         })
     }
 
@@ -690,8 +695,8 @@ fn elided_imports(program: &oxc_ast::ast::Program<'_>) -> Vec<Span> {
 /// sequence that is not UTF-8 (a Latin-1 comment, a binary file with a source extension) becomes
 /// U+FFFD instead of failing the run. Found by the Python oracle harness on
 /// openedx/openedx-platform, whose MPEG transport-stream fixtures are named `.ts`.
-fn read(path: &Path) -> Result<String, PipelineError> {
-    let bytes = std::fs::read(path).map_err(|source| PipelineError::Io {
+fn read(files: &Files, path: &Path) -> Result<String, PipelineError> {
+    let bytes = files.read(path).map_err(|source| PipelineError::Io {
         path: path.to_path_buf(),
         source,
     })?;
@@ -718,7 +723,7 @@ fn source_of(
     settings: &Settings,
     file: &str,
 ) -> Result<(String, Vec<(String, Script)>), PipelineError> {
-    let source = read(&settings.on_disk(file))?;
+    let source = read(&settings.files, &settings.on_disk(file))?;
     let extension = node_extname(file);
     let texts = if sfc::is_component(extension) {
         let scripts = sfc::scripts(&source);
@@ -1200,11 +1205,14 @@ fn gather_directory(
 ) -> Result<(), PipelineError> {
     let on_disk = settings.on_disk(directory);
     out.folders.insert(on_disk.clone());
-    let mut entries: Vec<String> = std::fs::read_dir(&on_disk)
+    let mut entries: Vec<String> = settings
+        .files
+        .read_dir(&on_disk)
         .map_err(|source| PipelineError::Io {
             path: on_disk.clone(),
             source,
         })?
+        .into_iter()
         .filter_map(Result::ok)
         .map(|e| e.file_name().to_string_lossy().into_owned())
         .collect();
@@ -1227,11 +1235,11 @@ fn gather_directory(
             continue;
         }
         let on_disk = settings.on_disk(&path);
-        let Ok(metadata) = std::fs::metadata(&on_disk) else {
+        let Ok(metadata) = settings.files.metadata(&on_disk) else {
             continue;
         };
         if metadata.is_dir() {
-            let Some(canonical) = not_a_cycle(&on_disk, ancestors) else {
+            let Some(canonical) = not_a_cycle(&settings.files, &on_disk, ancestors) else {
                 continue;
             };
             ancestors.push(canonical);
@@ -1258,8 +1266,8 @@ struct Gathered {
 }
 
 /// The canonical form of folder `path`, unless it is one of `ancestors` (a symlink cycle).
-fn not_a_cycle(path: &Path, ancestors: &[PathBuf]) -> Option<PathBuf> {
-    let canonical = std::fs::canonicalize(path).ok()?;
+fn not_a_cycle(files: &Files, path: &Path, ancestors: &[PathBuf]) -> Option<PathBuf> {
+    let canonical = files.canonicalize(path).ok()?;
     (!ancestors.contains(&canonical)).then_some(canonical)
 }
 
@@ -1295,18 +1303,22 @@ fn expand_glob(pattern: &str, settings: &Settings, folders: &mut BTreeSet<PathBu
     };
     let mut all = Vec::new();
     let root = settings.on_disk(&base);
-    let mut stack: Vec<(PathBuf, Vec<PathBuf>)> =
-        vec![(root.clone(), not_a_cycle(&root, &[]).into_iter().collect())];
+    let mut stack: Vec<(PathBuf, Vec<PathBuf>)> = vec![(
+        root.clone(),
+        not_a_cycle(&settings.files, &root, &[])
+            .into_iter()
+            .collect(),
+    )];
     while let Some((dir, ancestors)) = stack.pop() {
         // Recorded before it is read: a folder that cannot be read yet is watched all the same.
         folders.insert(dir.clone());
-        let Ok(entries) = std::fs::read_dir(&dir) else {
+        let Ok(entries) = settings.files.read_dir(&dir) else {
             continue;
         };
-        for entry in entries.flatten() {
+        for entry in entries.into_iter().flatten() {
             let path = entry.path();
-            if path.is_dir()
-                && let Some(canonical) = not_a_cycle(&path, &ancestors)
+            if settings.files.is_dir(&path)
+                && let Some(canonical) = not_a_cycle(&settings.files, &path, &ancestors)
             {
                 let mut below: Vec<PathBuf> = ancestors.clone();
                 below.push(canonical);
@@ -1356,12 +1368,17 @@ pub fn gather_walk(
     }
     for item in expanded {
         let on_disk = settings.on_disk(&item);
-        let metadata = std::fs::metadata(&on_disk).map_err(|source| PipelineError::Io {
-            path: on_disk.clone(),
-            source,
-        })?;
+        let metadata = settings
+            .files
+            .metadata(&on_disk)
+            .map_err(|source| PipelineError::Io {
+                path: on_disk.clone(),
+                source,
+            })?;
         if metadata.is_dir() {
-            let mut ancestors: Vec<PathBuf> = not_a_cycle(&on_disk, &[]).into_iter().collect();
+            let mut ancestors: Vec<PathBuf> = not_a_cycle(&settings.files, &on_disk, &[])
+                .into_iter()
+                .collect();
             gather_directory(&item, settings, &mut ancestors, &mut files)?;
         } else {
             files.files.push(item);
@@ -1678,7 +1695,7 @@ pub fn sidecar_pending(
 /// When the file cannot be read.
 pub fn stats(file: &str, settings: &Settings) -> Result<ExperimentalStats, PipelineError> {
     let path = settings.on_disk(file);
-    let source = read(&path)?;
+    let source = read(&settings.files, &path)?;
     let allocator = Allocator::default();
     let parsed = OxcParser::new(&allocator, &source, source_type_for(file))
         .with_options(ParseOptions {
@@ -1830,8 +1847,8 @@ mod tests {
         let _ = std::fs::create_dir_all(&dir);
         let file = dir.join("latin1.js");
         let _ = std::fs::write(&file, b"// na\xefve\nimport x from './x';\n");
-        let text = read(&file).ok();
-        let missing = read(&dir.join("missing.js"));
+        let text = read(&Files::disk(), &file).ok();
+        let missing = read(&Files::disk(), &dir.join("missing.js"));
         let _ = std::fs::remove_dir_all(&dir);
         assert_eq!(
             text.as_deref(),

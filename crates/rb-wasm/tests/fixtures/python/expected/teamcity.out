@@ -1,0 +1,8 @@
+##teamcity[inspectionType id='no-circular' name='no-circular' description='no-circular' category='dependency-cruiser' flowId='9404795409' timestamp='2026-10-10T12:00:00.000']
+##teamcity[inspectionType id='no-unresolved' name='no-unresolved' description='no-unresolved' category='dependency-cruiser' flowId='9404795409' timestamp='2026-10-10T12:00:00.000']
+##teamcity[inspectionType id='ui-not-to-models' name='ui-not-to-models' description='ui-not-to-models' category='dependency-cruiser' flowId='9404795409' timestamp='2026-10-10T12:00:00.000']
+##teamcity[inspection typeId='no-circular' message='src/shop/main.py -> src/shop/models.py -> src/shop/main.py' file='src/shop/main.py' SEVERITY='ERROR' flowId='9404795409' timestamp='2026-10-10T12:00:00.000']
+##teamcity[inspection typeId='no-circular' message='src/shop/main.py -> src/shop/util.py -> src/shop/models.py -> src/shop/main.py' file='src/shop/main.py' SEVERITY='ERROR' flowId='9404795409' timestamp='2026-10-10T12:00:00.000']
+##teamcity[inspection typeId='no-circular' message='src/shop/ui/view.py -> src/shop/models.py -> src/shop/main.py -> src/shop/ui/view.py' file='src/shop/ui/view.py' SEVERITY='ERROR' flowId='9404795409' timestamp='2026-10-10T12:00:00.000']
+##teamcity[inspection typeId='no-unresolved' message='src/shop/ui/view.py -> missing_package' file='src/shop/ui/view.py' SEVERITY='ERROR' flowId='9404795409' timestamp='2026-10-10T12:00:00.000']
+##teamcity[inspection typeId='ui-not-to-models' message='src/shop/ui/view.py -> src/shop/models.py' file='src/shop/ui/view.py' SEVERITY='WARNING' flowId='9404795409' timestamp='2026-10-10T12:00:00.000']

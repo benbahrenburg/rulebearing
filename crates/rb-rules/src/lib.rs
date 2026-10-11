@@ -27,6 +27,7 @@
 //! | [`compare`] | the orderings output is sorted by |
 //! | [`graph`] | the indexed graph, consolidation and filters |
 //! | [`rewrap`] | `fmt`'s re-summary of a saved result |
+//! | [`explain`], [`plain`] | `explain`: a rule, its sentence, its statistics and first edges |
 //! | [`ratchet`] | ratchet counts |
 //! | [`conformance`] | the `rulebearing validate` protocol layer 2 speaks |
 //! | [`js`], [`patterns`] | JavaScript's value and pattern semantics |
@@ -37,6 +38,7 @@ pub mod conformance;
 pub mod derive;
 pub mod elements;
 pub mod evaluate;
+pub mod explain;
 pub mod families;
 pub mod folders;
 pub mod graph;
@@ -44,6 +46,7 @@ pub mod js;
 pub mod known;
 pub mod matchers;
 pub mod patterns;
+pub mod plain;
 pub mod plantuml;
 pub mod plantuml_export;
 pub mod projects;

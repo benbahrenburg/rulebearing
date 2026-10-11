@@ -1,0 +1,6 @@
+##vso[task.logissue type=error;sourcepath=src/shop/main.py;code=no-circular;]src/shop/main.py -> src/shop/models.py -> src/shop/main.py
+##vso[task.logissue type=error;sourcepath=src/shop/main.py;code=no-circular;]src/shop/main.py -> src/shop/util.py -> src/shop/models.py -> src/shop/main.py
+##vso[task.logissue type=error;sourcepath=src/shop/ui/view.py;code=no-circular;]src/shop/ui/view.py -> src/shop/models.py -> src/shop/main.py -> src/shop/ui/view.py
+##vso[task.logissue type=error;sourcepath=src/shop/ui/view.py;code=no-unresolved;]src/shop/ui/view.py -> missing_package
+##vso[task.logissue type=warning;sourcepath=src/shop/ui/view.py;code=ui-not-to-models;]src/shop/ui/view.py -> src/shop/models.py
+##vso[task.complete result=Failed;]5 dependency violations (4 error, 1 warning/ informational). 11 modules, 11 dependencies cruised

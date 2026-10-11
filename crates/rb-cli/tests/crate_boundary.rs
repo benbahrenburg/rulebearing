@@ -41,7 +41,8 @@ const ALLOWED: &[(&str, &[&str])] = &[
     ),
     ("rb-node", &["rb-cli"]),
     // The playground's facade (ADR-0067, amending ADR-0010's table): the library crates only,
-    // never rb-cli, and nothing depends on it.
+    // never rb-cli, and nothing depends on it. The two extractors read the dropped files from
+    // memory (ADR-0073).
     (
         "rb-wasm",
         &[
@@ -50,6 +51,8 @@ const ALLOWED: &[(&str, &[&str])] = &[
             "rb-rules",
             "rb-report",
             "rb-ingest",
+            "rb-extract-ts",
+            "rb-extract-python",
         ],
     ),
 ];

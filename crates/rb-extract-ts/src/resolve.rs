@@ -19,12 +19,14 @@ use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use oxc_resolver::{
-    AliasValue, ResolveOptions, Resolver, TsconfigDiscovery, TsconfigOptions, TsconfigReferences,
+    AliasValue, ResolveOptions, ResolverGeneric, TsconfigDiscovery, TsconfigOptions,
+    TsconfigReferences,
 };
-use rb_model::DependencyType;
 use rb_model::options::BuiltInModules;
+use rb_model::{DependencyType, Files};
 
 use crate::core::is_builtin;
+use crate::files::ResolverFiles;
 use crate::npm::{self, Manifest};
 
 use DependencyType as D;
@@ -56,6 +58,9 @@ pub const SCANNABLE_EXTENSIONS: &[&str] = &[
 const UNFOLLOWABLE: &[&str] = &[
     ".json", ".node", ".css", ".sass", ".scss", ".stylus", ".less",
 ];
+
+/// The resolver this crate builds: `oxc_resolver` over the run's [`Files`].
+pub type Resolver = ResolverGeneric<ResolverFiles>;
 
 /// Where a webpack-style alias sends a specifier.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -239,6 +244,9 @@ pub struct ResolveConfig {
     /// extensions rather than the variant set; on in the recorded `test/extract` cases, which
     /// all pass `bustTheCache: true`.
     pub bust_the_cache: bool,
+    /// Where every file the resolution reads comes from: the disk, or a tree in memory
+    /// ([ADR-0073](../../../docs/adr/0073-extractors-read-files-through-rb-model.md)).
+    pub files: Files,
     /// The resolvers built from these options, each made on first use and kept, so its file
     /// system cache lives for the whole run. Set every option before the first resolution.
     pub(crate) resolvers: Resolvers,
@@ -303,6 +311,7 @@ impl Default for ResolveConfig {
             pnp_root: None,
             tsconfig_references: false,
             bust_the_cache: false,
+            files: Files::disk(),
             resolvers: Resolvers::default(),
         }
     }
@@ -332,9 +341,9 @@ impl ResolveConfig {
             return found.clone();
         }
         let found = if self.combined_dependencies {
-            npm::combined(folder, base_dir).map(Arc::new)
+            npm::combined(&self.files, folder, base_dir).map(Arc::new)
         } else {
-            npm::nearest(folder).map(Arc::new)
+            npm::nearest(&self.files, folder).map(Arc::new)
         };
         if let Ok(mut cache) = self.resolvers.manifests.lock() {
             cache.insert(key, found.clone());
@@ -371,50 +380,54 @@ impl ResolveConfig {
 
     /// The `oxc_resolver` for these options, with `extensions` replaced when given.
     pub fn resolver(&self, extensions: Option<&[String]>) -> Resolver {
-        Resolver::new(ResolveOptions {
-            extensions: extensions.map_or_else(|| self.extensions.clone(), <[String]>::to_vec),
-            modules: self.modules.clone(),
-            main_fields: self.main_fields.clone(),
-            main_files: self.main_files.clone(),
-            exports_fields: self
-                .exports_fields
-                .iter()
-                .map(|f| vec![f.clone()])
-                .collect(),
-            condition_names: self.condition_names.clone(),
-            alias_fields: self.alias_fields.iter().map(|f| vec![f.clone()]).collect(),
-            alias: self
-                .alias
-                .iter()
-                .map(|(k, targets)| {
-                    (
-                        k.clone(),
-                        targets
-                            .iter()
-                            .map(|t| match t {
-                                AliasTarget::Path(path) => AliasValue::Path(path.clone()),
-                                AliasTarget::Ignore => AliasValue::Ignore,
-                            })
-                            .collect(),
-                    )
-                })
-                .collect(),
-            symlinks: self.symlinks,
-            tsconfig: self.tsconfig.as_ref().map(|config_file| {
-                TsconfigDiscovery::Manual(TsconfigOptions {
-                    config_file: config_file.clone(),
-                    references: if self.tsconfig_references {
-                        TsconfigReferences::Auto
-                    } else {
-                        TsconfigReferences::Disabled
-                    },
-                })
-            }),
-            yarn_pnp: self.yarn_pnp,
-            cwd: self.pnp_root.clone(),
-            node_path: false,
-            ..ResolveOptions::default()
-        })
+        let files = ResolverFiles::new(self.files.clone(), self.yarn_pnp);
+        Resolver::new_with_file_system(
+            files,
+            ResolveOptions {
+                extensions: extensions.map_or_else(|| self.extensions.clone(), <[String]>::to_vec),
+                modules: self.modules.clone(),
+                main_fields: self.main_fields.clone(),
+                main_files: self.main_files.clone(),
+                exports_fields: self
+                    .exports_fields
+                    .iter()
+                    .map(|f| vec![f.clone()])
+                    .collect(),
+                condition_names: self.condition_names.clone(),
+                alias_fields: self.alias_fields.iter().map(|f| vec![f.clone()]).collect(),
+                alias: self
+                    .alias
+                    .iter()
+                    .map(|(k, targets)| {
+                        (
+                            k.clone(),
+                            targets
+                                .iter()
+                                .map(|t| match t {
+                                    AliasTarget::Path(path) => AliasValue::Path(path.clone()),
+                                    AliasTarget::Ignore => AliasValue::Ignore,
+                                })
+                                .collect(),
+                        )
+                    })
+                    .collect(),
+                symlinks: self.symlinks,
+                tsconfig: self.tsconfig.as_ref().map(|config_file| {
+                    TsconfigDiscovery::Manual(TsconfigOptions {
+                        config_file: config_file.clone(),
+                        references: if self.tsconfig_references {
+                            TsconfigReferences::Auto
+                        } else {
+                            TsconfigReferences::Disabled
+                        },
+                    })
+                }),
+                yarn_pnp: self.yarn_pnp,
+                cwd: self.pnp_root.clone(),
+                node_path: false,
+                ..ResolveOptions::default()
+            },
+        )
     }
 }
 
@@ -658,7 +671,7 @@ fn resolve_commonjs(
 
 fn resolve_amd(module: &str, context: &Context<'_>, config: &ResolveConfig) -> Resolution {
     // Upstream checks the guessed, base-relative path against the working directory.
-    let exists = |path: &str| context.cwd.join(path).is_file();
+    let exists = |path: &str| config.files.is_file(&context.cwd.join(path));
     let guess = |suffix: &str| {
         relative(
             &absolute(context.cwd, context.base_dir),
@@ -820,7 +833,9 @@ fn package_json(
     {
         return read.clone();
     }
-    let read = std::fs::read_to_string(&path)
+    let read = config
+        .files
+        .read_to_string(&path)
         .ok()
         .and_then(|text| serde_json::from_str(&text).ok())
         .map(Arc::new);

@@ -1,0 +1,28 @@
+# The playground's TypeScript fixture: cruise_ts over these files must print what
+# `rulebearing cruise -T <type>` prints here (crates/rb-wasm/tests/cruise.rs).
+languages:
+  typescript:
+    tsConfig:
+      fileName: tsconfig.json
+rules:
+  dependencies:
+    forbidden:
+      - name: no-circular
+        severity: error
+        comment: A cycle makes the order of initialisation an accident.
+        fix: Move what both modules need into a third module both import.
+        from: {}
+        to: { circular: true }
+      - name: no-unresolvable
+        severity: error
+        fix: Fix the specifier, or add the package to package.json.
+        from: {}
+        to: { couldNotResolve: true }
+      - name: ui-not-from-order
+        severity: warn
+        from: { path: "^src/ui/" }
+        to: { path: "^src/order/" }
+      - name: no-dev-deps-in-src
+        severity: error
+        from: { path: "^src/" }
+        to: { dependencyTypes: [npm-dev] }

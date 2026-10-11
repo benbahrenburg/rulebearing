@@ -20,6 +20,7 @@
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
+use rb_model::Files;
 use regex::Regex;
 use serde_json::Value;
 
@@ -61,7 +62,7 @@ impl BabelAliases {
     /// # Errors
     /// When the file cannot be read, is not JSON, is a JavaScript config, or an alias key is not
     /// a valid regular expression.
-    pub fn load(path: &Path, cwd: &Path) -> Result<Self, BabelError> {
+    pub fn load(files: &Files, path: &Path, cwd: &Path) -> Result<Self, BabelError> {
         let fail = |reason: String| BabelError {
             path: path.to_path_buf(),
             reason,
@@ -80,7 +81,9 @@ impl BabelAliases {
                     .to_owned(),
             ));
         }
-        let text = std::fs::read_to_string(path).map_err(|e| fail(e.to_string()))?;
+        let text = files
+            .read_to_string(path)
+            .map_err(|e| fail(e.to_string()))?;
         let mut json: Value =
             serde_json::from_str(&text).map_err(|e| fail(format!("not valid JSON: {e}")))?;
         if name == "package.json" {
@@ -221,7 +224,7 @@ mod tests {
         let _ = std::fs::create_dir_all(&directory);
         let path = directory.join(format!("{}.babelrc", json.len()));
         let _ = std::fs::write(&path, json);
-        let loaded = BabelAliases::load(&path, Path::new("/repo"));
+        let loaded = BabelAliases::load(&Files::disk(), &path, Path::new("/repo"));
         let _ = std::fs::remove_file(&path);
         loaded
     }
@@ -286,12 +289,20 @@ mod tests {
                 .err()
                 .is_some_and(|e| e.reason.contains("alias `^(`"))
         );
-        let js = BabelAliases::load(Path::new("/nowhere/babel.config.js"), Path::new("/"));
+        let js = BabelAliases::load(
+            &Files::disk(),
+            Path::new("/nowhere/babel.config.js"),
+            Path::new("/"),
+        );
         assert!(
             js.err()
                 .is_some_and(|e| e.to_string().contains("babel.config.json"))
         );
-        let missing = BabelAliases::load(Path::new("/nowhere/.babelrc"), Path::new("/"));
+        let missing = BabelAliases::load(
+            &Files::disk(),
+            Path::new("/nowhere/.babelrc"),
+            Path::new("/"),
+        );
         assert!(missing.is_err());
         let empty = aliases("{}");
         assert!(empty.is_ok_and(|a| a.is_empty()));
