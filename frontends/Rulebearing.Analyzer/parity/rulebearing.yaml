@@ -1,6 +1,6 @@
 # Rules over crates/rb-extract-dotnet/tests/fixtures/sample that touch every concept the analyzer
 # evaluates, for the pull-request parity check (run.sh): the analyzer's findings must equal the
-# gate's, as written and with each rule negated. Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21.
+# gate's, as written and with each rule negated. Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 21.
 languages:
   dotnet:
     assemblies:

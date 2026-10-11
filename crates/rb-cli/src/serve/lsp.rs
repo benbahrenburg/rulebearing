@@ -2,8 +2,8 @@
 //! quick-fix title, over standard input and output.
 //!
 //! - Source: [design § Hooks, test runners, an MCP server, an LSP](../../../../docs/artifacts/design.md#hooks-test-runners-an-mcp-server-an-lsp)
-//! - Plan: [Wave 3, Step 20](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp),
-//!   [§ 1.5](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Plan: [Wave 3, Step 20](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp),
+//!   [§ 1.5](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //!   (the diagnostic's `code`, `source` and `message`)
 //! - Decisions: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md),
 //!   [ADR-0015](../../../../docs/adr/0015-stable-violation-id.md) (the `code`)

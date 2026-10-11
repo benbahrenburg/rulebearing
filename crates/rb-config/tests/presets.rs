@@ -251,7 +251,7 @@ fn every_native_preset_is_snapshotted() {
 /// language presets without replacing their settings), and every rule named with the preset's
 /// prefix, commented with the decision token `plan:rulebearing-<preset>`, with a `fix`, a
 /// `severity`, and `examples` of both kinds
-/// ([plan 0003, Step 11](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
+/// ([plan 0003, Step 11](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
 #[test]
 fn framework_presets_are_documented_opinions() -> Result<(), Box<dyn Error>> {
     let mut seen: Vec<String> = Vec::new();

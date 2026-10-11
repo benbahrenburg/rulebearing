@@ -22,19 +22,19 @@
 //! which is wave 1's worklist.
 //!
 //! Every `extract` case is also run incrementally
-//! ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+//! ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
 //! with every file unchanged, every file changed, and each file changed on its own, the
 //! extraction [`rb_extract_ts::extract_incremental`] gives must equal the full one byte for
 //! byte, module order included. Each variant runs without file states, then keeping them and the
 //! walk (compared too): walking the inputs again, taking the earlier walk as
 //! [`rb_model::ExtractRequest::walk_unchanged`] promises
-//! ([Wave 3, Step 16](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)),
+//! ([Wave 3, Step 16](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)),
 //! and from an earlier extraction without its linked code layer, so the layer is linked again
 //! from the kept states. It prints `layer1-incremental: cases=<n> variants=<v>` and fails on any
 //! difference.
 //!
 //! A case whose file only the Node sidecar reads (CoffeeScript, LiveScript) is replayed through
-//! the sidecar ([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
+//! the sidecar ([Wave 3, Step 10](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
 //! [ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)): the dependency-cruiser
 //! checkout named by `RB_LAYER1_SIDECAR`, which `conformance/dependency-cruiser/run.sh` sets so
 //! the conformance job always replays them, or else the checkout that script clones into

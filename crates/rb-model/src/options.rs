@@ -269,7 +269,7 @@ pub struct TypeScriptOptions {
 }
 
 /// The runtime `--sidecar` names
-/// ([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
+/// ([Wave 3, Step 10](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum SidecarRuntime {
@@ -449,7 +449,7 @@ impl PythonOptions {
 /// How a cache decides what changed since the entry was written: dependency-cruiser's
 /// `cache.strategy` and `--cache-strategy`
 /// ([coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),
-/// [Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// [Wave 3, Step 1](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 #[derive(
     Debug,
     Clone,

@@ -10,7 +10,7 @@
 # Each file command is pointed at a throwaway file for the whole script. No test-bed script
 # writes one itself; the workflow's own steps keep theirs.
 #
-# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 25 (the greenfield
+# Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 25 (the greenfield
 # rows). Decision: docs/adr/0025-ci-and-supply-chain-hardening.md (least privilege).
 if [ -n "${GITHUB_ACTIONS:-}" ]; then
   rb_github_files="$(mktemp -d)"

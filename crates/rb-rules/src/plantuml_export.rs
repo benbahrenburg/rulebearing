@@ -3,7 +3,7 @@
 //!
 //! - Source: [design § Diagram rules](../../../docs/artifacts/design.md#diagram-rules)
 //! - Coverage: [`ArchUnitNET` § `PlantUML`](../../../docs/artifacts/archunitnet-0.13.4-coverage.md#plantuml)
-//! - Plan: [Wave 3, Step 9](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+//! - Plan: [Wave 3, Step 9](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
 //! - Decisions: [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md) (the
 //!   upstream suite is the specification; the ported cases are
 //!   `conformance/archunitnet/ported/PlantUmlFileBuilderTest.yaml` and

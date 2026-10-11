@@ -3,7 +3,7 @@
 //! incremental run equal to a full one; and the precision and recall of source edges against
 //! compiled edges on the fixtures that have both.
 //!
-//! - Plan: [Wave 3, Step 14](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
+//! - Plan: [Wave 3, Step 14](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
 //!   ("a fixture solution with partial classes, global usings, aliases and nested namespaces; and
 //!   a precision test ... into `target/source-mode-precision.json`, asserted at or above 90%
 //!   precision")

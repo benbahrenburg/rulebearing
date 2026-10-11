@@ -484,28 +484,28 @@ pub struct Summary {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub expired: Option<Vec<ExpiredEntry>>,
     /// Additive: what `--affected` compared and which modules it kept
-    /// ([Wave 3 plan § 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)).
+    /// ([Wave 3 plan § 1.7](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub affected: Option<Affected>,
     /// Additive: whether the extraction came from the `--cache` entry, and how its freshness was
     /// checked; absent when the run did not use the cache
-    /// ([Wave 3 § 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)).
+    /// ([Wave 3 § 1.7](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cache: Option<CacheSummary>,
     /// Additive: the Node sidecar's part in the graph, when `--sidecar node` extracted any file
     /// ([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md),
-    /// [Wave 3 § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)).
+    /// [Wave 3 § 1.5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sidecar: Option<SidecarReceipt>,
     /// Additive: the `plugin:<path>` reporter modules the run rendered through, each relative to
-    /// the repository root ([Wave 3 plan § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)).
+    /// the repository root ([Wave 3 plan § 1.5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub plugins: Option<Vec<String>>,
 }
 
 /// `summary.sidecar`: the tool that extracted the CoffeeScript and LiveScript files, its version,
 /// and how many files it extracted
-/// ([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
+/// ([Wave 3, Step 10](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SidecarReceipt {
@@ -518,7 +518,7 @@ pub struct SidecarReceipt {
 }
 
 /// `summary.affected`: the receipt of an `--affected` run
-/// ([Wave 3, Step 3](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// ([Wave 3, Step 3](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Affected {

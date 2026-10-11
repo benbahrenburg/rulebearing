@@ -1,6 +1,6 @@
 // Where the API finds the addon: the override, else `rulebearing.node` in the platform package
 // beside its binary, else one line saying why there is none.
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 22.
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 22.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';

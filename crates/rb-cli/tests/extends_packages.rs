@@ -2,7 +2,7 @@
 //! library ships in: npm's `node_modules/`, the NuGet global packages folder and a Python
 //! environment's `site-packages`, in that order.
 //!
-//! - Plan: [Wave 3, Step 23](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#27-steps-for-sub-wave-3g-the-rule-library-the-scale-table-adoption)
+//! - Plan: [Wave 3, Step 23](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#27-steps-for-sub-wave-3g-the-rule-library-the-scale-table-adoption)
 //!   ("`extends: rulebearing-rules/nextjs` resolves in a fixture repository for each of the three
 //!   package layouts")
 //! - Requirement: [FR-REACH-04](../../../docs/prd.md#fr-reach-04)

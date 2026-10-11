@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT licence: see LICENSE.
 r"""The scale table: Rulebearing's wall-clock time and peak memory on the scale repositories.
 
-Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 24 ("writes
+Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 24 ("writes
 testbeds/results/scale.md with wall-clock and peak memory per repository ... and the Stop-hook p95
 from step 17, then rewrites the README between the scale-table markers ... A regression over 20%
 against the previous published row fails the job"). Requirements: docs/prd.md#nfr-conf-03,

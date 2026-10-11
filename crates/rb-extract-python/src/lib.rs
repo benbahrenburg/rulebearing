@@ -206,7 +206,7 @@ pub fn prepare(
 /// carries the distribution's version), or `none`. A cache compares it between runs, so
 /// installing, removing or upgrading a distribution, or an environment appearing, is seen even
 /// when version control ignores the environment
-/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 /// It reads folder listings only, no distribution's metadata.
 ///
 /// # Errors
@@ -537,7 +537,7 @@ pub fn extract_with(inputs: &[PathBuf], settings: &Settings) -> Result<Extractio
 
 /// [`extract_with`] after some files changed: each file `request.unchanged` names is taken from
 /// `request.previous` (its module and the state the earlier run kept) instead of being read
-/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 /// The files, the index and the stub shadowing are recomputed from the tree, and every
 /// graph-wide step (the target modules, the base chains, the order) runs as in a full
 /// extraction, so the result equals [`extract_with`]'s when the caller's precondition holds: no

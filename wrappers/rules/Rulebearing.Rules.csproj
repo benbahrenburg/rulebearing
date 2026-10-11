@@ -7,7 +7,7 @@
      workspace version unless -p:Version is given, as for the other packages
      (eng/Rulebearing.Packages.props). Packed by wrappers/rules/pack.sh (docs/release.md).
      Decision: docs/adr/0071-the-rule-library-ships-from-this-repository.md.
-     Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 23. -->
+     Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 23. -->
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>

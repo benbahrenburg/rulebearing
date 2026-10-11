@@ -191,7 +191,7 @@ pub fn module_systems(list: &str) -> Result<Vec<ModuleSystem>, ConfigError> {
 }
 
 /// `--mode` over `languages.dotnet.mode`
-/// ([Wave 3, Step 14](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)),
+/// ([Wave 3, Step 14](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)),
 /// where .NET is read at all: the flag says how, never whether, so a repository without
 /// `languages.dotnet` or a root solution reads no `.cs` file because of it.
 fn dotnet_flags(config: &mut Config, args: &CruiseArgs, ctx: &Context<'_>) {
@@ -344,7 +344,7 @@ pub fn default_cache_folder(config: &Config) -> &'static str {
 /// dependency-cruiser's `normalizeCache` and `normalizeCacheStrategy` lay them: either flag
 /// replaces the configuration's setting with `{ folder, strategy }` (the default folder when
 /// none is named); `--no-cache` turns the cache off, and here it wins over `--cache-strategy`
-/// ([Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// ([Wave 3, Step 1](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 pub fn cache_flags(config: &mut Config, args: &CruiseArgs) {
     use rb_config::model::CacheSetting;
     if args.no_cache {

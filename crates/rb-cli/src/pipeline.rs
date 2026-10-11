@@ -8,7 +8,7 @@
 //!   (the path a gate takes)
 //! - Requirements: [FR-CORE-02](../../../docs/prd.md#fr-core-02), [FR-CORE-04](../../../docs/prd.md#fr-core-04),
 //!   [FR-CLI-05](../../../docs/prd.md#fr-cli-05) (the extraction in parts the cache keeps:
-//!   [Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict))
+//!   [Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict))
 
 #[cfg(any(feature = "extract-ts", feature = "extract-python"))]
 use std::path::PathBuf;
@@ -149,7 +149,7 @@ pub fn receipt(document: &GraphDocument) -> Inspected {
 }
 
 /// Each language's extraction, kept apart so the cache can store them and a later run can reuse
-/// or re-extract them one by one ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// or re-extract them one by one ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 /// [`merge`] turns them into the run's document; a cold run and a cached one both go through it,
 /// so equal parts give byte-identical documents.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -358,7 +358,7 @@ pub fn extract_parts(
 
 /// The .NET part: compiled mode through the extractor; source mode reading only the changed
 /// `.cs` files of an incremental plan and keeping each file's parse when asked
-/// ([Wave 3, Step 14](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
+/// ([Wave 3, Step 14](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
 #[cfg(feature = "extract-dotnet")]
 fn dotnet_part(
     ctx: &Context<'_>,

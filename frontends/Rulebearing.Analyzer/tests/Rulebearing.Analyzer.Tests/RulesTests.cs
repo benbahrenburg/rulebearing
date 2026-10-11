@@ -1,6 +1,6 @@
 // Reading rulebearing.yaml (rb-config's element-rule parsing for the evaluated subset) and
 // evaluating it (rb-rules' concepts), then the analyzer end to end.
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21.
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 21.
 
 using Microsoft.CodeAnalysis;
 

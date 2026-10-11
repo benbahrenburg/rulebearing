@@ -1,5 +1,5 @@
 // Helpers the tests share: a compilation from source, and the analyzer run over it with a rule file.
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21.
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 21.
 
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;

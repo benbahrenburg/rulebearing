@@ -2,7 +2,7 @@
 // is TypeScript's own `parseJsonConfigFileContent` over the file, run with the caller's TypeScript.
 //
 // Decision: docs/adr/0062-the-node-binding-reads-typescript-and-babel-configs-with-the-callers-packages.md.
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 22. Requirement: FR-DIST-02.
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 22. Requirement: FR-DIST-02.
 // Specification: dependency-cruiser 18.2.0, src/config-utl/extract-ts-config.mjs, ported line for line.
 //
 // `cruise()` accepts the result as `transpileOptions.tsConfig` by the file it records

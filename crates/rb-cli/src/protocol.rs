@@ -9,7 +9,7 @@
 //! `#report/plugins.mjs` and `report -T plugin:<path>` are answered by [`crate::plugin`], so the
 //! plugin fixtures of dependency-cruiser's specs run in Rulebearing's sandbox, from the working
 //! directory the harness runs in
-//! ([Wave 3, Step 7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
+//! ([Wave 3, Step 7](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
 
 use std::path::Path;
 

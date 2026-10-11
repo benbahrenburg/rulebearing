@@ -1,9 +1,9 @@
 //! `serve --lsp` driven by a headless client over the binary's standard input and output, and
 //! both servers checked for sockets.
 //!
-//! - Plan: [Wave 3, Step 20](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)
+//! - Plan: [Wave 3, Step 20](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)
 //!   ("fixture transcripts; an editor smoke test in CI using a headless LSP client"),
-//!   [§ 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)
+//!   [§ 1.7](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)
 //!   ("`serve` opens no socket")
 //! - Requirement: [FR-CLI-06](../../../docs/prd.md#fr-cli-06), [NFR-SEC-01](../../../docs/prd.md#nfr-sec-01)
 //!

@@ -4,8 +4,8 @@
 //! - Decisions: [ADR-0006](../../../../docs/adr/0006-embedded-quickjs-config-evaluator.md),
 //!   [ADR-0027](../../../../docs/adr/0027-pure-path-and-url-modules-in-the-config-sandbox.md),
 //!   [ADR-0030](../../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)
-//! - Plan: [Wave 3, Step 7](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
-//!   the [`plugin:<path>` contract](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Plan: [Wave 3, Step 7](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
+//!   the [`plugin:<path>` contract](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //! - Requirements: [FR-OUT-01](../../../../docs/prd.md#fr-out-01), [NFR-SEC-01](../../../../docs/prd.md#nfr-sec-01)
 //! - Coverage: [coverage § Output types](../../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types),
 //!   row `plugin:<path>`

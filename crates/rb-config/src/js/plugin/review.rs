@@ -1,5 +1,5 @@
 //! The security review's findings on the plugin sandbox, each pinned by a test
-//! ([Wave 3, Step 7](../../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
+//! ([Wave 3, Step 7](../../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
 
 use super::*;
 use std::error::Error;

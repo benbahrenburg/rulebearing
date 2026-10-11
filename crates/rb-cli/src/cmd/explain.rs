@@ -4,7 +4,7 @@
 //!   [design § The agentic engineering hat](../../../../docs/artifacts/design.md#the-agentic-engineering-hat-turn-two) (`explain --plain`)
 //! - Decision: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md)
 //! - Plan: [Wave 1, Step 14](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-14-rules---json-explain-explain---plain-test-can-import-1e)
-//! - Plan: [Wave 3, Step 19](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)
+//! - Plan: [Wave 3, Step 19](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)
 //!   (`--json`, the MCP tool's answer)
 //! - Requirement: [FR-CLI-01](../../../../docs/prd.md#fr-cli-01), [FR-CLI-06](../../../../docs/prd.md#fr-cli-06)
 //!

@@ -1,6 +1,6 @@
 // rb-node's tests: the programmatic API of the `rulebearing` package (wrappers/npm/src/api) over
 // the addon built from this crate, held to the 70% line floor (docs/adr/0018-test-coverage-threshold.md).
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 22.
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 22.
 // Forked workers, not threads: the tests change the working directory, as a script calling
 // dependency-cruiser's `cruise()` from its repository does.
 import { defineConfig } from 'vitest/config';

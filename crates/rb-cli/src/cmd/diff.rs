@@ -5,9 +5,9 @@
 //!   ("`rulebearing diff <old.json> <new.json>` prints added and removed edges and new
 //!   violations, for a review comment; `--base main` does the same against the base branch's
 //!   cruise")
-//! - Contract: [Wave 3 plan § 1.5](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Contract: [Wave 3 plan § 1.5](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //!   (the command line and the JSON shape)
-//! - Plan: [Wave 3, Step 4](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
+//! - Plan: [Wave 3, Step 4](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
 //! - Decisions: [ADR-0015](../../../../docs/adr/0015-stable-violation-id.md) (violations are
 //!   matched by stable id), [ADR-0008](../../../../docs/adr/0008-exit-code-contract.md) and
 //!   [ADR-0030](../../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md) (the exit
@@ -49,7 +49,7 @@
 //! configuration, an unknown output type or a wrong command line exit 3.
 //! With `--exit-code`, a side read in source mode refuses the gate, exit 2, unless
 //! `--allow-approximate-gate` ([`crate::exit::gate`];
-//! [Wave 3, Step 15](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
+//! [Wave 3, Step 15](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
 
 use std::path::{Path, PathBuf};
 

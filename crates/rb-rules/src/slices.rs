@@ -361,7 +361,7 @@ fn members<'a>(
 }
 
 /// The slices a pattern makes, for drawing them (the `plantuml` reporter,
-/// [Wave 3, Step 9](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)):
+/// [Wave 3, Step 9](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)):
 /// what `ArchUnitNET`'s `Matching` or `MatchingWithPackages` gives `PlantUmlFileBuilder`.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Slicing {
@@ -488,7 +488,7 @@ pub fn by_path(rule: &SliceRule) -> bool {
 
 /// The slice `name` (a module path, a namespace or a dotted module name) falls in under `rule`,
 /// exactly as [`evaluate`] assigns a member: `Ok(None)` when it falls in none. `changelog` uses it
-/// to tell an edge between two slices ([Wave 3, Step 13](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
+/// to tell an edge between two slices ([Wave 3, Step 13](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
 ///
 /// # Errors
 /// [`ElementError::Pattern`] for a pattern `ArchUnitNET` would refuse, [`ElementError::Slice`]

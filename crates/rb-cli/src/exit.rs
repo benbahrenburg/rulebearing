@@ -2,8 +2,8 @@
 //! ([ADR-0008](../../../docs/adr/0008-exit-code-contract.md)).
 //!
 //! - Contract: [Wave 1 plan § 1.5](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#15-interfaces-and-contracts-frozen-by-this-wave)
-//! - Strict mode: [Wave 3, Step 5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict),
-//!   [Wave 3 plan § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Strict mode: [Wave 3, Step 5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict),
+//!   [Wave 3 plan § 1.5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //! - Requirement: [FR-CORE-06](../../../docs/prd.md#fr-core-06)
 //!
 //! ADR-0008 leaves one ambiguity on purpose: a run with exactly two or three error violations
@@ -14,7 +14,7 @@
 //!
 //! A run whose graph was read in source mode is approximate, and an approximate run never
 //! decides a gate ([ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md),
-//! [Wave 3, Step 15](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)):
+//! [Wave 3, Step 15](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)):
 //! [`gate`] turns the verdict of one that would into exit 2 with
 //! [`APPROXIMATE_REASON`], unless `--allow-approximate-gate` asks for the count in a local
 //! script.

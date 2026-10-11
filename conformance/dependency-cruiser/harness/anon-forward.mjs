@@ -2,7 +2,7 @@
 // `#report/anon/anonymize-path.mjs` in conformance gate 1 layer 3: each call is answered by
 // `rulebearing validate`, with the state upstream's module keeps between calls held here.
 //
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 6. Protocol: the
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 6. Protocol: the
 // header of shim.mjs, and of crates/rb-report/src/conformance.rs for the stateful calls.
 //
 // Upstream's anonymiser takes words off the front of the array it is given, and remembers every

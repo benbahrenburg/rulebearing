@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Rebuilds the top-level statements fixture: deterministic, CI path-mapped (documents become
 # /_/..., relative to the repository root), portable PDB. Commit built/ with the new hashes in
-# PROVENANCE.md. Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 14.
+# PROVENANCE.md. Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 14.
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 dotnet build "$here/src/TopLevel.csproj" --configuration Release --output "$here/built" \

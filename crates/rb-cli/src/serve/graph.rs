@@ -1,8 +1,8 @@
 //! The warm graph: the cruise result `serve --mcp` and `serve --lsp` answer from, kept in memory
 //! and read again only when it changes.
 //!
-//! - Plan: [Wave 3, Step 18](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp),
-//!   [§ MCP and LSP over one warm graph](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#mcp-and-lsp-over-one-warm-graph)
+//! - Plan: [Wave 3, Step 18](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp),
+//!   [§ MCP and LSP over one warm graph](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#mcp-and-lsp-over-one-warm-graph)
 //! - Decision: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md) (the servers are thin
 //!   loops over the commands and the cached graph)
 //! - Requirement: [FR-CLI-06](../../../../docs/prd.md#fr-cli-06)

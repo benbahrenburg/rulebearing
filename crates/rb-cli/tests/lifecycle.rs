@@ -2,10 +2,10 @@
 //! them, `rules --unused` over committed snapshots, and the lifecycle fields in `cruise` and
 //! `config lint`.
 //!
-//! - Plan: [Wave 3, Steps 12 and 13](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
+//! - Plan: [Wave 3, Steps 12 and 13](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
 //!   (`--unused` over three fixture snapshots; the insufficient-history case; a committed fixture
 //!   pair and the expected Markdown output, byte-compared)
-//! - Contract: [Wave 3 plan § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Contract: [Wave 3 plan § 1.5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //!   (the snapshot's shape)
 //! - Decision: [ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md) (a deprecated
 //!   rule that matches nothing still fails)

@@ -5,7 +5,7 @@ The packages are npm's, NuGet's and PyPI's, built from the presets in the tree; 
 where ``extends: rulebearing-rules/nextjs`` finds it. The release workflow's install checks do the
 same with the packages a run built, on macOS, Linux and Windows (docs/release.md).
 
-- Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 23 ("the release
+- Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 23 ("the release
   dry run packs the three library packages and installs each in an empty project, where
   ``extends: rulebearing-rules/nextjs`` resolves").
 - Decision: docs/adr/0071-the-rule-library-ships-from-this-repository.md.

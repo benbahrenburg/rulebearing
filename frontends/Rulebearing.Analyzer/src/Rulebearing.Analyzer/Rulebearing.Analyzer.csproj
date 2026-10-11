@@ -2,7 +2,7 @@
   <!--
     Rulebearing.Analyzer: dependency and element rules from rulebearing.yaml, evaluated on the
     semantic model at compile time and reported as RB0001 and RB0002 with the rule's fix.
-    Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21.
+    Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 21.
     Requirement: docs/prd.md#fr-dist-04. Decision: docs/adr/0021-agent-surface-cli-first.md.
   -->
   <PropertyGroup>

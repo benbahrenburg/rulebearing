@@ -5,7 +5,7 @@
 //!   the fixed vectors below, taken from Node, and by conformance gate 1 layer 3's `html` oracle
 //!   comparison, whose mocks repeat module names
 //!   ([ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md))
-//! - Plan: [Wave 3, Step 6](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+//! - Plan: [Wave 3, Step 6](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
 //!
 //! dependency-cruiser's `html` reporter sorts with `(a, b) => key(a) > key(b) ? 1 : -1`, which

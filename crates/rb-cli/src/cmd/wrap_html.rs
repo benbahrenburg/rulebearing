@@ -7,7 +7,7 @@
 //!   `crates/rb-cli/tests/fixtures/wrap-html/`
 //! - Coverage: [coverage § Command line](../../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#command-line),
 //!   row `depcruise-wrap-stream-in-html`
-//! - Plan: [Wave 3, Step 8](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+//! - Plan: [Wave 3, Step 8](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
 //! - Requirement: [FR-CLI-08](../../../../docs/prd.md#fr-cli-08)
 //!
 //! Upstream streams rather than buffers, because the SVG can be large; so does the binary: its

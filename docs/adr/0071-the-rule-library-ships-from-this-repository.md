@@ -2,7 +2,7 @@
 
 - **Status:** Accepted (2026-10-10, by the owner: "let's revise the plan to keep everything in a single repo")
 - **Date:** 2026-10-10
-- **Amends:** [FR-REACH-04](../prd.md#fr-reach-04) ("`rulebearing-rules` MUST be a public repository ... versioned with a changelog"), and [plan 0003](../plans/pending/0003-wave-3-operations-surface-inner-loop.md) Step 23 and its "Where framework presets live" decision
+- **Amends:** [FR-REACH-04](../prd.md#fr-reach-04) ("`rulebearing-rules` MUST be a public repository ... versioned with a changelog"), and [plan 0003](../plans/implemented/0003-wave-3-operations-surface-inner-loop.md) Step 23 and its "Where framework presets live" decision
 - **Derives from:** [design § The developer relations hat](../artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo) ("A rule improves in one place; the presets live there"); [ADR-0020](0020-single-name-across-registries.md); [ADR-0068](0068-nuget-publishes-by-trusted-publishing.md), [ADR-0069](0069-npm-publishes-by-trusted-publishing.md)
 - **Constrains:** `presets/frameworks/`, `.github/workflows/release.yml`, `scripts/sync-rule-library.sh`, [docs/release.md](../release.md), the `benbahrenburg/rulebearing-rules` repository
 - **Requirements:** [FR-REACH-04](../prd.md#fr-reach-04), [FR-DIST-01](../prd.md#fr-dist-01)

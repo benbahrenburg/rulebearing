@@ -3,9 +3,9 @@
 //! their file states and, when no file's code layer changed, the linked code layer are moved into
 //! the result instead of being rebuilt.
 //!
-//! - Plan: [Wave 3, Step 16](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
+//! - Plan: [Wave 3, Step 16](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
 //!   (`guard --watch` re-checks a saved file on the private-monorepo-sized tree),
-//!   [Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
+//!   [Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
 //!   (incremental extraction equals full extraction)
 //! - Requirements: [NFR-PERF-03](../../../docs/prd.md#nfr-perf-03) (a saved file re-checked in
 //!   under 100 ms), [FR-CLI-05](../../../docs/prd.md#fr-cli-05)

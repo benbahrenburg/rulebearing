@@ -5,7 +5,7 @@
 //!   [ADR-0003](../../../docs/adr/0003-dotnet-extractor-fallback.md) (the C# fallback trigger)
 //! - Plans: [Wave 0, Spike B](../../../docs/plans/pending/0000-wave-0-spike.md),
 //!   [Wave 2, sub-wave 2A](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md),
-//!   [Wave 3](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md) (`--mode source`)
+//!   [Wave 3](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md) (`--mode source`)
 //! - Requirements: [FR-EXT-DN-01](../../../docs/prd.md#fr-ext-dn-01) to [FR-EXT-DN-04](../../../docs/prd.md#fr-ext-dn-04)
 //! - Specification: ECMA-335 partition II; the portable PDB format; `ArchUnitNET`'s `TestAssembly`
 //!   ([ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md))
@@ -361,7 +361,7 @@ fn content_hash(bytes: &[u8]) -> u64 {
 /// folder holds the analysed assemblies, their PDBs, and the assemblies beside them that
 /// `includeDependencies` and the referenced-type descriptions read, so the list covers them all
 /// (and may name a few the run does not open). It is what an incremental run keys the .NET
-/// graph on ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// graph on ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
 /// the assembly is the unit of change.
 ///
 /// # Errors
@@ -399,7 +399,7 @@ pub fn assembly_inputs(root: &Path, options: &DotnetOptions) -> Result<Vec<PathB
 
 /// The solution and every project file discovery under `root` reads, sorted: a change to one
 /// can move an assembly or rename it, so a cache treats each as structural
-/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 /// A directly loaded assembly (`assemblies`, `directories`) has no project file and is not
 /// listed.
 ///

@@ -5,7 +5,7 @@
 //!   (`query`, "edges matching a from and to pair", one of the MCP server's tools)
 //! - Decision: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md) (every MCP tool is
 //!   a command first)
-//! - Plan: [Wave 3, Step 19](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)
+//! - Plan: [Wave 3, Step 19](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)
 //! - Requirement: [FR-CLI-06](../../../../docs/prd.md#fr-cli-06)
 //!
 //! The edges are the ones `count` counts, from the same graph (`--graph`, the saved

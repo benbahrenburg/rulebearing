@@ -2,7 +2,7 @@
 //! code layer, so the command line may hand it one without: the list cannot leave out a reporter
 //! that reads the layer.
 //!
-//! - Plan: [Wave 3, 3G](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#wave-3g-the-rule-library-the-scale-table-adoption-action-5)
+//! - Plan: [Wave 3, 3G](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#wave-3g-the-rule-library-the-scale-table-adoption-action-5)
 //!   (peak memory on compiled .NET graphs)
 //! - Requirement: [NFR-PERF-03](../../../docs/prd.md#nfr-perf-03)
 

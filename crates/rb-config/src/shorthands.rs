@@ -11,7 +11,7 @@
 //! depend on a module in another. `rulebearing config expand` prints the result.
 //!
 //! An entry's lifecycle fields, `since`, `deprecated` and `replacedBy`
-//! ([Wave 3, Step 12](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)),
+//! ([Wave 3, Step 12](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)),
 //! are copied onto every rule it expands to, as `comment` and `fix` are.
 
 use serde_json::{Map, Value, json};

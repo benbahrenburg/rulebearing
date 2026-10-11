@@ -2,7 +2,7 @@
 //! `cruise` and `fmt` with their `reporterOptions`, and `wrap-html` byte-compared with the page
 //! dependency-cruiser's `depcruise-wrap-stream-in-html` wrote for the same SVG.
 //!
-//! - Plan: [Wave 3, Steps 6 and 8](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+//! - Plan: [Wave 3, Steps 6 and 8](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
 //! - Coverage: [coverage § Output types](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types),
 //!   [coverage § Command line](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)
 //! - Contracts: [ADR-0030](../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md),

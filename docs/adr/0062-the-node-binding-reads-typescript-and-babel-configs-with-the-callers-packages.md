@@ -3,7 +3,7 @@
 - **Status:** Accepted (2026-10-09, by the owner, choosing this option over a Rust reimplementation and over leaving the two out)
 - **Date:** 2026-10-09
 - **Derives from:** [ADR-0002](0002-rust-as-implementation-language.md) (Rust, with napi-rs for the Node binding), [ADR-0010](0010-crate-layout-and-extractor-boundary.md) (`rb-node` depends on `rb-cli` only), [ADR-0020](0020-single-name-across-registries.md) (one `rulebearing` package), [coverage § Programmatic API](../artifacts/dependency-cruiser-18.2.0-coverage.md#programmatic-api)
-- **Supersedes:** nothing. It narrows one sentence of [plan 0003, Step 22](../plans/pending/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node): "each delegating to `rb-cli`'s library entry points" holds for six of the eight exports.
+- **Supersedes:** nothing. It narrows one sentence of [plan 0003, Step 22](../plans/implemented/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node): "each delegating to `rb-cli`'s library entry points" holds for six of the eight exports.
 - **Constrains:** `crates/rb-node`, `crates/rb-cli/src/api.rs`, `wrappers/npm/src/api/`, the platform packages' contents ([docs/release.md](../release.md))
 - **Implemented by:** plan 0003, Step 22
 - **Requirements:** [FR-DIST-02](../prd.md#fr-dist-02)

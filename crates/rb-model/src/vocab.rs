@@ -262,7 +262,7 @@ vocabulary! {
         None => "none",
         /// Read from the source file itself by `--mode source`, without a build: the module's
         /// edges are namespace-level and each is marked `approximate`
-        /// ([Wave 3, Step 14](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
+        /// ([Wave 3, Step 14](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
         Source => "source",
     }
 }

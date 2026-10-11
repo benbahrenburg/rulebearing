@@ -10,7 +10,7 @@
 
 ## Context
 
-NFR-PERF-03 says `guard --watch` MUST re-check a saved file in under 100 ms and names no machine. [Plan 0003 § 1.7](../plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes) asserts it on the 5,500-module synthetic tree.
+NFR-PERF-03 says `guard --watch` MUST re-check a saved file in under 100 ms and names no machine. [Plan 0003 § 1.7](../plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes) asserts it on the 5,500-module synthetic tree.
 
 Sub-wave 3D brought the check on that tree from about 470 ms to a p95 of 88 to 98 ms on the maintainer's laptop (Apple M2 Pro, twelve threads), by evaluating the rules in parallel among other changes. The first CI run of the same measurement, on GitHub's `ubuntu-latest` (AMD EPYC 7763, 4 vCPUs), gave a p95 of 255 ms. The laptop answers in about 130 ms with one thread; the runner's four virtual cores take 190 ms. More threads do not close that gap. The check would have to do several times less work.
 

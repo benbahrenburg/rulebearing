@@ -1,7 +1,8 @@
 // The rule file the analyzer reads: rulebearing.yaml, native format, the dependency and element
 // families only.
 //
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21 (RuleFileReader).
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md,
+// Step 21 (RuleFileReader).
 // Source: crates/rb-config/src/elements.rs (the element rule's keys, split_key, the vocabulary and
 // the operand kinds), which this follows for the concepts it evaluates.
 //

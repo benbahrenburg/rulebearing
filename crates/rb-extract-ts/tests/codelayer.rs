@@ -125,7 +125,7 @@ fn the_layer_can_be_switched_off() -> Result<(), Box<dyn Error>> {
 }
 
 /// Incremental extraction over the code-layer tree
-/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
 /// every file unchanged, and each file changed on its own, gives the same modules and the same
 /// linked code layer as the full run, the reused files' layers coming from the kept states.
 #[test]

@@ -4,7 +4,8 @@
 # warm cache (testbeds/bench/stop_hook.py). The nightly runs it on dotnet/aspnetcore in source mode
 # and fails when the p95 reaches 2 s.
 #
-# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 17 and section 1.7.
+# Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md,
+# Step 17 and section 1.7.
 # Requirement: docs/prd.md#nfr-perf-02. Figures: docs/perf.md.
 # Usage: testbeds/bench/stop-hook.sh <owner/repo> <configuration> [results-file]
 #   (default results file: testbeds/results/stop-hook.json)

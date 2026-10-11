@@ -2,9 +2,9 @@
 //! only the reporter runs.
 //!
 //! - Architecture: [Performance model](../../../../docs/architecture.md#performance-model)
-//! - Plan: [Wave 3, Step 1](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
+//! - Plan: [Wave 3, Step 1](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
 //!   ("a warm run is byte-identical to a cold run ... and at least 5x faster"),
-//!   [§ 1.7](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)
+//!   [§ 1.7](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)
 //! - Coverage: [coverage § Options](../../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)
 //!   (row `cache`: dependency-cruiser serves the whole evaluated result when nothing changed)
 //! - Decision: [ADR-0008](../../../../docs/adr/0008-exit-code-contract.md) (a doubtful entry is a

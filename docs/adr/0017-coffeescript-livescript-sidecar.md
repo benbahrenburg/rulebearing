@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § What each extractor has to get right](../artifacts/design.md#what-each-extractor-has-to-get-right), [§ Open questions](../artifacts/design.md#open-questions) (the sidecar); [dependency-cruiser coverage § Extraction and resolution](../artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution)
 - **Constrains:** [architecture.md § Extractors](../architecture.md#extractors)
-- **Implemented by:** [Wave 3 plan](../plans/pending/0003-wave-3-operations-surface-inner-loop.md)
+- **Implemented by:** [Wave 3 plan](../plans/implemented/0003-wave-3-operations-surface-inner-loop.md)
 
 ## Context
 

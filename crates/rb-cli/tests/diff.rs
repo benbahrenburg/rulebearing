@@ -1,11 +1,11 @@
 //! `diff`, end to end: the committed fixture pair and its three renderings, `--base` against a
 //! two-commit repository, and the error paths.
 //!
-//! - Plan: [Wave 3, Step 4](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
+//! - Plan: [Wave 3, Step 4](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
 //!   (a fixture pair with one added edge, one removed edge, one new violation, one resolved
 //!   violation and one ratchet that fell; `--base` against a two-commit fixture repository; the
 //!   `markdown` rendering committed as the expected output for the wave 4 pull-request comment)
-//! - Contract: [Wave 3 plan § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Contract: [Wave 3 plan § 1.5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //! - Decisions: [ADR-0015](../../../docs/adr/0015-stable-violation-id.md),
 //!   [ADR-0008](../../../docs/adr/0008-exit-code-contract.md)
 //! - Requirement: [FR-CLI-01](../../../docs/prd.md#fr-cli-01)

@@ -599,7 +599,7 @@ fn diagram_paths<'x>(expr: &'x Expr, out: &mut Vec<&'x str>) {
 /// Every `.puml` path the rules of `config` read, as written (relative to the configuration's
 /// folder), sorted and each once: every `adhereToPlantUmlDiagram` in an element rule's `should`
 /// (a condition, never allowed in `select.where`), and every diagram rule's `adhereTo`. A cache keys an evaluation on these
-/// files ([Wave 3, Step 1](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// files ([Wave 3, Step 1](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 pub fn diagram_files(config: &rb_config::Config) -> Vec<String> {
     let mut paths: Vec<&str> = Vec::new();
     for rule in &config.rules.elements {

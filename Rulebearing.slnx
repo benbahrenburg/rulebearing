@@ -1,6 +1,7 @@
 <!-- Every C# project in the repository, so `cargo xtask lint` runs one `dotnet format` over all of
      them (docs/adr/0023-documentation-link-and-lint-gates.md). Wave 2 added the test adapter and
-     wave 3 the analyzer (docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21)
+     wave 3 the analyzer (docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md,
+     Step 21)
      and the rule library's content package (Step 23). -->
 <Solution>
   <Folder Name="/adapters/">

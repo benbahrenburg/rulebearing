@@ -2,8 +2,8 @@
 //! the stored extraction it names.
 //!
 //! - Architecture: [Performance model](../../../../docs/architecture.md#performance-model)
-//! - Plan: [Wave 3 § 1.5](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
-//!   (the manifest's shape), [Step 1](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
+//! - Plan: [Wave 3 § 1.5](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//!   (the manifest's shape), [Step 1](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
 //!   (`load` and `store`)
 //! - Coverage: [coverage § Options](../../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)
 //!   (row `cache`: `folder`, `strategy`, `compress`)

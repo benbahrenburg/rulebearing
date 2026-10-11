@@ -4,8 +4,8 @@
 //! - Source: [design § The developer relations hat](../../../../docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo)
 //!   ("the architecture diff between two revisions in words: new edges across boundaries, retired
 //!   rules, ratchets that fell")
-//! - Contract: [Wave 3 plan § 1.5](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
-//! - Plan: [Wave 3, Step 13](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
+//! - Contract: [Wave 3 plan § 1.5](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Plan: [Wave 3, Step 13](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
 //! - Decisions: [ADR-0030](../../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)
 //!   (a report exits 0)
 //! - Requirement: [FR-CLI-07](../../../../docs/prd.md#fr-cli-07)

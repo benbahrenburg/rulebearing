@@ -18,7 +18,7 @@
     },
     "Affected": {
       "additionalProperties": false,
-      "description": "`summary.affected`: the receipt of an `--affected` run\n([Wave 3, Step 3](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).",
+      "description": "`summary.affected`: the receipt of an `--affected` run\n([Wave 3, Step 3](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).",
       "properties": {
         "changed": {
           "description": "Every file the version control reports as changed since the revision (committed,\nstaged, unstaged or untracked, deleted files included), relative to the cruise's base\ndirectory, sorted.",
@@ -165,7 +165,7 @@
       "type": "object"
     },
     "CacheStrategy": {
-      "description": "How a cache decides what changed since the entry was written: dependency-cruiser's\n`cache.strategy` and `--cache-strategy`\n([coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),\n[Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).",
+      "description": "How a cache decides what changed since the entry was written: dependency-cruiser's\n`cache.strategy` and `--cache-strategy`\n([coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),\n[Wave 3, Step 1](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).",
       "oneOf": [
         {
           "const": "metadata",
@@ -1728,7 +1728,7 @@
     },
     "SidecarReceipt": {
       "additionalProperties": false,
-      "description": "`summary.sidecar`: the tool that extracted the CoffeeScript and LiveScript files, its version,\nand how many files it extracted\n([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).",
+      "description": "`summary.sidecar`: the tool that extracted the CoffeeScript and LiveScript files, its version,\nand how many files it extracted\n([Wave 3, Step 10](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).",
       "properties": {
         "files": {
           "description": "The files in the graph whose dependencies it extracted.",
@@ -1765,7 +1765,7 @@
               "type": "null"
             }
           ],
-          "description": "Additive: what `--affected` compared and which modules it kept\n([Wave 3 plan § 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes))."
+          "description": "Additive: what `--affected` compared and which modules it kept\n([Wave 3 plan § 1.7](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes))."
         },
         "cache": {
           "anyOf": [
@@ -1776,7 +1776,7 @@
               "type": "null"
             }
           ],
-          "description": "Additive: whether the extraction came from the `--cache` entry, and how its freshness was\nchecked; absent when the run did not use the cache\n([Wave 3 § 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes))."
+          "description": "Additive: whether the extraction came from the `--cache` entry, and how its freshness was\nchecked; absent when the run did not use the cache\n([Wave 3 § 1.7](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes))."
         },
         "environment": {
           "anyOf": [
@@ -1848,7 +1848,7 @@
           "type": "object"
         },
         "plugins": {
-          "description": "Additive: the `plugin:<path>` reporter modules the run rendered through, each relative to\nthe repository root ([Wave 3 plan § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)).",
+          "description": "Additive: the `plugin:<path>` reporter modules the run rendered through, each relative to\nthe repository root ([Wave 3 plan § 1.5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)).",
           "items": {
             "type": "string"
           },
@@ -1884,7 +1884,7 @@
               "type": "null"
             }
           ],
-          "description": "Additive: the Node sidecar's part in the graph, when `--sidecar node` extracted any file\n([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md),\n[Wave 3 § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes))."
+          "description": "Additive: the Node sidecar's part in the graph, when `--sidecar node` extracted any file\n([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md),\n[Wave 3 § 1.5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes))."
         },
         "totalCruised": {
           "description": "Modules cruised.",

@@ -1,9 +1,9 @@
 //! `diff`: what changed between two cruise results, and its three renderings (`json`,
 //! `markdown`, `agent`).
 //!
-//! - Contract: [Wave 3 plan § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Contract: [Wave 3 plan § 1.5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //!   (the `diff` JSON shape)
-//! - Plan: [Wave 3, Step 4](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
+//! - Plan: [Wave 3, Step 4](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
 //! - Source: [design § The subcommands a guard reaches for](../../../docs/artifacts/design.md#the-subcommands-a-guard-reaches-for)
 //!   ("prints added and removed edges and new violations, for a review comment")
 //! - Decisions: [ADR-0015](../../../docs/adr/0015-stable-violation-id.md) (violations are matched

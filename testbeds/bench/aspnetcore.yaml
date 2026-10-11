@@ -1,5 +1,5 @@
 # The rules the Stop-hook benchmark evaluates on dotnet/aspnetcore (testbeds/bench/stop_hook.py;
-# plan 0003, Step 17, docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md). `init`
+# plan 0003, Step 17, docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md). `init`
 # needs built assemblies and the benchmark measures a repository that was never built, so the
 # configuration is written here: the recommended preset (no-circular, not-to-unresolvable,
 # no-orphans) and three layering rules aspnetcore's own structure keeps. Mvc, Servers, Middleware

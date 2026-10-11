@@ -2,7 +2,7 @@
 //! reports, the report narrowed to the changed modules and the modules that reach them, the
 //! receipt, the error paths, and the .NET mapping of a changed source file to its types' modules.
 //!
-//! - Plan: [Wave 3, Step 3](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
+//! - Plan: [Wave 3, Step 3](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
 //!   ("a .NET fixture where a changed `.cs` file affects a partial class across two files")
 //! - Coverage: [coverage § Command line](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)
 //!   row `--affected [revision]`

@@ -701,7 +701,7 @@ fn solution_mode_finds_referenced_assemblies_beside_the_built_output()
 }
 
 /// The assemblies and PDBs an incremental run keys the .NET graph on
-/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
 /// the analysed assembly's folder, so the referenced `Sample.Core.dll` read beside it counts too.
 #[test]
 fn the_inputs_are_every_assembly_and_pdb_beside_the_analysed_ones()

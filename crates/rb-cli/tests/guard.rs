@@ -3,9 +3,9 @@
 //! checked again within 100 ms, a structural change read in full, a `.cs` file in source mode,
 //! and a clean stop when standard input closes, with nothing written outside `.graph/`.
 //!
-//! - Plan: [Wave 3, Step 16](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
+//! - Plan: [Wave 3, Step 16](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
 //!   ("an integration test that saves a file and asserts the findings file within 100 ms ...;
-//!   clean exit on stdin close; no writes outside `.graph/`"), [§ 1.6](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make)
+//!   clean exit on stdin close; no writes outside `.graph/`"), [§ 1.6](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make)
 //!   (younger than 5 s and the same configuration hash)
 //! - Requirement: [FR-CLI-05](../../../docs/prd.md#fr-cli-05), [NFR-PERF-03](../../../docs/prd.md#nfr-perf-03)
 

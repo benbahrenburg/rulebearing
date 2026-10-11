@@ -1,7 +1,7 @@
 //! JSON-RPC 2.0 messages and the two framings `serve` speaks over standard input and output: one
 //! message per line for MCP, `Content-Length` headers for LSP.
 //!
-//! - Plan: [Wave 3, Steps 19 and 20](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)
+//! - Plan: [Wave 3, Steps 19 and 20](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)
 //!   (stdio only, no socket)
 //! - Requirement: [FR-CLI-06](../../../../docs/prd.md#fr-cli-06), [NFR-SEC-01](../../../../docs/prd.md#nfr-sec-01)
 //!

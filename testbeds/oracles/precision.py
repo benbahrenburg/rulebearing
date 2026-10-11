@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT licence: see LICENSE.
 """Source mode's edges against compiled mode's on one .NET oracle: precision and recall.
 
-Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 14 ("a precision
+Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 14 ("a precision
 test that runs source mode and compiled mode over each .NET oracle and reports precision and
 recall of source edges against compiled edges", at or above 90% precision) and the 3D status
 table (`source-mode-precision.json`, published by the nightly). Requirement:

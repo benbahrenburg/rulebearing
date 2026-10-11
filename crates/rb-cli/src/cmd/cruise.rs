@@ -11,7 +11,7 @@
 //!
 //! `--affected [revision]` narrows the report to the changed modules and the modules that reach
 //! them ([`crate::affected`]); `--exit-code-mode strict` shifts the count to `10 + n`
-//! ([Wave 3, Step 5](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+//! ([Wave 3, Step 5](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 //!
 //! A gating reporter exits with the error count ([ADR-0030](../../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)),
 //! every reporter exits 2 when the run cannot be trusted (an empty cruise, an unsupported file,
@@ -21,7 +21,7 @@
 //! a plugin as it serves any reporter, since the verdict does not depend on the reporter; the
 //! rendered layer never serves or stores a plugin's output, because that output depends on the
 //! plugin's code and everything it requires, which the key does not cover
-//! ([Wave 3, Step 7](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
+//! ([Wave 3, Step 7](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
 //!
 //! `--from-hook` answers as a Claude Code `Stop` hook ([docs/agents.md](../../../../docs/agents.md#the-hooks)):
 //! with error findings it prints `{"decision": "block", "reason": <the agent report>}`, which
@@ -32,7 +32,7 @@
 //! A run read in source mode whose reporter gates is refused, exit 2 with
 //! `approximate-mode-not-a-gate`, unless `--allow-approximate-gate`; `--from-hook` still answers
 //! with it, since the hook is the inner loop source mode is for ([`crate::exit::gate`];
-//! [Wave 3, Step 15](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
+//! [Wave 3, Step 15](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
 
 use std::fmt::Write as _;
 
@@ -163,7 +163,7 @@ pub struct Given {
 
 /// What `cruise --from-hook` answers for an extraction the caller made, without reading stdin
 /// or the guard's findings: the answer the Stop hook would give, exit 0
-/// ([Wave 3, Step 16](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
+/// ([Wave 3, Step 16](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
 pub fn hook_answer(ctx: &mut Context<'_>, args: &CruiseArgs, given: Given) -> Outcome {
     let mut args = args.clone();
     args.from_hook = true;
@@ -186,7 +186,7 @@ pub struct Answer {
 
 /// A cruise of `args.paths` under `config`, a configuration the caller built in memory: the
 /// command line's run, reporter and verdict, with the output returned rather than written. The
-/// Node binding's `cruise()` ([Wave 3, Step 22](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)).
+/// Node binding's `cruise()` ([Wave 3, Step 22](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)).
 ///
 /// # Errors
 /// The command line's [`Outcome`] when the run cannot be trusted or the configuration is invalid

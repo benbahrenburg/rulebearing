@@ -2,7 +2,7 @@
 //! `adhereTo` diagram rule over the file it wrote, which must report nothing) over every
 //! committed .NET graph, `--from` on `cruise` and `fmt`, and the refusals.
 //!
-//! - Plan: [Wave 3, Step 9](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+//! - Plan: [Wave 3, Step 9](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
 //!   (the round trip is the reporter's acceptance test, § 1.3 row FR-OUT-02)
 //! - Coverage: [`ArchUnitNET` § `PlantUML`](../../../docs/artifacts/archunitnet-0.13.4-coverage.md#plantuml)
 //! - Decision: [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md)

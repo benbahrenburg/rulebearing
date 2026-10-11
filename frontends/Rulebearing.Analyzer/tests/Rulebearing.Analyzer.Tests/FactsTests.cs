@@ -1,6 +1,6 @@
 // A type's facts as the compiled-mode extractor would record them (crates/rb-extract-dotnet/src/codelayer.rs):
 // metadata names, the kind table, raw flags, the base chain, interfaces and dependencies.
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21.
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 21.
 
 namespace Rulebearing.Analyzer.Tests;
 

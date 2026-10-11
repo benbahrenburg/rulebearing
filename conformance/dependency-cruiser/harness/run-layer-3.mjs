@@ -6,7 +6,7 @@
 //
 // Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 12;
 // docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 10;
-// docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 6. Decision:
+// docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 6. Decision:
 // docs/adr/0009-conformance-suites-as-specification.md.
 // Usage: node run-layer-3.mjs <dependency-cruiser checkout> [spec ...]
 import { readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';

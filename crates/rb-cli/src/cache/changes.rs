@@ -2,9 +2,9 @@
 //! entry records.
 //!
 //! - Architecture: [Performance model](../../../../docs/architecture.md#performance-model)
-//! - Plan: [Wave 3 § 1.4](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#the-cache-and---affected)
+//! - Plan: [Wave 3 § 1.4](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#the-cache-and---affected)
 //!   ("`metadata` uses git status and file metadata to decide what changed, `content` hashes
-//!   every file"), [Step 1](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
+//!   every file"), [Step 1](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
 //! - Coverage: [coverage § Options](../../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)
 //!   (row `cache`), [coverage § Command line](../../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)
 //!   (`--cache-strategy`)
@@ -649,7 +649,7 @@ pub fn package_manifests<'a>(
 /// the clock that stamps files ([`Start::now`]). Windows stamps a file with a clock that ticks
 /// about every 16 ms, so a file edited just after a run started can carry a time before the
 /// precise start; it carries one no earlier than a file written at the start, which is what
-/// `file_clock` is ([plan 0003, 3G](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#wave-3g-the-rule-library-the-scale-table-adoption-action-5)).
+/// `file_clock` is ([plan 0003, 3G](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#wave-3g-the-rule-library-the-scale-table-adoption-action-5)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Start {
     /// The system clock, nanoseconds since the epoch.

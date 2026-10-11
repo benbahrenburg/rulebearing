@@ -10,11 +10,11 @@
 //! `fmt` never reads the source tree: its only input is the result. As `depcruise-fmt`, it exits
 //! 0 unless `--exit-code` asks for the error count; an input that is not a result exits 2.
 //! `--exit-code-mode strict` shifts the count to `10 + n`
-//! ([Wave 3, Step 5](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+//! ([Wave 3, Step 5](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 //! `-T plugin:<path>` renders in the sandbox, and with `--exit-code` the plugin's `exitCode` is the
-//! count ([`crate::plugin`]; [Wave 3, Step 7](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
+//! count ([`crate::plugin`]; [Wave 3, Step 7](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
 //! A saved result read in source mode never gates: with `--exit-code` it exits 2 unless
-//! `--allow-approximate-gate` ([`crate::exit::gate`]; [Wave 3, Step 15](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
+//! `--allow-approximate-gate` ([`crate::exit::gate`]; [Wave 3, Step 15](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
 
 use rb_report::ReportOptions;
 use rb_rules::graph::filters::{Filter, Filters};
@@ -166,7 +166,7 @@ pub struct Answer {
 
 /// `text`, a saved cruise result, formatted as `args` ask, with `--exit-code`'s count and the
 /// output returned rather than written. The Node binding's `format()`
-/// ([Wave 3, Step 22](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)).
+/// ([Wave 3, Step 22](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)).
 ///
 /// # Errors
 /// The command line's [`Outcome`] when the result cannot be read or reported (exit 2 or 3), with

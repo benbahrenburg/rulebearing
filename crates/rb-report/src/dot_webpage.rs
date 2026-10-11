@@ -12,7 +12,7 @@
 //! - Coverage: [coverage § Output types](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types),
 //!   row `x-dot-webpage`; [coverage § Command line](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#command-line),
 //!   row `depcruise-wrap-stream-in-html`
-//! - Plan: [Wave 3, Step 6 and Step 8](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+//! - Plan: [Wave 3, Step 6 and Step 8](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01), [FR-CLI-08](../../../docs/prd.md#fr-cli-08)
 //!
 //! This crate does not start processes. The reporter asks a [`Graphviz`] for the two calls

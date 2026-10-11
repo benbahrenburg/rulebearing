@@ -1,7 +1,7 @@
 //! Fuzzes the `--cache` entry reader: the manifest, and the stored extraction it names, plain and
 //! compressed. Neither may make a run panic; each is either an entry or a named miss.
 //!
-//! - Plan: [Wave 3 § 1.7](../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)
+//! - Plan: [Wave 3 § 1.7](../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)
 //!   ("fuzz target for the cache manifest")
 //! - Requirement: [NFR-SEC-01](../../docs/prd.md#nfr-sec-01)
 #![no_main]

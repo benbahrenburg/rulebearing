@@ -16,7 +16,8 @@
 # $RULEBEARING_BIN, else target/release/rulebearing.
 # Take the figure on a machine running nothing else of this repository's
 # (docs/adr/0059-gates-run-by-tier-and-mutants-by-diff.md).
-# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 16 and section 1.7.
+# Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md,
+# Step 16 and section 1.7.
 # Requirement: docs/prd.md#nfr-perf-03. Results: docs/perf.md.
 set -euo pipefail
 

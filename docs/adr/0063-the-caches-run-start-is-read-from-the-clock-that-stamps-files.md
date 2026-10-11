@@ -2,10 +2,10 @@
 
 - **Status:** Accepted (2026-10-10, by the owner)
 - **Date:** 2026-10-09
-- **Derives from:** [plan 0003, Steps 1 and 2](../plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict) (the cache: an input modified during a run is recorded unsettled and read again by the next)
+- **Derives from:** [plan 0003, Steps 1 and 2](../plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict) (the cache: an input modified during a run is recorded unsettled and read again by the next)
 - **Supersedes:** nothing. It replaces how the start that rule compares with is read.
 - **Constrains:** `crates/rb-cli/src/cache/changes.rs` (`Start`, `record`, `after_start`), `crates/rb-cli/src/cache/mod.rs`
-- **Implemented by:** [plan 0003, 3G](../plans/pending/0003-wave-3-operations-surface-inner-loop.md#wave-3g-the-rule-library-the-scale-table-adoption-action-5), the follow-up from 3A on a coarse file clock
+- **Implemented by:** [plan 0003, 3G](../plans/implemented/0003-wave-3-operations-surface-inner-loop.md#wave-3g-the-rule-library-the-scale-table-adoption-action-5), the follow-up from 3A on a coarse file clock
 - **Requirements:** [FR-CLI-05](../prd.md#fr-cli-05)
 
 ## Context

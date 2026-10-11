@@ -1,8 +1,8 @@
 //! `cruise --sidecar node`: CoffeeScript and LiveScript through the repository's own
 //! dependency-cruiser, merged into the walk.
 //!
-//! - Plan: [Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
-//!   (the missing-flag case; the receipt fields), [§ 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Plan: [Wave 3, Step 10](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+//!   (the missing-flag case; the receipt fields), [§ 1.5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //!   (`sidecar: true`, `summary.sidecar`, `unsupported-file-needs-sidecar`)
 //! - Decisions: [ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md),
 //!   [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md) (additive,

@@ -22,7 +22,7 @@
 //! | `replaced-by-self` | a `replacedBy` that names the rule itself | no |
 //! | `since-after-deprecated` | a `since` later than the rule's `deprecated`, both semver ([`crate::version`]) | no |
 //!
-//! The lifecycle checks ([Wave 3, Step 12](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog))
+//! The lifecycle checks ([Wave 3, Step 12](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog))
 //! cover every family: dependency, element, slice and diagram rules, the `layers` and
 //! `independence` shorthands (a `layers` entry once, not once per rule it expands to) and
 //! ratchets. A `deprecated` without a
@@ -235,7 +235,7 @@ pub fn lint(config: &Config, graph: Option<&GraphDocument>, options: LintOptions
 }
 
 /// The lifecycle fields of one rule, shorthand entry or ratchet
-/// ([Wave 3, Step 12](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
+/// ([Wave 3, Step 12](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LifecycleEntry<'a> {
     /// The name a finding reports: the rule's, or `allowed[n]` for an `allowed` entry.

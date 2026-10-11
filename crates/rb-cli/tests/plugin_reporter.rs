@@ -2,8 +2,8 @@
 //! the receipt names it, `fmt` renders a saved result through it, and every failure (missing,
 //! invalid, a sandbox refusal) exits 3 naming the plugin and the fix.
 //!
-//! - Plan: [Wave 3, Step 7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
-//!   the [`plugin:<path>` contract](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Plan: [Wave 3, Step 7](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
+//!   the [`plugin:<path>` contract](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //! - Decisions: [ADR-0006](../../../docs/adr/0006-embedded-quickjs-config-evaluator.md),
 //!   [ADR-0030](../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md),
 //!   [ADR-0008](../../../docs/adr/0008-exit-code-contract.md)

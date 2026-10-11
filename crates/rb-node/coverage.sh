@@ -4,7 +4,7 @@
 # llvm-cov reports the crate. No Rust test binary can link the N-API symbols, which only a Node
 # process has (Cargo.toml, [lib]). Prints llvm-cov's JSON summary, as `cargo llvm-cov --json` does.
 # Called by scripts/coverage-per-crate.sh (docs/adr/0018-test-coverage-threshold.md).
-# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 22.
+# Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 22.
 #
 # Usage: crates/rb-node/coverage.sh   (needs Node 22, the root's `npm ci`, and cargo-llvm-cov)
 set -euo pipefail
