@@ -9,7 +9,7 @@
 //!   `test/report` mock ([ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md))
 //! - Coverage: [coverage § Output types](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types),
 //!   row `html`
-//! - Plan: [Wave 3, Step 6](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+//! - Plan: [Wave 3, Step 6](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
 //!
 //! The modules are ordered as upstream orders them, non-core before core and then by `source` in

@@ -60,7 +60,7 @@ The synthetic tree did not move: `hyperfine -N --warmup 3 --runs 20` gave 817 ms
 
 ## The Stop hook on a large .NET solution
 
-The target is [NFR-PERF-02](prd.md#nfr-perf-02): the Stop hook's p95 under 2 s on dotnet/aspnetcore in source mode, which no build precedes ([Wave 3, Step 17](plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof); [source-mode.md](source-mode.md)). [`testbeds/bench/stop-hook.sh`](../testbeds/bench/stop-hook.sh) clones aspnetcore at its pinned SHA (10,706 `.cs` files in 587 projects), writes [the benchmark's rules](../testbeds/bench/aspnetcore.yaml) into it, and runs [`stop_hook.py`](../testbeds/bench/stop_hook.py). The hook is
+The target is [NFR-PERF-02](prd.md#nfr-perf-02): the Stop hook's p95 under 2 s on dotnet/aspnetcore in source mode, which no build precedes ([Wave 3, Step 17](plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof); [source-mode.md](source-mode.md)). [`testbeds/bench/stop-hook.sh`](../testbeds/bench/stop-hook.sh) clones aspnetcore at its pinned SHA (10,706 `.cs` files in 587 projects), writes [the benchmark's rules](../testbeds/bench/aspnetcore.yaml) into it, and runs [`stop_hook.py`](../testbeds/bench/stop_hook.py). The hook is
 
 ```sh
 rulebearing cruise --from-hook --mode source --cache --affected HEAD

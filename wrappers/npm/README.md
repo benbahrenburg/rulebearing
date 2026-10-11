@@ -12,7 +12,7 @@ The command-line surface is the binary's (`npx rulebearing --help`); the exit co
 
 ## The programmatic API
 
-The main export is dependency-cruiser 18.2.0's API under its own names and signatures, so a script that calls dependency-cruiser as a library switches by changing the package name ([coverage § Programmatic API](../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#programmatic-api), [FR-DIST-02](../../docs/prd.md#fr-dist-02), [plan 0003 Step 22](../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node), [ADR-0062](../../docs/adr/0062-the-node-binding-reads-typescript-and-babel-configs-with-the-callers-packages.md)).
+The main export is dependency-cruiser 18.2.0's API under its own names and signatures, so a script that calls dependency-cruiser as a library switches by changing the package name ([coverage § Programmatic API](../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#programmatic-api), [FR-DIST-02](../../docs/prd.md#fr-dist-02), [plan 0003 Step 22](../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node), [ADR-0062](../../docs/adr/0062-the-node-binding-reads-typescript-and-babel-configs-with-the-callers-packages.md)).
 
 ```javascript
 import { cruise, format, allExtensions, getAvailableTranspilers } from 'rulebearing';

@@ -6,8 +6,8 @@
 //!   [design § Reporters](../../../docs/artifacts/design.md#reporters)
 //! - Coverage: [`ArchUnitNET` § `PlantUML`](../../../docs/artifacts/archunitnet-0.13.4-coverage.md#plantuml)
 //!   (`WithDependenciesFromSlices` / `FromTypes` / `FromNamespaces`, `GenerationOptions`)
-//! - Plan: [Wave 3, Step 9](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
-//!   and the options in [§ 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Plan: [Wave 3, Step 9](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+//!   and the options in [§ 1.5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //! - Decisions: [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md),
 //!   [ADR-0034](../../../docs/adr/0034-slices-group-types-or-modules-and-segments.md)
 //! - Requirements: [FR-OUT-02](../../../docs/prd.md#fr-out-02), [FR-RULE-05](../../../docs/prd.md#fr-rule-05)

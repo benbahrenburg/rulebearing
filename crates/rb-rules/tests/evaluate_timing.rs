@@ -3,7 +3,7 @@
 //!
 //! - Requirement: [NFR-PERF-03](../../../docs/prd.md#nfr-perf-03) (a saved file re-checked in
 //!   under 100 ms on the 5,500-module synthetic tree)
-//! - Plan: [Wave 3, Step 16](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
+//! - Plan: [Wave 3, Step 16](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
 //! - Benchmark: [testbeds/synth](../../../testbeds/synth/gen.mjs) generates the tree,
 //!   [docs/perf.md](../../../docs/perf.md) records the numbers
 //!

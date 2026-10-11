@@ -1,7 +1,7 @@
 //! The graph document as a JSON value for a reporter, made and released without holding up the
 //! run: the modules are serialised in parallel, and the value is dropped on a worker thread.
 //!
-//! - Plan: [Wave 3, Step 16](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
+//! - Plan: [Wave 3, Step 16](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
 //!   (`guard --watch` checks a saved file within 100 ms on the 5,500-module tree)
 //! - Requirement: [NFR-PERF-03](../../../docs/prd.md#nfr-perf-03)
 //! - Architecture: [§ Performance model](../../../docs/architecture.md#performance-model)

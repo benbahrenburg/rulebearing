@@ -1,6 +1,6 @@
 # Framework preset fixtures
 
-One small repository per framework preset under `<name>/repo/`, and the proposal `rulebearing init --dry-run --owner @fixture --preset <name>` writes for it, committed as `<name>/rulebearing.yaml` and byte-compared by [`framework_presets.rs`](../../framework_presets.rs) ([plan 0003, Step 11](../../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)). The presets are [`presets/frameworks/`](../../../../../presets/frameworks/README.md). It is this repository's own code, under its MIT licence.
+One small repository per framework preset under `<name>/repo/`, and the proposal `rulebearing init --dry-run --owner @fixture --preset <name>` writes for it, committed as `<name>/rulebearing.yaml` and byte-compared by [`framework_presets.rs`](../../framework_presets.rs) ([plan 0003, Step 11](../../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)). The presets are [`presets/frameworks/`](../../../../../presets/frameworks/README.md). It is this repository's own code, under its MIT licence.
 
 | Fixture | What it holds | What the proposal shows |
 | --- | --- | --- |

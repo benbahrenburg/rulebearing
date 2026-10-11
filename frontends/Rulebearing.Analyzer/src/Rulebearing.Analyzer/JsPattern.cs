@@ -1,7 +1,7 @@
 // Path and name patterns: JavaScript regular expressions, matched as Rulebearing matches them.
 //
 // Decision: docs/adr/0016-linear-time-regex-and-strict-compat.md (the compatibility table, and
-// lookaround refused). Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md,
+// lookaround refused). Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md,
 // Step 21 (PathMatcher, held to the table rb-config exports as regex-compatibility.json).
 //
 // A rule's pattern is the string dependency-cruiser hands to `new RegExp(pattern)`: no flags, no

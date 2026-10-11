@@ -1,7 +1,7 @@
 // The addon and the binary the tests run: RULEBEARING_ADDON and RULEBEARING_BINARY when set (CI
 // builds them first), else debug builds of rb-node and rb-cli, built here with cargo. The addon is
 // copied to `rulebearing.node`, the name Node loads it by and the platform packages ship it under.
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 22.
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 22.
 import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';

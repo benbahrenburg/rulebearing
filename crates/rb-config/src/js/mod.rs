@@ -13,7 +13,7 @@
 //! There is no `process`, no `fs`, no network and no timers. Evaluation is bounded in time and
 //! memory; exceeding either is a configuration error (exit 3), never a hang.
 //!
-//! The same sandbox runs `plugin:<path>` reporters ([`plugin`]; [Wave 3, Step 7](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)):
+//! The same sandbox runs `plugin:<path>` reporters ([`plugin`]; [Wave 3, Step 7](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)):
 //! one policy, one `require`, one set of refusals, and its own time and memory limits.
 
 pub mod plugin;

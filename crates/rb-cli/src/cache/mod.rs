@@ -8,7 +8,7 @@
 //!   [Step 12](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#212-step-12-agent-subcommands-2g)
 //!   ("`propose` and `place` read the worktree-aware cache ... so they answer in the same time
 //!   as `can-import`")
-//! - Plan: [Wave 3, Steps 1 and 2](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
+//! - Plan: [Wave 3, Steps 1 and 2](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
 //!   (`--cache`, both strategies, `compress`; incremental extraction)
 //! - Decisions: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md),
 //!   [ADR-0008](../../../../docs/adr/0008-exit-code-contract.md) (the cache is only a speed-up: a
@@ -804,7 +804,7 @@ fn refresh(
 }
 
 /// The extraction `cruise` evaluates under `--cache` or `options.cache`
-/// ([Wave 3, Steps 1 and 2](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// ([Wave 3, Steps 1 and 2](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
 /// the entry in `options.folder` when every input is unchanged, a partial extraction when only
 /// files an extractor can re-read alone changed, a full one otherwise; then the entry is
 /// written again for the next run, on a thread of its own while this run evaluates

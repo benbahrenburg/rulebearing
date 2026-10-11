@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT licence: see LICENSE.
 """Rulebearing.Analyzer against the gate on one .NET oracle: the same element findings.
 
-Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21 ("the parity test
+Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 21 ("the parity test
 that builds each .NET oracle with the analyzer attached and compares the diagnostic set to
 `cruise --output-type json` violations for the covered families"). Requirement:
 docs/prd.md#fr-dist-04 ("every diagnostic the analyzer reports is also a gate violation, and vice

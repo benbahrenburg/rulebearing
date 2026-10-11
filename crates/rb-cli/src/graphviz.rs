@@ -4,7 +4,7 @@
 //!
 //! - Decision: [ADR-0053](../../../docs/adr/0053-x-dot-webpage-draws-with-graphviz-dot.md)
 //! - Architecture: [`docs/architecture.md#security-posture`](../../../docs/architecture.md#security-posture)
-//! - Plan: [Wave 3, Step 6](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+//! - Plan: [Wave 3, Step 6](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
 
 use std::io::Write as _;

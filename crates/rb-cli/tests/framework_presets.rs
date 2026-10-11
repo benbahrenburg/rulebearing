@@ -4,7 +4,7 @@
 //! What each preset file must carry (tokens, fixes, examples, no options) is
 //! `crates/rb-config/tests/presets.rs`.
 //!
-//! - Plan: [Wave 3, Step 11](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
+//! - Plan: [Wave 3, Step 11](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
 //!   ("`rulebearing test` on each preset's examples"; "`init --preset <name>` and
 //!   `extends: rulebearing:<name>` resolve them; they are off by default")
 //! - Source: [design § The developer relations hat](../../../docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo)

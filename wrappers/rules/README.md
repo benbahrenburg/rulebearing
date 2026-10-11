@@ -29,7 +29,7 @@ MIT licence.
 
 ## How the packages are built
 
-The presets live once, in [`presets/frameworks/`](../../presets/frameworks/README.md) and [`presets/rulebearing/recommended.yaml`](../../presets/rulebearing/recommended.yaml); this folder holds the three package definitions and no copy of them ([ADR-0071](../../docs/adr/0071-the-rule-library-ships-from-this-repository.md), [FR-REACH-04](../../docs/prd.md#fr-reach-04), [plan 0003 Step 23](../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#27-steps-for-sub-wave-3g-the-rule-library-the-scale-table-adoption)). [`pack.sh`](pack.sh) packs them at one version; the committed metadata carries none, and nothing in the source tree is edited.
+The presets live once, in [`presets/frameworks/`](../../presets/frameworks/README.md) and [`presets/rulebearing/recommended.yaml`](../../presets/rulebearing/recommended.yaml); this folder holds the three package definitions and no copy of them ([ADR-0071](../../docs/adr/0071-the-rule-library-ships-from-this-repository.md), [FR-REACH-04](../../docs/prd.md#fr-reach-04), [plan 0003 Step 23](../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#27-steps-for-sub-wave-3g-the-rule-library-the-scale-table-adoption)). [`pack.sh`](pack.sh) packs them at one version; the committed metadata carries none, and nothing in the source tree is edited.
 
 | Registry | Definition | Version | Layout installed |
 | --- | --- | --- | --- |

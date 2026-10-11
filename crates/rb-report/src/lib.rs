@@ -7,7 +7,7 @@
 //!   [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
 //! - Plans: [Wave 1, sub-wave 1D](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#wave-1d-reporters-fmt-exit-codes),
 //!   [Wave 2, sub-wave 2E](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md),
-//!   [Wave 3, sub-wave 3B](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md)
+//!   [Wave 3, sub-wave 3B](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md)
 //! - Requirements: [FR-OUT-01](../../../docs/prd.md#fr-out-01) to [FR-OUT-03](../../../docs/prd.md#fr-out-03)
 //! - Specification: dependency-cruiser's `test/report/<reporter>` specs, run unmodified against
 //!   these reporters by conformance gate 1 layer 3
@@ -122,7 +122,7 @@ pub fn gates(output_type: &str) -> bool {
 
 /// The reporters whose output carries [`ReportOptions::timestamp`]; every other reporter's
 /// output is the same at any time, which the `--cache` layer that keeps rendered output relies
-/// on ([Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// on ([Wave 3, Step 1](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 /// A test renders every output type at two times and holds this list to what changes.
 pub const STAMPED: &[&str] = &["err-html", "junit", "markdown", "trx", "teamcity"];
 

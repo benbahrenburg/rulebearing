@@ -4,7 +4,7 @@
 - **Date:** 2026-09-27
 - **Derives from:** [dependency-cruiser coverage § Output types](../artifacts/dependency-cruiser-18.2.0-coverage.md#output-types) (row `x-dot-webpage`, Parity, wave 3), [design § Reporters](../artifacts/design.md#reporters), [architecture § Security posture](../architecture.md#security-posture), [ADR-0009](0009-conformance-suites-as-specification.md) (the upstream specs are the specification), [ADR-0010](0010-crate-layout-and-extractor-boundary.md) (what each crate may do)
 - **Constrains:** `crates/rb-report/src/dot_webpage.rs`, `crates/rb-cli/src/graphviz.rs`, `crates/rb-cli/src/protocol.rs`, `conformance/dependency-cruiser/harness/dot-webpage-forward.mjs`
-- **Implemented by:** [Wave 3 plan](../plans/pending/0003-wave-3-operations-surface-inner-loop.md), [Step 6](../plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+- **Implemented by:** [Wave 3 plan](../plans/implemented/0003-wave-3-operations-surface-inner-loop.md), [Step 6](../plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
 - **Requirements:** [FR-OUT-01](../prd.md#fr-out-01), [NFR-SEC-01](../prd.md#nfr-sec-01), [NFR-CONF-01](../prd.md#nfr-conf-01)
 
 ## Context

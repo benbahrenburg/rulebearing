@@ -4,7 +4,7 @@
 # graph and by the analyzer attached to a build of the fixture's projects; any difference fails.
 # CI's `analyzer` job runs it on every pull request; the nightly runs the same comparison on each
 # .NET oracle (testbeds/oracles/dotnet.sh, analyzer_parity.py).
-# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21.
+# Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 21.
 # Requirement: docs/prd.md#fr-dist-04.
 #
 # Usage: frontends/Rulebearing.Analyzer/parity/run.sh

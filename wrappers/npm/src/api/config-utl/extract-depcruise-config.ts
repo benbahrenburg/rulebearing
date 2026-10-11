@@ -1,7 +1,7 @@
 // `rulebearing/config-utl/extract-depcruise-config`: dependency-cruiser's function of the same
 // name, answered by rb-config's loader (rb_cli::api::extract_depcruise_config).
 //
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 22. Requirement: FR-DIST-02.
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 22. Requirement: FR-DIST-02.
 // Specification: dependency-cruiser 18.2.0, src/config-utl/extract-depcruise-config/index.mjs.
 
 import type { IConfiguration } from '../../../types/dependency-cruiser/configuration.mjs';

@@ -2,8 +2,8 @@
 //! dependency-cruiser and continues from its answer, and incremental extraction re-runs the
 //! sidecar for a changed file only, with the full extraction's result.
 //!
-//! - Plan: [Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
-//!   [Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
+//! - Plan: [Wave 3, Step 10](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
+//!   [Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
 //!   (incremental equals full)
 //! - Decision: [ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)
 //! - Requirement: [FR-EXT-TS-05](../../../docs/prd.md#fr-ext-ts-05)

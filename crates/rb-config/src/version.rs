@@ -2,7 +2,7 @@
 //!
 //! - Source: [design § The architect's hat](../../../docs/artifacts/design.md#the-architects-hat-across-repos-and-across-time)
 //!   (`since`, `deprecated`, `replacedBy`; `snapshot` committed per release)
-//! - Plan: [Wave 3, Steps 12 and 13](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
+//! - Plan: [Wave 3, Steps 12 and 13](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
 //! - Requirement: [FR-CLI-07](../../../docs/prd.md#fr-cli-07)
 //!
 //! A version is a string and is never refused for its form: a repository may release as

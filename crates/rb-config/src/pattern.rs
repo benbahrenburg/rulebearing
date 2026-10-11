@@ -24,7 +24,7 @@ use regex_syntax::ast::{self, Ast};
 /// One proven case of the compatibility table: a pattern, a subject, and whether JavaScript's
 /// `new RegExp(pattern).test(subject)` is true, which [`compile`] must agree with. Exported to
 /// `frontends/Rulebearing.Analyzer` as `regex-compatibility.json`, so the Roslyn analyzer's
-/// matcher is held to the same cases ([Wave 3, Step 21](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)).
+/// matcher is held to the same cases ([Wave 3, Step 21](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CompatCase {
     /// The group of table rows the case proves.

@@ -2,7 +2,7 @@
 // non-empty diagram, over the committed fixture assemblies, so the ported cases compare
 // Rulebearing's builder with the text ArchUnitNET generates rather than with "not empty".
 //
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 9.
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 9.
 // Decision: docs/adr/0009-conformance-suites-as-specification.md.
 //
 // Every selection is ordered by ordinal full name (types) or description (slices, namespaces)

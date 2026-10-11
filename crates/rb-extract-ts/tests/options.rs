@@ -15,7 +15,7 @@
 //! [`rb_extract_ts::prepare`] rather than set on the process, so the tests run in parallel.
 //!
 //! Every extraction through [`run`], [`run_in`] and [`run_native`] is repeated incrementally
-//! ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+//! ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
 //! every file unchanged, every file changed, and each file changed on its own must give the same
 //! extraction byte for byte, so each option fixture is also a fixture of incremental extraction.
 

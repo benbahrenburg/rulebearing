@@ -1,6 +1,7 @@
 // The analyzer through Microsoft.CodeAnalysis.Testing's verifier: each diagnostic at the span the
 // source marks, with its id, severity and message, and nothing else reported.
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21 ("analyzer unit
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md,
+// Step 21 ("analyzer unit
 // tests with Microsoft.CodeAnalysis.Testing").
 
 using Microsoft.CodeAnalysis;

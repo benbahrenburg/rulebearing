@@ -1,6 +1,6 @@
 // Element rules over types, evaluated as rb-rules evaluates them.
 //
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 21
 // (ElementRuleAnalyzer). Source: crates/rb-rules/src/elements/mod.rs (selection, at most one
 // result per type, the AND of duplicates) and crates/rb-rules/src/elements/concepts.rs (each
 // concept's test). Names compare as the engine compares them: a simple name's prefix, suffix and

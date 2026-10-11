@@ -1,7 +1,7 @@
 // The replacement for `#report/dot-webpage/dot-module.mjs` in conformance gate 1 layer 3: the
 // reporter is `rulebearing report --output-type x-dot-webpage`.
 //
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 6. Decision:
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 6. Decision:
 // docs/adr/0053-x-dot-webpage-draws-with-graphviz-dot.md.
 //
 // Upstream's reporter takes a `spawnFunction` option, which its spec uses to stand in for

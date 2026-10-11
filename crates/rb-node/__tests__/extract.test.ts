@@ -1,6 +1,7 @@
 // The four configuration extractors under dependency-cruiser 18.2.0's own specs
 // (test/config-utl/*.spec.mjs), ported to vitest over its own fixtures (fixtures/PROVENANCE.md).
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 22 ("each extractor
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md,
+// Step 22 ("each extractor
 // function on its fixture"). Decision: docs/adr/0062-the-node-binding-reads-typescript-and-babel-configs-with-the-callers-packages.md.
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';

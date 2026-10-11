@@ -185,7 +185,7 @@ pub struct Options {
 
 /// `options.cache` after normalisation: off (`false`, or `--no-cache`), or the folder, strategy
 /// and compression ([coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)
-/// row `cache`, [Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// row `cache`, [Wave 3, Step 1](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 /// It serialises as dependency-cruiser's `optionsUsed.cache` does: `false`, or the object.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CacheSetting {

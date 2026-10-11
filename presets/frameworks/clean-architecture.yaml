@@ -13,7 +13,7 @@
 # presets/frameworks/README.md#rulebearingclean-architecture. Named with
 # `init --preset clean-architecture` or `extends: rulebearing:clean-architecture`.
 # Source: docs/artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo.
-# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 11. Requirements:
+# Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 11. Requirements:
 # FR-CLI-08, FR-REACH-04.
 rules:
   dependencies:

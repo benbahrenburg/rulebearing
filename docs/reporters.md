@@ -57,7 +57,7 @@ The module-level `dot` output, with `reporterOptions.dot`, is drawn by the Graph
 
 ## Plugin reporters
 
-`-T plugin:<path>` renders through a reporter written in JavaScript, as dependency-cruiser's plugin reporters do ([coverage § Output types](artifacts/dependency-cruiser-18.2.0-coverage.md#output-types), [plan 0003, Step 7](plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)). The module's default export (`module.exports` for CommonJS, `export default` for an ES module) is called with the cruise result and returns `{ output, exitCode }`:
+`-T plugin:<path>` renders through a reporter written in JavaScript, as dependency-cruiser's plugin reporters do ([coverage § Output types](artifacts/dependency-cruiser-18.2.0-coverage.md#output-types), [plan 0003, Step 7](plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)). The module's default export (`module.exports` for CommonJS, `export default` for an ES module) is called with the cruise result and returns `{ output, exitCode }`:
 
 ```js
 // reporters/count.cjs, used as: rulebearing cruise src -T plugin:./reporters/count.cjs
@@ -145,7 +145,7 @@ Each violation carries a `cost`: `edgesToMove` (one for a dependency, the steps 
 
 ## `plantuml`
 
-`plantuml` (wave 3) writes the graph as a PlantUML diagram, generated the way ArchUnitNET's `PlantUmlDefinition.ComponentDiagram()` generates one, so a diagram can be written once, committed, and then enforced with an `adhereTo` diagram rule ([rules.md](rules.md), [design § Diagram rules](artifacts/design.md#diagram-rules), [coverage § PlantUML](artifacts/archunitnet-0.13.4-coverage.md#plantuml)). It exits 0, as every drawing reporter does. The options take ArchUnitNET's names ([plan 0003 § 1.5](plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)):
+`plantuml` (wave 3) writes the graph as a PlantUML diagram, generated the way ArchUnitNET's `PlantUmlDefinition.ComponentDiagram()` generates one, so a diagram can be written once, committed, and then enforced with an `adhereTo` diagram rule ([rules.md](rules.md), [design § Diagram rules](artifacts/design.md#diagram-rules), [coverage § PlantUML](artifacts/archunitnet-0.13.4-coverage.md#plantuml)). It exits 0, as every drawing reporter does. The options take ArchUnitNET's names ([plan 0003 § 1.5](plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)):
 
 ```yaml
 options:

@@ -1,7 +1,7 @@
 // `rulebearing/config-utl/extract-webpack-resolve-config`: dependency-cruiser's function of the
 // same name, answered by rb-config's sandboxed webpack evaluation (rb_cli::api::extract_webpack_resolve_config).
 //
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 22. Requirement: FR-DIST-02.
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 22. Requirement: FR-DIST-02.
 // Specification: dependency-cruiser 18.2.0, src/config-utl/extract-webpack-resolve-config.mjs.
 
 import type extractWebpackResolveConfigUpstream from '../../../types/dependency-cruiser/config-utl/extract-webpack-resolve-config.mjs';

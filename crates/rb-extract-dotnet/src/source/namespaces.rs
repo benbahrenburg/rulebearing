@@ -1,7 +1,7 @@
 //! The names every file wrote, resolved against the types every file declares, the way the C#
 //! compiler looks a name up, and projected onto file modules with edges marked `approximate`.
 //!
-//! - Plan: [Wave 3, Step 14](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
+//! - Plan: [Wave 3, Step 14](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)
 //!   (namespace-level edges projected to files, every dependency `approximate: true`, every module
 //!   `attribution: source`)
 //! - Decision: [ADR-0011](../../../../docs/adr/0011-read-dotnet-assemblies-not-source.md),

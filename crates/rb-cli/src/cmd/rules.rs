@@ -8,7 +8,7 @@
 //!
 //! `fromMatches`, `toMatches` and `violations` need a graph: `--graph`, the saved
 //! `.graph/cruise.json`, or a fresh extraction. Each rule also carries its lifecycle fields,
-//! `since`, `deprecated` and `replacedBy` ([Wave 3, Step 12](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
+//! `since`, `deprecated` and `replacedBy` ([Wave 3, Step 12](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
 //!
 //! `rules --unused [--releases N]` ([FR-CLI-07](../../../../docs/prd.md#fr-cli-07)) reads the
 //! snapshots under `.graph/snapshots/` ([`crate::cmd::snapshot`]) instead of a graph: it takes
@@ -16,7 +16,7 @@
 //! configuration that each of them records with zero `fromMatches` and zero `toMatches`. A rule a
 //! snapshot does not record (it did not exist at that release) is not listed, since it has not
 //! been unused for `N` releases. With fewer than `N` snapshots the command prints
-//! `insufficient history` and exits 0 rather than guess ([Wave 3 plan § 1.6](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make)).
+//! `insufficient history` and exits 0 rather than guess ([Wave 3 plan § 1.6](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make)).
 //! Listing a rule changes nothing about it: an unused rule still fails `cruise` as vacuous
 //! unless it has `allowEmpty` ([ADR-0007](../../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).
 //! `--graph` and paths are refused with `--unused`, which reads no graph.

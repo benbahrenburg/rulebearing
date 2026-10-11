@@ -1,6 +1,6 @@
 # Top-level statements fixture
 
-A small C# program written for `rb-extract-dotnet`'s extraction tests ([plan 0003, Step 14](../../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)): top-level statements in `Program.cs`, which the compiler puts in `Program.<Main>$` and its async state machine, creating a type and calling an extension method of the same assembly. It is this repository's own code, under its MIT licence.
+A small C# program written for `rb-extract-dotnet`'s extraction tests ([plan 0003, Step 14](../../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)): top-level statements in `Program.cs`, which the compiler puts in `Program.<Main>$` and its async state machine, creating a type and calling an extension method of the same assembly. It is this repository's own code, under its MIT licence.
 
 | Item | Value |
 | --- | --- |

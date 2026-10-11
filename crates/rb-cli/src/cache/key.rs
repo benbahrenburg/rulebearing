@@ -316,7 +316,7 @@ pub fn config_hash(config: &Config, root: &Path) -> String {
 pub const FORMAT: &str = "1";
 
 /// The `configHash` of a `--cache` entry
-/// ([Wave 3, Step 1](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// ([Wave 3, Step 1](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
 /// `sha256:` and the hex digest over the configuration files ([`config_hash`]) and everything else
 /// that decides what the extractors produce: the per-language options after the command line
 /// laid its flags over them, the front-end (it decides whether Markdown fences are read), the

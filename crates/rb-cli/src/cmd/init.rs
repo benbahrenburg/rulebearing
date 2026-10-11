@@ -5,7 +5,7 @@
 //! - Plans: [Wave 1, Step 16](../../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-16-init-1f),
 //!   [Wave 2, Step 9](../../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#29-step-9-presets---init-presets-vue-svelte-markdown-webpackconfig-collapse-highlight-experimentalstats-2d)
 //!   ("`init` (wave 1) selects presets from the languages it detects"),
-//!   [Wave 3, Step 11](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
+//!   [Wave 3, Step 11](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
 //!   (`init --preset <framework>`)
 //! - Source: [design § What stays honest across the boundary](../../../../docs/artifacts/design.md#what-stays-honest-across-the-boundary)
 //!   (per-language presets, composed by `rulebearing:recommended`)
@@ -53,7 +53,7 @@ use crate::{Outcome, RunExit};
 
 /// A bundled preset `--preset` names (`rulebearing:<name>`): a language, whose defaults replace
 /// the languages found, or a framework, an opinion that is off unless named
-/// ([plan 0003, Step 11](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
+/// ([plan 0003, Step 11](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Preset {
     /// TypeScript and JavaScript: `rulebearing:typescript`.

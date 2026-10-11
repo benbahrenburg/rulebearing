@@ -2,7 +2,7 @@
 //! packages folder and a Python environment's `site-packages`, so `extends: rulebearing-rules/nextjs`
 //! reads the rule library from whichever registry the repository installed it from.
 //!
-//! - Plan: [Wave 3, Step 23](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#27-steps-for-sub-wave-3g-the-rule-library-the-scale-table-adoption)
+//! - Plan: [Wave 3, Step 23](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#27-steps-for-sub-wave-3g-the-rule-library-the-scale-table-adoption)
 //!   ("`extends` resolution in `rb-config` learns to find the package in `node_modules/`, the NuGet
 //!   global packages folder and `site-packages`, in that order")
 //! - Decisions: [ADR-0020](../../../docs/adr/0020-single-name-across-registries.md) (one name on

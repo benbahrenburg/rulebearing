@@ -153,7 +153,7 @@ pub enum ProgressType {
 }
 
 /// `--cache-strategy` values
-/// ([Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// ([Wave 3, Step 1](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum CacheStrategyArg {
     /// git status and diff against the recorded commit, and file size and time.
@@ -173,7 +173,7 @@ impl CacheStrategyArg {
 }
 
 /// `--sidecar` values
-/// ([Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
+/// ([Wave 3, Step 10](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
 /// [ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum SidecarArg {
@@ -191,7 +191,7 @@ impl SidecarArg {
 }
 
 /// `--mode` values: how the .NET graph is read
-/// ([Wave 3, Step 14](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof),
+/// ([Wave 3, Step 14](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof),
 /// [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum ModeArg {

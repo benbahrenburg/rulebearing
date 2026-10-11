@@ -20,7 +20,7 @@ use crate::code::CodeLayer;
 use crate::document::{Module, Receipt, SidecarReceipt};
 
 /// What one extractor produced. It serialises, so a cache can keep it and a later run can
-/// reuse it ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// reuse it ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Extraction {
@@ -53,7 +53,7 @@ pub struct Extraction {
 
 /// What an extractor's walk of the inputs found: the initial files, in the order the walk visits
 /// them, and every folder it listed to find them
-/// ([Wave 3, Step 16](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof),
+/// ([Wave 3, Step 16](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof),
 /// [NFR-PERF-03](../../../docs/prd.md#nfr-perf-03)). The sources follow only from the folders'
 /// entries, the inputs and the options, so while no entry of any folder is added, removed or
 /// renamed, and neither the inputs nor the options change, walking again finds the same sources.
@@ -83,7 +83,7 @@ pub struct FileState {
 
 /// A request to extract again after some files changed: which files changed, which did not, and
 /// the earlier extraction the unchanged files' results are taken from
-/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 /// Paths are relative to the working directory, as module sources are. A file in neither list
 /// is read, as a changed one is.
 ///

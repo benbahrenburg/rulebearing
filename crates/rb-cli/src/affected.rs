@@ -3,9 +3,9 @@
 //! their types' modules.
 //!
 //! - Architecture: [architecture § Performance model](../../../docs/architecture.md#performance-model)
-//! - Plan: [Wave 3, Step 3](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict),
-//!   [Wave 3 § 1.4](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#the-cache-and---affected),
-//!   [§ 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes) (the receipt)
+//! - Plan: [Wave 3, Step 3](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict),
+//!   [Wave 3 § 1.4](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#the-cache-and---affected),
+//!   [§ 1.7](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes) (the receipt)
 //! - Coverage: [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)
 //!   row `affected`, [§ Command line](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)
 //!   row `--affected [revision]`

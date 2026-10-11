@@ -1,10 +1,10 @@
 //! `cruise --cache`: the entry, both strategies, compression, incremental extraction across the
 //! three languages, and the promise that a cached run reports what a cold run reports.
 //!
-//! - Plan: [Wave 3, Steps 1 and 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
+//! - Plan: [Wave 3, Steps 1 and 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)
 //!   (hit; miss on configuration and tool version; miss on a changed input under each strategy;
 //!   a corrupt manifest discarded; a compressed round trip; worktree isolation; incremental equals
-//!   full), [§ 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)
+//!   full), [§ 1.7](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)
 //!   (a hit byte-identical to a cold run; `summary.cache`)
 //! - Coverage: [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)
 //!   (row `cache`), [coverage § Command line](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)
@@ -1408,7 +1408,7 @@ fn a_report_option_misses_the_rendered_output_and_keeps_the_evaluated_run() -> R
 
 /// `--from` is part of the rendered layer's key: a warm `-T plantuml --from types` after a run
 /// `--from folders` is drawn from types, never the cached folders diagram
-/// ([plan 0003, Step 9](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
+/// ([plan 0003, Step 9](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)).
 #[test]
 fn plantuml_from_is_part_of_the_rendered_key() -> Result {
     let dir = tree("plantuml-from", TREE)?;

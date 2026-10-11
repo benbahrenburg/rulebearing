@@ -4,7 +4,7 @@
 # npm package is staged in a temporary folder with the version stamped into its copy of
 # package.json, and NuGet and PyPI take the version as a property and an environment variable.
 # Decision: docs/adr/0071-the-rule-library-ships-from-this-repository.md. Procedure: docs/release.md.
-# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 23.
+# Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 23.
 #
 # Usage: wrappers/rules/pack.sh <version> <out-dir> [npm] [nuget] [pypi]
 #   <version>  the release version; a leading v is removed

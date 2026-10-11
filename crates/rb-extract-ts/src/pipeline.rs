@@ -1391,7 +1391,7 @@ pub struct ExtractedModule {
 }
 
 /// One file's result carried over from an earlier extraction instead of reading the file again
-/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
 /// its resolved, filtered, sorted dependencies and its statistics.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Reused {

@@ -5,7 +5,7 @@
 //! - Decisions: [ADR-0002](../../../docs/adr/0002-rust-as-implementation-language.md),
 //!   [ADR-0020](../../../docs/adr/0020-single-name-across-registries.md),
 //!   [ADR-0062](../../../docs/adr/0062-the-node-binding-reads-typescript-and-babel-configs-with-the-callers-packages.md)
-//! - Plan: [Wave 3, Step 22](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)
+//! - Plan: [Wave 3, Step 22](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)
 //! - Requirement: [FR-DIST-02](../../../docs/prd.md#fr-dist-02)
 //! - Specification: [coverage § Programmatic API](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#programmatic-api)
 //!

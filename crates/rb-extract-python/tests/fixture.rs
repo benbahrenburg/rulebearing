@@ -327,7 +327,7 @@ fn a_namespace_two_distributions_share_names_neither() -> Result<(), Box<dyn Err
 }
 
 /// Incremental extraction of the fixture package
-/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
+/// ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)):
 /// with every file unchanged, every file changed, and each file changed on its own, the result
 /// equals the full extraction byte for byte: modules, code layer (base chains included),
 /// receipt and warnings (the unparsable file's included), and the kept states themselves.

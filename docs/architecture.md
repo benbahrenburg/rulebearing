@@ -398,7 +398,7 @@ documentation link check runs inside every compile; both are fixed by
 | Single maintainer stalls | medium | high | suites as reviewer, public nightly, small crates, second maintainer by end of wave 2 | all |
 | Name lost on a registry | low | medium | placeholder `0.0.1` on all four on day one ([ADR-0020](adr/0020-single-name-across-registries.md)) | [Wave 0](plans/pending/0000-wave-0-spike.md) |
 | Agents ignore the tool | medium | high | six measured adoption signals; cut back if the first two do not move ([ADR-0021](adr/0021-agent-surface-cli-first.md)) | [Wave 1](plans/implemented/0001-wave-1-typescript-parity.md) onward |
-| Stop hook exceeds 2 s on a large solution | medium | medium | cache, `--affected`, `--mode source`, `guard --watch` | [Wave 3](plans/pending/0003-wave-3-operations-surface-inner-loop.md) |
+| Stop hook exceeds 2 s on a large solution | medium | medium | cache, `--affected`, `--mode source`, `guard --watch` | [Wave 3](plans/implemented/0003-wave-3-operations-surface-inner-loop.md) |
 
 ## Glossary
 

@@ -4,9 +4,9 @@
 //! - Source: [design § The architect's hat](../../../../docs/artifacts/design.md#the-architects-hat-across-repos-and-across-time)
 //!   ("`snapshot` committed per release: a small summary JSON (counts, instability per folder or
 //!   project, violations) that `changelog` and a trend chart read")
-//! - Contract: [Wave 3 plan § 1.5](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Contract: [Wave 3 plan § 1.5](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //!   (the snapshot's JSON shape)
-//! - Plan: [Wave 3, Step 13](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
+//! - Plan: [Wave 3, Step 13](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
 //! - Decisions: [ADR-0029](../../../../docs/adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)
 //!   (the ratchet counts), [ADR-0030](../../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)
 //!   (a report exits 0)
@@ -130,7 +130,7 @@ impl RuleCounts {
     }
 }
 
-/// A snapshot, the shape of the [Wave 3 plan § 1.5](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes).
+/// A snapshot, the shape of the [Wave 3 plan § 1.5](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes).
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Snapshot {
     /// The release.

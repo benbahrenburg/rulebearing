@@ -12,7 +12,7 @@
 //! adds nothing. `impact` reads the file being edited from the hook's JSON on stdin.
 //!
 //! `--mcp` also registers `rulebearing serve --mcp` as the project's MCP server `rulebearing` in
-//! `.mcp.json` ([Wave 3, Step 19](../../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)),
+//! `.mcp.json` ([Wave 3, Step 19](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)),
 //! merged the same way: other servers stay, and an entry already named `rulebearing` is kept as
 //! it is.
 

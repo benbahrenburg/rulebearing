@@ -3,7 +3,7 @@
 //! - Architecture: [`docs/architecture.md#security-posture`](../../../docs/architecture.md#security-posture)
 //! - Decision: [ADR-0025](../../../docs/adr/0025-ci-and-supply-chain-hardening.md) (the opt-in
 //!   git hooks that run the test suite)
-//! - Plan: [Wave 3](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md)
+//! - Plan: [Wave 3](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md)
 //!
 //! Each caller sets the folder git runs in and means the repository at that folder. Git exports
 //! the variables of `git rev-parse --local-env-vars` to a hook, and from a linked worktree

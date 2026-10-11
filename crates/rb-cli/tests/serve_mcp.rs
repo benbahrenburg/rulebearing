@@ -2,7 +2,7 @@
 //! request against the expected responses, and every tool's text against the CLI command it
 //! stands for.
 //!
-//! - Plan: [Wave 3, Step 19](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)
+//! - Plan: [Wave 3, Step 19](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#25-steps-for-sub-wave-3e-serve---mcp-and-serve---lsp)
 //!   ("fixture transcripts for every tool, and a test that asserts each tool result equals the
 //!   CLI's `--json` on the same fixture")
 //! - Decision: [ADR-0021](../../../docs/adr/0021-agent-surface-cli-first.md)

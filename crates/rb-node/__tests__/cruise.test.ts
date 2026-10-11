@@ -1,6 +1,7 @@
 // `cruise()` and `format()` answer what the command line answers: the same result for the same
 // options as a `.dependency-cruiser.json`, the same reporter text, and the reporter's exit code.
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 22 ("`cruise()` on a
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md,
+// Step 22 ("`cruise()` on a
 // fixture equals the CLI's JSON; `format()` on a saved JSON equals `fmt`").
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';

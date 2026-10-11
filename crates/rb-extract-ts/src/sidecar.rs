@@ -8,8 +8,8 @@
 //!   Node spawn besides `--config-via-node`; without the flag, exit 2 with a named reason),
 //!   [ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md) (the sidecar is
 //!   dispatch inside this crate; its options arrive through `rb_model::TypeScriptOptions`)
-//! - Plan: [Wave 3, Step 10](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
-//!   [§ 1.6](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make)
+//! - Plan: [Wave 3, Step 10](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar),
+//!   [§ 1.6](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make)
 //!   (a version other than 18.2.0 is a warning)
 //! - Requirements: [FR-EXT-TS-05](../../../docs/prd.md#fr-ext-ts-05), [NFR-SEC-01](../../../docs/prd.md#nfr-sec-01)
 //! - Source: [coverage § Extraction and resolution](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution)
@@ -71,7 +71,7 @@ use crate::resolve::{self, ResolveConfig};
 pub const TOOL: &str = "dependency-cruiser";
 
 /// The version the sidecar's edges are proven against: the conformance pin. Any other version
-/// runs, with a warning ([plan § 1.6](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make)).
+/// runs, with a warning ([plan § 1.6](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make)).
 pub const PINNED_VERSION: &str = "18.2.0";
 
 /// Why the sidecar could not answer.

@@ -3,13 +3,13 @@
 //! `.cs` files while staying equal to a cold run, and the refusal of source mode as a gate by
 //! `cruise`, `fmt --exit-code`, `diff --exit-code` and `attest`.
 //!
-//! - Plan: [Wave 3, Step 14](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof),
-//!   [§ 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
+//! - Plan: [Wave 3, Step 14](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof),
+//!   [§ 1.5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)
 //!   ("Source mode")
 //! - Decision: [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md),
 //!   [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
-//! - Refusal: [Wave 3, Step 15](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof),
-//!   [§ 1.6](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make)
+//! - Refusal: [Wave 3, Step 15](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof),
+//!   [§ 1.6](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make)
 //!   ("Whether source mode may ever feed `--exit-code`"), [ADR-0008](../../../docs/adr/0008-exit-code-contract.md)
 //! - Requirement: [FR-EXT-DN-04](../../../docs/prd.md#fr-ext-dn-04),
 //!   [FR-CLI-05](../../../docs/prd.md#fr-cli-05)

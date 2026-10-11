@@ -17,7 +17,7 @@
 //! the report opens with `approximate`, a sentence saying the findings are namespace-level and
 //! compiled mode is the gate, and each finding on an edge marked `approximate` carries
 //! `approximate: true`
-//! ([Wave 3 § 1.4](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#the-inner-loop-on-a-large-net-solution),
+//! ([Wave 3 § 1.4](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#the-inner-loop-on-a-large-net-solution),
 //! [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)).
 
 use std::collections::HashMap;

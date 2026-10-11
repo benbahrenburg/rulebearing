@@ -2,7 +2,7 @@
 // which is Babel's own `loadOptionsSync` over the file, run with the caller's Babel.
 //
 // Decision: docs/adr/0062-the-node-binding-reads-typescript-and-babel-configs-with-the-callers-packages.md.
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 22. Requirement: FR-DIST-02.
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 22. Requirement: FR-DIST-02.
 // Specification: dependency-cruiser 18.2.0, src/config-utl/extract-babel-config.mjs, ported line for
 // line; JSON5 is read with the `json5` Babel itself depends on, so this package adds no dependency.
 //

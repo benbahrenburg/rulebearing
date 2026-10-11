@@ -3,7 +3,7 @@
 
 - Decision: docs/adr/0071-the-rule-library-ships-from-this-repository.md (one source, the
   release version); docs/adr/0020-single-name-across-registries.md (one name on every registry).
-- Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 23.
+- Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 23.
 - Procedure: docs/release.md.
 - Requirement: FR-REACH-04 (docs/prd.md).
 

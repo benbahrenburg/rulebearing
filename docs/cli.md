@@ -89,7 +89,7 @@ A checkout holds what git tracks and nothing else. Edges into installed packages
 
 ## Snapshots, changelog and unused rules
 
-A rule file grows and never shrinks unless something shows which rules stopped earning their place; a pull request shows one change, and drift shows only across releases ([design § The architect's hat](artifacts/design.md#the-architects-hat-across-repos-and-across-time)). Three commands read the history a repository keeps under `.graph/snapshots/`, one snapshot per release ([plan 0003, Steps 12 and 13](plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)):
+A rule file grows and never shrinks unless something shows which rules stopped earning their place; a pull request shows one change, and drift shows only across releases ([design § The architect's hat](artifacts/design.md#the-architects-hat-across-repos-and-across-time)). Three commands read the history a repository keeps under `.graph/snapshots/`, one snapshot per release ([plan 0003, Steps 12 and 13](plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)):
 
 ```sh
 rulebearing snapshot --version 1.3.0                 # at the release; commit .graph/snapshots/1.3.0.json
@@ -168,7 +168,7 @@ A gating reporter exits with the error count of what the report kept. A revision
 
 ## The cache
 
-`cruise --cache [folder]` keeps the extraction and, on the next run, reads again only what changed ([coverage § Command line](artifacts/dependency-cruiser-18.2.0-coverage.md#command-line) rows `--cache [folder]`, `--cache-strategy`, `--no-cache`; [Wave 3, Steps 1 and 2](plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)). The rules are evaluated afresh on every run, so a cached run reports exactly what a cold run reports.
+`cruise --cache [folder]` keeps the extraction and, on the next run, reads again only what changed ([coverage § Command line](artifacts/dependency-cruiser-18.2.0-coverage.md#command-line) rows `--cache [folder]`, `--cache-strategy`, `--no-cache`; [Wave 3, Steps 1 and 2](plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)). The rules are evaluated afresh on every run, so a cached run reports exactly what a cold run reports.
 
 | Flag | Meaning |
 | --- | --- |
@@ -202,7 +202,7 @@ Under `--sidecar node` a CoffeeScript or LiveScript file is one of the files rea
 
 ## CoffeeScript and LiveScript: `--sidecar node`
 
-`cruise --sidecar node` extracts `.coffee`, `.litcoffee`, `.coffee.md`, `.ls`, `.cjsx` and `.csx` files by running the repository's own dependency-cruiser with Node, and merges what it finds into the graph ([coverage § Extraction and resolution](artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution), row "CoffeeScript, LiveScript"; [ADR-0017](adr/0017-coffeescript-livescript-sidecar.md); [Wave 3, Step 10](plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)). It is, with `--config-via-node`, the only way the binary starts Node, and it never does without the flag.
+`cruise --sidecar node` extracts `.coffee`, `.litcoffee`, `.coffee.md`, `.ls`, `.cjsx` and `.csx` files by running the repository's own dependency-cruiser with Node, and merges what it finds into the graph ([coverage § Extraction and resolution](artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution), row "CoffeeScript, LiveScript"; [ADR-0017](adr/0017-coffeescript-livescript-sidecar.md); [Wave 3, Step 10](plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)). It is, with `--config-via-node`, the only way the binary starts Node, and it never does without the flag.
 
 | Situation | Result |
 | --- | --- |
@@ -231,7 +231,7 @@ rulebearing cruise --sidecar node -T err src
 rulebearing cruise --mode source --cache --from-hook
 ```
 
-Source mode never decides a gate ([Wave 3 plan § 1.6](plans/pending/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make), [Step 15](plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)). Whenever the run's count would be the exit code, it prints `warning: approximate-mode-not-a-gate: ...` and exits 2 instead, still writing the report:
+Source mode never decides a gate ([Wave 3 plan § 1.6](plans/implemented/0003-wave-3-operations-surface-inner-loop.md#16-decisions-applied-and-decisions-this-wave-must-make), [Step 15](plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)). Whenever the run's count would be the exit code, it prints `warning: approximate-mode-not-a-gate: ...` and exits 2 instead, still writing the report:
 
 | Command | Refused, exit 2 | Not refused |
 | --- | --- | --- |

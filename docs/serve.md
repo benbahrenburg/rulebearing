@@ -55,7 +55,7 @@ rulebearing serve --lsp [--config rulebearing.yaml]
 | `workspace/executeCommand` `rulebearing.explain` | Runs `explain <rule>`, shows its text with `window/showMessage` and returns it |
 | `shutdown`, `exit` | Exits 0 after `shutdown` then `exit`, 1 for `exit` alone |
 
-Each diagnostic is one violation of the open file, as `cruise` evaluates the warm graph with the current configuration ([Wave 3 plan § 1.5](plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)):
+Each diagnostic is one violation of the open file, as `cruise` evaluates the warm graph with the current configuration ([Wave 3 plan § 1.5](plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)):
 
 | Field | Value |
 | --- | --- |

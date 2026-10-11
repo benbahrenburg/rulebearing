@@ -6,7 +6,7 @@
 //! - Protocol: `conformance/dependency-cruiser/harness/shim.mjs` (its header is the contract)
 //! - Decision: [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md)
 //! - Plan: [Wave 2, Step 10](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md#210-step-10-reporters-and-baseline-semantics-2e),
-//!   [Wave 3, Step 6](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+//!   [Wave 3, Step 6](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
 //! - Requirement: [NFR-CONF-01](../../../docs/prd.md#nfr-conf-01)
 //!
 //! A request names a `#report/...` module, an export and one argument list per application of a

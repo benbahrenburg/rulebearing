@@ -3,7 +3,7 @@
 # where `extends: rulebearing-rules/<preset>` finds them (docs/config.md, "extends").
 # hatch_rules.py stamps the release version and adds the presets at build time; the source tree
 # carries no copy of them and no version (docs/adr/0071-the-rule-library-ships-from-this-repository.md).
-# Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 23. Procedure: docs/release.md.
+# Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 23. Procedure: docs/release.md.
 # Lint, type-check and test configuration is the root pyproject.toml.
 [build-system]
 requires = ["hatchling>=1.26", "packaging>=24"]

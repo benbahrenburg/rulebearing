@@ -106,7 +106,7 @@ fn extension(path: &str) -> Option<&str> {
 }
 
 /// The reason a sidecar file stops a run without `--sidecar node`, opening with the reason's name
-/// ([Wave 3 § 1.5](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)).
+/// ([Wave 3 § 1.5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)).
 pub const SIDECAR_REASON: &str = "unsupported-file-needs-sidecar: CoffeeScript and LiveScript are \
      extracted by the Node sidecar (ADR-0017), which is not enabled; run with `--sidecar node`, or \
      exclude the file";
@@ -196,7 +196,7 @@ pub fn resolve_config(options: &TypeScriptOptions) -> ResolveConfig {
 /// `package.json` files: the tsconfig with the files its `extends` chains and project references
 /// name (each read as the resolver reads it), the Babel configuration, and the Plug'n'Play
 /// manifest. A cache keys a reused extraction on them
-/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 /// A file named but absent is listed too, so its appearance is seen.
 pub fn configuration_files(options: &TypeScriptOptions, cwd: &Path) -> Vec<PathBuf> {
     let config = resolve_config(options);
@@ -568,7 +568,7 @@ pub fn reuse_refused(settings: &Settings) -> Option<&'static str> {
 
 /// [`extract_with`] after some files changed: each file `request.unchanged` names is taken from
 /// `request.previous` instead of being read, and the walk replays over them
-/// ([Wave 3, Step 2](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
+/// ([Wave 3, Step 2](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 /// The result equals [`extract_with`]'s, module order included, when the caller's precondition
 /// holds: no file was added, deleted or renamed and no manifest changed since `previous`, so
 /// every unchanged file resolves as it did. When [`reuse_refused`] gives a reason, every file is
@@ -587,7 +587,7 @@ pub fn extract_incremental(
 
 /// [`extract_incremental`], taking the request, so the unchanged files' modules, file states and
 /// code layer move from `request.previous` into the result instead of being copied
-/// ([Wave 3, Step 16](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
+/// ([Wave 3, Step 16](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#24-steps-for-sub-wave-3d---mode-source-guard---watch-the-2-s-proof)).
 /// With `request.walk_unchanged` and a walk kept in `previous`, the initial sources are the
 /// walk's and no folder is listed again; otherwise the inputs are walked. Where
 /// [`incremental::applies`], the walk replays over the earlier modules as they stand

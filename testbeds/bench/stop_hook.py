@@ -1,10 +1,10 @@
 # Copyright (c) 2026 Ben Bahrenburg. MIT licence: see LICENSE.
 """The Stop hook's wall-clock over seeded one-line edits: the p95 NFR-PERF-02 promises under 2 s.
 
-Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 17 ("for a repository
-and a seed, choose 200 files, for each apply a one-line no-op edit, run the hook command,
-restore, record wall-clock; print p50, p95, p99, the runner CPU and memory, and write
-testbeds/results/stop-hook.json") and section 1.7 (Performance: Stop hook p95). Requirement:
+Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 17
+("for a repository and a seed, choose 200 files, for each apply a one-line no-op edit, run the
+hook command, restore, record wall-clock; print p50, p95, p99, the runner CPU and memory, and
+write testbeds/results/stop-hook.json") and section 1.7 (Performance: Stop hook p95). Requirement:
 docs/prd.md#nfr-perf-02. Run by .github/workflows/nightly-testbeds.yml on dotnet/aspnetcore in
 source mode, with the configuration testbeds/bench/aspnetcore.yaml; docs/perf.md records the
 figures.

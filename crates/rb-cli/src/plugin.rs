@@ -6,7 +6,7 @@
 //!   [ADR-0008](../../../docs/adr/0008-exit-code-contract.md),
 //!   [ADR-0030](../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md),
 //!   [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
-//! - Plan: [Wave 3, Step 7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
+//! - Plan: [Wave 3, Step 7](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#22-steps-for-sub-wave-3b-the-remaining-reporters-and-the-sidecar)
 //! - Requirements: [FR-OUT-01](../../../docs/prd.md#fr-out-01), [NFR-SEC-01](../../../docs/prd.md#nfr-sec-01)
 //!
 //! The sandbox itself is `rb_config::js::plugin`; this module is the orchestration `cruise`,
@@ -30,7 +30,7 @@
 //!   and the fix.
 //! - **Receipt.** The result a plugin receives carries `summary.plugins: [path]`, the module
 //!   relative to the repository root, so what rendered a report is on the record
-//!   ([plan § 1.7](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)).
+//!   ([plan § 1.7](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)).
 //!   `--strict-schema` hands the plugin dependency-cruiser's shape instead, with every addition,
 //!   the receipt included, stripped.
 

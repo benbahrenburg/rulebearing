@@ -19,7 +19,7 @@
 #      a cruise of the assemblies the first import names, so that types from packages resolve;
 #      then `rulebearing cruise -T junit` with the imported configuration;
 #   5. compare.py joins each TRX result with the JUnit cases of the rules named from its method;
-#   6. the plantuml round trip over the graph of step 4 (docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md,
+#   6. the plantuml round trip over the graph of step 4 (docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md,
 #      Step 9): the diagram written from namespaces and from slices, then enforced.
 # A test the importer writes commented out is recorded as `stays` (a custom predicate, or a test
 # that runs no rule and checks the architecture in C#) or `not-imported` with the importer's

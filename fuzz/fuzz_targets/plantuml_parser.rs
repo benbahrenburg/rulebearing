@@ -2,7 +2,7 @@
 //! associating the components (the stereotypes compiled as patterns), and placing a namespace.
 //! A malformed `.puml` must be a named `DiagramError`, never a panic.
 //!
-//! - Plan: [Wave 3 § 1.7](../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)
+//! - Plan: [Wave 3 § 1.7](../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes)
 //!   ("fuzz target for the cache manifest and the PlantUML parser")
 //! - Requirement: [NFR-SEC-01](../../docs/prd.md#nfr-sec-01)
 #![no_main]

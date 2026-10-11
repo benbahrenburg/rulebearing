@@ -2,7 +2,7 @@
 //
 // Source: docs/artifacts/design.md, "Two front-ends that will matter more than the MCP server".
 // Requirement: docs/prd.md#fr-dist-04. Decision: docs/adr/0021-agent-surface-cli-first.md.
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21, and its § 1.5
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 21, and its § 1.5
 // (RB0001 a dependency-rule violation, RB0002 an element-rule violation, RB0009 the config could
 // not be read; the message is the fix, or the comment when there is no fix; the rule name is the
 // help link's fragment; error is an error, warn a warning, info a message).

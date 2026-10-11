@@ -1,6 +1,6 @@
 // A type's facts as the compiled-mode extractor records them, computed from Roslyn's symbols.
 //
-// Plan: docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md, Step 21. Source:
+// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 21. Source:
 // crates/rb-extract-dotnet/src/codelayer.rs (build_type, kind, base_chain, the interfaces, the
 // flags), body.rs (what a method body depends on) and names.rs (how a type is named). The
 // analyzer sees source, not IL, so it reads the same facts from the semantic model: a type's full

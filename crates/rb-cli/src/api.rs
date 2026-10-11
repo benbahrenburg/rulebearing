@@ -3,7 +3,7 @@
 //! `getAvailableTranspilers` and `allExtensions`, each the command line's own code reached
 //! without argv.
 //!
-//! - Plan: [Wave 3, Step 22](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)
+//! - Plan: [Wave 3, Step 22](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#26-steps-for-sub-wave-3f-the-roslyn-analyzer-and-rb-node)
 //! - Decisions: [ADR-0062](../../../docs/adr/0062-the-node-binding-reads-typescript-and-babel-configs-with-the-callers-packages.md),
 //!   [ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md) (the binding reaches the
 //!   workspace through this crate only)

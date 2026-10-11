@@ -3,7 +3,7 @@
 //! - Source: [design § The dependency-cruiser format](../../../docs/artifacts/design.md#the-dependency-cruiser-format)
 //!   ("`extends` resolves files, npm packages, and the bundled presets, exactly as today")
 //! - Plans: [Wave 1, Step 3](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-3-extends-presets-defines-captures-regex-1a);
-//!   [Wave 3, Step 11](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
+//!   [Wave 3, Step 11](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)
 //!   (the framework presets, `rulebearing:nextjs` and the rest)
 //! - Coverage: [coverage § Rules](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#rules), row `extends`
 //! - Requirements: [FR-CFG-01](../../../docs/prd.md#fr-cfg-01), [FR-REACH-04](../../../docs/prd.md#fr-reach-04)
@@ -64,7 +64,7 @@ pub const NATIVE_PRESETS: &[(&str, &str)] = &[
 
 /// The framework presets among [`NATIVE_PRESETS`]: opinions, off by default, which nothing
 /// extends unless a configuration names them
-/// ([plan 0003, Step 11](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
+/// ([plan 0003, Step 11](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#23-steps-for-sub-wave-3c-presets-lifecycle-fields-snapshot-and-changelog)).
 pub const FRAMEWORK_PRESETS: &[&str] = &[
     "nextjs",
     "clean-architecture",

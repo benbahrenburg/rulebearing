@@ -63,7 +63,7 @@
       "type": "object"
     },
     "CacheStrategy": {
-      "description": "How a cache decides what changed since the entry was written: dependency-cruiser's\n`cache.strategy` and `--cache-strategy`\n([coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),\n[Wave 3, Step 1](../../../docs/plans/pending/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).",
+      "description": "How a cache decides what changed since the entry was written: dependency-cruiser's\n`cache.strategy` and `--cache-strategy`\n([coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options),\n[Wave 3, Step 1](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).",
       "oneOf": [
         {
           "const": "metadata",
