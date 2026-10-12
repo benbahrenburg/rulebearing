@@ -1,0 +1,30 @@
+{
+  "rule": "m07-reachable",
+  "violations": [
+    {
+      "id": "RB-5e89dfa4",
+      "from": "src/mutation/07-reachable/entry.mjs",
+      "to": "src/mutation/07-reachable/forbidden.mjs",
+      "plans": [
+        {
+          "kind": "move",
+          "target": "src/mutation/",
+          "edgesTouched": 1,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "port",
+          "package": "src/mutation/07-reachable",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "invert",
+          "edgesTouched": 2,
+          "dependentsToChange": [],
+          "legalBy": "can-import"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "rule": "m03-fence",
+  "violations": [
+    {
+      "id": "RB-716a32ca",
+      "from": "src/mutation/03-fence/alpha/a.mjs",
+      "to": "src/mutation/03-fence/beta/b.mjs",
+      "plans": [
+        {
+          "kind": "move",
+          "target": "src/mutation/03-fence/",
+          "edgesTouched": 1,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "port",
+          "package": "src/mutation",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        }
+      ]
+    }
+  ]
+}

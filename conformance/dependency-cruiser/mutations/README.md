@@ -7,6 +7,7 @@ Conformance gate 1, layer 5, second half ([plan 0001, Step 18](../../../docs/pla
 | [mutations.patch](mutations.patch) | New files only: `.dependency-cruiser.mutations.cjs` (twelve rules, one per shape) and `src/mutation/<nn>-<shape>/` (the violating modules). Applies with `git apply` at the manifest SHA |
 | [expected.json](expected.json) | The twelve violations, `{ rule, from, to }`, that each tool must report, and nothing else |
 | [expected-affected.json](expected-affected.json) | The seven violations each tool must report with the mutations committed and `--affected <manifest SHA>` ([below](#the-affected-run)) |
+| [expected-fix-plan/](expected-fix-plan/) | What `rulebearing fix --plan <rule>` prints for each of the twelve rules over the whole tree ([below](#the-plans)) |
 
 ## The twelve shapes
 
@@ -38,6 +39,10 @@ The script clones dependency-cruiser's repository at the manifest SHA into the l
 ## The affected run
 
 After the twelve, the script commits the mutations on top of the manifest SHA and runs both tools again with `--affected <manifest SHA>` ([plan 0003, Step 3](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict); [ADR-0052](../../../docs/adr/0052-affected-is-upstreams-reaches-filter.md)). The mutations are committed because `git status --porcelain` lists the new, untracked `src/mutation/` folder rather than its files, and neither tool counts a folder. Both results must agree field for field and hold exactly [expected-affected.json](expected-affected.json): the seven violations whose modules are all in the closure. The other five (`m01`, `m02`, `m06`, `not-in-allowed` and `m12`) are on edges from a mutation to a module that reaches no changed file (`src/cli/format-meta-info.mjs`, `src/graph-utl/compare.mjs`, `path`, `src/utl/bus.mjs`, the unresolved `./does-not-exist.mjs`), which dependency-cruiser's `reaches` filter drops, so neither tool reports them.
+
+## The plans
+
+After the twelve are found, the script runs `rulebearing fix --plan <rule>` for each rule over Rulebearing's result and byte-compares the output with `expected-fix-plan/<rule>.json` ([plan 0004, Step 9](../../../docs/plans/pending/0004-wave-4-reach.md#23-steps-for-sub-wave-4c-fix---plan-and-the-eval-harness-funded-only-by-the--12-rule); [ADR-0076](../../../docs/adr/0076-fix-plan-candidates-are-verified-and-the-eval-harness-scores-fix-text.md)): one plan document per rule shape, the nine edge shapes with their verified `move`, `port` and `invert` candidates, the three module shapes (`m05`, `m08`, `m09`) with an empty `plans` and the reason. `RB_UPDATE_SNAPSHOTS=1` rewrites them. The same rules over the patch's files alone, with every plan applied and checked independently, run in `cargo test -p rb-cli --test fix_plan` on every pull request.
 
 ## Changing it
 

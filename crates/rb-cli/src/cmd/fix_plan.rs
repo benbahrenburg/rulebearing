@@ -28,9 +28,10 @@
 //! | `port` | a new module in `package`; `from` imports it in place of `to`, and `to` imports it | 2 |
 //! | `invert` | `from` no longer imports `to`; `to` imports `from` | 2, plus one per other dependent of `to` (`dependentsToChange`), which imported what moves to `from`'s side |
 //!
-//! Each template's candidates are tried in a fixed order (`move`: the folders of the module's
-//! language nearest its own first, as `place` lists them; `port`: the folders nearest both ends
-//! first), and the first one that is legal is the template's plan. Legal means both checks pass
+//! Each template's candidates are the folders of the module's language that `place` lists, except
+//! the repository's root, tried nearest first (the fewest folders away from the module's own
+//! folder for `move`, from both ends' folders for `port`; then the deeper; then by name), and the
+//! first one that is legal is the template's plan. Legal means both checks pass
 //! on the changed graph: every edge the change adds is allowed by `can-import`
 //! ([`can_import::blocking_rules`]), and the whole rule set, evaluated as `cruise` evaluates it,
 //! no longer reports the violation and reports no error-severity violation, and no violation of
@@ -221,21 +222,30 @@ pub fn shared_depth(a: &str, b: &str) -> usize {
         .count()
 }
 
-/// `folders` in the order their candidates are tried: those sharing the most leading folder
-/// names with `anchors` (summed) first, then the deeper, then by name.
-pub fn preferred(folders: impl IntoIterator<Item = String>, anchors: &[&str]) -> Vec<String> {
+/// How many folder names a folder has, 0 for the root.
+pub fn depth(folder: &str) -> usize {
+    if folder.is_empty() {
+        0
+    } else {
+        folder.split('/').count()
+    }
+}
+
+/// The number of folders between two folders: up from `a` to the folder they share, then down
+/// to `b`.
+pub fn distance(a: &str, b: &str) -> usize {
+    let shared = shared_depth(a, b);
+    depth(a) - shared + depth(b) - shared
+}
+
+/// `folders` in the order their candidates are tried: the fewest folders away from `anchors`
+/// (summed) first, then the deeper, then by name.
+pub fn nearest(folders: impl IntoIterator<Item = String>, anchors: &[&str]) -> Vec<String> {
     let mut out: Vec<String> = folders.into_iter().collect();
-    let near = |f: &str| anchors.iter().map(|a| shared_depth(f, a)).sum::<usize>();
-    let depth = |f: &str| {
-        if f.is_empty() {
-            0
-        } else {
-            f.split('/').count()
-        }
-    };
+    let away = |f: &str| anchors.iter().map(|a| distance(f, a)).sum::<usize>();
     out.sort_by(|a, b| {
-        near(b)
-            .cmp(&near(a))
+        away(a)
+            .cmp(&away(b))
             .then_with(|| depth(b).cmp(&depth(a)))
             .then_with(|| a.cmp(b))
     });
@@ -456,10 +466,11 @@ impl<'a> Planner<'a> {
         let home = folder_of(from);
         let importers = self.dependents(from, "");
         let edges_touched = module.dependencies.len() + importers.len();
-        let folders = preferred(
+        // The repository's root is never a candidate: a module moved there leaves every package.
+        let folders = nearest(
             place::candidates(&self.document, language)
                 .into_iter()
-                .filter(|f| f != home),
+                .filter(|f| f != home && !f.is_empty()),
             &[home],
         );
         for folder in folders {
@@ -522,7 +533,7 @@ impl<'a> Planner<'a> {
         let file = place::default_name(from_language);
         let (from_home, to_home) = (folder_of(from), folder_of(to));
         // The repository's root is no package, so a port is never put there.
-        let folders = preferred(
+        let folders = nearest(
             place::candidates(&self.document, from_language)
                 .into_iter()
                 .filter(|f| !f.is_empty()),
@@ -884,55 +895,59 @@ rules:
         assert_eq!(shared_depth("a", ""), 0);
         assert_eq!(shared_depth("", "a"), 0);
         assert_eq!(shared_depth("ab", "a"), 0);
-        let order = preferred(
-            [
-                "",
-                "z",
-                "apps",
-                "apps/web",
-                "packages/shared/src",
-                "packages",
-                "apps/worker",
-            ]
-            .map(str::to_owned),
-            &["apps/web/src"],
+        assert_eq!(distance("a/b/c", "a/d"), 3);
+        assert_eq!(distance("a", "a"), 0);
+        assert_eq!(distance("", "a/b"), 2);
+        assert_eq!(depth(""), 0);
+        assert_eq!(depth("a/b"), 2);
+        assert_eq!(
+            nearest(
+                ["", "a", "a/b", "a/c", "a/c/d", "e"].map(str::to_owned),
+                &["a/b/x"]
+            ),
+            ["a/b", "a", "a/c", "", "a/c/d", "e"]
         );
-        assert_eq!(order[0], "apps/web");
-        assert_eq!(&order[1..3], ["apps/worker", "apps"], "the deeper first");
-        assert_eq!(&order[3..], ["packages/shared/src", "packages", "z", ""]);
-        let both = preferred(["a/x", "a/y", "b"].map(str::to_owned), &["a/x/1", "a/y/2"]);
-        assert_eq!(both, ["a/x", "a/y", "b"]);
+        // Both ends count: each end's own folder ties with the folder they share, and the deeper wins.
+        assert_eq!(
+            nearest(
+                ["m/f/a", "m/f/b", "m/f", "m", "m/o"].map(str::to_owned),
+                &["m/f/a", "m/f/b"]
+            ),
+            ["m/f/a", "m/f/b", "m/f", "m", "m/o"]
+        );
     }
 
     proptest! {
         #[test]
-        fn shared_depth_is_symmetric_and_bounded(
+        fn shared_depth_and_distance_are_symmetric_and_bounded(
             a in proptest::collection::vec("[ab]{1,2}", 0..4),
             b in proptest::collection::vec("[ab]{1,2}", 0..4),
         ) {
             let (a, b) = (a.join("/"), b.join("/"));
-            let depth = |f: &str| if f.is_empty() { 0 } else { f.split('/').count() };
             prop_assert_eq!(shared_depth(&a, &b), shared_depth(&b, &a));
             prop_assert!(shared_depth(&a, &b) <= depth(&a).min(depth(&b)));
             prop_assert_eq!(shared_depth(&a, &a), depth(&a));
+            prop_assert_eq!(distance(&a, &b), distance(&b, &a));
+            prop_assert_eq!(distance(&a, &a), 0);
+            prop_assert!(distance(&a, &b) <= depth(&a) + depth(&b));
             let file = joined(&a, "f.ts");
             prop_assert_eq!(folder_of(&file), a.as_str());
         }
 
         #[test]
-        fn preference_is_a_total_order_of_the_same_folders(
+        fn the_order_is_total_and_nearest_first(
             folders in proptest::collection::btree_set("[ab]{1,2}(/[ab]{1,2}){0,2}", 0..8),
             anchor in "[ab]{1,2}(/[ab]{1,2}){0,2}",
         ) {
             let given: Vec<String> = folders.iter().cloned().collect();
-            let once = preferred(given.clone(), &[anchor.as_str()]);
-            let reversed = preferred(given.into_iter().rev(), &[anchor.as_str()]);
+            let once = nearest(given.clone(), &[anchor.as_str()]);
+            let reversed = nearest(given.into_iter().rev(), &[anchor.as_str()]);
             prop_assert_eq!(&once, &reversed);
             let mut sorted = once.clone();
             sorted.sort();
             prop_assert_eq!(sorted, folders.into_iter().collect::<Vec<_>>());
             for pair in once.windows(2) {
-                prop_assert!(shared_depth(&pair[0], &anchor) >= shared_depth(&pair[1], &anchor));
+                prop_assert!(distance(&pair[0], &anchor) <= distance(&pair[1], &anchor));
             }
         }
     }
@@ -955,14 +970,14 @@ rules:
                 // Its one import and its one importer; anywhere under apps/ the importer breaks the rule.
                 Plan {
                     kind: PlanKind::Move {
-                        target: "packages/shared/src".into()
+                        target: "packages".into()
                     },
                     edges_touched: 2,
                     legal_by: LEGAL_BY
                 },
                 Plan {
                     kind: PlanKind::Port {
-                        package: "packages/shared/src".into()
+                        package: "packages".into()
                     },
                     edges_touched: 2,
                     legal_by: LEGAL_BY

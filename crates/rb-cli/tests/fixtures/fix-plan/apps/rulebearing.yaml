@@ -1,0 +1,24 @@
+# The fix --plan fixture beside the mutation branch (plan 0004, Step 9): the contract's own
+# example, an app importing another app; a layer edge that inverts with a dependent that changes;
+# and a rule no folder satisfies, whose plans are empty with a reason.
+rules:
+  dependencies:
+    forbidden:
+      - name: no-cross-app-imports
+        comment: "An app never imports another app. adr:0003"
+        fix: "Call the other app over its API, or move the shared code into packages/*."
+        severity: error
+        from: { path: "^apps/([^/]+)/" }
+        to: { path: "^apps/", pathNot: "^apps/$1/" }
+      - name: domain-not-to-web
+        comment: "The domain stays independent of the web layer. adr:0010"
+        fix: "Move what the domain needs into src/domain, or have the web layer pass it in."
+        severity: error
+        from: { path: "^src/domain/" }
+        to: { path: "^src/web/" }
+      - name: no-builtins
+        comment: "Modules take what they need from Node from their caller. adr:0011"
+        fix: "Take the built-in as a parameter from the caller."
+        severity: error
+        from: {}
+        to: { dependencyTypes: [core] }

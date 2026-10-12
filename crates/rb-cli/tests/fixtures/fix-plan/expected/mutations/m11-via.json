@@ -1,0 +1,30 @@
+{
+  "rule": "m11-via",
+  "violations": [
+    {
+      "id": "RB-2c1087cc",
+      "from": "src/mutation/11-via/a.mjs",
+      "to": "src/mutation/11-via/hub.mjs",
+      "plans": [
+        {
+          "kind": "invert",
+          "edgesTouched": 1,
+          "dependentsToChange": [],
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "move",
+          "target": "src/mutation/",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "port",
+          "package": "src/mutation/11-via",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        }
+      ]
+    }
+  ]
+}

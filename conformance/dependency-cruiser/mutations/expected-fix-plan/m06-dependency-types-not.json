@@ -1,0 +1,18 @@
+{
+  "rule": "m06-dependency-types-not",
+  "violations": [
+    {
+      "id": "RB-8110b593",
+      "from": "src/mutation/06-dependency-types-not/uses-core.mjs",
+      "to": "path",
+      "plans": [
+        {
+          "kind": "move",
+          "target": "src/mutation/",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        }
+      ]
+    }
+  ]
+}

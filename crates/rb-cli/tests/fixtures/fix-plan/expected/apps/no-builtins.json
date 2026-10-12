@@ -1,0 +1,12 @@
+{
+  "rule": "no-builtins",
+  "violations": [
+    {
+      "id": "RB-724aacc3",
+      "from": "tools/read.mjs",
+      "to": "fs",
+      "plans": [],
+      "reason": "no candidate is legal; move: no folder of the javascript modules takes tools/read.mjs without a new error-severity finding; port: fs is not a module of the repository, so it cannot import a port; invert: fs is not a module of the repository, so it cannot import tools/read.mjs"
+    }
+  ]
+}

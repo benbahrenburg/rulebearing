@@ -323,6 +323,7 @@ fn skill(place: &Place<'_>, entries: &[Entry]) -> String {
 | `rulebearing explain <rule>` | read a rule as a sentence, why it exists, its `fix` and the edges it matches |\n\
 | `rulebearing impact <file>` | see the rules that mention a file, its dependents, cycles and ratchets before editing it |\n\
 | `rulebearing place --imports a,b --imported-by c --language <language>` | find the directories where a new module with those imports would be legal |\n\
+| `rulebearing fix --plan <rule>` | get, for each violation of a rule, the cheapest verified move, port or inversion that clears it, as JSON |\n\
 | `rulebearing test` | prove every rule's `examples`: forbidden ones flagged, allowed ones not |\n\
 | `rulebearing guard --watch` | keep the Stop hook's answer current as files are saved, so the turn ends without a cruise (.NET is read from source there) |\n\
 | `rulebearing serve --mcp` | the commands above as MCP tools over one warm graph; `hooks install --claude-code --mcp` registers it in `.mcp.json` |\n\

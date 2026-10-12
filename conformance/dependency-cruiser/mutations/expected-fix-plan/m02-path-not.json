@@ -1,0 +1,42 @@
+{
+  "rule": "m02-path-not",
+  "violations": [
+    {
+      "id": "RB-6a461ebc",
+      "from": "src/mutation/02-path-not/uses-graph-utl.mjs",
+      "to": "src/graph-utl/compare.mjs",
+      "plans": [
+        {
+          "kind": "move",
+          "target": "src/mutation/",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "port",
+          "package": "src/mutation/02-path-not",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "invert",
+          "edgesTouched": 13,
+          "dependentsToChange": [
+            "src/analyze/summarize/get-stats.mjs",
+            "src/analyze/summarize/index.mjs",
+            "src/analyze/summarize/summarize-modules.mjs",
+            "src/graph-utl/consolidate-module-dependencies.mjs",
+            "src/graph-utl/consolidate-modules.mjs",
+            "src/main/report-wrap.mjs",
+            "src/report/baseline.mjs",
+            "src/report/dot/prepare-custom-level.mjs",
+            "src/report/dot/prepare-flat-level.mjs",
+            "src/report/dot/prepare-folder-level.mjs",
+            "src/report/error-html/index.mjs"
+          ],
+          "legalBy": "can-import"
+        }
+      ]
+    }
+  ]
+}

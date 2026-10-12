@@ -1,0 +1,30 @@
+{
+  "rule": "m02-path-not",
+  "violations": [
+    {
+      "id": "RB-6a461ebc",
+      "from": "src/mutation/02-path-not/uses-graph-utl.mjs",
+      "to": "src/graph-utl/compare.mjs",
+      "plans": [
+        {
+          "kind": "move",
+          "target": "src/mutation/",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "port",
+          "package": "src/mutation/02-path-not",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "invert",
+          "edgesTouched": 2,
+          "dependentsToChange": [],
+          "legalBy": "can-import"
+        }
+      ]
+    }
+  ]
+}

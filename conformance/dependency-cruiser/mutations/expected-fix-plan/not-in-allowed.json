@@ -1,0 +1,48 @@
+{
+  "rule": "not-in-allowed",
+  "violations": [
+    {
+      "id": "RB-1a2adcad",
+      "from": "src/mutation/10-allowed/a.mjs",
+      "to": "src/utl/bus.mjs",
+      "plans": [
+        {
+          "kind": "move",
+          "target": "src/mutation/",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "port",
+          "package": "src/mutation/10-allowed",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "invert",
+          "edgesTouched": 19,
+          "dependentsToChange": [
+            "src/analyze/analyze-modules.mjs",
+            "src/analyze/index.mjs",
+            "src/analyze/soften-known-violations.mjs",
+            "src/cache/cache.mjs",
+            "src/cache/find-content-changes.mjs",
+            "src/cache/metadata-strategy.mjs",
+            "src/cli/index.mjs",
+            "src/cli/listeners/cli-feedback.mjs",
+            "src/cli/listeners/ndjson.mjs",
+            "src/cli/listeners/performance-log/format-helpers.mjs",
+            "src/cli/listeners/performance-log/index.mjs",
+            "src/extract/index.mjs",
+            "src/main/cruise.mjs",
+            "src/main/report-wrap.mjs",
+            "src/main/rule-set/assert-validity.mjs",
+            "src/main/rule-set/normalize.mjs",
+            "src/mutation/02-path-not/uses-graph-utl.mjs"
+          ],
+          "legalBy": "can-import"
+        }
+      ]
+    }
+  ]
+}

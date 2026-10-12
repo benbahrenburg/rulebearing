@@ -1,0 +1,126 @@
+{
+  "inspected": {
+    "javascript": {
+      "files": 9,
+      "assemblies": 0,
+      "modules": 9
+    }
+  },
+  "vacuousRules": [],
+  "rules": [
+    {
+      "name": "no-builtins",
+      "severity": "error",
+      "count": 1,
+      "shown": 1,
+      "fix": "Take the built-in as a parameter from the caller.",
+      "decision": "adr:0011",
+      "violations": [
+        {
+          "id": "RB-724aacc3",
+          "from": "tools/read.mjs",
+          "to": "fs",
+          "line": 1,
+          "column": 1,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 1,
+            "targetFanIn": 1,
+            "score": 2
+          },
+          "plans": [],
+          "reason": "no candidate is legal; move: no folder of the javascript modules takes tools/read.mjs without a new error-severity finding; port: fs is not a module of the repository, so it cannot import a port; invert: fs is not a module of the repository, so it cannot import tools/read.mjs"
+        }
+      ]
+    },
+    {
+      "name": "domain-not-to-web",
+      "severity": "error",
+      "count": 1,
+      "shown": 1,
+      "fix": "Move what the domain needs into src/domain, or have the web layer pass it in.",
+      "decision": "adr:0010",
+      "violations": [
+        {
+          "id": "RB-543284d2",
+          "from": "src/domain/model.mjs",
+          "to": "src/web/view.mjs",
+          "line": 1,
+          "column": 1,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 1,
+            "targetFanIn": 2,
+            "score": 3
+          },
+          "plans": [
+            {
+              "kind": "move",
+              "target": "src/",
+              "edgesTouched": 2,
+              "legalBy": "can-import"
+            },
+            {
+              "kind": "port",
+              "package": "src/domain",
+              "edgesTouched": 2,
+              "legalBy": "can-import"
+            },
+            {
+              "kind": "invert",
+              "edgesTouched": 3,
+              "dependentsToChange": [
+                "src/web/page.mjs"
+              ],
+              "legalBy": "can-import"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "no-cross-app-imports",
+      "severity": "error",
+      "count": 1,
+      "shown": 1,
+      "fix": "Call the other app over its API, or move the shared code into packages/*.",
+      "decision": "adr:0003",
+      "violations": [
+        {
+          "id": "RB-c7eade13",
+          "from": "apps/web/src/x.mjs",
+          "to": "apps/worker/src/y.mjs",
+          "line": 1,
+          "column": 1,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 1,
+            "targetFanIn": 2,
+            "score": 3
+          },
+          "plans": [
+            {
+              "kind": "move",
+              "target": "packages/",
+              "edgesTouched": 2,
+              "legalBy": "can-import"
+            },
+            {
+              "kind": "port",
+              "package": "packages",
+              "edgesTouched": 2,
+              "legalBy": "can-import"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "budget": {
+    "maxFindings": 5,
+    "truncated": false
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "rule": "domain-not-to-web",
+  "violations": [
+    {
+      "id": "RB-543284d2",
+      "from": "src/domain/model.mjs",
+      "to": "src/web/view.mjs",
+      "plans": [
+        {
+          "kind": "move",
+          "target": "src/",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "port",
+          "package": "src/domain",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "invert",
+          "edgesTouched": 3,
+          "dependentsToChange": [
+            "src/web/page.mjs"
+          ],
+          "legalBy": "can-import"
+        }
+      ]
+    }
+  ]
+}

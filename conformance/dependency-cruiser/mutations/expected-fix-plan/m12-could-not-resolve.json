@@ -1,0 +1,18 @@
+{
+  "rule": "m12-could-not-resolve",
+  "violations": [
+    {
+      "id": "RB-30b0e427",
+      "from": "src/mutation/12-could-not-resolve/imports-nothing.mjs",
+      "to": "./does-not-exist.mjs",
+      "plans": [
+        {
+          "kind": "move",
+          "target": "src/mutation/",
+          "edgesTouched": 1,
+          "legalBy": "can-import"
+        }
+      ]
+    }
+  ]
+}

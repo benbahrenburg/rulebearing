@@ -9,8 +9,11 @@
 #   --mutations          apply mutations/mutations.patch to a fresh checkout of dependency-cruiser's
 #                        repository at its manifest SHA and assert that both tools report exactly
 #                        the twelve violations in mutations/expected.json, and agree otherwise;
-#                        then, with the mutations committed, that `--affected <manifest SHA>`
-#                        gives the same result from both, exactly mutations/expected-affected.json
+#                        that `rulebearing fix --plan` prints mutations/expected-fix-plan/<rule>.json
+#                        for each of the twelve rules over that graph (RB_UPDATE_SNAPSHOTS=1
+#                        rewrites them; plan 0004, Step 9); then, with the mutations committed, that
+#                        `--affected <manifest SHA>` gives the same result from both, exactly
+#                        mutations/expected-affected.json
 #
 # Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 18 and sub-wave 1G.
 # Requirements: docs/prd.md#nfr-conf-01, docs/prd.md#nfr-conf-03.
@@ -234,6 +237,27 @@ json.dump({"repo": repo, "sha": sha, "zeroDiff": verdict,
 PY
 }
 
+# `fix --plan` for every rule of the mutation branch over Rulebearing's result in <out>, each
+# byte-compared with mutations/expected-fix-plan/<rule>.json (plan 0004, Step 9; ADR-0076).
+fix_plans() { # out, directory
+  local out="$1" dir="$2" rule status=0
+  local expected="$gate/mutations/expected-fix-plan"
+  mkdir -p "$out/fix-plan" "$expected"
+  for rule in $(python3 -c 'import json, sys; print(" ".join(sorted({v["rule"] for v in json.load(open(sys.argv[1]))})))' "$gate/mutations/expected.json"); do
+    if ! (cd "$dir" && "$rulebearing" fix --plan "$rule" --config .dependency-cruiser.mutations.cjs \
+          --graph "$out/rulebearing.json") > "$out/fix-plan/$rule.json"; then
+      echo "layer5: fix --plan $rule failed" >&2
+      status=1
+    elif [ -n "${RB_UPDATE_SNAPSHOTS:-}" ]; then
+      cp "$out/fix-plan/$rule.json" "$expected/$rule.json"
+    elif ! diff -u "$expected/$rule.json" "$out/fix-plan/$rule.json"; then
+      echo "layer5: fix --plan $rule differs from mutations/expected-fix-plan/$rule.json" >&2
+      status=1
+    fi
+  done
+  return "$status"
+}
+
 run_mutations() {
   local name=sverweij/dependency-cruiser sha dir out
   sha="$(field "$name" sha)"
@@ -247,6 +271,7 @@ run_mutations() {
   # The pinned incumbent: the mutation config uses nothing newer than 18.2.0.
   cruise_both "$out" "$dir" .dependency-cruiser.mutations.cjs "$(pinned_incumbent)" src bin
   zero_diff "$out" "$name" --expect "$gate/mutations/expected.json"
+  fix_plans "$out" "$dir"
   # --affected (plan 0003, Step 3): the mutations committed on top of the manifest SHA, then both
   # tools with `--affected <sha>`. Committed, because `git status --porcelain` lists the new
   # untracked folder src/mutation/ rather than its files, which neither tool would count. Both

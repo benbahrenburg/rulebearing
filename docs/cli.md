@@ -13,6 +13,7 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | `explain <rule> [--plain] [--json]` | One rule in a sentence, with its reason, `fix` and first edges; `--json` prints it as `rules --json` lists it, with `sentence` and `firstEdges` | |
 | `test` | Each rule's `examples` checked against the rule | |
 | `can-import <from> <to>` | Would this import be allowed, from the saved graph | |
+| `fix --plan <rule>` | For each violation of the rule, the cheapest verified refactor of each kind (`move`, `port`, `invert`), as JSON; nothing is edited ([agents.md](agents.md#plans-for-a-violation)) | |
 | `count --from --to [--budget] [--write] [--json]` | Direct edges that match, against a ratchet budget that may only fall; `--json` prints `count`, and with a budget `ceiling` and `headroom` or `excess` | |
 | `query --from --to [--json]` | The direct edges `count` counts, one `from -> to` per line | |
 | `config convert <file> [--to native\|dependency-cruiser]` | Translate between the formats; says what a lossy conversion dropped | |
