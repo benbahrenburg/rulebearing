@@ -769,3 +769,452 @@ fn extend(
             .extend(rules.iter().cloned());
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+    use rb_model::{
+        Dependency, DependencyKind, ExpiredEntry, Module, ModuleSystem, RatchetResult,
+        RatchetStatus, RuleSummary, Severity, VacuousRule, Violation,
+    };
+    use serde_json::json;
+
+    #[derive(Parser)]
+    struct Line {
+        #[command(flatten)]
+        args: FleetArgs,
+    }
+
+    fn args(extra: &[&str]) -> FleetArgs {
+        let line = std::iter::once("fleet").chain(extra.iter().copied());
+        Line::try_parse_from(line).map_or_else(|_| Line::parse_from(["fleet"]).args, |l| l.args)
+    }
+
+    fn repo(name: &str, config: Option<&str>) -> FleetRepo {
+        FleetRepo {
+            name: name.into(),
+            path: format!("../{name}"),
+            config: config.map(str::to_owned),
+        }
+    }
+
+    #[test]
+    fn the_flags_default_to_fleet_yaml_and_err() {
+        let parsed = args(&[]);
+        assert_eq!(parsed.manifest, "fleet.yaml");
+        assert_eq!(
+            (parsed.output_type.as_str(), parsed.output_to.as_str()),
+            ("err", "-")
+        );
+        assert!(parsed.edges.is_none() && !parsed.no_cache && !parsed.strict_schema);
+        assert!(
+            Line::try_parse_from(["fleet", "--no-cache", "--cache-strategy", "content"]).is_err()
+        );
+    }
+
+    /// The fleet's flags, the configuration's cache folder, and the `--cache`,
+    /// `--cache-strategy` and `--no-cache` the repository's cruise gets.
+    type CacheCase<'a> = (
+        &'a [&'a str],
+        Option<&'a str>,
+        Option<&'a str>,
+        Option<CacheStrategyArg>,
+        bool,
+    );
+
+    #[test]
+    fn a_repository_keeps_its_own_cache_folder_or_gets_the_default() {
+        let web = repo("web", Some("rulebearing.yaml"));
+        let table: [CacheCase<'_>; 5] = [
+            (&[], None, Some(""), None, false),
+            (&[], Some("custom/cache"), None, None, false),
+            (&[], Some(""), None, None, false),
+            (
+                &["--cache-strategy", "content"],
+                Some("custom/cache"),
+                Some("custom/cache"),
+                Some(CacheStrategyArg::Content),
+                false,
+            ),
+            (&["--no-cache"], Some("custom/cache"), None, None, true),
+        ];
+        for (flags, configured, cache, strategy, off) in table {
+            let cruise = repo_args(&args(flags), &web, configured);
+            assert_eq!(cruise.cache.as_deref(), cache, "{flags:?} {configured:?}");
+            assert_eq!(cruise.cache_strategy, strategy, "{flags:?}");
+            assert_eq!(cruise.no_cache, off, "{flags:?}");
+            assert_eq!(cruise.output_type.as_deref(), Some("json"));
+            assert_eq!(cruise.config.config.as_deref(), Some("rulebearing.yaml"));
+            assert!(cruise.no_progress);
+        }
+        assert!(
+            repo_args(&args(&[]), &repo("api", None), None)
+                .config
+                .config
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn which_violations_name_paths_and_which_are_over_an_edge() {
+        use ViolationType as T;
+        let table = [
+            (None, true, false),
+            (Some(T::Dependency), true, true),
+            (Some(T::Module), true, false),
+            (Some(T::Reachability), true, false),
+            (Some(T::Cycle), true, true),
+            (Some(T::Instability), true, true),
+            (Some(T::Folder), true, false),
+            (Some(T::Project), false, false),
+            (Some(T::Element), false, false),
+            (Some(T::Slice), false, false),
+        ];
+        for (kind, paths, edge) in table {
+            assert_eq!(names_paths(kind), paths, "{kind:?}");
+            assert_eq!(over_an_edge(kind), edge, "{kind:?}");
+        }
+    }
+
+    fn violation(rule: &str, from: &str, to: &str, kind: Option<ViolationType>) -> Violation {
+        Violation {
+            from: from.into(),
+            to: to.into(),
+            unresolved_to: None,
+            dependency_types: None,
+            violation_type: kind,
+            rule: RuleSummary {
+                name: rule.into(),
+                severity: Severity::Error,
+            },
+            cycle: None,
+            via: None,
+            metrics: None,
+            comment: None,
+            id: Some("RB-00000000".into()),
+            fix: None,
+            decision: None,
+        }
+    }
+
+    fn step(name: &str) -> rb_model::MiniDependency {
+        rb_model::MiniDependency {
+            name: name.into(),
+            dependency_types: Vec::new(),
+        }
+    }
+
+    /// `src/a.ts` imports `src/b.ts` (an `import` edge in a cycle), the core module `fs` and the
+    /// unresolved `left-pad`.
+    fn repository() -> GraphDocument {
+        let local = Dependency {
+            dependency_kind: Some(DependencyKind::Import),
+            cycle: Some(vec![step("src/b.ts"), step("src/a.ts")]),
+            ..Dependency::new("./b", "src/b.ts", ModuleSystem::Es6)
+        };
+        let core = Dependency {
+            core_module: true,
+            ..Dependency::new("fs", "fs", ModuleSystem::Es6)
+        };
+        let unresolved = Dependency {
+            could_not_resolve: true,
+            ..Dependency::new("left-pad", "left-pad", ModuleSystem::Es6)
+        };
+        let fs = Module {
+            core_module: Some(true),
+            ..Module::new("fs")
+        };
+        let missing = Module {
+            could_not_resolve: Some(true),
+            ..Module::new("left-pad")
+        };
+        let mut document = GraphDocument {
+            modules: vec![
+                Module {
+                    dependents: Some(vec!["src/b.ts".into()]),
+                    dependencies: vec![local, core, unresolved],
+                    ..Module::new("src/a.ts")
+                },
+                Module::new("src/b.ts"),
+                fs,
+                missing,
+            ],
+            folders: Some(Vec::new()),
+            ..GraphDocument::default()
+        };
+        let mut cycle = violation(
+            "no-circular",
+            "src/a.ts",
+            "src/b.ts",
+            Some(ViolationType::Cycle),
+        );
+        cycle.cycle = Some(vec![step("src/b.ts"), step("src/a.ts")]);
+        let mut reach = violation(
+            "reach",
+            "src/a.ts",
+            "src/b.ts",
+            Some(ViolationType::Reachability),
+        );
+        reach.via = Some(vec![step("src/b.ts")]);
+        document.summary.violations = vec![
+            cycle,
+            reach,
+            violation("no-core", "src/a.ts", "fs", Some(ViolationType::Dependency)),
+            violation(
+                "projects",
+                "Shop.Web",
+                "Shop.Domain",
+                Some(ViolationType::Project),
+            ),
+        ];
+        document
+    }
+
+    fn id(rule: &str, from: &str, to: &str, kind: &str) -> String {
+        rb_model::violation_id::violation_id(rule, from, to, kind)
+    }
+
+    #[test]
+    fn prefix_names_every_path_of_the_repository_and_nothing_else() {
+        let mut document = repository();
+        prefix("web", &mut document);
+        let sources: Vec<&str> = document.modules.iter().map(|m| m.source.as_str()).collect();
+        assert_eq!(sources, ["web/src/a.ts", "web/src/b.ts", "fs", "left-pad"]);
+        let a = &document.modules[0];
+        assert_eq!(
+            a.dependents.as_deref(),
+            Some(&["web/src/b.ts".to_owned()][..])
+        );
+        let resolved: Vec<&str> = a.dependencies.iter().map(|d| d.resolved.as_str()).collect();
+        assert_eq!(resolved, ["web/src/b.ts", "fs", "left-pad"]);
+        let cycle: Vec<&str> = a.dependencies[0]
+            .cycle
+            .iter()
+            .flatten()
+            .map(|s| s.name.as_str())
+            .collect();
+        assert_eq!(cycle, ["web/src/b.ts", "web/src/a.ts"]);
+        assert!(document.folders.is_none());
+        let found = &document.summary.violations;
+        assert_eq!(
+            (found[0].from.as_str(), found[0].to.as_str()),
+            ("web/src/a.ts", "web/src/b.ts")
+        );
+        assert_eq!(
+            found[0].id.as_deref(),
+            Some(&*id(
+                "no-circular",
+                "web/src/a.ts",
+                "web/src/b.ts",
+                "import"
+            )),
+            "an edge violation hashes the edge's kind"
+        );
+        assert_eq!(
+            found[0].cycle.as_ref().map(|c| c[0].name.as_str()),
+            Some("web/src/b.ts")
+        );
+        assert_eq!(
+            found[1].via.as_ref().map(|c| c[0].name.as_str()),
+            Some("web/src/b.ts")
+        );
+        assert_eq!(
+            found[1].id.as_deref(),
+            Some(&*id("reach", "web/src/a.ts", "web/src/b.ts", "")),
+            "a reachability violation hashes no kind"
+        );
+        assert_eq!(found[2].to, "fs", "a core module keeps its name");
+        assert_eq!(
+            found[2].id.as_deref(),
+            Some(&*id("no-core", "web/src/a.ts", "fs", "")),
+            "the core edge has no kind"
+        );
+        assert_eq!(
+            (found[3].from.as_str(), found[3].id.as_deref()),
+            ("Shop.Web", Some("RB-00000000")),
+            "a project violation names projects, not paths"
+        );
+        let mut without_id = repository();
+        without_id.summary.violations[0].id = None;
+        prefix("web", &mut without_id);
+        assert!(without_id.summary.violations[0].id.is_none());
+    }
+
+    #[test]
+    fn union_sorts_and_keeps_a_shared_external_once() {
+        let mut web = repository();
+        prefix("web", &mut web);
+        let mut admin = repository();
+        prefix("admin", &mut admin);
+        web.modules[2].dependency_types = Some(vec![rb_model::DependencyType::Core]);
+        let joined = union(&[("web".into(), web), ("admin".into(), admin)]);
+        let sources: Vec<&str> = joined.modules.iter().map(|m| m.source.as_str()).collect();
+        assert_eq!(
+            sources,
+            [
+                "admin/src/a.ts",
+                "admin/src/b.ts",
+                "fs",
+                "left-pad",
+                "web/src/a.ts",
+                "web/src/b.ts"
+            ]
+        );
+        let fs = joined.modules.iter().find(|m| m.source == "fs");
+        assert!(
+            fs.is_some_and(|m| m.dependency_types.is_some()),
+            "the first repository's"
+        );
+        assert!(joined.summary.violations.is_empty());
+    }
+
+    #[test]
+    fn locate_finds_the_repository_by_its_first_segment() {
+        let repos = [repo("web", None), repo("api", None)];
+        assert_eq!(
+            locate(&repos, "api/openapi.json"),
+            Some((1, "openapi.json"))
+        );
+        assert_eq!(locate(&repos, "web/src/gen/"), Some((0, "src/gen/")));
+        assert_eq!(locate(&repos, "other/x"), None);
+        assert_eq!(locate(&repos, "web"), None);
+    }
+
+    fn rule(name: &str) -> RuleSummary {
+        RuleSummary {
+            name: name.into(),
+            severity: Severity::Warn,
+        }
+    }
+
+    fn object(value: &serde_json::Value) -> serde_json::Map<String, serde_json::Value> {
+        value.as_object().cloned().unwrap_or_default()
+    }
+
+    /// A repository's evaluated result, prefixed: a module rule, two edge rules, every count,
+    /// an expired entry, a ratchet, a vacuous rule and its rule set.
+    fn evaluated_repository() -> GraphDocument {
+        let mut theirs = repository();
+        prefix("web", &mut theirs);
+        theirs.modules[0].valid = false;
+        theirs.modules[0].rules = Some(vec![rule("module-rule")]);
+        theirs.modules[0].dependencies[0].valid = false;
+        theirs.modules[0].dependencies[0].rules = Some(vec![rule("edge-rule")]);
+        theirs.modules[0].dependencies[1].rules = Some(vec![rule("core-rule")]);
+        theirs.summary.error = 4;
+        theirs.summary.warn = 1;
+        theirs.summary.info = 2;
+        theirs.summary.ignore = Some(3);
+        theirs.summary.expired = Some(vec![ExpiredEntry {
+            name: "old".into(),
+            expires: "2020-01-01".into(),
+            kind: "rule".into(),
+        }]);
+        theirs.summary.ratchets = Some(vec![RatchetResult {
+            name: "budget".into(),
+            budget: "b.json".into(),
+            count: 1,
+            ceiling: Some(2),
+            status: RatchetStatus::Held,
+        }]);
+        theirs.summary.vacuous_rules = Some(vec![VacuousRule::new("empty", "from")]);
+        theirs.summary.rule_set_used = Some(object(&json!({
+            "forbidden": [{ "name": "edge-rule" }], "allowedSeverity": "error", "elements": []
+        })));
+        theirs
+    }
+
+    #[test]
+    fn fold_adds_each_repositorys_findings_to_the_union() {
+        let theirs = evaluated_repository();
+        // The union, evaluated: the fleet's own rule on the edge and its own violation; the
+        // core dependency moved, so it is found by search rather than by index.
+        let mut document = union(&[("web".into(), theirs.clone())]);
+        rb_rules::reset(&mut document);
+        let at = document
+            .modules
+            .iter()
+            .position(|m| m.source == "web/src/a.ts")
+            .unwrap_or_default();
+        document.modules[at].dependencies.swap(1, 2);
+        document.modules[at].dependencies[0].rules = Some(vec![rule("fleet-rule")]);
+        document.summary.violations = vec![violation(
+            "fleet-rule",
+            "web/src/a.ts",
+            "web/src/b.ts",
+            Some(ViolationType::Dependency),
+        )];
+        document.summary.error = 1;
+        document.summary.rule_set_used = Some(object(&json!({
+            "forbidden": [{ "name": "fleet-rule" }], "allowedSeverity": "warn"
+        })));
+        fold(&mut document, &[("web".into(), theirs)]);
+        let a = &document.modules[at];
+        assert!(!a.valid);
+        assert_eq!(a.rules.as_deref().map(<[_]>::len), Some(1));
+        let names = |d: &Dependency| -> Vec<String> {
+            d.rules.iter().flatten().map(|r| r.name.clone()).collect()
+        };
+        assert_eq!(names(&a.dependencies[0]), ["fleet-rule", "edge-rule"]);
+        assert!(!a.dependencies[0].valid);
+        let core = a.dependencies.iter().find(|d| d.resolved == "fs");
+        assert_eq!(core.map(names), Some(vec!["core-rule".to_owned()]));
+        let unresolved = a.dependencies.iter().find(|d| d.resolved == "left-pad");
+        assert!(unresolved.is_some_and(|d| d.rules.is_none() && d.valid));
+        let summary = &document.summary;
+        assert_eq!(
+            (summary.error, summary.warn, summary.info, summary.ignore),
+            (5, 1, 2, Some(3))
+        );
+        let order: Vec<&str> = summary
+            .violations
+            .iter()
+            .map(|v| v.rule.name.as_str())
+            .collect();
+        assert_eq!(
+            order,
+            ["fleet-rule", "no-circular", "no-core", "projects", "reach"],
+            "one severity: sorted by rule name"
+        );
+        assert_eq!(summary.expired.as_ref().map(Vec::len), Some(1));
+        assert_eq!(summary.ratchets.as_ref().map(Vec::len), Some(1));
+        assert_eq!(summary.vacuous_rules.as_ref().map(Vec::len), Some(1));
+        let used = summary.rule_set_used.clone().unwrap_or_default();
+        assert_eq!(
+            used["forbidden"],
+            json!([{ "name": "fleet-rule" }, { "name": "edge-rule" }])
+        );
+        assert_eq!(used["allowedSeverity"], "warn", "the fleet's scalar stays");
+        assert_eq!(used["elements"], json!([]));
+    }
+
+    #[test]
+    fn fold_into_a_union_without_a_rule_set_takes_the_repositorys() {
+        let theirs = evaluated_repository();
+        let mut document = union(&[("web".into(), theirs.clone())]);
+        rb_rules::reset(&mut document);
+        fold(&mut document, &[("web".into(), theirs)]);
+        let used = document.summary.rule_set_used.unwrap_or_default();
+        assert_eq!(used["allowedSeverity"], "error");
+        assert_eq!(document.summary.ignore, Some(3));
+    }
+
+    #[test]
+    fn extend_adds_only_a_non_empty_list() {
+        let mut into = None;
+        extend(&mut into, Some(&Vec::new()));
+        assert!(into.is_none());
+        extend(&mut into, None);
+        assert!(into.is_none());
+        extend(&mut into, Some(&vec![rule("a")]));
+        extend(&mut into, Some(&vec![rule("b")]));
+        assert_eq!(
+            into.iter()
+                .flatten()
+                .map(|r| r.name.as_str())
+                .collect::<Vec<_>>(),
+            ["a", "b"]
+        );
+    }
+}

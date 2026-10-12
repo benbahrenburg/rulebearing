@@ -194,7 +194,7 @@ fn three_repositories_one_report_with_per_repository_and_fleet_rules() -> Result
     );
     assert_eq!(per_repo["web"]["warn"], 1, "the web app's own rule fired");
     assert_eq!(per_repo["api"]["error"], 0);
-    assert!(per_repo["api"]["inspected"]["dotnet"]["assemblies"] == 4);
+    assert_eq!(per_repo["api"]["inspected"]["dotnet"]["assemblies"], 4);
     assert!(per_repo["pipeline"]["inspected"]["python"].is_object());
     assert!(per_repo["web"]["inspected"]["typescript"].is_object());
     // One fleet rule fires, through a declared edge; one does not.
@@ -246,6 +246,19 @@ fn three_repositories_one_report_with_per_repository_and_fleet_rules() -> Result
         (summary["error"].as_u64(), summary["warn"].as_u64()),
         (Some(1), Some(2))
     );
+    assert!(
+        stderr.contains("warning: declared edge web/src/gone.ts -> "),
+        "{stderr}"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn the_fleet_document_names_every_path_and_validates_against_the_superset_schema() -> Result {
+    let dir = fleet("document")?;
+    let (_, document, _) = json(&dir, &[])?;
+    let summary = &document["summary"];
     // Every repository path is prefixed; a core module and a standard-library module are not.
     let sources: Vec<&str> = document["modules"]
         .as_array()
@@ -277,10 +290,6 @@ fn three_repositories_one_report_with_per_repository_and_fleet_rules() -> Result
     ] {
         assert!(forbidden.contains(&rule), "{rule}: {forbidden:?}");
     }
-    assert!(
-        stderr.contains("warning: declared edge web/src/gone.ts -> "),
-        "{stderr}"
-    );
     // The whole document validates against the published superset schema.
     let schema: Value = serde_json::from_str(&std::fs::read_to_string(
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../schema/v1.json"),
