@@ -14,27 +14,29 @@
 //!   (OpenAPI edges read only from a named client directory, by operation id)
 //! - Requirement: [FR-REACH-03](../../../docs/prd.md#fr-reach-03)
 //!
-//! Nothing here reads a file: the caller hands over the text of `edges.yaml`, of each server
-//! document and of each client file, so this crate stays on the ingest side of the extractor
-//! boundary ([ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md)).
+//! Nothing here reads a file: the caller hands over the text of `edges.yaml` and of each server
+//! document, which are declarations like a configuration, and the client side comes from the
+//! code layer an extractor already wrote, so no source file is read outside an extractor
+//! ([ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md)).
 //!
 //! | Source | `from` | `to` | `module` | `declaredKind` | `comment` |
 //! | --- | --- | --- | --- | --- | --- |
 //! | `declared[]` | the entry's `from` | the entry's `to` | the entry's `to` | the entry's `kind` | the entry's `comment` |
-//! | `openapi[]` | each client file that names the operation id | the handler the server document records | the operation id | `http` | the operation, its method and path, and the document |
+//! | `openapi[]` | each client module that declares the operation | the handler the server document records | the operation id | `http` | the operation, its method and path, and the document |
 //!
 //! An OpenAPI operation declares an edge only when the server document records both its
 //! `operationId` and its handler, the file under the server's repository named by the
-//! operation's [`HANDLER_KEY`] extension; and only to the client files that name the operation id
-//! as a whole identifier, exactly as the document spells it. An operation without an id, or
-//! without a handler, or that no client file names, declares nothing, and the
-//! [`OpenApiReceipt`] counts it; when a pair declares nothing at all, the receipt says why.
-//! A path item given by `$ref` is not followed.
+//! operation's [`HANDLER_KEY`] extension; and only from the client modules whose code layer
+//! records a function, class or member named exactly as the operation id (a generated client
+//! declares one per operation). An operation without an id, or without a handler, or that no
+//! client module declares, declares no edge, and the [`OpenApiReceipt`] counts it; when a pair
+//! declares nothing at all, the receipt says why. A path item given by `$ref` is not followed.
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use rb_model::{
-    Dependency, DependencyKind, GraphDocument, Language, ModuleSystem, OpenApiReceipt, SkippedEdge,
+    CodeLayer, Dependency, DependencyKind, GraphDocument, Language, ModuleSystem, OpenApiReceipt,
+    SkippedEdge,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -215,18 +217,25 @@ pub fn read_openapi(server: &str, text: &str) -> Result<Vec<Operation>, Declared
     Ok(operations)
 }
 
-/// Whether `source` names `id` as a whole identifier: an occurrence not preceded or followed by
-/// a letter, digit, `_` or `$`, spelled exactly as the document spells it.
-pub fn names(source: &str, id: &str) -> bool {
-    if id.is_empty() {
-        return false;
+/// The names the code layer records as declared in each client module: every type's and
+/// member's `name` whose file, prefixed with `file_prefix` (`web/` in a `fleet`), is under
+/// `client_prefix`. Keyed by the prefixed module path.
+pub fn client_names(
+    code: &CodeLayer,
+    file_prefix: &str,
+    client_prefix: &str,
+) -> BTreeMap<String, BTreeSet<String>> {
+    let mut names: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    let types = code.types.iter().map(|t| (&t.location, &t.name));
+    let members = code.members.iter().map(|m| (&m.location, &m.name));
+    for (location, name) in types.chain(members) {
+        let Some(file) = &location.file else { continue };
+        let module = format!("{file_prefix}{file}");
+        if module.starts_with(client_prefix) {
+            names.entry(module).or_default().insert(name.clone());
+        }
     }
-    let part = |c: char| c.is_alphanumeric() || c == '_' || c == '$';
-    source.match_indices(id).any(|(at, _)| {
-        let before = source[..at].chars().next_back();
-        let after = source[at + id.len()..].chars().next();
-        !before.is_some_and(part) && !after.is_some_and(part)
-    })
+    names
 }
 
 /// Where a declaration came from.
@@ -272,13 +281,13 @@ pub fn hand_declarations(file: &EdgesFile) -> Vec<Declaration> {
 
 /// The declarations one OpenAPI pair makes, and its receipt. `handler_base` is what a handler
 /// path is joined to: the graph's name for the folder of the repository the server document is
-/// in (`api/` in a `fleet`). `clients` are the client folder's modules with their text, as
-/// `(module, text)`.
+/// in (`api/` in a `fleet`). `clients` are the names each client module declares
+/// ([`client_names`]); an operation's edges leave the modules that declare its id exactly.
 pub fn openapi_declarations(
     pair: &OpenApiPair,
     operations: &[Operation],
     handler_base: &str,
-    clients: &[(String, String)],
+    clients: &BTreeMap<String, BTreeSet<String>>,
 ) -> (Vec<Declaration>, OpenApiReceipt) {
     let mut receipt = OpenApiReceipt {
         client: pair.client.clone(),
@@ -299,7 +308,7 @@ pub fn openapi_declarations(
         let to = join(handler_base, handler);
         let callers: Vec<&String> = clients
             .iter()
-            .filter(|(_, text)| names(text, id))
+            .filter(|(_, declared)| declared.contains(id))
             .map(|(module, _)| module)
             .collect();
         if callers.is_empty() {
@@ -337,12 +346,12 @@ fn why_none(receipt: &OpenApiReceipt, no_clients: bool) -> String {
         )
     } else if no_clients {
         format!(
-            "the graph has no module under the client folder `{}`",
+            "the code layer records nothing declared under the client folder `{}`",
             receipt.client
         )
     } else {
         format!(
-            "no module under the client folder `{}` names an operationId the server document records",
+            "no module under the client folder `{}` declares a function, class or member named as an operationId the server document records",
             receipt.client
         )
     }
@@ -651,25 +660,46 @@ openapi:
         }
     }
 
-    #[test]
-    fn a_name_is_a_whole_identifier_spelled_exactly() {
-        let table = [
-            ("client.createOrder(body)", "createOrder", true),
-            ("'createOrder'", "createOrder", true),
-            ("createOrder", "createOrder", true),
-            ("createOrders()", "createOrder", false),
-            ("recreateOrder()", "createOrder", false),
-            ("_createOrder", "createOrder", false),
-            ("$createOrder", "createOrder", false),
-            ("createOrder$", "createOrder", false),
-            ("CreateOrder()", "createOrder", false),
-            ("x createOrder2 createOrder", "createOrder", true),
-            ("é createOrder", "createOrder", true),
-            ("anything", "", false),
-        ];
-        for (source, id, expected) in table {
-            assert_eq!(names(source, id), expected, "{source} / {id}");
+    fn location(file: Option<&str>) -> rb_model::Location {
+        rb_model::Location {
+            language: Language::Typescript,
+            file: file.map(str::to_owned),
+            line: None,
+            column: None,
         }
+    }
+
+    fn element(name: &str, file: Option<&str>) -> rb_model::TypeElement {
+        rb_model::TypeElement::new(name, name, "function", location(file))
+    }
+
+    #[test]
+    fn client_names_are_what_the_code_layer_declares_under_the_folder() {
+        let code = CodeLayer {
+            types: vec![
+                element("createOrder", Some("src/gen/orders.ts")),
+                element("OrdersApi", Some("src/gen/orders.ts")),
+                element("go", Some("src/app.ts")),
+                element("nowhere", None),
+            ],
+            members: vec![rb_model::MemberElement::new(
+                "OrdersApi",
+                "listOrders",
+                "method",
+                location(Some("src/gen/orders.ts")),
+            )],
+            ..CodeLayer::default()
+        };
+        let names = client_names(&code, "web/", "web/src/gen/");
+        let expected: BTreeMap<String, BTreeSet<String>> = BTreeMap::from([(
+            "web/src/gen/orders.ts".to_owned(),
+            ["OrdersApi", "createOrder", "listOrders"]
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+        )]);
+        assert_eq!(names, expected);
+        assert!(client_names(&code, "web/", "web/src/genx/").is_empty());
     }
 
     fn pair() -> OpenApiPair {
@@ -679,17 +709,26 @@ openapi:
         }
     }
 
+    fn declaring(entries: &[(&str, &[&str])]) -> BTreeMap<String, BTreeSet<String>> {
+        entries
+            .iter()
+            .map(|(module, names)| {
+                (
+                    (*module).to_owned(),
+                    names.iter().map(|n| (*n).to_owned()).collect(),
+                )
+            })
+            .collect()
+    }
+
     #[test]
-    fn an_operation_declares_an_edge_from_each_client_file_that_names_it() {
+    fn an_operation_declares_an_edge_from_each_client_module_that_declares_it() {
         let operations = read_openapi("api/openapi.json", SERVER).unwrap_or_default();
-        let clients = vec![
-            (
-                "web/gen/orders.ts".to_owned(),
-                "post('/orders', 'createOrder'); get('listOrders')".to_owned(),
-            ),
-            ("web/gen/health.ts".to_owned(), "nothing here".to_owned()),
-            ("web/gen/more.ts".to_owned(), "createOrder()".to_owned()),
-        ];
+        let clients = declaring(&[
+            ("web/gen/orders.ts", &["createOrder", "listOrders"]),
+            ("web/gen/health.ts", &["Health", "createOrders"]),
+            ("web/gen/more.ts", &["createOrder"]),
+        ]);
         let (declarations, receipt) = openapi_declarations(&pair(), &operations, "api/", &clients);
         let edges: Vec<(&str, &str, &str)> = declarations
             .iter()
@@ -699,8 +738,8 @@ openapi:
             edges,
             [
                 ("web/gen/orders.ts", "listOrders", "api/src/Orders.cs"),
-                ("web/gen/orders.ts", "createOrder", "api/src/Orders.cs"),
                 ("web/gen/more.ts", "createOrder", "api/src/Orders.cs"),
+                ("web/gen/orders.ts", "createOrder", "api/src/Orders.cs"),
             ]
         );
         assert_eq!(
@@ -727,8 +766,12 @@ openapi:
         );
     }
 
-    /// Operations, client files, and what the reason says.
-    type Case<'a> = (Vec<Operation>, &'a [(String, String)], &'a str);
+    /// Operations, client modules, and what the reason says.
+    type Case<'a> = (
+        Vec<Operation>,
+        &'a BTreeMap<String, BTreeSet<String>>,
+        &'a str,
+    );
 
     #[test]
     fn a_pair_that_declares_nothing_says_why() {
@@ -738,8 +781,9 @@ openapi:
             operation_id: id.map(str::to_owned),
             handler: handler.map(str::to_owned),
         };
-        let calls = vec![("web/gen/a.ts".to_owned(), "getX()".to_owned())];
-        let table: [Case<'_>; 5] = [
+        let calls = declaring(&[("web/gen/a.ts", &["getX"])]);
+        let none = BTreeMap::new();
+        let table: [Case<'_>; 6] = [
             (vec![], &calls, "lists no operations"),
             (
                 vec![op(None, Some("h.cs")), op(None, None)],
@@ -753,13 +797,18 @@ openapi:
             ),
             (
                 vec![op(Some("getX"), Some("h.cs"))],
-                &[],
-                "no module under the client folder `web/gen/`",
+                &none,
+                "records nothing declared under the client folder `web/gen/`",
             ),
             (
                 vec![op(Some("getY"), Some("h.cs"))],
                 &calls,
-                "names an operationId",
+                "declares a function, class or member named as an operationId",
+            ),
+            (
+                vec![op(Some("getx"), Some("h.cs")), op(Some("getY"), None)],
+                &calls,
+                "declares a function, class or member named as an operationId",
             ),
         ];
         for (operations, clients, says) in table {
@@ -937,21 +986,6 @@ openapi:
     }
 
     proptest::proptest! {
-        #[test]
-        fn names_never_finds_an_id_inside_a_longer_identifier(
-            id in "[a-zA-Z][a-zA-Z0-9]{0,8}",
-            glued in "[a-zA-Z0-9_$]{1,3}",
-        ) {
-            // Glued on either side, the only occurrence is inside a longer identifier.
-            let prefixed = [glued.as_str(), id.as_str()].concat();
-            let suffixed = [id.as_str(), glued.as_str()].concat();
-            let once = |text: &str| text.matches(id.as_str()).count() == 1;
-            proptest::prop_assert!(!once(&prefixed) || !names(&prefixed, &id));
-            proptest::prop_assert!(!once(&suffixed) || !names(&suffixed, &id));
-            let called = ["(", id.as_str(), ")"].concat();
-            proptest::prop_assert!(names(&called, &id));
-        }
-
         #[test]
         fn join_never_leaves_a_dot_segment(
             base in "[a-z]{0,3}(/[a-z]{1,3}){0,2}/?",
