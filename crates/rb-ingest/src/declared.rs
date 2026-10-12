@@ -913,6 +913,29 @@ openapi:
     }
 
     #[test]
+    fn apply_counts_each_source() {
+        let mut document = graph(&[("a", None), ("b", None)]);
+        let declaration = |module: &str, source: Source| Declaration {
+            from: "a".into(),
+            to: "b".into(),
+            module: module.into(),
+            kind: None,
+            comment: None,
+            source,
+        };
+        let applied = apply(
+            &mut document,
+            vec![
+                declaration("b", Source::EdgesYaml),
+                declaration("createOrder", Source::OpenApi),
+                declaration("listOrders", Source::OpenApi),
+            ],
+        );
+        assert_eq!((applied.edges_yaml, applied.openapi), (1, 2));
+        assert_eq!(document.modules[0].dependencies.len(), 3);
+    }
+
+    #[test]
     fn apply_is_independent_of_the_order_declarations_arrive_in() {
         let declaration = |from: &str, to: &str| Declaration {
             from: from.into(),

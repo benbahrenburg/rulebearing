@@ -25,10 +25,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::ConfigError;
+use crate::LoadOptions;
 use crate::model::{Config, IndependenceShorthand, LayersShorthand};
 use crate::read::Syntax;
 use crate::schema::DependencyRulesSchema;
-use crate::{ConfigFormat, LoadOptions};
 
 /// The `rules` keys a fleet evaluates.
 pub const RULE_KEYS: [&str; 3] = ["dependencies", "layers", "independence"];
@@ -151,12 +151,9 @@ pub fn rules_config(manifest: &FleetManifest, dir: &Path) -> Result<Config, Conf
             .unwrap_or_else(|| Value::Object(Map::new())),
     );
     let text = Value::Object(file).to_string();
-    let options = LoadOptions {
-        root: Some(dir.to_path_buf()),
-        format: Some(ConfigFormat::Native),
-        ..LoadOptions::default()
-    };
-    crate::load_text(&text, Syntax::Json, dir, &options)
+    // `{ "rules": ... }` is the native shape, so the file is read as native, as a
+    // `rulebearing.yaml` beside the manifest would be.
+    crate::load_text(&text, Syntax::Json, dir, &LoadOptions::default())
 }
 
 /// The manifest's JSON schema, published as `schema/fleet-v1.json`.
@@ -225,6 +222,11 @@ rules:
             })
             .unwrap_or_default();
         assert_eq!(forbidden, ["web-never-reaches-pipeline"]);
+        let compat = rules_config(&manifest, Path::new(".")).map(|c| c.compat);
+        assert!(
+            matches!(compat, Ok(crate::CompatMode::Native)),
+            "{compat:?}"
+        );
     }
 
     #[test]
