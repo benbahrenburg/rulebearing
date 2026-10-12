@@ -14,6 +14,7 @@ import {
 } from '../src/build.js';
 import { main, parseArgs } from '../src/cli.js';
 import { SCHEMA_BASE } from '../src/schemas.js';
+import { COVERAGE_DATA, SCALE_DATA } from '../src/tables.js';
 
 const realRepo = resolve(import.meta.dirname, '../..');
 let repo: string;
@@ -58,6 +59,16 @@ beforeEach(() => {
     '# CLI\n\n## Usage\n\n[Plan](plans/pending/p.md), [ADR](adr/0067-the-playground-facade-and-an-optional-javascript-engine.md).\n',
   );
   write('docs/adr/0067-the-playground-facade-and-an-optional-javascript-engine.md', '# ADR-0067\n');
+  // The live tables' data and the decisions their pages link (Step 4).
+  for (const adr of [
+    '0009-conformance-suites-as-specification',
+    '0075-the-coverage-ledger-is-tracked-and-its-status-is-computed',
+  ]) {
+    write(`docs/adr/${adr}.md`, `# ${adr}\n`);
+  }
+  for (const data of [COVERAGE_DATA, SCALE_DATA]) {
+    write(data, readFileSync(join(realRepo, data), 'utf8'));
+  }
   write('schema/README.md', '# Schemas\n\n[v1](v1.json)\n');
   write('cookbook/README.md', '# Cookbook\n');
   write('site/web/site.css', 'body {}\n');
@@ -119,7 +130,13 @@ describe('buildSite', () => {
     });
     expect(result.pages).toEqual([
       'cookbook/index.html',
+      'coverage/archunitnet.html',
+      'coverage/dependency-cruiser.html',
+      'coverage/index.html',
+      'coverage/scale.html',
+      'docs/adr/0009-conformance-suites-as-specification.html',
       'docs/adr/0067-the-playground-facade-and-an-optional-javascript-engine.html',
+      'docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.html',
       'docs/cli.html',
       'index.html',
       'playground.html',
@@ -129,6 +146,10 @@ describe('buildSite', () => {
     expect(result.brokenSite).toEqual([]);
     const site = join(work, 'site');
     expect(existsSync(join(site, 'docs/plans'))).toBe(false);
+    expect(readFileSync(join(site, 'coverage/index.html'), 'utf8')).toContain('rows proven');
+    expect(readFileSync(join(site, 'coverage/scale.html'), 'utf8')).toContain(
+      'blob/c0ffee/testbeds/results/scale.json',
+    );
     expect(readFileSync(join(site, 'index.html'), 'utf8')).toContain('href="docs/cli.html#usage"');
     expect(readFileSync(join(site, 'docs/cli.html'), 'utf8')).toContain('class="local-only"');
     const playground = readFileSync(join(site, 'playground.html'), 'utf8');
@@ -158,6 +179,19 @@ describe('buildSite', () => {
       schemaRef: 'v0.2.0',
     });
     expect(readFileSync(join(work, 'site/schema/v1.json'), 'utf8')).not.toContain('wip');
+  });
+
+  it('needs the data of the live tables', () => {
+    rmSync(join(repo, SCALE_DATA));
+    expect(() =>
+      buildSite({
+        repo,
+        out: join(work, 'site'),
+        wasmDir: join(work, 'wasm'),
+        webDir: join(work, 'web'),
+        schemaRef: 'v0.2.0',
+      }),
+    ).toThrow(/testbeds\/results\/scale.json is missing; the nightly writes it/u);
   });
 
   it('names a missing build input', () => {
@@ -258,7 +292,7 @@ describe('the command line', () => {
     const { io, out, err } = capture();
     expect(await main(args(), io)).toBe(0);
     expect(err).toEqual([]);
-    expect(out.join('')).toBe('site: 6 pages, schemas from v0.2.0, 0 broken link(s)\n');
+    expect(out.join('')).toBe('site: 12 pages, schemas from v0.2.0, 0 broken link(s)\n');
     const check = capture();
     expect(await main(['check', join(work, 'site')], check.io)).toBe(0);
     expect(check.out.join('')).toBe('site: 0 broken link(s)\n');

@@ -239,6 +239,7 @@ run_mutations() {
   sha="$(field "$name" sha)"
   dir="$checkouts/mutations"
   out="$out_root/mutations"
+  rm -f "$out/result.json"
   echo "layer5: mutation branch over $name at $sha"
   checkout "$name" "$sha" "$dir"
   git -C "$dir" apply --whitespace=nowarn "$gate/mutations/mutations.patch"
@@ -258,6 +259,9 @@ run_mutations() {
   cruise_both "$out/affected" "$dir" .dependency-cruiser.mutations.cjs "$(pinned_incumbent)" \
     --affected "$sha" src bin
   zero_diff "$out/affected" "$name" --expect "$gate/mutations/expected-affected.json"
+  # Reached only when both comparisons held (set -e): the live coverage tables read it
+  # (docs/plans/pending/0004-wave-4-reach.md, Step 4).
+  printf '{"steps": {"mutations": "pass", "affected": "pass"}}\n' > "$out/result.json"
 }
 
 case "$mode" in

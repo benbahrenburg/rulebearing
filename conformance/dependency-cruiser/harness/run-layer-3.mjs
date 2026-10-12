@@ -7,12 +7,15 @@
 // Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 12;
 // docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 10;
 // docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 6. Decision:
-// docs/adr/0009-conformance-suites-as-specification.md.
+// docs/adr/0009-conformance-suites-as-specification.md. A full run writes each spec's verdict and
+// each output type's oracle comparison to target/conformance/layer3.json for the live coverage
+// tables (docs/plans/pending/0004-wave-4-reach.md, Step 4; results.mjs).
 // Usage: node run-layer-3.mjs <dependency-cruiser checkout> [spec ...]
 import { readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
 import { register, createRequire } from 'node:module';
 import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { writeResults } from './results.mjs';
 import { report } from './shim.mjs';
 
 const args = process.argv.slice(2);
@@ -259,6 +262,8 @@ let differing = 0;
 let skipped = 0;
 let refusedByBoth = 0;
 let tooLarge = 0;
+// Each output type's oracle verdict: compared at least once and never differing.
+const oracleVerdicts = new Map();
 const onlySpecs = only.length > 0;
 if (!onlySpecs) {
     const results = [];
@@ -273,6 +278,7 @@ if (!onlySpecs) {
     for (const [outputType, module, optionSets, drawable = () => true] of ORACLE) {
         const upstreamReporter = (await import(pathToFileURL(join(upstream, module)).href)).default;
         const comparedBefore = compared;
+        const differingBefore = differing;
         for (const [name, result] of results) {
             if (!drawable(result)) {
                 tooLarge += 1;
@@ -328,9 +334,20 @@ if (!onlySpecs) {
             differing += 1;
             console.log(`layer3: ORACLE NONE ${outputType}: no mock was compared`);
         }
+        const agreed = compared > comparedBefore && differing === differingBefore;
+        oracleVerdicts.set(outputType, (oracleVerdicts.get(outputType) ?? true) && agreed);
     }
     console.log(
         `layer3: oracle comparisons=${compared} differing=${differing} not-renderable-upstream=${skipped} refused-by-both=${refusedByBoth} too-large-for-dot=${tooLarge}`,
     );
+}
+// The live coverage tables read each spec's verdict and each output type's oracle comparison
+// (plan 0004, Step 4); a narrowed run is not the gate, so it writes nothing.
+if (!onlySpecs) {
+    const items = new Map(specs.map((spec) => [spec, !failedSpecs.has(spec)]));
+    for (const [outputType, agreed] of oracleVerdicts) {
+        items.set(`oracle:${outputType}`, agreed);
+    }
+    console.log(`layer3: wrote ${writeResults('layer3', items)}`);
 }
 process.exit(failedSpecs.size > 0 || differing > 0 ? 1 : 0);

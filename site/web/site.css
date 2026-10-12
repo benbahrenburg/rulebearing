@@ -300,3 +300,30 @@ main {
         grid-template-columns: 1fr;
     }
 }
+
+/* The live coverage tables (plan 0004, Step 4; ADR-0075). */
+.unproven {
+    color: var(--danger);
+}
+
+.proven {
+    color: var(--accent);
+}
+
+.tab-claim {
+    color: var(--muted);
+}
+
+.evidence {
+    margin: 0;
+    padding-left: 1.1em;
+    font-size: 0.9em;
+}
+
+.evidence-rulebearing {
+    list-style-type: circle;
+}
+
+.coverage-counts {
+    font-weight: 600;
+}

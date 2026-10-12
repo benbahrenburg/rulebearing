@@ -1,0 +1,2474 @@
+{
+  "$comment": "The rows of the dependency-cruiser 18.2.0 coverage tab (docs/artifacts/dependency-cruiser-18.2.0-coverage.md, local only), derived by testbeds/scripts/coverage_status.py rows, and the evidence that proves each. The cells and claims are the tab's and are never edited here; a status is never written here (docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md).",
+  "sections": [
+    {
+      "headers": [
+        "Attribute",
+        "Applies to",
+        "Rulebearing",
+        "Wave"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`forbidden[]` (regular) with `name`, `comment`, `severity`, `scope`, `from`, `to`",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/validate/matchers.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-cli/multi_language::one_cruise_reads_three_languages",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`forbidden[]` reachability variant (`to.reachable`)",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.reachable.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/validate/match-module-rule.reachable.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-cli/multi_language::one_cruise_reads_three_languages",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`forbidden[]` dependents variant (`module.numberOfDependentsLessThan` / `MoreThan`)",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/match-module-rule.dependents.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-rules/lib::derive::tests::dependents_and_orphans",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`allowed[]`, `allowedSeverity`",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-cli/multi_language::one_cruise_reads_three_languages",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`required[]` with `module` and `to.reachable`",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.required-rules.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/validate/violates-required-rule.spec.mjs",
+              "results": "layer2"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`scope: module` / `scope: folder` (folder-level `circular`, `moreUnstable`)",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/match-folder-dependency-rule.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/graph-utl/consolidate-to-folder.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/validate/index.more-unstable.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-rules/cross_language::more_unstable_on_a_dotnet_graph",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`extends` (string or array; file, npm package, bundled presets `recommended`, `recommended-strict`, `recommended-warn-only`)",
+            "all",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-config/lib::load::tests::a_dependency_cruiser_config_with_extends_and_presets",
+              "results": "tests"
+            },
+            {
+              "item": "rb-config/presets::every_preset_resolves_to_its_snapshot",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/extends_packages::the_library_resolves_from_node_modules",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`$0` to `$9` group matching",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.groupmatching.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-rules/lib::derive::tests::capturing_groups_are_a_dollar_and_a_digit",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`severity`: `error`, `warn`, `info`, `ignore`",
+            "all",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "test/validate/index.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/graph-utl/compare.severities.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-cli/cli::exit_codes_follow_the_contract",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`from.path`, `from.pathNot`, `from.orphan`",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.orphans.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/validate/match-module-rule.orphan.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/validate/matchers.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-rules/cross_language::an_orphan_rule_narrows_by_language_and_namespace",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`to.path`, `to.pathNot`",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/validate/matchers.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-cli/multi_language::one_cruise_reads_three_languages",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`to.circular`, `to.via`, `to.viaOnly`, `to.viaNot`, `to.viaSomeNot`",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.cycle-via.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/validate/index.cycle-via-only.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-rules/lib::derive::tests::cycles_are_marked_or_skipped",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/multi_language::one_cruise_reads_three_languages",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`to.dependencyTypes`, `to.dependencyTypesNot`",
+            "all (per-language vocabulary)",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.core.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/validate/index.type-only.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-cli/cross_language::type_only_on_a_dotnet_rule_warns",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`to.dynamic`",
+            "all",
+            "Parity+ (.NET: literal `Assembly.Load` / `Type.GetType` / `Activator.CreateInstance`; Python: literal `importlib.import_module`)",
+            "1"
+          ],
+          "claim": "Parity+ (.NET: literal `Assembly.Load` / `Type.GetType` / `Activator.CreateInstance`; Python: literal `importlib.import_module`)",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-dotnet/extract::edges_carry_kinds_types_and_the_dynamic_flag",
+              "results": "tests"
+            },
+            {
+              "item": "rb-extract-python/lib::parse::tests::literal_dynamic_imports",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`to.exoticallyRequired`, `to.exoticRequire`, `to.exoticRequireNot`",
+            "TS/JS",
+            "Kept",
+            "1"
+          ],
+          "claim": "Kept",
+          "evidence": [
+            {
+              "item": "test/validate/index.exotic-require.spec.mjs",
+              "results": "layer2"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`to.license`, `to.licenseNot`",
+            "TS/JS (package.json); .NET (NuGet `.nuspec` licence); Python (installed `METADATA`)",
+            "Parity+",
+            "2"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.license.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-cli/cross_language::dotnet_licences_and_assemblies_reach_the_rules",
+              "results": "tests"
+            },
+            {
+              "item": "rb-rules/cross_language::license_on_the_python_graph",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`to.moreThanOneDependencyType`",
+            "TS/JS",
+            "Kept",
+            "1"
+          ],
+          "claim": "Kept",
+          "evidence": [
+            {
+              "item": "test/validate/index.more-than-one-dependency-type.spec.mjs",
+              "results": "layer2"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`to.moreUnstable`",
+            "all",
+            "Parity+",
+            "2"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.more-unstable.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-rules/cross_language::more_unstable_on_a_dotnet_graph",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`to.preCompilationOnly`",
+            "TS",
+            "Kept",
+            "1"
+          ],
+          "claim": "Kept",
+          "evidence": [
+            {
+              "item": "test/validate/index.pre-compilation-only.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-extract-ts/options::ts_pre_compilation_deps_false_true_and_specify",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`to.couldNotResolve`",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.could-not-resolve.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-cli/multi_language::one_cruise_reads_three_languages",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`to.ancestor`",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.ancestor.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-cli/multi_language::one_cruise_reads_three_languages",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`to.reachable` (reachability forbidden and required)",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/index.reachable.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/validate/match-module-rule.reachable.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/validate/match-module-rule.reaches.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-cli/multi_language::one_cruise_reads_three_languages",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`module.path`, `module.pathNot`",
+            "all",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/validate/match-module-rule.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-cli/multi_language::one_cruise_reads_three_languages",
+              "results": "tests"
+            }
+          ]
+        }
+      ],
+      "title": "Rules"
+    },
+    {
+      "headers": [
+        "Option",
+        "Rulebearing",
+        "Wave"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`affected` (git revision)",
+            "Parity+; for .NET, changed `.cs` files map through the PDB to affected types",
+            "3"
+          ],
+          "claim": "Parity+; for .NET, changed `.cs` files map through the PDB to affected types",
+          "evidence": [
+            {
+              "item": "rb-cli/affected",
+              "results": "tests"
+            },
+            {
+              "item": "mutations:affected",
+              "results": "layer5"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`babelConfig.fileName`",
+            "Parity for what it affects: syntax needs no Babel (`oxc` parses it); `babel-plugin-module-resolver` aliases are read from the config",
+            "1"
+          ],
+          "claim": "Parity for what it affects: syntax needs no Babel (`oxc` parses it); `babel-plugin-module-resolver` aliases are read from the config",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::babel_config_module_resolver_aliases_rewrite_specifiers",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`baseDir`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::base_dir_is_the_root_of_every_path",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`builtInModules` (`add`, `override`)",
+            "Parity; per Node version list bundled",
+            "1"
+          ],
+          "claim": "Parity; per Node version list bundled",
+          "evidence": [
+            {
+              "item": "rb-extract-ts/options::built_in_modules_are_added_to_or_replaced",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`cache` (`folder`, `strategy: metadata` / `content`, `compress`)",
+            "Parity; .NET keys on assembly and PDB hashes",
+            "3"
+          ],
+          "claim": "Parity; .NET keys on assembly and PDB hashes",
+          "evidence": [
+            {
+              "item": "rb-cli/cache",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`collapse` (digit or regex)",
+            "Parity+",
+            "2"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/graph-utl/consolidate-to-pattern.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-cli/cruise_options::collapse_folds_modules_to_a_depth_or_a_pattern",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`combinedDependencies`",
+            "Parity (monorepo package.json walk-up)",
+            "1"
+          ],
+          "claim": "Parity (monorepo package.json walk-up)",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::combined_dependencies_reads_every_manifest_up_to_the_base",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`detectJSDocImports`",
+            "Parity, implemented on the comment table rather than by switching parser",
+            "1"
+          ],
+          "claim": "Parity, implemented on the comment table rather than by switching parser",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::detect_jsdoc_imports_reads_import_tags_and_bracket_imports",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`detectProcessBuiltinModuleCalls`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-extract-ts/options::detect_process_builtin_module_calls_finds_both_spellings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`doNotFollow.path`, `doNotFollow.dependencyTypes`",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "rb-extract-ts/options::do_not_follow_by_path_and_by_dependency_type",
+              "results": "tests"
+            },
+            {
+              "item": "sverweij/dependency-cruiser",
+              "results": "layer5"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`enhancedResolveOptions`: `exportsFields`, `conditionNames`, `extensions`, `mainFields`, `mainFiles`, `aliasFields`, `cachedInputFileSystem.cacheDuration`, other enhanced-resolve keys",
+            "Parity through `oxc_resolver`, which is the Rust port of enhanced-resolve; `cacheDuration` accepted and ignored (the resolver caches per run)",
+            "1"
+          ],
+          "claim": "Parity through `oxc_resolver`, which is the Rust port of enhanced-resolve; `cacheDuration` accepted and ignored (the resolver caches per run)",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::enhanced_resolve_options_map_to_the_resolver",
+              "results": "tests"
+            },
+            {
+              "item": "microsoft/FluidFramework",
+              "results": "layer5"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`exclude.path`, `exclude.dynamic`",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "rb-extract-ts/options::exclude_drops_paths_and_dynamic_imports",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`exoticRequireStrings`",
+            "Kept",
+            "1"
+          ],
+          "claim": "Kept",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::exotic_require_strings_name_other_loaders",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`experimentalStats`",
+            "Parity (`experimentalStats` on modules and dependencies)",
+            "2"
+          ],
+          "claim": "Parity (`experimentalStats` on modules and dependencies)",
+          "evidence": [
+            {
+              "item": "rb-cli/cruise_options::experimental_stats_are_recorded_on_modules_and_summed_on_folders",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`externalModuleResolutionStrategy`: `node_modules` / `yarn-pnp`",
+            "Parity (`oxc_resolver` supports PnP)",
+            "1"
+          ],
+          "claim": "Parity (`oxc_resolver` supports PnP)",
+          "evidence": [
+            {
+              "item": "rb-extract-ts/options::yarn_pnp_resolves_through_the_manifest",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`extraExtensionsToScan`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-extract-ts/options::extra_extensions_are_discovered_and_carry_no_dependencies",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`focus.path`, `focus.depth`",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/graph-utl/add-focus.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/graph-utl/filter-bank.spec.mjs",
+              "results": "layer2"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`forceDeriveDependents`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-rules/lib::derive::tests::dependents_and_orphans",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`highlight.path`",
+            "Parity+",
+            "2"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "rb-cli/cruise_options::highlight_marks_every_module",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`includeOnly.path`",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "rb-extract-ts/options::include_only_keeps_matching_modules",
+              "results": "tests"
+            },
+            {
+              "item": "test/graph-utl/filter-bank.spec.mjs",
+              "results": "layer2"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`knownViolations[]`",
+            "Parity+, plus optional `expires`, `owner`, `reason` per entry",
+            "2"
+          ],
+          "claim": "Parity+, plus optional `expires`, `owner`, `reason` per entry",
+          "evidence": [
+            {
+              "item": "rb-cli/baseline",
+              "results": "tests"
+            },
+            {
+              "item": "test/report/baseline/baseline.spec.mjs",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`maxDepth`",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "rb-extract-ts/options::max_depth_bounds_the_walk",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`metrics`",
+            "Parity+ (module, folder, and for .NET project instability)",
+            "2"
+          ],
+          "claim": "Parity+ (module, folder, and for .NET project instability)",
+          "evidence": [
+            {
+              "item": "test/report/metrics/metrics.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:metrics",
+              "results": "layer3"
+            },
+            {
+              "item": "rb-cli/graph_reporters::metrics_flags_and_fmt_collapse",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/cross_language::a_project_scope_rule_compares_projects",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`moduleSystems`: `cjs`, `es6`, `amd`, `tsd`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::module_systems_select_the_forms_extracted",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`parser`: `acorn` / `swc` / `tsc`",
+            "Accepted; one parser (`oxc`) satisfies all three, and the value is recorded in `optionsUsed` for the report",
+            "1"
+          ],
+          "claim": "Accepted; one parser (`oxc`) satisfies all three, and the value is recorded in `optionsUsed` for the report",
+          "evidence": [
+            {
+              "item": "rb-extract-ts/options::parser_picks_the_walker_upstream_would",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`prefix`, `suffix`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-cli/cruise_fmt::flags_shape_the_run",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`preserveSymlinks`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-extract-ts/options::preserve_symlinks_keeps_the_link_path",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`progress`: `none`, `cli-feedback`, `performance-log`, `ndjson`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-cli/cruise_fmt::flags_shape_the_run",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`reaches.path`",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/graph-utl/filter-bank.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "test/validate/match-module-rule.reaches.spec.mjs",
+              "results": "layer2"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`reporterOptions.anon.wordlist`",
+            "Parity",
+            "3"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "test/report/anon/anonymize.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/anon/anonymize-path.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/anon/anonymize-path-element.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/anon/random-string.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:anon",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`reporterOptions.archi` / `dot` / `ddot` / `flat`: `collapsePattern`, `filters` (`exclude`, `focus`, `includeOnly`, `reaches`), `showMetrics`, `theme` (`graph`, `node`, `edge`, `modules[]`, `dependencies[]`, `replace`)",
+            "Parity+",
+            "2"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/report/dot/module-level/index.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/dot/folder-level/folder-level.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/dot/custom-level/index.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/dot/flat-level/index.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/dot/theming.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/dot/module-utl.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:dot",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:ddot",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:archi",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:flat",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`reporterOptions.err` / `err-long` / `err-html`: `showAliasedModulesUnresolved`, `showExternalModulesUnresolved`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "test/report/error/error.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/error/error-long.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/error-html/error-html.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:err-html",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`reporterOptions.markdown` (18 keys: `title`, `showTitle`, `showSummary`, `showSummaryHeader`, `summaryHeader`, `showStatsSummary`, `showRulesSummary`, `includeIgnoredInSummary`, `showDetails`, `showDetailsHeader`, `detailsHeader`, `includeIgnoredInDetails`, `collapseDetails`, `collapsedMessage`, `noViolationsMessage`, `showFooter`, `showAliasedModulesUnresolved`, `showExternalModulesUnresolved`)",
+            "Parity",
+            "3"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "test/report/markdown/markdown.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:markdown",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`reporterOptions.mermaid.minify`",
+            "Parity",
+            "2"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "test/report/mermaid/mermaid.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:mermaid",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`reporterOptions.metrics`: `hideFolders`, `hideModules`, `orderBy`",
+            "Parity",
+            "2"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "test/report/metrics/metrics.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:metrics",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`reporterOptions.text.highlightFocused`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "test/report/text/text.spec.mjs",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`skipAnalysisNotInRules`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-rules/lib::derive::tests::cycles_are_marked_or_skipped",
+              "results": "tests"
+            },
+            {
+              "item": "rb-rules/lib::derive::tests::dependents_and_orphans",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`tsConfig.fileName` (`extends`, `paths`, `baseUrl`, project references)",
+            "Parity through `oxc_resolver`'s tsconfig support",
+            "1"
+          ],
+          "claim": "Parity through `oxc_resolver`'s tsconfig support",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::ts_config_paths_base_url_extends_and_references",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`tsPreCompilationDeps`: `true` / `false` / `\"specify\"`",
+            "Parity; `specify` records both the pre- and post-compilation dependency sets and marks `pre-compilation-only`",
+            "1"
+          ],
+          "claim": "Parity; `specify` records both the pre- and post-compilation dependency sets and marks `pre-compilation-only`",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::ts_pre_compilation_deps_false_true_and_specify",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`webpackConfig.fileName`, `env`, `arguments`",
+            "Parity; the config is evaluated in the embedded JavaScript engine and its `resolve` block read; `--webpack-config-json` for a pre-evaluated copy",
+            "2"
+          ],
+          "claim": "Parity; the config is evaluated in the embedded JavaScript engine and its `resolve` block read; `--webpack-config-json` for a pre-evaluated copy",
+          "evidence": [
+            {
+              "item": "rb-cli/cruise_options::webpack_config_resolves_as_webpack_would",
+              "results": "tests"
+            },
+            {
+              "item": "rb-extract-ts/options::a_webpack_resolve_block_reaches_the_resolver",
+              "results": "tests"
+            }
+          ]
+        }
+      ],
+      "title": "Options"
+    },
+    {
+      "headers": [
+        "Flag or command",
+        "Rulebearing",
+        "Wave"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "positional files, directories and globs",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "sverweij/dependency-cruiser",
+              "results": "layer5"
+            },
+            {
+              "item": "langfuse/langfuse",
+              "results": "layer5"
+            },
+            {
+              "item": "microsoft/FluidFramework",
+              "results": "layer5"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`--config` / `--validate`, `--no-config`",
+            "Parity; also `--config-format`, `--config -` (stdin), `--config-via-node`",
+            "1"
+          ],
+          "claim": "Parity; also `--config-format`, `--config -` (stdin), `--config-via-node`",
+          "evidence": [
+            {
+              "item": "rb-cli/cruise_fmt",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/cli::help_matches_the_snapshot",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`--init` (`oneshot` presets)",
+            "Parity, with presets per language",
+            "2"
+          ],
+          "claim": "Parity, with presets per language",
+          "evidence": [
+            {
+              "item": "rb-cli/init_presets",
+              "results": "tests"
+            },
+            {
+              "item": "rb-config/presets::every_preset_resolves_to_its_snapshot",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`--info` (supported transpilers and extensions)",
+            "Parity, per extractor",
+            "1"
+          ],
+          "claim": "Parity, per extractor",
+          "evidence": [
+            {
+              "item": "rb-cli/cruise_fmt::flags_shape_the_run",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`--output-type`, `--output-to`",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "rb-cli/cruise_fmt::every_wave_1_reporter_reports_and_the_gating_ones_exit_with_the_count",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`--include-only`, `--focus`, `--focus-depth`, `--reaches`, `--highlight`, `--collapse`, `--exclude`, `--do-not-follow`, `--max-depth`, `--module-systems`, `--prefix`",
+            "Parity+",
+            "1 to 2"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "rb-cli/cruise_fmt::flags_shape_the_run",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/cruise_options::highlight_marks_every_module",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/cruise_options::collapse_folds_modules_to_a_depth_or_a_pattern",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`--affected [revision]`",
+            "Parity+",
+            "3"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "rb-cli/affected",
+              "results": "tests"
+            },
+            {
+              "item": "mutations:affected",
+              "results": "layer5"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`--ts-pre-compilation-deps`, `--ts-config`, `--webpack-config`, `--preserve-symlinks`",
+            "Parity",
+            "1 to 2"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-cli/cruise_fmt::flags_shape_the_run",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/cruise_options::webpack_config_resolves_as_webpack_would",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`--metrics`, `--no-metrics`",
+            "Parity+",
+            "2"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "rb-cli/graph_reporters::metrics_flags_and_fmt_collapse",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`--ignore-known [file]`, `--no-ignore-known`",
+            "Parity+",
+            "2"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "rb-cli/baseline::ignore_known_softens_the_baseline_and_the_last_flag_wins",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`--cache [folder]`, `--cache-strategy`, `--no-cache`",
+            "Parity+",
+            "3"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "rb-cli/cache",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/cli::help_matches_the_snapshot",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`--progress [type]`, `--no-progress`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-cli/cruise_fmt::flags_shape_the_run",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`--version`, `--help`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-cli/cli::help_matches_the_snapshot",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/cli::version_names_the_tool_and_the_crate_version",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "exit code = number of error-severity violations",
+            "Parity, plus 2 for an untrustworthy run and 3 for an invalid config",
+            "1"
+          ],
+          "claim": "Parity, plus 2 for an untrustworthy run and 3 for an invalid config",
+          "evidence": [
+            {
+              "item": "rb-cli/cli::exit_codes_follow_the_contract",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/cruise_fmt::every_wave_1_reporter_reports_and_the_gating_ones_exit_with_the_count",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`depcruise-fmt` (`-f`, `-T`, `-I`, `-F`, `-x`, `-S`, `-e`, `-p`, `--highlight`)",
+            "`rulebearing fmt`, same flags",
+            "1"
+          ],
+          "claim": "`rulebearing fmt`, same flags",
+          "evidence": [
+            {
+              "item": "rb-cli/cruise_fmt::fmt_rereports_a_saved_result",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/cruise_fmt::fmt_exit_code_counts_what_the_saved_result_carries",
+              "results": "tests"
+            },
+            {
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`depcruise-baseline` (`--baseline-mode`: `full` / `shrink-only` / `format`)",
+            "`rulebearing baseline`, same modes",
+            "2"
+          ],
+          "claim": "`rulebearing baseline`, same modes",
+          "evidence": [
+            {
+              "item": "rb-cli/baseline",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`depcruise-wrap-stream-in-html`",
+            "`rulebearing wrap-html`",
+            "3"
+          ],
+          "claim": "`rulebearing wrap-html`",
+          "evidence": [
+            {
+              "item": "rb-cli/wave3_reporters::wrap_html_is_upstream_s_page_byte_for_byte",
+              "results": "tests"
+            }
+          ]
+        }
+      ],
+      "title": "Command line"
+    },
+    {
+      "headers": [
+        "Type",
+        "Rulebearing",
+        "Wave"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`err`, `err-long`",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/report/error/error.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/error/error-long.spec.mjs",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`err-html`",
+            "Parity",
+            "2"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "test/report/error-html/error-html.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/error-html/utl.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:err-html",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`json`",
+            "Parity+; additive fields only, validates against the 18.2.0 `cruise-result` schema when extensions are stripped with `--strict-schema`",
+            "1"
+          ],
+          "claim": "Parity+; additive fields only, validates against the 18.2.0 `cruise-result` schema when extensions are stripped with `--strict-schema`",
+          "evidence": [
+            {
+              "item": "rb-cli/layer4::a_fresh_cruise_validates_with_strict_schema",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/layer4::upstream_results_revalidate_after_fmt",
+              "results": "tests"
+            },
+            {
+              "item": "sverweij/dependency-cruiser",
+              "results": "layer5"
+            },
+            {
+              "item": "langfuse/langfuse",
+              "results": "layer5"
+            },
+            {
+              "item": "microsoft/FluidFramework",
+              "results": "layer5"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`text`, `csv`",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/report/text/text.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/csv/csv.spec.mjs",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`teamcity`, `azure-devops`",
+            "Parity+",
+            "1"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/report/teamcity/teamcity.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/azure-devops/azure-devops.spec.mjs",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`dot`, `ddot`, `cdot` / `archi`, `fdot` / `flat`",
+            "Parity+",
+            "2"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/report/dot/module-level/index.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/dot/folder-level/folder-level.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/dot/custom-level/index.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/dot/flat-level/index.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/dot/theming.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/dot/module-utl.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:dot",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:ddot",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:archi",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:flat",
+              "results": "layer3"
+            },
+            {
+              "item": "rb-cli/graph_reporters::every_graph_reporter_renders_deterministically_and_exits_0",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`x-dot-webpage`",
+            "Parity",
+            "3"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "test/report/dot-webpage/dot-module.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:x-dot-webpage",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`mermaid`, `d2`",
+            "Parity+",
+            "2"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/report/mermaid/mermaid.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/d2/d2.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:mermaid",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:d2",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`html` (matrix)",
+            "Parity",
+            "3"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "test/report/html/html.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:html",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`markdown`",
+            "Parity",
+            "3"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "test/report/markdown/markdown.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:markdown",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`anon`",
+            "Parity",
+            "3"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "test/report/anon/anonymize.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/anon/anonymize-path.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/anon/anonymize-path-element.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/anon/random-string.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:anon",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`baseline`",
+            "Parity+",
+            "2"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/report/baseline/baseline.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "rb-cli/baseline::full_writes_every_violation_keyed_by_id_and_keeps_the_lifecycle_of_each_entry",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`metrics`",
+            "Parity+",
+            "2"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/report/metrics/metrics.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "oracle:metrics",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`null`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "test/report/null/null.spec.mjs",
+              "results": "layer3"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`plugin:<path>` (custom JavaScript reporter)",
+            "Parity through the embedded engine, receiving the cruise result object",
+            "3"
+          ],
+          "claim": "Parity through the embedded engine, receiving the cruise result object",
+          "evidence": [
+            {
+              "item": "test/report/plugins/index.get-external-plugin-reporter.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "test/report/plugins/index.is-valid-plugin.spec.mjs",
+              "results": "layer3"
+            },
+            {
+              "item": "rb-cli/plugin_reporter",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "New: `sarif`, `github-annotations`, `junit`, `trx`, `agent`, `plantuml`",
+            "Additions",
+            "1 to 3"
+          ],
+          "claim": "Additions",
+          "evidence": [
+            {
+              "item": "rb-report/sarif_schema",
+              "results": "tests"
+            },
+            {
+              "item": "rb-report/xml_schemas",
+              "results": "tests"
+            },
+            {
+              "item": "rb-report/plantuml",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/agent",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/cruise_fmt::every_wave_1_reporter_reports_and_the_gating_ones_exit_with_the_count",
+              "results": "tests"
+            }
+          ]
+        }
+      ],
+      "title": "Output types"
+    },
+    {
+      "headers": [
+        "Field",
+        "Rulebearing"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`modules[]`: `source`, `dependencies[]`, `dependents[]`, `orphan`, `valid`, `rules[]`, `reachable[]`, `reaches[]`, `instability`, `couldNotResolve`, `coreModule`, `followable`, `matchesDoNotFollow`, `matchesFocus`, `matchesReaches`, `matchesHighlight`, `consolidated`, `checksum`, `license`, `dependencyTypes`, `experimentalStats`",
+            "Parity+; added `language`, `project`, `namespaces`, `attribution`"
+          ],
+          "claim": "Parity+; added `language`, `project`, `namespaces`, `attribution`",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-cli/layer4::a_fresh_cruise_validates_with_strict_schema",
+              "results": "tests"
+            },
+            {
+              "item": "sverweij/dependency-cruiser",
+              "results": "layer5"
+            },
+            {
+              "item": "langfuse/langfuse",
+              "results": "layer5"
+            },
+            {
+              "item": "microsoft/FluidFramework",
+              "results": "layer5"
+            },
+            {
+              "item": "rb-cli/multi_language::one_cruise_reads_three_languages",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`modules[].dependencies[]`: `module`, `resolved`, `moduleSystem`, `dependencyTypes`, `dynamic`, `exoticallyRequired`, `exoticRequire`, `followable`, `coreModule`, `couldNotResolve`, `matchesDoNotFollow`, `circular`, `cycle[]`, `valid`, `rules[]`, `preCompilationOnly`, `typeOnly`, `protocol`, `mimeType`, `license`, `instability`",
+            "Parity+; added `line`, `column`, `dependencyKind`, `member`"
+          ],
+          "claim": "Parity+; added `line`, `column`, `dependencyKind`, `member`",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-cli/layer4::a_fresh_cruise_validates_with_strict_schema",
+              "results": "tests"
+            },
+            {
+              "item": "sverweij/dependency-cruiser",
+              "results": "layer5"
+            },
+            {
+              "item": "langfuse/langfuse",
+              "results": "layer5"
+            },
+            {
+              "item": "microsoft/FluidFramework",
+              "results": "layer5"
+            },
+            {
+              "item": "rb-extract-ts/options::every_edge_carries_its_line_and_column",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`folders[]`: `name`, `moduleCount`, `dependencies[]`, `dependents[]`, `afferentCouplings`, `efferentCouplings`, `instability`, `experimentalStats`",
+            "Parity+"
+          ],
+          "claim": "Parity+",
+          "evidence": [
+            {
+              "item": "test/graph-utl/consolidate-to-folder.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-cli/cruise_options::experimental_stats_are_recorded_on_modules_and_summed_on_folders",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/layer4::a_fresh_cruise_validates_with_strict_schema",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`summary`: `violations[]` (`from`, `to`, `rule`, `type`, `cycle`, `via`, `metrics`, `unresolvedTo`, `comment`), `error`, `warn`, `info`, `ignore`, `totalCruised`, `totalDependenciesCruised`, `optionsUsed`, `ruleSetUsed`, `environment`",
+            "Parity+; added `inspected` (files, assemblies, modules per language) and `vacuousRules[]`"
+          ],
+          "claim": "Parity+; added `inspected` (files, assemblies, modules per language) and `vacuousRules[]`",
+          "evidence": [
+            {
+              "item": "rb-cli/layer4::a_fresh_cruise_validates_with_strict_schema",
+              "results": "tests"
+            },
+            {
+              "item": "sverweij/dependency-cruiser",
+              "results": "layer5"
+            },
+            {
+              "item": "langfuse/langfuse",
+              "results": "layer5"
+            },
+            {
+              "item": "microsoft/FluidFramework",
+              "results": "layer5"
+            },
+            {
+              "item": "rb-rules/lib::evaluate::tests::liveness_and_allow_empty",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`revisionData` (`SHA1`, `changes[]`)",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-cli/lifecycle",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/affected",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "New `code` section: `types[]`, `members[]`, `attributes[]`, `calls[]`",
+            "Addition; the layer element, slice and diagram rules read"
+          ],
+          "claim": "Addition; the layer element, slice and diagram rules read",
+          "evidence": [
+            {
+              "item": "rb-extract-ts/codelayer",
+              "results": "tests"
+            },
+            {
+              "item": "rb-extract-dotnet/extract",
+              "results": "tests"
+            },
+            {
+              "item": "rb-extract-python/fixture",
+              "results": "tests"
+            }
+          ]
+        }
+      ],
+      "title": "Result document (`cruise-result` schema)"
+    },
+    {
+      "headers": [
+        "Group",
+        "Values",
+        "Rulebearing"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "Aliases",
+            "`aliased`, `aliased-subpath-import`, `aliased-tsconfig`, `aliased-tsconfig-base-url`, `aliased-tsconfig-paths`, `aliased-webpack`, `aliased-workspace`",
+            "Parity (`oxc_resolver` reports which alias table resolved the specifier)"
+          ],
+          "claim": "Parity (`oxc_resolver` reports which alias table resolved the specifier)",
+          "evidence": [
+            {
+              "results": "layer1"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Module forms",
+            "`import`, `export`, `require`, `import-equals`, `dynamic-import`, `amd-define`, `amd-require`, `amd-exotic-require`, `exotic-require`, `jsdoc`, `jsdoc-bracket-import`, `jsdoc-import-tag`, `triple-slash-amd-dependency`, `triple-slash-directive`, `triple-slash-file-reference`, `triple-slash-type-reference`, `process-get-builtin-module`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "results": "layer1"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Type-level",
+            "`type-only`, `type-import`, `pre-compilation-only`",
+            "Parity (TS); `type-only` reused for Python `TYPE_CHECKING`"
+          ],
+          "claim": "Parity (TS); `type-only` reused for Python `TYPE_CHECKING`",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "test/validate/index.type-only.spec.mjs",
+              "results": "layer2"
+            },
+            {
+              "item": "rb-extract-python/fixture",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "npm",
+            "`npm`, `npm-dev`, `npm-peer`, `npm-optional`, `npm-bundled`, `npm-no-pkg`, `npm-unknown`, `deprecated`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "results": "layer1"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Other",
+            "`core`, `local`, `localmodule`, `undetermined`, `unknown`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "test/validate/index.core.spec.mjs",
+              "results": "layer2"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Module systems",
+            "`cjs`, `es6`, `amd`, `tsd`",
+            "Parity; .NET reports `clr`, Python `py`"
+          ],
+          "claim": "Parity; .NET reports `clr`, Python `py`",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::module_systems_select_the_forms_extracted",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/multi_language::one_cruise_reads_three_languages",
+              "results": "tests"
+            }
+          ]
+        }
+      ],
+      "title": "Dependency types and module systems"
+    },
+    {
+      "headers": [
+        "Capability",
+        "Rulebearing",
+        "Wave"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "JavaScript (`.js`, `.mjs`, `.cjs`, `.jsx`), TypeScript (`.ts`, `.tsx`, `.mts`, `.cts`, `.d.ts`), decorators, stage-3 syntax",
+            "`oxc_parser`",
+            "1"
+          ],
+          "claim": "`oxc_parser`",
+          "evidence": [
+            {
+              "results": "layer1"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Vue single-file components (`.vue`), Svelte (`.svelte`)",
+            "script-block splitter, then `oxc`",
+            "2"
+          ],
+          "claim": "script-block splitter, then `oxc`",
+          "evidence": [
+            {
+              "item": "test/extract/get-dependencies.odds-and-ends.spec.mjs#1",
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::vue_and_svelte_scripts_are_extracted_where_they_stand",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "CoffeeScript, LiveScript (`.coffee`, `.litcoffee`, `.ls`, `.cjsx`, `.csx`)",
+            "Sidecar: `--sidecar node` spawns dependency-cruiser for those files and merges the edges",
+            "3"
+          ],
+          "claim": "Sidecar: `--sidecar node` spawns dependency-cruiser for those files and merges the edges",
+          "evidence": [
+            {
+              "item": "test/extract/get-dependencies.odds-and-ends.spec.mjs#2",
+              "results": "layer1"
+            },
+            {
+              "item": "rb-cli/sidecar::without_the_flag_a_coffeescript_file_stops_the_run",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Babel-transformed syntax, `.babel` files",
+            "`oxc` parses the syntax; module-resolver aliases read from the Babel config",
+            "1"
+          ],
+          "claim": "`oxc` parses the syntax; module-resolver aliases read from the Babel config",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::babel_config_module_resolver_aliases_rewrite_specifiers",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Markdown code fences (`.md`, via `extraExtensionsToScan`)",
+            "Parity",
+            "2"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-extract-ts/options::markdown_fences_are_read_for_a_native_configuration",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/cruise_options::markdown_fences_follow_the_configuration_format",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Resolution: node resolution, `exports` and `imports` fields, `conditionNames`, `mainFields`, `aliasFields`, tsconfig `paths` / `baseUrl` / `extends` / references, webpack `resolve.alias` and `modules`, workspaces, symlinks, Yarn PnP",
+            "`oxc_resolver`",
+            "1 to 2"
+          ],
+          "claim": "`oxc_resolver`",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::yarn_pnp_resolves_through_the_manifest",
+              "results": "tests"
+            },
+            {
+              "item": "rb-extract-ts/options::ts_config_paths_base_url_extends_and_references",
+              "results": "tests"
+            },
+            {
+              "item": "rb-extract-ts/options::a_webpack_resolve_block_reaches_the_resolver",
+              "results": "tests"
+            },
+            {
+              "item": "rb-extract-ts/options::preserve_symlinks_keeps_the_link_path",
+              "results": "tests"
+            },
+            {
+              "item": "sverweij/dependency-cruiser",
+              "results": "layer5"
+            },
+            {
+              "item": "langfuse/langfuse",
+              "results": "layer5"
+            },
+            {
+              "item": "microsoft/FluidFramework",
+              "results": "layer5"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "npm classification from the nearest `package.json`, licence and `deprecated` from the installed package",
+            "Parity",
+            "1 to 2"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "test/validate/index.license.spec.mjs",
+              "results": "layer2"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Core module detection per Node version, `node:` protocol, `process.getBuiltinModule`",
+            "Parity",
+            "1"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "results": "layer1"
+            },
+            {
+              "item": "rb-extract-ts/options::detect_process_builtin_module_calls_finds_both_spellings",
+              "results": "tests"
+            },
+            {
+              "item": "rb-extract-ts/options::built_in_modules_are_added_to_or_replaced",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Unsupported-transpiler failure mode: dependency-cruiser cruises zero modules and exits 0",
+            "Exit code 2 with a named reason; `the separate toolchain-version guard a heavy user has to bolt on becomes unnecessary`",
+            "1"
+          ],
+          "claim": "Exit code 2 with a named reason; `the separate toolchain-version guard a heavy user has to bolt on becomes unnecessary`",
+          "evidence": [
+            {
+              "item": "rb-extract-ts/options::a_sidecar_file_stops_the_run_with_a_named_reason",
+              "results": "tests"
+            },
+            {
+              "item": "rb-extract-ts/options::an_empty_input_finds_no_modules",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/sidecar::without_the_flag_a_coffeescript_file_stops_the_run",
+              "results": "tests"
+            }
+          ]
+        }
+      ],
+      "title": "Extraction and resolution"
+    },
+    {
+      "headers": [
+        "dependency-cruiser",
+        "Rulebearing"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`cruise(files, options, resolveOptions, transpileOptions)`",
+            "Rust `rulebearing::cruise`; Node `rulebearing` exports `cruise()` with the same signature through napi-rs"
+          ],
+          "claim": "Rust `rulebearing::cruise`; Node `rulebearing` exports `cruise()` with the same signature through napi-rs",
+          "evidence": [
+            {
+              "item": "rb-node (ubuntu-latest)",
+              "results": "jobs"
+            },
+            {
+              "item": "rb-node (macos-latest)",
+              "results": "jobs"
+            },
+            {
+              "item": "rb-node (windows-latest)",
+              "results": "jobs"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`format(result, options)`",
+            "`lb::format`; Node `format()`"
+          ],
+          "claim": "`lb::format`; Node `format()`",
+          "evidence": [
+            {
+              "item": "rb-node (ubuntu-latest)",
+              "results": "jobs"
+            },
+            {
+              "item": "rb-node (macos-latest)",
+              "results": "jobs"
+            },
+            {
+              "item": "rb-node (windows-latest)",
+              "results": "jobs"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`extractDepcruiseConfig`, `extractTSConfig`, `extractWebpackResolveConfig`, `extractBabelConfig`",
+            "same names in the Node binding"
+          ],
+          "claim": "same names in the Node binding",
+          "evidence": [
+            {
+              "item": "rb-node (ubuntu-latest)",
+              "results": "jobs"
+            },
+            {
+              "item": "rb-node (macos-latest)",
+              "results": "jobs"
+            },
+            {
+              "item": "rb-node (windows-latest)",
+              "results": "jobs"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`getAvailableTranspilers`, `allExtensions`",
+            "same names, per extractor"
+          ],
+          "claim": "same names, per extractor",
+          "evidence": [
+            {
+              "item": "rb-node (ubuntu-latest)",
+              "results": "jobs"
+            },
+            {
+              "item": "rb-node (macos-latest)",
+              "results": "jobs"
+            },
+            {
+              "item": "rb-node (windows-latest)",
+              "results": "jobs"
+            }
+          ]
+        }
+      ],
+      "title": "Programmatic API"
+    }
+  ],
+  "tab": "dependency-cruiser-18.2.0",
+  "tabSha256": "049ee19dc16473d4380cf10890d891e9d59534a20f056bcd7e68ab8deca10afa",
+  "title": "dependency-cruiser 18.2.0 coverage"
+}

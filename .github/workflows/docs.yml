@@ -1,7 +1,10 @@
 # The docs site on GitHub Pages (plan 0004, Step 3): built from `main` with the playground's wasm
 # module compiled in the same run, the two JSON schemas taken from the latest published release so
 # their `$id` URLs hold the released contract, a link check over the built site, the npm licence
-# check, and the playground's browser test.
+# check, and the playground's browser test. The live coverage and scale tables render
+# site/data/coverage.json and testbeds/results/scale.json, which the nightly's pull requests update
+# (plan 0004, Step 4; docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md),
+# so a change to either rebuilds the site.
 #
 # Pull request: build, link check, licence check and browser test, no deploy. Push to `main`, a
 # manual run on `main`, or a completed release run: the same, then deploy. One Pages site per
@@ -19,6 +22,7 @@ on:
       - "docs/**"
       - "schema/**"
       - "cookbook/**"
+      - "testbeds/results/scale.json"
       - "README.md"
       - "CONTRIBUTING.md"
       - "SECURITY.md"
@@ -42,6 +46,7 @@ on:
       - "docs/**"
       - "schema/**"
       - "cookbook/**"
+      - "testbeds/results/scale.json"
       - "README.md"
       - "CONTRIBUTING.md"
       - "SECURITY.md"

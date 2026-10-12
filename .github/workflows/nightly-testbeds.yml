@@ -12,7 +12,10 @@
 # scale rows (aspnetcore, jellyfin, home-assistant) time Rulebearing alone. Rulebearing runs
 # beside dependency-cruiser on its rows (plan 0001, Step 18), timed and diffed with the incumbent. The summary is published to the
 # `testbeds-results` branch, because `main` accepts changes only through reviewed pull requests;
-# README.md carries the table between its testbeds markers, refreshed from that branch.
+# README.md carries the table between its testbeds markers, refreshed from that branch. The live
+# coverage tables (docs/plans/pending/0004-wave-4-reach.md, Step 4) are written from the night's
+# conformance results to site/data/coverage.json and reach main by pull request, as the scale
+# table does (docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md).
 # Every action is pinned to a commit SHA (docs/adr/0025-ci-and-supply-chain-hardening.md).
 name: nightly-testbeds
 
@@ -356,6 +359,67 @@ jobs:
           path: target/conformance/layer5
           if-no-files-found: ignore
 
+  # The live coverage tables (docs/plans/pending/0004-wave-4-reach.md, Step 4;
+  # docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md): conformance gate 1's
+  # layers 1 to 4, gate 2, and the Rust tests conformance/ledger/ names, each writing its verdicts
+  # to target/conformance/*.json for the summary job. Their pass or fail is the CI gates' business;
+  # here a failure is data (the row it proves reads "unproven"), so it does not fail the night.
+  conformance:
+    name: conformance results
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      # Layer 3 compares x-dot-webpage with upstream's through GraphViz' dot (ADR-0053).
+      - name: GraphViz
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends graphviz
+      - name: gate 1, layers 1 to 4
+        continue-on-error: true
+        run: conformance/dependency-cruiser/run.sh
+      - name: gate 2
+        continue-on-error: true
+        run: cargo test -p rb-rules --test gate2 --test gate2_netarchtest
+      - name: the tests the ledger names
+        continue-on-error: true
+        run: python3 testbeds/scripts/coverage_status.py tests
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: conformance-results
+          path: target/conformance/*.json
+          if-no-files-found: ignore
+
+  # The job conclusions of the latest completed ci.yml run on main, for the coverage rows only CI
+  # proves (rb-node on three hosts, the .NET adapters). Its own job, so that only it reads Actions.
+  ci-jobs:
+    name: latest CI run on main
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: record its jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p target/conformance
+          run_id="$(gh run list --workflow ci.yml --branch main --event push --status completed \
+            --limit 1 --json databaseId --jq '.[0].databaseId')"
+          gh run view "$run_id" --json jobs > target/conformance/ci-run.json
+          python3 testbeds/scripts/coverage_status.py jobs --from target/conformance/ci-run.json \
+            --run "$run_id"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-jobs
+          path: target/conformance/jobs.json
+
   # The oracle harness (docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 11 and
   # § 1.4.5): each .NET and Python oracle's own tests or contracts against the same rules imported
   # into Rulebearing. TNG/ArchUnitNET and BenMorris/NetArchTest are conformance gate 2's suites,
@@ -497,12 +561,14 @@ jobs:
 
   summary:
     name: summary and regression check
-    needs: [run, layer-5, greenfield-init, scale, stop-hook, oracle-python, oracle-dotnet]
+    needs:
+      [run, layer-5, greenfield-init, scale, stop-hook, oracle-python, oracle-dotnet, conformance, ci-jobs]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # contents: write publishes the testbeds-results branch and the scale-table branch;
-    # pull-requests: write opens the scale table's pull request (plan 0003, Step 24).
+    # contents: write publishes the testbeds-results branch and the scale-table and coverage-tables
+    # branches; pull-requests: write opens their pull requests (plan 0003, Step 24; plan 0004,
+    # Step 4).
     permissions:
       contents: write
       pull-requests: write
@@ -525,6 +591,17 @@ jobs:
         with:
           name: layer5
           path: target/conformance/layer5
+      # The gates' verdicts and the latest CI run's jobs, for the live coverage tables.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        continue-on-error: true
+        with:
+          name: conformance-results
+          path: target/conformance
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        continue-on-error: true
+        with:
+          name: ci-jobs
+          path: target/conformance
       # The oracle harness's result files, over the committed ones, for the agreement table.
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         continue-on-error: true
@@ -650,6 +727,44 @@ jobs:
             gh pr create --base main --head testbeds/scale-table \
               --title "testbeds: the scale table, nightly run ${GITHUB_RUN_ID}" \
               --body "The scale table from nightly run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}, written by testbeds/bench/scale_table.py (plan 0003, Step 24). Later nights push to this branch while it is open."
+          fi
+      # The live coverage tables (plan 0004, Step 4; docs/adr/0074): each coverage-tab row's status
+      # from tonight's results, a row with any missing or failing evidence unproven.
+      - id: coverage
+        if: always()
+        run: |
+          python3 testbeds/scripts/coverage_status.py write --run "$GITHUB_RUN_ID" > "$RUNNER_TEMP/coverage.txt"
+          cat "$RUNNER_TEMP/coverage.txt" >> "$GITHUB_STEP_SUMMARY"
+      # Kept with the night, whichever branch it ran on, beside the pull request below.
+      - if: always() && steps.coverage.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-tables
+          path: site/data/coverage.json
+      # The coverage file on a branch of its own, committed in a worktree of this night's commit
+      # (not over the scale table's commit above), and a pull request for it when none is open.
+      - name: open or update the coverage tables pull request
+        if: always() && github.ref == 'refs/heads/main' && steps.coverage.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          file=site/data/coverage.json
+          tree="$RUNNER_TEMP/coverage-tables"
+          git worktree add -q --detach "$tree" "$GITHUB_SHA"
+          cp "$file" "$tree/$file"
+          cd "$tree"
+          if git diff --quiet HEAD -- "$file"; then
+            echo "coverage tables: unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898729+github-actions[bot]@users.noreply.github.com"
+          git commit -qm "testbeds: the coverage tables, nightly run ${GITHUB_RUN_ID}" -- "$file"
+          git push --force origin HEAD:refs/heads/testbeds/coverage-tables
+          if [ "$(gh pr list --head testbeds/coverage-tables --state open --json number --jq length)" = "0" ]; then
+            gh pr create --base main --head testbeds/coverage-tables \
+              --title "testbeds: the coverage tables, nightly run ${GITHUB_RUN_ID}" \
+              --body "Each coverage-tab row's status from nightly run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}, written by testbeds/scripts/coverage_status.py from conformance/ledger/ and the gates' results (plan 0004, Step 4; docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md). Later nights push to this branch while it is open."
           fi
       - name: scale regression
         if: always() && steps.scale.outputs.status == '1'

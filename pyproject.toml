@@ -48,6 +48,8 @@ ignore = [
 "testbeds/oracles/*.py" = ["INP001"]
 # The Stop-hook benchmark, run by path from the nightly (plan 0003, Step 17).
 "testbeds/bench/*.py" = ["INP001"]
+# The live coverage tables' script, run by path from the nightly (plan 0004, Step 4).
+"testbeds/scripts/*.py" = ["INP001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -85,17 +87,26 @@ ignore_missing_imports = true
 #   pytest adapters/python --cov=adapters/python
 #   pytest testbeds/oracles   (the oracle harness; not a published package, so no floor)
 #   pytest testbeds/bench --cov=testbeds/bench   (the Stop-hook benchmark, at the floor)
+#   pytest testbeds/scripts --cov=testbeds/scripts   (the live coverage tables, at the floor)
 # The sources are imported from the tree (pythonpath), so coverage measures them where they are,
 # and the plugin is loaded by the tests themselves, inside the measured window.
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib -p pytester --cov-report=term-missing --cov-fail-under=70"
-testpaths = ["wrappers/pip", "wrappers/rules", "adapters/python", "testbeds/oracles", "testbeds/bench"]
+testpaths = [
+    "wrappers/pip",
+    "wrappers/rules",
+    "adapters/python",
+    "testbeds/oracles",
+    "testbeds/bench",
+    "testbeds/scripts",
+]
 pythonpath = [
     "wrappers/pip/src",
     "wrappers/rules",
     "adapters/python/pytest-rulebearing/src",
     "testbeds/oracles",
     "testbeds/bench",
+    "testbeds/scripts",
 ]
 
 [tool.coverage.run]

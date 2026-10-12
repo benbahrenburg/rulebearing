@@ -149,6 +149,8 @@ pub struct SuiteRun {
     pub total: u64,
     /// One line per differing case.
     pub failures: Vec<String>,
+    /// Per case file (`ported/<name>.yaml`): its cases, and how many of them differ.
+    pub files: BTreeMap<String, (u64, u64)>,
 }
 
 /// Evaluates every case under `<root>/ported/*.yaml` with `check`, over one architecture per
@@ -206,17 +208,22 @@ pub fn run_suite(
         .collect();
     let mut total = 0_u64;
     let mut failures = Vec::new();
+    let mut files: BTreeMap<String, (u64, u64)> = BTreeMap::new();
     for (name, suite) in &suites {
+        let tally = files.entry(name.clone()).or_default();
         for case in cases(suite) {
             total += 1;
+            tally.0 += 1;
             let id = case.get("id").and_then(Value::as_str).unwrap_or("?");
             let assemblies = assemblies_of(suite, &case);
             let Some(architecture) = architectures.get(&assemblies) else {
                 failures.push(format!("{name}.{id}: no architecture for {assemblies:?}"));
+                tally.1 += 1;
                 continue;
             };
             if let Some(failure) = check(architecture, &format!("{name}.{id}"), &case) {
                 failures.push(failure);
+                tally.1 += 1;
             }
         }
     }
@@ -227,12 +234,63 @@ pub fn run_suite(
         "{}: ported.json's count must equal the cases under ported/",
         root.display()
     );
-    Ok(SuiteRun { total, failures })
+    Ok(SuiteRun {
+        total,
+        failures,
+        files,
+    })
 }
 
-/// Prints the tally, writes the differing cases to `<temp>/<report>` under `RB_GATE2_REPORT`,
-/// and fails when any case differs.
-pub fn report(label: &str, report: &str, run: &SuiteRun) -> Result<(), Box<dyn std::error::Error>> {
+/// The live coverage tables' results file for a suite: each case file passes when it holds a
+/// case and none of its cases differs, in the shape
+/// `conformance/dependency-cruiser/harness/results.mjs` writes
+/// ([Wave 4, Step 4](../../../../docs/plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables),
+/// [ADR-0075](../../../../docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md)).
+pub fn results_json(name: &str, run: &SuiteRun) -> serde_json::Result<String> {
+    let items: BTreeMap<&str, &str> = run
+        .files
+        .iter()
+        .map(|(file, (cases, differing))| {
+            let verdict = if *cases > 0 && *differing == 0 {
+                "pass"
+            } else {
+                "fail"
+            };
+            (file.as_str(), verdict)
+        })
+        .collect();
+    let passed = items.values().filter(|v| **v == "pass").count();
+    let cases: BTreeMap<&str, u64> = run
+        .files
+        .iter()
+        .map(|(file, (count, _))| (file.as_str(), *count))
+        .collect();
+    let document = serde_json::json!({
+        "results": name,
+        "ok": !items.is_empty() && passed == items.len(),
+        "passed": passed,
+        "total": items.len(),
+        "items": items,
+        "cases": cases,
+    });
+    Ok(format!("{}\n", serde_json::to_string_pretty(&document)?))
+}
+
+/// Prints the tally, writes the suite's results to `target/conformance/<results>.json`, writes
+/// the differing cases to `<temp>/<report>` under `RB_GATE2_REPORT`, and fails when any case
+/// differs.
+pub fn report(
+    label: &str,
+    results: &str,
+    report: &str,
+    run: &SuiteRun,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let out = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/conformance");
+    std::fs::create_dir_all(&out)?;
+    std::fs::write(
+        out.join(format!("{results}.json")),
+        results_json(results, run)?,
+    )?;
     println!(
         "{label}: {} of {} ported cases reproduce upstream",
         run.total - run.failures.len() as u64,

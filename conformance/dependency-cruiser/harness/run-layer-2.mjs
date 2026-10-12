@@ -11,10 +11,14 @@
 //   --record             rewrites conformance/excluded.json with the specs that fail now, keeping
 //                        each surviving entry's reason. Run it only to shrink the list: the
 //                        ratchet job rejects a pull request that grows it.
+//
+// A full run in gate mode writes each spec's verdict to target/conformance/layer2.json for the
+// live coverage tables (docs/plans/pending/0004-wave-4-reach.md, Step 4; results.mjs).
 import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { createRequire, register } from 'node:module';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { writeResults } from './results.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const excludedPath = join(here, '..', '..', 'excluded.json');
@@ -69,6 +73,15 @@ console.log(
     `layer2: specs=${specs.length} failing=${failedSpecs.size} excluded=${excluded.size} ` +
         `unexpected-failures=${unexpected.length} excluded-but-passing=${nowPassing.length}`,
 );
+// The live coverage tables read each spec's verdict (plan 0004, Step 4); a narrowed run is not
+// the gate, so it writes nothing.
+if (only.length === 0) {
+    const written = writeResults(
+        'layer2',
+        new Map(specs.map((spec) => [spec, !failedSpecs.has(spec)])),
+    );
+    console.log(`layer2: wrote ${written}`);
+}
 
 if (record) {
     const kept = specs
