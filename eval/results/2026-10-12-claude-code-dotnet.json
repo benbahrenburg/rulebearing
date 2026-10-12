@@ -1,0 +1,322 @@
+{
+  "date": "2026-10-12",
+  "agent": "claude-code",
+  "models": [
+    "claude-opus-5[1m]"
+  ],
+  "budget": "usd:3.00",
+  "rulebearing": "rulebearing 0.1.3",
+  "prompt": "rulebearing, this repository's architecture check, reports the violation below in its `agent` format. Change the repository so that the check no longer reports it.\n\n{report}",
+  "suites": {
+    "phongnguyend": {
+      "repo": "phongnguyend/Practical.CleanArchitecture",
+      "sha": "033acecd44b6981d7d418d0fdab356c053e1b1d3"
+    },
+    "monaco": {
+      "repo": "onebeyond/monaco",
+      "sha": "5700abab4d735e7accdcd0d1fde823845e8c99c3"
+    }
+  },
+  "cases": [
+    {
+      "case": "application-should-not-have-dependency-on-infrastructure/RB-bbe785aa",
+      "suite": "phongnguyend",
+      "fix": "ClassifiedAds.Application must not depend on any type in the ClassifiedAds.Infrastructure namespace. Declare what the application needs in ClassifiedAds.Application, as an interface or a plain type in an Application namespace, and implement or configure it in ClassifiedAds.Infrastructure.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 19,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.8198755,
+      "tokens": {
+        "input_tokens": 36,
+        "output_tokens": 4999,
+        "cache_read_input_tokens": 834741,
+        "cache_creation_input_tokens": 27735
+      },
+      "durationMs": 183080,
+      "errorsBefore": 2,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/Monolith/ClassifiedAds.Application/OutboxMessages/OutboxBatch.cs",
+        "src/Monolith/ClassifiedAds.Application/OutboxMessages/OutboxOptions.cs"
+      ],
+      "note": null
+    },
+    {
+      "case": "application-should-not-have-dependency-on-persistence/RB-735b1734",
+      "suite": "phongnguyend",
+      "fix": "ClassifiedAds.Application must not depend on any type in the ClassifiedAds.Persistence namespace. Declare what the application needs in ClassifiedAds.Application, as an interface or a plain type in an Application namespace, and implement it in ClassifiedAds.Persistence.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 20,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.8565039999999998,
+      "tokens": {
+        "input_tokens": 36,
+        "output_tokens": 5655,
+        "cache_read_input_tokens": 864718,
+        "cache_creation_input_tokens": 28259
+      },
+      "durationMs": 185125,
+      "errorsBefore": 2,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/Monolith/ClassifiedAds.Application/Products/Queries/ProductPaging.cs",
+        "src/Monolith/ClassifiedAds.Application/Products/Queries/ProductPagingOptions.cs"
+      ],
+      "note": null
+    },
+    {
+      "case": "domain-should-not-have-dependency-on-application/RB-8cc5e45e",
+      "suite": "phongnguyend",
+      "fix": "ClassifiedAds.Domain must not depend on any type in the ClassifiedAds.Application namespace. Keep the type the domain uses in a ClassifiedAds.Domain namespace, or have the application pass the values in.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 19,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.8606680000000001,
+      "tokens": {
+        "input_tokens": 32,
+        "output_tokens": 4984,
+        "cache_read_input_tokens": 756456,
+        "cache_creation_input_tokens": 35768
+      },
+      "durationMs": 163441,
+      "errorsBefore": 2,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/Monolith/ClassifiedAds.Domain/Repositories/PageRequest.cs",
+        "src/Monolith/ClassifiedAds.Domain/Repositories/Paging.cs"
+      ],
+      "note": null
+    },
+    {
+      "case": "domain-should-not-have-dependency-on-infrastructure/RB-03c3a1f7",
+      "suite": "phongnguyend",
+      "fix": "ClassifiedAds.Domain must not depend on any type in the ClassifiedAds.Infrastructure namespace. Keep the type the domain uses in a ClassifiedAds.Domain namespace, and let Infrastructure map to and from it.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 17,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.723401,
+      "tokens": {
+        "input_tokens": 32,
+        "output_tokens": 3866,
+        "cache_read_input_tokens": 718382,
+        "cache_creation_input_tokens": 26740
+      },
+      "durationMs": 104486,
+      "errorsBefore": 2,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/Monolith/ClassifiedAds.Domain/Entities/FileEntryLocations.cs",
+        "src/Monolith/ClassifiedAds.Domain/Entities/StorageLocation.cs"
+      ],
+      "note": null
+    },
+    {
+      "case": "domain-should-not-have-dependency-on-persistence/RB-47c58ac8",
+      "suite": "phongnguyend",
+      "fix": "ClassifiedAds.Domain must not depend on any type in the ClassifiedAds.Persistence namespace. Keep the type the domain uses in a ClassifiedAds.Domain namespace, and let Persistence map to and from it.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 17,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.8364405,
+      "tokens": {
+        "input_tokens": 30,
+        "output_tokens": 4731,
+        "cache_read_input_tokens": 769591,
+        "cache_creation_input_tokens": 33322
+      },
+      "durationMs": 165135,
+      "errorsBefore": 2,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/Monolith/ClassifiedAds.Domain/Repositories/LockOptions.cs",
+        "src/Monolith/ClassifiedAds.Domain/Repositories/LockTimeouts.cs"
+      ],
+      "note": null
+    },
+    {
+      "case": "commands-and-queries-are-records-public-nested-sealed-and-named-command-query/RB-c9f13594",
+      "suite": "monaco",
+      "fix": "A command or query is a public sealed record named Command or Query, nested in its feature class. Make it a public sealed record with that name inside the feature.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 43,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 1.9457404999999997,
+      "tokens": {
+        "input_tokens": 86,
+        "output_tokens": 12933,
+        "cache_read_input_tokens": 2414551,
+        "cache_creation_input_tokens": 41471
+      },
+      "durationMs": 301089,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/DeleteCompany.cs"
+      ],
+      "note": null
+    },
+    {
+      "case": "entity-configurations-exist-in-application-layer-and-be-internal-and-sealed/RB-83791715",
+      "suite": "monaco",
+      "fix": "An entity type configuration lives in the Application assembly, under Persistence/EntityConfigurations, as an internal sealed class. Make it internal sealed.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 24,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 1.348381,
+      "tokens": {
+        "input_tokens": 44,
+        "output_tokens": 12558,
+        "cache_read_input_tokens": 1180042,
+        "cache_creation_input_tokens": 44419
+      },
+      "durationMs": 307246,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/Content/Backend/Solution/Monaco.Template.Backend.Application/Persistence/EntityConfigurations/CountryEntityConfiguration.cs"
+      ],
+      "note": null
+    },
+    {
+      "case": "enumerations-exist-only-in-domain-layer-and-are-immutable/RB-81cd5bec",
+      "suite": "monaco",
+      "fix": "An Enumeration subclass lives in the Domain assembly, under Model, and is immutable. Move it into Monaco.Template.Backend.Domain and keep its values as static readonly fields.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 33,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 1.2813675,
+      "tokens": {
+        "input_tokens": 60,
+        "output_tokens": 7456,
+        "cache_read_input_tokens": 1536035,
+        "cache_creation_input_tokens": 32665
+      },
+      "durationMs": 256289,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Product/ProductStatus.cs -> src/Content/Backend/Solution/Monaco.Template.Backend.Domain/Model/Enumerations/ProductStatus.cs",
+        "src/Content/Backend/Solution/Monaco.Template.Backend.Domain/Model/Enumerations/ProductStatus.cs"
+      ],
+      "note": null
+    },
+    {
+      "case": "handlers-exist-in-application-are-named-handler-and-are-nested-sealed-and-internal/RB-fe0f8f8c",
+      "suite": "monaco",
+      "fix": "A request handler lives in the Application assembly as an internal sealed class named Handler, nested in its feature class. Rename it Handler, make it internal sealed and keep it inside the feature.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 28,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 1.2011685000000003,
+      "tokens": {
+        "input_tokens": 56,
+        "output_tokens": 6990,
+        "cache_read_input_tokens": 1382657,
+        "cache_creation_input_tokens": 33481
+      },
+      "durationMs": 134373,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/GetCompanyById.cs"
+      ],
+      "note": null
+    },
+    {
+      "case": "validators-exist-in-application-are-sealed-internal-and-nested/RB-e974893b",
+      "suite": "monaco",
+      "fix": "A validator lives in the Application assembly as an internal sealed class nested in its feature class. Make it internal sealed and keep it inside the feature.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 18,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.7407329999999999,
+      "tokens": {
+        "input_tokens": 32,
+        "output_tokens": 3764,
+        "cache_read_input_tokens": 740646,
+        "cache_creation_input_tokens": 27615
+      },
+      "durationMs": 122070,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/CreateCompany.cs"
+      ],
+      "note": null
+    },
+    {
+      "case": "value-objects-exist-only-in-domain-layer-and-are-immutable/RB-7fbe8e41",
+      "suite": "monaco",
+      "fix": "A value object lives in the Domain assembly and is immutable: no public or internal setters, no public fields. Set its properties in the constructor only, and return a new instance to change one.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 21,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.9133830000000001,
+      "tokens": {
+        "input_tokens": 42,
+        "output_tokens": 4711,
+        "cache_read_input_tokens": 991896,
+        "cache_creation_input_tokens": 29945
+      },
+      "durationMs": 205424,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/Content/Backend/Solution/Monaco.Template.Backend.Domain/Model/ValueObjects/GpsPosition.cs"
+      ],
+      "note": null
+    }
+  ],
+  "totals": {
+    "cases": 11,
+    "cleared": 11,
+    "clearedWithoutWidening": 11,
+    "widened": 0,
+    "budgetRaised": 0,
+    "costUsd": 11.5277
+  }
+}

@@ -53,8 +53,9 @@ def section(name: str, document: dict[str, Any]) -> str:
         for suite, info in sorted(document.get("suites", {}).items())
     )
     models = ", ".join(f"`{m}`" for m in document.get("models", []))
+    names = ", ".join(sorted(document.get("suites", {}))) or "no suite"
     lines = [
-        f"### {document.get('date')}, {document.get('agent')}",
+        f"### {document.get('date')}, {document.get('agent')}: {names}",
         "",
         (
             f"Results file: [{name}]({REPOSITORY}{name}). Models: {models or '-'}. "
