@@ -182,7 +182,7 @@ jobs:
         run: conformance/dependency-cruiser/scripts/run-layer-5.sh --mutations
       - run: npx --no-install playwright install --with-deps chromium-headless-shell
       - name: playground on the mutation fixture
-        run: npm --prefix site run test:e2e -- -t "mutation fixture"
+        run: npm --prefix site run test:e2e -- -t mutation
         env:
           RB_PLAYGROUND_MUTATIONS: ${{ github.workspace }}/target/conformance/layer5/mutations/playground
       - if: always()
