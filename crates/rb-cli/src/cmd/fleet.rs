@@ -182,6 +182,13 @@ pub fn run(ctx: &mut Context<'_>, args: &FleetArgs) -> Outcome {
         color: args.color,
         ..FmtArgs::default()
     };
+    ctx.usage.fired(
+        document
+            .summary
+            .violations
+            .iter()
+            .map(|v| v.rule.name.clone()),
+    );
     let outcome = crate::cmd::fmt::report(ctx, &report, document);
     Outcome {
         stderr: format!("{stderr}{}", outcome.stderr),
@@ -368,7 +375,7 @@ fn cruise_all(
         .map_or(1, std::num::NonZeroUsize::get)
         .min(repos.len())
         .max(1);
-    let (today, timestamp) = (ctx.today, ctx.timestamp.clone());
+    let (today, timestamp, ci) = (ctx.today, ctx.timestamp.clone(), ctx.usage.in_ci());
     let each = |(repo, folder): (&FleetRepo, &PathBuf)| {
         let mut stdin = std::io::empty();
         let mut repo_ctx = Context {
@@ -378,6 +385,8 @@ fn cruise_all(
             timestamp: timestamp.clone(),
             color_terminal: false,
             warm: None,
+            // Each repository's run counts on its own recorder; the fleet records what fired.
+            usage: crate::usage::Recorder::new(ci),
         };
         cruise_one(&mut repo_ctx, args, repo)
     };
