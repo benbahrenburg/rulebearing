@@ -18,16 +18,25 @@
 // Every run is timed against the 500 ms target.
 //
 // RB_PLAYGROUND_FIXTURE=<dir> times another fixture of the same shape (rulebearing.yaml or
-// rulebearing.json, graph.json, expected.json) for `evaluate` instead; plan 0004's mutation
-// fixture is one, once its graph is written from a dependency-cruiser checkout
-// (conformance/dependency-cruiser/mutations).
+// rulebearing.json, graph.json, expected.json) for `evaluate` instead.
+//
+// RB_PLAYGROUND_MUTATIONS=<dir> names plan 0004's mutation fixture: the folder
+// `conformance/dependency-cruiser/scripts/run-layer-5.sh --mutations` writes from a
+// dependency-cruiser checkout with mutations.patch applied (target/conformance/layer5/mutations/
+// playground). `evaluate` on that graph and configuration must print what `cruise --graph` printed
+// (its `expected/`), report exactly the twelve violations of mutations/expected.json, and run in
+// under 500 ms. The fixture needs a clone of dependency-cruiser and a release build, so a run
+// without the variable skips that test and says so; the `docs-playground-mutations` job in
+// docs.yml always sets it, and fails when the folder is missing.
+//
+// Under GitHub Actions every measured time is also written to the job summary.
 //
 // Plan: docs/plans/pending/0004-wave-4-reach.md, Step 3 and § 1.8 ("evaluate the wave 1 mutation
 // fixture in the browser in under 500 ms after load"; "Playwright test in the docs build").
 // Decisions: docs/adr/0072-the-docs-site-builds-from-docs-and-serves-the-released-schemas.md,
 // docs/adr/0073-extractors-read-files-through-rb-model.md. Requirement: FR-REACH-01.
 
-import { existsSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 import type { Server } from 'node:http';
 import { join, resolve } from 'node:path';
 import { chromium } from 'playwright';
@@ -41,6 +50,7 @@ const fixture = resolve(
   process.env.RB_PLAYGROUND_FIXTURE ?? join(root, 'cookbook/guards/no-circular'),
 );
 const repos = join(root, 'crates/rb-wasm/tests/fixtures');
+const mutations = process.env.RB_PLAYGROUND_MUTATIONS;
 const LIMIT_MS = 500;
 
 /** The reporters compared byte for byte: the JSON and two text reporters, none with a timestamp. */
@@ -51,6 +61,27 @@ const EXPLAINED = {
   typescript: ['no-circular', 'no-unresolvable'],
   python: ['no-circular', 'ui-not-to-models'],
 } as const;
+
+interface Edge {
+  rule: string | { name: string };
+  from: string;
+  to: string;
+}
+
+interface Cruise {
+  modules: unknown[];
+  summary: Record<'error' | 'warn' | 'info' | 'ignore' | 'totalCruised', number> & {
+    violations: Edge[];
+    vacuousRules?: unknown[];
+  };
+}
+
+/** Each violation as `rule from -> to`, sorted, whichever shape its rule name has. */
+function edgesOf(violations: Edge[]): string[] {
+  return violations
+    .map(({ rule, from, to }) => `${typeof rule === 'string' ? rule : rule.name} ${from} -> ${to}`)
+    .sort();
+}
 
 interface Expected {
   violations: unknown[];
@@ -86,6 +117,14 @@ beforeAll(async () => {
 
 afterAll(async () => {
   console.log(`playground timings in Chromium:\n  ${timings.join('\n  ')}`);
+  const summary = process.env.GITHUB_STEP_SUMMARY;
+  if (summary !== undefined && summary !== '') {
+    appendFileSync(
+      summary,
+      `### Playground timings in headless Chromium (limit ${String(LIMIT_MS)} ms)\n\n` +
+        `${timings.map((line) => `- ${line}`).join('\n')}\n`,
+    );
+  }
   await browser.close();
   await new Promise((done) => server.close(done));
 });
@@ -146,6 +185,55 @@ describe('the playground page', () => {
     expect(await component.getAttribute('data-action')).toBe('evaluate');
     expect(errors).toEqual([]);
   });
+
+  if (mutations === undefined || mutations === '') {
+    console.log(
+      'the mutation fixture is skipped: RB_PLAYGROUND_MUTATIONS is not set (run-layer-5.sh ' +
+        '--mutations writes it; the docs-playground-mutations job sets it)',
+    );
+  }
+
+  it.skipIf(mutations === undefined || mutations === '')(
+    'evaluates the mutation fixture as the command line does, within the time target',
+    async () => {
+      const dir = resolve(mutations ?? '');
+      const expectedOut = (type: string): string =>
+        readFileSync(join(dir, 'expected', `${type}.out`), 'utf8');
+      const { component, errors } = await open();
+      await setValue(component.locator('textarea[name="config"]'), configOf(dir));
+      await setValue(
+        component.locator('textarea[name="graph"]'),
+        readFileSync(join(dir, 'graph.json'), 'utf8'),
+      );
+      const graph = JSON.parse(readFileSync(join(dir, 'graph.json'), 'utf8')) as {
+        modules: unknown[];
+      };
+      const label = `mutation fixture (${String(graph.modules.length)} modules)`;
+      for (const outputType of COMPARED) {
+        await component.locator('select[name="output-type"]').selectOption(outputType);
+        const output = await ran(component, '[data-run]', `${label}, ${outputType}`);
+        expect(await component.getAttribute('data-action')).toBe('evaluate');
+        if (outputType === 'json') {
+          // The command line's summary also records the arguments it was run with
+          // (`optionsUsed`), which a pasted graph has none of; everything else is the same.
+          const ours = JSON.parse(output) as Cruise;
+          const theirs = JSON.parse(expectedOut('json')) as Cruise;
+          expect(ours.modules).toEqual(theirs.modules);
+          expect(ours.summary.violations).toEqual(theirs.summary.violations);
+          expect(ours.summary.vacuousRules ?? []).toEqual(theirs.summary.vacuousRules ?? []);
+          for (const count of ['error', 'warn', 'info', 'ignore', 'totalCruised'] as const) {
+            expect(ours.summary[count], count).toBe(theirs.summary[count]);
+          }
+          const twelve = JSON.parse(readFileSync(join(dir, 'violations.json'), 'utf8')) as Edge[];
+          expect(edgesOf(ours.summary.violations)).toEqual(edgesOf(twelve));
+          expect(twelve).toHaveLength(12);
+        } else {
+          expect(output, outputType).toBe(expectedOut(outputType));
+        }
+      }
+      expect(errors).toEqual([]);
+    },
+  );
 
   for (const name of ['typescript', 'python'] as const) {
     const exported = name === 'typescript' ? 'cruise_ts' : 'cruise_py';
