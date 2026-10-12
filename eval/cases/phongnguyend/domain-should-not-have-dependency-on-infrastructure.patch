@@ -1,0 +1,31 @@
+diff --git a/src/Monolith/ClassifiedAds.Domain/Entities/FileEntryLocations.cs b/src/Monolith/ClassifiedAds.Domain/Entities/FileEntryLocations.cs
+new file mode 100644
+index 0000000..e167001
+--- /dev/null
++++ b/src/Monolith/ClassifiedAds.Domain/Entities/FileEntryLocations.cs
+@@ -0,0 +1,11 @@
++using ClassifiedAds.Infrastructure.Storages;
++
++namespace ClassifiedAds.Domain.Entities;
++
++public static class FileEntryLocations
++{
++    public static string Describe(StorageLocation location)
++    {
++        return location is null ? string.Empty : location.Container + "/" + location.Path;
++    }
++}
+diff --git a/src/Monolith/ClassifiedAds.Domain/Entities/StorageLocation.cs b/src/Monolith/ClassifiedAds.Domain/Entities/StorageLocation.cs
+new file mode 100644
+index 0000000..98a594f
+--- /dev/null
++++ b/src/Monolith/ClassifiedAds.Domain/Entities/StorageLocation.cs
+@@ -0,0 +1,8 @@
++namespace ClassifiedAds.Infrastructure.Storages;
++
++public class StorageLocation
++{
++    public string Container { get; set; }
++
++    public string Path { get; set; }
++}

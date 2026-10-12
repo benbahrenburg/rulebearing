@@ -1,0 +1,190 @@
+# The eval harness's configuration for onebeyond/monaco (plan 0004, Step 10): the rules
+# `rulebearing import archunit --graph` writes from its ArchUnitNET tests (the chains it cannot
+# translate stay commented out), unchanged, with a `fix` on each. Each case puts one violation in
+# with a patch beside this file.
+# Imported from src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests by `rulebearing import archunit`.
+# Each rule is preceded by the C# chain it came from; a chain that cannot be translated is kept, commented out, with the reason.
+# 11 rule chains read: 6 imported, 5 commented out.
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+# new ArchLoader().LoadAssemblies(ApplicationAssembly, CommonApplicationAssembly, DomainAssembly, CommonDomainAssembly).Build()   [ApplicationTests.cs:15]
+# new ArchLoader().LoadAssemblies(DomainAssembly, CommonDomainAssembly).Build()   [DomainTests.cs:10]
+# 2 loaders were found; ArchUnitNET loads each architecture on its own, a configuration has one languages.dotnet block, so they are merged
+languages:
+  dotnet:
+    assemblies:
+      - "src/Content/Backend/Solution/Monaco.Template.Backend.Application/bin/**/Monaco.Template.Backend.Application.dll"
+      - "src/Content/Backend/Solution/Monaco.Template.Backend.Common.Application/bin/**/Monaco.Template.Backend.Common.Application.dll"
+      - "src/Content/Backend/Solution/Monaco.Template.Backend.Common.Domain/bin/**/Monaco.Template.Backend.Common.Domain.dll"
+      - "src/Content/Backend/Solution/Monaco.Template.Backend.Domain/bin/**/Monaco.Template.Backend.Domain.dll"
+rules:
+  elements:
+    # Classes().That().ImplementInterface(typeof(IRequest)).Or().ImplementInterface(typeof(IRequest<>)).And().AreNotAbstract()
+    #   .Should().Be(_applicationLayer).AndShould().BeRecord().AndShould().BePublic().AndShould().BeNested().AndShould().BeSealed().AndShould().HaveName("Command").OrShould().HaveName("Query")
+    #   .Check(Architecture)   [ApplicationTests.cs:86]
+    - name: commands-and-queries-are-records-public-nested-sealed-and-named-command-query
+      comment: "imported from src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/ApplicationTests.cs:86"
+      fix: "A command or query is a public sealed record named Command or Query, nested in its feature class. Make it a public sealed record with that name inside the feature."
+      select:
+        kind: class
+        language: dotnet
+        where:
+          all:
+            - any:
+                - implementInterface: [MediatR.IRequest]
+                - implementInterface: ["MediatR.IRequest`1"]
+            - areNotAbstract: true
+      should:
+        any:
+          - all:
+              - be:
+                  kind: type
+                  where:
+                    resideInAssembly: Monaco.Template.Backend.Application
+              - beRecord: true
+              - bePublic: true
+              - beNested: true
+              - beSealed: true
+              - haveName: Command
+          - haveName: Query
+    # Classes().That().AreAssignableTo(CommandBase).Or().AreAssignableTo(CommandBaseReturn).And().AreNotAbstract()
+    #   .Should().FollowCustomCondition(command => _validators.GetObjects(Architecture).Any(v => v.GetInheritsBaseClassDependencies().Any(d => d.Target.Equals(Validator) && d.TargetGenericArguments.Any(g => g.Type.Equals(command)))), "have a validator", "does not have a validator").Because("every command derived from CommandBase needs to have a validator")
+    #   .Check(Architecture)   [ApplicationTests.cs:104]
+    # stays in ArchUnitNET: custom predicate
+    # - name: commands-have-validators
+    #   comment: "imported from src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/ApplicationTests.cs:104"
+    # Classes().That().ImplementInterface(RequestHandler).Or().ImplementInterface(RequestHandlerReturn).And().AreNotAbstract()
+    #   .Should().NotDependOnAnyTypesThat().Are(typeof(ISender)).AndShould().NotDependOnAnyTypesThat().ImplementInterface(typeof(ISender)).Because("it can be used to invoke other commands and it should not")
+    #   .Check(Architecture)   [ApplicationTests.cs:117]
+    # not imported: the namespace of `ISender` cannot be determined from the sources read (pass the folder that declares it with --sources)
+    # - name: commands-dont-invoke-other-commands
+    #   comment: "imported from src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/ApplicationTests.cs:117"
+    # Classes().That().AreAssignableTo(Validator).And().AreNotAbstract()
+    #   .Should().Be(_applicationLayer).AndShould().HaveName("Validator").AndShould().BeSealed().AndShould().BeInternal().AndShould().BeNested()
+    #   .Check(Architecture)   [ApplicationTests.cs:128]
+    - name: validators-exist-in-application-are-sealed-internal-and-nested
+      comment: "imported from src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/ApplicationTests.cs:128"
+      fix: "A validator lives in the Application assembly as an internal sealed class nested in its feature class. Make it internal sealed and keep it inside the feature."
+      select:
+        kind: class
+        language: dotnet
+        where:
+          all:
+            - areAssignableTo: ["FluentValidation.AbstractValidator`1"]
+            - areNotAbstract: true
+      should:
+        all:
+          - be:
+              kind: type
+              where:
+                resideInAssembly: Monaco.Template.Backend.Application
+          - haveName: Validator
+          - beSealed: true
+          - beInternal: true
+          - beNested: true
+    # Classes().That().ImplementInterface(RequestHandler).Or().ImplementInterface(RequestHandlerReturn).And().AreNotAbstract()
+    #   .Should().Be(_applicationLayer).AndShould().HaveName("Handler").AndShould().BeNested().AndShould().BeSealed().AndShould().BeInternal()
+    #   .Check(Architecture)   [ApplicationTests.cs:142]
+    - name: handlers-exist-in-application-are-named-handler-and-are-nested-sealed-and-internal
+      comment: "imported from src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/ApplicationTests.cs:142"
+      fix: "A request handler lives in the Application assembly as an internal sealed class named Handler, nested in its feature class. Rename it Handler, make it internal sealed and keep it inside the feature."
+      select:
+        kind: class
+        language: dotnet
+        where:
+          all:
+            - any:
+                - implementInterface: ["MediatR.IRequestHandler`1"]
+                - implementInterface: ["MediatR.IRequestHandler`2"]
+            - areNotAbstract: true
+      should:
+        all:
+          - be:
+              kind: type
+              where:
+                resideInAssembly: Monaco.Template.Backend.Application
+          - haveName: Handler
+          - beNested: true
+          - beSealed: true
+          - beInternal: true
+    # Classes().That().AreAssignableTo(CommandBase).Or().AreAssignableTo(CommandBaseReturn).And().AreNotAbstract()
+    #   .Should().FollowCustomCondition(c => _validators.GetObjects(Architecture).Single(v => v.GetInheritsBaseClassDependencies().Any(d => d.Target.Equals(Validator) && d.TargetGenericArguments.Any(g => g.Type.Equals(c)))).NestType(Architecture).Equals(c.NestType(Architecture)), "be nested together with their validator", "is not nested together with its validator").AndShould().FollowCustomCondition(c => _handlers.GetObjects(Architecture).Single(h => h.GetImplementsInterfaceDependencies().Any(i => i.Target.Equals(RequestHandlerReturn) && i.TargetGenericArguments.Any(g => g.Type.Equals(c)))).NestType(Architecture).Equals(c.NestType(Architecture)), "be nested together with their handler", "is not nested together with its handler").Because("having each feature as a single file component reduces boilerplate and improves DX")
+    #   .Check(Architecture)   [ApplicationTests.cs:156]
+    # stays in ArchUnitNET: custom predicate
+    # - name: command-validator-and-handler-are-nested-together
+    #   comment: "imported from src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/ApplicationTests.cs:156"
+    # Classes().That().AreAssignableTo(EntityTypeConfiguration).And().AreNotAbstract().As("Entity Configurations")
+    #   .Should().Be(_applicationLayer).AndShould().BeInternal().AndShould().BeSealed()
+    #   .Check(Architecture)   [ApplicationTests.cs:181]
+    - name: entity-configurations-exist-in-application-layer-and-be-internal-and-sealed
+      comment: "imported from src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/ApplicationTests.cs:181"
+      fix: "An entity type configuration lives in the Application assembly, under Persistence/EntityConfigurations, as an internal sealed class. Make it internal sealed."
+      select:
+        kind: class
+        language: dotnet
+        where:
+          all:
+            - areAssignableTo: ["Microsoft.EntityFrameworkCore.IEntityTypeConfiguration`1"]
+            - areNotAbstract: true
+      should:
+        all:
+          - be:
+              kind: type
+              where:
+                resideInAssembly: Monaco.Template.Backend.Application
+          - beInternal: true
+          - beSealed: true
+    # Classes().That().AreAssignableTo(Entity).And().AreNot(Entity).And().AreNot(AggregateRoot).Or().AreAssignableTo(Enumeration).And().AreNot(Enumeration).As("Entities")
+    #   .Should().FollowCustomCondition(c => _entityConfiguration.GetObjects(Architecture).Any(etc => etc.GetImplementsInterfaceDependencies().Any(i => i.Target.Equals(EntityTypeConfiguration) && i.TargetGenericArguments.Any(g => g.Type.Equals(c)))), "have their corresponding EntityTypeConfiguration", "does not have its corresponding EntityTypeConfiguration").Because("each entity should be explicitly configured in EF Core").WithoutRequiringPositiveResults()
+    #   .Check(Architecture)   [ApplicationTests.cs:191]
+    # stays in ArchUnitNET: custom predicate
+    # - name: entities-have-entity-configuration
+    #   comment: "imported from src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/ApplicationTests.cs:191"
+    # Classes().That().AreAssignableTo(Entity).And().AreNot(AggregateRoot).And().AreNot(Entity).And().AreNotAssignableTo(Enumeration)
+    #   .Should().Be(_domainLayer).AndShould().FollowCustomCondition(c => c.GetPropertyMembers().All(p => !visibility.Contains(p.SetterVisibility)), $"not have properties setters with visibility {string.Join(", ", visibility)}", $"has property setter with visibility {string.Join(", ", visibility)}").Because("entities should encapsulate their behavior to follow DDD principles and only exist in the Domain layer").WithoutRequiringPositiveResults()
+    #   .Check(Architecture)   [DomainTests.cs:25]
+    # stays in ArchUnitNET: custom predicate
+    # - name: entities-exist-only-in-domain-layer-and-have-no-public-or-internal-prop-setters
+    #   comment: "imported from src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/DomainTests.cs:25"
+    # Classes().That().AreAssignableTo(ValueObject).And().AreNot(ValueObject)
+    #   .Should().Be(_domainLayer).AndShould().BeImmutable().Because("ValueObjects should not be mutable by definition and only exist in the Domain layer")
+    #   .Check(Architecture)   [DomainTests.cs:45]
+    - name: value-objects-exist-only-in-domain-layer-and-are-immutable
+      comment: "imported from src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/DomainTests.cs:45"
+      fix: "A value object lives in the Domain assembly and is immutable: no public or internal setters, no public fields. Set its properties in the constructor only, and return a new instance to change one."
+      because: "ValueObjects should not be mutable by definition and only exist in the Domain layer"
+      select:
+        kind: class
+        language: dotnet
+        where:
+          all:
+            - areAssignableTo: [Monaco.Template.Backend.Common.Domain.Model.ValueObject]
+            - areNot: [Monaco.Template.Backend.Common.Domain.Model.ValueObject]
+      should:
+        all:
+          - be:
+              kind: type
+              where:
+                resideInAssembly: Monaco.Template.Backend.Domain
+          - beImmutable: true
+    # Classes().That().AreAssignableTo(Enumeration).And().AreNot(Enumeration)
+    #   .Should().Be(_domainLayer).AndShould().BeImmutable().Because("Enumerations are not meant to modify their state and should only exist in the Domain layer").WithoutRequiringPositiveResults()
+    #   .Check(Architecture)   [DomainTests.cs:58]
+    - name: enumerations-exist-only-in-domain-layer-and-are-immutable
+      comment: "imported from src/Content/Backend/Solution/Monaco.Template.Backend.ArchitectureTests/DomainTests.cs:58"
+      fix: "An Enumeration subclass lives in the Domain assembly, under Model, and is immutable. Move it into Monaco.Template.Backend.Domain and keep its values as static readonly fields."
+      because: "Enumerations are not meant to modify their state and should only exist in the Domain layer"
+      allowEmpty: true
+      select:
+        kind: class
+        language: dotnet
+        where:
+          all:
+            - areAssignableTo: [Monaco.Template.Backend.Common.Domain.Model.Enumeration]
+            - areNot: [Monaco.Template.Backend.Common.Domain.Model.Enumeration]
+      should:
+        all:
+          - be:
+              kind: type
+              where:
+                resideInAssembly: Monaco.Template.Backend.Domain
+          - beImmutable: true

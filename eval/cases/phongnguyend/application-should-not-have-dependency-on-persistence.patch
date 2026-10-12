@@ -1,0 +1,32 @@
+diff --git a/src/Monolith/ClassifiedAds.Application/Products/Queries/ProductPaging.cs b/src/Monolith/ClassifiedAds.Application/Products/Queries/ProductPaging.cs
+new file mode 100644
+index 0000000..16ba618
+--- /dev/null
++++ b/src/Monolith/ClassifiedAds.Application/Products/Queries/ProductPaging.cs
+@@ -0,0 +1,12 @@
++using ClassifiedAds.Persistence.Repositories;
++
++namespace ClassifiedAds.Application.Products.Queries;
++
++public static class ProductPaging
++{
++    public static int Skip(int page, ProductPagingOptions options)
++    {
++        var size = options is null ? 20 : options.PageSize;
++        return page <= 1 ? 0 : (page - 1) * size;
++    }
++}
+diff --git a/src/Monolith/ClassifiedAds.Application/Products/Queries/ProductPagingOptions.cs b/src/Monolith/ClassifiedAds.Application/Products/Queries/ProductPagingOptions.cs
+new file mode 100644
+index 0000000..b1b9bb9
+--- /dev/null
++++ b/src/Monolith/ClassifiedAds.Application/Products/Queries/ProductPagingOptions.cs
+@@ -0,0 +1,8 @@
++namespace ClassifiedAds.Persistence.Repositories;
++
++public class ProductPagingOptions
++{
++    public int PageSize { get; set; } = 20;
++
++    public bool IncludeDeleted { get; set; }
++}

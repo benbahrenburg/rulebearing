@@ -198,6 +198,9 @@ Options:
       --max-findings <N>
           agent: the most violations shown per rule
 
+      --with-plans
+          agent: add to each violation shown the verified refactors `fix --plan` prints for it
+
       --color <COLOR>
           Colour terminal output
 

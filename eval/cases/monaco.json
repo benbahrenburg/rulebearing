@@ -1,0 +1,63 @@
+{
+  "suite": "monaco",
+  "repo": "onebeyond/monaco",
+  "sha": "5700abab4d735e7accdcd0d1fde823845e8c99c3",
+  "checkout": "onebeyond__monaco",
+  "config": "monaco/rulebearing.yaml",
+  "build": [
+    "dotnet",
+    "build",
+    "src/Content/Backend/Solution/Monaco.Template.Backend.Application/Monaco.Template.Backend.Application.csproj",
+    "-c",
+    "Release",
+    "-p:DebugType=portable",
+    "-p:EnableWindowsTargeting=true",
+    "--nologo",
+    "-v",
+    "q"
+  ],
+  "cases": [
+    {
+      "rule": "commands-and-queries-are-records-public-nested-sealed-and-named-command-query",
+      "from": "src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/DeleteCompany.cs",
+      "to": "Monaco.Template.Backend.Application.Features.Company.DeleteCompany+Command",
+      "id": "RB-c9f13594",
+      "patch": "monaco/commands-and-queries-are-records-public-nested-sealed-and-named-command-query.patch"
+    },
+    {
+      "rule": "entity-configurations-exist-in-application-layer-and-be-internal-and-sealed",
+      "from": "src/Content/Backend/Solution/Monaco.Template.Backend.Application/Persistence/EntityConfigurations/CountryEntityConfiguration.cs",
+      "to": "Monaco.Template.Backend.Application.Persistence.EntityConfigurations.CountryEntityConfiguration",
+      "id": "RB-83791715",
+      "patch": "monaco/entity-configurations-exist-in-application-layer-and-be-internal-and-sealed.patch"
+    },
+    {
+      "rule": "enumerations-exist-only-in-domain-layer-and-are-immutable",
+      "from": "src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Product/ProductStatus.cs",
+      "to": "Monaco.Template.Backend.Application.Features.Product.ProductStatus",
+      "id": "RB-81cd5bec",
+      "patch": "monaco/enumerations-exist-only-in-domain-layer-and-are-immutable.patch"
+    },
+    {
+      "rule": "handlers-exist-in-application-are-named-handler-and-are-nested-sealed-and-internal",
+      "from": "src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/GetCompanyById.cs",
+      "to": "Monaco.Template.Backend.Application.Features.Company.GetCompanyById+Fetcher",
+      "id": "RB-fe0f8f8c",
+      "patch": "monaco/handlers-exist-in-application-are-named-handler-and-are-nested-sealed-and-internal.patch"
+    },
+    {
+      "rule": "validators-exist-in-application-are-sealed-internal-and-nested",
+      "from": "src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/CreateCompany.cs",
+      "to": "Monaco.Template.Backend.Application.Features.Company.CreateCompany+Validator",
+      "id": "RB-e974893b",
+      "patch": "monaco/validators-exist-in-application-are-sealed-internal-and-nested.patch"
+    },
+    {
+      "rule": "value-objects-exist-only-in-domain-layer-and-are-immutable",
+      "from": "src/Content/Backend/Solution/Monaco.Template.Backend.Domain/Model/ValueObjects/GpsPosition.cs",
+      "to": "Monaco.Template.Backend.Domain.Model.ValueObjects.GpsPosition",
+      "id": "RB-7fbe8e41",
+      "patch": "monaco/value-objects-exist-only-in-domain-layer-and-are-immutable.patch"
+    }
+  ]
+}

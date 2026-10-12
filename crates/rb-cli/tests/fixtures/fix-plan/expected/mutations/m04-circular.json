@@ -1,0 +1,24 @@
+{
+  "rule": "m04-circular",
+  "violations": [
+    {
+      "id": "RB-20fb7af9",
+      "from": "src/mutation/04-circular/a.mjs",
+      "to": "src/mutation/04-circular/b.mjs",
+      "plans": [
+        {
+          "kind": "invert",
+          "edgesTouched": 1,
+          "dependentsToChange": [],
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "port",
+          "package": "src/mutation/04-circular",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        }
+      ]
+    }
+  ]
+}

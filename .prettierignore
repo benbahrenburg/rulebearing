@@ -39,6 +39,10 @@ crates/rb-cli/tests/fixtures/serve/
 # The playground's fixture repositories and the command line's outputs over them, compared byte for
 # byte (plan 0004, Step 2).
 crates/rb-wasm/tests/fixtures/
+# The fix --plan fixture repository and the plans the command prints over it and over the mutation
+# branch, compared byte for byte (plan 0004, Step 9).
+crates/rb-cli/tests/fixtures/fix-plan/
+conformance/dependency-cruiser/mutations/expected-fix-plan/
 # Extractor option fixtures: mini-repositories kept byte for byte, since line and column are asserted.
 crates/rb-extract-ts/tests/options/
 # The code-layer fixture tree and its expectation, compared byte for byte (plan 0002, 2C).
@@ -83,3 +87,5 @@ cookbook/questions/*/repo/
 cookbook/questions/*/expected.json
 cookbook/questions/*/converted/
 cookbook/questions/*/imported/
+# Written by the eval harness (eval/run.py, plan 0004 Step 10), never edited by hand.
+eval/results/

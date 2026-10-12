@@ -50,8 +50,34 @@ A check of one saved file takes under 100 ms on the fixture the integration test
 | `rulebearing explain <rule> [--plain]` | The rule as one English sentence, why it exists, what to do, and the first edges it matched |
 | `rulebearing rules --json` | Every rule, its family, severity, `fix`, its lifecycle fields (`since`, `deprecated`, `replacedBy`), and how many modules each side matches |
 | `rulebearing count --from <regex> --to <regex>` | How many direct edges match, against a budget with `--budget` |
+| `rulebearing fix --plan <rule>` | For each violation of the rule, how to clear it ([below](#plans-for-a-violation)) |
 
-The query commands (`can-import`, `impact`, `propose`, `place`) read `--graph FILE` when given; otherwise the worktree-aware cache under `.graph/cache/<key>/`, keyed by the worktree root, `HEAD` and the configuration's hash ([plan 0002, Step 13](plans/implemented/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)), so two worktrees of one repository never read each other's graph. A miss extracts the paths given and writes the cache; `--no-cache` neither reads nor writes it. The key follows commits, not uncommitted edits: pass `--no-cache` to see an edit before committing it.
+The query commands (`can-import`, `impact`, `propose`, `place`, `fix --plan`) read `--graph FILE` when given; otherwise the worktree-aware cache under `.graph/cache/<key>/`, keyed by the worktree root, `HEAD` and the configuration's hash ([plan 0002, Step 13](plans/implemented/0002-wave-2-dotnet-python-element-rules.md#213-step-13-worktree-aware-cache-and-the-eslint-plugin-2g)), so two worktrees of one repository never read each other's graph. A miss extracts the paths given and writes the cache; `--no-cache` neither reads nor writes it. The key follows commits, not uncommitted edits: pass `--no-cache` to see an edit before committing it.
+
+## Plans for a violation
+
+`rulebearing fix --plan <rule>` prints, for each violation of the rule, the cheapest refactor of each of the three kinds the design names that clears it, as JSON ([plan 0004 § 1.6](plans/pending/0004-wave-4-reach.md#16-interfaces-and-contracts-this-wave-freezes), [ADR-0077](adr/0077-fix-plan-candidates-are-verified-and-the-eval-harness-scores-fix-text.md)). The tool edits nothing; the agent executes the plan it picks.
+
+```json
+{
+  "rule": "no-cross-app-imports",
+  "violations": [
+    { "id": "RB-c7eade13", "from": "apps/web/src/x.mjs", "to": "apps/worker/src/y.mjs",
+      "plans": [
+        { "kind": "move", "target": "packages/", "edgesTouched": 2, "legalBy": "can-import" },
+        { "kind": "port", "package": "packages", "edgesTouched": 2, "legalBy": "can-import" }
+      ] }
+  ]
+}
+```
+
+| Kind | The change | `edgesTouched` |
+| --- | --- | --- |
+| `move` | `from` moves to the folder `target`, keeping its imports and its importers | its imports plus the imports of it |
+| `port` | a new module in the folder `package`; `from` imports it in place of `to`, and `to` imports it | 2 |
+| `invert` | `from` stops importing `to`, and `to` imports `from`; `dependentsToChange` lists the other modules that import `to` | the two imports, plus one per dependent |
+
+`edgesTouched` counts the import statements to edit, and the plans are sorted by it. Every plan printed is legal on a copy of the graph with the change made: `can-import` allows each edge it adds (`legalBy`), and the whole rule set no longer reports the violation and reports nothing new at error severity. A violation planned on a module alone (an orphan, a `required` rule, a dependents count), or for which no candidate is legal, has an empty `plans` and a `reason`. A reachability finding is planned on the first import of its path. `fix --plan` reads the graph as the other query commands do ([above](#questions-before-the-import-is-written)), exits 0 with the plans, 2 when the graph cannot be read, and 3 for a rule the configuration does not have. `cruise --output-type agent --with-plans` adds the same `plans` (and `reason`) to each violation the report shows.
 
 ## The `agent` reporter
 

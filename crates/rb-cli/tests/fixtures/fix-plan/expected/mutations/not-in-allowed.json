@@ -1,0 +1,32 @@
+{
+  "rule": "not-in-allowed",
+  "violations": [
+    {
+      "id": "RB-1a2adcad",
+      "from": "src/mutation/10-allowed/a.mjs",
+      "to": "src/utl/bus.mjs",
+      "plans": [
+        {
+          "kind": "move",
+          "target": "src/mutation/",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "port",
+          "package": "src/mutation/10-allowed",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "invert",
+          "edgesTouched": 3,
+          "dependentsToChange": [
+            "src/mutation/02-path-not/uses-graph-utl.mjs"
+          ],
+          "legalBy": "can-import"
+        }
+      ]
+    }
+  ]
+}

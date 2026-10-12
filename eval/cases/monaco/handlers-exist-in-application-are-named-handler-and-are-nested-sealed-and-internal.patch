@@ -1,0 +1,18 @@
+diff --git a/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/GetCompanyById.cs b/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/GetCompanyById.cs
+index df91785..fcda007 100644
+--- a/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/GetCompanyById.cs
++++ b/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/GetCompanyById.cs
+@@ -11,11 +11,11 @@ public sealed class GetCompanyById
+ {
+ 	public sealed record Query(Guid Id) : QueryByIdBase<CompanyDto?>(Id);
+ 
+-	internal sealed class Handler : IRequestHandler<Query, CompanyDto?>
++	internal sealed class Fetcher : IRequestHandler<Query, CompanyDto?>
+ 	{
+ 		private readonly AppDbContext _dbContext;
+ 
+-		public Handler(AppDbContext dbContext)
++		public Fetcher(AppDbContext dbContext)
+ 		{
+ 			_dbContext = dbContext;
+ 		}

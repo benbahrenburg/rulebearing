@@ -1,0 +1,24 @@
+{
+  "rule": "no-cross-app-imports",
+  "violations": [
+    {
+      "id": "RB-c7eade13",
+      "from": "apps/web/src/x.mjs",
+      "to": "apps/worker/src/y.mjs",
+      "plans": [
+        {
+          "kind": "move",
+          "target": "packages/",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "port",
+          "package": "packages",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        }
+      ]
+    }
+  ]
+}

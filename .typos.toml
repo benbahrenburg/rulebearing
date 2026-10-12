@@ -27,6 +27,10 @@ extend-exclude = [
   # The oracle harness's result files carry the oracles' own contract ids, test names and
   # messages verbatim (testbeds/oracles/compare.py).
   "testbeds/results/",
+  # The eval cases' patches carry git's blob hashes, and their results files the agents' output
+  # (plan 0004, Step 10).
+  "eval/cases/*/*.patch",
+  "eval/results/",
   # Tool output: compiler command lines, not prose.
   "mutants.out/",
   "mutants.out.old/",

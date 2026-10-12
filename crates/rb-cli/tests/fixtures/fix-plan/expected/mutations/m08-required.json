@@ -1,0 +1,12 @@
+{
+  "rule": "m08-required",
+  "violations": [
+    {
+      "id": "RB-36e145bc",
+      "from": "src/mutation/08-required/skips-the-bus.mjs",
+      "to": "src/mutation/08-required/skips-the-bus.mjs",
+      "plans": [],
+      "reason": "`m08-required` finds the module src/mutation/08-required/skips-the-bus.mjs itself, not one of its imports, so there is no edge to move, port or invert"
+    }
+  ]
+}

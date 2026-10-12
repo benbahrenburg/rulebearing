@@ -24,6 +24,7 @@ pub mod decisions;
 pub mod diff;
 pub mod docs;
 pub mod explain;
+pub mod fix_plan;
 pub mod fmt;
 pub mod generate;
 pub mod guard;

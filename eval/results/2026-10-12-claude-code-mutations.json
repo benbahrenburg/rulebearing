@@ -1,0 +1,350 @@
+{
+  "date": "2026-10-12",
+  "agent": "claude-code",
+  "models": [
+    "claude-opus-5[1m]"
+  ],
+  "budget": "usd:3.00",
+  "rulebearing": "rulebearing 0.1.3",
+  "prompt": "rulebearing, this repository's architecture check, reports the violation below in its `agent` format. Change the repository so that the check no longer reports it.\n\n{report}",
+  "suites": {
+    "mutations": {
+      "repo": "sverweij/dependency-cruiser",
+      "sha": "7c22858071cc4491321c735ff11894d90648ee6e"
+    }
+  },
+  "cases": [
+    {
+      "case": "m01-forbidden/RB-491004cb",
+      "suite": "mutations",
+      "fix": "Do not import src/cli from src/mutation/01-forbidden. Have the caller pass in what the module needs, or move the shared code out of src/cli into src/utl and import it from there.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 27,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 1.49189,
+      "tokens": {
+        "input_tokens": 42,
+        "output_tokens": 9652,
+        "cache_read_input_tokens": 1301040,
+        "cache_creation_input_tokens": 59986
+      },
+      "durationMs": 154254,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/cli/format-meta-info.mjs -> src/utl/format-meta-info.mjs",
+        "src/cli/index.mjs",
+        "src/mutation/01-forbidden/uses-cli.mjs",
+        "src/utl/format-meta-info.mjs",
+        "test/cli/format-meta-info.spec.mjs -> test/utl/format-meta-info.spec.mjs",
+        "test/utl/format-meta-info.spec.mjs"
+      ],
+      "note": null
+    },
+    {
+      "case": "m02-path-not/RB-6a461ebc",
+      "suite": "mutations",
+      "fix": "Import only from this folder and from src/utl. Move what you need into src/utl, or have the caller pass it in.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 13,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.5741945,
+      "tokens": {
+        "input_tokens": 20,
+        "output_tokens": 4339,
+        "cache_read_input_tokens": 449279,
+        "cache_creation_input_tokens": 24098
+      },
+      "durationMs": 71316,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/mutation/02-path-not/uses-graph-utl.mjs"
+      ],
+      "note": null
+    },
+    {
+      "case": "m03-fence/RB-716a32ca",
+      "suite": "mutations",
+      "fix": "Sibling folders under src/mutation/03-fence never import each other, nor the folder above them. Move the shared code out of src/mutation/03-fence, for example into src/utl, and import it from there.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 11,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.6399425,
+      "tokens": {
+        "input_tokens": 22,
+        "output_tokens": 3020,
+        "cache_read_input_tokens": 550105,
+        "cache_creation_input_tokens": 28928
+      },
+      "durationMs": 81321,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/mutation/03-fence/alpha/a.mjs",
+        "src/mutation/03-fence/beta/b.mjs",
+        "src/utl/fence-shared.mjs"
+      ],
+      "note": null
+    },
+    {
+      "case": "m04-circular/RB-20fb7af9",
+      "suite": "mutations",
+      "fix": "Break the cycle: one of the two modules must stop importing the other. Move what both need into a third module that imports neither.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 17,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.578631,
+      "tokens": {
+        "input_tokens": 24,
+        "output_tokens": 4912,
+        "cache_read_input_tokens": 510962,
+        "cache_creation_input_tokens": 20023
+      },
+      "durationMs": 123345,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/mutation/04-circular/a.mjs",
+        "src/mutation/04-circular/b.mjs",
+        "src/mutation/04-circular/core.mjs"
+      ],
+      "note": null
+    },
+    {
+      "case": "m05-orphan/RB-4075c6bb",
+      "suite": "mutations",
+      "fix": "Every module is imported by another or imports one. Import this module where it is used, or delete it if nothing needs it.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 10,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.32711100000000004,
+      "tokens": {
+        "input_tokens": 14,
+        "output_tokens": 1975,
+        "cache_read_input_tokens": 270832,
+        "cache_creation_input_tokens": 14225
+      },
+      "durationMs": 61479,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/mutation/05-orphan/lonely.mjs"
+      ],
+      "note": null
+    },
+    {
+      "case": "m06-dependency-types-not/RB-8110b593",
+      "suite": "mutations",
+      "fix": "Modules here import local files only, never a Node built-in or a package. Take the value the built-in computes as a parameter from the caller.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 16,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.5912835,
+      "tokens": {
+        "input_tokens": 30,
+        "output_tokens": 3620,
+        "cache_read_input_tokens": 626047,
+        "cache_creation_input_tokens": 18761
+      },
+      "durationMs": 96637,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/mutation/06-dependency-types-not/uses-core.mjs"
+      ],
+      "note": null
+    },
+    {
+      "case": "m07-reachable/RB-5e89dfa4",
+      "suite": "mutations",
+      "fix": "entry.mjs must not reach forbidden.mjs by any path, including through middle.mjs. Remove the import on the path, for example middle.mjs's import of forbidden.mjs.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 13,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.5020225,
+      "tokens": {
+        "input_tokens": 18,
+        "output_tokens": 2925,
+        "cache_read_input_tokens": 355515,
+        "cache_creation_input_tokens": 25105
+      },
+      "durationMs": 52985,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/mutation/07-reachable/middle.mjs"
+      ],
+      "note": null
+    },
+    {
+      "case": "m08-required/RB-36e145bc",
+      "suite": "mutations",
+      "fix": "Every module in src/mutation/08-required uses the bus. Import src/utl/bus.mjs and use it.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 13,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.47272600000000004,
+      "tokens": {
+        "input_tokens": 24,
+        "output_tokens": 2812,
+        "cache_read_input_tokens": 485772,
+        "cache_creation_input_tokens": 15942
+      },
+      "durationMs": 58971,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/mutation/08-required/skips-the-bus.mjs"
+      ],
+      "note": null
+    },
+    {
+      "case": "m09-dependents/RB-5c3d6cf9",
+      "suite": "mutations",
+      "fix": "A shared module has at least two dependents. Import it from a second module that uses it, or fold it into its one user.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 14,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.546033,
+      "tokens": {
+        "input_tokens": 26,
+        "output_tokens": 3091,
+        "cache_read_input_tokens": 557096,
+        "cache_creation_input_tokens": 19008
+      },
+      "durationMs": 66284,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/mutation/09-dependents/shared.mjs",
+        "src/mutation/09-dependents/user.mjs"
+      ],
+      "note": null
+    },
+    {
+      "case": "not-in-allowed/RB-1a2adcad",
+      "suite": "mutations",
+      "fix": null,
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 17,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.6332494999999999,
+      "tokens": {
+        "input_tokens": 28,
+        "output_tokens": 4237,
+        "cache_read_input_tokens": 620529,
+        "cache_creation_input_tokens": 21692
+      },
+      "durationMs": 110290,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/mutation/10-allowed/a.mjs"
+      ],
+      "note": null
+    },
+    {
+      "case": "m11-via/RB-2c1087cc",
+      "suite": "mutations",
+      "fix": "No cycle may run through hub.mjs. The hub must not import back into the modules that import it; move what it needs into a module neither imports.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 13,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.5386945,
+      "tokens": {
+        "input_tokens": 24,
+        "output_tokens": 4178,
+        "cache_read_input_tokens": 494489,
+        "cache_creation_input_tokens": 18688
+      },
+      "durationMs": 85818,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/mutation/11-via/core.mjs",
+        "src/mutation/11-via/hub.mjs"
+      ],
+      "note": null
+    },
+    {
+      "case": "m12-could-not-resolve/RB-30b0e427",
+      "suite": "mutations",
+      "fix": "Every import names a file that exists. Correct the path, or create the module it names.",
+      "agent": "claude-code",
+      "model": "claude-opus-5[1m]",
+      "budget": "usd:3.00",
+      "turns": 15,
+      "cleared": true,
+      "widened": false,
+      "budgetRaised": false,
+      "costUsd": 0.5992649999999999,
+      "tokens": {
+        "input_tokens": 30,
+        "output_tokens": 3847,
+        "cache_read_input_tokens": 626540,
+        "cache_creation_input_tokens": 18967
+      },
+      "durationMs": 122518,
+      "errorsBefore": 1,
+      "errorsAfter": 0,
+      "filesChanged": [
+        "src/mutation/12-could-not-resolve/imports-nothing.mjs",
+        "src/mutation/12-could-not-resolve/missing.mjs"
+      ],
+      "note": null
+    }
+  ],
+  "totals": {
+    "cases": 12,
+    "cleared": 12,
+    "clearedWithoutWidening": 12,
+    "widened": 0,
+    "budgetRaised": 0,
+    "costUsd": 7.495
+  }
+}

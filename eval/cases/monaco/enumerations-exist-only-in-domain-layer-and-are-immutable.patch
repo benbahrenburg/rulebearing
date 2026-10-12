@@ -1,0 +1,19 @@
+diff --git a/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Product/ProductStatus.cs b/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Product/ProductStatus.cs
+new file mode 100644
+index 0000000..5000314
+--- /dev/null
++++ b/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Product/ProductStatus.cs
+@@ -0,0 +1,13 @@
++using Monaco.Template.Backend.Common.Domain.Model;
++
++namespace Monaco.Template.Backend.Application.Features.Product;
++
++public sealed class ProductStatus : Enumeration
++{
++	public static readonly ProductStatus Draft = new(new Guid("3b9a7c1e-4f4d-4a51-9a52-0c6f0d1b2a01"), nameof(Draft));
++	public static readonly ProductStatus Published = new(new Guid("3b9a7c1e-4f4d-4a51-9a52-0c6f0d1b2a02"), nameof(Published));
++
++	private ProductStatus(Guid id, string name) : base(id, name)
++	{
++	}
++}

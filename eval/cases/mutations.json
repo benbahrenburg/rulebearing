@@ -1,0 +1,95 @@
+{
+  "suite": "mutations",
+  "repo": "sverweij/dependency-cruiser",
+  "sha": "7c22858071cc4491321c735ff11894d90648ee6e",
+  "checkout": "layer5/mutations",
+  "patches": ["../../conformance/dependency-cruiser/mutations/mutations.patch"],
+  "isolate": "src/mutation",
+  "config": "mutations/rulebearing.yaml",
+  "cases": [
+    {
+      "rule": "m01-forbidden",
+      "from": "src/mutation/01-forbidden/uses-cli.mjs",
+      "to": "src/cli/format-meta-info.mjs",
+      "id": "RB-491004cb",
+      "scope": "src/mutation/01-forbidden"
+    },
+    {
+      "rule": "m02-path-not",
+      "from": "src/mutation/02-path-not/uses-graph-utl.mjs",
+      "to": "src/graph-utl/compare.mjs",
+      "id": "RB-6a461ebc",
+      "scope": "src/mutation/02-path-not"
+    },
+    {
+      "rule": "m03-fence",
+      "from": "src/mutation/03-fence/alpha/a.mjs",
+      "to": "src/mutation/03-fence/beta/b.mjs",
+      "id": "RB-716a32ca",
+      "scope": "src/mutation/03-fence"
+    },
+    {
+      "rule": "m04-circular",
+      "from": "src/mutation/04-circular/a.mjs",
+      "to": "src/mutation/04-circular/b.mjs",
+      "id": "RB-20fb7af9",
+      "scope": "src/mutation/04-circular"
+    },
+    {
+      "rule": "m05-orphan",
+      "from": "src/mutation/05-orphan/lonely.mjs",
+      "to": "src/mutation/05-orphan/lonely.mjs",
+      "id": "RB-4075c6bb",
+      "scope": "src/mutation/05-orphan"
+    },
+    {
+      "rule": "m06-dependency-types-not",
+      "from": "src/mutation/06-dependency-types-not/uses-core.mjs",
+      "to": "path",
+      "id": "RB-8110b593",
+      "scope": "src/mutation/06-dependency-types-not"
+    },
+    {
+      "rule": "m07-reachable",
+      "from": "src/mutation/07-reachable/entry.mjs",
+      "to": "src/mutation/07-reachable/forbidden.mjs",
+      "id": "RB-5e89dfa4",
+      "scope": "src/mutation/07-reachable"
+    },
+    {
+      "rule": "m08-required",
+      "from": "src/mutation/08-required/skips-the-bus.mjs",
+      "to": "src/mutation/08-required/skips-the-bus.mjs",
+      "id": "RB-36e145bc",
+      "scope": "src/mutation/08-required"
+    },
+    {
+      "rule": "m09-dependents",
+      "from": "src/mutation/09-dependents/shared.mjs",
+      "to": "src/mutation/09-dependents/shared.mjs",
+      "id": "RB-5c3d6cf9",
+      "scope": "src/mutation/09-dependents"
+    },
+    {
+      "rule": "not-in-allowed",
+      "from": "src/mutation/10-allowed/a.mjs",
+      "to": "src/utl/bus.mjs",
+      "id": "RB-1a2adcad",
+      "scope": "src/mutation/10-allowed"
+    },
+    {
+      "rule": "m11-via",
+      "from": "src/mutation/11-via/a.mjs",
+      "to": "src/mutation/11-via/hub.mjs",
+      "id": "RB-2c1087cc",
+      "scope": "src/mutation/11-via"
+    },
+    {
+      "rule": "m12-could-not-resolve",
+      "from": "src/mutation/12-could-not-resolve/imports-nothing.mjs",
+      "to": "./does-not-exist.mjs",
+      "id": "RB-30b0e427",
+      "scope": "src/mutation/12-could-not-resolve"
+    }
+  ]
+}

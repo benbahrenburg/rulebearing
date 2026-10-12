@@ -1,0 +1,12 @@
+{
+  "rule": "m05-orphan",
+  "violations": [
+    {
+      "id": "RB-4075c6bb",
+      "from": "src/mutation/05-orphan/lonely.mjs",
+      "to": "src/mutation/05-orphan/lonely.mjs",
+      "plans": [],
+      "reason": "`m05-orphan` finds the module src/mutation/05-orphan/lonely.mjs itself, not one of its imports, so there is no edge to move, port or invert"
+    }
+  ]
+}

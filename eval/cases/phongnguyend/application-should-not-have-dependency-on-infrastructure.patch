@@ -1,0 +1,31 @@
+diff --git a/src/Monolith/ClassifiedAds.Application/OutboxMessages/OutboxBatch.cs b/src/Monolith/ClassifiedAds.Application/OutboxMessages/OutboxBatch.cs
+new file mode 100644
+index 0000000..49dc817
+--- /dev/null
++++ b/src/Monolith/ClassifiedAds.Application/OutboxMessages/OutboxBatch.cs
+@@ -0,0 +1,11 @@
++using ClassifiedAds.Infrastructure.Messaging;
++
++namespace ClassifiedAds.Application.OutboxMessages;
++
++public static class OutboxBatch
++{
++    public static int SizeOf(OutboxOptions options)
++    {
++        return options is null ? OutboxOptions.DefaultBatchSize : options.BatchSize;
++    }
++}
+diff --git a/src/Monolith/ClassifiedAds.Application/OutboxMessages/OutboxOptions.cs b/src/Monolith/ClassifiedAds.Application/OutboxMessages/OutboxOptions.cs
+new file mode 100644
+index 0000000..eea667e
+--- /dev/null
++++ b/src/Monolith/ClassifiedAds.Application/OutboxMessages/OutboxOptions.cs
+@@ -0,0 +1,8 @@
++namespace ClassifiedAds.Infrastructure.Messaging;
++
++public class OutboxOptions
++{
++    public const int DefaultBatchSize = 50;
++
++    public int BatchSize { get; set; } = DefaultBatchSize;
++}

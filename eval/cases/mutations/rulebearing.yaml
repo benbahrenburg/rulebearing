@@ -1,0 +1,115 @@
+# The eval harness's configuration for the mutation branch (plan 0004, Step 10): the twelve rules of
+# conformance/dependency-cruiser/mutations/mutations.patch, as `config convert --to native` writes
+# .dependency-cruiser.mutations.cjs, with a `fix` on each rule. The fix text is what the benchmark
+# scores. The `agent` report finds a rule's `fix` by its name, and an `allowed` entry has none, so
+# `not-in-allowed` reaches the agent without its entries' fix text.
+#
+# Each case keeps only its own folder under src/mutation (eval/cases/mutations.json, `isolate`), so
+# the other rules match nothing; `allowEmpty` keeps that, and a fix that empties a rule's folder,
+# from failing the run as vacuous. The cruise reads src, bin and the files at the top, as the layer 5
+# run's `src bin` does, without the test fixtures.
+allowEmpty:
+  - m01-forbidden
+  - m02-path-not
+  - m03-fence
+  - m04-circular
+  - m05-orphan
+  - m06-dependency-types-not
+  - m07-reachable
+  - m08-required
+  - m09-dependents
+  - m11-via
+  - m12-could-not-resolve
+  - allowed[0]
+  - allowed[1]
+options:
+  exclude:
+    path: "^(test|tools|types|configs|doc|docs)/"
+  doNotFollow:
+    path: node_modules
+  moduleSystems: [es6, cjs]
+  tsPreCompilationDeps: true
+  detectJSDocImports: true
+  enhancedResolveOptions:
+    exportsFields: [exports]
+    aliasFields: [browser]
+    conditionNames: [import, require]
+    extensions: [.js, .cjs, .mjs, .d.ts, .d.mts]
+rules:
+  dependencies:
+    forbidden:
+      - name: m01-forbidden
+        comment: "Regular forbidden: a mutation module must not reach into the cli."
+        fix: "Do not import src/cli from src/mutation/01-forbidden. Have the caller pass in what the module needs, or move the shared code out of src/cli into src/utl and import it from there."
+        severity: error
+        from: { path: "^src/mutation/01-forbidden/" }
+        to: { path: "^src/cli/" }
+      - name: m02-path-not
+        comment: "pathNot: the only way out of the folder is to the utilities."
+        fix: "Import only from this folder and from src/utl. Move what you need into src/utl, or have the caller pass it in."
+        severity: error
+        from: { path: "^src/mutation/02-path-not/" }
+        to: { pathNot: ["^src/mutation/02-path-not/", "^src/utl/"] }
+      - name: m03-fence
+        comment: "A $1 fence: sibling folders stay independent of each other."
+        fix: "Sibling folders under src/mutation/03-fence never import each other, nor the folder above them. Move the shared code out of src/mutation/03-fence, for example into src/utl, and import it from there."
+        severity: error
+        from: { path: "^src/mutation/03-fence/([^/]+)/" }
+        to: { path: "^src/mutation/03-fence/", pathNot: "^src/mutation/03-fence/$1/" }
+      - name: m04-circular
+        comment: "circular: no cycles."
+        fix: "Break the cycle: one of the two modules must stop importing the other. Move what both need into a third module that imports neither."
+        severity: error
+        from: { path: "^src/mutation/04-circular/" }
+        to: { circular: true }
+      - name: m05-orphan
+        comment: "orphan: every module is used, or uses something."
+        fix: "Every module is imported by another or imports one. Import this module where it is used, or delete it if nothing needs it."
+        severity: error
+        from: { orphan: true, path: "^src/mutation/05-orphan/" }
+        to: {}
+      - name: m06-dependency-types-not
+        comment: "dependencyTypesNot: local imports only."
+        fix: "Modules here import local files only, never a Node built-in or a package. Take the value the built-in computes as a parameter from the caller."
+        severity: error
+        from: { path: "^src/mutation/06-dependency-types-not/" }
+        to: { dependencyTypesNot: [local] }
+      - name: m07-reachable
+        comment: "reachable, forbidden: entry must not reach forbidden, directly or not."
+        fix: "entry.mjs must not reach forbidden.mjs by any path, including through middle.mjs. Remove the import on the path, for example middle.mjs's import of forbidden.mjs."
+        severity: error
+        from: { path: "^src/mutation/07-reachable/entry[.]mjs$" }
+        to: { path: "^src/mutation/07-reachable/forbidden[.]mjs$", reachable: true }
+      - name: m09-dependents
+        comment: "dependents: a shared module is shared by at least two."
+        fix: "A shared module has at least two dependents. Import it from a second module that uses it, or fold it into its one user."
+        severity: error
+        from: { path: "^src/mutation/09-dependents/" }
+        module: { path: "^src/mutation/09-dependents/shared[.]mjs$", numberOfDependentsLessThan: 2 }
+      - name: m11-via
+        comment: "via: no cycle may run through the hub."
+        fix: "No cycle may run through hub.mjs. The hub must not import back into the modules that import it; move what it needs into a module neither imports."
+        severity: error
+        from: { path: "^src/mutation/11-via/", pathNot: "hub[.]mjs$" }
+        to: { circular: true, via: { path: "^src/mutation/11-via/hub[.]mjs$" } }
+      - name: m12-could-not-resolve
+        comment: "couldNotResolve: every import names a file."
+        fix: "Every import names a file that exists. Correct the path, or create the module it names."
+        severity: error
+        from: { path: "^src/mutation/12-could-not-resolve/" }
+        to: { couldNotResolve: true }
+    allowed:
+      - from: { pathNot: "^src/mutation/10-allowed/" }
+        to: {}
+        fix: "Outside src/mutation/10-allowed any import is allowed."
+      - from: { path: "^src/mutation/10-allowed/" }
+        to: { path: "^src/mutation/10-allowed/" }
+        fix: "Modules in src/mutation/10-allowed import only each other. Have the caller pass in what the module needs from elsewhere."
+    allowedSeverity: error
+    required:
+      - name: m08-required
+        comment: "required: every module in the folder uses the bus."
+        fix: "Every module in src/mutation/08-required uses the bus. Import src/utl/bus.mjs and use it."
+        severity: error
+        module: { path: "^src/mutation/08-required/" }
+        to: { path: "^src/utl/bus[.]mjs$" }

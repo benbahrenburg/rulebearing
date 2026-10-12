@@ -1,0 +1,32 @@
+{
+  "rule": "m01-forbidden",
+  "violations": [
+    {
+      "id": "RB-491004cb",
+      "from": "src/mutation/01-forbidden/uses-cli.mjs",
+      "to": "src/cli/format-meta-info.mjs",
+      "plans": [
+        {
+          "kind": "move",
+          "target": "src/mutation/",
+          "edgesTouched": 1,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "port",
+          "package": "src/mutation/01-forbidden",
+          "edgesTouched": 2,
+          "legalBy": "can-import"
+        },
+        {
+          "kind": "invert",
+          "edgesTouched": 3,
+          "dependentsToChange": [
+            "src/cli/index.mjs"
+          ],
+          "legalBy": "can-import"
+        }
+      ]
+    }
+  ]
+}

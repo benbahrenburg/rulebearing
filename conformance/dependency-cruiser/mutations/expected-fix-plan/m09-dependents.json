@@ -1,0 +1,12 @@
+{
+  "rule": "m09-dependents",
+  "violations": [
+    {
+      "id": "RB-5c3d6cf9",
+      "from": "src/mutation/09-dependents/shared.mjs",
+      "to": "src/mutation/09-dependents/shared.mjs",
+      "plans": [],
+      "reason": "`m09-dependents` finds the module src/mutation/09-dependents/shared.mjs itself, not one of its imports, so there is no edge to move, port or invert"
+    }
+  ]
+}

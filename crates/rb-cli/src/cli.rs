@@ -95,6 +95,9 @@ pub enum Command {
     Impact(crate::cmd::impact::ImpactArgs),
     /// Where a new module with these imports would be legal
     Place(crate::cmd::place::PlaceArgs),
+    /// With --plan RULE: the cheapest verified refactor of each kind (move, port, invert) for
+    /// each violation of the rule, as JSON; nothing is edited
+    Fix(crate::cmd::fix_plan::FixArgs),
     /// Draft a rule from globs, a selector or one forbidden edge, with what it matches today
     Propose(crate::cmd::propose::ProposeArgs),
     /// Render the rules as AGENTS.md, a contributing table or a Claude Code skill
@@ -474,6 +477,9 @@ pub struct CruiseArgs {
     /// agent: the most violations shown per rule
     #[arg(long, value_name = "N")]
     pub max_findings: Option<usize>,
+    /// agent: add to each violation shown the verified refactors `fix --plan` prints for it
+    #[arg(long)]
+    pub with_plans: bool,
     /// Colour terminal output
     #[arg(long, value_enum, default_value_t = ColorChoice::Auto)]
     pub color: ColorChoice,

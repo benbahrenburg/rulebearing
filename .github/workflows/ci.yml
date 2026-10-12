@@ -295,6 +295,9 @@ jobs:
       # docs/adr/0074): the status rule, determinism, and the committed ledgers checked against
       # the tree; standard library only.
       - run: python -m pytest testbeds/scripts --cov=testbeds/scripts -p no:cacheprovider
+      # The fix-text eval harness (eval/run.py, plan 0004 Step 10) with test-double agents against
+      # the binary built above, and docs/eval.md's results table current; standard library only.
+      - run: python -m pytest eval --cov=eval -p no:cacheprovider
 
   # The .NET test adapters and the dotnet tool (plan 0002, Step 14, 2H): each of the seven
   # Rulebearing.TestAdapter packages and the tool's launcher at its own 70% line floor

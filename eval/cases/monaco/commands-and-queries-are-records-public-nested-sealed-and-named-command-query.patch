@@ -1,0 +1,13 @@
+diff --git a/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/DeleteCompany.cs b/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/DeleteCompany.cs
+index 0d7dadb..f09522f 100644
+--- a/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/DeleteCompany.cs
++++ b/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Features/Company/DeleteCompany.cs
+@@ -9,7 +9,7 @@ namespace Monaco.Template.Backend.Application.Features.Company;
+ 
+ public sealed class DeleteCompany
+ {
+-	public sealed record Command(Guid Id) : CommandBase(Id);
++	public record Command(Guid Id) : CommandBase(Id);
+ 
+ 	internal sealed class Validator : AbstractValidator<Command>
+ 	{
