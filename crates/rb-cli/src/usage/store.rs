@@ -470,6 +470,35 @@ mod tests {
     }
 
     #[test]
+    fn a_missing_file_is_nothing_yet_and_any_other_failure_is_named() {
+        let dir = Dir::new("kinds");
+        let store = Store::of(&dir.0);
+        // Nothing there yet: no closed month, no state, no payload; no salt can be made.
+        assert_eq!(store.closed("2026-10"), Ok(Vec::new()));
+        assert_eq!(store.state(), Ok(State::default()));
+        assert_eq!(store.read("2026-10"), Ok(None));
+        assert!(
+            store
+                .salt()
+                .is_err_and(|e| e.reason.contains("cannot create the salt")),
+            "the folder does not exist, so the salt cannot be created"
+        );
+        // A folder where a file belongs is a failure to read, not an absent file.
+        let _ = std::fs::create_dir_all(store.month_file("2026-10"));
+        let _ = std::fs::create_dir_all(store.dir().join(STATE_FILE));
+        assert!(
+            store
+                .read("2026-10")
+                .is_err_and(|e| e.reason.contains("cannot read it"))
+        );
+        assert!(
+            store
+                .state()
+                .is_err_and(|e| e.reason.contains("cannot read it"))
+        );
+    }
+
+    #[test]
     fn salts_are_hex_and_differ() {
         let a = fresh_salt();
         let b = fresh_salt();
