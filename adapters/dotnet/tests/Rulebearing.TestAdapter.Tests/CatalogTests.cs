@@ -182,7 +182,10 @@ public sealed class CatalogTests
         Assert.Equal("knownViolation `RB-9` expired on 2026-01-01; it no longer applies and the run fails", cases[3].Message);
     }
 
-    /// <summary>A failing rule with no fix of its own takes a violation's fix, or counts its violations.</summary>
+    /// <summary>
+    /// A failing rule's message lists each distinct fix of its violations, a violation's own over the
+    /// rule's, or counts its violations when there is none.
+    /// </summary>
     [Fact]
     public void TheFixComesFromTheFirstViolationOrTheRule()
     {
@@ -199,7 +202,7 @@ public sealed class CatalogTests
             } }
             """;
         IReadOnlyList<RuleResult> cases = RulebearingRun.Parse(json);
-        Assert.Equal("From the warning.\nc -> d", cases[0].Message);
+        Assert.Equal("From the warning.\nFrom the rule.\nc -> d", cases[0].Message);
         Assert.Equal(["", "odd", "u"], cases.Skip(1).Select(static c => c.Name));
         Assert.Equal("undefined", cases[1].Severity);
         Assert.Equal("undefined", cases[2].Severity);
@@ -261,5 +264,73 @@ public sealed class CatalogTests
             """);
         List<Catalog.Rule> split = Catalog.Rules(unlisted.RootElement);
         Assert.Equal([("unnamed", "forbidden"), ("unnamed#2", "rules")], split.Select(static r => (r.Id, r.Family)));
+    }
+
+    /// <summary>
+    /// The allowed list's fix is each entry's once, joined; a case lists each distinct fix of its
+    /// violations (catalog.rs).
+    /// </summary>
+    [Fact]
+    public void TheAllowedListJoinsItsFixesAndACaseListsItsDistinctFixes()
+    {
+        using JsonDocument document = JsonDocument.Parse("""
+            {
+              "summary": {
+                "violations": [
+                  { "type": "dependency", "from": "a", "to": "x", "rule": { "name": "not-in-allowed", "severity": "error" }, "fix": "A." },
+                  { "type": "dependency", "from": "b", "to": "x", "rule": { "name": "not-in-allowed", "severity": "error" }, "fix": "B." },
+                  { "type": "dependency", "from": "c", "to": "x", "rule": { "name": "not-in-allowed", "severity": "error" }, "fix": "A." }
+                ],
+                "ruleSetUsed": {
+                  "allowed": [
+                    { "from": {}, "to": {} }, { "from": {}, "to": {}, "fix": "Use one." },
+                    { "from": {}, "to": {}, "fix": "Or the other." }, { "from": {}, "to": {}, "fix": "Use one." }
+                  ],
+                  "allowedSeverity": "error"
+                }
+              }
+            }
+            """);
+        Assert.Equal("Use one. Or the other.", Catalog.Rules(document.RootElement)[0].Fix);
+        Assert.Equal("A.\nB.\na -> x\nb -> x\nc -> x", Catalog.Cases(document.RootElement)[0].FailureMessage);
+        using JsonDocument bare = JsonDocument.Parse("""{ "summary": { "ruleSetUsed": { "allowed": [{ "from": {}, "to": {} }] } } }""");
+        Assert.Null(Catalog.Rules(bare.RootElement)[0].Fix);
+    }
+
+    /// <summary>A violation on a declared edge is marked, and only there (declared.rs; ADR-0078).</summary>
+    [Fact]
+    public void AViolationOnADeclaredEdgeIsMarkedAndOnlyThere()
+    {
+        using JsonDocument document = JsonDocument.Parse("""
+            {
+              "modules": [{ "source": "a", "dependencies": [
+                { "resolved": "b", "declared": true, "declaredKind": "http" },
+                { "resolved": "b", "declared": true, "declaredKind": "queue" },
+                { "resolved": "b", "declared": true, "declaredKind": "http" },
+                { "resolved": "c", "declared": true },
+                { "resolved": "d", "declared": true, "declaredKind": "http" },
+                { "resolved": "d" },
+                { "resolved": "e", "declared": "yes" }
+              ] }]
+            }
+            """);
+        string On(string to, string? type = null)
+        {
+            string kind = type is null ? string.Empty : $"\"type\": \"{type}\", ";
+            using JsonDocument violation = JsonDocument.Parse($$"""{ {{kind}}"from": "a", "to": "{{to}}", "rule": { "name": "r" } }""");
+            return Catalog.Describe(document.RootElement, violation.RootElement);
+        }
+
+        Assert.Equal("a -> b (declared: http, queue)", On("b"));
+        Assert.Equal("a -> b (declared: http, queue)", On("b", "dependency"));
+        Assert.Equal("a -> b (declared: http, queue)", On("b", "instability"));
+        Assert.Equal("a -> b", On("b", "cycle"));
+        Assert.Equal("a -> c (declared)", On("c"));
+        Assert.Equal("a -> d", On("d"));
+        Assert.Equal("a -> e", On("e"));
+        Assert.Equal("a -> x", On("x"));
+        using JsonDocument empty = JsonDocument.Parse("{}");
+        using JsonDocument plain = JsonDocument.Parse("""{ "from": "a", "to": "b", "rule": { "name": "r" } }""");
+        Assert.Equal("a -> b", Catalog.Describe(empty.RootElement, plain.RootElement));
     }
 }

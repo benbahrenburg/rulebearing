@@ -396,3 +396,67 @@ describe('rules sharing a name', () => {
     expect(result.summary.violations.map((v) => ruleIndex(catalogue, v))).toEqual([0, 1]);
   });
 });
+
+// The fixed vectors of crates/rb-report/src/catalog.rs and declared.rs: the allowed list's fix, a
+// case's distinct fixes, and the mark of a declared edge (docs/adr/0078-fleet-and-declared-edges.md).
+describe('allowed fixes and declared edges', () => {
+  it("joins the allowed list's fixes and lists a case's distinct fixes", () => {
+    const entry = (fix?: string): Record<string, unknown> =>
+      fix === undefined ? { from: {}, to: {} } : { from: {}, to: {}, fix };
+    const notInAllowed = (from: string, fix: string): Record<string, unknown> => ({
+      type: 'dependency',
+      from,
+      to: 'x',
+      rule: { name: 'not-in-allowed', severity: 'error' },
+      fix,
+    });
+    const result = {
+      summary: {
+        violations: [notInAllowed('a', 'A.'), notInAllowed('b', 'B.'), notInAllowed('c', 'A.')],
+        ruleSetUsed: {
+          allowed: [entry(), entry('Use one.'), entry('Or the other.'), entry('Use one.')],
+          allowedSeverity: 'error',
+        },
+      },
+    };
+    expect(rules(result)[0]?.fix).toBe('Use one. Or the other.');
+    expect(cases(result)[0]?.failure).toBe('A.\nB.\na -> x\nb -> x\nc -> x');
+    const bare = { summary: { ruleSetUsed: { allowed: [entry()] } } };
+    expect(rules(bare)[0]?.fix).toBeUndefined();
+  });
+
+  it('marks a violation on a declared edge, and only there', () => {
+    const result = {
+      modules: [
+        {
+          source: 'a',
+          dependencies: [
+            { resolved: 'b', declared: true, declaredKind: 'http' },
+            { resolved: 'b', declared: true, declaredKind: 'queue' },
+            { resolved: 'b', declared: true, declaredKind: 'http' },
+            { resolved: 'c', declared: true },
+            { resolved: 'd', declared: true, declaredKind: 'http' },
+            { resolved: 'd' },
+            { resolved: 'e', declared: 'yes' },
+          ],
+        },
+      ],
+    };
+    const on = (to: string, type?: string): string =>
+      describeViolation(result, {
+        ...(type === undefined ? {} : { type }),
+        from: 'a',
+        to,
+        rule: { name: 'r', severity: 'error' },
+      });
+    expect(on('b')).toBe('a -> b (declared: http, queue)');
+    expect(on('b', 'dependency')).toBe('a -> b (declared: http, queue)');
+    expect(on('b', 'instability')).toBe('a -> b (declared: http, queue)');
+    expect(on('b', 'cycle')).toBe('a -> b');
+    expect(on('c')).toBe('a -> c (declared)');
+    expect(on('d')).toBe('a -> d');
+    expect(on('e')).toBe('a -> e');
+    expect(on('x')).toBe('a -> x');
+    expect(describeViolation({}, { from: 'a', to: 'b', rule: { name: 'r' } })).toBe('a -> b');
+  });
+});

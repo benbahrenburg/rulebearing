@@ -1161,7 +1161,7 @@ mod tests {
     /// The `fix` and decision of each `not-in-allowed` violation, by its `from`.
     type AllowedText = (String, Option<String>, Option<String>);
 
-    fn allowed_texts(allowed: Value) -> Result<Vec<AllowedText>, EngineError> {
+    fn allowed_texts(allowed: &Value) -> Result<Vec<AllowedText>, EngineError> {
         let cfg = config(json!({ "allowed": allowed, "allowedSeverity": "error" }));
         let result = evaluate(document(), &cfg, &EvalOptions::default())?;
         Ok(result
@@ -1176,7 +1176,7 @@ mod tests {
     fn a_not_in_allowed_violation_carries_the_fix_of_the_entry_that_applies()
     -> Result<(), EngineError> {
         // apps/web/a.ts -> apps/api/b.ts and apps/api/b.ts -> apps/web/a.ts match no entry.
-        let texts = allowed_texts(json!([
+        let texts = allowed_texts(&json!([
             { "from": { "path": "^packages/" }, "to": {}, "fix": "Packages import anything." },
             { "from": { "path": "^apps/web/" }, "to": { "path": "^packages/" },
               "fix": "The web app imports packages only.", "comment": "Web reads packages. adr:0042" },
@@ -1201,7 +1201,7 @@ mod tests {
         );
         // No entry selecting the module has a fix: the rule set's text, every entry's fix once,
         // in order, and the decision of the first entry.
-        let texts = allowed_texts(json!([
+        let texts = allowed_texts(&json!([
             { "from": { "path": "^packages/" }, "to": {}, "comment": "adr:0001" },
             { "from": { "path": "^lonely" }, "to": {}, "fix": "Lonely imports anything.", "comment": "adr:0002" },
             { "from": { "path": "^apps/" }, "to": { "path": "^packages/" } },
@@ -1218,7 +1218,7 @@ mod tests {
             assert_eq!(decision.as_deref(), Some("adr:0001"), "{from}");
         }
         // No entry has a fix: none, and the decision of the first entry.
-        let texts = allowed_texts(json!([
+        let texts = allowed_texts(&json!([
             { "from": { "path": "^packages/" }, "to": {}, "comment": "adr:0007" },
             { "from": { "path": "^apps/" }, "to": { "path": "^packages/" }, "comment": "adr:0008" }
         ]))?;
