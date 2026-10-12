@@ -6,7 +6,7 @@ two coverage tabs, and writes site/data/coverage.json with a status and an evide
 ... a row whose evidence is missing renders as unproven regardless of the tab's text").
 Decisions: docs/adr/0009-conformance-suites-as-specification.md (a row may not say Parity until
 the pinned suite says so),
-docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md (the tracked ledger
+docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md (the tracked ledger
 and the status rule). Requirement: docs/prd.md#nfr-conf-03.
 
 The rows come from conformance/ledger/<tab>.json, one tracked file per coverage tab: each row's
@@ -196,7 +196,7 @@ def derive(tab: Tab, text: str, previous: dict[str, Any] | None) -> dict[str, An
             "derived by testbeds/scripts/coverage_status.py rows, and the evidence that proves "
             "each. The cells and claims are the tab's and are never edited here; a status is "
             "never written here (docs/adr/0009-conformance-suites-as-specification.md, "
-            "docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md)."
+            "docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md)."
         ),
         "tab": tab.id,
         "title": tab.title,
@@ -533,7 +533,7 @@ def coverage(ledger: Path, results: Path, run: str) -> dict[str, Any]:
         "$comment": (
             "Written by testbeds/scripts/coverage_status.py write from conformance/ledger/ and the "
             "conformance results; never edited by hand (docs/adr/0009-conformance-suites-as-"
-            "specification.md, docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-"
+            "specification.md, docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-"
             "computed.md)."
         ),
         "run": run,

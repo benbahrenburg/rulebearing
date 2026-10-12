@@ -1,5 +1,5 @@
 {
-  "$comment": "Written by testbeds/scripts/coverage_status.py write from conformance/ledger/ and the conformance results; never edited by hand (docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md).",
+  "$comment": "Written by testbeds/scripts/coverage_status.py write from conformance/ledger/ and the conformance results; never edited by hand (docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md).",
   "run": "38190518342",
   "tabs": [
     {

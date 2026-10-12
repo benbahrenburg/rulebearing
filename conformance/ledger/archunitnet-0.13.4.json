@@ -1,5 +1,5 @@
 {
-  "$comment": "The rows of the ArchUnitNET 0.13.4 coverage tab (docs/artifacts/archunitnet-0.13.4-coverage.md, local only), derived by testbeds/scripts/coverage_status.py rows, and the evidence that proves each. The cells and claims are the tab's and are never edited here; a status is never written here (docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md).",
+  "$comment": "The rows of the ArchUnitNET 0.13.4 coverage tab (docs/artifacts/archunitnet-0.13.4-coverage.md, local only), derived by testbeds/scripts/coverage_status.py rows, and the evidence that proves each. The cells and claims are the tab's and are never edited here; a status is never written here (docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md).",
   "sections": [
     {
       "headers": [

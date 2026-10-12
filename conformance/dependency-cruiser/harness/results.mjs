@@ -4,7 +4,7 @@
 //
 // Plan: docs/plans/pending/0004-wave-4-reach.md, Step 4. Decisions:
 // docs/adr/0009-conformance-suites-as-specification.md,
-// docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md.
+// docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

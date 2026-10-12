@@ -1,4 +1,4 @@
-# ADR-0074: The coverage tabs' rows are kept in a tracked ledger with their evidence, and each row's status is computed from the gates' results
+# ADR-0075: The coverage tabs' rows are kept in a tracked ledger with their evidence, and each row's status is computed from the gates' results
 
 - **Status:** Proposed (2026-10-11)
 - **Date:** 2026-10-11

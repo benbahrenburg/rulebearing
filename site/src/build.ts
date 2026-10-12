@@ -1,6 +1,6 @@
 // Builds the docs site: a page for every tracked document under the page roots, the playground
 // with the wasm module built in the same run, the live coverage and scale tables from the data the
-// nightly writes (Step 4, docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md),
+// nightly writes (Step 4, docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md),
 // the stylesheet and page scripts, and the released schemas; then the link check over the result.
 //
 // Architecture: docs/architecture.md#distribution. Decisions: docs/adr/0072-the-docs-site-builds-from-docs-and-serves-the-released-schemas.md,
@@ -256,7 +256,7 @@ export function buildSite(options: BuildOptions): BuildResult {
   );
   pages.push(PLAYGROUND_PAGE);
 
-  // The live coverage and scale tables (Step 4; ADR-0074), from the data the nightly writes.
+  // The live coverage and scale tables (Step 4; ADR-0075), from the data the nightly writes.
   const data = (path: string): string => {
     const full = join(repo, path);
     if (!existsSync(full)) {

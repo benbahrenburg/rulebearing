@@ -3,7 +3,7 @@
 
 Plan: docs/plans/pending/0004-wave-4-reach.md, Step 4.
 
-Decision: docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md.
+Decision: docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md.
 """
 
 from __future__ import annotations

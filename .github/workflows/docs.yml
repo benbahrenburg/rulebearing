@@ -3,7 +3,7 @@
 # their `$id` URLs hold the released contract, a link check over the built site, the npm licence
 # check, and the playground's browser test. The live coverage and scale tables render
 # site/data/coverage.json and testbeds/results/scale.json, which the nightly's pull requests update
-# (plan 0004, Step 4; docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md),
+# (plan 0004, Step 4; docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md),
 # so a change to either rebuilds the site.
 #
 # Pull request: build, link check, licence check and browser test, no deploy. Push to `main`, a

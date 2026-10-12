@@ -1,7 +1,7 @@
 // The live coverage and scale tables: a row shows the tab's claim only when the data says it is
 // proven, any other row reads "unproven", every cell's Markdown is rendered and escaped, and the
 // committed data files render.
-// Plan: docs/plans/pending/0004-wave-4-reach.md, Step 4; docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md.
+// Plan: docs/plans/pending/0004-wave-4-reach.md, Step 4; docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -132,7 +132,7 @@ describe('the pages', () => {
       'Written from nightly <a href="https://github.com/benbahrenburg/rulebearing/actions/runs/42">run 42</a>.',
     );
     expect(page.body).toContain(
-      'href="../docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.html"',
+      'href="../docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.html"',
     );
     const unrun = tabPage({ ...coverage, run: '' }, tab, 'coverage/x.html');
     expect(unrun.body).toContain('No run has written this file yet.');

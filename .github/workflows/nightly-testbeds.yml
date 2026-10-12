@@ -15,7 +15,7 @@
 # README.md carries the table between its testbeds markers, refreshed from that branch. The live
 # coverage tables (docs/plans/pending/0004-wave-4-reach.md, Step 4) are written from the night's
 # conformance results to site/data/coverage.json and reach main by pull request, as the scale
-# table does (docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md).
+# table does (docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md).
 # Every action is pinned to a commit SHA (docs/adr/0025-ci-and-supply-chain-hardening.md).
 name: nightly-testbeds
 
@@ -360,7 +360,7 @@ jobs:
           if-no-files-found: ignore
 
   # The live coverage tables (docs/plans/pending/0004-wave-4-reach.md, Step 4;
-  # docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md): conformance gate 1's
+  # docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md): conformance gate 1's
   # layers 1 to 4, gate 2, and the Rust tests conformance/ledger/ names, each writing its verdicts
   # to target/conformance/*.json for the summary job. Their pass or fail is the CI gates' business;
   # here a failure is data (the row it proves reads "unproven"), so it does not fail the night.
@@ -764,7 +764,7 @@ jobs:
           if [ "$(gh pr list --head testbeds/coverage-tables --state open --json number --jq length)" = "0" ]; then
             gh pr create --base main --head testbeds/coverage-tables \
               --title "testbeds: the coverage tables, nightly run ${GITHUB_RUN_ID}" \
-              --body "Each coverage-tab row's status from nightly run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}, written by testbeds/scripts/coverage_status.py from conformance/ledger/ and the gates' results (plan 0004, Step 4; docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md). Later nights push to this branch while it is open."
+              --body "Each coverage-tab row's status from nightly run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}, written by testbeds/scripts/coverage_status.py from conformance/ledger/ and the gates' results (plan 0004, Step 4; docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md). Later nights push to this branch while it is open."
           fi
       - name: scale regression
         if: always() && steps.scale.outputs.status == '1'

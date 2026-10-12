@@ -301,7 +301,7 @@ main {
     }
 }
 
-/* The live coverage tables (plan 0004, Step 4; ADR-0074). */
+/* The live coverage tables (plan 0004, Step 4; ADR-0075). */
 .unproven {
     color: var(--danger);
 }

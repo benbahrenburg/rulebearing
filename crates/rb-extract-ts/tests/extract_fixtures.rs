@@ -872,7 +872,7 @@ fn ratio(passed: usize, total: usize) -> f64 {
 /// The live coverage tables' results file (`target/conformance/layer1.json`): each replayed
 /// case's verdict, sorted by id, in the shape `conformance/dependency-cruiser/harness/results.mjs`
 /// writes ([Wave 4, Step 4](../../../docs/plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables),
-/// [ADR-0074](../../../docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md)).
+/// [ADR-0075](../../../docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md)).
 fn results_json(runnable: &[&Case], failures: &[(&Case, Failure)]) -> serde_json::Result<String> {
     let failed: std::collections::BTreeSet<&str> =
         failures.iter().map(|(case, _)| case.id.as_str()).collect();

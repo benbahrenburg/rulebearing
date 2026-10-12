@@ -21,7 +21,7 @@ The ratchets are checked by `scripts/ratchets.sh` in the `ratchets` job against 
 
 A ratchet compares against a base recorded at the same upstream `pin`. A pin bump re-vendors and re-records, and the pull request that bumps it must show the new figures.
 
-Each gate also writes its verdicts, item by item, to `target/conformance/<name>.json`: `layer1` (each replayed case), `layer2` and `layer3` (each spec, and each reporter's comparison with upstream's), `gate2-archunitnet` and `gate2-netarchtest` (each case file); layer 5's folders are read as they are. The coverage tabs' rows, with the evidence that proves each, are tracked in [ledger/](ledger/), and `testbeds/scripts/coverage_status.py` computes each row's status from those files for the docs site's live tables: a row is proven only when every piece of its evidence passed ([ADR-0074](../docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md)).
+Each gate also writes its verdicts, item by item, to `target/conformance/<name>.json`: `layer1` (each replayed case), `layer2` and `layer3` (each spec, and each reporter's comparison with upstream's), `gate2-archunitnet` and `gate2-netarchtest` (each case file); layer 5's folders are read as they are. The coverage tabs' rows, with the evidence that proves each, are tracked in [ledger/](ledger/), and `testbeds/scripts/coverage_status.py` computes each row's status from those files for the docs site's live tables: a row is proven only when every piece of its evidence passed ([ADR-0075](../docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md)).
 
 Liveness ([ADR-0007](../docs/adr/0007-vacuous-rules-fail-by-default.md)) is disabled with `--no-liveness` when running dependency-cruiser's specs, because those specs do not expect it. Every other default is the tool's own.
 
@@ -76,7 +76,7 @@ dotnet run --project conformance/archunitnet/tools/PlantUmlOracle -- conformance
 conformance/
 ├── excluded.json                    # layer 2 exclusions, reason and plan each; may only shrink
 ├── divergences.md                   # layer 5 differences accepted, each with its reason
-├── ledger/                          # the coverage tabs' rows and each row's evidence (ADR-0074)
+├── ledger/                          # the coverage tabs' rows and each row's evidence (ADR-0075)
 ├── dependency-cruiser/
 │   ├── PIN, LICENSE                 # 18.2.0; upstream's MIT licence
 │   ├── threshold.json               # layer 1 minimum ratio; may only rise

@@ -245,7 +245,7 @@ pub fn run_suite(
 /// case and none of its cases differs, in the shape
 /// `conformance/dependency-cruiser/harness/results.mjs` writes
 /// ([Wave 4, Step 4](../../../../docs/plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables),
-/// [ADR-0074](../../../../docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md)).
+/// [ADR-0075](../../../../docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md)).
 pub fn results_json(name: &str, run: &SuiteRun) -> serde_json::Result<String> {
     let items: BTreeMap<&str, &str> = run
         .files

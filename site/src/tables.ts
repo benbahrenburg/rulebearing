@@ -4,7 +4,7 @@
 // request; the site only renders them. A row is shown with the tab's claim only when the data says
 // it is proven; any other row reads "unproven", whatever the tab says.
 //
-// Decisions: docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md,
+// Decisions: docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.md,
 // docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0072-the-docs-site-builds-from-docs-and-serves-the-released-schemas.md.
 // Plan: docs/plans/pending/0004-wave-4-reach.md, Step 4. Requirements: NFR-CONF-03, FR-REACH-01.
 
@@ -264,7 +264,7 @@ function provenance(coverage: Coverage, from: string): string {
   } else {
     run = `Written from ${escapeHtml(coverage.run)}, not a nightly run; the next nightly run replaces it.`;
   }
-  return `<p>A row reads as the tab claims only when every piece of its evidence passed: an upstream spec or ported case in conformance gate 1 or gate 2, or a named Rulebearing test. Any other row reads <strong class="unproven">unproven</strong>, whatever the tab says (${adr('0009-conformance-suites-as-specification', 'ADR-0009')}, ${adr('0074-the-coverage-ledger-is-tracked-and-its-status-is-computed', 'ADR-0074')}). ${run} Evidence marked upstream is the pinned suite's own; the rest is Rulebearing's tests.</p>`;
+  return `<p>A row reads as the tab claims only when every piece of its evidence passed: an upstream spec or ported case in conformance gate 1 or gate 2, or a named Rulebearing test. Any other row reads <strong class="unproven">unproven</strong>, whatever the tab says (${adr('0009-conformance-suites-as-specification', 'ADR-0009')}, ${adr('0075-the-coverage-ledger-is-tracked-and-its-status-is-computed', 'ADR-0075')}). ${run} Evidence marked upstream is the pinned suite's own; the rest is Rulebearing's tests.</p>`;
 }
 
 /** The page of one coverage tab. */

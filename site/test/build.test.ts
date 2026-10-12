@@ -62,7 +62,7 @@ beforeEach(() => {
   // The live tables' data and the decisions their pages link (Step 4).
   for (const adr of [
     '0009-conformance-suites-as-specification',
-    '0074-the-coverage-ledger-is-tracked-and-its-status-is-computed',
+    '0075-the-coverage-ledger-is-tracked-and-its-status-is-computed',
   ]) {
     write(`docs/adr/${adr}.md`, `# ${adr}\n`);
   }
@@ -136,7 +136,7 @@ describe('buildSite', () => {
       'coverage/scale.html',
       'docs/adr/0009-conformance-suites-as-specification.html',
       'docs/adr/0067-the-playground-facade-and-an-optional-javascript-engine.html',
-      'docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.html',
+      'docs/adr/0075-the-coverage-ledger-is-tracked-and-its-status-is-computed.html',
       'docs/cli.html',
       'index.html',
       'playground.html',
