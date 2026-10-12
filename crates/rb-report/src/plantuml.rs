@@ -44,6 +44,10 @@
 //! `from: slices`, `LimitDependencies` and `C4Style` from types, `IncludeDependenciesToOther` with
 //! packages, `C4Style` without them) is refused rather than ignored. `from: folders` is
 //! Rulebearing's, for TypeScript and Python modules: a node per folder of the local modules.
+//!
+//! In the component forms, an arrow every module edge of which is declared
+//! ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md)) is labelled
+//! `Ci --> Cj : declared: <kind>`, which `adhereTo` reads as the arrow it is ([`crate::declared`]).
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -57,7 +61,7 @@ use rb_rules::plantuml_export::{
 };
 use serde_json::Value;
 
-use crate::Rendered;
+use crate::{Edges, Rendered};
 
 /// The header of a diagram an `adhereTo` rule reads: no `!include`, which the parser refuses.
 pub const ADHERE_HEADER: &str = "@startuml\n\nhide stereotype\n\n";
@@ -275,6 +279,7 @@ pub fn render(result: &Value, options: &PlantUmlOptions) -> Result<Rendered, Pla
     let document: GraphDocument = serde_json::from_value(result.clone())
         .map_err(|e| PlantUmlError::Document(e.to_string()))?;
     let architecture = Architecture::new(&document);
+    let edges = Edges::of(result);
     let filter = |origin: &str, target: &str| options.keeps(origin, target);
     let generation = GenerationOptions {
         dependency_filter: Some(&filter),
@@ -331,7 +336,7 @@ pub fn render(result: &Value, options: &PlantUmlOptions) -> Result<Rendered, Pla
                     .render()?
             } else if let Some(pattern) = &options.matching {
                 let (nodes, texts) = matching_nodes(&slicing(&architecture, pattern, false)?);
-                components(&architecture, nodes, &generation, texts, options)?
+                components(&architecture, nodes, &generation, texts, options, &edges)?
             } else {
                 return invalid(
                     "from: slices needs the slice pattern: Matching (for example \"RiverBooks.(*)\") or MatchingWithPackages",
@@ -344,6 +349,7 @@ pub fn render(result: &Value, options: &PlantUmlOptions) -> Result<Rendered, Pla
             &generation,
             Texts::Namespaces,
             options,
+            &edges,
         )?,
         From::Folders => components(
             &architecture,
@@ -351,6 +357,7 @@ pub fn render(result: &Value, options: &PlantUmlOptions) -> Result<Rendered, Pla
             &generation,
             Texts::Folders,
             options,
+            &edges,
         )?,
     };
     Ok(Rendered {
@@ -623,6 +630,50 @@ fn partial(options: &PlantUmlOptions) -> Vec<&'static str> {
     set
 }
 
+/// The label of the arrow from the component aliased `origin` to the one aliased `target`:
+/// ` : declared: <kind>` when every module edge it stands for (a dependency of an `origin` member
+/// on a `target` member that the filters keep) is declared ([`crate::declared`]), else nothing.
+/// Only a module's dependencies can be declared: the code layer's, which the type, namespace and
+/// slice forms draw, never are, so those arrows carry no label.
+fn arrow_label(
+    nodes: &[Node],
+    aliases: &[String],
+    edges: &Edges<'_>,
+    options: &PlantUmlOptions,
+    origin: &str,
+    target: &str,
+) -> String {
+    let index = |alias: &str| aliases.iter().position(|a| a == alias);
+    let (Some(from), Some(to)) = (index(origin), index(target)) else {
+        return String::new();
+    };
+    let mut kinds: Vec<String> = Vec::new();
+    let mut any = false;
+    for (member, reached) in nodes[from]
+        .slice
+        .dependencies
+        .iter()
+        .filter(|(member, reached)| {
+            options.keeps(member, reached) && nodes[to].slice.types.contains(reached)
+        })
+    {
+        let Some(more) = edges.declared(member, reached) else {
+            return String::new();
+        };
+        any = true;
+        for kind in more {
+            if !kinds.contains(&kind) {
+                kinds.push(kind);
+            }
+        }
+    }
+    if any {
+        format!(" : {}", crate::declared::label(&kinds))
+    } else {
+        String::new()
+    }
+}
+
 /// The component forms: each dependency target is placed in the node holding its namespace
 /// (folder, path), or, with `IncludeDependenciesToOther`, in a node of its own; then the builder
 /// selects the arrows. Each component gets an alias (`C1`, `C2`, ...), which the arrows use, so
@@ -635,6 +686,7 @@ fn components(
     generation: &GenerationOptions<'_>,
     texts: Texts,
     options: &PlantUmlOptions,
+    edges: &Edges<'_>,
 ) -> Result<String, PlantUmlError> {
     let separator = texts.separator();
     let text_of = |target: &str| -> String {
@@ -679,12 +731,17 @@ fn components(
     {
         match kind {
             DependencyType::Circle => {
-                lines.push(format!("{origin} --> {target}"));
-                lines.push(format!("{target} --> {origin}"));
+                let there = arrow_label(&nodes, &aliases, edges, options, origin, target);
+                let back = arrow_label(&nodes, &aliases, edges, options, target, origin);
+                lines.push(format!("{origin} --> {target}{there}"));
+                lines.push(format!("{target} --> {origin}{back}"));
             }
             DependencyType::OneToOneCompact if depth(origin) != depth(target) => {}
             // Without packages the builder draws only these three kinds.
-            _ => lines.push(format!("{origin} --> {target}")),
+            _ => {
+                let label = arrow_label(&nodes, &aliases, edges, options, origin, target);
+                lines.push(format!("{origin} --> {target}{label}"));
+            }
         }
     }
     let mut body = lines.join("\n");

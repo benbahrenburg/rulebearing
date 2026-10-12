@@ -13,7 +13,7 @@ use serde_json::Value;
 use std::fmt::Write as _;
 
 use crate::azure_devops::violators;
-use crate::{Rendered, severity, text};
+use crate::{Edges, Rendered, severity, text};
 
 const CATEGORY: &str = "dependency-cruiser";
 
@@ -136,6 +136,7 @@ pub fn render(result: &Value, timestamp: &str) -> Rendered {
             timestamp,
         ));
     }
+    let edges = Edges::of(result);
     for v in &violations {
         let sev = match severity(v).as_str() {
             "error" => "ERROR",
@@ -145,7 +146,7 @@ pub fn render(result: &Value, timestamp: &str) -> Rendered {
         let name = v.get("rule").map(|r| text(r, "name")).unwrap_or_default();
         lines.push(inspection(
             &name,
-            &violators(v, false),
+            &violators(v, &edges, false),
             v.get("from").and_then(Value::as_str),
             sev,
             &flow,

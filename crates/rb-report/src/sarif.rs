@@ -24,6 +24,9 @@
 //! notifications on the invocation (the last at level `error`, as it makes the run untrustworthy).
 //! Every `artifactLocation.uri` is a relative reference: `\` becomes `/` and each segment is
 //! percent-encoded to RFC 3986 `pchar`s (`:` too, so a first segment never reads as a scheme).
+//! A violation on a declared edge ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md))
+//! names it `<from> -> <to> (declared: <kind>)` in its message and carries `declared: true` and
+//! `declaredKind` in its `properties` ([`crate::declared`]).
 //! Exits 0, as the data reporters do
 //! ([ADR-0030](../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)).
 
@@ -32,7 +35,7 @@ use std::fmt::Write as _;
 use serde_json::{Map, Value, json};
 
 use crate::catalog::{self, CatalogRule};
-use crate::{Rendered, text};
+use crate::{Edges, Rendered, declared, text};
 
 /// The schema URI the log names.
 pub const SCHEMA: &str = "https://json.schemastore.org/sarif-2.1.0.json";
@@ -92,13 +95,14 @@ fn rule_descriptor(rule: &CatalogRule) -> Value {
     Value::Object(descriptor)
 }
 
-fn message(violation: &Value, rule: &CatalogRule) -> String {
+fn message(violation: &Value, rule: &CatalogRule, declared: Option<&[String]>) -> String {
     let from = text(violation, "from");
     let to = text(violation, "to");
     let subject = if from.is_empty() && to.is_empty() {
         "the selection as a whole".to_owned()
     } else {
-        format!("{from} -> {to}")
+        let mark = declared.map(declared::mark).unwrap_or_default();
+        format!("{from} -> {to}{mark}")
     };
     match catalog::fix_of(violation, rule) {
         Some(fix) => format!("{}: {subject}. {fix}", rule.name),
@@ -108,19 +112,23 @@ fn message(violation: &Value, rule: &CatalogRule) -> String {
 
 fn result_of(
     result: &Value,
+    edges: &Edges<'_>,
     violation: &Value,
     index: usize,
     rule: &CatalogRule,
     prefix: &str,
 ) -> Value {
     let severity = crate::severity(violation);
+    let declared = declared::on_one_edge(violation)
+        .then(|| edges.declared(&text(violation, "from"), &text(violation, "to")))
+        .flatten();
     let mut out = Map::new();
     out.insert("ruleId".into(), json!(rule.id));
     out.insert("ruleIndex".into(), json!(index));
     out.insert("level".into(), json!(level(&severity)));
     out.insert(
         "message".into(),
-        json!({ "text": message(violation, rule) }),
+        json!({ "text": message(violation, rule, declared.as_deref()) }),
     );
     let from = text(violation, "from");
     if !from.is_empty() && from != "undefined" {
@@ -153,6 +161,12 @@ fn result_of(
     properties.insert("to".into(), json!(text(violation, "to")));
     if let Some(kind) = violation.get("type").and_then(Value::as_str) {
         properties.insert("type".into(), json!(kind));
+    }
+    if let Some(kinds) = &declared {
+        properties.insert("declared".into(), json!(true));
+        if !kinds.is_empty() {
+            properties.insert("declaredKind".into(), json!(kinds.join(", ")));
+        }
     }
     out.insert("properties".into(), Value::Object(properties));
     Value::Object(out)
@@ -242,10 +256,18 @@ fn notifications(result: &Value, rules: &[CatalogRule]) -> Vec<Value> {
 /// root, because code scanning places a result by its path from the root.
 pub fn render(result: &Value, prefix: &str) -> Rendered {
     let rules = catalog::rules(result);
+    let edges = Edges::of(result);
     let mut results = Vec::new();
     for violation in catalog::violations(result) {
         if let Some(index) = catalog::rule_index(&rules, violation) {
-            results.push(result_of(result, violation, index, &rules[index], prefix));
+            results.push(result_of(
+                result,
+                &edges,
+                violation,
+                index,
+                &rules[index],
+                prefix,
+            ));
         }
     }
     results.extend(ratchet_results(result, &rules, prefix));

@@ -393,8 +393,36 @@ fn edge_kinds<'w, 'm>(
     kinds
 }
 
+/// The `allowed` entry whose `fix` and decision token a `not-in-allowed` violation of the module
+/// at `from` carries. `allowed` is one rule to dependency-cruiser (its violations all name
+/// `not-in-allowed`), and none of its entries matched the edge; the entries whose `from` selects
+/// the module are the ones that say what it may depend on, so the first of those with a `fix` is
+/// the one that applies. When none of them has one, the text is the rule set's: the first entry
+/// with a `fix`, as dependency-cruiser's `err-html` gives the `not-in-allowed` rule the first
+/// comment any entry carries; then the first entry.
+fn allowed_entry<'r>(
+    rules: &'r DependencyRules,
+    from: &str,
+    facts: &ModuleFacts,
+) -> Option<&'r Rule> {
+    let module = json!({ "source": from });
+    let has_fix = |r: &&Rule| r.meta.fix.is_some();
+    rules
+        .allowed
+        .iter()
+        .filter(|r| Probe::new(r, Family::Allowed).selects(&module, from, facts))
+        .find(has_fix)
+        .or_else(|| rules.allowed.iter().find(has_fix))
+        .or_else(|| rules.allowed.first())
+}
+
 /// Adds the stable id, the `fix` and the decision token to each violation.
-fn annotate(violations: &mut [Value], modules: &[Value], rules: &DependencyRules) {
+fn annotate(
+    violations: &mut [Value],
+    modules: &[Value],
+    rules: &DependencyRules,
+    facts: &ModuleFacts,
+) {
     let ends: Vec<(String, String, String, bool)> = violations
         .iter()
         .map(|violation| {
@@ -438,7 +466,7 @@ fn annotate(violations: &mut [Value], modules: &[Value], rules: &DependencyRules
             .find(|r| r.name() == name)
             .or_else(|| {
                 (name == "not-in-allowed")
-                    .then(|| rules.allowed.first())
+                    .then(|| allowed_entry(rules, from, facts))
                     .flatten()
             });
         if let Some(rule) = rule {
@@ -693,7 +721,7 @@ pub fn evaluate(
     violations.extend(summarize_folders(&folder_values, Some(rules)));
     violations.extend(summarize_projects(&project_values, Some(rules)));
     violations.sort_by(crate::compare::compare_violations);
-    annotate(&mut violations, &modules, rules);
+    annotate(&mut violations, &modules, rules, &facts);
     let (rule_stats, mut vacuous) =
         stats_and_liveness(rules, &modules, &violations, opts.liveness, &facts);
     if let Some(input) = &element_input {

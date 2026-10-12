@@ -17,6 +17,10 @@
 //! line's values fill the ones an entry lacks. Keys are not sorted: as upstream's `JSON.stringify`,
 //! each entry keeps the order its violation carries them (the document's fixed field order), with
 //! the lifecycle fields after, so two runs over the same (sorted) violations are byte-identical.
+//! An entry for a violation on a declared edge
+//! ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md)) carries `declared: true` and
+//! `declaredKind` before them ([`crate::declared`]); `knownViolations` keeps keys it does not
+//! read, and matches an entry by its rule and ends as before.
 
 use serde_json::Value;
 
@@ -55,9 +59,13 @@ pub fn entries(result: &Value, lifecycle: &Lifecycle, previous: &[Value]) -> Vec
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default();
+    let edges = crate::Edges::of(result);
     violations
         .into_iter()
         .map(|mut entry| {
+            let declared = crate::declared::on_one_edge(&entry)
+                .then(|| edges.declared(&crate::text(&entry, "from"), &crate::text(&entry, "to")))
+                .flatten();
             let id = entry.get("id").and_then(Value::as_str).map(str::to_owned);
             let earlier = id.as_deref().and_then(|id| {
                 previous
@@ -65,6 +73,12 @@ pub fn entries(result: &Value, lifecycle: &Lifecycle, previous: &[Value]) -> Vec
                     .find(|p| p.get("id").and_then(Value::as_str) == Some(id))
             });
             if let Value::Object(map) = &mut entry {
+                if let Some(kinds) = declared {
+                    map.insert("declared".into(), Value::Bool(true));
+                    if !kinds.is_empty() {
+                        map.insert("declaredKind".into(), Value::String(kinds.join(", ")));
+                    }
+                }
                 for key in LIFECYCLE_KEYS {
                     let value = earlier
                         .and_then(|e| e.get(key))

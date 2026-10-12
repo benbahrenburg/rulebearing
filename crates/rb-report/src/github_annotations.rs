@@ -11,6 +11,8 @@
 //! come from the edge; a module violation has none. `: <comment>` and ` Fix: <fix>` appear only
 //! when the rule has them. Property values and messages are escaped as the workflow command
 //! syntax requires.
+//! A violation on a declared edge ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md))
+//! reads `<from> -> <to> (declared: <kind>)` ([`crate::declared`]).
 
 use serde_json::Value;
 use std::fmt::Write as _;
@@ -64,7 +66,10 @@ pub fn render(result: &Value, path_prefix: &str) -> Rendered {
         let mut message = if v.get("type").and_then(Value::as_str) == Some("module") {
             from.clone()
         } else {
-            format!("{from} -> {to}")
+            format!(
+                "{from} -> {to}{}",
+                crate::declared::violation_mark(&edges, v)
+            )
         };
         if let Some(comment) = rule
             .and_then(|r| r.get("comment"))

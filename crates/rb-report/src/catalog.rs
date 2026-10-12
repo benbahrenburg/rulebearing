@@ -119,7 +119,10 @@ pub fn rules(result: &Value) -> Vec<CatalogRule> {
             family: "allowed".into(),
             severity,
             comment: string(first, "comment"),
-            fix: string(first, "fix"),
+            // The rule set's text: the first entry with a `fix`, as the engine gives a violation
+            // no entry applying to its module has a `fix` for (each violation carries the text
+            // of the entry that applies, which [`fix_of`] prefers).
+            fix: allowed.iter().find_map(|entry| string(entry, "fix")),
         });
     }
     for key in ["required", "elements", "slices", "diagrams"] {
@@ -274,7 +277,8 @@ pub fn position(result: &Value, violation: &Value) -> Option<(u64, u64)> {
     crate::edge_position(result, &from, &to)
 }
 
-/// One line per violation: its id, `from -> to` and the line, as the failure messages list them.
+/// One line per violation: its id, `from -> to` (with ` (declared: <kind>)` on a declared edge,
+/// [`crate::declared`]) and the line, as the failure messages list them.
 pub fn describe(result: &Value, violation: &Value) -> String {
     let id = violation
         .get("id")
@@ -291,7 +295,8 @@ pub fn describe(result: &Value, violation: &Value) -> String {
     } else {
         ""
     };
-    format!("{id}{from} -> {to}{at}{known}")
+    let declared = crate::declared::scanned_violation_mark(result, violation);
+    format!("{id}{from} -> {to}{declared}{at}{known}")
 }
 
 /// How many violations a failure message lists before it says how many more there are.

@@ -4,6 +4,9 @@
 //! - Specification: `test/report/csv/*.spec.mjs`, run by conformance gate 1 layer 3
 //! - Plan: [Wave 1, Step 12](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
+//!
+//! A cell whose edge is declared ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md))
+//! reads `true (declared: <kind>)`, or the severity with the mark ([`crate::declared`]).
 
 use serde_json::Value;
 
@@ -22,11 +25,18 @@ fn sort_key(module: &Value) -> String {
 }
 
 fn incidence(module: &Value, column: &str) -> String {
-    let found = module
-        .get("dependencies")
-        .and_then(Value::as_array)
-        .and_then(|d| d.iter().find(|x| text(x, "resolved") == column));
-    match found {
+    let dependencies = || {
+        module
+            .get("dependencies")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter(|x| text(x, "resolved") == column)
+    };
+    let declared = crate::declared::kinds(dependencies())
+        .map(|kinds| crate::declared::mark(&kinds))
+        .unwrap_or_default();
+    let cell = match dependencies().next() {
         None => "false".into(),
         Some(d) if truthy(d.get("valid")) => "true".into(),
         Some(d) => d
@@ -34,7 +44,8 @@ fn incidence(module: &Value, column: &str) -> String {
             .and_then(Value::as_array)
             .and_then(|r| r.first())
             .map_or_else(|| "undefined".into(), |r| text(r, "severity")),
-    }
+    };
+    format!("{cell}{declared}")
 }
 
 /// Renders `csv`.

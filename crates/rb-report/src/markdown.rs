@@ -24,9 +24,9 @@ use std::fmt::Write as _;
 use serde_json::{Map, Value, json};
 
 use crate::err_html::{
-    DEPENDENCY_CRUISER_VERSION, aggregate_violations, determine_from_extras, determine_to,
+    DEPENDENCY_CRUISER_VERSION, aggregate_violations, determine_from_extras, determine_to_marked,
 };
-use crate::{Rendered, js};
+use crate::{Edges, Rendered, js};
 
 /// Every key of upstream's `REPORT_DEFAULTS` except `footer`, whose default carries the time, with
 /// its default.
@@ -141,6 +141,16 @@ pub fn rules_summary(summary: &Value, include_ignored: bool) -> String {
 /// `formatViolations(violations, options)`: one row per violation, the ignored ones only when
 /// `includeIgnoredInDetails` is set.
 pub fn violation_rows(summary: &Value, options: &Map<String, Value>) -> String {
+    violation_rows_marked(summary, options, &Edges::of(&Value::Null))
+}
+
+/// [`violation_rows`], with a declared edge marked in the "to" cell
+/// ([`crate::err_html::determine_to_marked`]).
+fn violation_rows_marked(
+    summary: &Value,
+    options: &Map<String, Value>,
+    edges: &Edges<'_>,
+) -> String {
     let include_ignored = js::truthy(options.get("includeIgnoredInDetails"));
     violations(summary)
         .iter()
@@ -158,7 +168,7 @@ pub fn violation_rows(summary: &Value, options: &Map<String, Value>) -> String {
                     js::field(rule, "name"),
                     js::field(v, "from"),
                     determine_from_extras(v),
-                    determine_to(v, options),
+                    determine_to_marked(v, options, edges),
                 )
             },
         )
@@ -172,7 +182,7 @@ fn flag(options: &Map<String, Value>, key: &str) -> bool {
     js::truthy(options.get(key))
 }
 
-fn details(summary: &Value, options: &Map<String, Value>) -> String {
+fn details(summary: &Value, options: &Map<String, Value>, edges: &Edges<'_>) -> String {
     let mut out = String::new();
     if violations(summary).is_empty() {
         out.push_str(&option_text(options, "noViolationsMessage"));
@@ -191,7 +201,7 @@ fn details(summary: &Value, options: &Map<String, Value>) -> String {
             option_text(options, "collapsedMessage")
         );
     }
-    out.push_str(&violation_rows(summary, options));
+    out.push_str(&violation_rows_marked(summary, options, edges));
     out.push_str("\n\n");
     if collapse {
         out.push_str("</details>\n\n");
@@ -231,7 +241,7 @@ pub fn render(result: &Value, options: Option<&Value>, timestamp: &str) -> Rende
         output.push_str(&summary_section(summary, &options));
     }
     if flag(&options, "showDetails") {
-        output.push_str(&details(summary, &options));
+        output.push_str(&details(summary, &options, &Edges::of(result)));
     }
     if flag(&options, "showFooter") {
         output.push_str(&option_text(&options, "footer"));

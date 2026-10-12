@@ -13,11 +13,15 @@
 //!
 //! The `fix` line appears only when a rule has a `fix`, so every dependency-cruiser fixture renders
 //! unchanged. It sits under the comment, indented as the comment is, prefixed `fix: `.
+//!
+//! A violation on a declared edge ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md))
+//! prints ` (declared: <kind>)` after its target, and a cycle or path step reached by one after
+//! the step ([`crate::declared`]); a result without declared edges prints as upstream's.
 
 use serde_json::Value;
 
 use crate::style::{Style, percentage, styled, wrap_and_indent};
-use crate::{Rendered, find_rule, num, severity, text};
+use crate::{Edges, Rendered, declared, find_rule, num, severity, text};
 
 const EXTRA_PATH_INDENT: usize = 6;
 
@@ -61,17 +65,10 @@ impl ErrOptions {
     }
 }
 
-fn names(steps: Option<&Value>) -> Vec<String> {
-    steps
-        .and_then(Value::as_array)
-        .map(|s| s.iter().map(|x| text(x, "name")).collect())
-        .unwrap_or_default()
-}
-
-fn mini(steps: Option<&Value>) -> String {
+fn mini(names: &[String]) -> String {
     format!(
         "\n{}",
-        wrap_and_indent(&names(steps).join(" → \n"), EXTRA_PATH_INDENT)
+        wrap_and_indent(&names.join(" → \n"), EXTRA_PATH_INDENT)
     )
 }
 
@@ -92,23 +89,31 @@ pub fn dependency_to(violation: &Value, show_external: bool, show_aliased: bool)
     text(violation, "to")
 }
 
-fn format_violators(v: &Value, o: ErrOptions) -> String {
+fn format_violators(v: &Value, edges: &Edges<'_>, o: ErrOptions) -> String {
     let bold = |t: &str| styled(Some(Style::Bold), t, o.color);
     let from = bold(&text(v, "from"));
     let dependency = || {
         format!(
-            "{from} → {}",
+            "{from} → {}{}",
             bold(&dependency_to(
                 v,
                 o.unresolved.external,
                 o.unresolved.aliased
-            ))
+            )),
+            declared::violation_mark(edges, v)
         )
     };
     match v.get("type").and_then(Value::as_str) {
         Some("module") => from,
-        Some("cycle") => format!("{from} → {}", mini(v.get("cycle"))),
-        Some("reachability") => format!("{from} → {}{}", bold(&text(v, "to")), mini(v.get("via"))),
+        Some("cycle") => format!(
+            "{from} → {}",
+            mini(&declared::step_names(edges, v, "cycle"))
+        ),
+        Some("reachability") => format!(
+            "{from} → {}{}",
+            bold(&text(v, "to")),
+            mini(&declared::step_names(edges, v, "via"))
+        ),
         Some("instability") => {
             let metric = |side: &str| {
                 percentage(num(
@@ -133,13 +138,19 @@ fn format_violators(v: &Value, o: ErrOptions) -> String {
     }
 }
 
-fn format_violation(v: &Value, comment: Option<&str>, fix: Option<&str>, o: ErrOptions) -> String {
+fn format_violation(
+    v: &Value,
+    edges: &Edges<'_>,
+    comment: Option<&str>,
+    fix: Option<&str>,
+    o: ErrOptions,
+) -> String {
     let sev = severity(v);
     let mut out = format!(
         "{} {}: {}",
         styled(Style::for_severity(&sev), &sev, o.color),
         v.get("rule").map(|r| text(r, "name")).unwrap_or_default(),
-        format_violators(v, o)
+        format_violators(v, edges, o)
     );
     if let Some(comment) = comment.filter(|c| !c.is_empty()) {
         out.push('\n');
@@ -234,6 +245,7 @@ pub fn render(result: &Value, o: ErrOptions) -> Rendered {
         )
     } else {
         let mut out = String::from("\n");
+        let edges = Edges::of(result);
         for v in violations.iter().rev() {
             let name = v.get("rule").map(|r| text(r, "name")).unwrap_or_default();
             let rule = find_rule(rule_set, &name);
@@ -256,7 +268,13 @@ pub fn render(result: &Value, o: ErrOptions) -> Rendered {
                 None
             };
             out.push_str("  ");
-            out.push_str(&format_violation(v, comment.as_deref(), fix.as_deref(), o));
+            out.push_str(&format_violation(
+                v,
+                &edges,
+                comment.as_deref(),
+                fix.as_deref(),
+                o,
+            ));
             out.push('\n');
         }
         let n = |k: &str| summary.get(k).and_then(Value::as_u64).unwrap_or(0);

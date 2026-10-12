@@ -9,31 +9,29 @@ use serde_json::Value;
 use std::fmt::Write as _;
 
 use crate::style::percentage;
-use crate::{Rendered, js_number, num, severity, text};
+use crate::{Edges, Rendered, declared, js_number, num, severity, text};
 
-fn names(steps: Option<&Value>) -> String {
-    steps
-        .and_then(Value::as_array)
-        .map(|s| {
-            s.iter()
-                .map(|x| text(x, "name"))
-                .collect::<Vec<_>>()
-                .join(" -> ")
-        })
-        .unwrap_or_default()
+fn names(edges: &Edges<'_>, v: &Value, key: &str) -> String {
+    declared::step_names(edges, v, key).join(" -> ")
 }
 
 /// The violation text shared by the `azure-devops` and `teamcity` reporters, which differ only in
-/// how a reachability violation prints its path.
-pub fn violators(v: &Value, reachability_with_via: bool) -> String {
-    let dependency = format!("{} -> {}", text(v, "from"), text(v, "to"));
+/// how a reachability violation prints its path. A declared edge is marked ` (declared: <kind>)`
+/// after its target, and a step a declared edge reaches after the step ([`crate::declared`]).
+pub(crate) fn violators(v: &Value, edges: &Edges<'_>, reachability_with_via: bool) -> String {
+    let dependency = format!(
+        "{} -> {}{}",
+        text(v, "from"),
+        text(v, "to"),
+        declared::violation_mark(edges, v)
+    );
     match v.get("type").and_then(Value::as_str) {
         Some("module") => text(v, "from"),
-        Some("cycle") => format!("{} -> {}", text(v, "from"), names(v.get("cycle"))),
+        Some("cycle") => format!("{} -> {}", text(v, "from"), names(edges, v, "cycle")),
         Some("reachability") if reachability_with_via => {
-            format!("{dependency} (via {})", names(v.get("via")))
+            format!("{dependency} (via {})", names(edges, v, "via"))
         }
-        Some("reachability") => format!("{dependency} {}", names(v.get("via"))),
+        Some("reachability") => format!("{dependency} {}", names(edges, v, "via")),
         Some("instability") => {
             let metric = |side: &str| {
                 percentage(num(
@@ -55,6 +53,7 @@ pub fn violators(v: &Value, reachability_with_via: bool) -> String {
 pub fn render(result: &Value) -> Rendered {
     let summary = result.get("summary").cloned().unwrap_or(Value::Null);
     let mut output = String::new();
+    let edges = Edges::of(result);
     for v in summary
         .get("violations")
         .and_then(Value::as_array)
@@ -74,7 +73,7 @@ pub fn render(result: &Value) -> Rendered {
             "##vso[task.logissue type={kind};sourcepath={};code={};]{}",
             text(v, "from"),
             v.get("rule").map(|r| text(r, "name")).unwrap_or_default(),
-            violators(v, true)
+            violators(v, &edges, true)
         );
     }
     let n = |k: &str| summary.get(k).and_then(Value::as_u64).unwrap_or(0);
@@ -154,12 +153,17 @@ mod tests {
             "##vso[task.complete result=Succeeded;]no dependency violations found - 2 violations ignored  (1 modules, 0 dependencies cruised)\n"
         );
         assert_eq!(
-            violators(&json!({ "type": "module", "from": "m" }), false),
+            violators(
+                &json!({ "type": "module", "from": "m" }),
+                &Edges::of(&json!({})),
+                false
+            ),
             "m"
         );
         assert_eq!(
             violators(
                 &json!({ "type": "reachability", "from": "a", "to": "b", "via": [{ "name": "b" }] }),
+                &Edges::of(&json!({})),
                 false
             ),
             "a -> b b"

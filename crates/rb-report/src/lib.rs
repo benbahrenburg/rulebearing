@@ -29,6 +29,7 @@ pub mod catalog;
 pub mod conformance;
 pub mod csv;
 pub mod d2;
+pub(crate) mod declared;
 pub mod diff;
 pub mod dot;
 pub mod dot_webpage;
@@ -436,6 +437,17 @@ impl<'r> Edges<'r> {
             .get(from)?
             .iter()
             .find(|d| d.get("resolved").and_then(Value::as_str) == Some(to))
+    }
+
+    /// The kinds of the declared edge `from -> to`, when the report has one: every dependency of
+    /// `from` on `to` in the first module named `from` is declared ([`declared::kinds`]).
+    pub(crate) fn declared(&self, from: &str, to: &str) -> Option<Vec<String>> {
+        declared::kinds(
+            self.by_source
+                .get(from)?
+                .iter()
+                .filter(|d| d.get("resolved").and_then(Value::as_str) == Some(to)),
+        )
     }
 
     /// The edge's line and column, when the extractor recorded them.

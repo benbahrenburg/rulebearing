@@ -37,6 +37,10 @@
 //! without those additions, which is every document dependency-cruiser writes, is anonymised as
 //! upstream anonymises it. The rule set, its comments, a violation's `unresolvedTo` and
 //! `optionsUsed` are printed as upstream prints them.
+//!
+//! The one addition kept is `declared: true` on a declared dependency
+//! ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md)), so the anonymised graph still
+//! tells a declared edge from a detected one; the declaration's kind and comment are left out.
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
@@ -407,6 +411,33 @@ impl Anonymizer {
     }
 }
 
+/// Puts `declared: true` back on each declared dependency, which the strip took off with the other
+/// additions: the modules and their dependencies keep their order through the anonymiser, so
+/// each is found at its index. The flag names nothing; `declaredKind` and `comment`, which are the
+/// declaration's own words and may name a service, stay off
+/// ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md), [`crate::declared`]).
+fn mark_declared(result: &Value, anonymised: &mut Value) {
+    let Some(modules) = result.get("modules").and_then(Value::as_array) else {
+        return;
+    };
+    for (m, module) in modules.iter().enumerate() {
+        for (d, dependency) in rb_rules::js::array(module, "dependencies")
+            .iter()
+            .enumerate()
+        {
+            if crate::declared::is_declared(dependency)
+                && let Some(Value::Object(out)) = anonymised
+                    .get_mut("modules")
+                    .and_then(|ms| ms.get_mut(m))
+                    .and_then(|m| m.get_mut("dependencies"))
+                    .and_then(|ds| ds.get_mut(d))
+            {
+                out.insert("declared".into(), Value::Bool(true));
+            }
+        }
+    }
+}
+
 /// `sanitizeWordList(words)`: every UTF-16 code unit outside `a-z`, `A-Z` and `-` replaced by
 /// `_`, then the empty words and those [`WHITELIST_RE`] matches dropped. A word that is not a
 /// string is dropped, where upstream would stop with a `TypeError`.
@@ -518,7 +549,8 @@ pub fn render(result: &Value, options: Option<&Value>) -> Rendered {
     let mut anonymizer = Anonymizer::new(words);
     anonymizer.key = document_key(&stripped);
     anonymizer.names = names;
-    let anonymised = anonymizer.document(&stripped);
+    let mut anonymised = anonymizer.document(&stripped);
+    mark_declared(result, &mut anonymised);
     let mut output = serde_json::to_string_pretty(&anonymised).unwrap_or_default();
     output.push('\n');
     Rendered {

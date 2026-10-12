@@ -16,6 +16,10 @@
 //! first occurrence only and with `$` patterns in the replacement expanded, so the page is the
 //! one upstream writes for the same result. The footer names the dependency-cruiser version whose
 //! output this reproduces, where upstream names its own, and the run's timestamp.
+//!
+//! A violation on a declared edge ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md))
+//! has ` (declared: <kind>)` after its target in the "to" cell, and a cycle or path step a
+//! declared edge reaches after the step ([`crate::declared`]); `markdown` shares the cell.
 
 use std::collections::BTreeMap;
 
@@ -24,7 +28,7 @@ use serde_json::{Map, Value, json};
 use crate::err::dependency_to;
 use crate::style::percentage;
 use crate::utl::one_letter_dependency_type;
-use crate::{Rendered, js};
+use crate::{Edges, Rendered, declared, js};
 
 /// The template, verbatim from dependency-cruiser 18.2.0.
 const TEMPLATE: &str = include_str!("err_html.html");
@@ -132,16 +136,24 @@ pub fn aggregate_violations(violations: &[Value], rule_set: Option<&Value>) -> V
     rules
 }
 
-/// `names.map(({ name }) => name).join(separator)`: null and undefined names are empty.
-fn names(steps: Option<&Value>, separator: &str) -> String {
-    steps
+/// `names.map(({ name }) => name).join(separator)`: null and undefined names are empty. A step a
+/// declared edge reaches is followed by its mark ([`crate::declared`]).
+fn names(edges: &Edges<'_>, violation: &Value, key: &str, separator: &str) -> String {
+    let mut previous = js::field(violation, "from");
+    violation
+        .get(key)
         .and_then(Value::as_array)
         .map(|steps| {
             steps
                 .iter()
-                .map(|s| match s.get("name") {
-                    None | Some(Value::Null) => String::new(),
-                    name => js::to_string(name),
+                .map(|s| {
+                    let name = match s.get("name") {
+                        None | Some(Value::Null) => String::new(),
+                        name => js::to_string(name),
+                    };
+                    let marked = format!("{name}{}", declared::edge_mark(edges, &previous, &name));
+                    previous = name;
+                    marked
                 })
                 .collect::<Vec<_>>()
                 .join(separator)
@@ -170,15 +182,31 @@ fn flags(options: &Map<String, Value>) -> (bool, bool) {
 
 /// `determineTo(violation, options)`: the "to" cell for each violation type.
 pub fn determine_to(violation: &Value, options: &Map<String, Value>) -> String {
+    determine_to_marked(violation, options, &Edges::of(&Value::Null))
+}
+
+/// [`determine_to`], with a declared edge marked ` (declared: <kind>)` after the target or the
+/// step it reaches ([`crate::declared`]), the edges looked up in `edges`.
+pub(crate) fn determine_to_marked(
+    violation: &Value,
+    options: &Map<String, Value>,
+    edges: &Edges<'_>,
+) -> String {
     let (external, aliased) = flags(options);
-    let to = || dependency_to(violation, external, aliased);
+    let to = || {
+        format!(
+            "{}{}",
+            dependency_to(violation, external, aliased),
+            declared::violation_mark(edges, violation)
+        )
+    };
     match violation.get("type").and_then(Value::as_str) {
         Some("module") => String::new(),
-        Some("cycle") => names(violation.get("cycle"), " &rightarrow;<br/>"),
+        Some("cycle") => names(edges, violation, "cycle", " &rightarrow;<br/>"),
         Some("reachability") => format!(
             "{}<br/>{}",
             js::field(violation, "to"),
-            names(violation.get("via"), " &rightarrow;<br/>")
+            names(edges, violation, "via", " &rightarrow;<br/>")
         ),
         Some("instability") => format!("{}{}", to(), instability(violation, "to")),
         _ => to(),
@@ -278,7 +306,12 @@ fn violated_rules_table(summary: &Value) -> String {
     )
 }
 
-fn violation_row(violation: &Value, prefix: &str, options: &Map<String, Value>) -> String {
+fn violation_row(
+    violation: &Value,
+    prefix: &str,
+    options: &Map<String, Value>,
+    edges: &Edges<'_>,
+) -> String {
     let rule = violation.get("rule").unwrap_or(&Value::Null);
     let severity = js::field(rule, "severity");
     let name = js::field(rule, "name");
@@ -305,11 +338,11 @@ fn violation_row(violation: &Value, prefix: &str, options: &Map<String, Value>) 
         types.join(" "),
         types.join(", "),
         one_letter_dependency_type(&type_refs),
-        determine_to(violation, options)
+        determine_to_marked(violation, options, edges)
     )
 }
 
-fn violations_list(summary: &Value, options: &Map<String, Value>) -> String {
+fn violations_list(summary: &Value, options: &Map<String, Value>, edges: &Edges<'_>) -> String {
     let violations = rb_rules::js::array(summary, "violations");
     if violations.is_empty() {
         return "    <h2><span aria-hidden=\"true\">&hearts;</span> No violations found</h2>\n    <p>Get gummy bears to celebrate.</p>".into();
@@ -320,7 +353,7 @@ fn violations_list(summary: &Value, options: &Map<String, Value>) -> String {
     };
     let rows: Vec<String> = violations
         .iter()
-        .map(|v| violation_row(v, &prefix, options))
+        .map(|v| violation_row(v, &prefix, options, edges))
         .collect();
     let ignored = if js::to_number(summary.get("ignore")) > 0.0 {
         r##"<tr>
@@ -387,7 +420,10 @@ pub fn render(result: &Value, options: Option<&Value>, timestamp: &str) -> Rende
         ("{{info}}", number("info")),
         ("{{ignore}}", ignore),
         ("{{violatedRulesTable}}", violated_rules_table(summary)),
-        ("{{violationsList}}", violations_list(summary, &options)),
+        (
+            "{{violationsList}}",
+            violations_list(summary, &options, &Edges::of(result)),
+        ),
         (
             "{{depcruiseVersion}}",
             format!("dependency-cruiser@{DEPENDENCY_CRUISER_VERSION}"),

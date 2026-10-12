@@ -111,12 +111,29 @@ fn finding(
     {
         object.insert("approximate".into(), json!(true));
     }
+    if crate::declared::on_one_edge(v)
+        && let Some(kinds) = index.declared(&from, &to)
+        && let Some(object) = finding.as_object_mut()
+    {
+        object.insert("declared".into(), json!(true));
+        if !kinds.is_empty() {
+            object.insert("declaredKind".into(), json!(kinds.join(", ")));
+        }
+    }
     let name = v.get("rule").map(|r| text(r, "name")).unwrap_or_default();
     Some((name, sev, score, finding))
 }
 
+/// One finding with its weight and its violation's own `fix` and decision token.
+type Weighed = (u64, Value, Option<String>, Option<String>);
+
 /// One rule's findings: name, severity, and each finding with its weight.
-type Group = (String, String, Vec<(u64, Value)>);
+type Group = (String, String, Vec<Weighed>);
+
+/// A string field of a violation.
+fn own(v: &Value, key: &str) -> Option<String> {
+    v.get(key).and_then(Value::as_str).map(str::to_owned)
+}
 
 /// Renders `agent`.
 pub fn render(result: &Value, max_findings: usize) -> Rendered {
@@ -134,20 +151,21 @@ pub fn render(result: &Value, max_findings: usize) -> Rendered {
         let Some((name, sev, score, finding)) = finding(&index, &fan, v) else {
             continue;
         };
+        let weighed = (score, finding, own(v, "fix"), own(v, "decision"));
         match groups.iter_mut().find(|(n, _, _)| *n == name) {
-            Some((_, _, list)) => list.push((score, finding)),
-            None => groups.push((name, sev, vec![(score, finding)])),
+            Some((_, _, list)) => list.push(weighed),
+            None => groups.push((name, sev, vec![weighed])),
         }
     }
     for (_, _, list) in &mut groups {
-        list.sort_by(|(a, x), (b, y)| {
+        list.sort_by(|(a, x, _, _), (b, y, _, _)| {
             a.cmp(b)
                 .then_with(|| text(x, "from").cmp(&text(y, "from")))
                 .then_with(|| text(x, "to").cmp(&text(y, "to")))
         });
     }
     groups.sort_by(|(na, _, a), (nb, _, b)| {
-        let min = |l: &Vec<(u64, Value)>| l.first().map_or(u64::MAX, |(s, _)| *s);
+        let min = |l: &Vec<Weighed>| l.first().map_or(u64::MAX, |(s, _, _, _)| *s);
         min(a).cmp(&min(b)).then_with(|| na.cmp(nb))
     });
     let mut truncated = false;
@@ -155,21 +173,38 @@ pub fn render(result: &Value, max_findings: usize) -> Rendered {
         .into_iter()
         .map(|(name, sev, list)| {
             let count = list.len();
+            let rule = find_rule(rule_set, &name);
+            let comment = rule.and_then(|r| r.get("comment")).and_then(Value::as_str);
+            // A rule found by name gives its own `fix` and decision. A violation of `allowed`
+            // names no rule (`not-in-allowed`): the engine put the text of the entry that applies
+            // on each violation, and the cheapest one's is the rule's here.
+            let fix = match rule {
+                Some(rule) => rule.get("fix").and_then(Value::as_str).map(str::to_owned),
+                None => list.first().and_then(|(_, _, fix, _)| fix.clone()),
+            };
+            let decision = match rule {
+                Some(_) => comment.and_then(crate::decision),
+                None => list
+                    .first()
+                    .and_then(|(_, _, _, decision)| decision.clone()),
+            };
             let shown: Vec<Value> = list
                 .into_iter()
                 .take(max_findings)
-                .map(|(_, f)| f)
+                .map(|(_, mut finding, own_fix, _)| {
+                    // A violation whose own `fix` differs from the rule's (another `allowed`
+                    // entry applies to it) carries its own.
+                    if let Some(own_fix) = own_fix.filter(|f| Some(f) != fix.as_ref())
+                        && let Some(object) = finding.as_object_mut()
+                    {
+                        object.insert("fix".into(), json!(own_fix));
+                    }
+                    finding
+                })
                 .collect();
             truncated |= shown.len() < count;
-            let rule = find_rule(rule_set, &name);
-            let comment = rule.and_then(|r| r.get("comment")).and_then(Value::as_str);
-            let fix = rule
-                .and_then(|r| r.get("fix"))
-                .cloned()
-                .unwrap_or(Value::Null);
-            let decision = comment
-                .and_then(crate::decision)
-                .map_or(Value::Null, Value::String);
+            let fix = fix.map_or(Value::Null, Value::String);
+            let decision = decision.map_or(Value::Null, Value::String);
             let mut out = Map::new();
             out.insert("name".into(), json!(name));
             out.insert("severity".into(), json!(sev));

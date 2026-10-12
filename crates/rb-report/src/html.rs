@@ -16,6 +16,10 @@
 //! UTF-16 code unit order, with upstream's comparator (`a > b ? 1 : -1`) run through V8's own sort
 //! (`crate::js_sort`): the comparator never answers "equal", so where two modules with the same
 //! `source` end up (upstream's mocks have them) depends on the algorithm, and it is V8's.
+//!
+//! A cell whose edge is declared ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md))
+//! has ` (declared: <kind>)` after the edge in its title, the class `cell-declared` and a dashed
+//! outline ([`crate::declared`]); a matrix without declared edges is upstream's byte for byte.
 
 use std::fmt::Write as _;
 
@@ -26,6 +30,11 @@ use crate::{Rendered, js, js_sort};
 /// The page, verbatim from dependency-cruiser 18.2.0.
 const TEMPLATE: &str = include_str!("html.html");
 
+/// What a declared edge's cell adds after its classes: a class of its own and, since the page's
+/// style sheet is upstream's and has no rule for it, a dashed outline of its own.
+const DECLARED_CELL: &str =
+    " cell-declared\" style=\"outline: 1px dashed currentColor; outline-offset: -3px";
+
 /// One cell of the matrix: whether the row's module depends on the column's.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Incidence {
@@ -35,6 +44,9 @@ pub struct Incidence {
     pub incidence: String,
     /// The first rule the dependency breaks, with how many others it breaks.
     pub rule: Option<String>,
+    /// The kinds of the edge when it is declared ([`crate::declared`]): the cell's title marks it
+    /// and the cell carries `cell-declared` and a dashed outline.
+    pub declared: Option<Vec<String>>,
 }
 
 impl Incidence {
@@ -65,21 +77,24 @@ fn sort_key(module: &Value) -> String {
 /// `determineIncidenceType(column)(row)`.
 fn incidence(column: &Value, row: &Value) -> Incidence {
     let to = js::field(column, "source");
-    let dependency = rb_rules::js::array(row, "dependencies")
-        .iter()
-        .find(|d| d.get("resolved") == column.get("source"));
+    let on_column = |d: &&Value| d.get("resolved") == column.get("source");
+    let dependencies = rb_rules::js::array(row, "dependencies");
+    let dependency = dependencies.iter().find(on_column);
     let Some(dependency) = dependency else {
         return Incidence {
             to,
             incidence: "false".into(),
             rule: None,
+            declared: None,
         };
     };
+    let declared = crate::declared::kinds(dependencies.iter().filter(on_column));
     if js::truthy(dependency.get("valid")) {
         return Incidence {
             to,
             incidence: "true".into(),
             rule: None,
+            declared,
         };
     }
     let rules = rb_rules::js::array(dependency, "rules");
@@ -93,6 +108,7 @@ fn incidence(column: &Value, row: &Value) -> Incidence {
         to,
         incidence: js::to_string(first.get("severity")),
         rule: Some(format!("{}{others}", js::to_string(first.get("name")))),
+        declared,
     }
 }
 
@@ -147,8 +163,13 @@ fn cell_title(module: &Value, incidence: &Incidence) -> String {
         lines.push(format!("{rule}:"));
     }
     if incidence.has_relation() {
+        let mark = incidence
+            .declared
+            .as_deref()
+            .map(crate::declared::mark)
+            .unwrap_or_default();
         lines.push(format!(
-            "{} -> {}",
+            "{} -> {}{mark}",
             js::field(module, "source"),
             incidence.to
         ));
@@ -164,9 +185,14 @@ fn table_row(row: &Row<'_>) -> String {
     let first = classes(row.module, &["first-cell"]);
     let source = js::field(row.module, "source");
     let cells = row.incidences.iter().fold(String::new(), |mut cells, i| {
+        let declared = if i.declared.is_some() {
+            DECLARED_CELL
+        } else {
+            ""
+        };
         let _ = write!(
             cells,
-            "<td class=\"cell cell-{}\"{}></td>",
+            "<td class=\"cell cell-{}{declared}\"{}></td>",
             i.incidence,
             cell_title(row.module, i)
         );
@@ -245,7 +271,8 @@ mod tests {
             Incidence {
                 to: "a.js".into(),
                 incidence: "error".into(),
-                rule: Some("r1 (+1 others)".into())
+                rule: Some("r1 (+1 others)".into()),
+                declared: None
             }
         );
         assert_eq!(b[1].incidence, "false");
