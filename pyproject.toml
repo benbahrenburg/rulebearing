@@ -50,6 +50,8 @@ ignore = [
 "testbeds/bench/*.py" = ["INP001"]
 # The live coverage tables' script, run by path from the nightly (plan 0004, Step 4).
 "testbeds/scripts/*.py" = ["INP001"]
+# The fix-text eval harness, run by path on demand (plan 0004, Step 10).
+"eval/*.py" = ["INP001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -88,6 +90,7 @@ ignore_missing_imports = true
 #   pytest testbeds/oracles   (the oracle harness; not a published package, so no floor)
 #   pytest testbeds/bench --cov=testbeds/bench   (the Stop-hook benchmark, at the floor)
 #   pytest testbeds/scripts --cov=testbeds/scripts   (the live coverage tables, at the floor)
+#   pytest eval --cov=eval   (the fix-text eval harness, with test-double agents, at the floor)
 # The sources are imported from the tree (pythonpath), so coverage measures them where they are,
 # and the plugin is loaded by the tests themselves, inside the measured window.
 [tool.pytest.ini_options]
@@ -99,6 +102,7 @@ testpaths = [
     "testbeds/oracles",
     "testbeds/bench",
     "testbeds/scripts",
+    "eval",
 ]
 pythonpath = [
     "wrappers/pip/src",
@@ -107,6 +111,7 @@ pythonpath = [
     "testbeds/oracles",
     "testbeds/bench",
     "testbeds/scripts",
+    "eval",
 ]
 
 [tool.coverage.run]
