@@ -129,7 +129,7 @@ fn module_system(language: Language) -> ModuleSystem {
 
 /// A new static import from a module in `language` to `target`: `target_types` (what the target
 /// is), then `import` for TypeScript and JavaScript; not dynamic, not type-only, kind `import`.
-fn new_edge(language: Language, target: &str, target_types: Vec<DependencyType>) -> Dependency {
+pub fn new_edge(language: Language, target: &str, target_types: Vec<DependencyType>) -> Dependency {
     let mut dependency_types = if target_types.is_empty() {
         vec![DependencyType::Local]
     } else {

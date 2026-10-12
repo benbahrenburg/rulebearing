@@ -202,6 +202,7 @@ fn dispatch(ctx: &mut Context<'_>, command: Command) -> Outcome {
         Command::Summary(a) => cmd::summary::run(ctx, &a),
         Command::Impact(a) => cmd::impact::run(ctx, &a),
         Command::Place(a) => cmd::place::run(ctx, &a),
+        Command::Fix(a) => cmd::fix_plan::run(ctx, &a),
         Command::Propose(a) => cmd::propose::run(ctx, &a),
         Command::Docs(a) => cmd::docs::run(ctx, &a),
         Command::Decisions(a) => cmd::decisions::run(ctx, &a),

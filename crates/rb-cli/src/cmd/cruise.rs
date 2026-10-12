@@ -244,7 +244,8 @@ fn cruise_with(
     progress.stage("configuration");
     let stderr = config_warnings(&effective);
     let (output_type, output_to) = outputs(args, &effective);
-    if let Err(e) = from_applies(args, &output_type) {
+    if let Err(e) = from_applies(args, &output_type).and_then(|()| plans_apply(args, &output_type))
+    {
         return failed(&e, &stderr);
     }
     effective.options.metrics = Some(configure::wants_metrics(
@@ -269,7 +270,7 @@ fn cruise_with(
         cache_of(ctx, &effective, args, &options, liveness)
     };
     let report_options = report_options(ctx, &effective, args, &output_type, &output_to);
-    let report_part = report_key(&output_type, &output_to, &report_options);
+    let report_part = report_key(&output_type, &output_to, &report_options, args.with_plans);
     let renders_cached = renders_cached(&output_type);
     let mode = Mode {
         cache: cache.as_ref(),
@@ -347,6 +348,8 @@ fn finish(
     } = finishing;
     let (cache, report_options, report_part) = (reporting.cache, reporting.options, reporting.part);
     let evaluation = reporting.evaluation.clone();
+    let plans = plans_for(finishing.args, effective);
+    let report = |verdict: &Verdict| render(ctx, verdict, output_type, report_options, plans);
     let (mut outcome, writing) = match produced {
         Evaluated::Rendered(output, tail) => (
             conclude(
@@ -362,7 +365,7 @@ fn finish(
         ),
         Evaluated::Stored(verdict, key) => {
             let tail = verdict.tail();
-            match render(ctx, &verdict, output_type, report_options) {
+            match report(&verdict) {
                 Ok((output, count)) => {
                     // The rendered output is kept for the next run with the same report, so the
                     // run's copy is a clone only when the cache stores it.
@@ -403,7 +406,7 @@ fn finish(
             summarise(&mut run.document.summary, &ratchets, liveness);
             let verdict = Verdict::of(*run, ratchets);
             let tail = verdict.tail();
-            let outcome = match render(ctx, &verdict, output_type, report_options) {
+            let outcome = match report(&verdict) {
                 Ok((output, count)) => conclude(
                     ctx,
                     effective,
@@ -631,13 +634,15 @@ fn report_options(
 }
 
 /// The report's part of the rendered layer's key: the output type and destination and every
-/// report option, the timestamp only for a reporter that prints it.
-fn report_key(output_type: &str, output_to: &str, options: &ReportOptions) -> String {
+/// report option, the timestamp only for a reporter that prints it, and `--with-plans`, since the
+/// plans are part of the report: one without them is never served for one with.
+fn report_key(output_type: &str, output_to: &str, options: &ReportOptions, plans: bool) -> String {
     let mut keyed = options.clone();
     if !rb_report::stamps(output_type) {
         keyed.timestamp.clear();
     }
-    format!("{output_type}\n{output_to}\n{keyed:?}")
+    let plans = if plans { "\nwith-plans" } else { "" };
+    format!("{output_type}\n{output_to}\n{keyed:?}{plans}")
 }
 
 /// The reporter's output for `verdict`, and for a `plugin:` reporter the count it returned
@@ -647,6 +652,7 @@ fn render(
     verdict: &Verdict,
     output_type: &str,
     options: &ReportOptions,
+    plans: Option<&Config>,
 ) -> Result<(String, Option<u64>), RunError> {
     // `json` as written is the document itself: serialised straight to text, never held as a
     // value first, which on a compiled .NET graph is several times the output's size (plan 0003,
@@ -672,13 +678,38 @@ fn render(
     }
     let rendered = rb_report::render(output_type, &value, options);
     crate::value::release(value);
-    rendered
-        .map(|rendered| (rendered.output, None))
+    let output = rendered
+        .map(|rendered| rendered.output)
         .map_err(|e| match e {
             // `x-dot-webpage` without a working `dot`: the report could not be made (ADR-0053).
             rb_report::ReportError::Graphviz(message) => RunError::Report(message),
             e => RunError::Config(rb_config::ConfigError::Invalid(e.to_string())),
-        })
+        })?;
+    match plans {
+        // `--with-plans`: each finding the agent report shows gets `fix --plan`'s refactors.
+        Some(config) if output_type == "agent" => {
+            crate::cmd::fix_plan::with_plans(&output, &verdict.document, config, ctx.today)
+                .map(|output| (output, None))
+                .map_err(RunError::Report)
+        }
+        _ => Ok((output, None)),
+    }
+}
+
+/// The configuration the `agent` report plans with under `--with-plans`.
+fn plans_for<'a>(args: &CruiseArgs, config: &'a Config) -> Option<&'a Config> {
+    args.with_plans.then_some(config)
+}
+
+/// `--with-plans` adds `fix --plan`'s refactors to the `agent` report; with any other reporter it
+/// would be ignored, so it is refused.
+fn plans_apply(args: &CruiseArgs, output_type: &str) -> Result<(), RunError> {
+    if args.with_plans && output_type != "agent" {
+        return Err(RunError::Config(rb_config::ConfigError::Invalid(format!(
+            "--with-plans applies to --output-type agent, not {output_type}"
+        ))));
+    }
+    Ok(())
 }
 
 /// `stderr` with the extractors' warnings after it, as a failed report prints them.

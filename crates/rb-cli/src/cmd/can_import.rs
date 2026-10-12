@@ -116,6 +116,49 @@ struct LightType {
     assembly: Option<String>,
 }
 
+impl LightGraph {
+    /// What `can-import` reads of a graph document already in memory.
+    fn of(document: &rb_model::GraphDocument) -> Self {
+        let text = |kind: &DependencyType| kind.as_str().to_owned();
+        Self {
+            modules: document
+                .modules
+                .iter()
+                .map(|m| LightModule {
+                    source: m.source.clone(),
+                    dependencies: m
+                        .dependencies
+                        .iter()
+                        .map(|d| LightDependency {
+                            resolved: d.resolved.clone(),
+                            dependency_types: Some(d.dependency_types.iter().map(text).collect()),
+                            core_module: Some(d.core_module),
+                            could_not_resolve: Some(d.could_not_resolve),
+                            license: d.license.clone(),
+                            instability: d.instability,
+                            dependency_kind: d.dependency_kind.map(|k| k.as_str().to_owned()),
+                        })
+                        .collect(),
+                    language: m.language.map(|l| l.as_str().to_owned()),
+                    namespaces: m.namespaces.clone(),
+                    project: m.project.clone(),
+                })
+                .collect(),
+            code: document.code.as_ref().map(|code| LightCode {
+                types: code
+                    .types
+                    .iter()
+                    .map(|t| LightType {
+                        file: t.location.file.clone(),
+                        files: t.files.clone(),
+                        assembly: t.assembly.clone(),
+                    })
+                    .collect(),
+            }),
+        }
+    }
+}
+
 /// The facts the cross-language keys read, from the light graph.
 fn facts(graph: &LightGraph) -> ModuleFacts {
     let mut assemblies: HashMap<&str, BTreeSet<&str>> = HashMap::new();
@@ -253,7 +296,12 @@ fn hypothetical_types(types: Option<&[String]>, es_import: bool) -> Vec<String> 
 
 /// The hypothetical edge's attributes: from an edge to `to` the graph already has, else a local
 /// file when `to` exists on disk, else `None`.
-fn target(ctx: &Context<'_>, graph: &LightGraph, to: &str, es_import: bool) -> Option<Value> {
+fn target(
+    graph: &LightGraph,
+    to: &str,
+    es_import: bool,
+    exists: &dyn Fn(&str) -> bool,
+) -> Option<Value> {
     let known = graph
         .modules
         .iter()
@@ -274,7 +322,7 @@ fn target(ctx: &Context<'_>, graph: &LightGraph, to: &str, es_import: bool) -> O
         return Some(edge);
     }
     let local = graph.modules.iter().any(|m| m.source == to)
-        || (!to.starts_with("node_modules/") && ctx.resolve(to).is_file());
+        || (!to.starts_with("node_modules/") && exists(to));
     local.then(|| {
         json!({
             "dependencyTypes": hypothetical_types(None, es_import),
@@ -348,6 +396,67 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
         Ok(found) => found,
         Err(o) => return o,
     };
+    let (from_path, to_path) = (normalise(ctx, &args.from), normalise(ctx, &args.to));
+    let exists = |path: &str| ctx.resolve(path).is_file();
+    let Some(decisions) = answer(&config, ctx.today, &graph, &from_path, &to_path, &exists) else {
+        return Outcome::failed(
+            RunExit::Untrustworthy,
+            format!(
+                "rulebearing can-import: {to_path} is not in {file} and is not a file here, so its kind of dependency is unknown; add it (or install it) first, or pass --graph with a graph that has it\n"
+            ),
+        );
+    };
+    let blocking = decisions.iter().filter(|d| d.blocks()).count();
+    // `no` is one finding for the gate to count, whichever number of rules decide it.
+    let code = RunExit::Violations(u64::from(blocking > 0)).code();
+    let stdout = if args.json {
+        as_json(&from_path, &to_path, &decisions)
+    } else {
+        as_text(&decisions)
+    };
+    Outcome {
+        stdout,
+        stderr: String::new(),
+        code,
+    }
+}
+
+/// The error-severity rules the edges `edges` (each `(from, to)`) would break in `document`, by
+/// name, each edge decided as `can-import` decides it, with the document's other edges as they
+/// are: what `fix --plan` checks the new edges of a candidate with
+/// ([plan 0004, Step 9](../../../../docs/plans/pending/0004-wave-4-reach.md#23-steps-for-sub-wave-4c-fix---plan-and-the-eval-harness-funded-only-by-the--12-rule)).
+/// `None` when a target is not a module of the document and so has no known kind, as
+/// `can-import` exits 2 for it.
+pub fn blocking_rules(
+    config: &rb_config::Config,
+    today: chrono::NaiveDate,
+    document: &rb_model::GraphDocument,
+    edges: &[(&str, &str)],
+) -> Option<BTreeSet<String>> {
+    let graph = LightGraph::of(document);
+    let mut out = BTreeSet::new();
+    for (from, to) in edges {
+        let decisions = answer(config, today, &graph, from, to, &|_| false)?;
+        out.extend(
+            decisions
+                .into_iter()
+                .filter(Decision::blocks)
+                .map(|d| d.name),
+        );
+    }
+    Some(out)
+}
+
+/// The rules the hypothetical edge from `from_path` to `to_path` matches in `graph`, each with
+/// the id, comment and fix the gate would report; `None` when the target's kind is unknown.
+fn answer(
+    config: &rb_config::Config,
+    today: chrono::NaiveDate,
+    graph: &LightGraph,
+    from_path: &str,
+    to_path: &str,
+    exists: &dyn Fn(&str) -> bool,
+) -> Option<Vec<Decision>> {
     let edges: HashMap<&str, Vec<&str>> = graph
         .modules
         .iter()
@@ -358,22 +467,14 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
             )
         })
         .collect();
-    let (from_path, to_path) = (normalise(ctx, &args.from), normalise(ctx, &args.to));
     let from_language = graph
         .modules
         .iter()
         .find(|m| m.source == from_path)
         .and_then(|m| m.language.as_deref());
-    let es_import = writes_es_import(from_language, &from_path);
-    let Some(mut dependency) = target(ctx, &graph, &to_path, es_import) else {
-        return Outcome::failed(
-            RunExit::Untrustworthy,
-            format!(
-                "rulebearing can-import: {to_path} is not in {file} and is not a file here, so its kind of dependency is unknown; add it (or install it) first, or pass --graph with a graph that has it\n"
-            ),
-        );
-    };
-    let circular = from_path == to_path || reaches(&edges, &to_path, &from_path);
+    let es_import = writes_es_import(from_language, from_path);
+    let mut dependency = target(graph, to_path, es_import, exists)?;
+    let circular = from_path == to_path || reaches(&edges, to_path, from_path);
     let from = json!({ "source": from_path });
     for (key, value) in [
         ("module", json!(to_path)),
@@ -392,7 +493,7 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
         &config.rules.dependencies,
         &from,
         &dependency,
-        &facts(&graph),
+        &facts(graph),
     );
     let rules = verdict
         .get("rules")
@@ -412,30 +513,17 @@ pub fn run(ctx: &mut Context<'_>, args: &CanImportArgs) -> Outcome {
         );
     let rules = soften_known(
         &config.known_violations,
-        ctx.today,
-        &graph,
+        today,
+        graph,
         Edge {
-            from: &from_path,
-            to: &to_path,
+            from: from_path,
+            to: to_path,
             kind: &kind,
             circular,
         },
         rules,
     );
-    let decisions = decide(&config, &rules, &from_path, &to_path, &kind);
-    let blocking = decisions.iter().filter(|d| d.blocks()).count();
-    // `no` is one finding for the gate to count, whichever number of rules decide it.
-    let code = RunExit::Violations(u64::from(blocking > 0)).code();
-    let stdout = if args.json {
-        as_json(&from_path, &to_path, &decisions)
-    } else {
-        as_text(&decisions)
-    };
-    Outcome {
-        stdout,
-        stderr: String::new(),
-        code,
-    }
+    Some(decide(config, &rules, from_path, to_path, &kind))
 }
 
 /// Each matched rule with the id the gate would give the edge, and the rule's comment and fix.
