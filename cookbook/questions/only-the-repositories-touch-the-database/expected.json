@@ -1,0 +1,21 @@
+{
+  "violations": [
+    {
+      "from": "shop/web/views.py",
+      "to": "shop/db/session.py",
+      "unresolvedTo": "shop.db.session",
+      "dependencyTypes": [
+        "local"
+      ],
+      "type": "dependency",
+      "rule": {
+        "name": "only-repositories-import-the-database",
+        "severity": "error"
+      },
+      "id": "RB-1a2c6319",
+      "fix": "Call a function in shop/repositories/ instead; if none fits, add one there that runs the query.",
+      "decision": "plan:0004-wave-4-reach"
+    }
+  ],
+  "vacuousRules": []
+}

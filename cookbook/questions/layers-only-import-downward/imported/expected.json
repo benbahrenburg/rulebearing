@@ -1,0 +1,77 @@
+{
+  "violations": [
+    {
+      "from": "shop/domain/order.py",
+      "to": "shop/web/formatting.py",
+      "type": "reachability",
+      "rule": {
+        "name": "layers:shop.domain-to-shop.web",
+        "severity": "error"
+      },
+      "via": [
+        {
+          "name": "shop/domain/pricing.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        },
+        {
+          "name": "shop/web/formatting.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        }
+      ],
+      "id": "RB-44d7a533"
+    },
+    {
+      "from": "shop/domain/pricing.py",
+      "to": "shop/web/formatting.py",
+      "type": "reachability",
+      "rule": {
+        "name": "layers:shop.domain-to-shop.web",
+        "severity": "error"
+      },
+      "via": [
+        {
+          "name": "shop/web/formatting.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        }
+      ],
+      "id": "RB-b15c6451"
+    },
+    {
+      "from": "shop/services/orders.py",
+      "to": "shop/web/formatting.py",
+      "type": "reachability",
+      "rule": {
+        "name": "layers:shop.services-to-shop.web",
+        "severity": "error"
+      },
+      "via": [
+        {
+          "name": "shop/domain/order.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        },
+        {
+          "name": "shop/domain/pricing.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        },
+        {
+          "name": "shop/web/formatting.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        }
+      ],
+      "id": "RB-6f70cf6a"
+    }
+  ],
+  "vacuousRules": []
+}

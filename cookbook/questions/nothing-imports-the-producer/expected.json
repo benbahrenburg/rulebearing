@@ -1,0 +1,22 @@
+{
+  "violations": [
+    {
+      "from": "src/orders/cancel-order.ts",
+      "to": "src/producer/producer.ts",
+      "unresolvedTo": "../producer/producer",
+      "dependencyTypes": [
+        "local",
+        "import"
+      ],
+      "type": "dependency",
+      "rule": {
+        "name": "nothing-imports-the-producer",
+        "severity": "error"
+      },
+      "id": "RB-463c30e2",
+      "fix": "Write the event to the outbox (src/outbox/outbox.ts) and let the producer process publish it.",
+      "decision": "plan:0004-wave-4-reach"
+    }
+  ],
+  "vacuousRules": []
+}

@@ -4,12 +4,23 @@
 //
 // Architecture: docs/architecture.md#distribution. Decisions: docs/adr/0072-the-docs-site-builds-from-docs-and-serves-the-released-schemas.md,
 // docs/adr/0067-the-playground-facade-and-an-optional-javascript-engine.md, docs/adr/0039-plans-and-design-kept-local.md,
-// docs/adr/0073-extractors-read-files-through-rb-model.md (the source-file examples).
-// Plan: docs/plans/pending/0004-wave-4-reach.md, Step 3. Requirements: FR-REACH-01, NFR-DOC-01.
+// docs/adr/0073-extractors-read-files-through-rb-model.md (the source-file examples),
+// docs/adr/0074-the-cookbook-question-pages-are-fixtures-beside-the-guard-catalogue.md (the
+// cookbook's question pages, filled from their fixtures by cookbook.ts).
+// Plan: docs/plans/pending/0004-wave-4-reach.md, Steps 3 and 5. Requirements: FR-REACH-01, NFR-DOC-01.
 
 import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import {
+  QUESTIONS_ROOT,
+  fillQuestion,
+  questionSlug,
+  questionSlugs,
+  readQuestion,
+  unlisted,
+  withPlaceholders,
+} from './cookbook.js';
 import { checkSite } from './linkcheck.js';
 import type { BrokenLink } from './linkcheck.js';
 import { trackedFolders } from './links.js';
@@ -186,10 +197,33 @@ export function buildSite(options: BuildOptions): BuildResult {
   };
   const folders = trackedFolders(tracked);
   const md = createRenderer();
-  const rendered = sources.map((source) => ({
-    source,
-    page: renderPage(md, source, readFileSync(join(repo, source), 'utf8'), context, folders),
-  }));
+  const slugs = questionSlugs(tracked);
+  const questions = new Map(slugs.map((slug) => [slug, readQuestion(repo, tracked, slug)]));
+  const rendered = sources.map((source) => {
+    const question = questions.get(questionSlug(source) ?? '');
+    if (question === undefined) {
+      return {
+        source,
+        page: renderPage(md, source, readFileSync(join(repo, source), 'utf8'), context, folders),
+        scripts: [],
+      };
+    }
+    const page = renderPage(md, source, withPlaceholders(question), context, folders);
+    return {
+      source,
+      page: { ...page, html: fillQuestion(page.html, question, pagePath(source)) },
+      scripts: ['assets/playground.js'],
+    };
+  });
+  const index = `${QUESTIONS_ROOT}README.md`;
+  if (slugs.length > 0) {
+    const missing = sources.includes(index)
+      ? unlisted(readFileSync(join(repo, index), 'utf8'), slugs)
+      : slugs;
+    if (missing.length > 0) {
+      throw new Error(`${index} does not link the question page(s) ${missing.join(', ')}`);
+    }
+  }
 
   const titles = new Map(rendered.map(({ source, page }) => [source, page.title]));
   const site: SiteInfo = {
@@ -201,10 +235,10 @@ export function buildSite(options: BuildOptions): BuildResult {
   };
   const brokenSources: string[] = [];
   const pages: string[] = [];
-  for (const { source, page } of rendered) {
+  for (const { source, page, scripts } of rendered) {
     brokenSources.push(...page.broken.map((b) => `${source}: ${b}`));
     const path = pagePath(source);
-    write(out, path, layout(site, { path, title: page.title, body: page.html, source }));
+    write(out, path, layout(site, { path, title: page.title, body: page.html, source, scripts }));
     pages.push(path);
   }
 

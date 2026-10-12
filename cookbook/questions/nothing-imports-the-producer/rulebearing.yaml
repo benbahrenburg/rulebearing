@@ -1,0 +1,17 @@
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+rules:
+  dependencies:
+    forbidden:
+      - name: nothing-imports-the-producer
+        comment: "The producer is its own process that drains the outbox; code that imports it publishes from the request path and fails when the broker is down. plan:0004-wave-4-reach"
+        fix: "Write the event to the outbox (src/outbox/outbox.ts) and let the producer process publish it."
+        severity: error
+        from: { pathNot: "^src/producer/" }
+        to: { path: "^src/producer/" }
+        examples:
+          forbidden:
+            - "src/orders/cancel-order.ts -> src/producer/producer.ts"
+          allowed:
+            - "src/orders/place-order.ts -> src/outbox/outbox.ts"
+            - "src/producer/main.ts -> src/producer/producer.ts"
+            - "src/producer/producer.ts -> src/outbox/outbox.ts"

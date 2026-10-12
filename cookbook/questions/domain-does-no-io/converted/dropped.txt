@@ -1,0 +1,5 @@
+dropped 4 item(s) dependency-cruiser cannot hold:
+  languages.python: dependency-cruiser reads TypeScript and JavaScript only
+  $schema: points at the native schema
+  forbidden[domain-does-no-io].fix: a Rulebearing rule field
+  forbidden[domain-does-no-io].examples: a Rulebearing rule field

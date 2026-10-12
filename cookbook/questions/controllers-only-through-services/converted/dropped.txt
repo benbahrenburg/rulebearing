@@ -1,0 +1,4 @@
+dropped 3 item(s) dependency-cruiser cannot hold:
+  $schema: points at the native schema
+  forbidden[controllers-only-through-services].fix: a Rulebearing rule field
+  forbidden[controllers-only-through-services].examples: a Rulebearing rule field

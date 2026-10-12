@@ -1,0 +1,38 @@
+# Imported from .importlinter by `rulebearing import import-linter`.
+# Each rule's comment names its import-linter contract; the contract's options are written above its first rule.
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+languages:
+  python:
+    roots: ["."]
+rules:
+  slices:
+    # import-linter contract `acyclic` (acyclic_siblings): The packages under shop form no cycle
+    #   ancestors = shop
+    - name: acyclic:shop
+      comment: "import-linter contract: The packages under shop form no cycle"
+      severity: error
+      matching: "shop.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: acyclic:shop.billing
+      comment: "import-linter contract: The packages under shop form no cycle"
+      severity: error
+      matching: "shop.billing.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: acyclic:shop.catalog
+      comment: "import-linter contract: The packages under shop form no cycle"
+      severity: error
+      matching: "shop.catalog.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true
+    - name: acyclic:shop.orders
+      comment: "import-linter contract: The packages under shop form no cycle"
+      severity: error
+      matching: "shop.orders.(*)"
+      segments: 1
+      should: beFreeOfCycles
+      allowEmpty: true

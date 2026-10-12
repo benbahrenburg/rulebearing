@@ -1,0 +1,11 @@
+[importlinter]
+root_package = shop
+
+[importlinter:contract:domain-no-io]
+name = The domain does no I/O
+type = forbidden
+source_modules =
+    shop.domain
+forbidden_modules =
+    shop.db
+    shop.http

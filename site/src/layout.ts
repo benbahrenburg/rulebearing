@@ -141,6 +141,8 @@ export interface PlaygroundPreset {
   readonly rule: string;
   /** The examples the component offers, embedded in the page. */
   readonly examples: readonly EmbeddedExample[];
+  /** The example loaded as soon as the module is ready, if any (a cookbook page's repository). */
+  readonly preload?: string;
 }
 
 /**
@@ -210,7 +212,9 @@ export function playgroundComponent(pagePathOfHost: string, preset: PlaygroundPr
         `<script type="application/json" data-example-data="${escapeHtml(e.id)}">${jsonBlock(e.data)}</script>`,
     )
     .join('\n');
-  return `<section class="playground" data-playground data-module="${rel('playground/rb_wasm.js')}">
+  const preload =
+    preset.preload === undefined ? '' : ` data-preload="${escapeHtml(preset.preload)}"`;
+  return `<section class="playground" data-playground data-module="${rel('playground/rb_wasm.js')}"${preload}>
 <p class="playground-note">Everything runs in this browser, with the same library crates as the <code>rulebearing</code> binary: nothing you paste, choose or drop is uploaded or sent anywhere. The configuration is YAML or JSON. A JavaScript configuration is not accepted: the browser build has no JavaScript engine (<a href="${rel('docs/adr/0067-the-playground-facade-and-an-optional-javascript-engine.html')}">ADR-0067</a>). An <code>extends</code> of a file cannot be followed; the bundled presets resolve as on the command line. Errors are the module's own words, shown as they come.</p>
 <ul class="playground-note">
 <li><strong>A cruise result:</strong> paste the JSON that <code>rulebearing cruise -T json</code> (or dependency-cruiser) wrote, and <strong>Run</strong> evaluates the configuration's rules over it, as <code>rulebearing cruise --graph graph.json -T &lt;output type&gt;</code> does. This is the way in for .NET: assemblies are not accepted, since reading them needs a build a browser cannot run, so paste the cruise result the command line wrote for the solution.</li>

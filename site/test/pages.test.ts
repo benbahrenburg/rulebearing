@@ -18,6 +18,8 @@ describe('page sources', () => {
     ['docs/adr/0001-record-architecture-decisions.md', true],
     ['schema/README.md', true],
     ['cookbook/README.md', true],
+    ['cookbook/questions/domain-does-no-io/README.md', true],
+    ['cookbook/guards/no-circular/README.md', false],
     ['docs/plans/pending/0004-wave-4-reach.md', false],
     ['docs/artifacts/design.md', false],
     ['docs/adr/README.txt', false],
@@ -74,9 +76,19 @@ describe('the sidebar', () => {
       'docs/reference/element-rules.md',
       'schema/README.md',
       'docs/other/page.md',
+      'cookbook/questions/README.md',
+      'cookbook/questions/domain-does-no-io/README.md',
     ]);
     expect(groups.map((g) => [g.title, g.sources])).toEqual([
-      ['Start', ['README.md', 'cookbook/README.md']],
+      ['Start', ['README.md']],
+      [
+        'Cookbook',
+        [
+          'cookbook/README.md',
+          'cookbook/questions/README.md',
+          'cookbook/questions/domain-does-no-io/README.md',
+        ],
+      ],
       ['Guides', ['docs/cli.md']],
       ['Reference', ['docs/reference/element-rules.md', 'schema/README.md']],
       ['Adoption', ['docs/adoption/2026-10-review.md']],

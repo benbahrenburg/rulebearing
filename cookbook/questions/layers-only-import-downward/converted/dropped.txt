@@ -1,0 +1,7 @@
+dropped 6 item(s) dependency-cruiser cannot hold:
+  languages.python: dependency-cruiser reads TypeScript and JavaScript only
+  $schema: points at the native schema
+  forbidden[domain-is-the-lowest-layer].fix: a Rulebearing rule field
+  forbidden[domain-is-the-lowest-layer].examples: a Rulebearing rule field
+  forbidden[services-sit-below-web].fix: a Rulebearing rule field
+  forbidden[services-sit-below-web].examples: a Rulebearing rule field

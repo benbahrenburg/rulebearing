@@ -1,0 +1,22 @@
+{
+  "violations": [
+    {
+      "from": "src/controllers/report-controller.ts",
+      "to": "src/repositories/order-repository.ts",
+      "unresolvedTo": "../repositories/order-repository",
+      "dependencyTypes": [
+        "local",
+        "import"
+      ],
+      "type": "dependency",
+      "rule": {
+        "name": "controllers-only-through-services",
+        "severity": "error"
+      },
+      "id": "RB-69b3ee82",
+      "fix": "Call a function in src/services/ instead; if none fits, add one there that wraps the repository call.",
+      "decision": "plan:0004-wave-4-reach"
+    }
+  ],
+  "vacuousRules": []
+}

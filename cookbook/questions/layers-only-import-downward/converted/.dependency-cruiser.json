@@ -1,0 +1,28 @@
+{
+  "forbidden": [
+    {
+      "name": "domain-is-the-lowest-layer",
+      "comment": "The domain is imported by the layers above it and imports neither of them, directly or through a chain. plan:0004-wave-4-reach",
+      "to": {
+        "path": "^shop/(services|web)/",
+        "reachable": true
+      },
+      "severity": "error",
+      "from": {
+        "path": "^shop/domain/"
+      }
+    },
+    {
+      "name": "services-sit-below-web",
+      "comment": "The services are called by the web layer and never call into it, directly or through a chain. plan:0004-wave-4-reach",
+      "to": {
+        "path": "^shop/web/",
+        "reachable": true
+      },
+      "severity": "error",
+      "from": {
+        "path": "^shop/services/"
+      }
+    }
+  ]
+}

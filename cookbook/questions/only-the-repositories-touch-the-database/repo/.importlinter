@@ -1,0 +1,10 @@
+[importlinter]
+root_package = shop
+
+[importlinter:contract:db-protected]
+name = Only the repositories open database sessions
+type = protected
+protected_modules =
+    shop.db
+allowed_importers =
+    shop.repositories

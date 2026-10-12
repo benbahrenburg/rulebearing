@@ -1,0 +1,8 @@
+[importlinter]
+root_package = shop
+
+[importlinter:contract:acyclic]
+name = The packages under shop form no cycle
+type = acyclic_siblings
+ancestors =
+    shop

@@ -1,0 +1,23 @@
+{
+  "violations": [
+    {
+      "from": "shop/domain/invoice.py",
+      "to": "shop/db/session.py",
+      "type": "reachability",
+      "rule": {
+        "name": "domain-no-io",
+        "severity": "error"
+      },
+      "via": [
+        {
+          "name": "shop/db/session.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        }
+      ],
+      "id": "RB-0e50b3d6"
+    }
+  ],
+  "vacuousRules": []
+}

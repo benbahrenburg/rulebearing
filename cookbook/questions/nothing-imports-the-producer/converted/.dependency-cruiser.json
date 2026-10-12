@@ -1,0 +1,15 @@
+{
+  "forbidden": [
+    {
+      "name": "nothing-imports-the-producer",
+      "comment": "The producer is its own process that drains the outbox; code that imports it publishes from the request path and fails when the broker is down. plan:0004-wave-4-reach",
+      "to": {
+        "path": "^src/producer/"
+      },
+      "severity": "error",
+      "from": {
+        "pathNot": "^src/producer/"
+      }
+    }
+  ]
+}

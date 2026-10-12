@@ -1,0 +1,25 @@
+{
+  "violations": [
+    {
+      "from": "shop/domain/invoice.py",
+      "to": "shop/db/session.py",
+      "type": "reachability",
+      "rule": {
+        "name": "domain-does-no-io",
+        "severity": "error"
+      },
+      "via": [
+        {
+          "name": "shop/db/session.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        }
+      ],
+      "id": "RB-4a3f2209",
+      "fix": "Load the data in the caller (shop/app.py) and pass the values into the domain function.",
+      "decision": "plan:0004-wave-4-reach"
+    }
+  ],
+  "vacuousRules": []
+}

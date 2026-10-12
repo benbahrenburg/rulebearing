@@ -1,0 +1,26 @@
+{
+  "violations": [
+    {
+      "from": "billing",
+      "to": "orders",
+      "type": "slice",
+      "rule": {
+        "name": "acyclic:shop",
+        "severity": "error"
+      },
+      "via": [
+        {
+          "name": "shop/billing/dunning.py -> shop/orders/status.py",
+          "dependencyTypes": []
+        },
+        {
+          "name": "shop/orders/order.py -> shop/billing/invoice.py",
+          "dependencyTypes": []
+        }
+      ],
+      "comment": "import-linter contract: The packages under shop form no cycle",
+      "id": "RB-75ac906d"
+    }
+  ],
+  "vacuousRules": []
+}

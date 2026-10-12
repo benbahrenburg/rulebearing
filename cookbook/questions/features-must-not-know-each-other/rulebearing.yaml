@@ -1,0 +1,17 @@
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+rules:
+  dependencies:
+    forbidden:
+      - name: features-are-independent
+        comment: "A feature that imports another cannot be built, tested or removed on its own. plan:0004-wave-4-reach"
+        fix: "Move what both features need into src/shared/, or let the app shell (src/main.ts) pass one feature's result to the other."
+        severity: error
+        from: { path: "^src/features/([^/]+)/" }
+        to: { path: "^src/features/", pathNot: "^src/features/$1/" }
+        examples:
+          forbidden:
+            - "src/features/cart/cart.ts -> src/features/catalog/product.ts"
+          allowed:
+            - "src/features/cart/cart.ts -> src/features/cart/line.ts"
+            - "src/features/cart/cart.ts -> src/shared/money.ts"
+            - "src/main.ts -> src/features/cart/cart.ts"

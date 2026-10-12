@@ -1,0 +1,4 @@
+dropped 3 item(s) dependency-cruiser cannot hold:
+  $schema: points at the native schema
+  forbidden[nothing-imports-the-producer].fix: a Rulebearing rule field
+  forbidden[nothing-imports-the-producer].examples: a Rulebearing rule field

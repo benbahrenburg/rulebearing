@@ -1,0 +1,19 @@
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+languages:
+  python: {}
+rules:
+  dependencies:
+    forbidden:
+      - name: orders-billing-shipping-are-independent
+        comment: "Each of the three packages is changed, tested and owned on its own, so none reaches another, directly or through a chain. plan:0004-wave-4-reach"
+        fix: "Move what two of the packages share into shop/common/, or let the caller pass one package's result to the other."
+        severity: error
+        from: { path: "^shop/(orders|billing|shipping)/" }
+        to: { path: "^shop/(orders|billing|shipping)/", pathNot: "^shop/$1/", reachable: true }
+        examples:
+          forbidden:
+            - "shop/orders/place.py -> shop/billing/invoice.py"
+            - "shop/shipping/label.py -> shop/orders/place.py"
+          allowed:
+            - "shop/orders/place.py -> shop/common/ids.py"
+            - "shop/billing/invoice.py -> shop/billing/__init__.py"

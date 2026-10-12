@@ -1,0 +1,25 @@
+{
+  "violations": [
+    {
+      "from": "shop/orders/place.py",
+      "to": "shop/billing/invoice.py",
+      "type": "reachability",
+      "rule": {
+        "name": "orders-billing-shipping-are-independent",
+        "severity": "error"
+      },
+      "via": [
+        {
+          "name": "shop/billing/invoice.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        }
+      ],
+      "id": "RB-85d92d7a",
+      "fix": "Move what two of the packages share into shop/common/, or let the caller pass one package's result to the other.",
+      "decision": "plan:0004-wave-4-reach"
+    }
+  ],
+  "vacuousRules": []
+}

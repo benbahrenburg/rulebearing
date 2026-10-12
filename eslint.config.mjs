@@ -35,6 +35,9 @@ export default defineConfig([
         // The playground's fixture repositories and the command line's outputs over them, compared
         // byte for byte (plan 0004, Step 2).
         'crates/rb-wasm/tests/fixtures/**',
+        // The cookbook's question repositories: extractor input whose imports break the page's
+        // rule on purpose, shown on the page and loaded into its playground (plan 0004, Step 5).
+        'cookbook/questions/*/repo/**',
         // The ESLint plugin's fixture repository, linted by the plugin's own tests against the gate
         // (plan 0002, Step 13), not by the repository's configuration.
         'frontends/eslint-plugin-rulebearing/test/fixture/**',

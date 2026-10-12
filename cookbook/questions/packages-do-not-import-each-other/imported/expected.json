@@ -1,0 +1,23 @@
+{
+  "violations": [
+    {
+      "from": "shop/orders/place.py",
+      "to": "shop/billing/invoice.py",
+      "type": "reachability",
+      "rule": {
+        "name": "independence:shop.orders-to-shop.billing",
+        "severity": "error"
+      },
+      "via": [
+        {
+          "name": "shop/billing/invoice.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        }
+      ],
+      "id": "RB-7e9386a5"
+    }
+  ],
+  "vacuousRules": []
+}

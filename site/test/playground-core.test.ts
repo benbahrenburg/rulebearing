@@ -326,6 +326,25 @@ describe('the component', () => {
     expect(v.output.textContent).toBe('ts:err:ts-config:src/a.ts=a,src/b.ts=b');
   });
 
+  it("loads the page's preloaded example once ready, as a cookbook page asks", () => {
+    const v = view();
+    v.data.preload = 'ts';
+    live(v);
+    expect(v.mode.value).toBe('files');
+    expect(v.config.value).toBe('ts-config');
+    expect(v.filesPanel.hidden).toBe(false);
+    expect(v.data.state).toBe('ready');
+    expect(v.status.textContent).toBe('Loaded the ts example.');
+    v.run.click();
+    expect(v.output.textContent).toBe('ts:err:ts-config:src/a.ts=a,src/b.ts=b');
+
+    const empty = view();
+    empty.data.preload = '';
+    live(empty);
+    expect(empty.mode.value).toBe('graph');
+    expect(empty.status.textContent).toBe('Ready: rulebearing 0.1.3.');
+  });
+
   it('loads a cruise-result example', () => {
     const v = view();
     const graph: Example = {

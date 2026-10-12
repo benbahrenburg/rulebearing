@@ -1,0 +1,17 @@
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+rules:
+  dependencies:
+    forbidden:
+      - name: controllers-only-through-services
+        comment: "A controller that reads storage itself skips the rules the service applies, and every storage change reaches the HTTP layer. plan:0004-wave-4-reach"
+        fix: "Call a function in src/services/ instead; if none fits, add one there that wraps the repository call."
+        severity: error
+        from: { path: "^src/controllers/" }
+        to: { path: "^src/", pathNot: "^src/(controllers|services|shared)/" }
+        examples:
+          forbidden:
+            - "src/controllers/report-controller.ts -> src/repositories/order-repository.ts"
+          allowed:
+            - "src/controllers/order-controller.ts -> src/services/order-service.ts"
+            - "src/controllers/order-controller.ts -> src/shared/http.ts"
+            - "src/services/order-service.ts -> src/repositories/order-repository.ts"

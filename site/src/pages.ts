@@ -15,6 +15,7 @@ export const PAGE_ROOTS: readonly string[] = [
   'docs/',
   'schema/README.md',
   'cookbook/README.md',
+  'cookbook/questions/',
 ];
 
 /**
@@ -68,7 +69,8 @@ export interface NavGroup {
 /** Groups the page sources for the sidebar, in a fixed order; a group with no page is dropped. */
 export function navGroups(sources: readonly string[]): NavGroup[] {
   const groups: { title: string; test: (s: string) => boolean }[] = [
-    { title: 'Start', test: (s) => !s.includes('/') || s === 'cookbook/README.md' },
+    { title: 'Start', test: (s) => !s.includes('/') },
+    { title: 'Cookbook', test: (s) => s.startsWith('cookbook/') },
     { title: 'Guides', test: (s) => /^docs\/[^/]+\.md$/u.test(s) },
     { title: 'Reference', test: (s) => s.startsWith('docs/reference/') || s.startsWith('schema/') },
     { title: 'Adoption', test: (s) => s.startsWith('docs/adoption/') },

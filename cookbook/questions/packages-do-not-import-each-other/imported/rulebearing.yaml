@@ -1,0 +1,71 @@
+# Imported from .importlinter by `rulebearing import import-linter`.
+# Each rule's comment names its import-linter contract; the contract's options are written above its first rule.
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+languages:
+  python:
+    roots: ["."]
+rules:
+  dependencies:
+    forbidden:
+      # import-linter contract `independence` (independence): Orders, billing and shipping do not import each other
+      #   modules = shop.orders, shop.billing, shop.shipping
+      - name: independence:shop.orders-to-shop.billing
+        comment: "import-linter contract: Orders, billing and shipping do not import each other"
+        severity: error
+        from:
+          path: "^shop/orders(/.*)?\\.py$"
+        to:
+          path: "^shop/billing(/.*)?\\.py$"
+          reachable: true
+        graph:
+          chainsThrough: "^shop(/.*)?\\.py$"
+      - name: independence:shop.orders-to-shop.shipping
+        comment: "import-linter contract: Orders, billing and shipping do not import each other"
+        severity: error
+        from:
+          path: "^shop/orders(/.*)?\\.py$"
+        to:
+          path: "^shop/shipping(/.*)?\\.py$"
+          reachable: true
+        graph:
+          chainsThrough: "^shop(/.*)?\\.py$"
+      - name: independence:shop.billing-to-shop.orders
+        comment: "import-linter contract: Orders, billing and shipping do not import each other"
+        severity: error
+        from:
+          path: "^shop/billing(/.*)?\\.py$"
+        to:
+          path: "^shop/orders(/.*)?\\.py$"
+          reachable: true
+        graph:
+          chainsThrough: "^shop(/.*)?\\.py$"
+      - name: independence:shop.billing-to-shop.shipping
+        comment: "import-linter contract: Orders, billing and shipping do not import each other"
+        severity: error
+        from:
+          path: "^shop/billing(/.*)?\\.py$"
+        to:
+          path: "^shop/shipping(/.*)?\\.py$"
+          reachable: true
+        graph:
+          chainsThrough: "^shop(/.*)?\\.py$"
+      - name: independence:shop.shipping-to-shop.orders
+        comment: "import-linter contract: Orders, billing and shipping do not import each other"
+        severity: error
+        from:
+          path: "^shop/shipping(/.*)?\\.py$"
+        to:
+          path: "^shop/orders(/.*)?\\.py$"
+          reachable: true
+        graph:
+          chainsThrough: "^shop(/.*)?\\.py$"
+      - name: independence:shop.shipping-to-shop.billing
+        comment: "import-linter contract: Orders, billing and shipping do not import each other"
+        severity: error
+        from:
+          path: "^shop/shipping(/.*)?\\.py$"
+        to:
+          path: "^shop/billing(/.*)?\\.py$"
+          reachable: true
+        graph:
+          chainsThrough: "^shop(/.*)?\\.py$"

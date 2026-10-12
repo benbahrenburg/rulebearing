@@ -1,0 +1,49 @@
+{
+  "violations": [
+    {
+      "from": "shop/billing",
+      "to": "shop/orders",
+      "type": "cycle",
+      "rule": {
+        "name": "sibling-packages-form-no-cycle",
+        "severity": "error"
+      },
+      "cycle": [
+        {
+          "name": "shop/orders",
+          "dependencyTypes": []
+        },
+        {
+          "name": "shop/billing",
+          "dependencyTypes": []
+        }
+      ],
+      "id": "RB-c4834799",
+      "fix": "Break the cycle at its weakest edge: move the code one package borrows into the package that needs it, or into a new package both import.",
+      "decision": "plan:0004-wave-4-reach"
+    },
+    {
+      "from": "shop/orders",
+      "to": "shop/billing",
+      "type": "cycle",
+      "rule": {
+        "name": "sibling-packages-form-no-cycle",
+        "severity": "error"
+      },
+      "cycle": [
+        {
+          "name": "shop/billing",
+          "dependencyTypes": []
+        },
+        {
+          "name": "shop/orders",
+          "dependencyTypes": []
+        }
+      ],
+      "id": "RB-27445fc9",
+      "fix": "Break the cycle at its weakest edge: move the code one package borrows into the package that needs it, or into a new package both import.",
+      "decision": "plan:0004-wave-4-reach"
+    }
+  ],
+  "vacuousRules": []
+}

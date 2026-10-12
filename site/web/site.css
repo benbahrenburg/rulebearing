@@ -143,6 +143,27 @@ main {
     font-size: 0.9em;
 }
 
+/* The cookbook's question pages (plan 0004, Step 5): the fixture's files under their names, and
+   the violations the fixture's repository produces. */
+.cookbook-file {
+    margin: 1em 0;
+}
+
+.cookbook-file figcaption {
+    color: var(--muted);
+    font-size: 0.9em;
+    margin-bottom: 4px;
+}
+
+.cookbook-file pre {
+    margin: 0;
+    max-height: 32em;
+}
+
+.cookbook-fixes {
+    color: var(--muted);
+}
+
 .footer {
     border-top: 1px solid var(--line);
     padding: 16px;
