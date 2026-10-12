@@ -456,7 +456,9 @@ fn the_published_schema_is_the_committed_one_and_valid() -> Result<(), Box<dyn E
 
 /// The binary links no call that opens a connection or resolves a host name. A run of `nm` over
 /// the binary the tests drive lists the symbols it takes from the system; none of them may be a
-/// socket call. The list is checked to hold `write`, so an empty listing cannot pass.
+/// socket call. The list is checked to hold `write`, so an empty listing cannot pass. `sendmsg` is
+/// not on it: on Linux `std::process::Command` sends the child's status over a local socket pair
+/// with it, which reaches no network; without `socket` and `connect` nothing can open one.
 #[cfg(unix)]
 #[test]
 fn the_binary_links_no_network_call() -> Result<(), Box<dyn Error>> {
@@ -482,13 +484,7 @@ fn the_binary_links_no_network_call() -> Result<(), Box<dyn Error>> {
         .filter(|s| {
             matches!(
                 s.as_str(),
-                "connect"
-                    | "connectx"
-                    | "socket"
-                    | "getaddrinfo"
-                    | "gethostbyname"
-                    | "sendto"
-                    | "sendmsg"
+                "connect" | "connectx" | "socket" | "getaddrinfo" | "gethostbyname" | "sendto"
             )
         })
         .collect();
