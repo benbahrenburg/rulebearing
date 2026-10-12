@@ -56,7 +56,7 @@ The query commands (`can-import`, `impact`, `propose`, `place`, `fix --plan`) re
 
 ## Plans for a violation
 
-`rulebearing fix --plan <rule>` prints, for each violation of the rule, the cheapest refactor of each of the three kinds the design names that clears it, as JSON ([plan 0004 § 1.6](plans/pending/0004-wave-4-reach.md#16-interfaces-and-contracts-this-wave-freezes), [ADR-0076](adr/0076-fix-plan-candidates-are-verified-and-the-eval-harness-scores-fix-text.md)). The tool edits nothing; the agent executes the plan it picks.
+`rulebearing fix --plan <rule>` prints, for each violation of the rule, the cheapest refactor of each of the three kinds the design names that clears it, as JSON ([plan 0004 § 1.6](plans/pending/0004-wave-4-reach.md#16-interfaces-and-contracts-this-wave-freezes), [ADR-0077](adr/0077-fix-plan-candidates-are-verified-and-the-eval-harness-scores-fix-text.md)). The tool edits nothing; the agent executes the plan it picks.
 
 ```json
 {

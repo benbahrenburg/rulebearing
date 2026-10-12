@@ -12,7 +12,7 @@
 //! - Decisions: [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md) (the agent
 //!   surface is the command line), [ADR-0015](../../../../docs/adr/0015-stable-violation-id.md)
 //!   (violations are named by their stable id),
-//!   [ADR-0076](../../../../docs/adr/0076-fix-plan-candidates-are-verified-and-the-eval-harness-scores-fix-text.md)
+//!   [ADR-0077](../../../../docs/adr/0077-fix-plan-candidates-are-verified-and-the-eval-harness-scores-fix-text.md)
 //!   (how a candidate is chosen, costed and verified)
 //! - Requirement: [FR-REACH-03](../../../../docs/prd.md#fr-reach-03)
 //!

@@ -7,7 +7,7 @@ then runs `cruise --exit-code`, `config lint` and `count` to score `cleared`, `w
 `budgetRaised`") and section 1.7 (the agent under test and its token budget are parameters of the
 run, recorded in every result row; one configuration ships: Claude Code with the repository's
 `hooks install` output). Decision:
-docs/adr/0076-fix-plan-candidates-are-verified-and-the-eval-harness-scores-fix-text.md.
+docs/adr/0077-fix-plan-candidates-are-verified-and-the-eval-harness-scores-fix-text.md.
 Requirement: docs/prd.md#fr-reach-03. Design: docs/artifacts/design.md, "The agentic engineering
 hat".
 

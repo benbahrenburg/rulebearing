@@ -3,7 +3,7 @@ r"""The eval harness's results table, written into docs/eval.md for the docs sit
 
 Plan: docs/plans/pending/0004-wave-4-reach.md, Step 10 ("`report.py` (the table) ... results
 committed under `eval/results/<date>-<agent>.json` and rendered on the docs site"). Decision:
-docs/adr/0076-fix-plan-candidates-are-verified-and-the-eval-harness-scores-fix-text.md.
+docs/adr/0077-fix-plan-candidates-are-verified-and-the-eval-harness-scores-fix-text.md.
 Requirement: docs/prd.md#fr-reach-03.
 
   python3 eval/report.py --write docs/eval.md   write the tables between the markers

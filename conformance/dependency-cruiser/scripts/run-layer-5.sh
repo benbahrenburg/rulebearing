@@ -238,7 +238,7 @@ PY
 }
 
 # `fix --plan` for every rule of the mutation branch over Rulebearing's result in <out>, each
-# byte-compared with mutations/expected-fix-plan/<rule>.json (plan 0004, Step 9; ADR-0076).
+# byte-compared with mutations/expected-fix-plan/<rule>.json (plan 0004, Step 9; ADR-0077).
 fix_plans() { # out, directory
   local out="$1" dir="$2" rule status=0
   local expected="$gate/mutations/expected-fix-plan"

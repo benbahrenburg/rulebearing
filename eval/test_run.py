@@ -266,7 +266,7 @@ def test_check_prepares_without_an_agent_and_a_wrong_case_fails(
         cases=[{"rule": "no-such-rule", "from": "a", "to": "b", "id": "RB-0"}],
     )
     assert main_with(tmp_path, none, local_binary, agent, "--case", "no-such-rule")[0] == 1
-    assert "expected one violation, found 0" in capsys.readouterr().err
+    assert "expected a violation, found none" in capsys.readouterr().err
     # --case leaves out the cases it does not name.
     assert main_with(tmp_path, none, local_binary, agent, "--case", "other")[0] == 0
 

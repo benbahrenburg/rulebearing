@@ -1,4 +1,4 @@
-# ADR-0076: `fix --plan` prints one verified candidate per template, costed by the imports it changes; the eval harness scores the `fix` text on a benchmark with injected violations
+# ADR-0077: `fix --plan` prints one verified candidate per template, costed by the imports it changes; the eval harness scores the `fix` text on a benchmark with injected violations
 
 - **Status:** Proposed (2026-10-11)
 - **Date:** 2026-10-11

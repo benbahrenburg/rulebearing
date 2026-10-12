@@ -4,7 +4,7 @@
 //!
 //! - Plan: [plan 0004, Step 9](../../../docs/plans/pending/0004-wave-4-reach.md#23-steps-for-sub-wave-4c-fix---plan-and-the-eval-harness-funded-only-by-the--12-rule)
 //! - Contract: [plan 0004 § 1.6](../../../docs/plans/pending/0004-wave-4-reach.md#16-interfaces-and-contracts-this-wave-freezes)
-//! - Decisions: [ADR-0076](../../../docs/adr/0076-fix-plan-candidates-are-verified-and-the-eval-harness-scores-fix-text.md),
+//! - Decisions: [ADR-0077](../../../docs/adr/0077-fix-plan-candidates-are-verified-and-the-eval-harness-scores-fix-text.md),
 //!   [ADR-0015](../../../docs/adr/0015-stable-violation-id.md)
 //! - Requirement: [FR-REACH-03](../../../docs/prd.md#fr-reach-03)
 //!
