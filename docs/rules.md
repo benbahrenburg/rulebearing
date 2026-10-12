@@ -80,6 +80,16 @@ Not every extractor records every property:
 
 A rule whose `from` or `to` narrows by a property that a language the side can select does not record is exit 3 naming the rule, the side, the key and the language, because the key would be false for every module of that language ([ADR-0014](adr/0014-no-invented-cross-language-edges.md)). Add that side's `language` to leave the language out: `from: { language: dotnet, namespace: "^Shop\\." }`. `to` can select the targets of the edges from what `from` can select, since no edge crosses languages. A core or external module, which no extractor analysed, has none of these properties and matches neither a key nor its `Not` form. The table is data in `rb-config` (`capability::records`).
 
+## Declared edges
+
+A rule across languages matches nothing until an edge exists, because no extractor invents one ([ADR-0014](adr/0014-no-invented-cross-language-edges.md)). In a fleet, `edges.yaml` declares the edges between services ([config.md](config.md#fleets-and-declared-edges)), and a rule over the prefixed paths then matches them like any other edge. Each declared edge carries `declared: true` and `dependencyKind: declared`, so a rule can also select them, or leave them out:
+
+```yaml
+- name: no-new-http-calls-to-billing
+  from: { path: "^web/" }
+  to: { path: "^billing/", dependencyKind: declared }
+```
+
 ## Captures
 
 A capturing group in `from.path` is available in `to` as `$1` to `$9` (and `$0` for the whole match), escaped so it matches only itself. The common fence is one rule:

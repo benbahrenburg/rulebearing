@@ -1,0 +1,9 @@
+rules:
+  dependencies:
+    forbidden:
+      - name: generated-only-through-client
+        severity: warn
+        comment: "plan:fleet-fixture"
+        fix: "Import the generated client through src/api/client.ts."
+        from: { path: "^src/app[.]ts$" }
+        to: { path: "^src/api/generated/" }

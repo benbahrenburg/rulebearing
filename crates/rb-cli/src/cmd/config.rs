@@ -8,7 +8,10 @@
 //! - Requirement: [FR-CFG-05](../../../../docs/prd.md#fr-cfg-05)
 //!
 //! `convert` and `expand` work on the file as written (a JavaScript file is evaluated first);
-//! `lint` works on the loaded configuration and, with `--graph`, on the graph as well.
+//! `lint` works on the loaded configuration and, with `--graph`, on the graph as well. With
+//! `--fleet` it lints a fleet manifest's rules and reports each declared edge that no longer
+//! exists as `stale-declared-edge` ([plan 0004, Step 12](../../../../docs/plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges);
+//! [ADR-0078](../../../../docs/adr/0078-fleet-and-declared-edges.md)).
 
 use clap::{Args, Subcommand, ValueEnum};
 use rb_config::convert;
@@ -80,6 +83,15 @@ pub struct LintArgs {
     /// below error with no violations)
     #[arg(long, value_name = "FILE")]
     pub graph: Option<String>,
+    /// Lint a fleet instead: the manifest's rules, and every declared edge whose from, to or
+    /// server document no longer exists (against --graph's modules when given, else the
+    /// repositories' files)
+    #[arg(long, value_name = "MANIFEST", conflicts_with_all = ["config", "no_config"])]
+    pub fleet: Option<String>,
+    /// With --fleet: the declared edges (default: edges.yaml beside the manifest, when there is
+    /// one)
+    #[arg(long, value_name = "FILE", requires = "fleet")]
+    pub edges: Option<String>,
 }
 
 fn failed(error: impl std::fmt::Display) -> Outcome {
@@ -172,15 +184,6 @@ pub fn run(ctx: &mut Context<'_>, command: &ConfigCommand) -> Outcome {
             }
         }
         ConfigCommand::Lint(args) => {
-            // A missing token is a finding here, not a reason to refuse the configuration.
-            let load = ConfigArgs {
-                require_comment_token: false,
-                ..args.config.clone()
-            };
-            let config = match configure::required(ctx, &load) {
-                Ok(c) => c,
-                Err(o) => return o,
-            };
             let graph = match &args.graph {
                 Some(file) => match pipeline::load_graph(ctx, file) {
                     Ok(g) => Some(g),
@@ -193,13 +196,31 @@ pub fn run(ctx: &mut Context<'_>, command: &ConfigCommand) -> Outcome {
                 },
                 None => None,
             };
-            let findings = lint(
+            let (config, fleet) = if let Some(manifest) = &args.fleet {
+                match crate::cmd::fleet::lint(ctx, manifest, args.edges.as_deref(), graph.as_ref())
+                {
+                    Ok(linted) => linted,
+                    Err(outcome) => return outcome,
+                }
+            } else {
+                // A missing token is a finding here, not a reason to refuse the configuration.
+                let load = ConfigArgs {
+                    require_comment_token: false,
+                    ..args.config.clone()
+                };
+                match configure::required(ctx, &load) {
+                    Ok(c) => (c, Vec::new()),
+                    Err(o) => return o,
+                }
+            };
+            let mut findings = lint(
                 &config,
                 graph.as_ref(),
                 LintOptions {
                     require_comment_token: args.config.require_comment_token,
                 },
             );
+            findings.extend(fleet);
             Outcome {
                 stdout: render(&findings),
                 stderr: String::new(),

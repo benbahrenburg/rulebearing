@@ -291,6 +291,9 @@ vocabulary! {
         Typeof => "typeof",
         /// A call.
         Call => "call",
+        /// Declared in `edges.yaml` or by an OpenAPI document, never detected
+        /// ([ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md)).
+        Declared => "declared",
     }
 }
 

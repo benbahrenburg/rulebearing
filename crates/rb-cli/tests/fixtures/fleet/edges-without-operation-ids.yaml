@@ -1,0 +1,4 @@
+# The same client against a server document that records no operationId (plan 0004, Step 12).
+openapi:
+  - client: web/src/api/generated/
+    server: api/openapi-without-operation-ids.json

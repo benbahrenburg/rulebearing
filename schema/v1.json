@@ -364,6 +364,49 @@
       },
       "type": "object"
     },
+    "DeclaredReceipt": {
+      "additionalProperties": false,
+      "description": "`summary.declared`: the declared edges added, by source, and the ones not added.",
+      "properties": {
+        "edgesYaml": {
+          "description": "Edges added from `edges.yaml`'s `declared` list.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "openapi": {
+          "description": "Edges added from the OpenAPI documents `edges.yaml` names.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "openapiSources": {
+          "description": "Each OpenAPI client and server pair: what it declared, and why it declared nothing when\nit did not.",
+          "items": {
+            "$ref": "#/definitions/OpenApiReceipt"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "skipped": {
+          "description": "Declared edges that were not added, each with the reason.",
+          "items": {
+            "$ref": "#/definitions/SkippedEdge"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "edgesYaml",
+        "openapi"
+      ],
+      "type": "object"
+    },
     "Dependency": {
       "additionalProperties": false,
       "description": "One edge in the module layer: `modules[].dependencies[]`.",
@@ -388,6 +431,13 @@
             "null"
           ]
         },
+        "comment": {
+          "description": "Additive: why a declared edge exists: `edges.yaml`'s `comment`, or the operation and the\ndocument for an edge an OpenAPI document declares.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "coreModule": {
           "description": "Whether the target is a runtime built-in.",
           "type": "boolean"
@@ -407,9 +457,16 @@
           ]
         },
         "declared": {
-          "description": "Additive: the edge was declared rather than detected (wave 4).",
+          "description": "Additive: the edge was declared rather than detected, in `edges.yaml` or by an OpenAPI\ndocument ([ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md),\n[plan 0004, Step 12](../../../docs/plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges)).",
           "type": [
             "boolean",
+            "null"
+          ]
+        },
+        "declaredKind": {
+          "description": "Additive: what a declared edge stands for, as its declaration names it (`http`, `queue`):\n`edges.yaml`'s `kind`, or `http` for an edge an OpenAPI document declares.",
+          "type": [
+            "string",
             "null"
           ]
         },
@@ -584,7 +641,8 @@
         "attribute",
         "generic-argument",
         "typeof",
-        "call"
+        "call",
+        "declared"
       ],
       "type": "string"
     },
@@ -844,6 +902,30 @@
       "required": [
         "extension",
         "available"
+      ],
+      "type": "object"
+    },
+    "FleetReceipt": {
+      "additionalProperties": false,
+      "description": "`summary.fleet`: how many repositories a `fleet` run cruised and what each one's own run\nfound, by the name the manifest gives it.",
+      "properties": {
+        "perRepo": {
+          "additionalProperties": {
+            "$ref": "#/definitions/RepoReceipt"
+          },
+          "description": "Each repository's run, by manifest name.",
+          "type": "object"
+        },
+        "repos": {
+          "description": "The repositories cruised.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "repos",
+        "perRepo"
       ],
       "type": "object"
     },
@@ -1428,6 +1510,67 @@
       ],
       "type": "object"
     },
+    "OpenApiReceipt": {
+      "additionalProperties": false,
+      "description": "One OpenAPI client and server pair of `edges.yaml`.",
+      "properties": {
+        "client": {
+          "description": "The client folder, as `edges.yaml` names it.",
+          "type": "string"
+        },
+        "edges": {
+          "description": "The edges the pair declared.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "operations": {
+          "description": "The operations the server document lists.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "reason": {
+          "description": "Why the pair declared no edge, when it declared none.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "server": {
+          "description": "The server's OpenAPI document, as `edges.yaml` names it.",
+          "type": "string"
+        },
+        "uncalled": {
+          "description": "The operations with an id and a handler that no client file names.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "withoutHandler": {
+          "description": "The operations with an id whose handler the document does not record.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "withoutOperationId": {
+          "description": "The operations without an `operationId`: none of them can declare an edge.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "client",
+        "server",
+        "operations",
+        "withoutOperationId",
+        "withoutHandler",
+        "uncalled",
+        "edges"
+      ],
+      "type": "object"
+    },
     "Protocol": {
       "enum": [
         "data:",
@@ -1663,6 +1806,95 @@
       ],
       "type": "object"
     },
+    "RepoReceipt": {
+      "additionalProperties": false,
+      "description": "One repository's own run in a `fleet`: where it is, what it read and what its own rules\nfound.",
+      "properties": {
+        "cache": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CacheSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Whether the repository's extraction came from its own cache."
+        },
+        "config": {
+          "description": "The configuration file the manifest names, relative to the repository; absent when the\nrun looked for one.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dependencies": {
+          "description": "Dependencies in the repository's graph.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "error": {
+          "description": "Error-severity violations of the repository's own rules.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "info": {
+          "description": "Info-severity violations of the repository's own rules.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "inspected": {
+          "additionalProperties": false,
+          "description": "The repository run's own receipt: files and modules per language.",
+          "properties": {
+            "dotnet": {
+              "$ref": "#/definitions/Receipt"
+            },
+            "javascript": {
+              "$ref": "#/definitions/Receipt"
+            },
+            "python": {
+              "$ref": "#/definitions/Receipt"
+            },
+            "typescript": {
+              "$ref": "#/definitions/Receipt"
+            }
+          },
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "modules": {
+          "description": "Modules in the repository's graph.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "The repository's folder, as the manifest names it.",
+          "type": "string"
+        },
+        "warn": {
+          "description": "Warn-severity violations of the repository's own rules.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "modules",
+        "dependencies",
+        "error",
+        "warn",
+        "info"
+      ],
+      "type": "object"
+    },
     "RevisionData": {
       "additionalProperties": true,
       "description": "`revisionData`, the cache key. The upstream schema allows extra keys here, so they are kept.",
@@ -1752,6 +1984,30 @@
       ],
       "type": "object"
     },
+    "SkippedEdge": {
+      "additionalProperties": false,
+      "description": "A declared edge that was not added to the graph.",
+      "properties": {
+        "from": {
+          "description": "The declared `from`.",
+          "type": "string"
+        },
+        "reason": {
+          "description": "Why it was not added.",
+          "type": "string"
+        },
+        "to": {
+          "description": "The declared `to`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "reason"
+      ],
+      "type": "object"
+    },
     "Summary": {
       "additionalProperties": false,
       "description": "`summary`: violations, counts, the options and rule set used, the environment, plus the\nadditive receipt and vacuous-rule list.",
@@ -1777,6 +2033,17 @@
             }
           ],
           "description": "Additive: whether the extraction came from the `--cache` entry, and how its freshness was\nchecked; absent when the run did not use the cache\n([Wave 3 § 1.7](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes))."
+        },
+        "declared": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/DeclaredReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Additive: the declared edges a `fleet` run added, by source, and the ones it could not\nadd, with the reason ([plan 0004, Step 12](../../../docs/plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges))."
         },
         "environment": {
           "anyOf": [
@@ -1804,6 +2071,17 @@
             "array",
             "null"
           ]
+        },
+        "fleet": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/FleetReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Additive: the repositories a `fleet` run cruised, each with its own run's counts\n([plan 0004, Step 11](../../../docs/plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges))."
         },
         "ignore": {
           "description": "Ignore-severity violations.",

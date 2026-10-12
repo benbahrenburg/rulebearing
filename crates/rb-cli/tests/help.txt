@@ -6,6 +6,8 @@ Usage: rulebearing [OPTIONS]
 Commands:
   cruise      Extract, evaluate and report: dependency-cruiser's `depcruise`
   fmt         Re-report a saved result without extracting: dependency-cruiser's `depcruise-fmt`
+  fleet       One run, one report across sibling repositories: each with its own rules and cache,
+              and fleet-wide rules over their union, joined by the edges edges.yaml declares
   rules       Every rule, its family, severity and statistics
   explain     One rule: its sentence, its violations and the edges it matched
   test        Run each rule's examples against a synthetic graph

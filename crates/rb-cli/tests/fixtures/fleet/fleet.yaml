@@ -1,0 +1,26 @@
+# The workspace manifest of the fleet fixture (plan 0004, Step 11; ADR-0078).
+repos:
+  - { name: web,      path: web,      config: rulebearing.yaml }
+  - { name: api,      path: api,      config: rulebearing.yaml }
+  - { name: pipeline, path: pipeline, config: architecture.yaml }
+rules:
+  dependencies:
+    forbidden:
+      - name: web-only-through-endpoints
+        severity: error
+        comment: "The web app calls the api through its endpoints only. plan:fleet-fixture"
+        fix: "Call the endpoint the api exposes, through the generated client."
+        from: { path: "^web/" }
+        to: { path: "^api/", pathNot: "/Shop[.]Web/" }
+      - name: web-never-reaches-pipeline
+        severity: error
+        comment: "plan:fleet-fixture"
+        fix: "Go through the api, which hands work to the pipeline's queue."
+        from: { path: "^web/" }
+        to: { path: "^pipeline/" }
+      - name: api-hands-orders-to-the-worker
+        severity: warn
+        comment: "Cross-language: nothing imports the worker, so this matches nothing until an edge from the api to it is declared. plan:fleet-fixture"
+        fix: "Keep the hand-off on the queue the edges file declares."
+        from: { path: "^api/" }
+        to: { path: "^pipeline/pipeline/worker[.]py$" }

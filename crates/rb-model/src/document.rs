@@ -258,9 +258,19 @@ pub struct Dependency {
     /// ([ADR-0017](../../../docs/adr/0017-coffeescript-livescript-sidecar.md)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sidecar: Option<bool>,
-    /// Additive: the edge was declared rather than detected (wave 4).
+    /// Additive: the edge was declared rather than detected, in `edges.yaml` or by an OpenAPI
+    /// document ([ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md),
+    /// [plan 0004, Step 12](../../../docs/plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub declared: Option<bool>,
+    /// Additive: what a declared edge stands for, as its declaration names it (`http`, `queue`):
+    /// `edges.yaml`'s `kind`, or `http` for an edge an OpenAPI document declares.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub declared_kind: Option<String>,
+    /// Additive: why a declared edge exists: `edges.yaml`'s `comment`, or the operation and the
+    /// document for an edge an OpenAPI document declares.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
     /// Additive: the edge was read from source by `--mode source`, resolved through namespaces
     /// and `using` directives rather than by a compiler, so it is namespace-level and never the
     /// gate ([ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)).
@@ -304,6 +314,8 @@ impl Dependency {
             member: None,
             sidecar: None,
             declared: None,
+            declared_kind: None,
+            comment: None,
             approximate: None,
         }
     }
@@ -501,6 +513,106 @@ pub struct Summary {
     /// the repository root ([Wave 3 plan § 1.5](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#15-interfaces-and-contracts-this-wave-freezes)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub plugins: Option<Vec<String>>,
+    /// Additive: the repositories a `fleet` run cruised, each with its own run's counts
+    /// ([plan 0004, Step 11](../../../docs/plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fleet: Option<FleetReceipt>,
+    /// Additive: the declared edges a `fleet` run added, by source, and the ones it could not
+    /// add, with the reason ([plan 0004, Step 12](../../../docs/plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub declared: Option<DeclaredReceipt>,
+}
+
+/// `summary.fleet`: how many repositories a `fleet` run cruised and what each one's own run
+/// found, by the name the manifest gives it.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct FleetReceipt {
+    /// The repositories cruised.
+    pub repos: u64,
+    /// Each repository's run, by manifest name.
+    pub per_repo: BTreeMap<String, RepoReceipt>,
+}
+
+/// One repository's own run in a `fleet`: where it is, what it read and what its own rules
+/// found.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct RepoReceipt {
+    /// The repository's folder, as the manifest names it.
+    pub path: String,
+    /// The configuration file the manifest names, relative to the repository; absent when the
+    /// run looked for one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub config: Option<String>,
+    /// Modules in the repository's graph.
+    pub modules: u64,
+    /// Dependencies in the repository's graph.
+    pub dependencies: u64,
+    /// Error-severity violations of the repository's own rules.
+    pub error: u64,
+    /// Warn-severity violations of the repository's own rules.
+    pub warn: u64,
+    /// Info-severity violations of the repository's own rules.
+    pub info: u64,
+    /// The repository run's own receipt: files and modules per language.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub inspected: Option<Inspected>,
+    /// Whether the repository's extraction came from its own cache.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cache: Option<CacheSummary>,
+}
+
+/// `summary.declared`: the declared edges added, by source, and the ones not added.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct DeclaredReceipt {
+    /// Edges added from `edges.yaml`'s `declared` list.
+    pub edges_yaml: u64,
+    /// Edges added from the OpenAPI documents `edges.yaml` names.
+    pub openapi: u64,
+    /// Declared edges that were not added, each with the reason.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub skipped: Option<Vec<SkippedEdge>>,
+    /// Each OpenAPI client and server pair: what it declared, and why it declared nothing when
+    /// it did not.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub openapi_sources: Option<Vec<OpenApiReceipt>>,
+}
+
+/// A declared edge that was not added to the graph.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SkippedEdge {
+    /// The declared `from`.
+    pub from: String,
+    /// The declared `to`.
+    pub to: String,
+    /// Why it was not added.
+    pub reason: String,
+}
+
+/// One OpenAPI client and server pair of `edges.yaml`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct OpenApiReceipt {
+    /// The client folder, as `edges.yaml` names it.
+    pub client: String,
+    /// The server's OpenAPI document, as `edges.yaml` names it.
+    pub server: String,
+    /// The operations the server document lists.
+    pub operations: u64,
+    /// The operations without an `operationId`: none of them can declare an edge.
+    pub without_operation_id: u64,
+    /// The operations with an id whose handler the document does not record.
+    pub without_handler: u64,
+    /// The operations with an id and a handler that no client file names.
+    pub uncalled: u64,
+    /// The edges the pair declared.
+    pub edges: u64,
+    /// Why the pair declared no edge, when it declared none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
 }
 
 /// `summary.sidecar`: the tool that extracted the CoffeeScript and LiveScript files, its version,
@@ -1208,6 +1320,90 @@ mod tests {
             back.plugins.as_deref(),
             Some(&["reporters/stats.mjs".to_owned()][..])
         );
+    }
+
+    #[test]
+    fn a_declared_edge_carries_its_marks_under_their_contract_names() {
+        let plain =
+            serde_json::to_value(Dependency::new("x", "x", ModuleSystem::Es6)).unwrap_or_default();
+        for key in ["declared", "declaredKind", "comment"] {
+            assert!(plain.get(key).is_none(), "{key} absent on a detected edge");
+        }
+        let declared = Dependency {
+            declared: Some(true),
+            declared_kind: Some("http".into()),
+            comment: Some("OrdersClient calls POST /orders".into()),
+            dependency_kind: Some(DependencyKind::Declared),
+            ..Dependency::new("x", "x", ModuleSystem::Es6)
+        };
+        let value = serde_json::to_value(&declared).unwrap_or_default();
+        assert_eq!(value["declared"], serde_json::json!(true));
+        assert_eq!(value["declaredKind"], serde_json::json!("http"));
+        assert_eq!(
+            value["comment"],
+            serde_json::json!("OrdersClient calls POST /orders")
+        );
+        assert_eq!(value["dependencyKind"], serde_json::json!("declared"));
+        let back: Dependency = serde_json::from_value(value).unwrap_or_else(|_| plain_dep());
+        assert_eq!(back, declared);
+    }
+
+    fn plain_dep() -> Dependency {
+        Dependency::new("", "", ModuleSystem::Es6)
+    }
+
+    #[test]
+    fn the_fleet_and_declared_receipts_have_their_contract_shape() {
+        let mut summary = Summary::default();
+        let plain = serde_json::to_value(&summary).unwrap_or_default();
+        assert!(plain.get("fleet").is_none() && plain.get("declared").is_none());
+        summary.fleet = Some(FleetReceipt {
+            repos: 1,
+            per_repo: BTreeMap::from([(
+                "web".to_owned(),
+                RepoReceipt {
+                    path: "../web".into(),
+                    modules: 2,
+                    dependencies: 1,
+                    error: 1,
+                    ..RepoReceipt::default()
+                },
+            )]),
+        });
+        summary.declared = Some(DeclaredReceipt {
+            edges_yaml: 1,
+            openapi: 0,
+            skipped: Some(vec![SkippedEdge {
+                from: "a".into(),
+                to: "b".into(),
+                reason: "gone".into(),
+            }]),
+            openapi_sources: Some(vec![OpenApiReceipt {
+                client: "web/gen/".into(),
+                server: "api/openapi.json".into(),
+                operations: 2,
+                without_operation_id: 2,
+                reason: Some("no ids".into()),
+                ..OpenApiReceipt::default()
+            }]),
+        });
+        let value = serde_json::to_value(&summary).unwrap_or_default();
+        assert_eq!(
+            value["fleet"],
+            serde_json::json!({ "repos": 1, "perRepo": { "web": {
+                "path": "../web", "modules": 2, "dependencies": 1, "error": 1, "warn": 0, "info": 0
+            } } })
+        );
+        assert_eq!(
+            value["declared"],
+            serde_json::json!({ "edgesYaml": 1, "openapi": 0,
+                "skipped": [{ "from": "a", "to": "b", "reason": "gone" }],
+                "openapiSources": [{ "client": "web/gen/", "server": "api/openapi.json",
+                    "operations": 2, "withoutOperationId": 2, "withoutHandler": 0, "uncalled": 0,
+                    "edges": 0, "reason": "no ids" }] })
+        );
+        let back: Summary = serde_json::from_value(value).unwrap_or_default();
+        assert_eq!(back, summary);
     }
 
     #[test]

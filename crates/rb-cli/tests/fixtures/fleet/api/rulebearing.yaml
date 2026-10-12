@@ -1,0 +1,9 @@
+rules:
+  dependencies:
+    forbidden:
+      - name: domain-depends-on-nothing-above
+        severity: error
+        comment: "plan:fleet-fixture"
+        fix: "Move what the domain needs into Shop.Domain."
+        from: { path: "/Shop[.]Domain/" }
+        to: { path: "/Shop[.](Application|Infrastructure|Web)/" }

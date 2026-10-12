@@ -178,6 +178,7 @@ fn dispatch(ctx: &mut Context<'_>, command: Command) -> Outcome {
     match command {
         Command::Cruise(a) => cmd::cruise::run(ctx, &a),
         Command::Fmt(a) => cmd::fmt::run(ctx, &a),
+        Command::Fleet(a) => cmd::fleet::run(ctx, &a),
         Command::Rules(a) => cmd::rules::run(ctx, &a),
         Command::Explain(a) => cmd::explain::run(ctx, &a),
         Command::Test(a) => cmd::test_rules::run(ctx, &a),

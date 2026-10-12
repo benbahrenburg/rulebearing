@@ -152,13 +152,15 @@ Fixed by [ADR-0004](adr/0004-graph-document-is-cruise-result-superset.md) and [A
 | module | `project`, `namespaces[]` | the `.csproj` or package that owns the file; the namespaces it declares |
 | module | `attribution` | `pdb`, `inferred`, `none` (.NET only) |
 | dependency | `line`, `column` | from the AST span, PDB sequence point or Python node |
-| dependency | `dependencyKind` | `import`, `inherits`, `implements`, `field`, `signature`, `body`, `attribute`, `generic-argument`, `typeof`, `call` |
+| dependency | `dependencyKind` | `import`, `inherits`, `implements`, `field`, `signature`, `body`, `attribute`, `generic-argument`, `typeof`, `call`, `declared` |
 | dependency | `member` | the member reference that formed the edge (`TodoItemsController.Get calls ApplicationDbContext.SaveChanges`) |
 | dependency | `sidecar`, `declared` | edge produced by the Node sidecar; edge declared rather than detected (wave 4) |
+| dependency | `declaredKind`, `comment` | what a declared edge stands for (`http`, `queue`) and why it exists ([ADR-0078](adr/0078-fleet-and-declared-edges.md)) |
 | violation | `id` | `RB-` plus eight hex characters of SHA-256 over rule, from, to, dependencyKind |
 | violation | `fix`, `decision` | the rule's `fix` text and the decision token parsed from `comment` |
 | summary | `inspected` | counts of files, assemblies and modules per language: the receipt |
 | summary | `vacuousRules[]` | rules whose selection was empty |
+| summary | `fleet`, `declared` | a `fleet` run's repositories with each one's own counts, and its declared edges by source ([ADR-0078](adr/0078-fleet-and-declared-edges.md)) |
 | top level | `code` | `types[]`, `members[]`, `attributes[]`, `calls[]`, each with `language`, `file`, `line`, `column`, and the properties the element predicates read (visibility, `sealed`, `abstract`, `static`, `readonly`, `record`, `virtual`, base types, interfaces, attribute arguments, return type, accessors) |
 
 `--strict-schema` strips every addition and the result validates against the pinned 18.2.0 schema. The superset schema is generated from `rb-model` with `schemars`, committed under `schema/`, and served at `https://benbahrenburg.github.io/rulebearing/schema/v1.json`.

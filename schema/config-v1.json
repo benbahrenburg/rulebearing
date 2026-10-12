@@ -184,7 +184,8 @@
         "attribute",
         "generic-argument",
         "typeof",
-        "call"
+        "call",
+        "declared"
       ],
       "type": "string"
     },

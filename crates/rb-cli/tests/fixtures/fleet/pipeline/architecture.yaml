@@ -1,0 +1,12 @@
+rules:
+  dependencies:
+    forbidden:
+      - name: jobs-do-not-start-the-worker
+        severity: error
+        comment: "plan:fleet-fixture"
+        fix: "Let the worker call the jobs, not the other way round."
+        from: { path: "^pipeline/jobs[.]py$" }
+        to: { path: "^pipeline/worker[.]py$" }
+options:
+  # Its own cache folder, which a fleet run keeps.
+  cache: .graph/pipeline-cache

@@ -573,7 +573,7 @@ pub struct DependencyRulesSchema {
 /// Rebuilds every object with its keys sorted, so the output does not depend on whether a
 /// dependency enabled `serde_json`'s `preserve_order` (feature unification differs between
 /// `cargo test -p rb-config` and `cargo test --workspace`).
-fn sorted(value: Value) -> Value {
+pub(crate) fn sorted(value: Value) -> Value {
     match value {
         Value::Object(map) => {
             let mut entries: Vec<(String, Value)> = map.into_iter().collect();

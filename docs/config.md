@@ -139,6 +139,56 @@ options:
 
 `--cache`, `--cache-strategy` and `--no-cache` replace it for one run.
 
+## Fleets and declared edges
+
+`rulebearing fleet` ([cli.md](cli.md#fleets-and-declared-edges)) reads two files beside each other ([ADR-0078](adr/0078-fleet-and-declared-edges.md); [plan 0004 § 1.6](plans/pending/0004-wave-4-reach.md#16-interfaces-and-contracts-this-wave-freezes)). Their schemas are [`schema/fleet-v1.json`](../schema/fleet-v1.json) and [`schema/edges-v1.json`](../schema/edges-v1.json).
+
+`fleet.yaml` names the repositories and the fleet-wide rules:
+
+```yaml
+repos:
+  - { name: web,      path: ../web,      config: rulebearing.yaml }
+  - { name: api,      path: ../api,      config: rulebearing.yaml }
+  - { name: pipeline, path: ../pipeline }
+rules:
+  dependencies:
+    forbidden:
+      - name: web-never-reaches-pipeline
+        comment: "adr:0021"
+        from: { path: "^web/" }
+        to:   { path: "^pipeline/" }
+```
+
+| Key | Meaning |
+| --- | --- |
+| `repos[].name` | the prefix of the repository's module paths: letters, digits, `.`, `_` and `-`, unique |
+| `repos[].path` | the repository's folder, relative to the manifest |
+| `repos[].config` | its configuration, relative to the repository; without it, the one `cruise` would find |
+| `rules` | the native format's `rules`, over the prefixed paths: `dependencies`, `layers` and `independence`. Element, slice and diagram rules and ratchets belong in a repository's own configuration and are refused (exit 3) |
+
+`edges.yaml` declares the edges no extractor can see, such as an HTTP call or a queue between two services ([ADR-0014](adr/0014-no-invented-cross-language-edges.md)):
+
+```yaml
+declared:
+  - from: web/src/api/client.ts
+    to: api/src/Web/Endpoints/Orders.cs
+    kind: http
+    comment: "OrdersClient calls POST /orders. adr:0007"
+openapi:
+  - client: web/src/api/generated/
+    server: api/openapi.json
+```
+
+Paths are the union's module paths, prefixed with the repository's name. Each `declared` entry becomes one dependency of its `from` module with `declared: true`, `dependencyKind: declared`, `declaredKind` (the `kind`) and `comment`.
+
+An `openapi` pair declares an edge for each operation the server document records both an `operationId` and a handler for, from each module under `client` whose code layer declares a function, class or member named exactly as the `operationId` (a generated client declares one per operation), to the handler. The handler is the operation's `x-rulebearing-handler` extension, a file path relative to the repository the document is in:
+
+```json
+"/orders": { "post": { "operationId": "createOrder", "x-rulebearing-handler": "src/Web/Endpoints/Orders.cs" } }
+```
+
+Nothing is guessed: an operation without an `operationId`, or without a handler, or that no client module declares, declares no edge, and `summary.declared.openapiSources[]` counts each case and says why when a pair declares nothing. When a server framework cannot write the extension, declare the edges in `declared` instead.
+
 ## Rule metadata
 
 Every rule, in either format, may carry these fields dependency-cruiser does not have. They are what `explain`, `err-long` and the `agent` reporter print ([design § Rule metadata](artifacts/design.md#rule-metadata-that-says-what-to-do)).

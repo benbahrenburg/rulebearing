@@ -1,0 +1,1244 @@
+{
+  "$defs": {
+    "DependencyKind": {
+      "enum": [
+        "import",
+        "inherits",
+        "implements",
+        "field",
+        "signature",
+        "body",
+        "attribute",
+        "generic-argument",
+        "typeof",
+        "call",
+        "declared"
+      ],
+      "type": "string"
+    },
+    "DependencyRulesSchema": {
+      "additionalProperties": false,
+      "description": "`rules.dependencies`.",
+      "properties": {
+        "allowed": {
+          "default": null,
+          "description": "The only edges that may exist.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "allowedSeverity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Severity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The severity of an edge outside `allowed`. Default `warn`."
+        },
+        "forbidden": {
+          "default": null,
+          "description": "Edges that must not exist.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "required": {
+          "default": null,
+          "description": "Edges that must exist.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "DependencyType": {
+      "enum": [
+        "aliased-subpath-import",
+        "aliased-tsconfig-base-url",
+        "aliased-tsconfig-paths",
+        "aliased-tsconfig",
+        "aliased-webpack",
+        "aliased-workspace",
+        "aliased",
+        "amd-define",
+        "amd-require",
+        "amd-exotic-require",
+        "core",
+        "deprecated",
+        "dynamic-import",
+        "exotic-require",
+        "export",
+        "import-equals",
+        "import",
+        "jsdoc",
+        "jsdoc-bracket-import",
+        "jsdoc-import-tag",
+        "local",
+        "localmodule",
+        "npm-bundled",
+        "npm-dev",
+        "npm-no-pkg",
+        "npm-optional",
+        "npm-peer",
+        "npm-unknown",
+        "npm",
+        "pre-compilation-only",
+        "process-get-builtin-module",
+        "require",
+        "triple-slash-amd-dependency",
+        "triple-slash-directive",
+        "triple-slash-file-reference",
+        "triple-slash-type-reference",
+        "type-import",
+        "type-only",
+        "undetermined",
+        "unknown",
+        "project",
+        "package",
+        "framework",
+        "test-only",
+        "signature-only",
+        "unresolved",
+        "stdlib",
+        "site",
+        "dynamic"
+      ],
+      "type": "string"
+    },
+    "Examples": {
+      "additionalProperties": false,
+      "description": "`examples`: `\"from -> to\"` strings.",
+      "properties": {
+        "allowed": {
+          "description": "Edges the rule must allow.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "forbidden": {
+          "description": "Edges the rule must flag.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "FleetRepo": {
+      "additionalProperties": false,
+      "description": "One repository of a fleet.",
+      "properties": {
+        "config": {
+          "description": "Its configuration file, relative to the repository; without it, the run looks for one\nas `cruise` does.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name its module paths are prefixed with: letters, digits, `.`, `_` and `-`, unique in\nthe manifest.",
+          "type": "string"
+        },
+        "path": {
+          "description": "The repository's folder, relative to the manifest.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "path"
+      ],
+      "type": "object"
+    },
+    "FleetRules": {
+      "additionalProperties": false,
+      "description": "`rules` in a fleet manifest: the keys a fleet evaluates, for the schema.",
+      "properties": {
+        "dependencies": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DependencyRulesSchema"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "dependency-cruiser's rule set, over the prefixed paths."
+        },
+        "independence": {
+          "default": null,
+          "description": "Independence contracts, expanded to one `$1` fence each.",
+          "items": {
+            "$ref": "#/$defs/IndependenceShorthand"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "layers": {
+          "default": null,
+          "description": "Layer models, expanded to one `forbidden` rule per lower-to-higher pair.",
+          "items": {
+            "$ref": "#/$defs/LayersShorthand"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "FromRestriction": {
+      "description": "`from`.",
+      "properties": {
+        "assembly": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the .NET assembly name must\nmatch (`CleanArchitecture.Web`, not the file name): the `assembly` of the types the code\nlayer declares in the module's file."
+        },
+        "assemblyNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the assembly name must not\nmatch; a module the code layer places no type in does not match."
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OneOrMany_Language"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. The languages the module must be in\n(`typescript`, `javascript`, `dotnet`, `python`), one or a list; compared with the\nmodule's `language`."
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns, any of which one of the\nmodule's `namespaces[]` must match (.NET namespaces; Python dotted module names)."
+        },
+        "namespaceNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns none of the module's\n`namespaces[]` may match; a module without `namespaces` does not match."
+        },
+        "orphan": {
+          "description": "Match modules with no edges in or out.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Paths the source must match."
+        },
+        "pathNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Paths the source must not match."
+        },
+        "project": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the module's `project` must\nmatch: the `.csproj` (or loaded assembly) path for .NET, the top-level package for Python."
+        },
+        "projectNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the module's `project` must\nnot match; a module without `project` does not match."
+        }
+      },
+      "type": "object"
+    },
+    "GraphFilter": {
+      "additionalProperties": false,
+      "description": "`graph` on a rule: the edges and modules taken out of the graph the rule sees\n([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)).",
+      "properties": {
+        "chainsThrough": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "On a reachability rule, a chain continues only from a module whose path matches; the\nchain's start and end need not match."
+        },
+        "dependencyTypesNot": {
+          "description": "Every edge carrying any of these dependency types is removed (`[type-only]`: imports under\n`if TYPE_CHECKING:`). Unlike `to.dependencyTypesNot`, this cuts chains too.",
+          "items": {
+            "$ref": "#/$defs/DependencyType"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "ignore": {
+          "description": "Edges removed, each `{ from, to }`: an edge whose importer's path matches `from` and whose\nresolved target matches `to` (a side left out matches every edge). An entry that matches\nno edge of the graph makes the rule vacuous unless the rule has `allowEmpty`:\nimport-linter's unmatched-ignore alerting.",
+          "items": {
+            "$ref": "#/$defs/IgnoredEdges"
+          },
+          "type": "array"
+        },
+        "modulesNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Modules whose path matches lose every edge from or to them."
+        },
+        "redirect": {
+          "description": "Imports led to another module, each `{ to, into }`: an edge whose resolved target matches\n`to` leads to the module `into` in the rule's graph, before the other keys apply, and an\nedge a redirect leads back to its importer is removed. grimp's attribution of an import of\na module it does not walk to the root package that holds it\n([ADR-0051](../../../docs/adr/0051-a-rule-redirects-the-imports-it-sees.md)).",
+          "items": {
+            "$ref": "#/$defs/RedirectedImports"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "IgnoredEdges": {
+      "additionalProperties": false,
+      "description": "One `graph.ignore` entry.",
+      "properties": {
+        "from": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Paths the importing module must match."
+        },
+        "to": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Paths (or, for a module outside the repository, names) the edge's resolved target must\nmatch."
+        }
+      },
+      "type": "object"
+    },
+    "IndependenceShorthand": {
+      "additionalProperties": false,
+      "description": "`rules.independence[]`: one `$1` fence\n([design § Shorthands](../../../docs/artifacts/design.md#shorthands)).",
+      "properties": {
+        "allowEmpty": {
+          "description": "Opt out of liveness.",
+          "type": "boolean"
+        },
+        "comment": {
+          "description": "Why the modules are independent.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deprecated": {
+          "description": "The release it was deprecated in; it is still evaluated\n([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fix": {
+          "description": "The fix.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "graph": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GraphFilter"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What the expanded rule takes out of its graph\n([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md))."
+        },
+        "name": {
+          "description": "The rule name.",
+          "type": "string"
+        },
+        "pattern": {
+          "description": "A path pattern with exactly one capturing group naming the module, for example\n`^apps/web/src/features/([^/]+)/`.",
+          "type": "string"
+        },
+        "replacedBy": {
+          "description": "The rule, shorthand or ratchet that takes over; `config lint` checks it exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Severity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Severity. Default `error`."
+        },
+        "since": {
+          "description": "The release it arrived in ([`crate::version`]); informational.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "pattern"
+      ],
+      "type": "object"
+    },
+    "Language": {
+      "enum": [
+        "typescript",
+        "javascript",
+        "dotnet",
+        "python"
+      ],
+      "type": "string"
+    },
+    "LayersShorthand": {
+      "additionalProperties": false,
+      "description": "`rules.layers[]`: one `forbidden` rule per lower-to-higher pair\n([design § Shorthands](../../../docs/artifacts/design.md#shorthands)).",
+      "properties": {
+        "allowEmpty": {
+          "description": "Opt out of liveness for every expanded rule.",
+          "type": "boolean"
+        },
+        "comment": {
+          "description": "Why the layering exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deprecated": {
+          "description": "The release it was deprecated in; it is still evaluated\n([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fix": {
+          "description": "The fix shared by every expanded rule.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "graph": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GraphFilter"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What each expanded rule takes out of its graph, copied to every one\n([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md))."
+        },
+        "layers": {
+          "description": "Path patterns from the highest layer to the lowest; a lower layer may not depend on a\nhigher one.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "The rule name; each expanded rule is `<name>:<lower>-to-<higher>`.",
+          "type": "string"
+        },
+        "replacedBy": {
+          "description": "The rule, shorthand or ratchet that takes over; `config lint` checks it exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Severity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Severity of every expanded rule. Default `error`."
+        },
+        "since": {
+          "description": "The release it arrived in ([`crate::version`]); informational.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "layers"
+      ],
+      "type": "object"
+    },
+    "ModuleRestriction": {
+      "description": "`module`: the restriction of a dependents rule or a required rule.",
+      "properties": {
+        "numberOfDependentsLessThan": {
+          "description": "Match modules with fewer matching dependents than this.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "numberOfDependentsMoreThan": {
+          "description": "Match modules with more matching dependents than this.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Modules to match."
+        },
+        "pathNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Modules not to match."
+        }
+      },
+      "type": "object"
+    },
+    "OneOrMany_DependencyKind": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DependencyKind"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/DependencyKind"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      ]
+    },
+    "OneOrMany_Language": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Language"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/Language"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      ]
+    },
+    "Patterns": {
+      "anyOf": [
+        {
+          "description": "A single expression.",
+          "type": "string"
+        },
+        {
+          "description": "Several expressions, matched as an alternation.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      ],
+      "description": "One regular expression or several, dependency-cruiser's `REAsStringsType`."
+    },
+    "RedirectedImports": {
+      "additionalProperties": false,
+      "description": "One `graph.redirect` entry.",
+      "properties": {
+        "into": {
+          "description": "The module path the edge leads to instead, as the document writes `source`.",
+          "type": "string"
+        },
+        "to": {
+          "$ref": "#/$defs/Patterns",
+          "description": "Paths the edge's resolved target must match."
+        }
+      },
+      "required": [
+        "to",
+        "into"
+      ],
+      "type": "object"
+    },
+    "Rule": {
+      "description": "One dependency rule, in dependency-cruiser's shape plus the native metadata.",
+      "properties": {
+        "allowEmpty": {
+          "description": "Opt out of liveness ([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
+          "type": "boolean"
+        },
+        "comment": {
+          "description": "Why the rule exists; carries the decision token.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deprecated": {
+          "description": "The release the rule was deprecated in; the rule is still evaluated and still live\n([ADR-0007](../../../docs/adr/0007-vacuous-rules-fail-by-default.md)).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "examples": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Examples"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Edges that must pass and edges that must fail; `rulebearing test` runs them."
+        },
+        "expires": {
+          "description": "The last day the rule applies; the run fails the day after.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fix": {
+          "description": "The imperative to follow when the rule fires.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "from": {
+          "$ref": "#/$defs/FromRestriction",
+          "default": {},
+          "description": "The selecting side of a dependency rule."
+        },
+        "graph": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GraphFilter"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only\n([ADR-0038](../../../docs/adr/0038-a-rule-narrows-the-graph-it-sees.md)). What to take out\nof the graph before this rule is evaluated: its direct edges and every chain it follows\nsee the rest. On `forbidden` rules only."
+        },
+        "module": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModuleRestriction"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The module restriction of a dependents or required rule."
+        },
+        "name": {
+          "description": "The rule name. Default `unnamed`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "owner": {
+          "description": "Who answers for the rule.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "replacedBy": {
+          "description": "The rule that takes over from this one; `config lint` checks it exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scope": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Scope"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "`module`, `folder` or `project`. Default `module`."
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Severity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "`error`, `warn`, `info` or `ignore`. Default `warn`."
+        },
+        "since": {
+          "description": "The release the rule arrived in ([`crate::version`]); informational.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "to": {
+          "$ref": "#/$defs/ToRestriction",
+          "default": {},
+          "description": "The target side."
+        }
+      },
+      "type": "object"
+    },
+    "Scope": {
+      "description": "`scope`: module, folder, or (an addition) project.",
+      "oneOf": [
+        {
+          "const": "module",
+          "description": "The default: the rule compares modules.",
+          "type": "string"
+        },
+        {
+          "const": "folder",
+          "description": "The rule compares folders.",
+          "type": "string"
+        },
+        {
+          "const": "project",
+          "description": "The rule compares projects: the `.csproj` or package each module belongs to, aggregated\nas folders are ([ADR-0066](../../../docs/adr/0066-project-scope-and-the-project-layer.md)).\nA native configuration's addition.",
+          "type": "string"
+        }
+      ]
+    },
+    "Severity": {
+      "enum": [
+        "ignore",
+        "info",
+        "warn",
+        "error"
+      ],
+      "type": "string"
+    },
+    "ToRestriction": {
+      "description": "`to`: every restriction dependency-cruiser 18.2.0 defines.",
+      "properties": {
+        "ancestor": {
+          "description": "Match targets in a folder above the source.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "assembly": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the .NET assembly name must\nmatch (`CleanArchitecture.Web`, not the file name): the `assembly` of the types the code\nlayer declares in the module's file."
+        },
+        "assemblyNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the assembly name must not\nmatch; a module the code layer places no type in does not match."
+        },
+        "circular": {
+          "description": "Match edges on a cycle.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "couldNotResolve": {
+          "description": "Match unresolvable targets.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "dependencyKind": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OneOrMany_DependencyKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. The kinds of reference, any of which\nthe edge's `dependencyKind` must be (`import`, `inherits`, `implements`, `field`,\n`signature`, `body`, `attribute`, `generic-argument`, `typeof`, `call`), one or a list.\nA property of the edge, so it sits on `to` only."
+        },
+        "dependencyKindNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OneOrMany_DependencyKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. The kinds of reference the edge's\n`dependencyKind` may not be; an edge without `dependencyKind` does not match."
+        },
+        "dependencyTypes": {
+          "description": "Dependency types, any of which matches.",
+          "items": {
+            "$ref": "#/$defs/DependencyType"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "dependencyTypesNot": {
+          "description": "Dependency types, none of which may be present.",
+          "items": {
+            "$ref": "#/$defs/DependencyType"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "dynamic": {
+          "description": "Match `import()` edges.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "exoticRequire": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The exotic require names to match."
+        },
+        "exoticRequireNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The exotic require names not to match."
+        },
+        "exoticallyRequired": {
+          "description": "Match edges formed by an exotic require.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OneOrMany_Language"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. The languages the module must be in\n(`typescript`, `javascript`, `dotnet`, `python`), one or a list; compared with the\nmodule's `language`."
+        },
+        "license": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Licences to match (wave 2)."
+        },
+        "licenseNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Licences not to match (wave 2)."
+        },
+        "moreThanOneDependencyType": {
+          "description": "Match edges whose target is depended on in more than one way.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "moreUnstable": {
+          "description": "Match targets more unstable than the source (needs `metrics`, wave 2).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns, any of which one of the\nmodule's `namespaces[]` must match (.NET namespaces; Python dotted module names)."
+        },
+        "namespaceNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns none of the module's\n`namespaces[]` may match; a module without `namespaces` does not match."
+        },
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Paths the target must match; `$0` to `$9` substitute captures from `from.path`."
+        },
+        "pathNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Paths the target must not match."
+        },
+        "preCompilationOnly": {
+          "description": "Match edges that disappear after compilation.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "project": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the module's `project` must\nmatch: the `.csproj` (or loaded assembly) path for .NET, the top-level package for Python."
+        },
+        "projectNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rulebearing addition, native configurations only. Patterns the module's `project` must\nnot match; a module without `project` does not match."
+        },
+        "reachable": {
+          "description": "Reachability: match modules the `from` modules reach (or do not reach).",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "via": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ViaRestriction"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Cycle members, some of which match."
+        },
+        "viaNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Shorthand for `viaOnly.pathNot`."
+        },
+        "viaOnly": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ViaRestriction"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Cycle members, all of which match."
+        },
+        "viaSomeNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Shorthand for `via.pathNot`."
+        }
+      },
+      "type": "object"
+    },
+    "ViaObject": {
+      "description": "The object form of `via`.",
+      "properties": {
+        "dependencyTypes": {
+          "description": "Dependency types a step must have.",
+          "items": {
+            "$ref": "#/$defs/DependencyType"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "dependencyTypesNot": {
+          "description": "Dependency types a step must not have.",
+          "items": {
+            "$ref": "#/$defs/DependencyType"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Cycle members to match."
+        },
+        "pathNot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patterns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Cycle members not to match."
+        }
+      },
+      "type": "object"
+    },
+    "ViaRestriction": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Patterns",
+          "description": "`via: \"pattern\"` or `via: [\"a\", \"b\"]`."
+        },
+        {
+          "$ref": "#/$defs/ViaObject",
+          "description": "`via: { path, pathNot, dependencyTypes, dependencyTypesNot }`."
+        }
+      ],
+      "description": "`via` and `viaOnly`: the pattern form or the object form."
+    }
+  },
+  "$id": "https://benbahrenburg.github.io/rulebearing/schema/fleet-v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "`fleet.yaml`.",
+  "properties": {
+    "$schema": {
+      "description": "The schema this file is written against.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "repos": {
+      "description": "The repositories, each cruised with its own configuration and cache.",
+      "items": {
+        "$ref": "#/$defs/FleetRepo"
+      },
+      "type": "array"
+    },
+    "rules": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FleetRules"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The fleet-wide rules, in the native format's `rules` shape, over module paths prefixed\nwith each repository's name and `/` (`web/src/app.ts`)."
+    }
+  },
+  "required": [
+    "repos"
+  ],
+  "title": "Rulebearing fleet manifest",
+  "type": "object"
+}

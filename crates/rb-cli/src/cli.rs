@@ -65,6 +65,9 @@ pub enum Command {
     Cruise(Box<CruiseArgs>),
     /// Re-report a saved result without extracting: dependency-cruiser's `depcruise-fmt`.
     Fmt(FmtArgs),
+    /// One run, one report across sibling repositories: each with its own rules and cache, and
+    /// fleet-wide rules over their union, joined by the edges edges.yaml declares
+    Fleet(Box<crate::cmd::fleet::FleetArgs>),
     /// Every rule, its family, severity and statistics
     Rules(crate::cmd::rules::RulesArgs),
     /// One rule: its sentence, its violations and the edges it matched
