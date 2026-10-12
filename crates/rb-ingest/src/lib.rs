@@ -6,12 +6,17 @@
 //!   [ADR-0003](../../../docs/adr/0003-dotnet-extractor-fallback.md)
 //! - Plans: [Wave 1](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md) (`fmt --from dependency-cruiser`),
 //!   [Wave 2](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md) (importers)
-//! - Requirements: [FR-CLI-01](../../../docs/prd.md#fr-cli-01), [FR-CLI-04](../../../docs/prd.md#fr-cli-04)
+//!   [Plan 0004, Step 12](../../../docs/plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges)
+//!   (declared edges; [ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md))
+//! - Requirements: [FR-CLI-01](../../../docs/prd.md#fr-cli-01), [FR-CLI-04](../../../docs/prd.md#fr-cli-04),
+//!   [FR-REACH-03](../../../docs/prd.md#fr-reach-03)
 //!
 //! | Module | Reads |
 //! | --- | --- |
 //! | [`dependency_cruiser`] | a result dependency-cruiser wrote (`fmt --from dependency-cruiser`) |
+//! | [`declared`] | `edges.yaml` and the OpenAPI documents it names, into edges marked `declared` |
 
+pub mod declared;
 pub mod dependency_cruiser;
 
 use rb_model::GraphDocument;

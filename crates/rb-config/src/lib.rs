@@ -19,6 +19,7 @@
 //! | [`js`] | the sandboxed QuickJS evaluator and `--config-via-node` |
 //! | [`native`] | the native shape onto dependency-cruiser's and back |
 //! | [`extends`] | `extends` resolution and dependency-cruiser's merge |
+//! | [`fleet`] | `fleet.yaml`: the repositories of a fleet and its rules; `schema/fleet-v1.json` |
 //! | [`packages`] | a package `extends` names, in the NuGet global packages folder and `site-packages` |
 //! | [`defines`] | `defines` and `${name}` substitution |
 //! | [`shorthands`] | `layers` and `independence` |
@@ -36,6 +37,7 @@ pub mod convert;
 pub mod defines;
 pub mod elements;
 pub mod extends;
+pub mod fleet;
 pub mod js;
 pub mod lint;
 pub mod load;

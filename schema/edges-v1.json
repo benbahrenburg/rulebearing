@@ -1,0 +1,87 @@
+{
+  "$id": "https://benbahrenburg.github.io/rulebearing/schema/edges-v1.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "definitions": {
+    "DeclaredEdge": {
+      "additionalProperties": false,
+      "description": "One edge declared by hand.",
+      "properties": {
+        "comment": {
+          "description": "Why the edge exists; a decision token (`adr:0007`) makes it citable.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "from": {
+          "description": "The module the edge leaves, as the graph names it (in a `fleet`, prefixed with the\nrepository's name: `web/src/api/client.ts`).",
+          "type": "string"
+        },
+        "kind": {
+          "description": "What the edge stands for: `http`, `queue`, or any word the team uses.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "to": {
+          "description": "The module the edge reaches, as the graph names it.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "OpenApiPair": {
+      "additionalProperties": false,
+      "description": "One OpenAPI client folder and the server document it calls.",
+      "properties": {
+        "client": {
+          "description": "The folder of the generated client, as the graph names it (`web/src/api/generated/`):\nonly its modules are read for operation ids.",
+          "type": "string"
+        },
+        "server": {
+          "description": "The server's OpenAPI document (JSON or YAML), as the graph names its path\n(`api/openapi.json`).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "client",
+        "server"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "`edges.yaml`: the edges declared by hand, and the OpenAPI client and server pairs whose\noperations declare more.",
+  "properties": {
+    "$schema": {
+      "description": "The schema this file is written against.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "declared": {
+      "default": [],
+      "description": "Edges declared one by one.",
+      "items": {
+        "$ref": "#/definitions/DeclaredEdge"
+      },
+      "type": "array"
+    },
+    "openapi": {
+      "default": [],
+      "description": "OpenAPI client folders and the server documents their operations are matched against.",
+      "items": {
+        "$ref": "#/definitions/OpenApiPair"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Rulebearing declared edges",
+  "type": "object"
+}

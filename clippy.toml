@@ -14,6 +14,7 @@ doc-valid-idents = [
     "MSBuild",
     "NetArchTest",
     "NuGet",
+    "OpenAPI",
     "PnP",
     "PyPI",
     "QuickJS",
