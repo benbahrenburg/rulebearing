@@ -141,7 +141,7 @@ options:
 
 ## Fleets and declared edges
 
-`rulebearing fleet` ([cli.md](cli.md#fleets-and-declared-edges)) reads two files beside each other ([ADR-0076](adr/0076-fleet-and-declared-edges.md); [plan 0004 § 1.6](plans/pending/0004-wave-4-reach.md#16-interfaces-and-contracts-this-wave-freezes)). Their schemas are [`schema/fleet-v1.json`](../schema/fleet-v1.json) and [`schema/edges-v1.json`](../schema/edges-v1.json).
+`rulebearing fleet` ([cli.md](cli.md#fleets-and-declared-edges)) reads two files beside each other ([ADR-0077](adr/0077-fleet-and-declared-edges.md); [plan 0004 § 1.6](plans/pending/0004-wave-4-reach.md#16-interfaces-and-contracts-this-wave-freezes)). Their schemas are [`schema/fleet-v1.json`](../schema/fleet-v1.json) and [`schema/edges-v1.json`](../schema/edges-v1.json).
 
 `fleet.yaml` names the repositories and the fleet-wide rules:
 

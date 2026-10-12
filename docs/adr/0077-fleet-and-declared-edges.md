@@ -1,4 +1,4 @@
-# ADR-0076: `fleet` cruises each repository as it is and evaluates the union; declared edges attach there, and an OpenAPI operation declares an edge only through the handler its document records
+# ADR-0077: `fleet` cruises each repository as it is and evaluates the union; declared edges attach there, and an OpenAPI operation declares an edge only through the handler its document records
 
 - **Status:** Proposed (2026-10-11)
 - **Date:** 2026-10-11

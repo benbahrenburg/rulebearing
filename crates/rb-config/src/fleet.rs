@@ -4,7 +4,7 @@
 //! - Architecture: [Configuration and the rule language](../../../docs/architecture.md#configuration-and-the-rule-language)
 //! - Decisions: [ADR-0005](../../../docs/adr/0005-native-config-superset-and-compat.md) (the
 //!   fleet rules are the native format's `rules`),
-//!   [ADR-0076](../../../docs/adr/0076-fleet-and-declared-edges.md) (what a fleet rule may be)
+//!   [ADR-0077](../../../docs/adr/0077-fleet-and-declared-edges.md) (what a fleet rule may be)
 //! - Plan: [plan 0004, Step 11](../../../docs/plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges),
 //!   [§ 1.6](../../../docs/plans/pending/0004-wave-4-reach.md#16-interfaces-and-contracts-this-wave-freezes)
 //!   (the frozen `fleet.yaml`)

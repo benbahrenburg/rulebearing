@@ -4,7 +4,7 @@
 //!
 //! - Source: [design § The architect's hat](../../../../docs/artifacts/design.md#the-architects-hat-across-repos-and-across-time)
 //! - Architecture: [The graph document](../../../../docs/architecture.md#the-graph-document)
-//! - Decisions: [ADR-0076](../../../../docs/adr/0076-fleet-and-declared-edges.md) (what a fleet
+//! - Decisions: [ADR-0077](../../../../docs/adr/0077-fleet-and-declared-edges.md) (what a fleet
 //!   run does, in order), [ADR-0014](../../../../docs/adr/0014-no-invented-cross-language-edges.md)
 //!   (declared edges are marked, never inferred),
 //!   [ADR-0010](../../../../docs/adr/0010-crate-layout-and-extractor-boundary.md) (`rb-rules`
@@ -391,7 +391,7 @@ fn cruise_all(
 }
 
 /// The cruise arguments for one repository: `-T json`, its configuration, and its cache as
-/// ADR-0076 lays it out.
+/// ADR-0077 lays it out.
 pub fn repo_args(args: &FleetArgs, repo: &FleetRepo, configured: Option<&str>) -> CruiseArgs {
     let mut cruise = CruiseArgs {
         config: ConfigArgs {

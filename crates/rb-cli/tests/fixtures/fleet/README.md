@@ -1,6 +1,6 @@
 # fleet fixture
 
-Three sibling repositories and the manifest that joins them, for `rulebearing fleet` and declared edges ([plan 0004, Steps 11 and 12](../../../../../docs/plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges); [ADR-0076](../../../../../docs/adr/0076-fleet-and-declared-edges.md)). It is this repository's own code, under its MIT licence.
+Three sibling repositories and the manifest that joins them, for `rulebearing fleet` and declared edges ([plan 0004, Steps 11 and 12](../../../../../docs/plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges); [ADR-0077](../../../../../docs/adr/0077-fleet-and-declared-edges.md)). It is this repository's own code, under its MIT licence.
 
 | Path | What it is |
 | --- | --- |

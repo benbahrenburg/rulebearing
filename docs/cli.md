@@ -250,7 +250,7 @@ A result without its marks could gate later, so `cruise` and `fmt` also refuse t
 
 ## Fleets and declared edges
 
-`rulebearing fleet [fleet.yaml]` runs over a workspace manifest of sibling repositories ([config.md](config.md#fleets-and-declared-edges) has both file formats; [ADR-0076](adr/0076-fleet-and-declared-edges.md) the decisions; [plan 0004, Steps 11 and 12](plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges)). In order:
+`rulebearing fleet [fleet.yaml]` runs over a workspace manifest of sibling repositories ([config.md](config.md#fleets-and-declared-edges) has both file formats; [ADR-0077](adr/0077-fleet-and-declared-edges.md) the decisions; [plan 0004, Steps 11 and 12](plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges)). In order:
 
 1. Each repository is cruised in its own folder with its own configuration (the manifest's `config`, or the one `cruise` would find) and its own cache: the configuration's `options.cache` when it sets one, else `--cache` at the default folder. `--no-cache` turns every repository's cache off; `--cache-strategy` sets how each finds what changed. Repositories run in parallel. A missing folder, or a repository whose own run exits 2 or 3, stops the fleet with that code and the repository named.
 2. Every module path is prefixed with the repository's `name` and `/` (`web/src/app.ts`); module identity inside a repository is unchanged, so its rules and cache are reused as they are. A core module and an unresolved specifier keep their names.

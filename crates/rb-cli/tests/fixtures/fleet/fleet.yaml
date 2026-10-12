@@ -1,4 +1,4 @@
-# The workspace manifest of the fleet fixture (plan 0004, Step 11; ADR-0076).
+# The workspace manifest of the fleet fixture (plan 0004, Step 11; ADR-0077).
 repos:
   - { name: web,      path: web,      config: rulebearing.yaml }
   - { name: api,      path: api,      config: rulebearing.yaml }
