@@ -1,0 +1,4 @@
+
+ERROR: The cruise result didn't contain any metrics - re-running the cruise with
+       the '--metrics' command line option should fix that.
+

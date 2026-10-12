@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>dependency-cruiser output</title>
+  <style media="screen">
+    html {
+      font-family: sans-serif;
+      font-size: 10pt;
+    }
+
+    table {
+      overflow: hidden;
+    }
+
+    table,
+    td.controls {
+      transition-duration: 0.3s;
+    }
+
+    table,
+    th,
+    td {
+      border: solid black 1px;
+      border-collapse: collapse;
+      font-size: inherit;
+    }
+
+    td,
+    th {
+      position: relative;
+    }
+
+    th {
+      text-align: start;
+      vertical-align: bottom;
+      max-width: 1em;
+      max-height: 30em;
+      height: 20em;
+      font-weight: normal;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    th div {
+      transform: rotateZ(-90deg);
+      transform-origin: 0.5em;
+      text-align: start;
+      height: 1em;
+      width: 30em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    td {
+      text-align: center;
+    }
+
+    td.first-cell {
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    td.top-left {
+      border-top: solid 1px transparent;
+      border-left: solid 1px transparent;
+    }
+
+    td.top-right {
+      border-top: solid 1px transparent;
+      border-right: solid 1px transparent;
+    }
+
+    td.bottom-left {
+      border-bottom: solid 1px transparent;
+      border-left: solid 1px transparent;
+    }
+
+    td.bottom-right {
+      border-bottom: solid 1px transparent;
+      border-right: solid 1px transparent;
+    }
+
+    tbody tr:hover {
+      background-color: lightgrey;
+    }
+
+    td:hover::after,
+    td:focus::after,
+    th:hover::after,
+    th:focus::after {
+      background-color: #00000077;
+      content: "";
+      height: 5000px;
+      left: 0;
+      position: absolute;
+      top: -2500px;
+      width: 100%;
+      z-index: -1;
+    }
+
+    #table-rotated:target {
+      transform: rotateZ(45deg);
+      transform-origin: bottom left;
+    }
+
+    #table-rotated:target #unrotate {
+      opacity: 1;
+    }
+
+    #table-rotated:target #rotate {
+      opacity: 0;
+    }
+
+    #unrotate {
+      opacity: 0;
+    }
+
+    #rotate {
+      opacity: 1;
+    }
+
+    .controls {
+      opacity: 0.2;
+      vertical-align: bottom;
+      padding: 0.5em;
+    }
+
+    .controls:hover {
+      opacity: 1;
+    }
+
+    .controls a {
+      font-style: normal;
+      text-decoration: none;
+      background-color: #eee;
+      padding: 0.2em 0.5em 0.2em 0.5em;
+    }
+
+    .cell-core-module {
+      color: grey;
+      font-style: italic;
+    }
+
+    .cell-unresolvable-module {
+      color: red;
+      font-style: italic;
+    }
+
+    .cell-true {
+      background-color: black;
+      opacity: 0.5;
+    }
+
+    .cell-false {
+      background-color: white;
+      opacity: 0.5;
+    }
+
+    .cell-error {
+      background-color: red;
+      opacity: 0.5;
+    }
+
+    .cell-warn {
+      background-color: orange;
+      opacity: 0.5;
+    }
+
+    .cell-info {
+      background-color: blue;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+
+<body>
+  
+  <table id="table-rotated">
+    <thead>
+      <tr>
+        <td class="controls top-left">
+          <a id="rotate" href="#table-rotated">rotate</a>
+          <a id="unrotate" href="#">rotate back</a>
+        </td>
+        <th><div>api/src/Orders.cs</div></th><th><div>api/src/Store.cs</div></th><th><div>pipeline/worker.py</div></th><th><div>web/src/api/client.ts</div></th><th><div>web/src/app.ts</div></th><th><div>web/src/legacy.ts</div></th><th><div>web/src/util.ts</div></th>
+        <td class="top-right"></td>
+      </tr>
+    </thead>
+    <tbody>
+    
+      <tr>
+        <td class="first-cell">api/src/Orders.cs</td>
+        <td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-warn" title="api-hands-to-worker:
+api/src/Orders.cs -> pipeline/worker.py"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td>
+        <td class="first-cell">api/src/Orders.cs</td>
+      </tr>
+      <tr>
+        <td class="first-cell">api/src/Store.cs</td>
+        <td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td>
+        <td class="first-cell">api/src/Store.cs</td>
+      </tr>
+      <tr>
+        <td class="first-cell">pipeline/worker.py</td>
+        <td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-true" title="pipeline/worker.py -> web/src/app.ts"></td><td class="cell cell-false"></td><td class="cell cell-false"></td>
+        <td class="first-cell">pipeline/worker.py</td>
+      </tr>
+      <tr>
+        <td class="first-cell">web/src/api/client.ts</td>
+        <td class="cell cell-true" title="web/src/api/client.ts -> api/src/Orders.cs"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-true" title="web/src/api/client.ts -> web/src/util.ts"></td>
+        <td class="first-cell">web/src/api/client.ts</td>
+      </tr>
+      <tr>
+        <td class="first-cell">web/src/app.ts</td>
+        <td class="cell cell-error" title="web-only-through-endpoints:
+web/src/app.ts -> api/src/Orders.cs"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-true" title="web/src/app.ts -> web/src/api/client.ts"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td>
+        <td class="first-cell">web/src/app.ts</td>
+      </tr>
+      <tr>
+        <td class="first-cell">web/src/legacy.ts</td>
+        <td class="cell cell-false"></td><td class="cell cell-error" title="web-only-through-endpoints:
+web/src/legacy.ts -> api/src/Store.cs"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td>
+        <td class="first-cell">web/src/legacy.ts</td>
+      </tr>
+      <tr>
+        <td class="first-cell">web/src/util.ts</td>
+        <td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td><td class="cell cell-false"></td>
+        <td class="first-cell">web/src/util.ts</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td class="bottom-left"></td>
+        <th><div>api/src/Orders.cs</div></th><th><div>api/src/Store.cs</div></th><th><div>pipeline/worker.py</div></th><th><div>web/src/api/client.ts</div></th><th><div>web/src/app.ts</div></th><th><div>web/src/legacy.ts</div></th><th><div>web/src/util.ts</div></th>
+        <td class="bottom-right"></td>
+      </tr>
+    </tfoot>
+  </table>
+
+</body>
+</html>

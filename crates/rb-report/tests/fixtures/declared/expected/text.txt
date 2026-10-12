@@ -1,0 +1,8 @@
+api/src/Orders.cs → pipeline/worker.py (declared: queue)
+pipeline/worker.py → web/src/app.ts (declared: webhook)
+web/src/api/client.ts → api/src/Orders.cs (declared: http)
+web/src/api/client.ts → web/src/util.ts
+web/src/app.ts → api/src/Orders.cs (declared: http)
+web/src/app.ts → web/src/api/client.ts
+web/src/legacy.ts → api/src/Store.cs
+web/src/legacy.ts → api/src/Store.cs (declared: http)

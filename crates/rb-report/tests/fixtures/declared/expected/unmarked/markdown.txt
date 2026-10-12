@@ -1,0 +1,33 @@
+## Forbidden dependency check - results
+
+### :chart_with_upwards_trend: Summary
+
+**7** modules&nbsp;&nbsp;&nbsp;&nbsp;**9** dependencies&nbsp;&nbsp;&nbsp;&nbsp;**3** errors&nbsp;&nbsp;&nbsp;&nbsp;**2** warnings&nbsp;&nbsp;&nbsp;&nbsp;**0** informational&nbsp;&nbsp;&nbsp;&nbsp;**0** ignored
+
+
+|rule|violations|ignored|explanation
+|:---|:---:|:---:|:---|
+|:exclamation:&nbsp;_web-only-through-endpoints_|**2**|**0**|The web app calls the api through its endpoints only. plan:fleet-fixture|
+|:warning:&nbsp;_api-hands-to-worker_|**1**|**0**|The api hands orders to the worker through the queue only. adr:0078|
+|:warning:&nbsp;_no-circular_|**1**|**0**|No cycles across the services.|
+|:exclamation:&nbsp;_web-never-reaches-pipeline_|**1**|**0**|The web app never reaches the pipeline.|
+
+
+### :fire: All violations
+
+<details><summary>Violations found - click to expand</summary>
+
+|violated rule|module|to|
+|:---|:---|:---|
+|:warning:&nbsp;_api-hands-to-worker_|api/src/Orders.cs|pipeline/worker.py|
+|:warning:&nbsp;_no-circular_|api/src/Orders.cs|pipeline/worker.py &rightarrow;<br/>web/src/app.ts &rightarrow;<br/>api/src/Orders.cs|
+|:exclamation:&nbsp;_web-only-through-endpoints_|web/src/app.ts|api/src/Orders.cs|
+|:exclamation:&nbsp;_web-never-reaches-pipeline_|web/src/app.ts|pipeline/worker.py<br/>api/src/Orders.cs &rightarrow;<br/>pipeline/worker.py|
+|:exclamation:&nbsp;_web-only-through-endpoints_|web/src/legacy.ts|api/src/Store.cs|
+
+
+</details>
+
+---
+[dependency-cruiser@18.2.0](https://www.github.com/sverweij/dependency-cruiser) / 2026-10-12T00:00:00.000Z
+

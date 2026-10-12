@@ -19,6 +19,14 @@
 //! `approximate: true`
 //! ([Wave 3 § 1.4](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#the-inner-loop-on-a-large-net-solution),
 //! [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)).
+//!
+//! A finding on a declared edge carries `declared: true` and `declaredKind` beside its
+//! `dependencyKind` ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md),
+//! [`crate::declared`]). A rule found by name in `summary.ruleSetUsed` gives its group its `fix`
+//! and decision. `not-in-allowed` names the `allowed` list, whose entries have no name: its group
+//! takes the `fix` and decision of its cheapest violation, each of which carries the text of the
+//! entry that applies to it, and a finding whose own `fix` differs carries it
+//! ([reporters.md § `allowed` and `fix`](../../../docs/reporters.md#allowed-and-fix)).
 
 use std::collections::HashMap;
 
@@ -301,6 +309,100 @@ mod tests {
         assert!(
             report.get("approximate").is_none(),
             "compiled mode has no header"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn not_in_allowed_takes_the_fix_its_violations_carry() -> Result<(), serde_json::Error> {
+        let result = json!({
+            "modules": [
+                { "source": "a", "dependencies": [{ "resolved": "x" }] },
+                { "source": "b", "dependencies": [{ "resolved": "x" }, { "resolved": "y" }] }
+            ],
+            "summary": {
+                "error": 3,
+                "violations": [
+                    { "type": "dependency", "from": "b", "to": "y", "rule": { "name": "not-in-allowed", "severity": "error" },
+                      "fix": "B imports only z.", "decision": "adr:0002" },
+                    { "type": "dependency", "from": "a", "to": "x", "rule": { "name": "not-in-allowed", "severity": "error" },
+                      "fix": "A imports only y.", "decision": "adr:0001" },
+                    { "type": "dependency", "from": "b", "to": "x", "rule": { "name": "not-in-allowed", "severity": "error" },
+                      "fix": "B imports only z.", "decision": "adr:0002" },
+                    { "type": "dependency", "from": "a", "to": "y", "rule": { "name": "named", "severity": "error" },
+                      "fix": "Its own." }
+                ],
+                "ruleSetUsed": {
+                    "forbidden": [{ "name": "named", "fix": "The rule's.", "comment": "adr:0009" }],
+                    "allowed": [{ "from": {}, "to": { "path": "z" }, "fix": "B imports only z." }]
+                }
+            }
+        });
+        let report: Value = serde_json::from_str(&render(&result, DEFAULT_MAX_FINDINGS).output)?;
+        let allowed = &report["rules"][1];
+        assert_eq!(allowed["name"], "not-in-allowed");
+        assert_eq!(
+            allowed["fix"], "B imports only z.",
+            "the cheapest violation's"
+        );
+        assert_eq!(allowed["decision"], "adr:0002");
+        let findings = allowed["violations"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default();
+        let own: Vec<(&str, Option<&str>)> = findings
+            .iter()
+            .map(|f| (f["from"].as_str().unwrap_or_default(), f["fix"].as_str()))
+            .collect();
+        assert_eq!(
+            own,
+            [("b", None), ("a", Some("A imports only y.")), ("b", None)],
+            "only a finding whose fix differs carries its own"
+        );
+        let named = &report["rules"][0];
+        assert_eq!(named["fix"], "The rule's.", "a named rule gives its own");
+        assert_eq!(named["decision"], "adr:0009");
+        assert_eq!(named["violations"][0]["fix"], "Its own.");
+        let bare = json!({ "summary": { "violations": [
+            { "type": "dependency", "from": "a", "to": "x", "rule": { "name": "not-in-allowed", "severity": "error" } }
+        ] } });
+        let report: Value = serde_json::from_str(&render(&bare, DEFAULT_MAX_FINDINGS).output)?;
+        assert_eq!(report["rules"][0]["fix"], Value::Null);
+        assert_eq!(report["rules"][0]["decision"], Value::Null);
+        assert!(report["rules"][0]["violations"][0].get("fix").is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn a_finding_on_a_declared_edge_says_so() -> Result<(), serde_json::Error> {
+        let result = json!({
+            "modules": [{ "source": "a", "dependencies": [
+                { "resolved": "b", "dependencyKind": "declared", "declared": true, "declaredKind": "http" },
+                { "resolved": "c", "dependencyKind": "declared", "declared": true }
+            ] }],
+            "summary": { "violations": [
+                { "type": "dependency", "from": "a", "to": "b", "rule": { "name": "r", "severity": "error" } },
+                { "type": "dependency", "from": "a", "to": "c", "rule": { "name": "r", "severity": "error" } },
+                { "type": "cycle", "from": "a", "to": "b", "cycle": [{ "name": "b" }, { "name": "a" }], "rule": { "name": "s", "severity": "error" } }
+            ] }
+        });
+        let report: Value = serde_json::from_str(&render(&result, DEFAULT_MAX_FINDINGS).output)?;
+        let r = &report["rules"].as_array().cloned().unwrap_or_default();
+        let found = |rule: &str, to: &str| -> Value {
+            r.iter()
+                .filter(|g| g["name"] == rule)
+                .flat_map(|g| g["violations"].as_array().cloned().unwrap_or_default())
+                .find(|f| f["to"] == to)
+                .unwrap_or_default()
+        };
+        assert_eq!(found("r", "b")["declared"], true);
+        assert_eq!(found("r", "b")["declaredKind"], "http");
+        assert_eq!(found("r", "b")["dependencyKind"], "declared");
+        assert_eq!(found("r", "c")["declared"], true);
+        assert!(found("r", "c").get("declaredKind").is_none(), "no kind");
+        assert!(
+            found("s", "b").get("declared").is_none(),
+            "a cycle is not one edge"
         );
         Ok(())
     }

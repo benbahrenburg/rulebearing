@@ -86,6 +86,18 @@ pub fn list<'a>(result: &'a Value, key: &str) -> Vec<&'a Value> {
         .unwrap_or_default()
 }
 
+/// The `fix` of the `allowed` list as a whole: each entry's `fix` once, in order, joined by a
+/// space; `None` when no entry has one.
+fn allowed_fix(entries: &[Value]) -> Option<String> {
+    let mut fixes: Vec<String> = Vec::new();
+    for fix in entries.iter().filter_map(|entry| string(entry, "fix")) {
+        if !fixes.contains(&fix) {
+            fixes.push(fix);
+        }
+    }
+    (!fixes.is_empty()).then(|| fixes.join(" "))
+}
+
 /// Every rule of the run, in the order the module documentation gives.
 pub fn rules(result: &Value) -> Vec<CatalogRule> {
     let mut out: Vec<CatalogRule> = Vec::new();
@@ -119,10 +131,10 @@ pub fn rules(result: &Value) -> Vec<CatalogRule> {
             family: "allowed".into(),
             severity,
             comment: string(first, "comment"),
-            // The rule set's text: the first entry with a `fix`, as the engine gives a violation
-            // no entry applying to its module has a `fix` for (each violation carries the text
-            // of the entry that applies, which [`fix_of`] prefers).
-            fix: allowed.iter().find_map(|entry| string(entry, "fix")),
+            // The list's text: each entry's `fix` once, in order, joined by a space, as the engine
+            // gives a violation that no entry selecting its module has a `fix` for (a violation
+            // carries the text of the entry that applies, which [`fix_of`] prefers).
+            fix: allowed_fix(&allowed),
         });
     }
     for key in ["required", "elements", "slices", "diagrams"] {
@@ -307,7 +319,7 @@ pub const SHOWN: usize = 5;
 pub struct Case {
     /// The rule, or the expired known violation, the case is for.
     pub rule: CatalogRule,
-    /// A failure: its message (the `fix`, then the first violations) and every violation, one
+    /// A failure: its message (the `fix`, each distinct one once, then the first violations) and every violation, one
     /// per line. Only error-severity findings fail a case, as only they fail the gate.
     pub failure: Option<(String, String)>,
     /// Errors: the rule could not be trusted (vacuous, expired, a ratchet without a budget), as
@@ -396,11 +408,19 @@ pub fn cases(result: &Value) -> Vec<Case> {
                     .push(format!("{}: {}", crate::severity(v), describe(result, v)));
             }
             if !errors.is_empty() {
-                let fix = found
-                    .first()
-                    .and_then(|v| fix_of(v, &case.rule))
-                    .unwrap_or_else(|| format!("{} violation(s) of `{name}`", errors.len()));
-                let mut message = fix;
+                // Each distinct `fix` of the case's violations, in their order: one for a rule,
+                // one per `allowed` entry that applies for `not-in-allowed`.
+                let mut fixes: Vec<String> = Vec::new();
+                for fix in found.iter().filter_map(|v| fix_of(v, &case.rule)) {
+                    if !fixes.contains(&fix) {
+                        fixes.push(fix);
+                    }
+                }
+                let mut message = if fixes.is_empty() {
+                    format!("{} violation(s) of `{name}`", errors.len())
+                } else {
+                    fixes.join("\n")
+                };
                 for line in errors.iter().take(SHOWN) {
                     message.push('\n');
                     message.push_str(line);
@@ -508,6 +528,7 @@ pub fn xml(text: &str, attribute: bool) -> String {
 
 #[cfg(test)]
 mod tests {
+    use super::rules as rules_of;
     use super::*;
     use serde_json::json;
 
@@ -563,6 +584,21 @@ mod tests {
         assert_eq!(rules[0].comment.as_deref(), Some("c"));
         assert_eq!(rules[2].fix.as_deref(), Some("Use one."));
         assert_eq!(rules[8].comment.as_deref(), Some("z"));
+        let mut listed = result();
+        listed["summary"]["ruleSetUsed"]["allowed"] = json!([
+            { "from": {}, "to": {}, "comment": "first" },
+            { "from": {}, "to": {}, "fix": "Use one." },
+            { "from": {}, "to": {}, "fix": "Or the other." },
+            { "from": {}, "to": {}, "fix": "Use one." }
+        ]);
+        let allowed = &rules_of(&listed)[2];
+        assert_eq!(
+            (allowed.comment.as_deref(), allowed.fix.as_deref()),
+            (Some("first"), Some("Use one. Or the other.")),
+            "the list's fix is each entry's once, in order"
+        );
+        listed["summary"]["ruleSetUsed"]["allowed"] = json!([{ "from": {}, "to": {} }]);
+        assert_eq!(rules_of(&listed)[2].fix, None);
         let mut strict = result();
         strict["summary"]["ruleSetUsed"]["allowedSeverity"] = json!("error");
         assert!(

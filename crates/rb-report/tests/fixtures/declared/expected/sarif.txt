@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "rulebearing",
+          "informationUri": "https://github.com/benbahrenburg/rulebearing",
+          "semanticVersion": "0.1.3",
+          "rules": [
+            {
+              "id": "web-only-through-endpoints",
+              "shortDescription": {
+                "text": "web-only-through-endpoints"
+              },
+              "fullDescription": {
+                "text": "The web app calls the api through its endpoints only. plan:fleet-fixture"
+              },
+              "help": {
+                "text": "The web app calls the api through its endpoints only. plan:fleet-fixture",
+                "markdown": "The web app calls the api through its endpoints only. plan:fleet-fixture\n\n**Fix:** Call the endpoint the api exposes, through the generated client."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "family": "forbidden",
+                "fix": "Call the endpoint the api exposes, through the generated client.",
+                "decision": "plan:fleet-fixture"
+              }
+            },
+            {
+              "id": "api-hands-to-worker",
+              "shortDescription": {
+                "text": "api-hands-to-worker"
+              },
+              "fullDescription": {
+                "text": "The api hands orders to the worker through the queue only. adr:0078"
+              },
+              "help": {
+                "text": "The api hands orders to the worker through the queue only. adr:0078",
+                "markdown": "The api hands orders to the worker through the queue only. adr:0078\n\n**Fix:** Keep the hand-off on the queue the edges file declares."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "family": "forbidden",
+                "fix": "Keep the hand-off on the queue the edges file declares.",
+                "decision": "adr:0078"
+              }
+            },
+            {
+              "id": "no-circular",
+              "shortDescription": {
+                "text": "no-circular"
+              },
+              "fullDescription": {
+                "text": "No cycles across the services."
+              },
+              "help": {
+                "text": "No cycles across the services.",
+                "markdown": "No cycles across the services.\n\n**Fix:** Break the cycle at the callback."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "family": "forbidden",
+                "fix": "Break the cycle at the callback."
+              }
+            },
+            {
+              "id": "web-never-reaches-pipeline",
+              "shortDescription": {
+                "text": "web-never-reaches-pipeline"
+              },
+              "fullDescription": {
+                "text": "The web app never reaches the pipeline."
+              },
+              "help": {
+                "text": "The web app never reaches the pipeline.",
+                "markdown": "The web app never reaches the pipeline.\n\n**Fix:** Go through the api's endpoints."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "family": "forbidden",
+                "fix": "Go through the api's endpoints."
+              }
+            }
+          ]
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "toolConfigurationNotifications": []
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "api-hands-to-worker",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "api-hands-to-worker: api/src/Orders.cs -> pipeline/worker.py (declared: queue). Keep the hand-off on the queue the edges file declares."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "api/src/Orders.cs"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "rulebearing/v1": "RB-0a000001"
+          },
+          "properties": {
+            "to": "pipeline/worker.py",
+            "type": "dependency",
+            "declared": true,
+            "declaredKind": "queue"
+          }
+        },
+        {
+          "ruleId": "no-circular",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "no-circular: api/src/Orders.cs -> pipeline/worker.py. Break the cycle at the callback."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "api/src/Orders.cs"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "rulebearing/v1": "RB-0a000002"
+          },
+          "properties": {
+            "to": "pipeline/worker.py",
+            "type": "cycle"
+          }
+        },
+        {
+          "ruleId": "web-only-through-endpoints",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "web-only-through-endpoints: web/src/app.ts -> api/src/Orders.cs (declared: http). Call the endpoint the api exposes, through the generated client."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "web/src/app.ts"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "rulebearing/v1": "RB-0a000003"
+          },
+          "properties": {
+            "to": "api/src/Orders.cs",
+            "type": "dependency",
+            "declared": true,
+            "declaredKind": "http"
+          }
+        },
+        {
+          "ruleId": "web-never-reaches-pipeline",
+          "ruleIndex": 3,
+          "level": "error",
+          "message": {
+            "text": "web-never-reaches-pipeline: web/src/app.ts -> pipeline/worker.py. Go through the api's endpoints."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "web/src/app.ts"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "rulebearing/v1": "RB-0a000004"
+          },
+          "properties": {
+            "to": "pipeline/worker.py",
+            "type": "reachability"
+          }
+        },
+        {
+          "ruleId": "web-only-through-endpoints",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "web-only-through-endpoints: web/src/legacy.ts -> api/src/Store.cs. Call the endpoint the api exposes, through the generated client."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "web/src/legacy.ts"
+                },
+                "region": {
+                  "startLine": 3,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "rulebearing/v1": "RB-0a000005"
+          },
+          "properties": {
+            "to": "api/src/Store.cs",
+            "type": "dependency"
+          }
+        }
+      ]
+    }
+  ]
+}

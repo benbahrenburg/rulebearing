@@ -1,0 +1,6 @@
+##vso[task.logissue type=warning;sourcepath=api/src/Orders.cs;code=api-hands-to-worker;]api/src/Orders.cs -> pipeline/worker.py (declared: queue)
+##vso[task.logissue type=warning;sourcepath=api/src/Orders.cs;code=no-circular;]api/src/Orders.cs -> pipeline/worker.py (declared: queue) -> web/src/app.ts (declared: webhook) -> api/src/Orders.cs (declared: http)
+##vso[task.logissue type=error;sourcepath=web/src/app.ts;code=web-only-through-endpoints;]web/src/app.ts -> api/src/Orders.cs (declared: http)
+##vso[task.logissue type=error;sourcepath=web/src/app.ts;code=web-never-reaches-pipeline;]web/src/app.ts -> pipeline/worker.py (via api/src/Orders.cs (declared: http) -> pipeline/worker.py (declared: queue))
+##vso[task.logissue type=error;sourcepath=web/src/legacy.ts;code=web-only-through-endpoints;]web/src/legacy.ts -> api/src/Store.cs
+##vso[task.complete result=Failed;]5 dependency violations (3 error, 2 warning/ informational). 7 modules, 9 dependencies cruised

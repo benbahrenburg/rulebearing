@@ -1,0 +1,29 @@
+
+  error web-only-through-endpoints: web/src/legacy.ts → api/src/Store.cs
+    The web app calls the api through its endpoints only. plan:fleet-fixture
+    fix: Call the endpoint the api exposes, through the generated client.
+
+  error web-never-reaches-pipeline: web/src/app.ts → pipeline/worker.py
+      api/src/Orders.cs (declared: http) →
+      pipeline/worker.py (declared: queue)
+    The web app never reaches the pipeline.
+    fix: Go through the api's endpoints.
+
+  error web-only-through-endpoints: web/src/app.ts → api/src/Orders.cs (declared: http)
+    The web app calls the api through its endpoints only. plan:fleet-fixture
+    fix: Call the endpoint the api exposes, through the generated client.
+
+  warn no-circular: api/src/Orders.cs → 
+      pipeline/worker.py (declared: queue) →
+      web/src/app.ts (declared: webhook) →
+      api/src/Orders.cs (declared: http)
+    No cycles across the services.
+    fix: Break the cycle at the callback.
+
+  warn api-hands-to-worker: api/src/Orders.cs → pipeline/worker.py (declared: queue)
+    The api hands orders to the worker through the queue only. adr:0078
+    fix: Keep the hand-off on the queue the edges file declares.
+
+
+x 5 dependency violations (3 errors, 2 warnings). 7 modules, 9 dependencies cruised.
+

@@ -1,0 +1,15 @@
+@startuml
+
+hide stereotype
+
+[api/src] <<^api/src(?:/(?:[^\x2F][^\x2F]*))?$>> as C1
+[pipeline] <<^pipeline(?:/(?:[^\x2F][^\x2F]*))?$>> as C2
+[web/src] <<^web/src(?:/(?:[^\x2Fa][^\x2F]*|a(?:|[^\x2Fp][^\x2F]*|p(?:|[^\x2Fi][^\x2F]*|i(?:[^\x2F][^\x2F]*)))))?$>> as C3
+[web/src/api] <<^web/src/api(?:/(?:[^\x2F][^\x2F]*))?$>> as C4
+C1 --> C2 : declared: queue
+C2 --> C3 : declared: webhook
+C3 --> C1
+C3 --> C4
+C4 --> C3
+C4 --> C1 : declared: http
+@enduml

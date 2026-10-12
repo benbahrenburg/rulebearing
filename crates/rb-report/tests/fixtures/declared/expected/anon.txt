@@ -1,0 +1,348 @@
+{
+  "modules": [
+    {
+      "source": "qgy/src/Ivgrar.cs",
+      "dependencies": [
+        {
+          "module": "ghnmpfxj/bqogry.py",
+          "resolved": "ghnmpfxj/bqogry.py",
+          "coreModule": false,
+          "dependencyTypes": [],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": true,
+          "moduleSystem": "clr",
+          "valid": false,
+          "rules": [
+            {
+              "name": "api-hands-to-worker",
+              "severity": "warn"
+            }
+          ],
+          "cycle": [],
+          "declared": true
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "oya/src/qgy/gffket.ts",
+        "oya/src/oqo.ts"
+      ]
+    },
+    {
+      "source": "qgy/src/Rhexm.cs",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "oya/src/poilah.ts"
+      ]
+    },
+    {
+      "source": "ghnmpfxj/bqogry.py",
+      "dependencies": [
+        {
+          "module": "oya/src/oqo.ts",
+          "resolved": "oya/src/oqo.ts",
+          "coreModule": false,
+          "dependencyTypes": [],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": true,
+          "moduleSystem": "py",
+          "valid": true,
+          "cycle": [],
+          "declared": true
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "qgy/src/Ivgrar.cs"
+      ]
+    },
+    {
+      "source": "oya/src/qgy/gffket.ts",
+      "dependencies": [
+        {
+          "module": "gpnnsJfyrv",
+          "resolved": "qgy/src/Ivgrar.cs",
+          "coreModule": false,
+          "dependencyTypes": [],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "cycle": [],
+          "declared": true
+        },
+        {
+          "module": "../util",
+          "resolved": "oya/src/acby.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "cycle": []
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "oya/src/oqo.ts"
+      ]
+    },
+    {
+      "source": "oya/src/oqo.ts",
+      "dependencies": [
+        {
+          "module": "qgy/src/Ivgrar.cs",
+          "resolved": "qgy/src/Ivgrar.cs",
+          "coreModule": false,
+          "dependencyTypes": [],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": true,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "web-only-through-endpoints",
+              "severity": "error"
+            }
+          ],
+          "cycle": [],
+          "declared": true
+        },
+        {
+          "module": "./qgy/gffket",
+          "resolved": "oya/src/qgy/gffket.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "cycle": []
+        }
+      ],
+      "valid": true,
+      "dependents": [
+        "ghnmpfxj/bqogry.py"
+      ]
+    },
+    {
+      "source": "oya/src/poilah.ts",
+      "dependencies": [
+        {
+          "module": "../../qgy/src/Rhexm.cs",
+          "resolved": "qgy/src/Rhexm.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "web-only-through-endpoints",
+              "severity": "error"
+            }
+          ],
+          "cycle": []
+        },
+        {
+          "module": "qgy/src/Rhexm.cs",
+          "resolved": "qgy/src/Rhexm.cs",
+          "coreModule": false,
+          "dependencyTypes": [],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "web-only-through-endpoints",
+              "severity": "error"
+            }
+          ],
+          "cycle": [],
+          "declared": true
+        }
+      ],
+      "valid": true,
+      "dependents": []
+    },
+    {
+      "source": "oya/src/acby.ts",
+      "dependencies": [],
+      "valid": true,
+      "dependents": [
+        "oya/src/qgy/gffket.ts"
+      ]
+    }
+  ],
+  "summary": {
+    "violations": [
+      {
+        "from": "qgy/src/Ivgrar.cs",
+        "to": "ghnmpfxj/bqogry.py",
+        "dependencyTypes": [],
+        "type": "dependency",
+        "rule": {
+          "name": "api-hands-to-worker",
+          "severity": "warn"
+        },
+        "cycle": []
+      },
+      {
+        "from": "qgy/src/Ivgrar.cs",
+        "to": "ghnmpfxj/bqogry.py",
+        "cycle": [
+          {
+            "name": "ghnmpfxj/bqogry.py",
+            "dependencyTypes": []
+          },
+          {
+            "name": "oya/src/oqo.ts",
+            "dependencyTypes": []
+          },
+          {
+            "name": "qgy/src/Ivgrar.cs",
+            "dependencyTypes": []
+          }
+        ],
+        "type": "cycle",
+        "rule": {
+          "name": "no-circular",
+          "severity": "warn"
+        }
+      },
+      {
+        "from": "oya/src/oqo.ts",
+        "to": "qgy/src/Ivgrar.cs",
+        "dependencyTypes": [],
+        "type": "dependency",
+        "rule": {
+          "name": "web-only-through-endpoints",
+          "severity": "error"
+        },
+        "cycle": []
+      },
+      {
+        "from": "oya/src/oqo.ts",
+        "to": "ghnmpfxj/bqogry.py",
+        "via": [
+          {
+            "name": "qgy/src/Ivgrar.cs",
+            "dependencyTypes": []
+          },
+          {
+            "name": "ghnmpfxj/bqogry.py",
+            "dependencyTypes": []
+          }
+        ],
+        "type": "reachability",
+        "rule": {
+          "name": "web-never-reaches-pipeline",
+          "severity": "error"
+        },
+        "cycle": []
+      },
+      {
+        "from": "oya/src/poilah.ts",
+        "to": "qgy/src/Rhexm.cs",
+        "dependencyTypes": [
+          "local"
+        ],
+        "type": "dependency",
+        "rule": {
+          "name": "web-only-through-endpoints",
+          "severity": "error"
+        },
+        "cycle": []
+      }
+    ],
+    "error": 3,
+    "warn": 2,
+    "info": 0,
+    "ignore": 0,
+    "totalCruised": 7,
+    "totalDependenciesCruised": 9,
+    "ruleSetUsed": {
+      "forbidden": [
+        {
+          "name": "web-only-through-endpoints",
+          "severity": "error",
+          "comment": "The web app calls the api through its endpoints only. plan:fleet-fixture",
+          "to": {
+            "path": "^api/",
+            "pathNot": "Orders[.]cs$"
+          },
+          "from": {
+            "path": "^web/"
+          }
+        },
+        {
+          "name": "api-hands-to-worker",
+          "severity": "warn",
+          "comment": "The api hands orders to the worker through the queue only. adr:0078",
+          "to": {
+            "path": "^pipeline/"
+          },
+          "from": {
+            "path": "^api/"
+          }
+        },
+        {
+          "name": "no-circular",
+          "severity": "warn",
+          "comment": "No cycles across the services.",
+          "to": {
+            "circular": true
+          },
+          "from": {}
+        },
+        {
+          "name": "web-never-reaches-pipeline",
+          "severity": "error",
+          "comment": "The web app never reaches the pipeline.",
+          "to": {
+            "path": "^pipeline/",
+            "reachable": true
+          },
+          "from": {
+            "path": "^web/src/app[.]ts$"
+          }
+        }
+      ]
+    },
+    "optionsUsed": {}
+  }
+}

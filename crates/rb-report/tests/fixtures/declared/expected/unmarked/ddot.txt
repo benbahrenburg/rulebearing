@@ -1,0 +1,16 @@
+strict digraph "dependency-cruiser output"{
+    rankdir="LR" splines="true" overlap="false" nodesep="0.16" ranksep="0.18" fontname="Helvetica-bold" fontsize="9" style="rounded,bold,filled" fillcolor="#ffffff" compound="true"
+    node [shape="box" style="rounded, filled" height="0.2" color="black" fillcolor="#ffffcc" fontcolor="black" fontname="Helvetica" fontsize="9"]
+    edge [arrowhead="normal" arrowsize="0.6" penwidth="2.0" color="#00000033" fontname="Helvetica" fontsize="9"]
+
+    subgraph "cluster_api" {label="api" "api" [width="0.05" shape="point" style="invis"] "api/src" [label=<src> tooltip="src" URL="api/src" shape="box3d"] }
+    "api/src" -> "pipeline" [xlabel="api-hands-to-worker" tooltip="api-hands-to-worker" arrowhead="normalnoneodot" fontcolor="orange" color="orange"]
+    "pipeline" [label=<pipeline> tooltip="pipeline" URL="pipeline" shape="box3d"]
+    "pipeline" -> "web/src" [arrowhead="normalnoneodot"]
+    subgraph "cluster_web" {label="web" "web" [width="0.05" shape="point" style="invis"] "web/src" [label=<src> tooltip="src" URL="web/src" shape="box3d"] }
+    "web/src" -> "api/src" [xlabel="web-only-through-endpoints" tooltip="web-only-through-endpoints" arrowhead="normalnoneodot" fontcolor="red" color="red"]
+    "web/src" -> "web/src/api"
+    subgraph "cluster_web" {label="web" "web" [width="0.05" shape="point" style="invis"] subgraph "cluster_web/src" {label="src" "web/src" [width="0.05" shape="point" style="invis"] "web/src/api" [label=<api> tooltip="api" URL="web/src/api" shape="box3d"] } }
+    "web/src/api" -> "api/src"
+    "web/src/api" -> "web/src"
+}

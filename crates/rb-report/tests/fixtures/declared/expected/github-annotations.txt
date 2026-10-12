@@ -1,0 +1,5 @@
+::warning file=api/src/Orders.cs,title=api-hands-to-worker::api/src/Orders.cs -> pipeline/worker.py (declared: queue): The api hands orders to the worker through the queue only. adr:0078 Fix: Keep the hand-off on the queue the edges file declares.
+::warning file=api/src/Orders.cs,title=no-circular::api/src/Orders.cs -> pipeline/worker.py: No cycles across the services. Fix: Break the cycle at the callback.
+::error file=web/src/app.ts,title=web-only-through-endpoints::web/src/app.ts -> api/src/Orders.cs (declared: http): The web app calls the api through its endpoints only. plan:fleet-fixture Fix: Call the endpoint the api exposes, through the generated client.
+::error file=web/src/app.ts,title=web-never-reaches-pipeline::web/src/app.ts -> pipeline/worker.py: The web app never reaches the pipeline. Fix: Go through the api's endpoints.
+::error file=web/src/legacy.ts,line=3,col=1,title=web-only-through-endpoints::web/src/legacy.ts -> api/src/Store.cs: The web app calls the api through its endpoints only. plan:fleet-fixture Fix: Call the endpoint the api exposes, through the generated client.
