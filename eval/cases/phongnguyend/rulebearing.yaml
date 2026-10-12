@@ -1,0 +1,105 @@
+# The eval harness's configuration for phongnguyend/Practical.CleanArchitecture (plan 0004, Step 10):
+# the rules `rulebearing import archunit` writes from its NetArchTest tests, unchanged, with a `fix`
+# on each. Each case puts one violation in with a patch beside this file.
+# Imported from src/Monolith/ClassifiedAds.ArchTests by `rulebearing import archunit`.
+# Each rule is preceded by the C# chain it came from; a chain that cannot be translated is kept, commented out, with the reason.
+# 5 rule chains read: 5 imported, 0 commented out.
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+# NetArchTest's Types.InAssembly(...) loads the assemblies its tests name
+languages:
+  dotnet:
+    assemblies:
+      - "src/Monolith/ClassifiedAds.Application/bin/**/ClassifiedAds.Application.dll"
+      - "src/Monolith/ClassifiedAds.Domain/bin/**/ClassifiedAds.Domain.dll"
+rules:
+  elements:
+    # Types.InAssembly(typeof(Dispatcher).Assembly)
+    #   .ShouldNot().HaveDependencyOn("ClassifiedAds.Infrastructure")
+    #   .GetResult()   [ApplicationTests.cs:12]
+    - name: application-should-not-have-dependency-on-infrastructure
+      comment: "imported from src/Monolith/ClassifiedAds.ArchTests/ApplicationTests.cs:12"
+      fix: "ClassifiedAds.Application must not depend on any type in the ClassifiedAds.Infrastructure namespace. Declare what the application needs in ClassifiedAds.Application, as an interface or a plain type in an Application namespace, and implement or configure it in ClassifiedAds.Infrastructure."
+      allowEmpty: true
+      select:
+        kind: type
+        language: dotnet
+        where:
+          resideInAssembly: ClassifiedAds.Application
+      should:
+        not:
+          dependOnAny:
+            kind: type
+            where:
+              haveFullNameMatching: "^(?:ClassifiedAds\\.Infrastructure)(?:$|[.+])"
+    # Types.InAssembly(typeof(Dispatcher).Assembly)
+    #   .ShouldNot().HaveDependencyOn("ClassifiedAds.Persistence")
+    #   .GetResult()   [ApplicationTests.cs:23]
+    - name: application-should-not-have-dependency-on-persistence
+      comment: "imported from src/Monolith/ClassifiedAds.ArchTests/ApplicationTests.cs:23"
+      fix: "ClassifiedAds.Application must not depend on any type in the ClassifiedAds.Persistence namespace. Declare what the application needs in ClassifiedAds.Application, as an interface or a plain type in an Application namespace, and implement it in ClassifiedAds.Persistence."
+      allowEmpty: true
+      select:
+        kind: type
+        language: dotnet
+        where:
+          resideInAssembly: ClassifiedAds.Application
+      should:
+        not:
+          dependOnAny:
+            kind: type
+            where:
+              haveFullNameMatching: "^(?:ClassifiedAds\\.Persistence)(?:$|[.+])"
+    # Types.InAssembly(typeof(Entity<>).Assembly)
+    #   .ShouldNot().HaveDependencyOn("ClassifiedAds.Application")
+    #   .GetResult()   [DomainTests.cs:12]
+    - name: domain-should-not-have-dependency-on-application
+      comment: "imported from src/Monolith/ClassifiedAds.ArchTests/DomainTests.cs:12"
+      fix: "ClassifiedAds.Domain must not depend on any type in the ClassifiedAds.Application namespace. Keep the type the domain uses in a ClassifiedAds.Domain namespace, or have the application pass the values in."
+      allowEmpty: true
+      select:
+        kind: type
+        language: dotnet
+        where:
+          resideInAssembly: ClassifiedAds.Domain
+      should:
+        not:
+          dependOnAny:
+            kind: type
+            where:
+              haveFullNameMatching: "^(?:ClassifiedAds\\.Application)(?:$|[.+])"
+    # Types.InAssembly(typeof(Entity<>).Assembly)
+    #   .ShouldNot().HaveDependencyOn("ClassifiedAds.Infrastructure")
+    #   .GetResult()   [DomainTests.cs:23]
+    - name: domain-should-not-have-dependency-on-infrastructure
+      comment: "imported from src/Monolith/ClassifiedAds.ArchTests/DomainTests.cs:23"
+      fix: "ClassifiedAds.Domain must not depend on any type in the ClassifiedAds.Infrastructure namespace. Keep the type the domain uses in a ClassifiedAds.Domain namespace, and let Infrastructure map to and from it."
+      allowEmpty: true
+      select:
+        kind: type
+        language: dotnet
+        where:
+          resideInAssembly: ClassifiedAds.Domain
+      should:
+        not:
+          dependOnAny:
+            kind: type
+            where:
+              haveFullNameMatching: "^(?:ClassifiedAds\\.Infrastructure)(?:$|[.+])"
+    # Types.InAssembly(typeof(Entity<>).Assembly)
+    #   .ShouldNot().HaveDependencyOn("ClassifiedAds.Persistence")
+    #   .GetResult()   [DomainTests.cs:34]
+    - name: domain-should-not-have-dependency-on-persistence
+      comment: "imported from src/Monolith/ClassifiedAds.ArchTests/DomainTests.cs:34"
+      fix: "ClassifiedAds.Domain must not depend on any type in the ClassifiedAds.Persistence namespace. Keep the type the domain uses in a ClassifiedAds.Domain namespace, and let Persistence map to and from it."
+      allowEmpty: true
+      select:
+        kind: type
+        language: dotnet
+        where:
+          resideInAssembly: ClassifiedAds.Domain
+      should:
+        not:
+          dependOnAny:
+            kind: type
+            where:
+              haveFullNameMatching: "^(?:ClassifiedAds\\.Persistence)(?:$|[.+])"

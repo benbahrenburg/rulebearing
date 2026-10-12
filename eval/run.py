@@ -128,7 +128,7 @@ def load_suite(path: Path) -> Suite:
     """
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-        folder = path.parent
+        folder = path.resolve().parent
         cases = tuple(
             Case(
                 rule=c["rule"],
@@ -484,23 +484,31 @@ class Before:
 def observe(tool: Rulebearing, workdir: Path, case: Case) -> tuple[Before, dict[str, Any]]:
     """The state before the agent, and the report it is given.
 
+    The case's rule may report more than one violation (a .NET type and the types the compiler
+    generates for it, say), but the case's own must be among them, and no other rule may report
+    an error, so the agent is asked about this case alone.
+
     Raises:
-        HarnessError: the case's violation is not the one, and only one, the repository has.
+        HarnessError: the repository does not hold the case's violation, or holds another.
     """
     result = tool.cruise(workdir)
     found = violations_of(result, case.rule)
-    if len(found) != 1:
-        message = f"{case.rule}: expected one violation, found {len(found)}"
+    if not found:
+        message = f"{case.rule}: expected a violation, found none"
         raise HarnessError(message)
-    violation = found[0]
-    if (violation.get("from"), violation.get("to")) != (case.source, case.target):
-        message = f"{case.rule}: the violation is {violation.get('from')} -> {violation.get('to')}"
+    matching = [v for v in found if (v.get("from"), v.get("to")) == (case.source, case.target)]
+    if not matching:
+        listed = "; ".join(f"{v.get('from')} -> {v.get('to')} ({v.get('id')})" for v in found)
+        message = f"{case.rule}: no violation {case.source} -> {case.target}; found {listed}"
         raise HarnessError(message)
+    violation = matching[0]
     if violation.get("id") != case.id:
         message = f"{case.rule}: the violation's id is {violation.get('id')}, the case's {case.id}"
         raise HarnessError(message)
     others = [
-        v for v in result["summary"]["violations"] if v is not violation and severity(v) == "error"
+        v
+        for v in result["summary"]["violations"]
+        if v.get("rule", {}).get("name") != case.rule and severity(v) == "error"
     ]
     if others:
         message = f"{case.rule}: {len(others)} other error violations; a case has its own only"
@@ -539,8 +547,12 @@ def score(
     workdir, base = space.folder, space.base
     failed = build(suite, workdir)
     changed = sorted(set(git(workdir, "status", "--porcelain").splitlines()))
+    # The binary's own cache under .graph/ is written by the hooks, not by the agent.
     files = sorted(
-        {line[3:] for line in changed} | set(git(workdir, "diff", "--name-only", base).split())
+        name
+        for name in {line[3:] for line in changed}
+        | set(git(workdir, "diff", "--name-only", base).split())
+        if not name.startswith(".graph/")
     )
     if failed is not None:
         return {

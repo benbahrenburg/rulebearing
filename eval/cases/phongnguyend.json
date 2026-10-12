@@ -1,0 +1,56 @@
+{
+  "suite": "phongnguyend",
+  "repo": "phongnguyend/Practical.CleanArchitecture",
+  "sha": "033acecd44b6981d7d418d0fdab356c053e1b1d3",
+  "checkout": "phongnguyend__Practical.CleanArchitecture",
+  "config": "phongnguyend/rulebearing.yaml",
+  "build": [
+    "dotnet",
+    "build",
+    "src/Monolith/ClassifiedAds.Application/ClassifiedAds.Application.csproj",
+    "-c",
+    "Release",
+    "-p:DebugType=portable",
+    "-p:EnableWindowsTargeting=true",
+    "--nologo",
+    "-v",
+    "q"
+  ],
+  "cases": [
+    {
+      "rule": "application-should-not-have-dependency-on-infrastructure",
+      "from": "src/Monolith/ClassifiedAds.Application/OutboxMessages/OutboxBatch.cs",
+      "to": "ClassifiedAds.Application.OutboxMessages.OutboxBatch",
+      "id": "RB-bbe785aa",
+      "patch": "phongnguyend/application-should-not-have-dependency-on-infrastructure.patch"
+    },
+    {
+      "rule": "application-should-not-have-dependency-on-persistence",
+      "from": "src/Monolith/ClassifiedAds.Application/Products/Queries/ProductPaging.cs",
+      "to": "ClassifiedAds.Application.Products.Queries.ProductPaging",
+      "id": "RB-735b1734",
+      "patch": "phongnguyend/application-should-not-have-dependency-on-persistence.patch"
+    },
+    {
+      "rule": "domain-should-not-have-dependency-on-application",
+      "from": "src/Monolith/ClassifiedAds.Domain/Repositories/Paging.cs",
+      "to": "ClassifiedAds.Domain.Repositories.Paging",
+      "id": "RB-8cc5e45e",
+      "patch": "phongnguyend/domain-should-not-have-dependency-on-application.patch"
+    },
+    {
+      "rule": "domain-should-not-have-dependency-on-infrastructure",
+      "from": "src/Monolith/ClassifiedAds.Domain/Entities/FileEntryLocations.cs",
+      "to": "ClassifiedAds.Domain.Entities.FileEntryLocations",
+      "id": "RB-03c3a1f7",
+      "patch": "phongnguyend/domain-should-not-have-dependency-on-infrastructure.patch"
+    },
+    {
+      "rule": "domain-should-not-have-dependency-on-persistence",
+      "from": "src/Monolith/ClassifiedAds.Domain/Repositories/LockTimeouts.cs",
+      "to": "ClassifiedAds.Domain.Repositories.LockTimeouts",
+      "id": "RB-47c58ac8",
+      "patch": "phongnguyend/domain-should-not-have-dependency-on-persistence.patch"
+    }
+  ]
+}

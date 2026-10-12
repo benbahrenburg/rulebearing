@@ -1,0 +1,13 @@
+diff --git a/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Persistence/EntityConfigurations/CountryEntityConfiguration.cs b/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Persistence/EntityConfigurations/CountryEntityConfiguration.cs
+index 6394983..7041ee6 100644
+--- a/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Persistence/EntityConfigurations/CountryEntityConfiguration.cs
++++ b/src/Content/Backend/Solution/Monaco.Template.Backend.Application/Persistence/EntityConfigurations/CountryEntityConfiguration.cs
+@@ -6,7 +6,7 @@ using Monaco.Template.Backend.Domain.Model.Entities;
+ 
+ namespace Monaco.Template.Backend.Application.Persistence.EntityConfigurations;
+ 
+-internal sealed class CountryEntityConfiguration : IEntityTypeConfiguration<Country>
++public sealed class CountryEntityConfiguration : IEntityTypeConfiguration<Country>
+ {
+ 	public void Configure(EntityTypeBuilder<Country> builder)
+ 	{

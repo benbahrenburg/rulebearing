@@ -22,6 +22,10 @@ The design asks `fix --plan <rule>` for "the three cheapest refactors that clear
 
 **`cruise --output-type agent --with-plans`** adds the same `plans` (and `reason`) to each violation the `agent` report shows. With any other reporter the flag is refused (exit 3), as `--from` is.
 
+**The eval harness's benchmark is three suites, and the .NET violations are injected.** The plan names "every violation on the mutation branch and the imported rules of two .NET oracles". The twelve mutation violations are cases as they are, each isolated to its own folder so the agent sees one. The two .NET oracles with imported rules that agree with their tests (phongnguyend/Practical.CleanArchitecture, five rules; onebeyond/monaco, six) report no violation at their pinned SHAs, since their tests pass, so each rule gets a committed patch that puts one violation in, and the repository is built before and after the agent. The `fix` text a case scores lives in the suite's configuration; for the .NET suites it is added to what `import archunit` writes and nothing else changes.
+
+**A case is scored from the binary's own answers.** `cleared`: `cruise` reports no violation of the case's rule. `widened`: a rule's definition in `rules --json` changed, `summary.ignore` grew (a known violation softened a finding), or `config lint` reports a new finding. `budgetRaised`: a JSON file's `ceiling` went up. The agent is told only a fixed sentence and the `agent` report restricted to the case's rule. The agent and its budget are parameters (`--agent`, `--model`, `--budget-usd`); Claude Code's `--max-budget-usd` is the budget it enforces, so the rows record the budget in dollars and the tokens the agent reported alongside. Each row carries the agent, the model the agent reported, the budget, turns, cost and tokens.
+
 ## Consequences
 
 - A printed plan is legal by construction, and a test proves it independently: each fixture plan applied to the graph as JSON, every added edge answered `yes` by `can-import --graph`, and no rule's count up in `rules --json`.
@@ -36,3 +40,6 @@ The design asks `fix --plan <rule>` for "the three cheapest refactors that clear
 | `edgesTouched` as the edges in the changed graph that differ | A moved file's edges all "differ" while its importers' statements change too; the count the agent pays is statements edited. |
 | Verify with `can-import` only | It answers for one edge: a move that closes a cycle elsewhere, or a port that empties a `required` rule's target, would pass. |
 | Verify with the full evaluation only | Correct, but the plan freezes `legalBy: "can-import"`, and the per-edge answer is what the agent will ask again before it writes the import. |
+| Benchmark the .NET oracles as they are | They have no violation to fix: their architecture tests pass at the pinned SHA. |
+| One case with all twelve mutations present | The `Stop` hook blocks while any error remains, so every case would fix all twelve and the rows would not be per `fix`. |
+| A token budget enforced by the harness | Claude Code enforces a dollar budget itself; a harness-side token cap would have to kill the agent mid-edit and score a half-made change. |

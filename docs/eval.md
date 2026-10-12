@@ -7,6 +7,10 @@ A rule's `fix` is the sentence an agent reads when the rule fires ([agents.md](a
 | Suite | Repository | The violations | Configuration |
 | --- | --- | --- | --- |
 | `mutations` | dependency-cruiser at the [manifest](../testbeds/manifest.yaml) SHA, with [the mutation branch](../conformance/dependency-cruiser/mutations/README.md) applied | the twelve, one per rule shape; each case keeps only its own folder under `src/mutation/`, so the agent sees one violation | [eval/cases/mutations/rulebearing.yaml](../eval/cases/mutations/rulebearing.yaml): the branch's rules with a `fix` each |
+| `phongnguyend` | phongnguyend/Practical.CleanArchitecture at the manifest SHA, built | one per imported NetArchTest rule (five): a type declared in the wrong layer's namespace and used from its own layer, so the layer depends on it | [eval/cases/phongnguyend/rulebearing.yaml](../eval/cases/phongnguyend/rulebearing.yaml): what `import archunit` writes, with a `fix` each |
+| `monaco` | onebeyond/monaco at the manifest SHA, built | one per imported ArchUnitNET rule (six): a command no longer sealed, a validator no longer sealed, a handler renamed, an entity configuration made public, a value object given a setter, an enumeration declared in the Application layer | [eval/cases/monaco/rulebearing.yaml](../eval/cases/monaco/rulebearing.yaml): what `import archunit --graph` writes, with a `fix` each |
+
+The two .NET oracles' own tests pass at their pinned SHAs, so their imported rules report nothing ([testbeds/results](../testbeds/results/)); each .NET case is a patch beside its suite that puts one violation in, the way a pull request would.
 
 Each suite is a file under [eval/cases/](../eval/cases/) naming the repository, the SHA, the patches and the cases, each by rule, ends and stable id ([ADR-0015](adr/0015-stable-violation-id.md)). The harness refuses a case whose repository does not hold exactly that violation.
 

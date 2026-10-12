@@ -1,0 +1,13 @@
+diff --git a/src/Content/Backend/Solution/Monaco.Template.Backend.Domain/Model/ValueObjects/GpsPosition.cs b/src/Content/Backend/Solution/Monaco.Template.Backend.Domain/Model/ValueObjects/GpsPosition.cs
+index c0f0cf1..0b27f36 100644
+--- a/src/Content/Backend/Solution/Monaco.Template.Backend.Domain/Model/ValueObjects/GpsPosition.cs
++++ b/src/Content/Backend/Solution/Monaco.Template.Backend.Domain/Model/ValueObjects/GpsPosition.cs
+@@ -21,7 +21,7 @@ public class GpsPosition : ValueObject
+ 							 .IfOutOfRange(LongitudeMin, LongitudeMax);
+ 	}
+ 
+-	public float Latitude { get; }
++	public float Latitude { get; set; }
+ 	public float Longitude { get; }
+ 
+ 	protected override IEnumerable<object?> GetEqualityComponents()
