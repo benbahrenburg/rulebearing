@@ -1231,6 +1231,26 @@ mod tests {
     }
 
     #[test]
+    fn only_not_in_allowed_reads_the_allowed_entries() {
+        let cfg = config(json!({
+            "allowed": [{ "from": {}, "to": { "path": "^packages/" }, "fix": "Only import packages.", "comment": "adr:0042" }],
+            "allowedSeverity": "error"
+        }));
+        let rules = &cfg.rules.dependencies;
+        let mut violations = vec![
+            json!({ "type": "dependency", "from": "apps/web/a.ts", "to": "apps/api/b.ts",
+                    "rule": { "name": "some-other-rule", "severity": "error" } }),
+            json!({ "type": "dependency", "from": "apps/web/a.ts", "to": "apps/api/b.ts",
+                    "rule": { "name": "not-in-allowed", "severity": "error" } }),
+        ];
+        annotate(&mut violations, &[], rules, &ModuleFacts::default());
+        assert!(violations[0].get("fix").is_none(), "{}", violations[0]);
+        assert!(violations[0].get("decision").is_none(), "{}", violations[0]);
+        assert_eq!(violations[1]["fix"], json!("Only import packages."));
+        assert_eq!(violations[1]["decision"], json!("adr:0042"));
+    }
+
+    #[test]
     fn an_allowed_entry_selects_by_the_cross_language_keys_of_its_from() -> Result<(), EngineError>
     {
         let mut document = document();
