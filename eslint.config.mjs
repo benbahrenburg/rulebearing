@@ -32,6 +32,9 @@ export default defineConfig([
         // The serve fixture repository and its MCP and LSP transcripts, compared byte for byte
         // (plan 0003, Steps 19 and 20).
         'crates/rb-cli/tests/fixtures/serve/**',
+        // The fleet fixture's repositories: extractor input whose imports and declared edges the
+        // fleet test asserts (plan 0004, Steps 11 and 12).
+        'crates/rb-cli/tests/fixtures/fleet/**',
         // The playground's fixture repositories and the command line's outputs over them, compared
         // byte for byte (plan 0004, Step 2).
         'crates/rb-wasm/tests/fixtures/**',
