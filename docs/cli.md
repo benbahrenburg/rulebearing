@@ -18,7 +18,7 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | `query --from --to [--json]` | The direct edges `count` counts, one `from -> to` per line | |
 | `config convert <file> [--to native\|dependency-cruiser]` | Translate between the formats; says what a lossy conversion dropped | |
 | `config expand <file>` | A native file with `defines` substituted and shorthands expanded | |
-| `config lint` | Rules that can never match, shadowed rules, missing `fix` text | |
+| `config lint` | Rules that can never match, shadowed rules, missing `fix` text; with `--fleet <manifest>`, a fleet's rules and every declared edge that no longer exists | |
 | `hooks install --claude-code` | The three Claude Code hooks ([agents.md](agents.md)) | |
 | `summary [--format agent\|text]` | The session brief: open violations, ratchet headroom, vacuous rules | |
 | `impact <file> [--depth N] [--from-hook]` | What a file is subject to, before an edit | |
@@ -30,6 +30,7 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | `snapshot [--version V]` | A summary of the architecture at a release, under `.graph/snapshots/`; [below](#snapshots-changelog-and-unused-rules) | |
 | `changelog --since V [--to V]` | New edges across boundaries, retired rules and ratchets that fell between two snapshots, as `markdown` or `json`; [below](#snapshots-changelog-and-unused-rules) | |
 | `serve --mcp`, `serve --lsp` | The query commands as MCP tools, or the findings as editor diagnostics, over standard input and output from one warm graph; [serve.md](serve.md) | |
+| `fleet [manifest]` | One run, one report across sibling repositories: each cruised with its own configuration and cache, the fleet-wide rules over the union of their graphs, joined by the edges `edges.yaml` declares; [below](#fleets-and-declared-edges) | |
 | `wrap-html` | An SVG read from stdin, written between the header and the footer of the page `x-dot-webpage` writes; [below](#wrap-html) | `depcruise-wrap-stream-in-html` |
 
 `cruise --init [oneshot]` is `depcruise --init` without the questions: it writes what `init` writes, to `--config FILE` or `rulebearing.yaml`, with `--preset typescript,dotnet,python` naming the languages instead of detecting them. `yes`, a bare `--init` and any other name write the configuration; `x-scripts` also adds `rulebearing`, `rulebearing:text` and `rulebearing:focus` run scripts to `package.json` after the existing ones and, as dependency-cruiser does, leaves an existing configuration be. dependency-cruiser's graph and HTML scripts need the `dot`, `archi` and `err-html` reporters and `wrap-html`, and are not written until those exist. One language extends its own preset first, `[rulebearing:python, rulebearing:recommended]`, so its exclusions win; several extend `rulebearing:recommended` ([config.md](config.md#presets)).
@@ -246,6 +247,26 @@ A result without its marks could gate later, so `cruise` and `fmt` also refuse t
 `--allow-approximate-gate` (on `cruise`, `fmt`, and `diff` with `--exit-code`) gives the count back, and lets `--strict-schema` write, for a local script. A CI recipe never uses it: compiled mode is the gate.
 
 `--mode` says how .NET is read, never whether: in a repository with no `languages.dotnet` and no solution at the root, `--mode source` reads no `.cs` file.
+
+## Fleets and declared edges
+
+`rulebearing fleet [fleet.yaml]` runs over a workspace manifest of sibling repositories ([config.md](config.md#fleets-and-declared-edges) has both file formats; [ADR-0076](adr/0076-fleet-and-declared-edges.md) the decisions; [plan 0004, Steps 11 and 12](plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges)). In order:
+
+1. Each repository is cruised in its own folder with its own configuration (the manifest's `config`, or the one `cruise` would find) and its own cache: the configuration's `options.cache` when it sets one, else `--cache` at the default folder. `--no-cache` turns every repository's cache off; `--cache-strategy` sets how each finds what changed. Repositories run in parallel. A missing folder, or a repository whose own run exits 2 or 3, stops the fleet with that code and the repository named.
+2. Every module path is prefixed with the repository's `name` and `/` (`web/src/app.ts`); module identity inside a repository is unchanged, so its rules and cache are reused as they are. A core module and an unresolved specifier keep their names.
+3. The edges `edges.yaml` declares (beside the manifest, or the file `--edges` names) are added, each marked `declared: true` and `dependencyKind: declared`; an edge whose `from` or `to` is not a module of the union is not added and is printed as a warning.
+4. The manifest's fleet-wide rules are evaluated over the union, liveness strict.
+5. Each repository's own findings are folded in, paths prefixed and stable ids recomputed, and the document is reported with any reporter, as `fmt` reports a saved result: a gating reporter exits with the fleet's and the repositories' error count.
+
+`fleet -T json` writes one document whose `summary.fleet` records each repository's own counts, receipt and cache verdict, and whose `summary.declared` records the declared edges by source and the ones skipped. `--strict-schema` strips both, and the marks on every declared edge; the edges stay ([ADR-0004](adr/0004-graph-document-is-cruise-result-superset.md)).
+
+```sh
+rulebearing fleet                          # fleet.yaml and edges.yaml in the current folder
+rulebearing fleet -T json -f fleet.json    # one document for the whole fleet
+rulebearing config lint --fleet fleet.yaml --graph fleet.json
+```
+
+`config lint --fleet <manifest>` lints the manifest's rules, as `config lint` lints a configuration, and reports `stale-declared-edge` for each declared `from` or `to` that no longer exists (not a module of `--graph` when it is given, else not a file of its repository) and each OpenAPI server document that is not a file. With `--graph`, a fleet rule whose `to.path` matches no edge is `never-matches`: a rule across languages matches nothing until an edge between them is declared.
 
 ## Flags the query commands share
 

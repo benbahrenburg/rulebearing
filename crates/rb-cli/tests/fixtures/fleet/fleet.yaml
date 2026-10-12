@@ -18,9 +18,9 @@ rules:
         fix: "Go through the api, which hands work to the pipeline's queue."
         from: { path: "^web/" }
         to: { path: "^pipeline/" }
-      - name: api-hands-orders-to-pipeline
+      - name: api-hands-orders-to-the-worker
         severity: warn
-        comment: "Cross-language: matches nothing until an edge from the api to the pipeline exists. plan:fleet-fixture"
+        comment: "Cross-language: nothing imports the worker, so this matches nothing until an edge from the api to it is declared. plan:fleet-fixture"
         fix: "Keep the hand-off on the queue the edges file declares."
         from: { path: "^api/" }
-        to: { path: "^pipeline/" }
+        to: { path: "^pipeline/pipeline/worker[.]py$" }

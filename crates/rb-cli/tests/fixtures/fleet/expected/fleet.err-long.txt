@@ -1,0 +1,17 @@
+
+  warn generated-only-through-client: web/src/app.ts → web/src/api/generated/orders.ts
+    plan:fleet-fixture
+    fix: Import the generated client through src/api/client.ts.
+
+  warn api-hands-orders-to-the-worker: api/crates/rb-cli/tests/fixtures/init-layers/src/Shop.Application/PlaceOrder.cs → pipeline/pipeline/worker.py
+    Cross-language: nothing imports the worker, so this matches nothing until
+    an edge from the api to it is declared. plan:fleet-fixture
+    fix: Keep the hand-off on the queue the edges file declares.
+
+  error web-only-through-endpoints: web/src/legacy.ts → api/crates/rb-cli/tests/fixtures/init-layers/src/Shop.Infrastructure/OrderStore.cs
+    The web app calls the api through its endpoints only. plan:fleet-fixture
+    fix: Call the endpoint the api exposes, through the generated client.
+
+
+x 3 dependency violations (1 errors, 2 warnings). 14 modules, 30 dependencies cruised.
+
