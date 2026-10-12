@@ -1,0 +1,5 @@
+dropped 4 item(s) dependency-cruiser cannot hold:
+  languages.python: dependency-cruiser reads TypeScript and JavaScript only
+  $schema: points at the native schema
+  forbidden[sibling-packages-form-no-cycle].fix: a Rulebearing rule field
+  forbidden[sibling-packages-form-no-cycle].examples: a Rulebearing rule field

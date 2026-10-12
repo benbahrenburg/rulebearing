@@ -1,0 +1,83 @@
+{
+  "violations": [
+    {
+      "from": "shop/domain/order.py",
+      "to": "shop/web/formatting.py",
+      "type": "reachability",
+      "rule": {
+        "name": "domain-is-the-lowest-layer",
+        "severity": "error"
+      },
+      "via": [
+        {
+          "name": "shop/domain/pricing.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        },
+        {
+          "name": "shop/web/formatting.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        }
+      ],
+      "id": "RB-4902d765",
+      "fix": "Move the code the domain needs out of the higher layer into shop/domain/, or have the higher layer pass it in as an argument.",
+      "decision": "plan:0004-wave-4-reach"
+    },
+    {
+      "from": "shop/domain/pricing.py",
+      "to": "shop/web/formatting.py",
+      "type": "reachability",
+      "rule": {
+        "name": "domain-is-the-lowest-layer",
+        "severity": "error"
+      },
+      "via": [
+        {
+          "name": "shop/web/formatting.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        }
+      ],
+      "id": "RB-0c8b42db",
+      "fix": "Move the code the domain needs out of the higher layer into shop/domain/, or have the higher layer pass it in as an argument.",
+      "decision": "plan:0004-wave-4-reach"
+    },
+    {
+      "from": "shop/services/orders.py",
+      "to": "shop/web/formatting.py",
+      "type": "reachability",
+      "rule": {
+        "name": "services-sit-below-web",
+        "severity": "error"
+      },
+      "via": [
+        {
+          "name": "shop/domain/order.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        },
+        {
+          "name": "shop/domain/pricing.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        },
+        {
+          "name": "shop/web/formatting.py",
+          "dependencyTypes": [
+            "local"
+          ]
+        }
+      ],
+      "id": "RB-4916bfdf",
+      "fix": "Return data from the service and let shop/web/ format or render it.",
+      "decision": "plan:0004-wave-4-reach"
+    }
+  ],
+  "vacuousRules": []
+}

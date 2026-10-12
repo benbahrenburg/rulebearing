@@ -1,0 +1,16 @@
+{
+  "forbidden": [
+    {
+      "name": "features-are-independent",
+      "comment": "A feature that imports another cannot be built, tested or removed on its own. plan:0004-wave-4-reach",
+      "to": {
+        "path": "^src/features/",
+        "pathNot": "^src/features/$1/"
+      },
+      "severity": "error",
+      "from": {
+        "path": "^src/features/([^/]+)/"
+      }
+    }
+  ]
+}

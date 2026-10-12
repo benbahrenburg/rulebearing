@@ -71,3 +71,10 @@ cookbook/guards/*/graph.json
 cookbook/guards/*/expected.json
 cookbook/guards/*/converted/
 cookbook/guards/*/negative/
+# The cookbook's question pages: the repositories are extractor input shown on the page, and the
+# rest is what the binary prints for them, compared byte for byte by cookbook/questions/run.sh
+# and regenerated with RB_UPDATE_SNAPSHOTS=1 (plan 0004, Step 5).
+cookbook/questions/*/repo/
+cookbook/questions/*/expected.json
+cookbook/questions/*/converted/
+cookbook/questions/*/imported/

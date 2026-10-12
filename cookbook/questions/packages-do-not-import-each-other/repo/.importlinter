@@ -1,0 +1,10 @@
+[importlinter]
+root_package = shop
+
+[importlinter:contract:independence]
+name = Orders, billing and shipping do not import each other
+type = independence
+modules =
+    shop.orders
+    shop.billing
+    shop.shipping

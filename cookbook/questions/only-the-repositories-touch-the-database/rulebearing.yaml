@@ -1,0 +1,19 @@
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+languages:
+  python: {}
+rules:
+  dependencies:
+    forbidden:
+      - name: only-repositories-import-the-database
+        comment: "Every query goes through a repository, so a schema change is made in one place. plan:0004-wave-4-reach"
+        fix: "Call a function in shop/repositories/ instead; if none fits, add one there that runs the query."
+        severity: error
+        from: { pathNot: "^shop/(db|repositories)/" }
+        to: { path: "^shop/db/" }
+        examples:
+          forbidden:
+            - "shop/web/views.py -> shop/db/session.py"
+          allowed:
+            - "shop/repositories/orders.py -> shop/db/session.py"
+            - "shop/db/session.py -> shop/db/pool.py"
+            - "shop/web/views.py -> shop/repositories/orders.py"

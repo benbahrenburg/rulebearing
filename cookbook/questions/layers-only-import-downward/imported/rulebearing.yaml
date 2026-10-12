@@ -1,0 +1,41 @@
+# Imported from .importlinter by `rulebearing import import-linter`.
+# Each rule's comment names its import-linter contract; the contract's options are written above its first rule.
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+languages:
+  python:
+    roots: ["."]
+rules:
+  dependencies:
+    forbidden:
+      # import-linter contract `layers` (layers): The web layer sits on the services, which sit on the domain
+      #   layers = shop.web, shop.services, shop.domain
+      - name: layers:shop.services-to-shop.web
+        comment: "import-linter contract: The web layer sits on the services, which sit on the domain"
+        severity: error
+        from:
+          path: "^shop/services(/.*)?\\.py$"
+        to:
+          path: "^shop/web(/.*)?\\.py$"
+          reachable: true
+        graph:
+          chainsThrough: "^shop(/.*)?\\.py$"
+      - name: layers:shop.domain-to-shop.web
+        comment: "import-linter contract: The web layer sits on the services, which sit on the domain"
+        severity: error
+        from:
+          path: "^shop/domain(/.*)?\\.py$"
+        to:
+          path: "^shop/web(/.*)?\\.py$"
+          reachable: true
+        graph:
+          chainsThrough: "^shop(/.*)?\\.py$"
+      - name: layers:shop.domain-to-shop.services
+        comment: "import-linter contract: The web layer sits on the services, which sit on the domain"
+        severity: error
+        from:
+          path: "^shop/domain(/.*)?\\.py$"
+        to:
+          path: "^shop/services(/.*)?\\.py$"
+          reachable: true
+        graph:
+          chainsThrough: "^shop(/.*)?\\.py$"

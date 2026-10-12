@@ -1,0 +1,16 @@
+{
+  "forbidden": [
+    {
+      "name": "controllers-only-through-services",
+      "comment": "A controller that reads storage itself skips the rules the service applies, and every storage change reaches the HTTP layer. plan:0004-wave-4-reach",
+      "to": {
+        "path": "^src/",
+        "pathNot": "^src/(controllers|services|shared)/"
+      },
+      "severity": "error",
+      "from": {
+        "path": "^src/controllers/"
+      }
+    }
+  ]
+}

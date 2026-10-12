@@ -12,6 +12,8 @@
 // - `explain` over the cruise result of either mode: byte for byte the command line's
 //   `expected/explain-<rule>.out`.
 // - The module's refusals shown verbatim.
+// - A cookbook question page (plan 0004, Step 5; docs/adr/0074): its playground preloaded with the
+//   page's repository and rule, and Run finding the violations the page shows.
 //
 // Every run is timed against the 500 ms target.
 //
@@ -199,6 +201,48 @@ describe('the playground page', () => {
       await component.locator('input[name="rule"]').fill(rule);
       const output = await ran(component, '[data-explain]', `${name} pasted, explain ${rule}`);
       expect(output).toBe(expectedOf(name, `explain-${rule}.out`));
+    });
+  }
+
+  // A cookbook question page opens with its own repository and rule loaded; Run must find the
+  // violations the page shows (expected.json, which cookbook/questions/run.sh holds the command
+  // line to). One TypeScript and one Python page.
+  for (const [slug, exported] of [
+    ['features-must-not-know-each-other', 'cruise_ts'],
+    ['layers-only-import-downward', 'cruise_py'],
+  ] as const) {
+    it(`runs the preloaded playground of the cookbook page ${slug}`, async () => {
+      const dir = join(root, 'cookbook/questions', slug);
+      const page = await browser.newPage();
+      const errors: string[] = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await page.goto(`${urlOf(server)}cookbook/questions/${slug}/index.html`);
+      const component = page.locator('[data-playground]');
+      await expect.poll(() => component.getAttribute('data-state')).toBe('ready');
+      expect(await component.locator('[data-status]').textContent()).toBe(
+        `Loaded the ${slug} example.`,
+      );
+      expect(await component.locator('select[name="mode"]').inputValue()).toBe('files');
+      expect(await component.locator('textarea[name="config"]').inputValue()).toBe(
+        readFileSync(join(dir, 'rulebearing.yaml'), 'utf8'),
+      );
+      const shown = await page.locator('table.cookbook-findings').first().textContent();
+      const expected = JSON.parse(readFileSync(join(dir, 'expected.json'), 'utf8')) as Expected & {
+        violations: { from: string; to: string }[];
+      };
+      for (const { from, to } of expected.violations) {
+        expect(shown).toContain(from);
+        expect(shown).toContain(to);
+      }
+      await component.locator('select[name="output-type"]').selectOption('json');
+      const output = await ran(component, '[data-run]', `cookbook ${slug}, json`);
+      expect(await component.getAttribute('data-action')).toBe(exported);
+      const result = JSON.parse(output) as {
+        summary: { violations: unknown; vacuousRules?: unknown };
+      };
+      expect(result.summary.violations).toEqual(expected.violations);
+      expect(result.summary.vacuousRules ?? []).toEqual(expected.vacuousRules);
+      expect(errors).toEqual([]);
     });
   }
 

@@ -1,0 +1,15 @@
+{
+  "forbidden": [
+    {
+      "name": "only-repositories-import-the-database",
+      "comment": "Every query goes through a repository, so a schema change is made in one place. plan:0004-wave-4-reach",
+      "to": {
+        "path": "^shop/db/"
+      },
+      "severity": "error",
+      "from": {
+        "pathNot": "^shop/(db|repositories)/"
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "forbidden": [
+    {
+      "name": "domain-does-no-io",
+      "comment": "The domain is tested without a database or a network, so it reaches neither, directly or through a chain. plan:0004-wave-4-reach",
+      "to": {
+        "path": "^shop/(db|http)/",
+        "reachable": true
+      },
+      "severity": "error",
+      "from": {
+        "path": "^shop/domain/"
+      }
+    }
+  ]
+}

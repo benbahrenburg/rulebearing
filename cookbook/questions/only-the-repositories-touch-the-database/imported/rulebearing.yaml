@@ -1,0 +1,34 @@
+# Imported from .importlinter by `rulebearing import import-linter`.
+# Each rule's comment names its import-linter contract; the contract's options are written above its first rule.
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+languages:
+  python:
+    roots: ["."]
+rules:
+  dependencies:
+    allowed:
+      # import-linter contract `db-protected` (protected): Only the repositories open database sessions
+      #   allowed_importers = shop.repositories
+      #   protected_modules = shop.db
+      - name: db-protected
+        comment: "import-linter contract: Only the repositories open database sessions"
+        from:
+          path: ["^shop/repositories(/.*)?\\.py$", "^shop/db(/.*)?\\.py$"]
+        to:
+          path: "^shop/db(/.*)?\\.py$"
+        allowEmpty: true
+      - name: db-protected:outside-the-root-packages
+        comment: "import-linter contract: Only the repositories open database sessions"
+        from:
+          pathNot: "^shop(/.*)?\\.py$"
+        to:
+          path: "^shop/db(/.*)?\\.py$"
+        allowEmpty: true
+      # dependency-cruiser's allowed rules are one allow-list: this one allows every import of a module no protected contract names.
+      - name: import-linter:unprotected
+        comment: "import-linter: every import of an unprotected module"
+        from: {}
+        to:
+          pathNot: "^shop/db(/.*)?\\.py$"
+        allowEmpty: true
+    allowedSeverity: error

@@ -1,0 +1,19 @@
+{
+  "violations": [
+    {
+      "from": "shop/web/views.py",
+      "to": "shop/db/session.py",
+      "unresolvedTo": "shop.db.session",
+      "dependencyTypes": [
+        "local"
+      ],
+      "type": "dependency",
+      "rule": {
+        "name": "not-in-allowed",
+        "severity": "error"
+      },
+      "id": "RB-c006bb72"
+    }
+  ],
+  "vacuousRules": []
+}

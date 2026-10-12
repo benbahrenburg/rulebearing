@@ -174,6 +174,61 @@ describe('buildSite', () => {
   });
 });
 
+describe('the cookbook question pages', () => {
+  const slug = 'domain-does-no-io';
+
+  function addQuestion(index: string): void {
+    const dir = `cookbook/questions/${slug}`;
+    const files = execFileSync('git', ['ls-files', '-z', dir], { cwd: realRepo, encoding: 'utf8' })
+      .split('\0')
+      .filter((f) => f !== '');
+    for (const path of files) {
+      write(path, readFileSync(join(realRepo, path), 'utf8'));
+    }
+    // The page links the PRD and two ADRs (and the plan and the design, which are local-only);
+    // give the small repository each target and anchor.
+    write('docs/prd.md', '# PRD\n\n## FR-REACH-01\n');
+    write('docs/adr/0013-ruff-parser-for-python.md', '# ADR-0013\n');
+    write('docs/adr/0038-a-rule-narrows-the-graph-it-sees.md', '# ADR-0038\n');
+    write('cookbook/questions/README.md', index);
+    git('add', '-f', '.');
+    git('commit', '-qm', 'question');
+  }
+
+  const options = (): Parameters<typeof buildSite>[0] => ({
+    repo,
+    out: join(work, 'site'),
+    wasmDir: join(work, 'wasm'),
+    webDir: join(work, 'web'),
+    schemaRef: 'v0.2.0',
+    commit: 'c0ffee',
+  });
+
+  it('renders a question from its fixture, with its playground preloaded', () => {
+    addQuestion(`# Questions\n\n[The domain does no I/O](${slug}/README.md)\n`);
+    const result = buildSite(options());
+    expect(result.brokenSources).toEqual([]);
+    expect(result.brokenSite).toEqual([]);
+    expect(result.pages).toContain(`cookbook/questions/${slug}/index.html`);
+    const page = readFileSync(join(work, 'site', `cookbook/questions/${slug}/index.html`), 'utf8');
+    expect(page).toContain('<script type="module" src="../../../assets/playground.js"></script>');
+    expect(page).toContain(`data-preload="${slug}"`);
+    expect(page).toContain('<code>.dependency-cruiser.json</code>');
+    expect(page).toContain('<code>shop/domain/invoice.py</code>');
+    expect(page).not.toContain('RBCOOKBOOKMARKER');
+    expect(readFileSync(join(work, 'site', 'cookbook/questions/index.html'), 'utf8')).toContain(
+      `href="${slug}/index.html"`,
+    );
+  });
+
+  it('refuses a question the index does not link', () => {
+    addQuestion('# Questions\n');
+    expect(() => buildSite(options())).toThrow(
+      `cookbook/questions/README.md does not link the question page(s) ${slug}`,
+    );
+  });
+});
+
 describe('playgroundExamples', () => {
   it("embeds each fixture repository's tracked files by their path inside it", () => {
     const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: repo, encoding: 'utf8' })

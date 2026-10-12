@@ -1,0 +1,31 @@
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+languages:
+  python: {}
+rules:
+  dependencies:
+    forbidden:
+      - name: domain-is-the-lowest-layer
+        comment: "The domain is imported by the layers above it and imports neither of them, directly or through a chain. plan:0004-wave-4-reach"
+        fix: "Move the code the domain needs out of the higher layer into shop/domain/, or have the higher layer pass it in as an argument."
+        severity: error
+        from: { path: "^shop/domain/" }
+        to: { path: "^shop/(services|web)/", reachable: true }
+        examples:
+          forbidden:
+            - "shop/domain/pricing.py -> shop/web/formatting.py"
+            - "shop/domain/order.py -> shop/services/orders.py"
+          allowed:
+            - "shop/domain/order.py -> shop/domain/pricing.py"
+            - "shop/services/orders.py -> shop/domain/order.py"
+      - name: services-sit-below-web
+        comment: "The services are called by the web layer and never call into it, directly or through a chain. plan:0004-wave-4-reach"
+        fix: "Return data from the service and let shop/web/ format or render it."
+        severity: error
+        from: { path: "^shop/services/" }
+        to: { path: "^shop/web/", reachable: true }
+        examples:
+          forbidden:
+            - "shop/services/orders.py -> shop/web/formatting.py"
+          allowed:
+            - "shop/web/views.py -> shop/services/orders.py"
+            - "shop/services/orders.py -> shop/domain/order.py"

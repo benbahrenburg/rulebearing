@@ -1,0 +1,20 @@
+$schema: https://benbahrenburg.github.io/rulebearing/schema/config-v1.json
+languages:
+  python: {}
+rules:
+  dependencies:
+    forbidden:
+      - name: sibling-packages-form-no-cycle
+        comment: "Packages that import each other can only be understood, tested and released together. plan:0004-wave-4-reach"
+        fix: "Break the cycle at its weakest edge: move the code one package borrows into the package that needs it, or into a new package both import."
+        severity: error
+        scope: folder
+        from: { path: "^shop/" }
+        to: { circular: true }
+        # A cycle between two folders takes at least two edges, and `rulebearing test` builds its
+        # graph from one edge per example, so the examples show what stays allowed and the
+        # fixture's repository holds the cycle (expected.json).
+        examples:
+          allowed:
+            - "shop/orders/order.py -> shop/billing/invoice.py"
+            - "shop/orders/order.py -> shop/catalog/prices.py"

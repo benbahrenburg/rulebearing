@@ -1,0 +1,16 @@
+{
+  "forbidden": [
+    {
+      "name": "sibling-packages-form-no-cycle",
+      "comment": "Packages that import each other can only be understood, tested and released together. plan:0004-wave-4-reach",
+      "to": {
+        "circular": true
+      },
+      "severity": "error",
+      "scope": "folder",
+      "from": {
+        "path": "^shop/"
+      }
+    }
+  ]
+}

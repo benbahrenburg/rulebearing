@@ -1,0 +1,22 @@
+{
+  "violations": [
+    {
+      "from": "src/features/cart/cart.ts",
+      "to": "src/features/catalog/product.ts",
+      "unresolvedTo": "../catalog/product",
+      "dependencyTypes": [
+        "local",
+        "import"
+      ],
+      "type": "dependency",
+      "rule": {
+        "name": "features-are-independent",
+        "severity": "error"
+      },
+      "id": "RB-4fdbdfc7",
+      "fix": "Move what both features need into src/shared/, or let the app shell (src/main.ts) pass one feature's result to the other.",
+      "decision": "plan:0004-wave-4-reach"
+    }
+  ],
+  "vacuousRules": []
+}

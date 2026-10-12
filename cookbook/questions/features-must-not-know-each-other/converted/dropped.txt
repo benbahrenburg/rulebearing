@@ -1,0 +1,4 @@
+dropped 3 item(s) dependency-cruiser cannot hold:
+  $schema: points at the native schema
+  forbidden[features-are-independent].fix: a Rulebearing rule field
+  forbidden[features-are-independent].examples: a Rulebearing rule field

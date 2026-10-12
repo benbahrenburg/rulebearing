@@ -118,7 +118,8 @@ export interface PlaygroundView {
   readonly status: { textContent: string | null };
   /**
    * The component's `dataset`: `state` is `ready`, `ok` or `error`, `elapsed` the last run in ms,
-   * `action` what the last run was (`evaluate`, `cruise_ts`, `cruise_py` or `explain`).
+   * `action` what the last run was (`evaluate`, `cruise_ts`, `cruise_py` or `explain`), and
+   * `preload`, set by the page, the example loaded once the module is ready.
    */
   readonly data: Record<string, string | undefined>;
 }
@@ -222,6 +223,11 @@ export class Playground {
     view.explain.disabled = false;
     view.data.state = 'ready';
     view.status.textContent = `Ready: rulebearing ${this.api.version()}.`;
+    // A cookbook page opens with its own repository and rule loaded.
+    const preload = view.data.preload;
+    if (preload !== undefined && preload !== '') {
+      this.load(preload);
+    }
   }
 
   /** Shows the panel of the mode picked, hiding the other. */

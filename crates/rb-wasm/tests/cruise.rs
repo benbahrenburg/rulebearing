@@ -10,6 +10,11 @@
 //! `rulebearing explain <rule>` print there (`expected/`), which `rb-cli`'s
 //! `tests/playground_fixtures.rs` holds the command line to on every run. The playground, handed
 //! the same files as a map of paths to text, must print the same bytes.
+//!
+//! The cookbook's question pages ([ADR-0074](../../../docs/adr/0074-the-cookbook-question-pages-are-fixtures-beside-the-guard-catalogue.md),
+//! [plan 0004, Step 5](../../../docs/plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables))
+//! preload their playground with a fixture's repository; over each, `cruise_ts` or `cruise_py`
+//! must find the violations the page shows.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -121,6 +126,50 @@ fn explain_prints_what_the_command_line_prints() -> Result {
             assert_eq!(printed, expected, "{name}: {rule}");
         }
     }
+    Ok(())
+}
+
+/// The cookbook's question fixtures (`cookbook/questions/<slug>/`): each page's playground is
+/// preloaded with the fixture's `repo/` and `rulebearing.yaml`, and the page shows the violations
+/// `rulebearing cruise` found there (`expected.json`, which `cookbook/questions/run.sh` holds the
+/// command line to). The playground must find the same ones.
+#[test]
+fn each_cookbook_question_s_playground_finds_what_its_page_shows() -> Result {
+    let questions = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../cookbook/questions");
+    let mut compared = 0;
+    for entry in std::fs::read_dir(&questions)? {
+        let dir = entry?.path();
+        if !dir.join("rulebearing.yaml").is_file() {
+            continue;
+        }
+        let files = dropped(&dir.join("repo"))?;
+        let python = files
+            .keys()
+            .any(|path| Path::new(path).extension().is_some_and(|ext| ext == "py"));
+        let extractor = if python {
+            Extractor::Python
+        } else {
+            Extractor::TypeScript
+        };
+        let config = read(&dir.join("rulebearing.yaml"))?;
+        let printed: serde_json::Value =
+            serde_json::from_str(&cruise(extractor, &files, &config, "json", &now())?)?;
+        let expected: serde_json::Value = serde_json::from_str(&read(&dir.join("expected.json"))?)?;
+        let summary = &printed["summary"];
+        assert_eq!(
+            summary["violations"],
+            expected["violations"],
+            "{}",
+            dir.display()
+        );
+        let vacuous = summary
+            .get("vacuousRules")
+            .cloned()
+            .unwrap_or_else(|| serde_json::Value::Array(Vec::new()));
+        assert_eq!(vacuous, expected["vacuousRules"], "{}", dir.display());
+        compared += 1;
+    }
+    assert!(compared >= 8, "only {compared} question fixtures found");
     Ok(())
 }
 
