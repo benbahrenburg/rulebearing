@@ -142,9 +142,11 @@ const CANONICAL_KEYS: &[&str] = &[
     "elements",
     "slices",
     "diagrams",
+    "telemetry",
 ];
 /// The native top-level additions, a warning in a dependency-cruiser file.
 const NATIVE_TOP_KEYS: &[&str] = &[
+    "telemetry",
     "defines",
     "allowEmpty",
     "languages",

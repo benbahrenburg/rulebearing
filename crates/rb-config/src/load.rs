@@ -22,7 +22,8 @@ use serde_json::{Map, Value};
 use crate::extends::{self, Target};
 use crate::js::{self, Kind, Limits};
 use crate::model::{
-    CompatMode, Config, Define, DependencyRules, KnownViolation, Languages, Options, Ratchet, Rules,
+    CompatMode, Config, Define, DependencyRules, KnownViolation, Languages, Options, Ratchet,
+    Rules, Telemetry,
 };
 use crate::read::{self, Evaluation, Syntax};
 use crate::{ConfigError, ConfigFormat, defines, native, normalize, shorthands};
@@ -479,6 +480,13 @@ fn assemble(
         .map_err(|e| invalid("defines", e))?
         .unwrap_or_default();
     let allow_empty = allow_empty(&canonical, &mut rules, &ratchets)?;
+    let telemetry = canonical
+        .get("telemetry")
+        .cloned()
+        .map(serde_json::from_value::<Telemetry>)
+        .transpose()
+        .map_err(|e| invalid("telemetry", e))?
+        .unwrap_or_default();
     let family = |key: &str| {
         canonical
             .get(key)
@@ -524,6 +532,7 @@ fn assemble(
         files: Vec::new(),
         via_node: false,
         allow_empty,
+        telemetry,
     })
 }
 
@@ -701,6 +710,72 @@ mod tests {
             repo.load("wrong.yaml"),
             Err(ConfigError::Invalid(m)) if m.contains("options.cache")
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn telemetry_is_off_unless_the_root_file_turns_it_on() -> Result<(), Box<dyn Error>> {
+        let repo = Repo::new(
+            "telemetry",
+            &[
+                ("plain.yaml", "forbidden: []\n"),
+                ("on.yaml", "telemetry: { enabled: true }\n"),
+                ("ci.yaml", "telemetry: { enabled: true, ciAllowed: true }\n"),
+                (
+                    "extends-on.yaml",
+                    "extends: ./plain.yaml\ntelemetry: { enabled: true }\n",
+                ),
+                ("preset.yaml", "telemetry: { enabled: true }\n"),
+                ("from-preset.yaml", "extends: ./preset.yaml\n"),
+                ("unknown.yaml", "telemetry: { enabled: true, send: true }\n"),
+                ("shape.yaml", "telemetry: yes\n"),
+                (
+                    ".dependency-cruiser.json",
+                    r#"{ "telemetry": { "enabled": true }, "forbidden": [] }"#,
+                ),
+            ],
+        )?;
+        assert_eq!(repo.load("plain.yaml")?.telemetry, Telemetry::default());
+        assert!(!Telemetry::default().enabled && !Telemetry::default().ci_allowed);
+        assert_eq!(
+            repo.load("on.yaml")?.telemetry,
+            Telemetry {
+                enabled: true,
+                ci_allowed: false
+            }
+        );
+        assert_eq!(
+            repo.load("ci.yaml")?.telemetry,
+            Telemetry {
+                enabled: true,
+                ci_allowed: true
+            }
+        );
+        assert!(
+            repo.load("extends-on.yaml")?.telemetry.enabled,
+            "the root file's key survives the merge"
+        );
+        for (file, needle) in [
+            ("from-preset.yaml", "file named in `extends`"),
+            ("unknown.yaml", "send"),
+            ("shape.yaml", "telemetry"),
+        ] {
+            let message = match repo.load(file) {
+                Err(ConfigError::Invalid(message)) => message,
+                other => return Err(format!("{file} should be invalid, got {other:?}").into()),
+            };
+            assert!(message.contains(needle), "{file}: {message}");
+        }
+        let cruiser = repo.load(".dependency-cruiser.json")?;
+        assert!(cruiser.telemetry.enabled);
+        assert!(
+            cruiser
+                .warnings
+                .iter()
+                .any(|w| w.message.contains("`telemetry` is a Rulebearing addition")),
+            "{:?}",
+            cruiser.warnings
+        );
         Ok(())
     }
 

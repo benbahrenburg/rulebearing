@@ -305,7 +305,7 @@ Release is one tag: `cargo-dist` builds the binaries, and the three wrappers are
 
 ## Security posture
 
-- **No network, ever.** The binary makes no outbound connection; opt-in usage counts (wave 4) are printed before sending and off by default.
+- **No network, ever.** The binary makes no outbound connection. Opt-in usage counts (wave 4) are off by default, counted on the machine with salted rule hashes and printed by `--usage-counts print`; there is no endpoint yet, so no send path is built and nothing is retained remotely ([ADR-0075](adr/0075-usage-counts-are-counted-and-printed-but-not-sent.md); the payload schema and the local retention are in [usage-counts.md](usage-counts.md)). A test fails if the binary links a network call.
 - **No code execution outside the sandbox.** The QuickJS evaluator has no filesystem access beyond the repository, no `process`, no timers ([ADR-0006](adr/0006-embedded-quickjs-config-evaluator.md)). It runs JavaScript configurations and `plugin:<path>` reporters alike ([reporters § Plugin reporters](reporters.md#plugin-reporters)). Escaping it is a test case that must fail.
 - **The sidecar is explicit.** Node is spawned only with `--sidecar node` or `--config-via-node`, and the report records that it was.
 - **Inputs are untrusted.** Assemblies, PDBs and source files are parsed defensively; a malformed input produces exit 2 with a named reason, never a panic. Fuzz targets exist for the metadata reader and the config parsers.

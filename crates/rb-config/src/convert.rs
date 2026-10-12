@@ -78,6 +78,12 @@ pub fn to_dependency_cruiser(
             });
         }
     }
+    if canonical.remove("telemetry").is_some() {
+        dropped.push(Dropped {
+            at: "telemetry".into(),
+            reason: "Rulebearing's usage-counts opt-in; dependency-cruiser counts nothing".into(),
+        });
+    }
     if canonical.remove("$schema").is_some() {
         dropped.push(Dropped {
             at: "$schema".into(),
@@ -276,6 +282,7 @@ mod tests {
         let native_file = object(json!({
             "$schema": "s",
             "extends": ["rulebearing:recommended"],
+            "telemetry": { "enabled": true },
             "languages": { "dotnet": { "solution": "a.sln" } },
             "rules": {
                 "dependencies": { "forbidden": [{ "name": "a", "fix": "f", "examples": { "allowed": [] }, "owner": "o", "expires": "2030-01-01", "since": "1.0.0", "allowEmpty": true, "from": {}, "to": {} }] },
@@ -297,12 +304,14 @@ mod tests {
             "forbidden[a].since",
             "forbidden[a].allowEmpty",
             "rules.layers, rules.independence",
+            "telemetry",
         ] {
             assert!(at.contains(&expected), "{expected} in {at:?}");
         }
         assert_eq!(dc["forbidden"].as_array().map(Vec::len), Some(2));
         assert!(!dc.contains_key("extends"));
-        assert!(describe(&dropped).contains("dropped 11"));
+        assert!(!dc.contains_key("telemetry"));
+        assert!(describe(&dropped).contains("dropped 12"));
         assert_eq!(describe(&[]), "nothing dropped\n");
         Ok(())
     }

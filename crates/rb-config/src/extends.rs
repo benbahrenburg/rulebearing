@@ -327,7 +327,7 @@ fn merge_named(extended: &[&Value], base: &[&Value]) -> Vec<Value> {
 ///
 /// # Errors
 /// [`ConfigError::Invalid`] when either file holds a rule list (`forbidden`, `rules.elements`,
-/// `allowEmpty` and the rest) that is not a list.
+/// `allowEmpty` and the rest) that is not a list, or when `base` sets `telemetry`.
 pub fn merge(
     extended: &Map<String, Value>,
     base: &Map<String, Value>,
@@ -393,6 +393,16 @@ pub fn merge(
     }
     if let Some(schema) = extended.get("$schema") {
         out.insert("$schema".into(), schema.clone());
+    }
+    // The usage-counts opt-in belongs to the repository: an extended file cannot set it, so a
+    // shared preset never turns counting on (or off) for the repositories that use it (ADR-0075).
+    if base.contains_key("telemetry") {
+        return Err(ConfigError::Invalid(
+            "`telemetry` is read from the repository's own configuration file only; a file named in `extends` cannot turn usage counts on or off: move the key into the root file".into(),
+        ));
+    }
+    if let Some(telemetry) = extended.get("telemetry") {
+        out.insert("telemetry".into(), telemetry.clone());
     }
     Ok(out)
 }
