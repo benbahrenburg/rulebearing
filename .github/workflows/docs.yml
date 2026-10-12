@@ -10,6 +10,11 @@
 # manual run on `main`, or a completed release run: the same, then deploy. One Pages site per
 # repository, so this is the only workflow that deploys it; release.yml starts it by finishing.
 #
+# Push to `main` and a manual run (on any branch) also time the playground on plan 0004's
+# mutation fixture (section 1.8: "evaluate the wave 1 mutation fixture in the browser in under
+# 500 ms after load"): the fixture is the mutation branch of conformance gate 1, layer 5, a patch
+# over a clone of dependency-cruiser, so a pull request does not build it.
+#
 # Decision: docs/adr/0072-the-docs-site-builds-from-docs-and-serves-the-released-schemas.md.
 # Hardening: docs/adr/0025-ci-and-supply-chain-hardening.md (pinned actions, least privilege: only
 # the deploy job holds pages: write and id-token: write). Requirements: FR-REACH-01, NFR-DOC-01.
@@ -63,6 +68,12 @@ on:
       - "package-lock.json"
       - "deny.toml"
       - ".github/workflows/docs.yml"
+      # The mutation fixture: the binary that writes its graph and expected output, the patch,
+      # the script that applies it and the pinned SHA it applies to.
+      - "crates/rb-cli/**"
+      - "conformance/dependency-cruiser/mutations/**"
+      - "conformance/dependency-cruiser/scripts/run-layer-5.sh"
+      - "testbeds/manifest.yaml"
   # A release publishes new schemas: rebuild the site from `main` so the schema URLs serve them.
   workflow_run:
     workflows: [release]
@@ -124,6 +135,62 @@ jobs:
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: target/site
+
+  # The playground on the mutation fixture, in a job of its own so the timing shares the runner
+  # with nothing else (CLAUDE.md, Testing and coverage): run-layer-5.sh --mutations applies the
+  # patch to dependency-cruiser at the manifest SHA, checks both tools report the twelve
+  # violations, and writes the cruise result, the configuration as JSON and the command line's
+  # `cruise --graph` output to target/conformance/layer5/mutations/playground; the browser test
+  # then runs the built page's `evaluate` on them, compares its output with the command line's and
+  # asserts each run under 500 ms. The times go to the job summary. A missing fixture fails the
+  # test rather than skipping it, because the variable is set. Not a dependency of the deploy.
+  playground-mutations:
+    name: docs-playground-mutations
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      - run: rustup target add wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2
+        with:
+          tool: wasm-bindgen@0.2.128
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python3 -m pip install --quiet pyyaml
+      - run: npm ci --no-audit --no-fund --ignore-scripts
+      - id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          git fetch --no-tags --depth=1 origin "refs/tags/$tag:refs/tags/$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      # Builds target/release/rulebearing as well, which the mutation branch runs.
+      - run: site/build.sh target/site
+        env:
+          RB_SCHEMA_REF: ${{ steps.release.outputs.tag }}
+      - name: mutation branch and its playground fixture
+        run: conformance/dependency-cruiser/scripts/run-layer-5.sh --mutations
+      - run: npx --no-install playwright install --with-deps chromium-headless-shell
+      - name: playground on the mutation fixture
+        run: npm --prefix site run test:e2e -- -t "mutation fixture"
+        env:
+          RB_PLAYGROUND_MUTATIONS: ${{ github.workspace }}/target/conformance/layer5/mutations/playground
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playground-mutations
+          path: target/conformance/layer5/mutations/playground
+          if-no-files-found: ignore
 
   deploy:
     name: docs-deploy

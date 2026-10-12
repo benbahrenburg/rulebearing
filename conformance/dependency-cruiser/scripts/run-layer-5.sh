@@ -13,7 +13,9 @@
 #                        for each of the twelve rules over that graph (RB_UPDATE_SNAPSHOTS=1
 #                        rewrites them; plan 0004, Step 9); then, with the mutations committed, that
 #                        `--affected <manifest SHA>` gives the same result from both, exactly
-#                        mutations/expected-affected.json
+#                        mutations/expected-affected.json. On the way it writes the playground's
+#                        fixture for that graph to target/conformance/layer5/mutations/playground
+#                        (plan 0004, Step 3; site/test/e2e/playground.test.ts)
 #
 # Plan: docs/plans/implemented/0001-wave-1-typescript-parity.md, Step 18 and sub-wave 1G.
 # Requirements: docs/prd.md#nfr-conf-01, docs/prd.md#nfr-conf-03.
@@ -258,6 +260,36 @@ fix_plans() { # out, directory
   return "$status"
 }
 
+# The playground's fixture for the mutation branch, in <out>/playground (plan 0004, Step 3 and
+# § 1.8; docs/adr/0072): Rulebearing's cruise result as graph.json, the configuration as JSON
+# (`config expand --json`, since the page has no JavaScript engine for the .cjs), and what
+# `cruise --graph` prints over that graph with the original .cjs, per reporter the browser test
+# compares, under expected/. site/test/e2e/playground.test.ts reads the folder from
+# RB_PLAYGROUND_MUTATIONS and holds the page's `evaluate` to those bytes and to 500 ms.
+playground_fixture() { # out, directory
+  local out="$1" dir="$2" fixture="$1/playground" type status
+  rm -rf "$fixture"
+  mkdir -p "$fixture/expected"
+  cp "$out/rulebearing.json" "$fixture/graph.json"
+  (cd "$dir" && "$rulebearing" config expand .dependency-cruiser.mutations.cjs --json) \
+    > "$fixture/rulebearing.json"
+  for type in json err-long text; do
+    status=0
+    (cd "$dir" && "$rulebearing" cruise --graph "$fixture/graph.json" \
+      --config .dependency-cruiser.mutations.cjs --output-type "$type") \
+      > "$fixture/expected/$type.out" || status=$?
+    # json and text do not gate (exit 0); err-long exits with the error count, which is no
+    # failure here. A refused run (2: untrusted, 3: invalid configuration) prints no report.
+    if [ ! -s "$fixture/expected/$type.out" ] || { [ "$type" != err-long ] && [ "$status" -ne 0 ]; }; then
+      echo "layer5: cruise --graph -T $type exited $status:" >&2
+      head -c 2000 "$fixture/expected/$type.out" >&2
+      return 1
+    fi
+  done
+  cp "$gate/mutations/expected.json" "$fixture/violations.json"
+  echo "layer5: playground fixture written to $fixture"
+}
+
 run_mutations() {
   local name=sverweij/dependency-cruiser sha dir out
   sha="$(field "$name" sha)"
@@ -272,6 +304,7 @@ run_mutations() {
   cruise_both "$out" "$dir" .dependency-cruiser.mutations.cjs "$(pinned_incumbent)" src bin
   zero_diff "$out" "$name" --expect "$gate/mutations/expected.json"
   fix_plans "$out" "$dir"
+  playground_fixture "$out" "$dir"
   # --affected (plan 0003, Step 3): the mutations committed on top of the manifest SHA, then both
   # tools with `--affected <sha>`. Committed, because `git status --porcelain` lists the new
   # untracked folder src/mutation/ rather than its files, which neither tool would count. Both
