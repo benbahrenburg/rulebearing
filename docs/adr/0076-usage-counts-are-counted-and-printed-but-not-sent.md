@@ -1,4 +1,4 @@
-# ADR-0075: Usage counts are counted and printed on the machine, and not sent, until there is an endpoint
+# ADR-0076: Usage counts are counted and printed on the machine, and not sent, until there is an endpoint
 
 - **Status:** Proposed (2026-10-11)
 - **Date:** 2026-10-11

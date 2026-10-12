@@ -1,7 +1,7 @@
 //! `.graph/usage/`: the salt, one payload per calendar month, and the month of the last monthly
 //! report.
 //!
-//! - Decision: [ADR-0075](../../../../docs/adr/0075-usage-counts-are-counted-and-printed-but-not-sent.md)
+//! - Decision: [ADR-0076](../../../../docs/adr/0076-usage-counts-are-counted-and-printed-but-not-sent.md)
 //!   (storage, cadence, retention)
 //! - Plan: [plan 0004, Step 13](../../../../docs/plans/pending/0004-wave-4-reach.md#25-steps-for-sub-wave-4e-usage-counts-and-the-adoption-review),
 //!   [§ 1.7](../../../../docs/plans/pending/0004-wave-4-reach.md#17-decisions-applied-and-decisions-this-wave-must-make)

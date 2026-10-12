@@ -45,13 +45,13 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Command>,
     /// `print`: this month's usage counts, as a send would carry them; counted only with
-    /// `telemetry.enabled`, and never sent in this release (ADR-0075)
+    /// `telemetry.enabled`, and never sent in this release (ADR-0076)
     #[arg(long, value_enum, value_name = "print", hide_possible_values = true)]
     pub usage_counts: Option<UsageCounts>,
 }
 
 /// What `--usage-counts` does. `print` is the only action: there is no send in this release
-/// ([ADR-0075](../../../docs/adr/0075-usage-counts-are-counted-and-printed-but-not-sent.md)).
+/// ([ADR-0076](../../../docs/adr/0076-usage-counts-are-counted-and-printed-but-not-sent.md)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum UsageCounts {
     /// Print this month's usage-counts payload to stdout.

@@ -2,7 +2,7 @@
 //! name outside the public library replaced by a salted hash.
 //!
 //! - Architecture: [architecture § Security posture](../../../../docs/architecture.md#security-posture)
-//! - Decision: [ADR-0075](../../../../docs/adr/0075-usage-counts-are-counted-and-printed-but-not-sent.md)
+//! - Decision: [ADR-0076](../../../../docs/adr/0076-usage-counts-are-counted-and-printed-but-not-sent.md)
 //! - Plan: [plan 0004 § 1.5](../../../../docs/plans/pending/0004-wave-4-reach.md#15-architecture-of-what-this-wave-builds)
 //!   (the payload), [Step 13](../../../../docs/plans/pending/0004-wave-4-reach.md#25-steps-for-sub-wave-4e-usage-counts-and-the-adoption-review)
 //! - Requirements: [FR-REACH-03](../../../../docs/prd.md#fr-reach-03), [NFR-SEC-01](../../../../docs/prd.md#nfr-sec-01)

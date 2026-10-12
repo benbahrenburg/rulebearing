@@ -2,7 +2,7 @@
 //! `telemetry.enabled`, the CI guard, the salted hashes, the monthly cadence, `--usage-counts
 //! print`, the published schema, and no network call anywhere in the binary.
 //!
-//! - Decision: [ADR-0075](../../../docs/adr/0075-usage-counts-are-counted-and-printed-but-not-sent.md)
+//! - Decision: [ADR-0076](../../../docs/adr/0076-usage-counts-are-counted-and-printed-but-not-sent.md)
 //! - Plan: [plan 0004, Step 13](../../../docs/plans/pending/0004-wave-4-reach.md#25-steps-for-sub-wave-4e-usage-counts-and-the-adoption-review)
 //!   (off by default, the CI guard, the salt test)
 //! - Requirements: [FR-REACH-03](../../../docs/prd.md#fr-reach-03) ("No network call is made
@@ -497,7 +497,7 @@ fn the_binary_links_no_network_call() -> Result<(), Box<dyn Error>> {
 }
 
 /// No crate's own code names a socket type, and the lock file carries no HTTP client: the
-/// sending path does not exist, as ADR-0075 decides.
+/// sending path does not exist, as ADR-0076 decides.
 #[test]
 fn no_crate_reaches_for_the_network() -> Result<(), Box<dyn Error>> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");

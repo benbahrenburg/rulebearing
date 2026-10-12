@@ -5241,7 +5241,7 @@
     },
     "Telemetry": {
       "additionalProperties": false,
-      "description": "`telemetry`: whether this repository counts its own use of the tool. Both switches are off\nunless written; nothing is ever sent in this release, so the counts stay on the machine\n(ADR-0075).",
+      "description": "`telemetry`: whether this repository counts its own use of the tool. Both switches are off\nunless written; nothing is ever sent in this release, so the counts stay on the machine\n(ADR-0076).",
       "properties": {
         "ciAllowed": {
           "default": false,
@@ -5997,7 +5997,7 @@
         }
       ],
       "default": null,
-      "description": "Usage counts: off unless `enabled` is true; counted on this machine only, since sending\nis not available in this release (ADR-0075)."
+      "description": "Usage counts: off unless `enabled` is true; counted on this machine only, since sending\nis not available in this release (ADR-0076)."
     }
   },
   "title": "Rulebearing configuration",

@@ -45,7 +45,7 @@ pub struct NativeFile {
     #[serde(default)]
     pub allow_empty: Option<Vec<String>>,
     /// Usage counts: off unless `enabled` is true; counted on this machine only, since sending
-    /// is not available in this release (ADR-0075).
+    /// is not available in this release (ADR-0076).
     #[serde(default)]
     pub telemetry: Option<Telemetry>,
     /// Per-language settings.

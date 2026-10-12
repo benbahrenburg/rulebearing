@@ -89,7 +89,7 @@ pub fn load(ctx: &mut Context<'_>, args: &ConfigArgs) -> Result<Option<Config>, 
     }
     evaluate_webpack(ctx, &mut config, args)?;
     check_report_patterns(&config)?;
-    // Usage counting follows the configuration the command read (ADR-0075).
+    // Usage counting follows the configuration the command read (ADR-0076).
     ctx.usage.saw(&config);
     Ok(Some(config))
 }

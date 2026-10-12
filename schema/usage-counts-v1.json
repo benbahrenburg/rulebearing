@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Rulebearing usage counts",
-  "description": "One calendar month of one repository's usage counts: what `rulebearing --usage-counts print` shows. No path, no repository name and no user; a rule outside the public library appears only as a salted hash. Sending is not available in this release (ADR-0075).",
+  "description": "One calendar month of one repository's usage counts: what `rulebearing --usage-counts print` shows. No path, no repository name and no user; a rule outside the public library appears only as a salted hash. Sending is not available in this release (ADR-0076).",
   "type": "object",
   "additionalProperties": false,
   "required": ["tool", "version", "period", "commands", "rules"],

@@ -2,7 +2,7 @@
 //! never sent.
 //!
 //! - Architecture: [architecture § Security posture](../../../../docs/architecture.md#security-posture)
-//! - Decisions: [ADR-0075](../../../../docs/adr/0075-usage-counts-are-counted-and-printed-but-not-sent.md)
+//! - Decisions: [ADR-0076](../../../../docs/adr/0076-usage-counts-are-counted-and-printed-but-not-sent.md)
 //!   (the client without the send), [ADR-0021](../../../../docs/adr/0021-agent-surface-cli-first.md)
 //!   (adoption is measured)
 //! - Plan: [plan 0004, Step 13](../../../../docs/plans/pending/0004-wave-4-reach.md#25-steps-for-sub-wave-4e-usage-counts-and-the-adoption-review),
@@ -41,7 +41,7 @@ use self::store::{FOLDER, Recorded, Store};
 
 /// What every message about the opt-in says about sending.
 pub const NOT_SENT: &str =
-    "Sending is not available in this release (ADR-0075): nothing leaves this machine.";
+    "Sending is not available in this release (ADR-0076): nothing leaves this machine.";
 
 /// What one invocation learned about usage counting while it ran.
 #[derive(Debug, Default)]

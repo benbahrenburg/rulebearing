@@ -28,7 +28,7 @@
 //! | [`progress`] | `--progress` |
 //! | [`protocol`] | the conformance harness's `validate` and `report` |
 //! | [`serve`] | `serve --mcp` and `serve --lsp` over one warm graph |
-//! | [`usage`] | usage counts: counted and printed, never sent ([ADR-0075](../../../docs/adr/0075-usage-counts-are-counted-and-printed-but-not-sent.md)) |
+//! | [`usage`] | usage counts: counted and printed, never sent ([ADR-0076](../../../docs/adr/0076-usage-counts-are-counted-and-printed-but-not-sent.md)) |
 
 pub mod affected;
 pub mod api;

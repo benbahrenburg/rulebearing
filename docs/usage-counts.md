@@ -1,6 +1,6 @@
 # Usage counts: the payload, the schema and the retention
 
-Usage counts tell the project which commands are run and which rules fire, so the next cookbook page and the next fix go where they are used ([design § The developer relations hat](artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo); [FR-REACH-03](prd.md#fr-reach-03)). They are off unless a repository turns them on, and **nothing is sent in this release**: there is no endpoint yet, so the binary counts on the machine, prints what it counted, and makes no network connection in any configuration ([ADR-0075](adr/0075-usage-counts-are-counted-and-printed-but-not-sent.md); [architecture § Security posture](architecture.md#security-posture); [NFR-SEC-01](prd.md#nfr-sec-01)).
+Usage counts tell the project which commands are run and which rules fire, so the next cookbook page and the next fix go where they are used ([design § The developer relations hat](artifacts/design.md#the-developer-relations-hat-the-first-ten-minutes-and-the-brownfield-repo); [FR-REACH-03](prd.md#fr-reach-03)). They are off unless a repository turns them on, and **nothing is sent in this release**: there is no endpoint yet, so the binary counts on the machine, prints what it counted, and makes no network connection in any configuration ([ADR-0076](adr/0076-usage-counts-are-counted-and-printed-but-not-sent.md); [architecture § Security posture](architecture.md#security-posture); [NFR-SEC-01](prd.md#nfr-sec-01)).
 
 ## Turning counting on
 
@@ -81,7 +81,7 @@ The payload is valid against this schema, committed as `schema/usage-counts-v1.j
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Rulebearing usage counts",
-  "description": "One calendar month of one repository's usage counts: what `rulebearing --usage-counts print` shows. No path, no repository name and no user; a rule outside the public library appears only as a salted hash. Sending is not available in this release (ADR-0075).",
+  "description": "One calendar month of one repository's usage counts: what `rulebearing --usage-counts print` shows. No path, no repository name and no user; a rule outside the public library appears only as a salted hash. Sending is not available in this release (ADR-0076).",
   "type": "object",
   "additionalProperties": false,
   "required": ["tool", "version", "period", "commands", "rules"],

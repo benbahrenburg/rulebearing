@@ -540,7 +540,7 @@ fn other_languages(
 }
 
 /// Reads `telemetry`, the usage-counts opt-in: off when absent
-/// ([ADR-0075](../../../docs/adr/0075-usage-counts-are-counted-and-printed-but-not-sent.md)).
+/// ([ADR-0076](../../../docs/adr/0076-usage-counts-are-counted-and-printed-but-not-sent.md)).
 fn telemetry(canonical: &Map<String, Value>) -> Result<Telemetry, ConfigError> {
     canonical
         .get("telemetry")

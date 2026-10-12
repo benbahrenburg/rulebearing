@@ -42,7 +42,7 @@ Commands:
 Options:
       --usage-counts <print>  `print`: this month's usage counts, as a send would carry them;
                               counted only with `telemetry.enabled`, and never sent in this release
-                              (ADR-0075)
+                              (ADR-0076)
   -h, --help                  Print help
   -V, --version               Print version
 
