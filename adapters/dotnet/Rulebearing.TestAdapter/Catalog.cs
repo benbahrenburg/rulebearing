@@ -57,7 +57,9 @@ internal static class Catalog
                 "allowed",
                 JsValue.String(ruleSet, "allowedSeverity") ?? "warn",
                 JsValue.String(allowed[0], "comment"),
-                JsValue.String(allowed[0], "fix")));
+                Distinct(allowed.Select(static e => JsValue.String(e, "fix"))) is { Count: > 0 } fixes
+                    ? string.Join(' ', fixes)
+                    : null));
         }
 
         foreach (string family in ElementFamilies)
@@ -210,9 +212,12 @@ internal static class Catalog
 
                 if (failing.Count > 0)
                 {
+                    // Each distinct fix of the case's violations, in their order.
+                    List<string> fixes = Distinct(found.Select(v => FixOf(v, rule)));
                     StringBuilder message = new(
-                        (found.Count > 0 ? FixOf(found[0], rule) : null)
-                        ?? $"{failing.Count.ToString(CultureInfo.InvariantCulture)} violation(s) of `{name}`");
+                        fixes.Count > 0
+                            ? string.Join('\n', fixes)
+                            : $"{failing.Count.ToString(CultureInfo.InvariantCulture)} violation(s) of `{name}`");
                     foreach (string line in failing.Take(Shown))
                     {
                         message.Append('\n').Append(line);
@@ -273,7 +278,10 @@ internal static class Catalog
         return cases;
     }
 
-    /// <summary>One line per violation: its id, <c>from -&gt; to</c> and where it sits.</summary>
+    /// <summary>
+    /// One line per violation: its id, <c>from -&gt; to</c> (marked when the edge is declared,
+    /// <see cref="DeclaredMark"/>) and where it sits.
+    /// </summary>
     public static string Describe(JsonElement result, JsonElement violation)
     {
         string id = JsValue.String(violation, "id") is { } s ? $"{s} " : string.Empty;
@@ -283,7 +291,50 @@ internal static class Catalog
             ? string.Create(CultureInfo.InvariantCulture, $" (line {p.Line}, column {p.Column})")
             : string.Empty;
         string known = JsValue.Severity(violation) == "ignore" ? " [known]" : string.Empty;
-        return $"{id}{from} -> {to}{at}{known}";
+        return $"{id}{from} -> {to}{DeclaredMark(result, violation)}{at}{known}";
+    }
+
+    /// <summary>
+    /// <c>declared::scanned_violation_mark</c>: <c> (declared: &lt;kind&gt;)</c> when the violation
+    /// stands on one edge (a dependency or instability violation, or one without a <c>type</c>) and
+    /// every dependency of the first module named <c>from</c> on <c>to</c> is declared
+    /// (docs/adr/0078-fleet-and-declared-edges.md); <c> (declared)</c> when none carries a kind;
+    /// empty otherwise.
+    /// </summary>
+    public static string DeclaredMark(JsonElement result, JsonElement violation)
+    {
+        if (JsValue.String(violation, "type") is not (null or "dependency" or "instability"))
+        {
+            return string.Empty;
+        }
+
+        string from = JsValue.Text(violation, "from");
+        string to = JsValue.Text(violation, "to");
+        JsonElement? module = JsValue.Array(result, "modules").Cast<JsonElement?>()
+            .FirstOrDefault(m => JsValue.String(m, "source") == from);
+        List<JsonElement> edges = [.. JsValue.Array(module, "dependencies").Where(d => JsValue.String(d, "resolved") == to)];
+        if (edges.Count == 0 || !edges.All(static d => JsValue.Get(d, "declared") is { ValueKind: JsonValueKind.True }))
+        {
+            return string.Empty;
+        }
+
+        List<string> kinds = Distinct(edges.Select(static d => JsValue.String(d, "declaredKind")));
+        return kinds.Count == 0 ? " (declared)" : $" (declared: {string.Join(", ", kinds)})";
+    }
+
+    /// <summary>Each text that is there once, in order.</summary>
+    private static List<string> Distinct(IEnumerable<string?> texts)
+    {
+        List<string> found = [];
+        foreach (string? text in texts)
+        {
+            if (text is not null && !found.Contains(text))
+            {
+                found.Add(text);
+            }
+        }
+
+        return found;
     }
 
     /// <summary>

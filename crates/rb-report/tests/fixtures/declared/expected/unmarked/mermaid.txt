@@ -1,0 +1,29 @@
+flowchart LR
+
+subgraph 0["api"]
+subgraph 1["src"]
+2["Orders.cs"]
+3["Store.cs"]
+end
+end
+subgraph 4["pipeline"]
+5["worker.py"]
+end
+subgraph 6["web"]
+subgraph 7["src"]
+subgraph 8["api"]
+9["client.ts"]
+end
+A["app.ts"]
+B["legacy.ts"]
+C["util.ts"]
+end
+end
+2-->5
+5-->A
+9-->2
+9-->C
+A-->2
+A-->9
+B-->3
+B-->3

@@ -123,6 +123,30 @@ A refusal stops the run with `<path> is not a valid plugin: the reporter sandbox
 
 `--strict-schema` removes all of them, and the output then validates against dependency-cruiser 18.2.0's schema ([layer 4](../conformance/README.md#gate-1-layer-by-layer)). The graph document's own schema is [`schema/v1.json`](../schema/v1.json), generated from the types. Two runs over the same inputs serialise byte for byte. `optionsUsed.baseDir` is the working folder, as upstream writes it, and `teamcity` stamps each message with the time, which `SOURCE_DATE_EPOCH` pins.
 
+## Declared edges
+
+A `fleet` run adds the edges `edges.yaml` and OpenAPI clients declare, each marked `declared: true`, `dependencyKind: declared` and `declaredKind` ([cli.md § Fleets and declared edges](cli.md#fleets-and-declared-edges), [ADR-0078](adr/0078-fleet-and-declared-edges.md)). Every reporter that prints dependencies or violations tells a declared edge from a detected one ([FR-REACH-03](prd.md#fr-reach-03); [ADR-0014](adr/0014-no-invented-cross-language-edges.md): declared, never inferred). An edge between two modules is declared when every dependency of the one on the other is; when a detected edge joins the same two modules, a finding stands on the detected edge and carries no mark. A result without declared edges, which is every `cruise` result and every result dependency-cruiser writes, renders byte for byte as before, so every upstream byte comparison is unchanged.
+
+| Reporter | A declared edge |
+| --- | --- |
+| `err`, `err-long`, `err-html`, `markdown`, `teamcity`, `azure-devops`, `github-annotations`, `junit`, `trx` | ` (declared: <kind>)` after the violation's target; in a cycle or a reachability path, after the step the declared edge reaches |
+| `text` | ` (declared: <kind>)` at the end of the dependency's line |
+| `csv` | the cell reads `true (declared: <kind>)`, or the severity with the mark |
+| `html` | the cell's title has the mark after the edge, and the cell carries the class `cell-declared` and a dashed outline |
+| `json` | `declared`, `dependencyKind: declared`, `declaredKind` and `comment` on the dependency; `--strict-schema` strips them, and the edge stays |
+| `anon` | `declared: true` on the dependency, the one addition the anonymiser keeps; the kind and comment are the declaration's own words and may name a service, so they are left out |
+| `agent` | `dependencyKind: declared`, `declared: true` and `declaredKind` on the finding |
+| `sarif` | the mark in the result's message, and `declared: true` and `declaredKind` in its `properties` |
+| `baseline` | `declared: true` and `declaredKind` on the entry, before the lifecycle fields; `knownViolations` keeps keys it does not read and matches the entry by its rule and ends as before |
+| `dot`, `ddot`, `archi` / `cdot`, `flat` / `fdot`, `x-dot-webpage` | the edge drawn dashed and labelled `declared: <kind>`, in an attribute list after the theme's, so no theme hides it; at folder or collapsed granularity an edge is declared when every module edge drawn on it is |
+| `mermaid` | a dotted link labelled with the kind: `A-.->\|"declared: http"\|B` |
+| `d2` | `style.stroke-dash: 3` and the label `declared: <kind>`, under the rule names when the edge breaks a rule |
+| `plantuml` | in the component forms, `Ci --> Cj : declared: <kind>` when every module edge the arrow stands for is declared, which `adhereTo` reads as the arrow it is. The type, namespace and slice forms draw the code layer, which a declared edge never enters (the union carries no code layer, ADR-0078 § 6), so they have no declared edge to draw |
+
+`<kind>` is the declaration's `kind` (`http` for an OpenAPI edge); several, joined by `, `, when the edge stands for declarations of different kinds; ` (declared)` when none has one.
+
+Two reporters print no edge and so carry no mark, and a test holds each to that: `null` prints nothing, and `metrics` prints each module's and folder's coupling and instability, counts in which a declared edge is one more dependency, with no line per edge or per violation.
+
 ## `github-annotations`
 
 ```text
@@ -141,7 +165,11 @@ One test case per rule of every family, and one per ratchet. An error-severity v
 
 ## `agent`
 
-Each violation carries a `cost`: `edgesToMove` (one for a dependency, the steps of a cycle or a reachability path, none for a module finding) and `targetFanIn` (how many modules depend on the target), summed into `score`. Violations are ordered by `score`, then `from` and `to`; rules by their cheapest violation. Each rule group carries its `fix` and decision token, `count` keeps the total, and `budget.truncated` says whether `--max-findings` cut anything. With the hooks from [agents.md](agents.md), this is what an agent reads when a turn ends.
+Each violation carries a `cost`: `edgesToMove` (one for a dependency, the steps of a cycle or a reachability path, none for a module finding) and `targetFanIn` (how many modules depend on the target), summed into `score`. Violations are ordered by `score`, then `from` and `to`; rules by their cheapest violation. Each rule group carries its `fix` and decision token; for `not-in-allowed`, which names the `allowed` list rather than a rule, it is the `fix` of the entry that applies to the cheapest violation, and a violation another entry applies to carries that entry's `fix` itself ([below](#allowed-and-fix)). `count` keeps the total, and `budget.truncated` says whether `--max-findings` cut anything. With the hooks from [agents.md](agents.md), this is what an agent reads when a turn ends.
+
+### `allowed` and `fix`
+
+dependency-cruiser reports a dependency that no `allowed` entry matches as `not-in-allowed`: the violation names the list, not an entry, and the `allowed` entries in `summary.ruleSetUsed` carry no name, so no output field gains one. Each violation carries the `fix` of the entry that applies to it, the first entry whose `from` selects the violating module and that has a `fix`, since those entries say what the module may depend on; its decision token comes from that entry's comment. When no such entry has a `fix`, the violation carries the list's text: each entry's `fix` once, in order, joined by a space, with the decision token of the first entry's comment. `err-long`, `github-annotations`, `sarif`'s results and `agent` print the violation's own `fix`; a `junit` or `trx` failure message opens with each distinct `fix` of the case's violations, one per line; `sarif`'s rule descriptor, which stands for the whole list, carries the list's text. `agent` gives the `not-in-allowed` group the `fix` of its cheapest violation, and a finding whose own `fix` differs carries it.
 
 ## `plantuml`
 

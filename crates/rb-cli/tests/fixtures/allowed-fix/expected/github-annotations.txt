@@ -1,0 +1,2 @@
+::error file=src/feature/a.ts,line=2,col=1,title=not-in-allowed::src/feature/a.ts -> src/lib/util.ts Fix: Modules in src/feature import only each other. Have the caller pass in what the module needs.
+::error file=src/lib/util.ts,line=1,col=1,title=not-in-allowed::src/lib/util.ts -> src/feature/c.ts Fix: src/lib imports only src/lib. Move the code the library needs into it.

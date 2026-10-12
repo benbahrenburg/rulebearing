@@ -1,0 +1,13 @@
+
+  error not-in-allowed: src/lib/util.ts → src/feature/c.ts
+    -
+    fix: src/lib imports only src/lib. Move the code the library needs into it.
+
+  error not-in-allowed: src/feature/a.ts → src/lib/util.ts
+    -
+    fix: Modules in src/feature import only each other. Have the caller pass in
+    what the module needs.
+
+
+x 2 dependency violations (2 errors, 0 warnings). 4 modules, 4 dependencies cruised.
+

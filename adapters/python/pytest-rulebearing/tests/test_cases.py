@@ -415,3 +415,73 @@ def test_an_element_violation_named_like_a_dependency_rule_is_a_rule_of_its_own(
     summary = result["summary"]
     assert isinstance(summary, dict)
     assert [rule_index(catalogue, v) for v in summary["violations"]] == [0, 1]
+
+
+# The fixed vectors of crates/rb-report/src/catalog.rs and declared.rs: the allowed list's fix, a
+# case's distinct fixes, and the mark of a declared edge
+# (docs/adr/0078-fleet-and-declared-edges.md).
+def _entry(fix: str | None = None) -> dict[str, object]:
+    return {"from": {}, "to": {}} if fix is None else {"from": {}, "to": {}, "fix": fix}
+
+
+def _not_in_allowed(source: str, fix: str) -> dict[str, object]:
+    return {
+        "type": "dependency",
+        "from": source,
+        "to": "x",
+        "rule": {"name": "not-in-allowed", "severity": "error"},
+        "fix": fix,
+    }
+
+
+def test_the_allowed_list_joins_its_fixes_and_a_case_lists_its_distinct_fixes() -> None:
+    entries = [_entry(), _entry("Use one."), _entry("Or the other."), _entry("Use one.")]
+    result: dict[str, object] = {
+        "summary": {
+            "violations": [
+                _not_in_allowed("a", "A."),
+                _not_in_allowed("b", "B."),
+                _not_in_allowed("c", "A."),
+            ],
+            "ruleSetUsed": {"allowed": entries, "allowedSeverity": "error"},
+        },
+    }
+    assert rules(result)[0].fix == "Use one. Or the other."
+    assert cases(result)[0].failure == "A.\nB.\na -> x\nb -> x\nc -> x"
+    bare: dict[str, object] = {"summary": {"ruleSetUsed": {"allowed": [_entry()]}}}
+    assert rules(bare)[0].fix is None
+
+
+def test_a_violation_on_a_declared_edge_is_marked_and_only_there() -> None:
+    result: dict[str, object] = {
+        "modules": [
+            {
+                "source": "a",
+                "dependencies": [
+                    {"resolved": "b", "declared": True, "declaredKind": "http"},
+                    {"resolved": "b", "declared": True, "declaredKind": "queue"},
+                    {"resolved": "b", "declared": True, "declaredKind": "http"},
+                    {"resolved": "c", "declared": True},
+                    {"resolved": "d", "declared": True, "declaredKind": "http"},
+                    {"resolved": "d"},
+                    {"resolved": "e", "declared": "yes"},
+                ],
+            },
+        ],
+    }
+
+    def on(target: str, kind: str | None = None) -> str:
+        violation: dict[str, object] = {"from": "a", "to": target, "rule": {"name": "r"}}
+        if kind is not None:
+            violation["type"] = kind
+        return describe(result, violation)
+
+    assert on("b") == "a -> b (declared: http, queue)"
+    assert on("b", "dependency") == "a -> b (declared: http, queue)"
+    assert on("b", "instability") == "a -> b (declared: http, queue)"
+    assert on("b", "cycle") == "a -> b"
+    assert on("c") == "a -> c (declared)"
+    assert on("d") == "a -> d"
+    assert on("e") == "a -> e"
+    assert on("x") == "a -> x"
+    assert describe({}, {"from": "a", "to": "b", "rule": {"name": "r"}}) == "a -> b"

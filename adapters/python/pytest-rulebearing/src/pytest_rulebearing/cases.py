@@ -23,9 +23,19 @@ from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
 
-__all__ = ["SHOWN", "Case", "Rule", "cases", "describe", "message", "rule_index", "rules"]
+__all__ = [
+    "SHOWN",
+    "Case",
+    "Rule",
+    "cases",
+    "declared_mark",
+    "describe",
+    "message",
+    "rule_index",
+    "rules",
+]
 
 #: How many violations a failure message lists before it says how many more there are.
 SHOWN = 5
@@ -65,7 +75,8 @@ class Case:
 
     Attributes:
         rule: The rule, or the expired known violation, the case is for.
-        failure: The failure message (the ``fix``, then the first violations), or ``None``.
+        failure: The failure message (each distinct ``fix`` of the rule's violations, then
+            the first violations), or ``None``.
         errors: ``(type, message)`` for each reason the rule could not be trusted: vacuous,
             expired, a ratchet without a budget.
         output: What the case reports without failing: warn, info and known findings.
@@ -239,7 +250,9 @@ def rules(result: object) -> list[Rule]:
                 family="allowed",
                 severity=_or(_string(rule_set, "allowedSeverity"), "warn"),
                 comment=_string(allowed[0], "comment"),
-                fix=_string(allowed[0], "fix"),
+                fix=" ".join(fixes)
+                if (fixes := _distinct(_string(r, "fix") for r in allowed))
+                else None,
             ),
         )
     for key in _LISTED_FAMILIES:
@@ -360,8 +373,42 @@ def position(result: object, violation: object) -> tuple[int, int] | None:
     return line, column
 
 
+def _distinct(texts: Iterable[str | None]) -> list[str]:
+    out: list[str] = []
+    for item in texts:
+        if item is not None and item not in out:
+            out.append(item)
+    return out
+
+
+def declared_mark(result: object, violation: object) -> str:
+    """The mark of a violation on a declared edge (docs/adr/0078-fleet-and-declared-edges.md).
+
+    Args:
+        result: The parsed JSON of a cruise.
+        violation: One of its violations.
+
+    Returns:
+        `` (declared: <kind>)`` when the violation stands on one edge (a dependency or
+        instability violation, or one without a ``type``) and every dependency of the first module
+        named ``from`` on ``to`` is declared; `` (declared)`` when none carries a kind; empty
+        otherwise.
+    """
+    if _string(violation, "type") not in {None, "dependency", "instability"}:
+        return ""
+    module = _first(_list(result, "modules"), "source", text(violation, "from"))
+    target = text(violation, "to")
+    edges = [d for d in _list(module, "dependencies") if _string(d, "resolved") == target]
+    if not edges or not all(_get(d, "declared")[1] is True for d in edges):
+        return ""
+    kinds = _distinct(_string(d, "declaredKind") for d in edges)
+    return f" (declared: {', '.join(kinds)})" if kinds else " (declared)"
+
+
 def describe(result: object, violation: object) -> str:
     """One line per violation: its id, ``from -> to``, the line, and ``[known]`` when baselined.
+
+    A violation on a declared edge carries its mark after ``to`` (:func:`declared_mark`).
 
     Args:
         result: The parsed JSON of a cruise.
@@ -375,7 +422,8 @@ def describe(result: object, violation: object) -> str:
     at = position(result, violation)
     where = "" if at is None else f" (line {at[0]}, column {at[1]})"
     known = " [known]" if severity(violation) == "ignore" else ""
-    return f"{prefix}{text(violation, 'from')} -> {text(violation, 'to')}{where}{known}"
+    declared = declared_mark(result, violation)
+    return f"{prefix}{text(violation, 'from')} -> {text(violation, 'to')}{declared}{where}{known}"
 
 
 def _vacuous_message(entry: object) -> str:
@@ -426,9 +474,9 @@ def _violation_case(case: Case, result: object, catalogue: list[Rule], index: in
     )
     if not errors:
         return
-    own = _string(found[0], "fix")
-    fix = case.rule.fix if own is None else own
-    lines = [fix if fix is not None else f"{len(errors)} violation(s) of `{name}`"]
+    # Each distinct ``fix`` of the case's violations, in their order.
+    fixes = _distinct(case.rule.fix if (own := _string(v, "fix")) is None else own for v in found)
+    lines = fixes or [f"{len(errors)} violation(s) of `{name}`"]
     lines.extend(errors[:SHOWN])
     if len(errors) > SHOWN:
         lines.append(f"... and {len(errors) - SHOWN} more")

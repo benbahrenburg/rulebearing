@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "rulebearing",
+          "informationUri": "https://github.com/benbahrenburg/rulebearing",
+          "semanticVersion": "0.1.3",
+          "rules": [
+            {
+              "id": "not-in-allowed",
+              "shortDescription": {
+                "text": "not-in-allowed"
+              },
+              "help": {
+                "text": "not-in-allowed",
+                "markdown": "not-in-allowed\n\n**Fix:** Outside src/feature and src/lib any import is allowed. Modules in src/feature import only each other. Have the caller pass in what the module needs. src/lib imports only src/lib. Move the code the library needs into it."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "family": "allowed",
+                "fix": "Outside src/feature and src/lib any import is allowed. Modules in src/feature import only each other. Have the caller pass in what the module needs. src/lib imports only src/lib. Move the code the library needs into it."
+              }
+            }
+          ]
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "toolConfigurationNotifications": []
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "not-in-allowed",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "not-in-allowed: src/feature/a.ts -> src/lib/util.ts. Modules in src/feature import only each other. Have the caller pass in what the module needs."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/feature/a.ts"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "rulebearing/v1": "RB-437eb651"
+          },
+          "properties": {
+            "to": "src/lib/util.ts",
+            "type": "dependency"
+          }
+        },
+        {
+          "ruleId": "not-in-allowed",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "not-in-allowed: src/lib/util.ts -> src/feature/c.ts. src/lib imports only src/lib. Move the code the library needs into it."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/lib/util.ts"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "rulebearing/v1": "RB-e92e06e5"
+          },
+          "properties": {
+            "to": "src/feature/c.ts",
+            "type": "dependency"
+          }
+        }
+      ]
+    }
+  ]
+}

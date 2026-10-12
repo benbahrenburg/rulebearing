@@ -1,0 +1,120 @@
+{
+  "inspected": {},
+  "vacuousRules": [],
+  "rules": [
+    {
+      "name": "api-hands-to-worker",
+      "severity": "warn",
+      "count": 1,
+      "shown": 1,
+      "fix": "Keep the hand-off on the queue the edges file declares.",
+      "decision": "adr:0078",
+      "violations": [
+        {
+          "id": "RB-0a000001",
+          "from": "api/src/Orders.cs",
+          "to": "pipeline/worker.py",
+          "line": null,
+          "column": null,
+          "member": null,
+          "dependencyKind": null,
+          "cost": {
+            "edgesToMove": 1,
+            "targetFanIn": 1,
+            "score": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "web-never-reaches-pipeline",
+      "severity": "error",
+      "count": 1,
+      "shown": 1,
+      "fix": "Go through the api's endpoints.",
+      "decision": null,
+      "violations": [
+        {
+          "id": "RB-0a000004",
+          "from": "web/src/app.ts",
+          "to": "pipeline/worker.py",
+          "line": null,
+          "column": null,
+          "member": null,
+          "dependencyKind": null,
+          "cost": {
+            "edgesToMove": 2,
+            "targetFanIn": 1,
+            "score": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "web-only-through-endpoints",
+      "severity": "error",
+      "count": 2,
+      "shown": 2,
+      "fix": "Call the endpoint the api exposes, through the generated client.",
+      "decision": "plan:fleet-fixture",
+      "violations": [
+        {
+          "id": "RB-0a000003",
+          "from": "web/src/app.ts",
+          "to": "api/src/Orders.cs",
+          "line": null,
+          "column": null,
+          "member": null,
+          "dependencyKind": null,
+          "cost": {
+            "edgesToMove": 1,
+            "targetFanIn": 2,
+            "score": 3
+          }
+        },
+        {
+          "id": "RB-0a000005",
+          "from": "web/src/legacy.ts",
+          "to": "api/src/Store.cs",
+          "line": 3,
+          "column": 1,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 1,
+            "targetFanIn": 2,
+            "score": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "no-circular",
+      "severity": "warn",
+      "count": 1,
+      "shown": 1,
+      "fix": "Break the cycle at the callback.",
+      "decision": null,
+      "violations": [
+        {
+          "id": "RB-0a000002",
+          "from": "api/src/Orders.cs",
+          "to": "pipeline/worker.py",
+          "line": null,
+          "column": null,
+          "member": null,
+          "dependencyKind": null,
+          "cost": {
+            "edgesToMove": 3,
+            "targetFanIn": 1,
+            "score": 4
+          }
+        }
+      ]
+    }
+  ],
+  "budget": {
+    "maxFindings": 5,
+    "truncated": false
+  }
+}

@@ -1,0 +1,29 @@
+# modules
+
+"api"."src"."Orders.cs": {class: module; link: "api/src/Orders.cs"}
+"api"."src"."Store.cs": {class: module; link: "api/src/Store.cs"}
+"pipeline"."worker.py": {class: module; link: "pipeline/worker.py"}
+"web"."src"."api"."client.ts": {class: module; link: "web/src/api/client.ts"}
+"web"."src"."app.ts": {class: module; link: "web/src/app.ts"}
+"web"."src"."legacy.ts": {class: module; link: "web/src/legacy.ts"}
+"web"."src"."util.ts": {class: module; link: "web/src/util.ts"}
+
+# dependencies
+
+"api"."src"."Orders.cs" -> "pipeline"."worker.py": {style: {stroke: orange}; label: "api-hands-to-worker"; target-arrowhead: {shape: circle}}
+"pipeline"."worker.py" -> "web"."src"."app.ts": { target-arrowhead: {shape: circle}}
+"web"."src"."api"."client.ts" -> "api"."src"."Orders.cs"
+"web"."src"."api"."client.ts" -> "web"."src"."util.ts"
+"web"."src"."app.ts" -> "api"."src"."Orders.cs": {style: {stroke: red}; label: "web-only-through-endpoints"; target-arrowhead: {shape: circle}}
+"web"."src"."app.ts" -> "web"."src"."api"."client.ts"
+"web"."src"."legacy.ts" -> "api"."src"."Store.cs": {style: {stroke: red}; label: "web-only-through-endpoints"}
+"web"."src"."legacy.ts" -> "api"."src"."Store.cs": {style: {stroke: red}; label: "web-only-through-endpoints"}
+
+# styling
+
+classes: {
+  module: {
+    height: 30;
+    style.border-radius: 10;
+  }
+}

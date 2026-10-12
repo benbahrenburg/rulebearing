@@ -1,0 +1,361 @@
+{
+  "modules": [
+    {
+      "source": "api/src/Orders.cs",
+      "language": "dotnet",
+      "valid": true,
+      "dependents": [
+        "web/src/api/client.ts",
+        "web/src/app.ts"
+      ],
+      "dependencies": [
+        {
+          "module": "pipeline/worker.py",
+          "resolved": "pipeline/worker.py",
+          "coreModule": false,
+          "dependencyTypes": [],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": true,
+          "moduleSystem": "clr",
+          "valid": false,
+          "rules": [
+            {
+              "name": "api-hands-to-worker",
+              "severity": "warn"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source": "api/src/Store.cs",
+      "language": "dotnet",
+      "valid": true,
+      "dependents": [
+        "web/src/legacy.ts"
+      ],
+      "dependencies": []
+    },
+    {
+      "source": "pipeline/worker.py",
+      "language": "python",
+      "valid": true,
+      "dependents": [
+        "api/src/Orders.cs"
+      ],
+      "dependencies": [
+        {
+          "module": "web/src/app.ts",
+          "resolved": "web/src/app.ts",
+          "coreModule": false,
+          "dependencyTypes": [],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": true,
+          "moduleSystem": "py",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "source": "web/src/api/client.ts",
+      "language": "typescript",
+      "valid": true,
+      "dependents": [
+        "web/src/app.ts"
+      ],
+      "dependencies": [
+        {
+          "module": "placeOrder",
+          "resolved": "api/src/Orders.cs",
+          "coreModule": false,
+          "dependencyTypes": [],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true
+        },
+        {
+          "module": "../util",
+          "resolved": "web/src/util.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ]
+    },
+    {
+      "source": "web/src/app.ts",
+      "language": "typescript",
+      "valid": true,
+      "dependents": [
+        "pipeline/worker.py"
+      ],
+      "dependencies": [
+        {
+          "module": "api/src/Orders.cs",
+          "resolved": "api/src/Orders.cs",
+          "coreModule": false,
+          "dependencyTypes": [],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": true,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "web-only-through-endpoints",
+              "severity": "error"
+            }
+          ]
+        },
+        {
+          "module": "./api/client",
+          "resolved": "web/src/api/client.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 2,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ]
+    },
+    {
+      "source": "web/src/legacy.ts",
+      "language": "typescript",
+      "valid": true,
+      "dependents": [],
+      "dependencies": [
+        {
+          "module": "../../api/src/Store.cs",
+          "resolved": "api/src/Store.cs",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "web-only-through-endpoints",
+              "severity": "error"
+            }
+          ],
+          "line": 3,
+          "column": 1,
+          "dependencyKind": "import"
+        },
+        {
+          "module": "api/src/Store.cs",
+          "resolved": "api/src/Store.cs",
+          "coreModule": false,
+          "dependencyTypes": [],
+          "followable": false,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": false,
+          "rules": [
+            {
+              "name": "web-only-through-endpoints",
+              "severity": "error"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source": "web/src/util.ts",
+      "language": "typescript",
+      "valid": true,
+      "dependents": [
+        "web/src/api/client.ts"
+      ],
+      "dependencies": []
+    }
+  ],
+  "summary": {
+    "violations": [
+      {
+        "from": "api/src/Orders.cs",
+        "to": "pipeline/worker.py",
+        "dependencyTypes": [],
+        "type": "dependency",
+        "rule": {
+          "name": "api-hands-to-worker",
+          "severity": "warn"
+        },
+        "id": "RB-0a000001",
+        "fix": "Keep the hand-off on the queue the edges file declares."
+      },
+      {
+        "from": "api/src/Orders.cs",
+        "to": "pipeline/worker.py",
+        "cycle": [
+          {
+            "name": "pipeline/worker.py",
+            "dependencyTypes": []
+          },
+          {
+            "name": "web/src/app.ts",
+            "dependencyTypes": []
+          },
+          {
+            "name": "api/src/Orders.cs",
+            "dependencyTypes": []
+          }
+        ],
+        "type": "cycle",
+        "rule": {
+          "name": "no-circular",
+          "severity": "warn"
+        },
+        "id": "RB-0a000002",
+        "fix": "Break the cycle at the callback."
+      },
+      {
+        "from": "web/src/app.ts",
+        "to": "api/src/Orders.cs",
+        "dependencyTypes": [],
+        "type": "dependency",
+        "rule": {
+          "name": "web-only-through-endpoints",
+          "severity": "error"
+        },
+        "id": "RB-0a000003",
+        "fix": "Call the endpoint the api exposes, through the generated client."
+      },
+      {
+        "from": "web/src/app.ts",
+        "to": "pipeline/worker.py",
+        "via": [
+          {
+            "name": "api/src/Orders.cs",
+            "dependencyTypes": []
+          },
+          {
+            "name": "pipeline/worker.py",
+            "dependencyTypes": []
+          }
+        ],
+        "type": "reachability",
+        "rule": {
+          "name": "web-never-reaches-pipeline",
+          "severity": "error"
+        },
+        "id": "RB-0a000004",
+        "fix": "Go through the api's endpoints."
+      },
+      {
+        "from": "web/src/legacy.ts",
+        "to": "api/src/Store.cs",
+        "dependencyTypes": [
+          "local"
+        ],
+        "type": "dependency",
+        "rule": {
+          "name": "web-only-through-endpoints",
+          "severity": "error"
+        },
+        "id": "RB-0a000005",
+        "fix": "Call the endpoint the api exposes, through the generated client."
+      }
+    ],
+    "error": 3,
+    "warn": 2,
+    "info": 0,
+    "ignore": 0,
+    "totalCruised": 7,
+    "totalDependenciesCruised": 9,
+    "ruleSetUsed": {
+      "forbidden": [
+        {
+          "name": "web-only-through-endpoints",
+          "severity": "error",
+          "comment": "The web app calls the api through its endpoints only. plan:fleet-fixture",
+          "fix": "Call the endpoint the api exposes, through the generated client.",
+          "from": {
+            "path": "^web/"
+          },
+          "to": {
+            "path": "^api/",
+            "pathNot": "Orders[.]cs$"
+          }
+        },
+        {
+          "name": "api-hands-to-worker",
+          "severity": "warn",
+          "comment": "The api hands orders to the worker through the queue only. adr:0078",
+          "fix": "Keep the hand-off on the queue the edges file declares.",
+          "from": {
+            "path": "^api/"
+          },
+          "to": {
+            "path": "^pipeline/"
+          }
+        },
+        {
+          "name": "no-circular",
+          "severity": "warn",
+          "comment": "No cycles across the services.",
+          "fix": "Break the cycle at the callback.",
+          "from": {},
+          "to": {
+            "circular": true
+          }
+        },
+        {
+          "name": "web-never-reaches-pipeline",
+          "severity": "error",
+          "comment": "The web app never reaches the pipeline.",
+          "fix": "Go through the api's endpoints.",
+          "from": {
+            "path": "^web/src/app[.]ts$"
+          },
+          "to": {
+            "path": "^pipeline/",
+            "reachable": true
+          }
+        }
+      ]
+    },
+    "optionsUsed": {}
+  }
+}

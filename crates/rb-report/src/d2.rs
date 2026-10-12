@@ -10,6 +10,9 @@
 //!
 //! An invalid module or dependency is stroked in the colour of its most severe rule (orange when
 //! the severity is not one of `error`, `warn`, `info`), with the rule names as tooltip or label.
+//! A declared dependency ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md)) is
+//! dashed (`stroke-dash: 3`) and labelled `declared: <kind>`, under the rule names when it breaks
+//! a rule (`crate::declared`).
 
 use std::fmt::Write as _;
 
@@ -119,13 +122,24 @@ fn module_attributes(module: &Value, options_used: Option<&Value>) -> String {
 
 fn dependency_attributes(dependency: &Value) -> String {
     let mut thing = String::new();
+    let declared = crate::declared::kinds(std::iter::once(dependency))
+        .map(|kinds| crate::declared::label(&kinds).replace('"', "\\\""));
     if dependency.get("valid") == Some(&Value::Bool(false)) {
         let rules = rb_rules::js::array(dependency, "rules");
-        thing = format!(
-            "style: {{stroke: {}}}; label: \"{}\"",
-            severity_colour(max_severity(rules)),
-            rule_names(rules)
-        );
+        thing = match &declared {
+            Some(label) => format!(
+                "style: {{stroke: {}; stroke-dash: 3}}; label: \"{}\\n{label}\"",
+                severity_colour(max_severity(rules)),
+                rule_names(rules)
+            ),
+            None => format!(
+                "style: {{stroke: {}}}; label: \"{}\"",
+                severity_colour(max_severity(rules)),
+                rule_names(rules)
+            ),
+        };
+    } else if let Some(label) = &declared {
+        thing = format!("style: {{stroke-dash: 3}}; label: \"{label}\"");
     }
     for (key, shape) in [("circular", "circle"), ("dynamic", "arrow")] {
         if js::truthy(dependency.get(key)) {

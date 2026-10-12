@@ -6,6 +6,9 @@
 //!   `reporterOptions.text.highlightFocused`
 //! - Plan: [Wave 1, Step 12](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-12-reporters-1d)
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
+//!
+//! A declared dependency ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md)) ends
+//! its line with ` (declared: <kind>)` (`crate::declared`); no other line changes.
 
 use std::collections::HashSet;
 use std::fmt::Write as _;
@@ -46,9 +49,12 @@ pub fn render(result: &Value, highlight_focused: bool, color: bool) -> Rendered 
         {
             let resolved = text(dependency, "resolved");
             let to_highlight = highlight_focused && in_focus.contains(&resolved);
+            let declared = crate::declared::kinds(std::iter::once(dependency))
+                .map(|kinds| crate::declared::mark(&kinds))
+                .unwrap_or_default();
             let _ = writeln!(
                 output,
-                "{} → {}",
+                "{} → {}{declared}",
                 show(&source, from_highlight),
                 show(&resolved, to_highlight)
             );
@@ -80,5 +86,19 @@ mod tests {
             "\u{1b}[4ma\u{1b}[24m → \u{1b}[4mb\u{1b}[24m\n"
         );
         assert_eq!(render(&json!({ "modules": [] }), false, false).output, "\n");
+    }
+
+    #[test]
+    fn a_declared_dependency_ends_its_line_with_the_mark() {
+        let result = json!({ "modules": [
+            { "source": "a", "dependencies": [
+                { "resolved": "b", "declared": true, "declaredKind": "http" },
+                { "resolved": "c" }
+            ] }
+        ] });
+        assert_eq!(
+            render(&result, false, false).output,
+            "a → b (declared: http)\na → c\n"
+        );
     }
 }

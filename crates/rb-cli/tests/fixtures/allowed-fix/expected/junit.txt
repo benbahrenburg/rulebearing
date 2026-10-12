@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="rulebearing" tests="1" failures="1" errors="0" time="0">
+  <testsuite name="rulebearing" tests="1" failures="1" errors="0" skipped="0" time="0" timestamp="2026-09-21T14:13:20.000">
+    <properties>
+      <property name="inspected.typescript.assemblies" value="0"/>
+      <property name="inspected.typescript.files" value="4"/>
+      <property name="inspected.typescript.modules" value="4"/>
+      <property name="totalCruised" value="4"/>
+      <property name="totalDependenciesCruised" value="4"/>
+      <property name="error" value="2"/>
+      <property name="warn" value="0"/>
+      <property name="info" value="0"/>
+      <property name="ignore" value="0"/>
+    </properties>
+    <testcase name="not-in-allowed" classname="rulebearing.allowed" time="0">
+      <failure type="error" message="Modules in src/feature import only each other. Have the caller pass in what the module needs.&#10;src/lib imports only src/lib. Move the code the library needs into it.&#10;RB-437eb651 src/feature/a.ts -&gt; src/lib/util.ts (line 2, column 1)&#10;RB-e92e06e5 src/lib/util.ts -&gt; src/feature/c.ts (line 1, column 1)">RB-437eb651 src/feature/a.ts -&gt; src/lib/util.ts (line 2, column 1)
+RB-e92e06e5 src/lib/util.ts -&gt; src/feature/c.ts (line 1, column 1)</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

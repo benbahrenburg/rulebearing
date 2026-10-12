@@ -1,0 +1,55 @@
+{
+  "inspected": {
+    "typescript": {
+      "files": 4,
+      "assemblies": 0,
+      "modules": 4
+    }
+  },
+  "vacuousRules": [],
+  "rules": [
+    {
+      "name": "not-in-allowed",
+      "severity": "error",
+      "count": 2,
+      "shown": 2,
+      "fix": "Modules in src/feature import only each other. Have the caller pass in what the module needs.",
+      "decision": "adr:0042",
+      "violations": [
+        {
+          "id": "RB-437eb651",
+          "from": "src/feature/a.ts",
+          "to": "src/lib/util.ts",
+          "line": 2,
+          "column": 1,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 1,
+            "targetFanIn": 1,
+            "score": 2
+          }
+        },
+        {
+          "id": "RB-e92e06e5",
+          "from": "src/lib/util.ts",
+          "to": "src/feature/c.ts",
+          "line": 1,
+          "column": 1,
+          "member": null,
+          "dependencyKind": "import",
+          "cost": {
+            "edgesToMove": 1,
+            "targetFanIn": 2,
+            "score": 3
+          },
+          "fix": "src/lib imports only src/lib. Move the code the library needs into it."
+        }
+      ]
+    }
+  ],
+  "budget": {
+    "maxFindings": 5,
+    "truncated": false
+  }
+}

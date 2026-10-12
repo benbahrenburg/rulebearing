@@ -16,10 +16,17 @@
 //! section in `summary.optionsUsed.reporterOptions` (`dot`, `ddot`, `archi`, `flat`), then `dot`'s,
 //! exactly as upstream's `normalizeDotReporterOptions` pries them. `archi` collapses to
 //! `^(node_modules|packages|src|lib|app|test|spec)/[^/]+` when no pattern is given.
+//!
+//! An edge every dependency drawn on it is declared for
+//! ([ADR-0078](../../../../docs/adr/0078-fleet-and-declared-edges.md)), at the granularity drawn,
+//! gets a second attribute list, `[style="dashed" label="declared: <kind>"]`, after the theme's,
+//! so it is dashed and labelled whatever the theme says (`crate::declared`); a graph without
+//! declared edges is drawn as upstream draws it.
 
 pub mod module_utl;
 pub mod theme;
 
+use std::collections::HashMap;
 use std::fmt::Write as _;
 
 use serde_json::Value;
@@ -231,11 +238,40 @@ fn hierarchy(module: &Value, clusters_have_own_node: bool) -> String {
     )
 }
 
-fn dependency_line(source: &str, dependency: &Value) -> String {
-    let mut line = format!(
-        "    \"{source}\" -> \"{}\"",
-        js::field(dependency, "resolved")
-    );
+/// The drawn edges that are declared, by their two ends as drawn, with their kinds: an edge is
+/// declared when every dependency it stands for is (`crate::declared`).
+type Declared = HashMap<(String, String), Vec<String>>;
+
+/// Every edge as `squash` draws it, kept when each dependency drawn on it is declared.
+fn declared_edges(modules: &[Value], squash: &dyn Fn(&str) -> String) -> Declared {
+    let mut edges: HashMap<(String, String), Option<Vec<String>>> = HashMap::new();
+    for module in modules {
+        let source = squash(&js::field(module, "source"));
+        for dependency in rb_rules::js::array(module, "dependencies") {
+            let key = (source.clone(), squash(&js::field(dependency, "resolved")));
+            let kinds = crate::declared::kinds(std::iter::once(dependency));
+            let entry = edges.entry(key).or_insert_with(|| Some(Vec::new()));
+            match (entry.as_mut(), kinds) {
+                (Some(all), Some(kinds)) => {
+                    for kind in kinds {
+                        if !all.contains(&kind) {
+                            all.push(kind);
+                        }
+                    }
+                }
+                _ => *entry = None,
+            }
+        }
+    }
+    edges
+        .into_iter()
+        .filter_map(|(key, kinds)| kinds.map(|k| (key, k)))
+        .collect()
+}
+
+fn dependency_line(source: &str, dependency: &Value, declared: &Declared) -> String {
+    let resolved = js::field(dependency, "resolved");
+    let mut line = format!("    \"{source}\" -> \"{resolved}\"");
     if js::truthy(dependency.get("hasExtraAttributes")) {
         let name = dependency.get("rule").and_then(|r| r.get("name"));
         let label = if js::truthy(name) {
@@ -250,10 +286,17 @@ fn dependency_line(source: &str, dependency: &Value) -> String {
         };
         let _ = write!(line, " [{label}{theme}]");
     }
+    if let Some(kinds) = declared.get(&(source.to_owned(), resolved)) {
+        let _ = write!(
+            line,
+            " [style=\"dashed\" label=\"{}\"]",
+            crate::declared::label(kinds).replace('"', "\\\"")
+        );
+    }
     line
 }
 
-fn module_block(module: &Value, clusters_have_own_node: bool) -> String {
+fn module_block(module: &Value, clusters_have_own_node: bool, declared: &Declared) -> String {
     let mut block = if js::truthy(module.get("folder")) {
         format!("    {}", hierarchy(module, clusters_have_own_node))
     } else {
@@ -264,7 +307,7 @@ fn module_block(module: &Value, clusters_have_own_node: bool) -> String {
         let source = js::field(module, "source");
         let lines: Vec<String> = dependencies
             .iter()
-            .map(|d| dependency_line(&source, d))
+            .map(|d| dependency_line(&source, d, declared))
             .collect();
         block.push('\n');
         block.push_str(&lines.join("\n"));
@@ -299,10 +342,18 @@ pub fn render(result: &Value, granularity: Granularity, section: Option<&Value>)
             suffix: &suffix,
         },
     );
+    let squash = |path: &str| match (granularity, pattern.as_deref()) {
+        (Granularity::Folder, _) => rb_rules::graph::consolidate::dirname(path),
+        (_, Some(pattern)) => {
+            rb_rules::patterns::first_match(pattern, path).unwrap_or_else(|| path.to_owned())
+        }
+        (_, None) => path.to_owned(),
+    };
+    let declared = declared_edges(&modules, &squash);
     let clusters_have_own_node = granularity == Granularity::Folder;
     let body: Vec<String> = prepared
         .iter()
-        .map(|m| module_block(m, clusters_have_own_node))
+        .map(|m| module_block(m, clusters_have_own_node, &declared))
         .collect();
     Rendered {
         output: format!(

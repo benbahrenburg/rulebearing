@@ -1,0 +1,14 @@
+
+  error web-only-through-endpoints: web/src/legacy.ts → api/src/Store.cs
+  error web-never-reaches-pipeline: web/src/app.ts → pipeline/worker.py
+      api/src/Orders.cs →
+      pipeline/worker.py
+  error web-only-through-endpoints: web/src/app.ts → api/src/Orders.cs
+  warn no-circular: api/src/Orders.cs → 
+      pipeline/worker.py →
+      web/src/app.ts →
+      api/src/Orders.cs
+  warn api-hands-to-worker: api/src/Orders.cs → pipeline/worker.py
+
+x 5 dependency violations (3 errors, 2 warnings). 7 modules, 9 dependencies cruised.
+

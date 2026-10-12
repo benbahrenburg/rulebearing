@@ -1,0 +1,21 @@
+strict digraph "dependency-cruiser output"{
+    rankdir="LR" splines="true" overlap="false" nodesep="0.16" ranksep="0.18" fontname="Helvetica-bold" fontsize="9" style="rounded,bold,filled" fillcolor="#ffffff" compound="true"
+    node [shape="box" style="rounded, filled" height="0.2" color="black" fillcolor="#ffffcc" fontcolor="black" fontname="Helvetica" fontsize="9"]
+    edge [arrowhead="normal" arrowsize="0.6" penwidth="2.0" color="#00000033" fontname="Helvetica" fontsize="9"]
+
+    subgraph "cluster_api" {label="api" subgraph "cluster_api/src" {label="src" "api/src/Orders.cs" [label=<Orders.cs> tooltip="Orders.cs" URL="api/src/Orders.cs" ] } }
+    "api/src/Orders.cs" -> "pipeline/worker.py" [xlabel="api-hands-to-worker" tooltip="api-hands-to-worker" arrowhead="normalnoneodot" fontcolor="orange" color="orange"] [style="dashed" label="declared: queue"]
+    subgraph "cluster_api" {label="api" subgraph "cluster_api/src" {label="src" "api/src/Store.cs" [label=<Store.cs> tooltip="Store.cs" URL="api/src/Store.cs" ] } }
+    subgraph "cluster_pipeline" {label="pipeline" "pipeline/worker.py" [label=<worker.py> tooltip="worker.py" URL="pipeline/worker.py" ] }
+    "pipeline/worker.py" -> "web/src/app.ts" [arrowhead="normalnoneodot"] [style="dashed" label="declared: webhook"]
+    subgraph "cluster_web" {label="web" subgraph "cluster_web/src" {label="src" subgraph "cluster_web/src/api" {label="api" "web/src/api/client.ts" [label=<client.ts> tooltip="client.ts" URL="web/src/api/client.ts" fillcolor="#ddfeff"] } } }
+    "web/src/api/client.ts" -> "api/src/Orders.cs" [style="dashed" label="declared: http"]
+    "web/src/api/client.ts" -> "web/src/util.ts"
+    subgraph "cluster_web" {label="web" subgraph "cluster_web/src" {label="src" "web/src/app.ts" [label=<app.ts> tooltip="app.ts" URL="web/src/app.ts" fillcolor="#ddfeff"] } }
+    "web/src/app.ts" -> "api/src/Orders.cs" [xlabel="web-only-through-endpoints" tooltip="web-only-through-endpoints" arrowhead="normalnoneodot" fontcolor="red" color="red"] [style="dashed" label="declared: http"]
+    "web/src/app.ts" -> "web/src/api/client.ts"
+    subgraph "cluster_web" {label="web" subgraph "cluster_web/src" {label="src" "web/src/legacy.ts" [label=<legacy.ts> tooltip="legacy.ts" URL="web/src/legacy.ts" fillcolor="#ddfeff"] } }
+    "web/src/legacy.ts" -> "api/src/Store.cs" [xlabel="web-only-through-endpoints" tooltip="web-only-through-endpoints" fontcolor="red" color="red"]
+    "web/src/legacy.ts" -> "api/src/Store.cs" [xlabel="web-only-through-endpoints" tooltip="web-only-through-endpoints" fontcolor="red" color="red"]
+    subgraph "cluster_web" {label="web" subgraph "cluster_web/src" {label="src" "web/src/util.ts" [label=<util.ts> tooltip="util.ts" URL="web/src/util.ts" fillcolor="#ddfeff"] } }
+}

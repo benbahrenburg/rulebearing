@@ -1,0 +1,35 @@
+[
+  {
+    "from": "src/feature/a.ts",
+    "to": "src/lib/util.ts",
+    "unresolvedTo": "../lib/util",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "type": "dependency",
+    "rule": {
+      "name": "not-in-allowed",
+      "severity": "error"
+    },
+    "id": "RB-437eb651",
+    "fix": "Modules in src/feature import only each other. Have the caller pass in what the module needs.",
+    "decision": "adr:0042"
+  },
+  {
+    "from": "src/lib/util.ts",
+    "to": "src/feature/c.ts",
+    "unresolvedTo": "../feature/c",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "type": "dependency",
+    "rule": {
+      "name": "not-in-allowed",
+      "severity": "error"
+    },
+    "id": "RB-e92e06e5",
+    "fix": "src/lib imports only src/lib. Move the code the library needs into it."
+  }
+]

@@ -12,6 +12,10 @@
 //! `minify` (the default) names nodes by a base-36 counter in first-seen order; otherwise each
 //! node is named from its path with the characters Mermaid cannot take replaced. Folders are
 //! listed in JavaScript's object key order: names that are array indices first, ascending.
+//!
+//! A declared dependency ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md)) is a
+//! dotted link labelled with its kind, `A-.->|"declared: http"|B`, where a detected one is
+//! `A-->B` (`crate::declared`).
 
 use std::collections::HashMap;
 
@@ -206,7 +210,16 @@ pub fn render(result: &Value, options: Option<&Value>) -> Rendered {
             let from = node_of(&names, &js::field(module, "source")).to_owned();
             rb_rules::js::array(module, "dependencies")
                 .iter()
-                .map(|d| format!("{from}-->{}", node_of(&names, &js::field(d, "resolved"))))
+                .map(|d| {
+                    let to = node_of(&names, &js::field(d, "resolved"));
+                    match crate::declared::kinds(std::iter::once(d)) {
+                        Some(kinds) => format!(
+                            "{from}-.->|\"{}\"|{to}",
+                            crate::declared::label(&kinds).replace('"', "#quot;")
+                        ),
+                        None => format!("{from}-->{to}"),
+                    }
+                })
                 .collect::<Vec<_>>()
         })
         .collect();

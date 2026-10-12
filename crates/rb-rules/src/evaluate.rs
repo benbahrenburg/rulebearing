@@ -393,8 +393,46 @@ fn edge_kinds<'w, 'm>(
     kinds
 }
 
+/// The `fix` and the comment (for its decision token) a `not-in-allowed` violation of the module
+/// at `from` carries. `allowed` is one rule to dependency-cruiser (its violations all name
+/// `not-in-allowed`), and none of its entries matched the edge; the entries whose `from` selects
+/// the module are the ones that say what it may depend on, so the first of those with a `fix`
+/// applies and gives both. When none of them has one, the text is the rule set's: each entry's
+/// `fix`, once, in order, joined by a space, which together say what the list allows; and the
+/// comment is the first entry's, as before any entry's `fix` was read.
+fn allowed_fix<'r>(
+    rules: &'r DependencyRules,
+    from: &str,
+    facts: &ModuleFacts,
+) -> (Option<String>, Option<&'r str>) {
+    let module = json!({ "source": from });
+    if let Some(entry) = rules.allowed.iter().find(|r| {
+        r.meta.fix.is_some() && Probe::new(r, Family::Allowed).selects(&module, from, facts)
+    }) {
+        return (entry.meta.fix.clone(), entry.meta.comment.as_deref());
+    }
+    let mut fixes: Vec<&str> = Vec::new();
+    for fix in rules.allowed.iter().filter_map(|r| r.meta.fix.as_deref()) {
+        if !fixes.contains(&fix) {
+            fixes.push(fix);
+        }
+    }
+    (
+        (!fixes.is_empty()).then(|| fixes.join(" ")),
+        rules
+            .allowed
+            .first()
+            .and_then(|r| r.meta.comment.as_deref()),
+    )
+}
+
 /// Adds the stable id, the `fix` and the decision token to each violation.
-fn annotate(violations: &mut [Value], modules: &[Value], rules: &DependencyRules) {
+fn annotate(
+    violations: &mut [Value],
+    modules: &[Value],
+    rules: &DependencyRules,
+    facts: &ModuleFacts,
+) {
     let ends: Vec<(String, String, String, bool)> = violations
         .iter()
         .map(|violation| {
@@ -435,19 +473,17 @@ fn annotate(violations: &mut [Value], modules: &[Value], rules: &DependencyRules
             .forbidden
             .iter()
             .chain(&rules.required)
-            .find(|r| r.name() == name)
-            .or_else(|| {
-                (name == "not-in-allowed")
-                    .then(|| rules.allowed.first())
-                    .flatten()
-            });
-        if let Some(rule) = rule {
-            if let Some(fix) = &rule.meta.fix {
-                js::set(violation, "fix", json!(fix));
-            }
-            if let Some(token) = rule.meta.comment.as_deref().and_then(decision_token) {
-                js::set(violation, "decision", json!(token));
-            }
+            .find(|r| r.name() == name);
+        let (fix, comment) = match rule {
+            Some(rule) => (rule.meta.fix.clone(), rule.meta.comment.as_deref()),
+            None if name == "not-in-allowed" => allowed_fix(rules, from, facts),
+            None => (None, None),
+        };
+        if let Some(fix) = fix {
+            js::set(violation, "fix", json!(fix));
+        }
+        if let Some(token) = comment.and_then(decision_token) {
+            js::set(violation, "decision", json!(token));
         }
     }
 }
@@ -693,7 +729,7 @@ pub fn evaluate(
     violations.extend(summarize_folders(&folder_values, Some(rules)));
     violations.extend(summarize_projects(&project_values, Some(rules)));
     violations.sort_by(crate::compare::compare_violations);
-    annotate(&mut violations, &modules, rules);
+    annotate(&mut violations, &modules, rules, &facts);
     let (rule_stats, mut vacuous) =
         stats_and_liveness(rules, &modules, &violations, opts.liveness, &facts);
     if let Some(input) = &element_input {
@@ -1119,6 +1155,121 @@ mod tests {
         );
         assert_eq!(result.rule_stats[0].name, "allowed[0]");
         assert_eq!(result.rule_stats[1].to_matches, 1);
+        Ok(())
+    }
+
+    /// The `fix` and decision of each `not-in-allowed` violation, by its `from`.
+    type AllowedText = (String, Option<String>, Option<String>);
+
+    fn allowed_texts(allowed: &Value) -> Result<Vec<AllowedText>, EngineError> {
+        let cfg = config(json!({ "allowed": allowed, "allowedSeverity": "error" }));
+        let result = evaluate(document(), &cfg, &EvalOptions::default())?;
+        Ok(result
+            .violations()
+            .iter()
+            .filter(|v| v.rule.name == "not-in-allowed")
+            .map(|v| (v.from.clone(), v.fix.clone(), v.decision.clone()))
+            .collect())
+    }
+
+    #[test]
+    fn a_not_in_allowed_violation_carries_the_fix_of_the_entry_that_applies()
+    -> Result<(), EngineError> {
+        // apps/web/a.ts -> apps/api/b.ts and apps/api/b.ts -> apps/web/a.ts match no entry.
+        let texts = allowed_texts(&json!([
+            { "from": { "path": "^packages/" }, "to": {}, "fix": "Packages import anything." },
+            { "from": { "path": "^apps/web/" }, "to": { "path": "^packages/" },
+              "fix": "The web app imports packages only.", "comment": "Web reads packages. adr:0042" },
+            { "from": { "path": "^apps/api/" }, "to": { "path": "^packages/" } },
+            { "from": { "path": "^apps/" }, "to": { "path": "^nothing/" }, "fix": "Apps import packages." }
+        ]))?;
+        assert_eq!(
+            texts,
+            [
+                (
+                    "apps/api/b.ts".to_owned(),
+                    Some("Apps import packages.".to_owned()),
+                    None
+                ),
+                (
+                    "apps/web/a.ts".to_owned(),
+                    Some("The web app imports packages only.".to_owned()),
+                    Some("adr:0042".to_owned())
+                ),
+            ],
+            "the first entry selecting the module that has a fix, not the first entry"
+        );
+        // No entry selecting the module has a fix: the rule set's text, every entry's fix once,
+        // in order, and the decision of the first entry.
+        let texts = allowed_texts(&json!([
+            { "from": { "path": "^packages/" }, "to": {}, "comment": "adr:0001" },
+            { "from": { "path": "^lonely" }, "to": {}, "fix": "Lonely imports anything.", "comment": "adr:0002" },
+            { "from": { "path": "^apps/" }, "to": { "path": "^packages/" } },
+            { "from": { "path": "^packages/" }, "to": {}, "fix": "Packages import anything." },
+            { "from": { "path": "^lone" }, "to": {}, "fix": "Lonely imports anything." }
+        ]))?;
+        assert_eq!(texts.len(), 2);
+        for (from, fix, decision) in &texts {
+            assert_eq!(
+                fix.as_deref(),
+                Some("Lonely imports anything. Packages import anything."),
+                "{from}"
+            );
+            assert_eq!(decision.as_deref(), Some("adr:0001"), "{from}");
+        }
+        // No entry has a fix: none, and the decision of the first entry.
+        let texts = allowed_texts(&json!([
+            { "from": { "path": "^packages/" }, "to": {}, "comment": "adr:0007" },
+            { "from": { "path": "^apps/" }, "to": { "path": "^packages/" }, "comment": "adr:0008" }
+        ]))?;
+        assert_eq!(texts.len(), 2);
+        for (from, fix, decision) in &texts {
+            assert_eq!(fix.as_deref(), None, "{from}");
+            assert_eq!(decision.as_deref(), Some("adr:0007"), "{from}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn only_not_in_allowed_reads_the_allowed_entries() {
+        let cfg = config(json!({
+            "allowed": [{ "from": {}, "to": { "path": "^packages/" }, "fix": "Only import packages.", "comment": "adr:0042" }],
+            "allowedSeverity": "error"
+        }));
+        let rules = &cfg.rules.dependencies;
+        let mut violations = vec![
+            json!({ "type": "dependency", "from": "apps/web/a.ts", "to": "apps/api/b.ts",
+                    "rule": { "name": "some-other-rule", "severity": "error" } }),
+            json!({ "type": "dependency", "from": "apps/web/a.ts", "to": "apps/api/b.ts",
+                    "rule": { "name": "not-in-allowed", "severity": "error" } }),
+        ];
+        annotate(&mut violations, &[], rules, &ModuleFacts::default());
+        assert!(violations[0].get("fix").is_none(), "{}", violations[0]);
+        assert!(violations[0].get("decision").is_none(), "{}", violations[0]);
+        assert_eq!(violations[1]["fix"], json!("Only import packages."));
+        assert_eq!(violations[1]["decision"], json!("adr:0042"));
+    }
+
+    #[test]
+    fn an_allowed_entry_selects_by_the_cross_language_keys_of_its_from() -> Result<(), EngineError>
+    {
+        let mut document = document();
+        for module in &mut document.modules {
+            module.language = Some(rb_model::Language::Typescript);
+        }
+        let cfg = config(json!({ "allowed": [
+            { "from": { "language": "python" }, "to": {}, "fix": "Python imports anything." },
+            { "from": { "language": "typescript", "path": "^apps/" }, "to": { "path": "^packages/" },
+              "fix": "TypeScript apps import packages." }
+        ], "allowedSeverity": "error" }));
+        let result = evaluate(document, &cfg, &EvalOptions::default())?;
+        let fixes: Vec<Option<&str>> = result
+            .violations()
+            .iter()
+            .filter(|v| v.rule.name == "not-in-allowed")
+            .map(|v| v.fix.as_deref())
+            .collect();
+        assert_eq!(fixes, [Some("TypeScript apps import packages."); 2]);
         Ok(())
     }
 

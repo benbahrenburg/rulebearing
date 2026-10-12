@@ -1,0 +1,8 @@
+"","api/src/Orders.cs","api/src/Store.cs","pipeline/worker.py","web/src/api/client.ts","web/src/app.ts","web/src/legacy.ts","web/src/util.ts",""
+"api/src/Orders.cs","false","false","warn (declared: queue)","false","false","false","false",""
+"api/src/Store.cs","false","false","false","false","false","false","false",""
+"pipeline/worker.py","false","false","false","false","true (declared: webhook)","false","false",""
+"web/src/api/client.ts","true (declared: http)","false","false","false","false","false","true",""
+"web/src/app.ts","error (declared: http)","false","false","true","false","false","false",""
+"web/src/legacy.ts","false","error","false","false","false","false","false",""
+"web/src/util.ts","false","false","false","false","false","false","false",""

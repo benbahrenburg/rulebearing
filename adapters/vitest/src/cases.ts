@@ -42,7 +42,10 @@ export interface Rule {
 /** One rule's result, as the junit reporter reports it. */
 export interface Case {
   readonly rule: Rule;
-  /** The failure message (the `fix`, then the first violations), when the rule failed. */
+  /**
+   * The failure message (each distinct `fix` of the rule's violations, then the first violations),
+   * when the rule failed.
+   */
   failure: string | undefined;
   /** `[type, message]` for each reason the rule could not be trusted. */
   readonly errors: [string, string][];
@@ -166,13 +169,15 @@ export function rules(result: Json): Rule[] {
   const out: Rule[] = list(ruleSet, 'forbidden').map((rule) => entry('forbidden', rule));
   const allowed = list(ruleSet, 'allowed');
   if (allowed.length > 0) {
+    // The list's `fix`: each entry's once, in order, joined by a space.
+    const fixes = distinct(allowed.map((rule) => string(rule, 'fix')));
     out.push({
       id: '',
       name: 'not-in-allowed',
       family: 'allowed',
       severity: string(ruleSet, 'allowedSeverity') ?? 'warn',
       comment: string(allowed[0], 'comment'),
-      fix: string(allowed[0], 'fix'),
+      fix: fixes.length > 0 ? fixes.join(' ') : undefined,
     });
   }
   for (const key of LISTED_FAMILIES) {
@@ -285,13 +290,49 @@ export function position(result: Json, violation: Json): [number, number] | unde
   return line === undefined || column === undefined ? undefined : [line, column];
 }
 
-/** One line per violation: its id, `from -> to`, the line, and `[known]` when baselined. */
+/** Each defined text once, in order. */
+function distinct(texts: (string | undefined)[]): string[] {
+  const out: string[] = [];
+  for (const item of texts) {
+    if (item !== undefined && !out.includes(item)) {
+      out.push(item);
+    }
+  }
+  return out;
+}
+
+/**
+ * `declared::scanned_violation_mark`: ` (declared: <kind>)` when the violation stands on one edge
+ * (a dependency or instability violation, or one without a `type`) and every dependency of the
+ * first module named `from` on `to` is declared (docs/adr/0078-fleet-and-declared-edges.md);
+ * ` (declared)` when none carries a kind; empty otherwise.
+ */
+export function declaredMark(result: Json, violation: Json): string {
+  const kind = string(violation, 'type');
+  if (kind !== undefined && kind !== 'dependency' && kind !== 'instability') {
+    return '';
+  }
+  const module = first(list(result, 'modules'), 'source', text(violation, 'from'));
+  const to = text(violation, 'to');
+  const edges = list(module, 'dependencies').filter((d) => string(d, 'resolved') === to);
+  if (edges.length === 0 || !edges.every((d) => field(d, 'declared').value === true)) {
+    return '';
+  }
+  const kinds = distinct(edges.map((d) => string(d, 'declaredKind')));
+  return kinds.length === 0 ? ' (declared)' : ` (declared: ${kinds.join(', ')})`;
+}
+
+/**
+ * One line per violation: its id, `from -> to` (marked when the edge is declared), the line, and
+ * `[known]` when baselined.
+ */
 export function describe(result: Json, violation: Json): string {
   const id = string(violation, 'id');
   const at = position(result, violation);
   const where = at === undefined ? '' : ` (line ${String(at[0])}, column ${String(at[1])})`;
   const known = severity(violation) === 'ignore' ? ' [known]' : '';
-  return `${id === undefined ? '' : `${id} `}${text(violation, 'from')} -> ${text(violation, 'to')}${where}${known}`;
+  const declared = declaredMark(result, violation);
+  return `${id === undefined ? '' : `${id} `}${text(violation, 'from')} -> ${text(violation, 'to')}${declared}${where}${known}`;
 }
 
 function vacuousMessage(item: Json): string {
@@ -331,8 +372,9 @@ function violationCase(found: Case, result: Json, catalogue: readonly Rule[], in
   if (errors.length === 0) {
     return;
   }
-  const fix = string(matching[0], 'fix') ?? found.rule.fix;
-  const lines = [fix ?? `${String(errors.length)} violation(s) of \`${name}\``];
+  // Each distinct `fix` of the case's violations, in their order.
+  const fixes = distinct(matching.map((v) => string(v, 'fix') ?? found.rule.fix));
+  const lines = fixes.length > 0 ? fixes : [`${String(errors.length)} violation(s) of \`${name}\``];
   lines.push(...errors.slice(0, SHOWN));
   if (errors.length > SHOWN) {
     lines.push(`... and ${String(errors.length - SHOWN)} more`);
