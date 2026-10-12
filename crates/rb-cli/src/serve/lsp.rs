@@ -262,6 +262,7 @@ fn recheck(session: &mut Session) -> Result<(), String> {
         timestamp: String::new(),
         color_terminal: false,
         warm: None,
+        usage: crate::usage::Recorder::default(),
     };
     session.warm.replace(&ctx, document);
     Ok(())

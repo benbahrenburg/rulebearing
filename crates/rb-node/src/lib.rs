@@ -40,6 +40,7 @@ fn with_context<T>(call: impl FnOnce(&mut Context<'_>) -> T) -> Result<T> {
         timestamp,
         color_terminal: false,
         warm: None,
+        usage: rb_cli::usage::Recorder::default(),
     };
     Ok(call(&mut ctx))
 }

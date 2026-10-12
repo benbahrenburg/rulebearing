@@ -73,6 +73,27 @@ pub struct Config {
     /// already applied to each rule's `meta.allow_empty`
     /// ([ADR-0032](../../../docs/adr/0032-liveness-follows-the-configuration-format.md)).
     pub allow_empty: Vec<String>,
+    /// `telemetry`, native only and read from the root file alone: the opt-in for usage counts,
+    /// off unless the file says otherwise
+    /// ([ADR-0076](../../../docs/adr/0076-usage-counts-are-counted-and-printed-but-not-sent.md)).
+    pub telemetry: Telemetry,
+}
+
+/// `telemetry`: whether this repository counts its own use of the tool. Both switches are off
+/// unless written; nothing is ever sent in this release, so the counts stay on the machine
+/// (ADR-0076).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Telemetry {
+    /// Count the commands run and the rules that fire, per calendar month, under
+    /// `.graph/usage/`; `rulebearing --usage-counts print` shows the counts. Sending them is not
+    /// available in this release: nothing leaves the machine.
+    #[serde(default)]
+    pub enabled: bool,
+    /// Count in a CI environment too (`CI` set and not `false` or `0`); without it a CI run
+    /// counts nothing.
+    #[serde(default)]
+    pub ci_allowed: bool,
 }
 
 /// A problem found while loading that does not make the configuration invalid.

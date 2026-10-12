@@ -724,6 +724,7 @@ fn conclude(
     for warning in &tail.warnings {
         let _ = writeln!(stderr, "warning: {warning}");
     }
+    ctx.usage.fired(tail.fired.iter().cloned());
     // Output without the approximate marks could later gate through fmt, diff or attest
     // (ADR-0011), so it is not written.
     if strips_approximate(

@@ -1096,6 +1096,7 @@ mod tests {
             timestamp: String::new(),
             color_terminal: false,
             warm: None,
+            usage: crate::usage::Recorder::default(),
         }
     }
 

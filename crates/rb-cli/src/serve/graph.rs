@@ -254,6 +254,7 @@ mod tests {
             timestamp: String::new(),
             color_terminal: false,
             warm: None,
+            usage: crate::usage::Recorder::default(),
         };
         let mut warm = WarmGraph::open(&ConfigArgs::default());
         assert_eq!(warm.ensure_fresh(&ctx)?, Freshness::Missing);

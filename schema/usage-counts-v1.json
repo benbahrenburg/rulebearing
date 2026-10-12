@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Rulebearing usage counts",
+  "description": "One calendar month of one repository's usage counts: what `rulebearing --usage-counts print` shows. No path, no repository name and no user; a rule outside the public library appears only as a salted hash. Sending is not available in this release (ADR-0076).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tool", "version", "period", "commands", "rules"],
+  "properties": {
+    "tool": {
+      "description": "Always `rulebearing`.",
+      "const": "rulebearing"
+    },
+    "version": {
+      "description": "The version of the binary that last counted into this month.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.+-]+)?$"
+    },
+    "period": {
+      "description": "The calendar month counted, `YYYY-MM`.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+    },
+    "commands": {
+      "description": "Runs per top-level subcommand that read a configuration turning counting on.",
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z-]*$" },
+      "additionalProperties": { "type": "integer", "minimum": 1 }
+    },
+    "rules": {
+      "description": "Per rule, the `cruise` runs in which it reported at least one violation. A rule of the public library is keyed by its name; any other by `sha256:` and the hex SHA-256 of the repository's salt followed by its name.",
+      "type": "object",
+      "propertyNames": { "pattern": "^(sha256:[0-9a-f]{64}|[a-z0-9][a-z0-9-]*)$" },
+      "additionalProperties": { "type": "integer", "minimum": 1 }
+    }
+  }
+}

@@ -139,6 +139,10 @@ pub struct Tail {
     /// ([`crate::exit::gate`]).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub approximate: bool,
+    /// The rules with at least one violation in the report, by name, sorted: what usage counts
+    /// count as fired ([`crate::usage`]).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fired: Vec<String>,
 }
 
 impl Verdict {
@@ -151,6 +155,15 @@ impl Verdict {
             warnings: self.warnings.clone(),
             error: self.document.summary.error,
             approximate: crate::exit::is_approximate(&self.document),
+            fired: self
+                .document
+                .summary
+                .violations
+                .iter()
+                .map(|v| v.rule.name.clone())
+                .collect::<std::collections::BTreeSet<_>>()
+                .into_iter()
+                .collect(),
         }
     }
 }
@@ -430,6 +443,7 @@ mod tests {
             timestamp: String::new(),
             color_terminal: false,
             warm: None,
+            usage: crate::usage::Recorder::default(),
         };
         let options = RunOptions::default();
         let key = || partial_key(&ctx, &config, &options, "Strict");

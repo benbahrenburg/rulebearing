@@ -1,6 +1,7 @@
 rulebearing: one architecture rule set for TypeScript, .NET and Python
 
-Usage: rulebearing <COMMAND>
+Usage: rulebearing [OPTIONS]
+       rulebearing <COMMAND>
 
 Commands:
   cruise      Extract, evaluate and report: dependency-cruiser's `depcruise`
@@ -39,8 +40,11 @@ Commands:
               depcruise-wrap-stream-in-html
 
 Options:
-  -h, --help     Print help
-  -V, --version  Print version
+      --usage-counts <print>  `print`: this month's usage counts, as a send would carry them;
+                              counted only with `telemetry.enabled`, and never sent in this release
+                              (ADR-0076)
+  -h, --help                  Print help
+  -V, --version               Print version
 
 Exit codes:
   0       no error-severity violation

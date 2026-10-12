@@ -95,6 +95,7 @@ impl Session {
             timestamp: self.timestamp.clone(),
             color_terminal: false,
             warm: warm.then_some(&self.warm),
+            usage: crate::usage::Recorder::default(),
         };
         f(&mut ctx)
     }
@@ -112,6 +113,7 @@ impl Session {
             timestamp: self.timestamp.clone(),
             color_terminal: false,
             warm: None,
+            usage: crate::usage::Recorder::default(),
         };
         self.warm.ensure_fresh(&ctx)
     }

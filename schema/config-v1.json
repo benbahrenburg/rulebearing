@@ -5239,6 +5239,23 @@
         }
       ]
     },
+    "Telemetry": {
+      "additionalProperties": false,
+      "description": "`telemetry`: whether this repository counts its own use of the tool. Both switches are off\nunless written; nothing is ever sent in this release, so the counts stay on the machine\n(ADR-0076).",
+      "properties": {
+        "ciAllowed": {
+          "default": false,
+          "description": "Count in a CI environment too (`CI` set and not `false` or `0`); without it a CI run\ncounts nothing.",
+          "type": "boolean"
+        },
+        "enabled": {
+          "default": false,
+          "description": "Count the commands run and the rules that fire, per calendar month, under\n`.graph/usage/`; `rulebearing --usage-counts print` shows the counts. Sending them is not\navailable in this release: nothing leaves the machine.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "ToRestriction": {
       "description": "`to`: every restriction dependency-cruiser 18.2.0 defines.",
       "properties": {
@@ -5969,6 +5986,18 @@
       ],
       "default": null,
       "description": "The rule families."
+    },
+    "telemetry": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Telemetry"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Usage counts: off unless `enabled` is true; counted on this machine only, since sending\nis not available in this release (ADR-0076)."
     }
   },
   "title": "Rulebearing configuration",

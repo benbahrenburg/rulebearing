@@ -21,7 +21,7 @@ use crate::elements::{Concept, Side, VOCABULARY, ValueKind, spellings, split_key
 
 use crate::model::{
     Define, FilterOption, GraphFilter, IndependenceShorthand, KnownViolation, LayersShorthand,
-    Ratchet, Rule,
+    Ratchet, Rule, Telemetry,
 };
 
 /// A native configuration file: `rulebearing.yaml`, `.json`, `.jsonc` or `.toml`.
@@ -44,6 +44,10 @@ pub struct NativeFile {
     /// these is an error, so an exception cannot outlive its rule (ADR-0032).
     #[serde(default)]
     pub allow_empty: Option<Vec<String>>,
+    /// Usage counts: off unless `enabled` is true; counted on this machine only, since sending
+    /// is not available in this release (ADR-0076).
+    #[serde(default)]
+    pub telemetry: Option<Telemetry>,
     /// Per-language settings.
     #[serde(default)]
     pub languages: Option<NativeLanguages>,
