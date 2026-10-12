@@ -20,6 +20,8 @@ pub const DEPENDENCY_ADDITIONS: &[&str] = &[
     "member",
     "sidecar",
     "declared",
+    "declaredKind",
+    "comment",
     "approximate",
 ];
 /// Violation keys Rulebearing adds.
@@ -34,6 +36,8 @@ pub const SUMMARY_ADDITIONS: &[&str] = &[
     "cache",
     "sidecar",
     "plugins",
+    "fleet",
+    "declared",
 ];
 /// Rule-set keys Rulebearing adds (inside `summary.ruleSetUsed`): the element, slice and diagram
 /// rules.
@@ -161,8 +165,11 @@ mod tests {
     #[test]
     fn strict_schema_strips_every_addition() {
         let result = json!({
-            "modules": [{ "source": "a", "language": "typescript", "valid": true, "dependencies": [{ "resolved": "b", "line": 1, "column": 2, "dependencyKind": "import", "sidecar": true, "approximate": true }] }],
+            "modules": [{ "source": "a", "language": "typescript", "valid": true, "dependencies": [{ "resolved": "b", "line": 1, "column": 2, "dependencyKind": "import", "sidecar": true, "approximate": true },
+                                                                               { "resolved": "c", "declared": true, "declaredKind": "http", "comment": "declaredComment", "dependencyKind": "declared" }] }],
             "summary": { "violations": [{ "from": "a", "to": "b", "id": "RB-1", "fix": "f", "decision": "adr:1" }], "inspected": {}, "vacuousRules": [], "cache": { "hit": true, "strategy": "metadata" }, "sidecar": { "tool": "dependency-cruiser", "version": "18.2.0", "files": 2 }, "affected": { "revision": "main", "changed": ["affectedFile"], "closure": [] }, "plugins": ["pluginFile.mjs"],
+                         "fleet": { "repos": 1, "perRepo": { "fleetRepo": { "path": "../w", "modules": 1, "dependencies": 0, "error": 0, "warn": 0, "info": 0 } } },
+                         "declared": { "edgesYaml": 1, "openapi": 0, "openapiSources": [{ "client": "openapiClient/" }] },
                          "ruleSetUsed": { "forbidden": [{ "name": "r", "fix": "f", "allowEmpty": true }],
                                           "elements": [{ "name": "sealedElement" }], "slices": [{ "name": "apartSlice" }],
                                           "diagrams": [{ "name": "drawnDiagram" }] } },
@@ -187,6 +194,12 @@ mod tests {
             "dependency-cruiser",
             "\"sidecar\"",
             "approximate",
+            "declared",
+            "declaredKind",
+            "declaredComment",
+            "fleetRepo",
+            "\"fleet\"",
+            "openapiClient",
         ] {
             assert!(!stripped.contains(gone), "{gone}");
         }

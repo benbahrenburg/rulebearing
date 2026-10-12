@@ -41,11 +41,12 @@ pub use code::{
     NamedArgument, TypeElement,
 };
 pub use document::{
-    Affected, AttributionCounts, CacheSummary, Change, Dependency, Environment, EnvironmentIssue,
-    ExperimentalStats, ExpiredEntry, ExtensionFound, Folder, FolderDependency, FolderDependent,
-    GraphDocument, Inspected, InstabilityMetric, MiniDependency, Module, RatchetResult,
-    RatchetStatus, Reachable, ReachedModule, Reaches, Receipt, RevisionData, RuleSummary,
-    SidecarReceipt, Summary, TranspilerFound, VacuousRule, Violation, ViolationMetrics,
+    Affected, AttributionCounts, CacheSummary, Change, DeclaredReceipt, Dependency, Environment,
+    EnvironmentIssue, ExperimentalStats, ExpiredEntry, ExtensionFound, FleetReceipt, Folder,
+    FolderDependency, FolderDependent, GraphDocument, Inspected, InstabilityMetric, MiniDependency,
+    Module, OpenApiReceipt, RatchetResult, RatchetStatus, Reachable, ReachedModule, Reaches,
+    Receipt, RepoReceipt, RevisionData, RuleSummary, SidecarReceipt, SkippedEdge, Summary,
+    TranspilerFound, VacuousRule, Violation, ViolationMetrics,
 };
 pub use extract::{
     ExtractError, ExtractRequest, Extraction, Extractor, FileState, Walk, Warning, source_name,
