@@ -9,7 +9,7 @@ Three sibling repositories and the manifest that joins them, for `rulebearing fl
 | [`edges-without-operation-ids.yaml`](edges-without-operation-ids.yaml) | the same client against a server document without any `operationId` |
 | `web/` | TypeScript: `src/api/generated/orders.ts` declares `createOrder` and `listOrders`, one function per operation; its own rule fires once (`warn`) |
 | `api/` | the .NET api's configuration and OpenAPI documents. The test copies the compiled [`init-layers`](../init-layers/PROVENANCE.md) solution here, each assembly where `dotnet build` puts it. Its portable PDBs record the sources under `crates/rb-cli/tests/fixtures/init-layers/`, so the api's module paths, and the handlers `x-rulebearing-handler` names, carry that prefix |
-| `pipeline/` | Python: a worker and its jobs |
+| `pipeline/` | Python: a worker and its jobs, with its configuration under a name `cruise` would not look for (`architecture.yaml`), so only the manifest's `config` loads it |
 | [`expected/fleet.err-long.txt`](expected/fleet.err-long.txt) | the `err-long` report, byte for byte |
 
 The test ([`tests/fleet.rs`](../../fleet.rs)) copies the fixture to a scratch folder and makes each repository a git repository with one commit, so each one's cache works as it would in a clone.

@@ -2,7 +2,7 @@
 repos:
   - { name: web,      path: web,      config: rulebearing.yaml }
   - { name: api,      path: api,      config: rulebearing.yaml }
-  - { name: pipeline, path: pipeline, config: rulebearing.yaml }
+  - { name: pipeline, path: pipeline, config: architecture.yaml }
 rules:
   dependencies:
     forbidden:

@@ -440,7 +440,7 @@ fn a_missing_repository_or_a_malformed_input_stops_the_fleet_with_a_named_reason
     }
     // A repository whose own configuration is invalid stops the fleet with its exit 3.
     std::fs::write(
-        dir.join("pipeline/rulebearing.yaml"),
+        dir.join("pipeline/architecture.yaml"),
         "rules: { nonsense: 1 }\n",
     )?;
     let output = run(&dir, &["fleet"])?;
@@ -719,6 +719,57 @@ fn config_lint_reports_declared_edges_that_no_longer_exist() -> Result {
     assert!(findings.contains(
         "stale-declared-edge openapi[0].server: `api/missing.json` is not a file of its repository"
     ));
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn the_report_flags_reach_the_reporter_and_a_vacuous_fleet_rule_fails_the_run() -> Result {
+    let dir = fleet("flags")?;
+    let agent = |extra: &[&str]| -> Result<Value> {
+        let output = run(&dir, &[&["fleet", "-T", "agent"], extra].concat())?;
+        Ok(serde_json::from_slice(&output.stdout)?)
+    };
+    assert_eq!(agent(&[])?["budget"]["truncated"], false);
+    let capped = agent(&["--max-findings", "0"])?;
+    assert_eq!(capped["budget"]["truncated"], true, "{capped}");
+    let colored = run(&dir, &["fleet", "-T", "err-long", "--color", "always"])?;
+    assert!(String::from_utf8_lossy(&colored.stdout).contains('\u{1b}'));
+    let plain = run(&dir, &["fleet", "-T", "err-long", "--color", "never"])?;
+    assert!(!String::from_utf8_lossy(&plain.stdout).contains('\u{1b}'));
+    // A fleet rule whose `from` matches no module of the union fails the run, as in `cruise`.
+    std::fs::write(dir.join("no-edges.yaml"), "declared: []\n")?;
+    std::fs::write(
+        dir.join("vacuous.yaml"),
+        "repos: [{ name: web, path: web, config: rulebearing.yaml }]\nrules:\n  dependencies:\n    forbidden:\n      - { name: from-nowhere, from: { path: '^nowhere/' }, to: {} }\n",
+    )?;
+    let output = run(&dir, &["fleet", "vacuous.yaml", "--edges", "no-edges.yaml"])?;
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(output.status.code(), Some(2), "{stderr}");
+    assert!(
+        stderr.contains("rule `from-nowhere` is vacuous"),
+        "{stderr}"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+#[test]
+fn a_repository_read_from_source_decides_the_exit_code_only_when_allowed() -> Result {
+    let dir = fleet("source")?;
+    let config = dir.join("api/rulebearing.yaml");
+    let text = std::fs::read_to_string(&config)?;
+    std::fs::write(
+        &config,
+        format!("languages: {{ dotnet: {{ mode: source }} }}\n{text}"),
+    )?;
+    let refused = run(&dir, &["fleet", "-T", "err"])?;
+    let stderr = String::from_utf8_lossy(&refused.stderr);
+    assert_eq!(refused.status.code(), Some(2), "{stderr}");
+    assert!(stderr.contains("approximate"), "{stderr}");
+    let allowed = run(&dir, &["fleet", "-T", "err", "--allow-approximate-gate"])?;
+    let stderr = String::from_utf8_lossy(&allowed.stderr);
+    assert_ne!(allowed.status.code(), Some(2), "{stderr}");
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }

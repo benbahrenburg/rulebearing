@@ -171,7 +171,6 @@ pub fn run(ctx: &mut Context<'_>, args: &FleetArgs) -> Outcome {
         }
     };
     let report = FmtArgs {
-        input: args.manifest.clone(),
         output_type: args.output_type.clone(),
         output_to: args.output_to.clone(),
         exit_code: true,
@@ -1207,6 +1206,87 @@ mod tests {
         let used = document.summary.rule_set_used.unwrap_or_default();
         assert_eq!(used["allowedSeverity"], "error");
         assert_eq!(document.summary.ignore, Some(3));
+    }
+
+    fn edge(module: &str, resolved: &str, rules: Option<&str>) -> Dependency {
+        Dependency {
+            rules: rules.map(|r| vec![rule(r)]),
+            ..Dependency::new(module, resolved, ModuleSystem::Es6)
+        }
+    }
+
+    #[test]
+    fn fold_finds_each_edge_by_both_its_specifier_and_its_target() {
+        let theirs = GraphDocument {
+            modules: vec![Module {
+                dependencies: vec![
+                    edge("./b", "x/b", None),
+                    edge("./b.js", "x/b", Some("rb")),
+                    edge("./d", "x/d", Some("rd")),
+                ],
+                ..Module::new("x/a")
+            }],
+            ..GraphDocument::default()
+        };
+        // At index 1 an edge with the same specifier and another target, at index 2 one with the
+        // same target and another specifier: neither is the repository's edge.
+        let mut document = GraphDocument {
+            modules: vec![Module {
+                dependencies: vec![
+                    edge("./b.js", "x/b", None),
+                    edge("./b.js", "x/c", None),
+                    edge("./dd", "x/d", None),
+                    edge("./d", "x/d", None),
+                    edge("./b", "x/b", None),
+                ],
+                ..Module::new("x/a")
+            }],
+            ..GraphDocument::default()
+        };
+        fold(&mut document, &[("x".into(), theirs)]);
+        let found: Vec<Vec<String>> = document.modules[0]
+            .dependencies
+            .iter()
+            .map(|d| d.rules.iter().flatten().map(|r| r.name.clone()).collect())
+            .collect();
+        let none: Vec<String> = Vec::new();
+        assert_eq!(
+            found,
+            [
+                vec!["rb".to_owned()],
+                none.clone(),
+                none.clone(),
+                vec!["rd".to_owned()],
+                none
+            ]
+        );
+    }
+
+    #[test]
+    fn prefix_keeps_a_core_or_unresolved_target_the_graph_does_not_list() {
+        let mut document = GraphDocument {
+            modules: vec![Module {
+                dependencies: vec![
+                    Dependency {
+                        core_module: true,
+                        ..Dependency::new("os", "os", ModuleSystem::Py)
+                    },
+                    Dependency {
+                        could_not_resolve: true,
+                        ..Dependency::new("requests", "requests", ModuleSystem::Py)
+                    },
+                ],
+                ..Module::new("p/a.py")
+            }],
+            ..GraphDocument::default()
+        };
+        prefix("pipeline", &mut document);
+        let resolved: Vec<&str> = document.modules[0]
+            .dependencies
+            .iter()
+            .map(|d| d.resolved.as_str())
+            .collect();
+        assert_eq!(resolved, ["os", "requests"]);
     }
 
     #[test]
