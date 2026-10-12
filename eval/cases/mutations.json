@@ -3,9 +3,7 @@
   "repo": "sverweij/dependency-cruiser",
   "sha": "7c22858071cc4491321c735ff11894d90648ee6e",
   "checkout": "layer5/mutations",
-  "patches": [
-    "../../conformance/dependency-cruiser/mutations/mutations.patch"
-  ],
+  "patches": ["../../conformance/dependency-cruiser/mutations/mutations.patch"],
   "isolate": "src/mutation",
   "config": "mutations/rulebearing.yaml",
   "cases": [

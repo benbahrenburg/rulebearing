@@ -87,3 +87,5 @@ cookbook/questions/*/repo/
 cookbook/questions/*/expected.json
 cookbook/questions/*/converted/
 cookbook/questions/*/imported/
+# Written by the eval harness (eval/run.py, plan 0004 Step 10), never edited by hand.
+eval/results/
