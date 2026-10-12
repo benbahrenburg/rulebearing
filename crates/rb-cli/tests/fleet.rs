@@ -349,7 +349,7 @@ fn hits(document: &Value) -> Vec<bool> {
 }
 
 #[test]
-fn each_repositorys_own_cache_is_written_then_reused() -> Result {
+fn the_cache_of_each_repository_is_written_then_reused() -> Result {
     let dir = fleet("cache")?;
     let (_, cold, _) = json(&dir, &[])?;
     assert_eq!(hits(&cold), [false, false, false]);

@@ -517,7 +517,7 @@ fn over_an_edge(kind: Option<ViolationType>) -> bool {
 /// dependencies, cycles, and the `from`, `to`, `cycle` and `via` of each violation over modules or
 /// folders, whose stable ids are recomputed. A core module and an unresolved specifier are not
 /// paths of the repository and keep their names. The folder layer is dropped, since the union's
-/// is computed afresh, and the code layer is kept for [`declare`].
+/// is computed afresh, and the code layer is kept for the OpenAPI clients.
 pub fn prefix(name: &str, document: &mut GraphDocument) {
     let external: std::collections::BTreeSet<String> = document
         .modules
@@ -1135,7 +1135,7 @@ mod tests {
     }
 
     #[test]
-    fn fold_adds_each_repositorys_findings_to_the_union() {
+    fn fold_adds_the_findings_of_each_repository_to_the_union() {
         let theirs = evaluated_repository();
         // The union, evaluated: the fleet's own rule on the edge and its own violation; the
         // core dependency moved, so it is found by search rather than by index.
@@ -1199,7 +1199,7 @@ mod tests {
     }
 
     #[test]
-    fn fold_into_a_union_without_a_rule_set_takes_the_repositorys() {
+    fn fold_into_a_union_without_a_rule_set_takes_the_rule_set_of_the_repository() {
         let theirs = evaluated_repository();
         let mut document = union(&[("web".into(), theirs.clone())]);
         rb_rules::reset(&mut document);
