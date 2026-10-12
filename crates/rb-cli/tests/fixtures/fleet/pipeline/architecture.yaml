@@ -7,3 +7,6 @@ rules:
         fix: "Let the worker call the jobs, not the other way round."
         from: { path: "^pipeline/jobs[.]py$" }
         to: { path: "^pipeline/worker[.]py$" }
+options:
+  # Its own cache folder, which a fleet run keeps.
+  cache: .graph/pipeline-cache

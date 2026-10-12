@@ -353,9 +353,12 @@ fn the_cache_of_each_repository_is_written_then_reused() -> Result {
     let dir = fleet("cache")?;
     let (_, cold, _) = json(&dir, &[])?;
     assert_eq!(hits(&cold), [false, false, false]);
-    for repo in ["web", "api", "pipeline"] {
+    for repo in ["web", "api"] {
         assert!(dir.join(repo).join(".graph/cache").is_dir(), "{repo}");
     }
+    // The pipeline's configuration names its own cache folder, and the fleet keeps it.
+    assert!(dir.join("pipeline/.graph/pipeline-cache").is_dir());
+    assert!(!dir.join("pipeline/.graph/cache").exists());
     let (_, warm, _) = json(&dir, &[])?;
     assert_eq!(
         hits(&warm),
