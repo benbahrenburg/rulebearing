@@ -1,0 +1,22 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Shop", "version": "1.0.0" },
+  "paths": {
+    "/orders": {
+      "post": {
+        "operationId": "createOrder",
+        "x-rulebearing-handler": "crates/rb-cli/tests/fixtures/init-layers/src/Shop.Web/OrdersEndpoint.cs"
+      },
+      "get": {
+        "operationId": "listOrders",
+        "x-rulebearing-handler": "crates/rb-cli/tests/fixtures/init-layers/src/Shop.Web/OrdersEndpoint.cs"
+      }
+    },
+    "/health": {
+      "get": { "summary": "No operationId: no edge, counted in the receipt." }
+    },
+    "/orders/{id}": {
+      "delete": { "operationId": "cancelOrder" }
+    }
+  }
+}

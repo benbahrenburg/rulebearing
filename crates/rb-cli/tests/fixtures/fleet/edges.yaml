@@ -1,0 +1,17 @@
+# Declared edges between the fleet fixture's repositories (plan 0004, Step 12; ADR-0076).
+declared:
+  - from: web/src/legacy.ts
+    to: api/crates/rb-cli/tests/fixtures/init-layers/src/Shop.Infrastructure/OrderStore.cs
+    kind: http
+    comment: "The legacy page posts to the store's admin route. plan:fleet-fixture"
+  - from: api/crates/rb-cli/tests/fixtures/init-layers/src/Shop.Application/PlaceOrder.cs
+    to: pipeline/pipeline/worker.py
+    kind: queue
+    comment: "PlaceOrder enqueues an order the worker picks up. plan:fleet-fixture"
+  - from: web/src/gone.ts
+    to: api/crates/rb-cli/tests/fixtures/init-layers/src/Shop.Web/OrdersEndpoint.cs
+    kind: http
+    comment: "A page that was deleted: the edge is skipped and reported. plan:fleet-fixture"
+openapi:
+  - client: web/src/api/generated/
+    server: api/openapi.json

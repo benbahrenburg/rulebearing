@@ -458,22 +458,24 @@ pub fn apply(document: &mut GraphDocument, declarations: Vec<Declaration>) -> Ap
 }
 
 /// The declared edges whose `from` or `to` no longer exists, as `config lint` reports them:
-/// `(index, side, path)` for each `declared[index]` side `exists` says is gone, and
-/// `(index, "server", path)` for an `openapi[index]` server document that is gone.
+/// `(index, side, path)` for each `declared[index]` side `module` says is gone, and
+/// `(index, "server", path)` for an `openapi[index]` server document `file` says is gone (a
+/// server document is a file, never a module).
 pub fn stale(
-    file: &EdgesFile,
-    exists: &dyn Fn(&str) -> bool,
+    edges: &EdgesFile,
+    module: &dyn Fn(&str) -> bool,
+    file: &dyn Fn(&str) -> bool,
 ) -> Vec<(usize, &'static str, String)> {
     let mut out = Vec::new();
-    for (index, edge) in file.declared.iter().enumerate() {
+    for (index, edge) in edges.declared.iter().enumerate() {
         for (side, path) in [("from", &edge.from), ("to", &edge.to)] {
-            if !exists(path) {
+            if !module(path) {
                 out.push((index, side, path.clone()));
             }
         }
     }
-    for (index, pair) in file.openapi.iter().enumerate() {
-        if !exists(&pair.server) {
+    for (index, pair) in edges.openapi.iter().enumerate() {
+        if !file(&pair.server) {
             out.push((index, "server", pair.server.clone()));
         }
     }
@@ -954,16 +956,15 @@ openapi:
     #[test]
     fn stale_lists_every_side_that_is_gone() {
         let file = read_edges(EDGES).unwrap_or_default();
-        let none = stale(&file, &|_| true);
+        let none = stale(&file, &|_| true, &|_| true);
         assert!(none.is_empty());
-        let gone = stale(&file, &|path| path.starts_with("web/"));
+        let gone = stale(&file, &|path| path.starts_with("web/"), &|_| true);
         assert_eq!(
             gone,
-            [
-                (0, "to", "api/src/Web/Endpoints/Orders.cs".to_owned()),
-                (0, "server", "api/openapi.json".to_owned())
-            ]
+            [(0, "to", "api/src/Web/Endpoints/Orders.cs".to_owned())]
         );
+        let server = stale(&file, &|_| true, &|path| path != "api/openapi.json");
+        assert_eq!(server, [(0, "server", "api/openapi.json".to_owned())]);
     }
 
     #[test]
