@@ -6,7 +6,7 @@
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
 //!
 //! A cell whose edge is declared ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md))
-//! reads `true (declared: <kind>)`, or the severity with the mark ([`crate::declared`]).
+//! reads `true (declared: <kind>)`, or the severity with the mark (`crate::declared`).
 
 use serde_json::Value;
 

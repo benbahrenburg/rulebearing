@@ -47,7 +47,7 @@
 //!
 //! In the component forms, an arrow every module edge of which is declared
 //! ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md)) is labelled
-//! `Ci --> Cj : declared: <kind>`, which `adhereTo` reads as the arrow it is ([`crate::declared`]).
+//! `Ci --> Cj : declared: <kind>`, which `adhereTo` reads as the arrow it is (`crate::declared`).
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -632,7 +632,7 @@ fn partial(options: &PlantUmlOptions) -> Vec<&'static str> {
 
 /// The label of the arrow from the component aliased `origin` to the one aliased `target`:
 /// ` : declared: <kind>` when every module edge it stands for (a dependency of an `origin` member
-/// on a `target` member that the filters keep) is declared ([`crate::declared`]), else nothing.
+/// on a `target` member that the filters keep) is declared (`crate::declared`), else nothing.
 /// Only a module's dependencies can be declared: the code layer's, which the type, namespace and
 /// slice forms draw, never are, so those arrows carry no label.
 fn arrow_label(

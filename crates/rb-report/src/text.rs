@@ -8,7 +8,7 @@
 //! - Requirement: [FR-OUT-01](../../../docs/prd.md#fr-out-01)
 //!
 //! A declared dependency ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md)) ends
-//! its line with ` (declared: <kind>)` ([`crate::declared`]); no other line changes.
+//! its line with ` (declared: <kind>)` (`crate::declared`); no other line changes.
 
 use std::collections::HashSet;
 use std::fmt::Write as _;

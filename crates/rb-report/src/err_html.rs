@@ -19,7 +19,7 @@
 //!
 //! A violation on a declared edge ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md))
 //! has ` (declared: <kind>)` after its target in the "to" cell, and a cycle or path step a
-//! declared edge reaches after the step ([`crate::declared`]); `markdown` shares the cell.
+//! declared edge reaches after the step (`crate::declared`); `markdown` shares the cell.
 
 use std::collections::BTreeMap;
 
@@ -137,7 +137,7 @@ pub fn aggregate_violations(violations: &[Value], rule_set: Option<&Value>) -> V
 }
 
 /// `names.map(({ name }) => name).join(separator)`: null and undefined names are empty. A step a
-/// declared edge reaches is followed by its mark ([`crate::declared`]).
+/// declared edge reaches is followed by its mark (`crate::declared`).
 fn names(edges: &Edges<'_>, violation: &Value, key: &str, separator: &str) -> String {
     let mut previous = js::field(violation, "from");
     violation
@@ -186,7 +186,7 @@ pub fn determine_to(violation: &Value, options: &Map<String, Value>) -> String {
 }
 
 /// [`determine_to`], with a declared edge marked ` (declared: <kind>)` after the target or the
-/// step it reaches ([`crate::declared`]), the edges looked up in `edges`.
+/// step it reaches (`crate::declared`), the edges looked up in `edges`.
 pub(crate) fn determine_to_marked(
     violation: &Value,
     options: &Map<String, Value>,

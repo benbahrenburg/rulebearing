@@ -19,7 +19,7 @@
 //!
 //! A cell whose edge is declared ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md))
 //! has ` (declared: <kind>)` after the edge in its title, the class `cell-declared` and a dashed
-//! outline ([`crate::declared`]); a matrix without declared edges is upstream's byte for byte.
+//! outline (`crate::declared`); a matrix without declared edges is upstream's byte for byte.
 
 use std::fmt::Write as _;
 
@@ -44,7 +44,7 @@ pub struct Incidence {
     pub incidence: String,
     /// The first rule the dependency breaks, with how many others it breaks.
     pub rule: Option<String>,
-    /// The kinds of the edge when it is declared ([`crate::declared`]): the cell's title marks it
+    /// The kinds of the edge when it is declared (`crate::declared`): the cell's title marks it
     /// and the cell carries `cell-declared` and a dashed outline.
     pub declared: Option<Vec<String>>,
 }

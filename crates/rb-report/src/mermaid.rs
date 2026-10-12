@@ -15,7 +15,7 @@
 //!
 //! A declared dependency ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md)) is a
 //! dotted link labelled with its kind, `A-.->|"declared: http"|B`, where a detected one is
-//! `A-->B` ([`crate::declared`]).
+//! `A-->B` (`crate::declared`).
 
 use std::collections::HashMap;
 

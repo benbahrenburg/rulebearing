@@ -22,7 +22,7 @@
 //!
 //! A finding on a declared edge carries `declared: true` and `declaredKind` beside its
 //! `dependencyKind` ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md),
-//! [`crate::declared`]). A rule found by name in `summary.ruleSetUsed` gives its group its `fix`
+//! `crate::declared`). A rule found by name in `summary.ruleSetUsed` gives its group its `fix`
 //! and decision. `not-in-allowed` names the `allowed` list, whose entries have no name: its group
 //! takes the `fix` and decision of its cheapest violation, each of which carries the text of the
 //! entry that applies to it, and a finding whose own `fix` differs carries it

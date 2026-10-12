@@ -415,7 +415,7 @@ impl Anonymizer {
 /// additions: the modules and their dependencies keep their order through the anonymiser, so
 /// each is found at its index. The flag names nothing; `declaredKind` and `comment`, which are the
 /// declaration's own words and may name a service, stay off
-/// ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md), [`crate::declared`]).
+/// ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md), `crate::declared`).
 fn mark_declared(result: &Value, anonymised: &mut Value) {
     let Some(modules) = result.get("modules").and_then(Value::as_array) else {
         return;

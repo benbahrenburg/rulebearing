@@ -16,7 +16,7 @@
 //!
 //! A violation on a declared edge ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md))
 //! prints ` (declared: <kind>)` after its target, and a cycle or path step reached by one after
-//! the step ([`crate::declared`]); a result without declared edges prints as upstream's.
+//! the step (`crate::declared`); a result without declared edges prints as upstream's.
 
 use serde_json::Value;
 

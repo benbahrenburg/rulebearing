@@ -12,7 +12,7 @@
 //! the severity is not one of `error`, `warn`, `info`), with the rule names as tooltip or label.
 //! A declared dependency ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md)) is
 //! dashed (`stroke-dash: 3`) and labelled `declared: <kind>`, under the rule names when it breaks
-//! a rule ([`crate::declared`]).
+//! a rule (`crate::declared`).
 
 use std::fmt::Write as _;
 

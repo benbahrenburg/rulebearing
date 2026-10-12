@@ -17,7 +17,7 @@ fn names(edges: &Edges<'_>, v: &Value, key: &str) -> String {
 
 /// The violation text shared by the `azure-devops` and `teamcity` reporters, which differ only in
 /// how a reachability violation prints its path. A declared edge is marked ` (declared: <kind>)`
-/// after its target, and a step a declared edge reaches after the step ([`crate::declared`]).
+/// after its target, and a step a declared edge reaches after the step (`crate::declared`).
 pub(crate) fn violators(v: &Value, edges: &Edges<'_>, reachability_with_via: bool) -> String {
     let dependency = format!(
         "{} -> {}{}",

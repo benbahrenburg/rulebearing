@@ -12,7 +12,7 @@
 //! when the rule has them. Property values and messages are escaped as the workflow command
 //! syntax requires.
 //! A violation on a declared edge ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md))
-//! reads `<from> -> <to> (declared: <kind>)` ([`crate::declared`]).
+//! reads `<from> -> <to> (declared: <kind>)` (`crate::declared`).
 
 use serde_json::Value;
 use std::fmt::Write as _;

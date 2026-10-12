@@ -19,7 +19,7 @@
 //! the lifecycle fields after, so two runs over the same (sorted) violations are byte-identical.
 //! An entry for a violation on a declared edge
 //! ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md)) carries `declared: true` and
-//! `declaredKind` before them ([`crate::declared`]); `knownViolations` keeps keys it does not
+//! `declaredKind` before them (`crate::declared`); `knownViolations` keeps keys it does not
 //! read, and matches an entry by its rule and ends as before.
 
 use serde_json::Value;

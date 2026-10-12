@@ -20,7 +20,7 @@
 //! An edge every dependency drawn on it is declared for
 //! ([ADR-0078](../../../../docs/adr/0078-fleet-and-declared-edges.md)), at the granularity drawn,
 //! gets a second attribute list, `[style="dashed" label="declared: <kind>"]`, after the theme's,
-//! so it is dashed and labelled whatever the theme says ([`crate::declared`]); a graph without
+//! so it is dashed and labelled whatever the theme says (`crate::declared`); a graph without
 //! declared edges is drawn as upstream draws it.
 
 pub mod module_utl;
@@ -239,7 +239,7 @@ fn hierarchy(module: &Value, clusters_have_own_node: bool) -> String {
 }
 
 /// The drawn edges that are declared, by their two ends as drawn, with their kinds: an edge is
-/// declared when every dependency it stands for is ([`crate::declared`]).
+/// declared when every dependency it stands for is (`crate::declared`).
 type Declared = HashMap<(String, String), Vec<String>>;
 
 /// Every edge as `squash` draws it, kept when each dependency drawn on it is declared.

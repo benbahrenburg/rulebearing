@@ -290,7 +290,7 @@ pub fn position(result: &Value, violation: &Value) -> Option<(u64, u64)> {
 }
 
 /// One line per violation: its id, `from -> to` (with ` (declared: <kind>)` on a declared edge,
-/// [`crate::declared`]) and the line, as the failure messages list them.
+/// `crate::declared`) and the line, as the failure messages list them.
 pub fn describe(result: &Value, violation: &Value) -> String {
     let id = violation
         .get("id")

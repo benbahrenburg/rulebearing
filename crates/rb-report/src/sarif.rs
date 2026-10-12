@@ -26,7 +26,7 @@
 //! percent-encoded to RFC 3986 `pchar`s (`:` too, so a first segment never reads as a scheme).
 //! A violation on a declared edge ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md))
 //! names it `<from> -> <to> (declared: <kind>)` in its message and carries `declared: true` and
-//! `declaredKind` in its `properties` ([`crate::declared`]).
+//! `declaredKind` in its `properties` (`crate::declared`).
 //! Exits 0, as the data reporters do
 //! ([ADR-0030](../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)).
 
