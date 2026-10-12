@@ -6,7 +6,7 @@
 //!   edges are the named wave 4 addition, marked, never inferred),
 //!   [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md) (the marks are
 //!   additive and `--strict-schema` strips them),
-//!   [ADR-0077](../../../docs/adr/0077-fleet-and-declared-edges.md) (where the edges attach, how
+//!   [ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md) (where the edges attach, how
 //!   an OpenAPI operation names its handler, what a client call is)
 //! - Plan: [plan 0004, Step 12](../../../docs/plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges),
 //!   [§ 1.6](../../../docs/plans/pending/0004-wave-4-reach.md#16-interfaces-and-contracts-this-wave-freezes)
@@ -374,7 +374,7 @@ pub fn join(base: &str, path: &str) -> String {
 
 /// The module system a declared edge records: the `from` module's language's, since the
 /// upstream field is required and has no value for an edge no import formed
-/// ([ADR-0077](../../../docs/adr/0077-fleet-and-declared-edges.md)).
+/// ([ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md)).
 pub fn module_system_of(language: Option<Language>) -> ModuleSystem {
     match language {
         Some(Language::Dotnet) => ModuleSystem::Clr,

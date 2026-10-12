@@ -6,7 +6,7 @@
 //!   missing repository exits 2; `edges.yaml`; an OpenAPI pair with and without operation ids;
 //!   the liveness case), [§ 3, Wave 4D](../../../docs/plans/pending/0004-wave-4-reach.md#wave-4d-fleet-and-declared-edges)
 //!   (per-repository caches reused; `--strict-schema` strips the marks)
-//! - Decisions: [ADR-0077](../../../docs/adr/0077-fleet-and-declared-edges.md),
+//! - Decisions: [ADR-0078](../../../docs/adr/0078-fleet-and-declared-edges.md),
 //!   [ADR-0014](../../../docs/adr/0014-no-invented-cross-language-edges.md),
 //!   [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md),
 //!   [ADR-0015](../../../docs/adr/0015-stable-violation-id.md)

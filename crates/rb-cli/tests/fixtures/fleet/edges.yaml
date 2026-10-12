@@ -1,4 +1,4 @@
-# Declared edges between the fleet fixture's repositories (plan 0004, Step 12; ADR-0077).
+# Declared edges between the fleet fixture's repositories (plan 0004, Step 12; ADR-0078).
 declared:
   - from: web/src/legacy.ts
     to: api/crates/rb-cli/tests/fixtures/init-layers/src/Shop.Infrastructure/OrderStore.cs

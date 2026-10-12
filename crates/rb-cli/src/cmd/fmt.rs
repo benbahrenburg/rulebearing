@@ -209,7 +209,7 @@ fn formatted(
 /// with `--exit-code`'s count computed from the document alone
 /// ([ADR-0031](../../../../docs/adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)).
 /// `fleet` reports its union through it
-/// ([ADR-0077](../../../../docs/adr/0077-fleet-and-declared-edges.md)).
+/// ([ADR-0078](../../../../docs/adr/0078-fleet-and-declared-edges.md)).
 pub fn report(ctx: &Context<'_>, args: &FmtArgs, document: rb_model::GraphDocument) -> Outcome {
     formatted_document(ctx, args, document, None)
 }

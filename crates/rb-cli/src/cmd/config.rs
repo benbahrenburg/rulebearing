@@ -11,7 +11,7 @@
 //! `lint` works on the loaded configuration and, with `--graph`, on the graph as well. With
 //! `--fleet` it lints a fleet manifest's rules and reports each declared edge that no longer
 //! exists as `stale-declared-edge` ([plan 0004, Step 12](../../../../docs/plans/pending/0004-wave-4-reach.md#24-steps-for-sub-wave-4d-fleet-and-declared-edges);
-//! [ADR-0077](../../../../docs/adr/0077-fleet-and-declared-edges.md)).
+//! [ADR-0078](../../../../docs/adr/0078-fleet-and-declared-edges.md)).
 
 use clap::{Args, Subcommand, ValueEnum};
 use rb_config::convert;
