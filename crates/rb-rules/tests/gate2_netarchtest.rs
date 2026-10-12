@@ -39,6 +39,7 @@ fn every_ported_netarchtest_case_reproduces_upstream() -> Result<(), Box<dyn std
     let run = gate2_common::run_suite(&gate2_common::suite_root("netarchtest"), check)?;
     gate2_common::report(
         "gate2 netarchtest",
+        "gate2-netarchtest",
         "rb-gate2-netarchtest-failures.txt",
         &run,
     )

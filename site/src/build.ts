@@ -1,6 +1,7 @@
 // Builds the docs site: a page for every tracked document under the page roots, the playground
-// with the wasm module built in the same run, the stylesheet and page scripts, and the released
-// schemas; then the link check over the result.
+// with the wasm module built in the same run, the live coverage and scale tables from the data the
+// nightly writes (Step 4, docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md),
+// the stylesheet and page scripts, and the released schemas; then the link check over the result.
 //
 // Architecture: docs/architecture.md#distribution. Decisions: docs/adr/0072-the-docs-site-builds-from-docs-and-serves-the-released-schemas.md,
 // docs/adr/0067-the-playground-facade-and-an-optional-javascript-engine.md, docs/adr/0039-plans-and-design-kept-local.md,
@@ -30,6 +31,7 @@ import type { EmbeddedExample, SiteInfo } from './layout.js';
 import { pagePath, pageSources, relativeUrl } from './pages.js';
 import { createRenderer, renderPage } from './render.js';
 import { SCHEMA_FILES, readSchemas } from './schemas.js';
+import { COVERAGE_DATA, SCALE_DATA, SCALE_PAGE, tablePages } from './tables.js';
 
 /** The repository's GitHub URL. */
 export const REPO_URL = 'https://github.com/benbahrenburg/rulebearing';
@@ -253,6 +255,20 @@ export function buildSite(options: BuildOptions): BuildResult {
     }),
   );
   pages.push(PLAYGROUND_PAGE);
+
+  // The live coverage and scale tables (Step 4; ADR-0074), from the data the nightly writes.
+  const data = (path: string): string => {
+    const full = join(repo, path);
+    if (!existsSync(full)) {
+      throw new Error(`${path} is missing; the nightly writes it and the tables need it`);
+    }
+    return readFileSync(full, 'utf8');
+  };
+  for (const table of tablePages(data(COVERAGE_DATA), data(SCALE_DATA))) {
+    const source = table.path === SCALE_PAGE ? SCALE_DATA : COVERAGE_DATA;
+    write(out, table.path, layout(site, { ...table, source }));
+    pages.push(table.path);
+  }
 
   for (const [name, text] of schemas) {
     write(out, `schema/${name}`, text);

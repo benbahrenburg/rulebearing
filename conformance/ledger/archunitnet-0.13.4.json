@@ -1,0 +1,1475 @@
+{
+  "$comment": "The rows of the ArchUnitNET 0.13.4 coverage tab (docs/artifacts/archunitnet-0.13.4-coverage.md, local only), derived by testbeds/scripts/coverage_status.py rows, and the evidence that proves each. The cells and claims are the tab's and are never edited here; a status is never written here (docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md).",
+  "sections": [
+    {
+      "headers": [
+        "ArchUnitNET",
+        "Rulebearing",
+        "Languages"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`Types()`",
+            "`kind: type`",
+            ".NET, TS (class, interface, enum, type alias), Python (class)"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "ObjectSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "TypeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "DependencySearch-DependencyLocationTests",
+              "results": "gate2-netarchtest"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`Classes()`",
+            "`kind: class`",
+            "all"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "LogicalConjunctionTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "ClassSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "ObjectSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`Interfaces()`",
+            "`kind: interface`",
+            ".NET, TS"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "TypeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "ConditionTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "PredicateTests",
+              "results": "gate2-netarchtest"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`Attributes()`",
+            "`kind: attribute`",
+            ".NET; TS and Python decorators"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "ObjectSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "AttributeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "DependenciesToOtherAssembliesTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`Members()`",
+            "`kind: member`",
+            "all"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "MemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "RuleEvaluationTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`FieldMembers()`",
+            "`kind: field`",
+            ".NET, TS class fields, Python class attributes"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-rules/lib::elements::tests::two_objects_with_one_key_fail_when_either_fails",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`MethodMembers()`",
+            "`kind: method`",
+            "all"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "MethodMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "ObjectSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`PropertyMembers()`",
+            "`kind: property`",
+            ".NET, TS accessors, Python `@property`"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "PropertyMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "(none)",
+            "`kind: function`, `kind: module`",
+            "TS, Python additions"
+          ],
+          "claim": "Addition",
+          "evidence": [
+            {
+              "item": "rb-rules/lib::elements::tests::the_function_kind_selects_functions_only",
+              "results": "tests"
+            },
+            {
+              "item": "rb-rules/mappings::typescript_modules_reside_in_their_path_and_depend_on_their_imports",
+              "results": "tests"
+            },
+            {
+              "item": "rb-rules/mappings::python_modules_reside_in_their_dotted_name",
+              "results": "tests"
+            }
+          ]
+        }
+      ],
+      "title": "Selectors (`select.kind`)"
+    },
+    {
+      "headers": [
+        "ArchUnitNET (predicate / condition)",
+        "Rulebearing key",
+        "Status"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`Are` / `Be`, `AreNot` / `NotBe` (a type, a list, or a selector)",
+            "`are`, `be`",
+            "Parity, Cross"
+          ],
+          "claim": "Parity, Cross",
+          "evidence": [
+            {
+              "item": "ObjectSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "TypeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "PropertyMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`Exist` / `NotExist`",
+            "`exist`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "LogicalConjunctionTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "DependenciesToOtherAssembliesTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "RuleEvaluationTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`HaveName`, `HaveNameMatching`, `HaveNameStartingWith`, `HaveNameEndingWith`, `HaveNameContaining` (+ `DoNot`, `Not`)",
+            "`haveName`, `haveNameMatching`, `haveNameStartingWith`, `haveNameEndingWith`, `haveNameContaining`",
+            "Parity, Cross"
+          ],
+          "claim": "Parity, Cross",
+          "evidence": [
+            {
+              "item": "DependencySearch-DependencyLocationTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "DependencySearch-DependencyTypeTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "ConditionTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`HaveFullName`, `HaveFullNameMatching`, `...StartingWith`, `...EndingWith`, `...Containing`",
+            "`haveFullName*`",
+            "Parity, Cross (dotted module path)"
+          ],
+          "claim": "Parity, Cross (dotted module path)",
+          "evidence": [
+            {
+              "item": "ObjectSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`HaveAssemblyQualifiedName` and its four variants",
+            "`haveAssemblyQualifiedName*`",
+            "Parity (.NET); TS and Python: package-qualified name"
+          ],
+          "claim": "Parity (.NET); TS and Python: package-qualified name",
+          "evidence": [
+            {
+              "item": "ObjectSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`ArePublic`, `ArePrivate`, `AreProtected`, `AreInternal`, `AreProtectedInternal`, `ArePrivateProtected` / `Be...`",
+            "`arePublic` ... `arePrivateProtected`; `be...`",
+            "Parity; Cross for `public` / `private` / `protected` (TS), `public` / `private` by underscore (Python)"
+          ],
+          "claim": "Parity; Cross for `public` / `private` / `protected` (TS), `public` / `private` by underscore (Python)",
+          "evidence": [
+            {
+              "item": "DependencySearch-DependencyTypeTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "ObjectSyntaxElementsVisibilityTest",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "DependencySearch-VariousTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`DependOnAny` / `DoNotDependOnAny` / `NotDependOnAny`, `DependOnAnyTypesThat`",
+            "`dependOnAny` (value: names, regex, or nested selector)",
+            "Parity, Cross"
+          ],
+          "claim": "Parity, Cross",
+          "evidence": [
+            {
+              "item": "DependencySearch-DependencyLocationTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "DependencySearch-DependencyTypeTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "ObjectSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`OnlyDependOn` / `OnlyDependOnTypesThat`",
+            "`onlyDependOn`",
+            "Parity, Cross"
+          ],
+          "claim": "Parity, Cross",
+          "evidence": [
+            {
+              "item": "ObjectSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "DependencySearch-SearchTypeTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`CallAny` / `DoNotCallAny` / `NotCallAny`",
+            "`callAny`",
+            "Parity (.NET IL); TS and Python: resolved call expressions"
+          ],
+          "claim": "Parity (.NET IL); TS and Python: resolved call expressions",
+          "evidence": [
+            {
+              "item": "ObjectSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`HaveAnyAttributes`, `HaveAnyAttributesThat`, `OnlyHaveAttributes`, `OnlyHaveAttributesThat`",
+            "`haveAnyAttributes`, `onlyHaveAttributes`",
+            "Parity, Cross (decorators)"
+          ],
+          "claim": "Parity, Cross (decorators)",
+          "evidence": [
+            {
+              "item": "ObjectSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "ConditionTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "PredicateTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`HaveAttributeWithArguments`, `HaveAttributeWithNamedArguments`, `HaveAnyAttributesWithArguments`, `HaveAnyAttributesWithNamedArguments`",
+            "`haveAttributeWithArguments`, `haveAttributeWithNamedArguments`, `haveAnyAttributesWithArguments`, `haveAnyAttributesWithNamedArguments`",
+            "Parity; Cross for literal decorator arguments"
+          ],
+          "claim": "Parity; Cross for literal decorator arguments",
+          "evidence": [
+            {
+              "item": "ObjectSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/attribute_arguments",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`FollowCustomPredicate` / `FollowCustomCondition`",
+            "none",
+            "Stays"
+          ],
+          "claim": "Stays",
+          "evidence": [
+            {
+              "item": "custom-predicate",
+              "results": "unported-archunitnet"
+            }
+          ]
+        }
+      ],
+      "title": "Predicates and conditions shared by every element (`ObjectPredicatesDefinition`, `ObjectConditionsDefinition`)"
+    },
+    {
+      "headers": [
+        "ArchUnitNET",
+        "Rulebearing key",
+        "Status"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`ResideInNamespace`, `ResideInNamespaceMatching` (+ `DoNot` / `Not`)",
+            "`resideInNamespace`, `resideInNamespaceMatching`",
+            "Parity, Cross (dotted module path; TS folder path)"
+          ],
+          "claim": "Parity, Cross (dotted module path; TS folder path)",
+          "evidence": [
+            {
+              "item": "DependencySearch-DependencyTypeTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "TypeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "PredicateTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`ResideInAssembly`, `ResideInAssemblyMatching`",
+            "`resideInAssembly`, `resideInAssemblyMatching`",
+            "Parity; Cross as package / distribution"
+          ],
+          "claim": "Parity; Cross as package / distribution",
+          "evidence": [
+            {
+              "item": "TypeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`AreAssignableTo` / `BeAssignableTo`, `BeAssignableToTypesThat`",
+            "`areAssignableTo`, `beAssignableTo`",
+            "Parity; Cross for `extends` chains"
+          ],
+          "claim": "Parity; Cross for `extends` chains",
+          "evidence": [
+            {
+              "item": "TypeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "PredicateTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "ConditionTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`ImplementInterface`, `ImplementAny`, `ImplementAnyInterfacesThat`",
+            "`implementInterface`, `implementAny`",
+            "Parity; TS `implements`"
+          ],
+          "claim": "Parity; TS `implements`",
+          "evidence": [
+            {
+              "item": "TypeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "ConditionListTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "ConditionTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`AreEnums`, `AreStructs`, `AreValueTypes` / `Be...`",
+            "`areEnums`, `areStructs`, `areValueTypes`",
+            "Parity; `areEnums` Cross (TS enum, Python `Enum`)"
+          ],
+          "claim": "Parity; `areEnums` Cross (TS enum, Python `Enum`)",
+          "evidence": [
+            {
+              "item": "TypeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`AreNested`, `AreNestedIn` / `BeNested`, `BeNestedIn`",
+            "`areNested`, `areNestedIn`",
+            "Parity, Cross"
+          ],
+          "claim": "Parity, Cross",
+          "evidence": [
+            {
+              "item": "DependencySearch-DependencyTypeTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "TypeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "DependencySearch-VariousTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`HaveMemberWithName`, `HaveFieldMemberWithName`, `HaveMethodMemberWithName`, `HavePropertyMemberWithName`",
+            "`haveMemberWithName`, `haveFieldMemberWithName`, `haveMethodMemberWithName`, `havePropertyMemberWithName`",
+            "Parity, Cross"
+          ],
+          "claim": "Parity, Cross",
+          "evidence": [
+            {
+              "item": "TypeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`BeTypesThat`",
+            "nested selector under `be`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "ObjectSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "TypeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "PropertyMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`AdhereToPlantUmlDiagram`",
+            "`adhereTo: <file>.puml` (diagram rule)",
+            "Parity, Cross"
+          ],
+          "claim": "Parity, Cross",
+          "evidence": [
+            {
+              "item": "PlantUmlFileBuilderTest",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "PlantUmlTypeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "PlantUmlFluentComponentDiagramTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-cli/plantuml::path_slices_of_typescript_round_trip",
+              "results": "tests"
+            }
+          ]
+        }
+      ],
+      "title": "Type predicates and conditions (`TypePredicatesDefinition`, `TypeConditionsDefinition`)"
+    },
+    {
+      "headers": [
+        "ArchUnitNET",
+        "Rulebearing key",
+        "Status"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`AreAbstract` / `BeAbstract` (classes, attributes)",
+            "`areAbstract`, `beAbstract`",
+            "Parity; TS `abstract`, Python `ABC`"
+          ],
+          "claim": "Parity; TS `abstract`, Python `ABC`",
+          "evidence": [
+            {
+              "item": "AttributeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "ClassSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "ConditionTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`AreSealed` / `BeSealed` (classes, attributes)",
+            "`areSealed`, `beSealed`",
+            "Parity; TS and Python: validation error"
+          ],
+          "claim": "Parity; TS and Python: validation error",
+          "evidence": [
+            {
+              "item": "AttributeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "ClassSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "ConditionTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`AreRecord` / `BeRecord`",
+            "`areRecord`, `beRecord`",
+            "Parity; Python `@dataclass(frozen=True)` as `areImmutable`"
+          ],
+          "claim": "Parity; Python `@dataclass(frozen=True)` as `areImmutable`",
+          "evidence": [
+            {
+              "item": "ClassSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`AreImmutable` / `BeImmutable`",
+            "`areImmutable`, `beImmutable`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "ClassSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "MemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        }
+      ],
+      "title": "Class and attribute predicates and conditions"
+    },
+    {
+      "headers": [
+        "ArchUnitNET",
+        "Rulebearing key",
+        "Status"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`AreDeclaredIn`, `BeDeclaredIn`, `BeDeclaredInTypesThat` (+ `Not`)",
+            "`areDeclaredIn`, `declaredInTypesThat`",
+            "Parity, Cross"
+          ],
+          "claim": "Parity, Cross",
+          "evidence": [
+            {
+              "item": "MemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`AreStatic` / `BeStatic`",
+            "`areStatic`, `beStatic`",
+            "Parity, Cross (TS `static`, Python `@staticmethod` / `@classmethod`)"
+          ],
+          "claim": "Parity, Cross (TS `static`, Python `@staticmethod` / `@classmethod`)",
+          "evidence": [
+            {
+              "item": "MemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "ConditionTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "PredicateTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`AreReadOnly` / `BeReadOnly`",
+            "`areReadOnly`, `beReadOnly`",
+            "Parity; TS `readonly`"
+          ],
+          "claim": "Parity; TS `readonly`",
+          "evidence": [
+            {
+              "item": "MemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`AreImmutable` / `BeImmutable`",
+            "`areImmutable`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "ClassSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "MemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Method: `AreConstructors` / `BeConstructor`, `AreNoConstructors`",
+            "`areConstructors`",
+            "Parity, Cross"
+          ],
+          "claim": "Parity, Cross",
+          "evidence": [
+            {
+              "item": "MethodMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Method: `AreVirtual` / `BeVirtual`",
+            "`areVirtual`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "MethodMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "PropertyMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Method: `HaveReturnType` / `DoNotHaveReturnType`",
+            "`haveReturnType`",
+            "Parity; TS annotated return types"
+          ],
+          "claim": "Parity; TS annotated return types",
+          "evidence": [
+            {
+              "item": "MethodMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Method: `HaveDependencyInMethodBodyTo` / `DoNotHave...`",
+            "`haveDependencyInMethodBodyTo`",
+            "Parity; TS and Python: references inside the function body"
+          ],
+          "claim": "Parity; TS and Python: references inside the function body",
+          "evidence": [
+            {
+              "item": "MethodMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Method: `AreCalledBy` / `BeCalledBy` / `NotBeCalledBy`",
+            "`areCalledBy`",
+            "Parity; Cross where calls resolve"
+          ],
+          "claim": "Parity; Cross where calls resolve",
+          "evidence": [
+            {
+              "item": "MethodMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Method: `BeMethodMembersThat`",
+            "nested selector",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "MethodMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Property: `HaveGetter`, `HaveNoGetter`, `HaveSetter`, `HaveNoSetter`, `HaveInitSetter`",
+            "`haveGetter`, `haveSetter`, `haveInitSetter`",
+            "Parity; TS accessors"
+          ],
+          "claim": "Parity; TS accessors",
+          "evidence": [
+            {
+              "item": "PropertyMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Property: `HavePublicGetter`, `HavePrivateGetter`, `HaveProtectedGetter`, `HaveInternalGetter`, `HaveProtectedInternalGetter`, `HavePrivateProtectedGetter` and the six setter twins",
+            "`getterVisibility: public`, `setterVisibility: private`, and so on",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-config/lib::elements::tests::accessor_visibility_is_the_have_getter_and_setter_family",
+              "results": "tests"
+            },
+            {
+              "item": "rb-rules/lib::elements::concepts::tests::writability_decides_immutability",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Property: `AreVirtual` / `BeVirtual`",
+            "`areVirtual`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "MethodMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "PropertyMemberSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        }
+      ],
+      "title": "Member predicates and conditions"
+    },
+    {
+      "headers": [
+        "ArchUnitNET",
+        "Rulebearing",
+        "Status"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`That()`, `Should()`",
+            "`select.where`, `should`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "results": "gate2-archunitnet"
+            },
+            {
+              "results": "gate2-netarchtest"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`And()`, `Or()` in predicates; `AndShould()`, `OrShould()` in conditions",
+            "`all: [...]`, `any: [...]`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "LogicalConjunctionTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "ConditionTests",
+              "results": "gate2-netarchtest"
+            },
+            {
+              "item": "PredicateTests",
+              "results": "gate2-netarchtest"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`Because(reason)`",
+            "`because` (and `comment` for the decision token)",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-rules/lib::families::tests::because_is_appended_to_the_comment_every_reporter_prints",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`Check(architecture)`, `Evaluate(architecture)` returning results per object",
+            "`rulebearing cruise` / `fmt`; the `junit`, `trx` and `agent` reporters carry the per-object results",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-report/xml_schemas",
+              "results": "tests"
+            },
+            {
+              "item": "rb-report/sarif_schema",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/agent",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`WithoutRequiringPositiveResults()`",
+            "`allowEmpty: true` (default false, as in ArchUnitNET)",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-rules/lib::evaluate::tests::liveness_and_allow_empty",
+              "results": "tests"
+            },
+            {
+              "item": "rb-rules/lib::slices::tests::an_empty_selection_is_vacuous_unless_allowed",
+              "results": "tests"
+            },
+            {
+              "item": "rb-cli/first_run",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Combined rules (`rule1.And(rule2)`, `Or`)",
+            "two rules, or `all` / `any` inside one",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "LogicalConjunctionTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "MultipleConditionRulesTests",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        }
+      ],
+      "title": "Combinators and rule operations"
+    },
+    {
+      "headers": [
+        "ArchUnitNET",
+        "Rulebearing",
+        "Status"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`Slices().Matching(\"Ns.(*)\")`",
+            "`matching: \"Ns.(*)\"`",
+            "Parity, Cross (path or module pattern)"
+          ],
+          "claim": "Parity, Cross (path or module pattern)",
+          "evidence": [
+            {
+              "item": "SlicesTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "FreezeTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings::typescript_slices_by_path",
+              "results": "tests"
+            },
+            {
+              "item": "rb-rules/mappings::python_slices_by_dotted_module",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`Slices().MatchingWithPackages(\"Ns.(**)\")`",
+            "`matching: \"Ns.(**)\"`",
+            "Parity, Cross"
+          ],
+          "claim": "Parity, Cross",
+          "evidence": [
+            {
+              "item": "SlicesTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "FreezeTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/lib::slices::tests::single_and_double_asterisks_name_slices_as_archunitnet_does",
+              "results": "tests"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`Should().NotDependOnEachOther()`",
+            "`should: notDependOnEachOther`",
+            "Parity, Cross"
+          ],
+          "claim": "Parity, Cross",
+          "evidence": [
+            {
+              "item": "SlicesTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "FreezeTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`Should().BeFreeOfCycles()`",
+            "`should: beFreeOfCycles`",
+            "Parity, Cross"
+          ],
+          "claim": "Parity, Cross",
+          "evidence": [
+            {
+              "item": "SlicesTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-rules/mappings",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "slice filtering (`Where`, ignoring named slices)",
+            "`ignore: [...]`, `where`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-rules/lib::slices::tests::where_keeps_only_the_slices_it_matches",
+              "results": "tests"
+            }
+          ]
+        }
+      ],
+      "title": "Slices (`SliceRuleDefinition`)"
+    },
+    {
+      "headers": [
+        "ArchUnitNET",
+        "Rulebearing",
+        "Status"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`Types().Should().AdhereToPlantUmlDiagram(file)` (component diagram with `<<..pattern..>>` stereotypes, aliases, associations)",
+            "`diagrams[]` rule: `adhereTo`",
+            "Parity, Cross"
+          ],
+          "claim": "Parity, Cross",
+          "evidence": [
+            {
+              "item": "PlantUmlTypeSyntaxElementsTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "PlantUmlDependenciesTest",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "PlantUmlErrorMessagesCheck",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-cli/plantuml::path_slices_of_typescript_round_trip",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`PlantUmlDefinition.ComponentDiagram().WithDependenciesFromSlices(...)` / `WithDependenciesFromTypes` / `WithDependenciesFromNamespaces`, `WriteToFile`",
+            "`--output-type plantuml` with \\`--from slices",
+            "types"
+          ],
+          "claim": "types",
+          "evidence": [
+            {
+              "item": "rb-cli/plantuml",
+              "results": "tests"
+            },
+            {
+              "item": "PlantUmlFileBuilderTest",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`GenerationOptions`: `LimitDependencies`, `C4Style`, `FocusOn`, `IncludeDependenciesToOther`, `DependencyFilters`",
+            "reporter options of the same names",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "PlantUmlFileBuilderTest",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "PlantUmlFluentComponentDiagramTests",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "rb-cli/plantuml",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "Import exceptions (`IllegalDiagramException`, `ComponentIntersectionException`, ...)",
+            "config-lint errors with the same meaning",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "PlantUmlErrorMessagesCheck",
+              "results": "gate2-archunitnet"
+            },
+            {
+              "item": "PlantUmlParserTest",
+              "results": "gate2-archunitnet"
+            }
+          ]
+        }
+      ],
+      "title": "PlantUML"
+    },
+    {
+      "headers": [
+        "ArchUnitNET",
+        "Rulebearing",
+        "Status"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`LoadAssembly`, `LoadAssemblies`, `LoadAssemblyIncludingDependencies`, `LoadAssembliesIncludingDependencies`, `LoadAssembliesRecursively`",
+            "`languages.dotnet.assemblies` (globs) and `includeDependencies: true`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-extract-dotnet/discover",
+              "results": "tests"
+            },
+            {
+              "item": "rb-extract-dotnet/extract",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`LoadFilteredDirectory(dir, filter)`, `LoadFilteredDirectoryIncludingDependencies`",
+            "`languages.dotnet.directories` with `filter`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-extract-dotnet/discover",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`LoadNamespacesWithinAssembly(assembly, namespaces...)`",
+            "`languages.dotnet.namespaces`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-extract-dotnet/discover",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`Build()`",
+            "implicit",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "results": "gate2-archunitnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "`WithoutArchitectureCache`, `WithoutRuleEvaluationCache`",
+            "`--no-cache`",
+            "Parity"
+          ],
+          "claim": "Parity",
+          "evidence": [
+            {
+              "item": "rb-cli/cache",
+              "results": "tests"
+            }
+          ]
+        },
+        {
+          "cells": [
+            "solution-driven loading (none in ArchUnitNET)",
+            "`languages.dotnet.solution` finds the built assemblies of every project",
+            "Addition"
+          ],
+          "claim": "Addition",
+          "evidence": [
+            {
+              "item": "rb-extract-dotnet/discover",
+              "results": "tests"
+            }
+          ]
+        }
+      ],
+      "title": "Loader and caches"
+    },
+    {
+      "headers": [
+        "ArchUnitNET",
+        "Rulebearing",
+        "Status"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "`ArchUnitNET.xUnit`, `.xUnitV3`, `.NUnit`, `.MSTestV2`, `.MSTestV4`, `.TUnit` (`rule.Check(arch)` throws a framework assertion)",
+            "`Rulebearing.TestAdapter`: a `[Theory]` / `[TestCaseSource]` data source that runs the binary and yields one test per rule with the `fix` text in the failure message; `pytest-rulebearing` and a vitest reporter do the same for Python and TypeScript",
+            "Parity in effect"
+          ],
+          "claim": "Parity in effect",
+          "evidence": [
+            {
+              "item": "dotnet-adapters",
+              "results": "jobs"
+            }
+          ]
+        }
+      ],
+      "title": "Test framework adapters"
+    }
+  ],
+  "tab": "archunitnet-0.13.4",
+  "tabSha256": "9bb88952e903cf0b6ee1e25e0a2dc301cba022a4c0eafc1558941d14ee089cd1",
+  "title": "ArchUnitNET 0.13.4 coverage"
+}

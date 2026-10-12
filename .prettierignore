@@ -54,6 +54,11 @@ crates/rb-extract-dotnet/tests/fixtures/*.expected.json
 crates/rb-extract-python/tests/fixtures/*.expected.json
 # Written by the oracle harness (testbeds/oracles/).
 testbeds/results/
+# Written by testbeds/scripts/coverage_status.py, byte for byte the same on two runs (plan 0004,
+# Step 4; docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md): the ledger's
+# rows by `rows`, the coverage document by the nightly's `write`.
+conformance/ledger/
+site/data/
 # Vendored verbatim with its NOTICE (the OASIS SARIF 2.1.0 schema).
 crates/rb-report/tests/schemas/
 

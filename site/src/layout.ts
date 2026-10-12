@@ -104,6 +104,7 @@ ${scripts}
 <header class="masthead">
 <a class="brand" href="${rel('index.html')}">Rulebearing</a>
 <a href="${rel(PLAYGROUND_PAGE)}">Playground</a>
+<a href="${rel('coverage/index.html')}">Coverage</a>
 <a href="${rel('schema/index.html')}">Schemas</a>
 <a href="${escapeHtml(site.repoUrl)}">GitHub</a>
 </header>

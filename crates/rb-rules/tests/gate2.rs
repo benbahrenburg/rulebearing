@@ -572,5 +572,5 @@ fn compare_diagram(id: &str, text: &str, expect: &Value) -> Option<String> {
 #[test]
 fn every_ported_case_reproduces_upstream() -> Result<(), Box<dyn std::error::Error>> {
     let run = gate2_common::run_suite(&conformance(), check)?;
-    gate2_common::report("gate2", "rb-gate2-failures.txt", &run)
+    gate2_common::report("gate2", "gate2-archunitnet", "rb-gate2-failures.txt", &run)
 }

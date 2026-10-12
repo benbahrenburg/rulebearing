@@ -16,7 +16,8 @@
 //! corresponding Rust surface and compares the output as JSON, array order included, because the
 //! upstream assertion is a `deepEqual`. It prints
 //! `layer1: passed=<n> total=<t> ratio=<r>` and a timing line, writes the diff report to
-//! `target/conformance/layer1.md`, and fails when the ratio is below
+//! `target/conformance/layer1.md` and each case's verdict to `target/conformance/layer1.json`
+//! (the live coverage tables' input), and fails when the ratio is below
 //! `conformance/dependency-cruiser/threshold.json`. With `RB_UPDATE_LAYER1_OPEN=1` it rewrites
 //! `conformance/dependency-cruiser/layer1-open.json`, the list of failing cases with their class,
 //! which is wave 1's worklist.
@@ -868,6 +869,31 @@ fn ratio(passed: usize, total: usize) -> f64 {
     }
 }
 
+/// The live coverage tables' results file (`target/conformance/layer1.json`): each replayed
+/// case's verdict, sorted by id, in the shape `conformance/dependency-cruiser/harness/results.mjs`
+/// writes ([Wave 4, Step 4](../../../docs/plans/pending/0004-wave-4-reach.md#21-steps-for-sub-wave-4a-docs-site-playground-cookbook-live-tables),
+/// [ADR-0074](../../../docs/adr/0074-the-coverage-ledger-is-tracked-and-its-status-is-computed.md)).
+fn results_json(runnable: &[&Case], failures: &[(&Case, Failure)]) -> serde_json::Result<String> {
+    let failed: std::collections::BTreeSet<&str> =
+        failures.iter().map(|(case, _)| case.id.as_str()).collect();
+    let items: BTreeMap<&str, &str> = runnable
+        .iter()
+        .map(|case| {
+            let id = case.id.as_str();
+            (id, if failed.contains(id) { "fail" } else { "pass" })
+        })
+        .collect();
+    let passed = items.values().filter(|v| **v == "pass").count();
+    let document = serde_json::json!({
+        "results": "layer1",
+        "ok": !items.is_empty() && passed == items.len(),
+        "passed": passed,
+        "total": items.len(),
+        "items": items,
+    });
+    Ok(format!("{}\n", serde_json::to_string_pretty(&document)?))
+}
+
 #[test]
 fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
     let _turn = FIXTURE_TREE
@@ -942,6 +968,7 @@ fn layer1_extract_fixtures() -> Result<(), Box<dyn Error>> {
     let out = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/conformance");
     std::fs::create_dir_all(&out)?;
     std::fs::write(out.join("layer1.md"), report)?;
+    std::fs::write(out.join("layer1.json"), results_json(&runnable, &failures)?)?;
 
     if std::env::var_os("RB_UPDATE_LAYER1_OPEN").is_some() {
         let open: Vec<Value> = failures
