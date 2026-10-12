@@ -28,6 +28,7 @@
 //! | [`progress`] | `--progress` |
 //! | [`protocol`] | the conformance harness's `validate` and `report` |
 //! | [`serve`] | `serve --mcp` and `serve --lsp` over one warm graph |
+//! | [`usage`] | usage counts: counted and printed, never sent ([ADR-0075](../../../docs/adr/0075-usage-counts-are-counted-and-printed-but-not-sent.md)) |
 
 pub mod affected;
 pub mod api;
@@ -45,13 +46,14 @@ pub mod progress;
 pub mod protocol;
 pub mod ratchets;
 pub mod serve;
+pub mod usage;
 pub mod value;
 
 use std::fmt::Write as _;
 
-use clap::Parser;
+use clap::{CommandFactory as _, FromArgMatches as _, Parser};
 
-use crate::cli::{Cli, Command};
+use crate::cli::{Cli, Command, UsageCounts};
 pub use crate::context::Context;
 pub use crate::exit::RunExit;
 
@@ -130,8 +132,15 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
         );
     }
     let command_line = std::iter::once("rulebearing".to_owned()).chain(args.iter().cloned());
-    let cli = match Cli::try_parse_from(command_line) {
-        Ok(cli) => cli,
+    let parsed = Cli::command()
+        .try_get_matches_from(command_line)
+        .and_then(|mut matches| {
+            // The name first: reading the matches into `Cli` takes the subcommand out of them.
+            let name = matches.subcommand_name().map(str::to_owned);
+            Cli::from_arg_matches_mut(&mut matches).map(|cli| (cli, name))
+        });
+    let (cli, name) = match parsed {
+        Ok(parsed) => parsed,
         Err(error) => {
             let text = error.render().to_string();
             return match error.kind() {
@@ -142,7 +151,31 @@ pub fn run_in(ctx: &mut Context<'_>, args: &[String]) -> Outcome {
             };
         }
     };
-    match cli.command {
+    let Some(command) = cli.command else {
+        return match cli.usage_counts {
+            Some(UsageCounts::Print) => usage::print(ctx),
+            None => Outcome::failed(
+                RunExit::InvalidConfig,
+                Cli::command()
+                    .error(
+                        clap::error::ErrorKind::MissingSubcommand,
+                        "a subcommand or --usage-counts is required",
+                    )
+                    .render()
+                    .to_string(),
+            ),
+        };
+    };
+    let mut outcome = dispatch(ctx, command);
+    if let Some(name) = &name {
+        usage::finish(ctx, name, &mut outcome);
+    }
+    outcome
+}
+
+/// Runs one subcommand.
+fn dispatch(ctx: &mut Context<'_>, command: Command) -> Outcome {
+    match command {
         Command::Cruise(a) => cmd::cruise::run(ctx, &a),
         Command::Fmt(a) => cmd::fmt::run(ctx, &a),
         Command::Rules(a) => cmd::rules::run(ctx, &a),
@@ -218,7 +251,7 @@ pub fn run_streaming(
     stderr: &mut dyn std::io::Write,
 ) -> Option<u8> {
     let command_line = std::iter::once("rulebearing".to_owned()).chain(args.iter().cloned());
-    match Cli::try_parse_from(command_line).ok()?.command {
+    match Cli::try_parse_from(command_line).ok()?.command? {
         Command::Serve(serve) => {
             let (today, timestamp) = context::clock();
             let origin = serve::Origin {
@@ -248,7 +281,7 @@ pub fn run_daemon(args: &[String]) -> Option<u8> {
     use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
     let command_line = std::iter::once("rulebearing".to_owned()).chain(args.iter().cloned());
-    let Command::Guard(guard) = Cli::try_parse_from(command_line).ok()?.command else {
+    let Some(Command::Guard(guard)) = Cli::try_parse_from(command_line).ok()?.command else {
         return None;
     };
     if !guard.watch {
@@ -271,6 +304,7 @@ pub fn run_daemon(args: &[String]) -> Option<u8> {
         timestamp,
         color_terminal: std::io::stdout().is_terminal(),
         warm: None,
+        usage: crate::usage::Recorder::default(),
     };
     let stop = || closed.load(Ordering::SeqCst);
     Some(cmd::guard::run(
@@ -298,6 +332,7 @@ pub fn run_with_input(args: &[String], stdin: &mut dyn std::io::Read) -> Outcome
         timestamp,
         color_terminal: std::io::stdout().is_terminal(),
         warm: None,
+        usage: crate::usage::Recorder::from_env(),
     };
     run_in(&mut ctx, args)
 }
@@ -387,6 +422,50 @@ mod tests {
     fn unknown_subcommands_and_flags_are_invalid() {
         assert_eq!(run(&args(&["frobnicate"])).code, 3);
         assert_eq!(run(&args(&["cruise", "--no-such-flag"])).code, 3);
+        let neither = run(&args(&["--"]));
+        assert_eq!(neither.code, 3);
+        assert!(
+            neither
+                .stderr
+                .contains("a subcommand or --usage-counts is required"),
+            "{}",
+            neither.stderr
+        );
+    }
+
+    #[test]
+    fn usage_counts_print_and_a_counted_command_go_through_the_dispatch() {
+        let dir = std::env::temp_dir().join(format!("rb-lib-usage-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let _ = std::fs::create_dir_all(dir.join(".git"));
+        let _ = std::fs::write(
+            dir.join("rulebearing.yaml"),
+            "telemetry: { enabled: true }\nforbidden: []\n",
+        );
+        let mut empty: &[u8] = &[];
+        let mut ctx = Context {
+            cwd: dir.clone(),
+            stdin: &mut empty,
+            today: chrono::NaiveDate::from_ymd_opt(2026, 10, 11).unwrap_or_default(),
+            timestamp: String::new(),
+            color_terminal: false,
+            warm: None,
+            usage: usage::Recorder::default(),
+        };
+        let printed = run_in(&mut ctx, &args(&["--usage-counts", "print"]));
+        assert_eq!(printed.code, 0, "{}", printed.stderr);
+        assert!(printed.stdout.contains("\"period\": \"2026-10\""));
+        assert!(!dir.join(".graph").exists(), "print writes nothing");
+        let rules = run_in(&mut ctx, &args(&["rules"]));
+        assert!(
+            rules.stderr.contains("usage counts are on"),
+            "{}",
+            rules.stderr
+        );
+        let counted =
+            std::fs::read_to_string(dir.join(".graph/usage/2026-10.json")).unwrap_or_default();
+        assert!(counted.contains("\"rules\": 1"), "{counted}");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

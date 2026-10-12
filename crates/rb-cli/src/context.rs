@@ -24,6 +24,9 @@ pub struct Context<'a> {
     /// The graph a server holds warm ([`crate::serve::graph::WarmGraph`]): a command given no
     /// `--graph` and no paths answers from it instead of reading a file.
     pub warm: Option<&'a crate::serve::graph::WarmGraph>,
+    /// What the run learns for usage counting: whether it is in CI, the configuration's
+    /// `telemetry`, the rules that fired ([`crate::usage`]).
+    pub usage: crate::usage::Recorder,
 }
 
 impl Context<'_> {
@@ -89,6 +92,7 @@ mod tests {
             timestamp: String::new(),
             color_terminal: false,
             warm: None,
+            usage: crate::usage::Recorder::default(),
         };
         assert_eq!(ctx.resolve("a/b"), PathBuf::from("/repo/a/b"));
         assert_eq!(ctx.resolve("/x"), PathBuf::from("/x"));

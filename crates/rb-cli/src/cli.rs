@@ -37,12 +37,25 @@ only ever mean an untrustworthy run and an invalid configuration.";
     version,
     about = "rulebearing: one architecture rule set for TypeScript, .NET and Python",
     disable_help_subcommand = true,
+    args_conflicts_with_subcommands = true,
     after_help = EXIT_CODES
 )]
 pub struct Cli {
-    /// The subcommand.
+    /// The subcommand; absent only with `--usage-counts`.
     #[command(subcommand)]
-    pub command: Command,
+    pub command: Option<Command>,
+    /// `print`: this month's usage counts, as a send would carry them; counted only with
+    /// `telemetry.enabled`, and never sent in this release (ADR-0075)
+    #[arg(long, value_enum, value_name = "print", hide_possible_values = true)]
+    pub usage_counts: Option<UsageCounts>,
+}
+
+/// What `--usage-counts` does. `print` is the only action: there is no send in this release
+/// ([ADR-0075](../../../docs/adr/0075-usage-counts-are-counted-and-printed-but-not-sent.md)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum UsageCounts {
+    /// Print this month's usage-counts payload to stdout.
+    Print,
 }
 
 /// Every wave 1 subcommand.

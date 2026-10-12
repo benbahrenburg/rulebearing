@@ -448,23 +448,7 @@ fn assemble(
 
     let (typescript, options, known_violations) = split_options(&canonical, compat)?;
     let invalid = |what: &str, e: serde_json::Error| ConfigError::Invalid(format!("`{what}`: {e}"));
-    let languages = canonical
-        .get("languages")
-        .and_then(Value::as_object)
-        .cloned()
-        .unwrap_or_default();
-    let dotnet: Option<DotnetOptions> = languages
-        .get("dotnet")
-        .cloned()
-        .map(serde_json::from_value)
-        .transpose()
-        .map_err(|e| invalid("languages.dotnet", e))?;
-    let python: Option<PythonOptions> = languages
-        .get("python")
-        .cloned()
-        .map(serde_json::from_value)
-        .transpose()
-        .map_err(|e| invalid("languages.python", e))?;
+    let (dotnet, python) = other_languages(&canonical)?;
     let ratchets: Vec<Ratchet> = canonical
         .get("ratchets")
         .cloned()
@@ -480,13 +464,7 @@ fn assemble(
         .map_err(|e| invalid("defines", e))?
         .unwrap_or_default();
     let allow_empty = allow_empty(&canonical, &mut rules, &ratchets)?;
-    let telemetry = canonical
-        .get("telemetry")
-        .cloned()
-        .map(serde_json::from_value::<Telemetry>)
-        .transpose()
-        .map_err(|e| invalid("telemetry", e))?
-        .unwrap_or_default();
+    let telemetry = telemetry(&canonical)?;
     let family = |key: &str| {
         canonical
             .get(key)
@@ -534,6 +512,43 @@ fn assemble(
         allow_empty,
         telemetry,
     })
+}
+
+/// Reads `languages.dotnet` and `languages.python`.
+fn other_languages(
+    canonical: &Map<String, Value>,
+) -> Result<(Option<DotnetOptions>, Option<PythonOptions>), ConfigError> {
+    let invalid = |what: &str, e: serde_json::Error| ConfigError::Invalid(format!("`{what}`: {e}"));
+    let languages = canonical
+        .get("languages")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let dotnet: Option<DotnetOptions> = languages
+        .get("dotnet")
+        .cloned()
+        .map(serde_json::from_value)
+        .transpose()
+        .map_err(|e| invalid("languages.dotnet", e))?;
+    let python: Option<PythonOptions> = languages
+        .get("python")
+        .cloned()
+        .map(serde_json::from_value)
+        .transpose()
+        .map_err(|e| invalid("languages.python", e))?;
+    Ok((dotnet, python))
+}
+
+/// Reads `telemetry`, the usage-counts opt-in: off when absent
+/// ([ADR-0075](../../../docs/adr/0075-usage-counts-are-counted-and-printed-but-not-sent.md)).
+fn telemetry(canonical: &Map<String, Value>) -> Result<Telemetry, ConfigError> {
+    canonical
+        .get("telemetry")
+        .cloned()
+        .map(serde_json::from_value::<Telemetry>)
+        .transpose()
+        .map_err(|e| ConfigError::Invalid(format!("`telemetry`: {e}")))
+        .map(Option::unwrap_or_default)
 }
 
 /// Reads `allowEmpty` (a native file's named liveness exceptions) and applies it: each named
