@@ -15,7 +15,7 @@
     "lint:all": "cargo xtask lint"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.7",
+    "@babel/core": "^8.0.7",
     "@babel/plugin-transform-modules-commonjs": "^7.29.7",
     "@babel/preset-typescript": "^7.29.7",
     "@eslint/js": "^10.0.1",
