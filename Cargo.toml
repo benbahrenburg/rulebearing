@@ -111,7 +111,7 @@ ruff_text_size = "=0.0.15"
 # `rulebearing import archunit` reads C# test projects (plan 0002, Step 11; the decision rule "How
 # `import archunit` reads C#" in its section 1.7). The wave 3 `--mode source` reuses them. Pinned to
 # exact versions. Both MIT.
-tree-sitter = "=0.27.0"
+tree-sitter = "=0.27.1"
 tree-sitter-c-sharp = "=0.23.5"
 
 # `rb-node`, the Node binding (plan 0003, Step 22): the N-API glue and its build script. Pinned to
