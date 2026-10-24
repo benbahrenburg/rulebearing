@@ -1,0 +1,144 @@
+{
+  "repo": "open-metadata/OpenMetadata",
+  "sha": "325c3ee7af5176f615f48b89747f027018d6d61a",
+  "tool": "import-linter",
+  "importLinterVersion": "2.15",
+  "settings": "ingestion/.importlinter",
+  "config": "imported",
+  "status": "compared",
+  "summary": {
+    "total": 1,
+    "agree": 1,
+    "disagree": 0,
+    "stays": 0,
+    "not-imported": 0,
+    "error": 0
+  },
+  "contracts": [
+    {
+      "id": "layers",
+      "name": "Ingestion layers",
+      "type": "layers",
+      "importLinter": "kept",
+      "rules": 394,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    }
+  ],
+  "graph": {
+    "rootPackages": [
+      "metadata",
+      "metadata.ingestion",
+      "metadata.data_quality",
+      "metadata.generated",
+      "metadata.workflow",
+      "metadata.applications",
+      "metadata.automations",
+      "metadata.cli",
+      "metadata.clients",
+      "metadata.config",
+      "metadata.mixins",
+      "metadata.models",
+      "metadata.parsers",
+      "metadata.pii",
+      "metadata.readers",
+      "metadata.sampler",
+      "metadata.timer",
+      "metadata.antlr"
+    ],
+    "importLinter": 11755,
+    "rulebearing": 12762,
+    "equal": false,
+    "unexplained": 0,
+    "onlyRulebearing": {
+      "notGrimpModule": {
+        "count": 1007,
+        "sample": [
+          [
+            "src/metadata/__init__.py",
+            "src/metadata/profiler/api/models.py"
+          ],
+          [
+            "src/metadata/__init__.py",
+            "src/metadata/profiler/metrics/registry.py"
+          ],
+          [
+            "src/metadata/__init__.py",
+            "src/metadata/profiler/source/database/base/profiler_resolver.py"
+          ],
+          [
+            "src/metadata/__init__.py",
+            "src/metadata/utils/dependency_injector/dependency_injector.py"
+          ],
+          [
+            "src/metadata/data_quality/builders/validator_builder.py",
+            "src/metadata/profiler/processor/runner.py"
+          ],
+          [
+            "src/metadata/data_quality/interface/pandas/pandas_test_suite_interface.py",
+            "src/metadata/profiler/processor/runner.py"
+          ],
+          [
+            "src/metadata/data_quality/interface/sqlalchemy/sqa_test_suite_interface.py",
+            "src/metadata/profiler/processor/runner.py"
+          ],
+          [
+            "src/metadata/data_quality/validations/base_test_handler.py",
+            "src/metadata/profiler/processor/runner.py"
+          ],
+          [
+            "src/metadata/data_quality/validations/column/base/columnValueLengthsToBeBetween.py",
+            "src/metadata/profiler/metrics/registry.py"
+          ],
+          [
+            "src/metadata/data_quality/validations/column/base/columnValueMaxToBeBetween.py",
+            "src/metadata/profiler/metrics/registry.py"
+          ],
+          [
+            "src/metadata/data_quality/validations/column/base/columnValueMeanToBeBetween.py",
+            "src/metadata/profiler/metrics/registry.py"
+          ],
+          [
+            "src/metadata/data_quality/validations/column/base/columnValueMedianToBeBetween.py",
+            "src/metadata/profiler/metrics/registry.py"
+          ],
+          [
+            "src/metadata/data_quality/validations/column/base/columnValueMinToBeBetween.py",
+            "src/metadata/profiler/metrics/registry.py"
+          ],
+          [
+            "src/metadata/data_quality/validations/column/base/columnValueStdDevToBeBetween.py",
+            "src/metadata/profiler/metrics/registry.py"
+          ],
+          [
+            "src/metadata/data_quality/validations/column/base/columnValuesMissingCount.py",
+            "src/metadata/profiler/metrics/registry.py"
+          ],
+          [
+            "src/metadata/data_quality/validations/column/base/columnValuesSumToBeBetween.py",
+            "src/metadata/profiler/metrics/registry.py"
+          ],
+          [
+            "src/metadata/data_quality/validations/column/base/columnValuesToBeBetween.py",
+            "src/metadata/profiler/metrics/registry.py"
+          ],
+          [
+            "src/metadata/data_quality/validations/column/base/columnValuesToBeBetween.py",
+            "src/metadata/profiler/orm/registry.py"
+          ],
+          [
+            "src/metadata/data_quality/validations/column/base/columnValuesToBeInSet.py",
+            "src/metadata/profiler/metrics/registry.py"
+          ],
+          [
+            "src/metadata/data_quality/validations/column/base/columnValuesToBeNotInSet.py",
+            "src/metadata/profiler/metrics/registry.py"
+          ]
+        ]
+      }
+    },
+    "onlyImportLinter": {}
+  },
+  "agrees": true
+}

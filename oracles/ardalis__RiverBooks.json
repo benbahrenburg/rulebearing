@@ -1,0 +1,8 @@
+{
+  "repo": "ardalis/RiverBooks",
+  "sha": "0938f187f3963e225fa25e31bc10a5213932ddf4",
+  "tool": "archunitnet",
+  "status": "error",
+  "detail": "dotnet build src/RiverBooks.OrderProcessingTests/RiverBooks.OrderProcessingTests.csproj failed (see build.log)",
+  "agrees": false
+}

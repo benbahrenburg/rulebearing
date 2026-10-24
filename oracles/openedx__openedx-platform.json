@@ -1,0 +1,101 @@
+{
+  "repo": "openedx/openedx-platform",
+  "sha": "23f45c133cf8e5074a723e6f6685137c87c01780",
+  "tool": "import-linter",
+  "importLinterVersion": "2.15",
+  "settings": "pyproject.toml",
+  "config": "imported",
+  "status": "compared",
+  "summary": {
+    "total": 4,
+    "agree": 3,
+    "disagree": 0,
+    "stays": 1,
+    "not-imported": 0,
+    "error": 0
+  },
+  "contracts": [
+    {
+      "id": null,
+      "name": "lms and cms are independent",
+      "type": "independence",
+      "importLinter": "kept",
+      "rules": 2,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "Do not depend on non-public API of isolated apps.",
+      "type": "isolated_apps",
+      "importLinter": "kept",
+      "rules": 0,
+      "violations": 0,
+      "rulebearing": null,
+      "verdict": "stays",
+      "reason": "stays in import-linter: `isolated_apps` is a custom contract type, Python code the importer cannot translate"
+    },
+    {
+      "id": null,
+      "name": "Do not directly import internals of openedx_content (only import from openedx_content.api).",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "Low-level apps should not depend on high-level apps",
+      "type": "layers",
+      "importLinter": "kept",
+      "rules": 31,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    }
+  ],
+  "graph": {
+    "rootPackages": [
+      "lms",
+      "cms",
+      "openedx",
+      "openedx_content",
+      "openedx_catalog",
+      "openedx_learning"
+    ],
+    "importLinter": 7098,
+    "rulebearing": 7097,
+    "equal": false,
+    "unexplained": 0,
+    "onlyRulebearing": {
+      "dynamic": {
+        "count": 1,
+        "sample": [
+          [
+            "openedx/core/djangoapps/bookmarks/signals.py",
+            "openedx/core/djangoapps/bookmarks/tasks.py"
+          ]
+        ]
+      }
+    },
+    "onlyImportLinter": {
+      "ancestorOfMissing": {
+        "count": 2,
+        "sample": [
+          [
+            "cms/envs/devstack.py",
+            "cms/__init__.py"
+          ],
+          [
+            "lms/envs/devstack.py",
+            "lms/__init__.py"
+          ]
+        ]
+      }
+    }
+  },
+  "agrees": true
+}

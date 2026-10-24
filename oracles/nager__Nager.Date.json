@@ -1,0 +1,52 @@
+{
+  "repo": "nager/Nager.Date",
+  "sha": "e2734bcfad2397957a5fe18a4f22fb145e87c1e0",
+  "tool": "archunitnet",
+  "tests": "src/Nager.Date.ArchitectureTest",
+  "status": "compared",
+  "detail": "",
+  "summary": {
+    "total": 3,
+    "agree": 3,
+    "disagree": 0,
+    "stays": 0,
+    "not-imported": 0,
+    "error": 0
+  },
+  "rules": {
+    "imported": 3,
+    "commentedOut": 0,
+    "withoutTest": []
+  },
+  "outOfScope": 0,
+  "results": [
+    {
+      "test": "HolidayProvider_Should_Be_Internal",
+      "dotnet": "passed",
+      "rules": [
+        "holiday-provider-should-be-internal"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "HolidayProvider_Should_Be_Sealed",
+      "dotnet": "passed",
+      "rules": [
+        "holiday-provider-should-be-sealed"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "HolidayProvider_Should_Reside_In_Namespace",
+      "dotnet": "passed",
+      "rules": [
+        "holiday-provider-should-reside-in-namespace"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    }
+  ],
+  "agrees": true
+}
