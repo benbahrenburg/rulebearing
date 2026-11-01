@@ -753,9 +753,17 @@ impl Pending {
 }
 
 /// Where a `--cache` run is: the working directory, the worktree and its `HEAD`, the extensions
-/// scanned and the cache folder.
-fn scope_of(ctx: &Context<'_>, config: &Config, folder: &Path) -> changes::Scope {
-    let root = key::worktree_root(&ctx.cwd);
+/// scanned, the cache folder and the run's `git status`, when the caller took one for this
+/// working directory.
+fn scope_of(
+    ctx: &Context<'_>,
+    config: &Config,
+    folder: &Path,
+    status: Option<crate::git::Snapshot>,
+) -> changes::Scope {
+    let root = status
+        .as_ref()
+        .map_or_else(|| key::worktree_root(&ctx.cwd), |s| s.root().to_path_buf());
     changes::Scope {
         // Without Windows' verbatim prefix, as the root from git is: a path joined to the root is
         // then inside the base by its spelling, whether or not the file still exists.
@@ -782,6 +790,7 @@ fn scope_of(ctx: &Context<'_>, config: &Config, folder: &Path) -> changes::Scope
                 .canonicalize()
                 .unwrap_or_else(|_| folder.to_path_buf()),
         ),
+        status,
     }
 }
 
@@ -816,6 +825,10 @@ fn refresh(
 /// evaluated run stored under that key and this extraction, and names it without reading the
 /// extraction ([`Content::Evaluated`]); the caller reads it, or its rendered output.
 ///
+/// With `status` (the run's [`crate::git::Snapshot`] of `ctx.cwd`), what changed and the
+/// presence set the entry records are read from that one `git status` rather than from a
+/// listing of their own each.
+///
 /// # Errors
 /// [`ExtractError`] from an extractor, as a cold run fails; never from the cache itself, whose
 /// every doubtful entry is a miss and whose write failure [`Writing::wait`] reports.
@@ -825,11 +838,12 @@ pub fn extract_cached(
     paths: &[String],
     options: &CacheOptions,
     evaluation: Option<&str>,
+    status: Option<crate::git::Snapshot>,
 ) -> Result<Cached, ExtractError> {
     // Before anything is looked at: an input modified after this is recorded as unsettled.
     let started = changes::Start::now();
     let folder = ctx.resolve(&options.folder);
-    let scope = scope_of(ctx, config, &folder);
+    let scope = scope_of(ctx, config, &folder, status);
     let (root, head) = (scope.root.clone(), scope.head.clone());
     let probes = probes(ctx, config);
     let fresh = manifest::Manifest {
@@ -963,6 +977,7 @@ mod tests {
             head: None,
             extra_extensions: Vec::new(),
             cache_folder: dir.join(".graph/cache"),
+            status: None,
         }
     }
 
@@ -1099,14 +1114,14 @@ mod tests {
             // The run starts a clear tick after the files were written, so only the edit made
             // during it is in the start's tick of the coarse file clock (ADR-0063).
             std::thread::sleep(std::time::Duration::from_millis(25));
-            let first = extract_cached(&ctx, &config, &paths, &options, None)?;
+            let first = extract_cached(&ctx, &config, &paths, &options, None, None)?;
             assert!(matches!(first.served, Served::Full(_)));
             assert!(first.writing.wait()?.is_some(), "the entry is written");
             HOOKS
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .retain(|(registered, _)| *registered != folder);
-            let second = extract_cached(&ctx, &config, &paths, &options, None)?;
+            let second = extract_cached(&ctx, &config, &paths, &options, None, None)?;
             match &second.served {
                 Served::Full(reason) if deleted => {
                     assert_eq!(reason, "src/b.ts was deleted");

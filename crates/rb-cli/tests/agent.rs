@@ -54,6 +54,36 @@ fn tree(name: &str) -> Result<PathBuf, Box<dyn Error>> {
     Ok(dir)
 }
 
+/// A Stop hook with nothing to block on renders no report (NFR-PERF-02), and the report it did not
+/// render is not stored: the same run asked for the report afterwards still gets it, from the
+/// layer the hook's run left behind as from a cold run.
+#[test]
+fn a_skipped_hook_report_never_reaches_the_rendered_cache() -> Result<(), Box<dyn Error>> {
+    let dir = tree("skipped-report")?;
+    std::fs::write(
+        dir.join("rulebearing.yaml"),
+        "forbidden:\n  - name: domain-not-to-web\n    severity: warn\n    comment: \"plan:rulebearing-wave-3\"\n    fix: Move the shared type into src/domain\n    from: { path: \"^src/domain/\" }\n    to: { path: \"^src/web/\" }\n",
+    )?;
+    let hook = ["cruise", "--from-hook", "--cache"];
+    // Twice, so the second is served the evaluated run rather than evaluating.
+    for _ in 0..2 {
+        let answered = run_with_stdin(&dir, &hook, "{}")?;
+        assert_eq!(answered.status.code(), Some(0));
+        assert!(answered.stdout.is_empty(), "a warning does not block");
+    }
+    let cold = stdout(&run(&dir, &["cruise", "-T", "agent", "--no-cache"])?);
+    assert!(cold.contains("domain-not-to-web"), "{cold}");
+    for _ in 0..2 {
+        let cached = run(&dir, &["cruise", "-T", "agent", "--cache"])?;
+        assert_eq!(stdout(&cached), cold);
+    }
+    // The other way round: the agent report is stored, and the hook still says nothing.
+    let answered = run_with_stdin(&dir, &hook, "{}")?;
+    assert!(answered.stdout.is_empty());
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
 fn run(dir: &Path, args: &[&str]) -> Result<Output, Box<dyn Error>> {
     Ok(Command::new(BIN).args(args).current_dir(dir).output()?)
 }

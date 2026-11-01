@@ -82,6 +82,10 @@
 //!   a closure file; a slice violation, whose ends are slice names, when one of its member edges
 //!   (`via`) has such an end.
 //! - `reaches` is not set, so `optionsUsed` carries no expression.
+//! - The untracked files come from the run's one `git status` ([`crate::git::Snapshot`]), whose
+//!   NUL-terminated paths git never quotes: a name holding a `"`, a `\` or a control character is
+//!   its real name, as a module's is. A name with a space or a tab is left out, as in upstream's
+//!   patterns.
 //!
 //! In both modes git runs with `core.quotePath=false` (a non-ASCII path is written as it is, not
 //! quoted, which would match no module) and `diff --no-relative` (a `diff.relative` setting
@@ -392,7 +396,7 @@ pub fn relative_to_base(path: &str, prefix: &str) -> Option<String> {
 /// [`AffectedError`] when git is missing, `repo` is not in a repository, or git does not know
 /// the revision.
 pub fn changed_since(repo: &Path, revision: &str) -> Result<Vec<Change>, AffectedError> {
-    list_changes(repo, revision, false)
+    list_changes(repo, revision, Untracked::Folders)
 }
 
 /// [`changed_since`], with each file of an untracked folder listed (`git status --porcelain
@@ -401,13 +405,41 @@ pub fn changed_since(repo: &Path, revision: &str) -> Result<Vec<Change>, Affecte
 /// # Errors
 /// As [`changed_since`].
 pub fn changed_since_all(repo: &Path, revision: &str) -> Result<Vec<Change>, AffectedError> {
-    list_changes(repo, revision, true)
+    list_changes(repo, revision, Untracked::EveryFile(None))
+}
+
+/// How the untracked files are listed: as `git status --porcelain` shows them (an untracked
+/// folder as the folder), or each file, from the run's status when it holds `repo`'s worktree.
+#[derive(Clone, Copy)]
+enum Untracked<'a> {
+    Folders,
+    EveryFile(Option<&'a crate::git::Snapshot>),
+}
+
+/// The untracked files of the run's status, as `parse_status_line` reads the lines of `git
+/// status --porcelain --untracked-files=all`: each path whole, as git wrote it without quoting,
+/// and kept when it is a name watskeburt's patterns take (no space or tab). `None` when the
+/// snapshot is of another worktree or git could not answer it.
+fn untracked_of(
+    repo: &Path,
+    status: &crate::git::Snapshot,
+) -> Option<Vec<(ChangeType, String, Option<String>)>> {
+    let listed = status.untracked_from(repo)?;
+    Some(
+        listed
+            .into_iter()
+            .map(String::from_utf8_lossy)
+            .filter_map(|name| {
+                plain_name(&name).map(|n| (ChangeType::Untracked, n.to_owned(), None))
+            })
+            .collect(),
+    )
 }
 
 fn list_changes(
     repo: &Path,
     revision: &str,
-    every_untracked_file: bool,
+    untracked: Untracked<'_>,
 ) -> Result<Vec<Change>, AffectedError> {
     if revision.is_empty() || revision.starts_with('-') {
         return Err(AffectedError::NotARevision {
@@ -430,20 +462,33 @@ fn list_changes(
     // `--no-relative` keeps the paths repository-relative whatever `diff.relative` says; `--`
     // ends the revisions.
     let diff_args = ["diff", revision, "--name-status", "--no-relative", "--"];
-    let status_args: &[&str] = if every_untracked_file {
-        &["status", "--porcelain", "--untracked-files=all"]
-    } else {
-        &["status", "--porcelain"]
+    let (status_args, shared): (&[&str], _) = match untracked {
+        Untracked::Folders => (&["status", "--porcelain"], None),
+        Untracked::EveryFile(shared) => {
+            (&["status", "--porcelain", "--untracked-files=all"], shared)
+        }
     };
     // Each walks the worktree and neither reads the other's answer; on a large repository
-    // running them one after the other is most of the time `--affected` takes.
-    let (diff, status) = std::thread::scope(|threads| {
-        let status = threads.spawn(|| git(repo, status_args));
+    // running them one after the other is most of the time `--affected` takes. The run's status,
+    // when it answers, stands for the second (and is then there for the cache to read).
+    let (diff, untracked) = std::thread::scope(|threads| {
+        let untracked = threads.spawn(|| {
+            if let Some(listed) = shared.and_then(|s| untracked_of(repo, s)) {
+                return Ok(listed);
+            }
+            git(repo, status_args).map(|status| {
+                status
+                    .lines()
+                    .filter_map(parse_status_line)
+                    .filter(|(kind, _, _)| *kind == ChangeType::Untracked)
+                    .collect::<Vec<_>>()
+            })
+        });
         let diff = git(repo, &diff_args);
-        let status = status
+        let untracked = untracked
             .join()
             .unwrap_or_else(|_| Err((None, "git status did not finish".to_owned())));
-        (diff, status)
+        (diff, untracked)
     });
     let diff = diff.map_err(|e| match e {
         (Some(128), _) => AffectedError::UnknownRevision {
@@ -451,11 +496,7 @@ fn list_changes(
         },
         other => git_error(repo, &diff_args, other),
     })?;
-    let status = status.map_err(|e| git_error(repo, status_args, e))?;
-    let untracked = status
-        .lines()
-        .filter_map(parse_status_line)
-        .filter(|(kind, _, _)| *kind == ChangeType::Untracked);
+    let untracked = untracked.map_err(|e| git_error(repo, status_args, e))?;
     Ok(diff
         .lines()
         .filter_map(parse_diff_line)
@@ -702,7 +743,8 @@ pub fn saved_graph_seeds(
 /// Lists the changes for `request`. [`Mode::Upstream`] sets the configuration's `reaches` to
 /// dependency-cruiser's expression, so `optionsUsed` and the report are upstream's;
 /// [`Mode::Closure`] lists every untracked file and reads the dependents of deleted files from
-/// the saved graph `saved`, and leaves `reaches` alone.
+/// the saved graph `saved`, and leaves `reaches` alone, reading the untracked files from the
+/// run's `status` when it is `repo`'s ([`crate::git::Snapshot`]).
 ///
 /// # Errors
 /// [`AffectedError`] from [`changed_since`] and `dependents_in_saved_graph`.
@@ -711,6 +753,7 @@ pub fn select(
     saved: &Path,
     request: Request,
     config: &mut Config,
+    status: Option<&crate::git::Snapshot>,
 ) -> Result<Selection, AffectedError> {
     let (changes, saved_seeds) = match request.mode {
         Mode::Upstream => {
@@ -722,7 +765,7 @@ pub fn select(
             (changes, SavedSeeds::default())
         }
         Mode::Closure => {
-            let changes = changed_since_all(repo, &request.revision)?;
+            let changes = list_changes(repo, &request.revision, Untracked::EveryFile(status))?;
             let gone: Vec<&str> = changes
                 .iter()
                 .filter_map(|c| match c.kind {
@@ -1599,6 +1642,87 @@ mod tests {
         );
         let _ = std::fs::remove_dir_all(&dir);
         Ok(())
+    }
+
+    /// A committed repository: `src/a.ts` changed, `src/b.ts` deleted, and untracked files.
+    fn changed_repository(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("rb-affected-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        assert!(std::fs::create_dir_all(dir.join("src")).is_ok());
+        for file in ["src/a.ts", "src/b.ts"] {
+            assert!(std::fs::write(dir.join(file), "x\n").is_ok());
+        }
+        let git = |args: &[&str]| {
+            let done = crate::git::command().args(args).current_dir(&dir).status();
+            assert!(done.is_ok_and(|s| s.success()), "{args:?}");
+        };
+        git(&["init", "--quiet"]);
+        git(&["add", "."]);
+        git(&[
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.com",
+            "commit",
+            "--quiet",
+            "-m",
+            "one",
+        ]);
+        assert!(std::fs::write(dir.join("src/a.ts"), "y\n").is_ok());
+        assert!(std::fs::remove_file(dir.join("src/b.ts")).is_ok());
+        assert!(std::fs::create_dir_all(dir.join("src/new/deep")).is_ok());
+        for file in ["src/new/c.ts", "src/new/deep/d.ts", "é.ts", "with space.ts"] {
+            assert!(std::fs::write(dir.join(file), "x\n").is_ok());
+        }
+        dir
+    }
+
+    #[test]
+    fn the_run_s_status_lists_what_git_status_lists() {
+        let dir = changed_repository("shared");
+        let status = crate::git::Snapshot::new(&dir);
+        let asked = changed_since_all(&dir, "HEAD");
+        let shared = list_changes(&dir, "HEAD", Untracked::EveryFile(Some(&status)));
+        assert!(asked.as_ref().is_ok_and(|c| c.len() >= 5), "{asked:?}");
+        assert_eq!(shared, asked);
+        // From a subfolder too: the status is the worktree's, the paths the folder's.
+        let inside = dir.join("src");
+        let status = crate::git::Snapshot::new(&inside);
+        assert_eq!(
+            list_changes(&inside, "HEAD", Untracked::EveryFile(Some(&status))),
+            changed_since_all(&inside, "HEAD"),
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_status_of_another_folder_is_not_read() {
+        let dir = changed_repository("elsewhere");
+        let other = std::env::temp_dir();
+        let status = crate::git::Snapshot::new(&other);
+        assert_eq!(
+            list_changes(&dir, "HEAD", Untracked::EveryFile(Some(&status))),
+            changed_since_all(&dir, "HEAD"),
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_untracked_name_with_a_quote_is_its_real_name_from_the_run_s_status() {
+        if cfg!(windows) {
+            return; // A file name cannot hold a quote there.
+        }
+        let dir = changed_repository("quote");
+        assert!(std::fs::write(dir.join("q\"uote.ts"), "x\n").is_ok());
+        let status = crate::git::Snapshot::new(&dir);
+        let shared = list_changes(&dir, "HEAD", Untracked::EveryFile(Some(&status)));
+        assert!(
+            shared
+                .as_ref()
+                .is_ok_and(|c| c.iter().any(|c| c.path == "q\"uote.ts")),
+            "{shared:?}"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

@@ -120,6 +120,10 @@ pub struct Scope {
     pub extra_extensions: Vec<String>,
     /// The cache folder, canonical when it exists.
     pub cache_folder: PathBuf,
+    /// The run's `git status` ([`crate::git::Snapshot`]), which the untracked and added files are
+    /// read from when it is of this worktree; without one, or when it cannot answer, git is asked
+    /// here.
+    pub status: Option<crate::git::Snapshot>,
 }
 
 impl Scope {
@@ -339,12 +343,7 @@ pub fn git_changes(scope: &Scope, head: &str) -> Option<Vec<(Listed, String)>> {
     // Both walk the worktree; on a large one each takes long enough that running them one
     // after the other is most of a warm run.
     let (diff, untracked) = std::thread::scope(|threads| {
-        let untracked = threads.spawn(|| {
-            git(
-                &scope.root,
-                &["ls-files", "--others", "--exclude-standard", "-z"],
-            )
-        });
+        let untracked = threads.spawn(|| untracked(scope));
         let diff = git(
             &scope.root,
             &[
@@ -372,9 +371,8 @@ pub fn git_changes(scope: &Scope, head: &str) -> Option<Vec<(Listed, String)>> {
     }
     listed.extend(
         untracked
-            .split(|b| *b == 0)
-            .filter(|f| !f.is_empty())
-            .map(|p| (Listed::Added, String::from_utf8_lossy(p).into_owned())),
+            .into_iter()
+            .map(|p| (Listed::Added, String::from_utf8_lossy(&p).into_owned())),
     );
     Some(
         listed
@@ -388,24 +386,41 @@ pub fn git_changes(scope: &Scope, head: &str) -> Option<Vec<(Listed, String)>> {
 /// The relevant files git lists as untracked or added to the index, by recorded name: the
 /// presence set the `metadata` strategy records in a repository. `None` outside one.
 pub fn git_presence(scope: &Scope) -> Option<BTreeSet<String>> {
-    let status = git(
+    let named = |entries: &[crate::git::Entry]| -> BTreeSet<String> {
+        entries
+            .iter()
+            .filter(|e| e.is_untracked() || e.staged == b'A')
+            .map(|e| scope.name(&scope.root.join(String::from_utf8_lossy(&e.path).as_ref())))
+            .filter(|name| !scope.skipped(name) && scope.is_relevant(name))
+            .collect()
+    };
+    if let Some(entries) = scope.status.as_ref().and_then(|s| s.status_of(&scope.root)) {
+        return Some(named(entries));
+    }
+    let status = git(&scope.root, &crate::git::STATUS_ARGS)?;
+    Some(named(&crate::git::parse_status(&status)))
+}
+
+/// The untracked files of the worktree, relative to its root, in git's order: from the run's
+/// status when it answers, else `git ls-files --others --exclude-standard`, which lists the same
+/// files (each file, not its folder; the ignored ones left out). `None` when git cannot answer.
+fn untracked(scope: &Scope) -> Option<Vec<Vec<u8>>> {
+    if let Some(listed) = scope
+        .status
+        .as_ref()
+        .and_then(|s| s.untracked_of(&scope.root))
+    {
+        return Some(listed.into_iter().map(<[u8]>::to_vec).collect());
+    }
+    let listed = git(
         &scope.root,
-        &[
-            "status",
-            "--porcelain=v1",
-            "-z",
-            "--untracked-files=all",
-            "--no-renames",
-        ],
+        &["ls-files", "--others", "--exclude-standard", "-z"],
     )?;
     Some(
-        status
+        listed
             .split(|b| *b == 0)
-            .filter(|e| e.len() > 3)
-            .filter(|e| e.starts_with(b"??") || e.first() == Some(&b'A'))
-            .filter_map(|e| e.get(3..))
-            .map(|p| scope.name(&scope.root.join(String::from_utf8_lossy(p).as_ref())))
-            .filter(|name| !scope.skipped(name) && scope.is_relevant(name))
+            .filter(|f| !f.is_empty())
+            .map(<[u8]>::to_vec)
             .collect(),
     )
 }
@@ -796,6 +811,7 @@ mod tests {
             head: None,
             extra_extensions: vec![".md".into()],
             cache_folder: dir.join(".cache"),
+            status: None,
         }
     }
 
@@ -1010,6 +1026,69 @@ mod tests {
         assert!(found.is_empty(), "{found:?}");
         assert_ne!(found.stamps, manifest.stamps, "the new stamp is reported");
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_run_s_status_answers_as_git_does_when_asked_here() {
+        let dir = scratch("shared-status");
+        let git = |args: &[&str]| {
+            let done = crate::git::command().args(args).current_dir(&dir).status();
+            assert!(done.is_ok_and(|s| s.success()), "{args:?}");
+        };
+        write(&dir.join("kept.ts"), "x\n");
+        git(&["init", "--quiet"]);
+        git(&["add", "."]);
+        git(&[
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.com",
+            "commit",
+            "--quiet",
+            "-m",
+            "one",
+        ]);
+        let head = key::head(&dir);
+        write(&dir.join("kept.ts"), "y\n");
+        write(&dir.join("new/untracked.ts"), "x\n");
+        write(&dir.join("new/notes.txt"), "not relevant\n");
+        write(&dir.join("staged.ts"), "x\n");
+        git(&["add", "staged.ts"]);
+        let asked = Scope {
+            head: Some(head.clone()),
+            ..scope(&dir)
+        };
+        let shared = Scope {
+            status: Some(crate::git::Snapshot::new(&dir)),
+            ..asked.clone()
+        };
+        let presence = git_presence(&shared);
+        assert_eq!(presence, git_presence(&asked));
+        assert_eq!(
+            presence,
+            Some(BTreeSet::from([
+                "new/untracked.ts".to_owned(),
+                "staged.ts".to_owned()
+            ])),
+        );
+        let sorted = |scope: &Scope| {
+            git_changes(scope, &head).map(|mut listed| {
+                listed.sort_by(|a, b| a.1.cmp(&b.1));
+                listed
+            })
+        };
+        assert_eq!(sorted(&shared), sorted(&asked));
+        assert!(sorted(&shared).is_some_and(|l| l.len() >= 4));
+        // A status of another worktree is not read: git is asked here.
+        let elsewhere = scratch("shared-status-elsewhere");
+        let other = Scope {
+            status: Some(crate::git::Snapshot::new(&elsewhere)),
+            ..asked.clone()
+        };
+        assert_eq!(git_presence(&other), git_presence(&asked));
+        assert_eq!(sorted(&other), sorted(&asked));
+        let _ = std::fs::remove_dir_all(&dir);
+        let _ = std::fs::remove_dir_all(&elsewhere);
     }
 
     #[test]
