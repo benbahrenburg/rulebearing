@@ -117,8 +117,8 @@ tree-sitter-c-sharp = "=0.23.5"
 
 # `rb-node`, the Node binding (plan 0003, Step 22): the N-API glue and its build script. Pinned to
 # exact versions. All MIT.
-napi = { version = "=3.14.2", default-features = false, features = ["napi8", "serde-json"] }
-napi-derive = "=3.6.12"
+napi = { version = "=3.15.0", default-features = false, features = ["napi8", "serde-json"] }
+napi-derive = "=3.6.13"
 napi-build = "=2.6.0"
 
 [workspace.lints.rust]
