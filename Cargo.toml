@@ -105,9 +105,11 @@ clap = { version = "4", features = ["derive", "wrap_help"] }
 # The Python extractor (plan 0002, Step 4). ruff's parser crates are pinned to exact versions and
 # bumped only by a pull request that re-runs the Python fixtures (docs/adr/0013-ruff-parser-for-python.md).
 # All MIT.
-ruff_python_ast = "=0.0.17"
-ruff_python_parser = "=0.0.17"
-ruff_text_size = "=0.0.17"
+ruff_python_ast = "=0.0.20"
+# `stacker` became optional in 0.0.20. Without it a deeply nested file overflows the parser's stack
+# and aborts the run, so a_deeply_nested_file_is_a_named_error_not_a_stack_overflow holds it on.
+ruff_python_parser = { version = "=0.0.20", features = ["stacker"] }
+ruff_text_size = "=0.0.20"
 
 # `rulebearing import archunit` reads C# test projects (plan 0002, Step 11; the decision rule "How
 # `import archunit` reads C#" in its section 1.7). The wave 3 `--mode source` reuses them. Pinned to
