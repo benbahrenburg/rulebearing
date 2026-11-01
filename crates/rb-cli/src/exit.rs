@@ -18,6 +18,11 @@
 //! [`gate`] turns the verdict of one that would into exit 2 with
 //! [`APPROXIMATE_REASON`], unless `--allow-approximate-gate` asks for the count in a local
 //! script.
+//!
+//! [`gating_count`] is what a gating reporter's count is made of: `summary.advisedExitCode`, or
+//! `summary.error` on a result that lacks it, plus the expired entries and the exceeded ratchets
+//! ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md),
+//! [plan 0011, Step 4](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#22-steps-for-sub-wave-11b-the-engine-and-the-exit-code)).
 
 use clap::ValueEnum;
 
@@ -65,6 +70,20 @@ impl RunExit {
             (Self::InvalidConfig, _) => 3,
         }
     }
+}
+
+/// The count a gating reporter exits with, before the cap and `--exit-code-mode`:
+/// `advised` (`summary.advisedExitCode`), or `error` (`summary.error`) on a result written before
+/// the field existed, plus the `expired` entries and the `exceeded` ratchets. `cruise` and
+/// `fmt --exit-code` both come here, so a saved result gates as the run would have
+/// ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md),
+/// [ADR-0031](../../../docs/adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)). A saved
+/// result is untrusted input, so the sum saturates rather than overflows.
+pub fn gating_count(advised: Option<u64>, error: u64, expired: u64, exceeded: u64) -> u64 {
+    advised
+        .unwrap_or(error)
+        .saturating_add(expired)
+        .saturating_add(exceeded)
 }
 
 /// The warning an approximate run that would decide a gate prints before it exits 2.
@@ -231,6 +250,53 @@ mod tests {
         }
     }
 
+    /// The fixed vectors of [ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md).
+    /// `advised` comes from the engine's own formula, so a row holds the formula and the sum
+    /// together. `written` false is a result without the field.
+    #[test]
+    fn the_gating_count_is_the_table_of_adr_0080() {
+        for (severity, written, error, stale, expired, exceeded, default, strict) in [
+            // One row per `staleEntriesSeverity`: only `error` counts stale entries.
+            (Some("error"), true, 1u64, 2u64, 0u64, 0u64, 3u8, 13u8),
+            (Some("warn"), true, 1, 2, 0, 0, 1, 11),
+            (Some("info"), true, 1, 2, 0, 0, 1, 11),
+            (Some("ignore"), true, 1, 2, 0, 0, 1, 11),
+            (None, true, 1, 2, 0, 0, 1, 11),
+            // Stale entries alone fail a run with no violation only under `error`.
+            (Some("error"), true, 0, 2, 0, 0, 2, 12),
+            (Some("warn"), true, 0, 2, 0, 0, 0, 0),
+            // A result without `advisedExitCode`: `summary.error`, stale entries or not.
+            (Some("error"), false, 4, 2, 0, 0, 4, 14),
+            (None, false, 0, 0, 0, 0, 0, 0),
+            // Stale, expired and ratchets together.
+            (Some("error"), true, 1, 2, 3, 4, 10, 20),
+            (Some("warn"), true, 1, 2, 3, 4, 8, 18),
+            (None, false, 1, 2, 3, 4, 8, 18),
+            // The cap holds over the sum, not over each part.
+            (Some("error"), true, 100, 100, 50, 6, 255, 255),
+            (Some("error"), true, 100, 100, 50, 5, 255, 255),
+            (Some("error"), true, 100, 100, 50, 4, 254, 255),
+        ] {
+            let advised = written
+                .then(|| rb_rules::summarize::advised_exit_code(error, Some(stale), severity));
+            let count = gating_count(advised, error, expired, exceeded);
+            let row = format!("{severity:?} {written} {error} {stale} {expired} {exceeded}");
+            assert_eq!(RunExit::Violations(count).code(), default, "{row}");
+            assert_eq!(
+                RunExit::Violations(count).code_in(ExitCodeMode::Strict),
+                strict,
+                "{row}"
+            );
+        }
+        // A present field wins over `summary.error`, and each count is added once.
+        assert_eq!(gating_count(Some(5), 1, 0, 0), 5);
+        assert_eq!(gating_count(Some(0), 7, 0, 0), 0);
+        assert_eq!(gating_count(None, 7, 1, 0), 8);
+        assert_eq!(gating_count(None, 7, 0, 1), 8);
+        // A saved result cannot overflow the sum.
+        assert_eq!(gating_count(Some(u64::MAX), 0, 1, 1), u64::MAX);
+    }
+
     #[test]
     fn the_modes_parse_by_their_command_line_names() {
         for (name, mode) in [
@@ -262,6 +328,15 @@ mod tests {
             } else {
                 prop_assert_eq!(next, 255);
             }
+        }
+
+        #[test]
+        fn the_gating_count_is_the_sum_of_its_parts(
+            base in 0u64..1 << 40, expired in 0u64..1 << 40, exceeded in 0u64..1 << 40,
+        ) {
+            let count = gating_count(Some(base), 0, expired, exceeded);
+            prop_assert_eq!(count, base + expired + exceeded);
+            prop_assert_eq!(count, gating_count(None, base, expired, exceeded));
         }
 
         #[test]

@@ -1,6 +1,6 @@
 # ADR-0080: Gate 1 moves to dependency-cruiser 18.7.0
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-01, by the owner, who asked for plan 0011 to be implemented)
 - **Date:** 2026-11-01
 - **Supersedes:** the pin in [ADR-0009](0009-conformance-suites-as-specification.md) ("Gate 1, dependency-cruiser 18.2.0"). The principle stands: the pinned upstream suite is the specification, and the gates ratchet.
 - **Amends:** the list of what a gating reporter counts in [ADR-0030](0030-the-reporter-decides-the-error-count-exit.md) and the sum `fmt --exit-code` computes in [ADR-0031](0031-a-saved-result-carries-what-the-exit-code-counts.md); [ADR-0053](0053-x-dot-webpage-draws-with-graphviz-dot.md) (the output type's name); [ADR-0037](0037-baseline-modes.md) (the modes reach `cruise`)

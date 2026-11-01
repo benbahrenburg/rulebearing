@@ -1878,6 +1878,15 @@
           "description": "The repository's folder, as the manifest names it.",
           "type": "string"
         },
+        "staleCounted": {
+          "description": "The stale baseline entries the repository's own `staleEntriesSeverity: error` counts toward\nthe exit code; absent when none do\n([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).",
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
         "warn": {
           "description": "Warn-severity violations of the repository's own rules.",
           "format": "uint64",

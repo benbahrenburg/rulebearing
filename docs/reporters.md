@@ -17,7 +17,7 @@
 | `agent` | JSON for a coding agent: violations grouped by rule, cheapest fix first, within a budget | yes |
 | `null` | Nothing; the exit code only | yes |
 
-**Gates** means the exit code is the number of error-severity violations. The others exit 0 on a trustworthy run, as in dependency-cruiser, so a pipeline can save JSON in one step and gate in the next ([ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). Every reporter exits 2 on a run that cannot be trusted and 3 on an invalid configuration ([ADR-0008](adr/0008-exit-code-contract.md)).
+**Gates** means the exit code is `summary.advisedExitCode` (the error-severity violations, plus the stale baseline entries under `staleEntriesSeverity: error`), or `summary.error` on a result without it, plus the expired entries and the exceeded ratchets, capped at 255 ([ADR-0080](adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)). The others exit 0 on a trustworthy run, as in dependency-cruiser, so a pipeline can save JSON in one step and gate in the next ([ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). Every reporter exits 2 on a run that cannot be trusted and 3 on an invalid configuration ([ADR-0008](adr/0008-exit-code-contract.md)).
 
 ## Wave 2
 

@@ -13,7 +13,7 @@
 //! them ([`crate::affected`]); `--exit-code-mode strict` shifts the count to `10 + n`
 //! ([Wave 3, Step 5](../../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#21-steps-for-sub-wave-3a-cache---affected-diff---exit-code-mode-strict)).
 //!
-//! A gating reporter exits with the error count ([ADR-0030](../../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md)),
+//! A gating reporter exits with [`crate::exit::gating_count`] ([ADR-0030](../../../../docs/adr/0030-the-reporter-decides-the-error-count-exit.md), [ADR-0080](../../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)),
 //! every reporter exits 2 when the run cannot be trusted (an empty cruise, an unsupported file,
 //! a vacuous rule) and 3 for an invalid configuration. The report is still written for a vacuous
 //! run, so the reader sees which rules matched nothing. A `plugin:<path>` reporter runs in the
@@ -784,7 +784,12 @@ fn verdict_code(
     if (strict && vacuous) || ratchets.no_budget() {
         RunExit::Untrustworthy
     } else if rb_report::gates(output_type) {
-        RunExit::Violations(tail.error + tail.expired.len() as u64 + ratchets.exceeded())
+        RunExit::Violations(crate::exit::gating_count(
+            tail.advised_exit_code,
+            tail.error,
+            tail.expired.len() as u64,
+            ratchets.exceeded(),
+        ))
     } else if let Some(count) = plugin_count {
         // A plugin decides its own count, as upstream's command line exits with it (ADR-0030).
         RunExit::Violations(count)
@@ -1051,6 +1056,7 @@ mod tests {
             ratchets: Ratchets::default(),
             warnings: Vec::new(),
             error,
+            advised_exit_code: None,
             approximate: false,
             fired: Vec::new(),
         }
