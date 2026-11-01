@@ -2,7 +2,7 @@
 
 **Deterministic guardrails for agentic engineering.** Architecture rules your coding agent cannot talk its way past, with the fix attached to every finding, for TypeScript (TypeScript 7 included), JavaScript, .NET and Python in one rule file.
 
-> **Status: waves 1 and 2 built, first release in progress.** Wave 1, the drop-in for repositories already using dependency-cruiser, builds and runs from source and supports TypeScript 7 ([how it is proven](#typescript-7)); its `v0.1.0` release is being cut. Wave 2, .NET and Python, is built, with its nightly evidence and the NuGet and PyPI packages still to finish. If the problem below is yours, star or watch the repository; the [roadmap](#roadmap) says what lands when.
+> **Status: released.** Waves 1 to 3 are done. `v0.1.3` is on npm, PyPI and NuGet, and the [docs site](https://benbahrenburg.github.io/rulebearing/) has a playground that runs in the browser. Most of wave 4 is on `main` and arrives with the next release; [What is new on `main`](#what-is-new-on-main) lists it. The move to dependency-cruiser 18.7.0 is in progress. If the problem below is yours, star or watch the repository; the [roadmap](#roadmap) says what lands when.
 
 ## The problem with telling an agent the rules
 
@@ -113,28 +113,24 @@ So a repository with a TypeScript front end, a .NET service and a Python pipelin
 
 ## Try it
 
-**Now, from source.** Wave 1, the TypeScript drop-in, is built: dependency-cruiser's whole rule language and option set, both configuration formats, the wave 1 reporters, and the agent commands. It matches dependency-cruiser with zero differences on dependency-cruiser's own repository, langfuse and FluidFramework ([conformance](conformance/README.md)). Until the first release is published:
-
-```sh
-cargo build --release                               # target/release/rulebearing
-./target/release/rulebearing init                   # reads the repo and proposes rules that already pass
-./target/release/rulebearing cruise src             # or: replace `depcruise` with it in your pipeline
-./target/release/rulebearing hooks install --claude-code
-```
-
-**From the first release, `v0.1.0`.** In a TypeScript repository:
+**In a TypeScript repository:**
 
 ```sh
 npm install --save-dev rulebearing
-npx rulebearing init
+npx rulebearing init                                # reads the repo and proposes rules that already pass
 npx rulebearing cruise --output-type agent
+npx rulebearing hooks install --claude-code
 ```
 
-or in GitHub Actions, `uses: benbahrenburg/rulebearing@v0.1.0` with `args: --config rulebearing.yaml src`. A repository already on dependency-cruiser keeps its configuration: replace `depcruise` with `rulebearing cruise` and change nothing else, or run `rulebearing adopt` for a baseline, a CI step and one green pull request.
+or in GitHub Actions, `uses: benbahrenburg/rulebearing@v0.1.3` with `args: --config rulebearing.yaml src`. A repository already on dependency-cruiser keeps its configuration: replace `depcruise` with `rulebearing cruise` and change nothing else, or run `rulebearing adopt` for a baseline, a CI step and one green pull request. It matches dependency-cruiser 18.2.0 with zero differences on dependency-cruiser's own repository, langfuse and FluidFramework ([conformance](conformance/README.md)).
+
+**From source,** for what is on `main` and not yet released: `cargo build --release` writes `target/release/rulebearing`.
+
+**Without installing anything,** try a rule in the [playground](https://benbahrenburg.github.io/rulebearing/).
 
 The guides: [configuration](docs/config.md), [rules](docs/rules.md), [reporters](docs/reporters.md), [the command line](docs/cli.md) and [Rulebearing for coding agents](docs/agents.md).
 
-**.NET and Python (wave 2).** The .NET extractor reads the compiled assemblies and their portable PDBs, so build first; the Python extractor reads the source, without running an interpreter. Once the wave 2 release is published, install with `dotnet tool install -g Rulebearing` or `pip install rulebearing`; from source, use `./target/release/rulebearing` as above.
+**.NET and Python.** The .NET extractor reads the compiled assemblies and their portable PDBs, so build first; the Python extractor reads the source, without running an interpreter. Install with `dotnet tool install -g Rulebearing` or `pip install rulebearing`.
 
 ```sh
 dotnet build -p:DebugType=portable                  # .NET: the assemblies and PDBs the extractor reads
@@ -151,6 +147,20 @@ rulebearing import eslint --from eslint.config.js --out rulebearing.yaml        
 ```
 
 The same rules run as tests in the suite you already have: `Rulebearing.TestAdapter` for xUnit, NUnit, MSTest and TUnit, `pytest-rulebearing`, and `rulebearing/vitest`, one test per rule with the fix in the failure message; `eslint-plugin-rulebearing` flags a boundary in the editor. ArchUnitNET's predicates are keys of [element rules](docs/rules.md), with each key's meaning in every language in the [generated reference](docs/reference/element-rules.md).
+
+## What is new on `main`
+
+These landed after `v0.1.3` and arrive with the next release. The [command line guide](docs/cli.md) has the details.
+
+| Feature | What it does | Guide |
+| --- | --- | --- |
+| `fix --plan <rule>` | For each violation, prints the cheapest refactor of each kind (`move`, `port`, `invert`) as JSON, each one checked with `can-import` first. `cruise --output-type agent --with-plans` adds the plans to the agent report | [cli](docs/cli.md) |
+| `fleet` | Cruises sibling repositories, each with its own configuration and cache, and evaluates fleet-wide rules over the union in one report | [config](docs/config.md#fleets-and-declared-edges) |
+| Declared edges | `edges.yaml` and OpenAPI documents add cross-language edges you state yourself. Every reporter marks them `declared: true`, and `--strict-schema` strips them | [config](docs/config.md#fleets-and-declared-edges) |
+| Usage counts | Counts commands and rules on your machine and prints them. Off by default, and this release sends nothing | [usage counts](docs/usage-counts.md) |
+| A faster Stop hook | A run takes one `git status`, and a Stop hook with nothing to block on renders no report. p95 on dotnet/aspnetcore in source mode was 1.95 s in the first run on the slower CI runner class, against 2.02 to 2.36 s on the three nights that failed there. That leaves little headroom under the 2 s budget | [perf](docs/perf.md) |
+| Question pages | The docs site's cookbook: eight architecture questions, each a small repository the page's playground loads | [cookbook](cookbook/README.md) |
+| Safe YAML | YAML is parsed by `serde-saphyr`, written in safe Rust, in place of the unmaintained `serde_yaml` | [ADR-0079](docs/adr/0079-yaml-is-parsed-with-serde-saphyr.md) |
 
 ## TypeScript 7
 
@@ -172,19 +182,21 @@ Five waves of part-time work, TypeScript first because that is where the largest
 | Wave | Weeks | What lands for you | Exit criterion | Status |
 | --- | --- | --- | --- | --- |
 | **0 Spike** | 4 | The TypeScript extractor, matching dependency-cruiser on 292 of the 296 cases its own extraction suite records (0.9865); the .NET metadata reader, attributing 99.29% of the .NET oracles' types to a source file, so the C# fallback is not needed ([ADR-0022](docs/adr/0022-dotnet-reader-in-rust-confirmed.md)); both conformance harnesses; the nightly test beds; the name held on four registries | Fixtures at 95%; 99% of .NET types attributed to a source file, or the fallback extractor is invoked | Done |
-| **1 TypeScript** | 10 | The drop-in: full dependency-cruiser parity, TypeScript 7 included; the `agent` reporter, `fix` and `examples`, line-precise findings, liveness by default, `init`, `adopt`, `hooks install`, `attest`, `can-import`, `explain`, `test`; npm package and GitHub Action | Zero difference against dependency-cruiser on its own repository, langfuse and FluidFramework | Built; the `v0.1.0` release is in progress |
-| **2 .NET and Python** | 10 | Both extractors; ArchUnitNET's full vocabulary as declarative element rules; `propose`, `impact`, `place`, `docs`; importers; test-runner adapters; the ESLint rule; SARIF and JUnit | Every imported .NET test agrees with `dotnet test`; every Python contract reproduces | Built; the nightly oracle evidence and the NuGet and PyPI publishing are in progress |
-| **3 Inner loop** | 8 | Caching and `--affected`; a source mode for .NET that answers without a build; `guard --watch`; the Roslyn analyzer; MCP and LSP servers; framework presets; the public rule library | Stop hook under two seconds on a large .NET solution; all reporters byte-compared | Not started |
-| **4 Reach** | 8 | Browser playground; pull-request app; `fix --plan`; rules across a fleet of repositories | Funded only if the numbers below move | Not started |
+| **1 TypeScript** | 10 | The drop-in: full dependency-cruiser parity, TypeScript 7 included; the `agent` reporter, `fix` and `examples`, line-precise findings, liveness by default, `init`, `adopt`, `hooks install`, `attest`, `can-import`, `explain`, `test`; npm package and GitHub Action | Zero difference against dependency-cruiser on its own repository, langfuse and FluidFramework | Done; released |
+| **2 .NET and Python** | 10 | Both extractors; ArchUnitNET's full vocabulary as declarative element rules; `propose`, `impact`, `place`, `docs`; importers; test-runner adapters; the ESLint rule; SARIF and JUnit | Every imported .NET test agrees with `dotnet test`; every Python contract reproduces | Done; released on NuGet and PyPI |
+| **3 Inner loop** | 8 | Caching and `--affected`; a source mode for .NET that answers without a build; `guard --watch`; the Roslyn analyzer; MCP and LSP servers; framework presets; the public rule library | Stop hook under two seconds on a large .NET solution; all reporters byte-compared | Done; released |
+| **4 Reach** | 8 | Docs site and browser playground; question pages; `fix --plan` and its fix-text evaluation; `fleet` and declared edges; usage counts; a pull-request app | The adoption review closes on the six signals below | In progress. On `main`: all of it except the pull-request app and the closing adoption review, neither started |
 
-Beside the waves, five tracks. Two run alongside waves 1 and 2. The other three add languages and incumbents once wave 2 is done, under the same promise: each incumbent's own test suite becomes a conformance gate before its row says Parity.
+Beside the waves, seven tracks. Three add languages and incumbents under the same promise: each incumbent's own test suite becomes a conformance gate before its row says Parity.
 
 | Track | Weeks | What lands for you | Exit criterion | Status |
 | --- | --- | --- | --- | --- |
+| **dependency-cruiser 18.7.0** | 8 | Everything from 18.3 to 18.7: `cruise --baseline` and `--baseline-mode`, stale-baseline reporting with `staleEntriesSeverity` and `summary.advisedExitCode`, imports in ambient modules, `dot-webpage`, on the CLI, the npm API, the playground and the wrappers ([ADR-0080](docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)) | Gate 1 runs 18.7.0's suite in all five layers, with no more exclusions than at 18.2.0 | In progress |
 | **Guard catalogue** | 5 | Quality, convention and lifecycle guards (cycles, dead code, licences, layer fences, budgets that only fall, exceptions that expire) as executable recipes: one fixture per guard, and the cookbook page generated from the fixtures so it cannot drift from the engine | Every recipe a green fixture in CI, none vacuous; the page checked against the fixtures | Started |
 | **Rulebearing on Rulebearing** | 5 | This repository gated by its own tool: one graph over its five languages, the gate in CI, the test runners, the editor and the agent loop, and the first month of signals | The self-check green on `main`; the test runners agree with the gate | Started |
 | **Java and ArchUnit** | 9 | Java as the fourth language, read from compiled classes; ArchUnit's vocabulary and library rules (layered and onion architectures, `GeneralCodingRules`); an importer for existing ArchUnit tests; JUnit adapter and a Maven Central package | ArchUnit's own tests pass as conformance gate 3; the Java oracles agree | Not started |
-| **.NET, complete** | 6 | VB.NET and F# projects read as C# ones are; NetArchTest's own definitions as additive options, so a NetArchTest suite migrates without a changed verdict | NetArchTest's ported cases at 388 with ArchUnitNET's unchanged; the three .NET oracles that compare nothing today compared | Not started |
+| **.NET, complete** | 6 | VB.NET and F# projects read as C# ones are; NetArchTest's own definitions as additive options, so a NetArchTest suite migrates without a changed verdict | NetArchTest's ported cases at 388 with ArchUnitNET's unchanged; the three .NET oracles that compare nothing today compared | Started |
+| **Try a rule before it is written** | 8 | `propose --impact`, `suggest` and a `repl` session, so an agent or a person can test a rule against the graph before committing to it | Every candidate `suggest` prints holds with zero violations and matches something, on every test bed with a graph | Started |
 | **Rust** | 9 | Rust as the fifth language, with arch-lint, archaven and TangleGuard as the incumbents; importers for their configurations; a crates.io package; this repository's own rules on the Rust graph instead of a script | Their suites pass as conformance gate 4; zero difference on the Rust oracles, or each difference recorded | Not started |
 
 **This is measured, not believed.** From wave 1, six signals are tracked on the repositories where agent-authored pull requests can be seen: the share that pass the boundary check on their first CI run (target above 90%), the median turns from a violation to green (target one), rules caught by the authoring guardrails, Stop-hook latency, the share of rules carrying `fix` text, and budget raises merged (target zero). If the first two do not move, the agent surface is cut back to the reporter and the hook, and what remains is a faster dependency-cruiser that also covers .NET and Python. Saying that in advance is cheaper than discovering it later.
