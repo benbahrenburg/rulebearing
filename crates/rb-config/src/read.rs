@@ -6,7 +6,7 @@
 //!
 //! | Extension | Reader |
 //! | --- | --- |
-//! | `.yaml`, `.yml` | `serde_yaml` |
+//! | `.yaml`, `.yml` | `serde-saphyr`, through [`crate::yaml`] ([ADR-0079](../../../docs/adr/0079-yaml-is-parsed-with-serde-saphyr.md)) |
 //! | `.json` | `serde_json`, falling back to JSON5 (dependency-cruiser reads JSON with `json5`) |
 //! | `.jsonc` | comments and trailing commas removed, then `serde_json` |
 //! | `.toml` | `toml` |
@@ -121,7 +121,7 @@ pub fn parse_text(
             if text.trim().is_empty() {
                 return Ok(Value::Object(serde_json::Map::new()));
             }
-            serde_yaml::from_str(text).map_err(|e| parse(e.to_string()))
+            crate::yaml::from_str(text).map_err(|e| parse(e.to_string()))
         }
         Syntax::Json => match serde_json::from_str(text) {
             Ok(value) => Ok(value),

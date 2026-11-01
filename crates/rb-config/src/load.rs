@@ -311,7 +311,7 @@ fn resolve_extends(
                 (evaluated.value, base_dir.to_path_buf())
             }
             Target::NativePreset(name, text) => {
-                let value = serde_yaml::from_str(text).map_err(|e| ConfigError::Parse {
+                let value = crate::yaml::from_str(text).map_err(|e| ConfigError::Parse {
                     file: PathBuf::from(format!("rulebearing:{name}")),
                     reason: e.to_string(),
                 })?;

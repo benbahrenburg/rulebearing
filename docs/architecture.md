@@ -293,7 +293,7 @@ Release is one tag: `cargo-dist` builds the binaries, and the three wrappers are
 | Python parsing | `ruff_python_parser` | [0013](adr/0013-ruff-parser-for-python.md) |
 | JavaScript config evaluation | QuickJS via `rquickjs`, sandboxed | [0006](adr/0006-embedded-quickjs-config-evaluator.md) |
 | Regex | `regex` crate | [0016](adr/0016-linear-time-regex-and-strict-compat.md) |
-| Serialisation, schema | `serde`, `serde_json`, `serde_yaml`, `toml`, `schemars` | [0004](adr/0004-graph-document-is-cruise-result-superset.md) |
+| Serialisation, schema | `serde`, `serde_json`, `serde-saphyr`, `toml`, `schemars` | [0004](adr/0004-graph-document-is-cruise-result-superset.md), [0079](adr/0079-yaml-is-parsed-with-serde-saphyr.md) |
 | CLI | `clap` with derive; `--help` byte-compared for the shared flags | [0008](adr/0008-exit-code-contract.md) |
 | Hashing | `sha2` for violation ids and `attest` | [0015](adr/0015-stable-violation-id.md) |
 | Node binding | `napi-rs` | [0002](adr/0002-rust-as-implementation-language.md) |

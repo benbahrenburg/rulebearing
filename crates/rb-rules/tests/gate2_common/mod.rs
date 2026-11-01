@@ -172,7 +172,7 @@ pub fn run_suite(
     files.sort();
     let mut suites = Vec::new();
     for file in &files {
-        let suite: Value = serde_yaml::from_str(&std::fs::read_to_string(file)?)?;
+        let suite: Value = rb_config::yaml::from_str(&std::fs::read_to_string(file)?)?;
         let name = file
             .file_stem()
             .map(|s| s.to_string_lossy().into_owned())

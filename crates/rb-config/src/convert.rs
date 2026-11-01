@@ -217,7 +217,7 @@ pub fn expand(
 /// [`ConfigError::Invalid`] when serialisation fails.
 pub fn render(value: &Map<String, Value>, yaml: bool) -> Result<String, ConfigError> {
     if yaml {
-        serde_yaml::to_string(value).map_err(|e| ConfigError::Invalid(e.to_string()))
+        crate::yaml::to_string(value).map_err(|e| ConfigError::Invalid(e.to_string()))
     } else {
         serde_json::to_string_pretty(value)
             .map(|mut s| {

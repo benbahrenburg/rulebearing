@@ -135,7 +135,7 @@ pub fn library() -> &'static BTreeSet<String> {
     LIBRARY.get_or_init(|| {
         let mut names = BTreeSet::new();
         for (_, text) in rb_config::extends::NATIVE_PRESETS {
-            if let Ok(preset) = serde_yaml::from_str::<Value>(text) {
+            if let Ok(preset) = rb_config::yaml::from_str::<Value>(text) {
                 names.extend(preset_rule_names(&preset));
             }
         }

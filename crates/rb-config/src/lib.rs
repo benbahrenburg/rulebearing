@@ -31,6 +31,7 @@
 //! | [`schema`] | the native format's JSON schema, `schema/config-v1.json` |
 //! | [`version`] | release versions of the lifecycle fields and snapshots, and their order |
 //! | [`webpack`] | `webpackConfig`'s `resolve` block, evaluated in the sandbox |
+//! | [`yaml`] | YAML in and out, with the one set of parser options ([ADR-0079](../../../docs/adr/0079-yaml-is-parsed-with-serde-saphyr.md)) |
 
 pub mod capability;
 pub mod convert;
@@ -52,6 +53,7 @@ pub mod schema;
 pub mod shorthands;
 pub mod version;
 pub mod webpack;
+pub mod yaml;
 
 use std::path::PathBuf;
 

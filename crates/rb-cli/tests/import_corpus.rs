@@ -333,7 +333,7 @@ fn every_archunitnet_chain_the_importer_reads_is_its_ported_rule() -> Result<(),
         .collect();
     files.sort();
     for file in files {
-        let suite: Value = serde_yaml::from_str(&std::fs::read_to_string(&file)?)?;
+        let suite: Value = rb_config::yaml::from_str(&std::fs::read_to_string(&file)?)?;
         let stem = file
             .file_stem()
             .map(|s| s.to_string_lossy().into_owned())
@@ -465,7 +465,7 @@ fn every_netarchtest_chain_the_importer_reads_is_its_ported_rule() -> Result<(),
         .collect();
     files.sort();
     for file in files {
-        let suite: Value = serde_yaml::from_str(&std::fs::read_to_string(&file)?)?;
+        let suite: Value = rb_config::yaml::from_str(&std::fs::read_to_string(&file)?)?;
         for case in suite["cases"].as_array().into_iter().flatten() {
             let (Some(csharp), Some(rule)) = (case["csharp"].as_str(), case.get("rule")) else {
                 continue;

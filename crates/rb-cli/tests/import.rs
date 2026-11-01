@@ -120,8 +120,8 @@ fn import_linter_reproduces_the_hand_translation_of_its_own_contracts() -> Resul
         &["import", "import-linter", "--from", ".importlinter"],
     )?;
     assert_eq!(output.status.code(), Some(0));
-    let imported: Value = serde_yaml::from_slice(&output.stdout)?;
-    let oracle: Value = serde_yaml::from_str(&std::fs::read_to_string(
+    let imported: Value = rb_config::yaml::from_slice(&output.stdout)?;
+    let oracle: Value = rb_config::yaml::from_str(&std::fs::read_to_string(
         Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../testbeds/oracles/configs/seddonym__import-linter.yaml"),
     )?)?;
@@ -264,7 +264,7 @@ fn imported_archunit_rules_select_dotnet_in_a_mixed_language_graph() -> Result<(
         &["import", "archunit", "tests/Shop.ArchitectureTests"],
     )?;
     assert_eq!(output.status.code(), Some(0));
-    let imported: Value = serde_yaml::from_slice(&output.stdout)?;
+    let imported: Value = rb_config::yaml::from_slice(&output.stdout)?;
     let rules = rb_config::elements::parse_elements(&imported["rules"]["elements"])?;
     assert!(!rules.is_empty());
     let mut document = serde_json::to_value(rb_model::GraphDocument::default())?;

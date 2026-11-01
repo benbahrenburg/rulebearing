@@ -655,7 +655,7 @@ mod tests {
                 .join(suite)
                 .join("ported");
             for entry in std::fs::read_dir(folder)?.flatten() {
-                let doc: Value = serde_yaml::from_str(&std::fs::read_to_string(entry.path())?)?;
+                let doc: Value = crate::yaml::from_str(&std::fs::read_to_string(entry.path())?)?;
                 for case in doc["cases"].as_array().into_iter().flatten() {
                     case_keys(&case["rule"]["select"]["where"], Side::Where, &mut keys);
                     case_keys(&case["rule"]["should"], Side::Should, &mut keys);
@@ -762,8 +762,8 @@ rules:
   ratchets:
     - { name: r, from: { path: "^a" }, to: { path: "^b" }, budget: b.json }
 "#;
-        let _: NativeFile = serde_yaml::from_str(text)?;
-        assert!(serde_yaml::from_str::<NativeFile>("bogus: 1").is_err());
+        let _: NativeFile = crate::yaml::from_str(text)?;
+        assert!(crate::yaml::from_str::<NativeFile>("bogus: 1").is_err());
         Ok(())
     }
 }
