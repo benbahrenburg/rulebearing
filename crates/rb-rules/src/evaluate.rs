@@ -33,7 +33,9 @@ use rb_config::model::{DependencyRules, Family, Rules};
 use rb_config::{Config, Rule, decision_token};
 use rb_model::options::Patterns;
 use rb_model::violation_id::violation_id;
-use rb_model::{ExpiredEntry, Folder, GraphDocument, Module, Summary, VacuousRule, Violation};
+use rb_model::{
+    ExpiredEntry, Folder, GraphDocument, Module, Severity, Summary, VacuousRule, Violation,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
@@ -46,8 +48,8 @@ use crate::known::KnownSet;
 use crate::matchers::{ModuleFacts, matches_from_cross_language, pattern_ref};
 use crate::patterns;
 use crate::summarize::{
-    options_used, rule_set_used, summarize_folders, summarize_modules, summarize_projects,
-    violation_stats,
+    advised_exit_code, options_used, rule_set_used, summarize_folders, summarize_modules,
+    summarize_projects, violation_stats,
 };
 use crate::validate::{validate_dependency, validate_module};
 
@@ -711,7 +713,12 @@ pub fn evaluate(
     }
     add_validations(&mut modules, rules, opts.validate, &facts);
     let mut expired = expired_rules(&config.rules, opts.today);
-    let mut known = KnownSet::new(&config.known_violations, opts.today, &mut expired);
+    let mut known = if config.options.ignore_known == Some(false) {
+        // No entry applies, so a date past does not fail the run either.
+        KnownSet::new(&config.known_violations, opts.today, &mut Vec::new()).matching_only()
+    } else {
+        KnownSet::new(&config.known_violations, opts.today, &mut expired)
+    };
     known.soften_modules(&mut modules);
 
     let folder_values = if metrics {
@@ -729,6 +736,7 @@ pub fn evaluate(
     violations.extend(summarize_folders(&folder_values, Some(rules)));
     violations.extend(summarize_projects(&project_values, Some(rules)));
     violations.sort_by(crate::compare::compare_violations);
+    known.observe(&violations);
     annotate(&mut violations, &modules, rules, &facts);
     let (rule_stats, mut vacuous) =
         stats_and_liveness(rules, &modules, &violations, opts.liveness, &facts);
@@ -743,6 +751,14 @@ pub fn evaluate(
 
     let stats = violation_stats(&violations);
     let count = |k: &str| stats.get(k).and_then(Value::as_u64).unwrap_or(0);
+    let in_use = config.known_violations_given || !config.known_violations.is_empty();
+    let baseline_stale = in_use.then(|| known.unmatched().len() as u64);
+    let severity = config
+        .options
+        .baseline
+        .as_ref()
+        .and_then(|b| b.stale_entries_severity)
+        .map(Severity::as_str);
     let mut used = rule_set_used(rules);
     used.extend(crate::families::rule_set_used(&config.rules));
     let summary = Summary {
@@ -754,6 +770,9 @@ pub fn evaluate(
         warn: count("warn"),
         info: count("info"),
         ignore: Some(count("ignore")),
+        baseline_size: in_use.then_some(config.known_violations.len() as u64),
+        baseline_stale,
+        advised_exit_code: Some(advised_exit_code(count("error"), baseline_stale, severity)),
         total_cruised: modules.len() as u64,
         total_dependencies_cruised: Some(
             modules
@@ -857,6 +876,110 @@ mod tests {
         assert_eq!(document.folders, None);
         assert_eq!(document.projects, None);
         assert_eq!(document.summary, rb_model::Summary::default());
+    }
+
+    fn baseline_run(options: &Value) -> Result<rb_model::Summary, EngineError> {
+        let mut config = config(json!({
+            "forbidden": [{ "name": "no-b", "severity": "error", "from": {}, "to": { "path": "^b" } }],
+            "options": options,
+        }));
+        config.options.ignore_known = options.get("ignoreKnown").and_then(Value::as_bool);
+        let mut module = Module::new("a");
+        module.dependencies = vec![edge("b")];
+        let document = GraphDocument {
+            modules: vec![module, Module::new("b")],
+            ..GraphDocument::default()
+        };
+        let options = EvalOptions {
+            today: today(),
+            ..EvalOptions::default()
+        };
+        Ok(evaluate(document, &config, &options)?.document.summary)
+    }
+
+    fn known(from: &str) -> Value {
+        json!({ "type": "dependency", "from": from, "to": "b",
+            "rule": { "name": "no-b", "severity": "error" } })
+    }
+
+    #[test]
+    fn the_summary_carries_the_baseline_counts_and_the_advised_code() -> Result<(), EngineError> {
+        // No baseline: only the advised code, equal to the error count.
+        let none = baseline_run(&json!({}))?;
+        assert_eq!(
+            (
+                none.baseline_size,
+                none.baseline_stale,
+                none.advised_exit_code
+            ),
+            (None, None, Some(1))
+        );
+        // An empty list is in use, as upstream's truthy check has it.
+        let empty = baseline_run(&json!({ "knownViolations": [] }))?;
+        assert_eq!(
+            (empty.baseline_size, empty.baseline_stale),
+            (Some(0), Some(0))
+        );
+        // One entry softens the violation, one is stale; warn does not count it.
+        let two = json!([known("a"), known("gone")]);
+        let warn = baseline_run(&json!({ "knownViolations": two }))?;
+        assert_eq!(
+            (
+                warn.error,
+                warn.baseline_size,
+                warn.baseline_stale,
+                warn.advised_exit_code
+            ),
+            (0, Some(2), Some(1), Some(0))
+        );
+        for (severity, expected) in [("error", 1), ("warn", 0), ("info", 0), ("ignore", 0)] {
+            let run = baseline_run(&json!({ "knownViolations": two,
+                "baseline": { "staleEntriesSeverity": severity } }))?;
+            assert_eq!(run.advised_exit_code, Some(expected), "{severity}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn ignore_known_false_keeps_the_severity_and_still_counts_stale_entries()
+    -> Result<(), EngineError> {
+        let run = baseline_run(&json!({ "knownViolations": [known("a"), known("gone")],
+            "ignoreKnown": false }))?;
+        assert_eq!(
+            (run.error, run.ignore, run.baseline_stale),
+            (1, Some(0), Some(1))
+        );
+        let on = baseline_run(&json!({ "knownViolations": [known("a")], "ignoreKnown": true }))?;
+        assert_eq!(
+            (on.error, on.ignore, on.baseline_stale),
+            (0, Some(1), Some(0))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn ignore_known_false_does_not_fail_a_run_on_an_expired_entry() -> Result<(), EngineError> {
+        let mut entry = known("a");
+        entry["expires"] = json!("2000-01-01");
+        let off = baseline_run(&json!({ "knownViolations": [entry], "ignoreKnown": false }))?;
+        assert_eq!(off.expired, None);
+        let on = baseline_run(&json!({ "knownViolations": [entry] }))?;
+        assert_eq!(on.expired.map(|e| e.len()), Some(1));
+        Ok(())
+    }
+
+    #[test]
+    fn the_baseline_counts_serialise_the_same_twice() -> Result<(), Box<dyn std::error::Error>> {
+        let options = json!({ "knownViolations": [known("a"), known("gone")],
+            "baseline": { "staleEntriesSeverity": "error" } });
+        let first = serde_json::to_string(&baseline_run(&options)?)?;
+        assert_eq!(first, serde_json::to_string(&baseline_run(&options)?)?);
+        assert!(
+            first.contains(
+                r#""baselineSize":2,"baselineStale":1,"advisedExitCode":1,"totalCruised""#
+            )
+        );
+        Ok(())
     }
 
     fn config(value: Value) -> Config {

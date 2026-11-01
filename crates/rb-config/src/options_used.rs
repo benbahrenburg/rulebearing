@@ -24,6 +24,7 @@ fn defaults(cwd: &str) -> Map<String, Value> {
     map.insert("maxDepth".into(), json!(0));
     map.insert("moduleSystems".into(), json!(["es6", "cjs", "tsd", "amd"]));
     map.insert("detectJSDocImports".into(), json!(false));
+    map.insert("detectImportsInAmbientModules".into(), json!(false));
     map.insert("detectProcessBuiltinModuleCalls".into(), json!(false));
     map.insert("skipAnalysisNotInRules".into(), json!(false));
     map.insert("tsPreCompilationDeps".into(), json!(false));
@@ -129,6 +130,33 @@ pub fn options_used(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_options_of_18_7_are_echoed() -> Result<(), Box<dyn std::error::Error>> {
+        assert_eq!(
+            options_used(None, Path::new("/repo"), "err", "-")["detectImportsInAmbientModules"],
+            false
+        );
+        let canonical = json!({ "options": { "ignoreKnown": false, "detectImportsInAmbientModules": true,
+            "baseline": { "mode": "shrink-only", "staleEntriesSeverity": "error" } } });
+        let config = crate::load::from_canonical(
+            canonical.as_object().cloned().unwrap_or_default(),
+            crate::CompatMode::DependencyCruiser,
+        )?;
+        let used = options_used(Some(&config), Path::new("/repo"), "err", "-");
+        assert_eq!(used["ignoreKnown"], false);
+        assert_eq!(used["detectImportsInAmbientModules"], true);
+        assert_eq!(
+            used["baseline"],
+            json!({ "mode": "shrink-only", "staleEntriesSeverity": "error" })
+        );
+        let twice = options_used(Some(&config), Path::new("/repo"), "err", "-");
+        assert_eq!(
+            serde_json::to_string(&used)?,
+            serde_json::to_string(&twice)?
+        );
+        Ok(())
+    }
 
     #[test]
     fn without_a_configuration_the_defaults_and_the_output_are_used() {

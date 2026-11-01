@@ -2012,6 +2012,15 @@
       "additionalProperties": false,
       "description": "`summary`: violations, counts, the options and rule set used, the environment, plus the\nadditive receipt and vacuous-rule list.",
       "properties": {
+        "advisedExitCode": {
+          "description": "`error`, plus `baselineStale` when `options.baseline.staleEntriesSeverity` is `error`,\nuncapped. Written on every run; absent on a saved result from dependency-cruiser before\n18.4.0 ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).",
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
         "affected": {
           "anyOf": [
             {
@@ -2022,6 +2031,24 @@
             }
           ],
           "description": "Additive: what `--affected` compared and which modules it kept\n([Wave 3 plan § 1.7](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md#17-quality-attributes))."
+        },
+        "baselineSize": {
+          "description": "The entries in the baseline; present when known violations are in use, as upstream's\n`getBaselineDiffCounts` writes it\n([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).",
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "baselineStale": {
+          "description": "The entries in the baseline no current violation matches; present when known violations\nare in use ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).",
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
         },
         "cache": {
           "anyOf": [

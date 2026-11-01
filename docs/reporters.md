@@ -23,7 +23,7 @@
 
 | Output type | Writes | Gates |
 | --- | --- | --- |
-| `baseline` | Every violation as a `knownViolations` entry, the file `rulebearing baseline` writes ([cli.md § Baselines](cli.md#baselines)) | no |
+| `baseline` | Every violation as a `knownViolations` entry, the file `rulebearing baseline` writes ([cli.md § Baselines](cli.md#baselines)); `options.baseline.mode` `shrink-only` holds the known entries that still occur, `format` every known entry | no |
 | `sarif` | SARIF 2.1.0 for code scanning ([below](#sarif)) | no |
 | `junit` | JUnit XML, one test case per rule ([below](#junit-and-trx)) | no |
 | `trx` | Visual Studio TRX, one unit test per rule | no |
@@ -43,7 +43,7 @@ Each is byte for byte dependency-cruiser 18.2.0's: gate 1 layer 3 runs upstream'
 
 ### `markdown`
 
-`reporterOptions.markdown` takes dependency-cruiser's keys with its defaults: `showTitle`, `title`, `showSummary`, `showSummaryHeader`, `summaryHeader`, `showStatsSummary`, `showRulesSummary`, `includeIgnoredInSummary`, `showDetails`, `includeIgnoredInDetails`, `showDetailsHeader`, `detailsHeader`, `collapseDetails`, `collapsedMessage`, `noViolationsMessage`, `showFooter`, `footer`, `showExternalModulesUnresolved` and `showAliasedModulesUnresolved` ([coverage tab § Options](artifacts/dependency-cruiser-18.2.0-coverage.md#options)). As upstream, `showStatsSummary` is accepted and has no effect (upstream's reporter always writes the statistics line), and a key given as `null` replaces its default. The default footer names dependency-cruiser 18.2.0, whose output this reproduces, and the run's time, which `SOURCE_DATE_EPOCH` pins.
+`reporterOptions.markdown` takes dependency-cruiser's keys with its defaults: `showTitle`, `title`, `showSummary`, `showSummaryHeader`, `summaryHeader`, `showStatsSummary`, `showRulesSummary`, `includeIgnoredInSummary`, `showDetails`, `includeIgnoredInDetails`, `showDetailsHeader`, `detailsHeader`, `collapseDetails`, `collapsedMessage`, `noViolationsMessage`, `showFooter`, `footer`, `showExternalModulesUnresolved` and `showAliasedModulesUnresolved` ([coverage tab § Options](artifacts/dependency-cruiser-18.2.0-coverage.md#options)). From 18.7.0's reporter it also takes `showStaleBaselineDetails`, `staleBaselineHeader`, `collapseStaleBaseline`, `collapseStaleBaselineMessage` and `staleBaselineIntro`, which govern a table of the baseline entries no violation matches, and the statistics line counts those entries when there are any ([coverage tab § Options](artifacts/dependency-cruiser-18.7.0-coverage.md#options)). As upstream, `showStatsSummary` is accepted and has no effect (upstream's reporter always writes the statistics line), and a key given as `null` replaces its default. The default footer names dependency-cruiser 18.2.0, whose output this reproduces, and the run's time, which `SOURCE_DATE_EPOCH` pins.
 
 ### `anon`
 

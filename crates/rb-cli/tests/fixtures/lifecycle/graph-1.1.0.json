@@ -264,6 +264,7 @@
     "warn": 2,
     "info": 0,
     "ignore": 0,
+    "advisedExitCode": 1,
     "totalCruised": 7,
     "totalDependenciesCruised": 6,
     "ruleSetUsed": {
@@ -325,6 +326,7 @@
     "optionsUsed": {
       "baseDir": ".",
       "combinedDependencies": false,
+      "detectImportsInAmbientModules": false,
       "detectJSDocImports": false,
       "detectProcessBuiltinModuleCalls": false,
       "exoticRequireStrings": [],

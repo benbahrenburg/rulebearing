@@ -13,7 +13,7 @@ import type { ResolveOptions } from "enhanced-resolve";
  *         doesn't exist, or because it's invalid)
  */
 export default function extractWebpackResolveConfig(
-  pWebpackConfigFilename: string,
-  pEnvironment?: { [key: string]: any },
-  pArguments?: { [key: string]: any } | string
+	pWebpackConfigFilename: string,
+	pEnvironment?: { [key: string]: any },
+	pArguments?: { [key: string]: any } | string,
 ): Promise<ResolveOptions>;

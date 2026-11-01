@@ -158,10 +158,9 @@ const NATIVE_TOP_KEYS: &[&str] = &[
     "diagrams",
 ];
 
-/// Every option key dependency-cruiser 18.2.0's schema defines, plus the command-line-only keys
+/// Every option key dependency-cruiser 18.7.0's schema defines, plus the command-line-only keys
 /// that reach `optionsUsed` (`focusDepth`, `outputType`, `outputTo`, `rulesFile`, `validate`,
-/// `args`), plus `baseline`, which dependency-cruiser releases after 18.2.0 accept and its own
-/// repository's configuration uses (a wave 2 row of the coverage tab; recorded, not applied).
+/// `args`) ([plan 0011 Step 3](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#21-steps-for-sub-wave-11a-the-document-and-the-options)).
 pub const OPTION_KEYS: &[&str] = &[
     "affected",
     "babelConfig",
@@ -171,6 +170,7 @@ pub const OPTION_KEYS: &[&str] = &[
     "cache",
     "collapse",
     "combinedDependencies",
+    "detectImportsInAmbientModules",
     "detectJSDocImports",
     "detectProcessBuiltinModuleCalls",
     "doNotFollow",
@@ -184,6 +184,7 @@ pub const OPTION_KEYS: &[&str] = &[
     "focusDepth",
     "forceDeriveDependents",
     "highlight",
+    "ignoreKnown",
     "includeOnly",
     "knownViolations",
     "maxDepth",
@@ -566,13 +567,47 @@ pub fn check_keys(
     }
     if let Some(options) = canonical.get("options") {
         check_object(options, "options", OPTION_KEYS)?;
-        if options.get("baseline").is_some() {
-            out.warnings.push(ConfigWarning::general(
-                "options.baseline is recorded but not applied: baseline modes arrive in wave 2",
-            ));
-        }
+        check_stale_baseline_options(options)?;
     }
     Ok(out)
+}
+
+/// The five `reporterOptions.markdown` keys of the stale-baseline table, with the JSON type
+/// upstream's schema gives each: `true` for a boolean, `false` for a string.
+const MARKDOWN_STALE_KEYS: [(&str, bool); 5] = [
+    ("showStaleBaselineDetails", true),
+    ("staleBaselineHeader", false),
+    ("collapseStaleBaseline", true),
+    ("collapseStaleBaselineMessage", false),
+    ("staleBaselineIntro", false),
+];
+
+/// `reporterOptions` stays verbatim for the reporter to read, so the types of the keys this
+/// release adds are checked here: a mistyped value is a named error, never a silent default.
+fn check_stale_baseline_options(options: &Value) -> Result<(), ConfigError> {
+    let Some(markdown) = options
+        .get("reporterOptions")
+        .and_then(|r| r.get("markdown"))
+    else {
+        return Ok(());
+    };
+    for (key, boolean) in MARKDOWN_STALE_KEYS {
+        let Some(value) = markdown.get(key) else {
+            continue;
+        };
+        let right = if boolean {
+            value.is_boolean()
+        } else {
+            value.is_string()
+        };
+        if !right {
+            let wanted = if boolean { "a boolean" } else { "a string" };
+            return Err(ConfigError::Invalid(format!(
+                "`options.reporterOptions.markdown.{key}` must be {wanted}"
+            )));
+        }
+    }
+    Ok(())
 }
 
 /// Joins a pattern list the way dependency-cruiser's `normalizeToREAsString` does.

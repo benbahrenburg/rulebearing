@@ -30,7 +30,7 @@
 
 use chrono::NaiveDate;
 use rb_config::model::KnownViolation;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use rb_model::violation_id::violation_id;
 use rb_model::{GraphDocument, Summary};
@@ -38,7 +38,9 @@ use serde_json::{Value, json};
 
 use crate::evaluate::Expired;
 use crate::js;
-use crate::summarize::{SameIndex, Side, is_same_violation, violation_stats};
+use crate::summarize::{
+    SameIndex, Side, advised_exit_code, is_same_violation, stale_entries_severity, violation_stats,
+};
 
 /// One entry, as the matching reads it.
 struct Entry {
@@ -47,11 +49,37 @@ struct Entry {
     honoured: bool,
 }
 
+/// What `compareViolationsExSeverities` compares, as one string, so a baseline of any size is
+/// compared in one pass.
+fn diff_key(violation: &Value) -> String {
+    let rule = violation.get("rule").and_then(|r| r.get("name"));
+    let names = |key: &str| -> Vec<&Value> {
+        js::array(violation, key)
+            .iter()
+            .map(|step| step.get("name").unwrap_or(step))
+            .collect()
+    };
+    json!([
+        rule,
+        violation.get("from"),
+        violation.get("to"),
+        violation.get("unresolvedTo"),
+        violation.get("type"),
+        js::array(violation, "dependencyTypes"),
+        names("cycle"),
+        names("via"),
+    ])
+    .to_string()
+}
+
 /// The known violations of a run, and which of them some violation matched.
 pub struct KnownSet {
     entries: Vec<Entry>,
     matched: Vec<bool>,
     index: Index,
+    /// `options.ignoreKnown`: whether a matched finding is softened. Matching is recorded either
+    /// way, because stale entries are counted either way.
+    soften: bool,
     /// Test every entry, as before the index: the oracle the tests compare the index with.
     #[cfg(test)]
     scan_all: bool,
@@ -239,8 +267,38 @@ impl KnownSet {
             entries: out,
             matched,
             index,
+            soften: true,
             #[cfg(test)]
             scan_all: false,
+        }
+    }
+
+    /// `options.ignoreKnown: false`: record what the entries match without softening anything.
+    #[must_use]
+    pub fn matching_only(mut self) -> Self {
+        self.soften = false;
+        self
+    }
+
+    /// Records which entries `violations` match, changing nothing: what `getBaselineDiffCounts`
+    /// compares the baseline with, the folder and project violations included. An entry also
+    /// matches a violation equal to it but for the severity, as `diffViolationArrays` has it,
+    /// which covers an entry with no `type`: upstream's softening passes over those, its diff
+    /// does not.
+    pub fn observe(&mut self, violations: &[Value]) {
+        if self.entries.is_empty() {
+            return;
+        }
+        let keys: HashSet<String> = violations.iter().map(diff_key).collect();
+        for (entry, matched) in self.entries.iter().zip(self.matched.iter_mut()) {
+            *matched |= keys.contains(&diff_key(&entry.shape));
+        }
+        for violation in violations {
+            let id = js::str_of(violation, "id").map(str::to_owned);
+            let candidates = self.index.violation(violation);
+            self.hit(candidates, |k| {
+                (k.id.is_some() && k.id == id) || shape_matches(&k.shape, violation)
+            });
         }
     }
 
@@ -270,7 +328,7 @@ impl KnownSet {
                 soften |= entry.honoured;
             }
         }
-        soften
+        soften && self.soften
     }
 
     /// The indices of the entries no violation matched, in the order given.
@@ -387,6 +445,37 @@ fn recount(summary: &mut Summary, violations: &[Value]) {
     summary.warn = count("warn");
     summary.info = count("info");
     summary.ignore = Some(count("ignore"));
+    refresh_advised(summary);
+}
+
+/// `summary.advisedExitCode` from the counts: kept absent on a saved result that has none, whose
+/// consumers read `summary.error` ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
+pub fn refresh_advised(summary: &mut Summary) {
+    if summary.advised_exit_code.is_some() {
+        summary.advised_exit_code = Some(advised_exit_code(
+            summary.error,
+            summary.baseline_stale,
+            stale_entries_severity(&summary.options_used),
+        ));
+    }
+}
+
+/// [`unmatched`] over entries as a saved result holds them; a list the engine cannot read matches
+/// nothing, so every entry is unmatched.
+pub fn unmatched_as_written(entries: &[Value], violations: &[Value]) -> Vec<usize> {
+    serde_json::from_value::<Vec<KnownViolation>>(Value::Array(entries.to_vec())).map_or_else(
+        |_| (0..entries.len()).collect(),
+        |entries| unmatched(&entries, violations),
+    )
+}
+
+/// The indices of the `entries` no violation of `violations` matches, whether or not an entry is
+/// past its date: what upstream's `getBaselineDiffCounts` counts as `baselineStale`.
+pub fn unmatched(entries: &[KnownViolation], violations: &[Value]) -> Vec<usize> {
+    let mut past = Vec::new();
+    let mut known = KnownSet::new(entries, NaiveDate::MIN, &mut past);
+    known.observe(violations);
+    known.unmatched()
 }
 
 fn to_values<T: serde::Serialize>(items: &[T]) -> Result<Vec<Value>, serde_json::Error> {
@@ -418,6 +507,8 @@ pub fn apply_to_document(
     document.modules = from_values(modules)?;
     let mut violations = to_values(&document.summary.violations)?;
     known.soften_violations(&mut violations);
+    document.summary.baseline_size = Some(entries.len() as u64);
+    document.summary.baseline_stale = Some(known.unmatched().len() as u64);
     recount(&mut document.summary, &violations);
     document.summary.violations = from_values(violations)?;
     if !expired.is_empty() {
@@ -511,6 +602,8 @@ pub fn restore_severities(document: &mut GraphDocument) -> Result<(), serde_json
             restore(rule, &severities);
         }
     }
+    document.summary.baseline_size = None;
+    document.summary.baseline_stale = None;
     recount(&mut document.summary, &violations);
     document.summary.violations = from_values(violations)?;
     if let Some(list) = &mut document.summary.expired {
@@ -520,6 +613,136 @@ pub fn restore_severities(document: &mut GraphDocument) -> Result<(), serde_json
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod baseline_counts {
+    use super::*;
+    use rb_model::GraphDocument;
+
+    fn entry(from: &str) -> KnownViolation {
+        serde_json::from_value(json!({ "type": "dependency", "from": from, "to": "b.ts",
+            "rule": { "name": "no-b", "severity": "error" } }))
+        .unwrap_or_else(|_| KnownViolation::default())
+    }
+
+    fn violation(from: &str) -> Value {
+        json!({ "type": "dependency", "from": from, "to": "b.ts",
+            "rule": { "name": "no-b", "severity": "error" } })
+    }
+
+    fn today() -> NaiveDate {
+        NaiveDate::MIN
+    }
+
+    #[test]
+    fn unmatched_names_the_entries_no_violation_matches() {
+        let entries = [entry("a.ts"), entry("gone.ts")];
+        assert_eq!(unmatched(&entries, &[violation("a.ts")]), [1]);
+        assert_eq!(unmatched(&entries, &[]), [0, 1]);
+        assert!(unmatched(&[], &[violation("a.ts")]).is_empty());
+    }
+
+    #[test]
+    fn matching_only_records_a_match_and_softens_nothing() {
+        let entries = [entry("a.ts")];
+        let mut past = Vec::new();
+        let mut set = KnownSet::new(&entries, today(), &mut past).matching_only();
+        let mut found = [violation("a.ts")];
+        set.soften_violations(&mut found);
+        assert_eq!(found[0]["rule"]["severity"], "error");
+        assert!(set.unmatched().is_empty());
+    }
+
+    #[test]
+    fn observing_matches_on_an_id_only_when_the_entry_has_one() {
+        let by_id: KnownViolation = serde_json::from_value(json!({ "id": "RB-1" }))
+            .unwrap_or_else(|_| KnownViolation::default());
+        let empty = KnownViolation::default();
+        let found = json!({ "id": "RB-1", "type": "dependency", "from": "x", "to": "y",
+            "rule": { "name": "r", "severity": "error" } });
+        assert!(unmatched(std::slice::from_ref(&by_id), std::slice::from_ref(&found)).is_empty());
+        let other = json!({ "id": "RB-2", "type": "dependency", "from": "x", "to": "y",
+            "rule": { "name": "r", "severity": "error" } });
+        assert_eq!(unmatched(std::slice::from_ref(&by_id), &[other]), [0]);
+        // No id on either side is no match on the id.
+        let no_id = json!({ "type": "dependency", "from": "x", "to": "y",
+            "rule": { "name": "r", "severity": "error" } });
+        assert_eq!(unmatched(&[empty], &[no_id]), [0]);
+    }
+
+    #[test]
+    fn with_every_entry_a_candidate_no_id_on_either_side_is_still_no_match() {
+        let entries = [entry("other.ts")];
+        let mut past = Vec::new();
+        let mut set = KnownSet::new(&entries, today(), &mut past);
+        set.scan_all = true;
+        set.observe(&[violation("a.ts")]);
+        assert_eq!(set.unmatched(), [0]);
+    }
+
+    #[test]
+    fn an_entry_equal_but_for_the_severity_is_matched_without_a_type() {
+        let entry: KnownViolation = serde_json::from_value(json!({ "from": "x", "to": "y",
+            "rule": { "name": "r", "severity": "ignore" } }))
+        .unwrap_or_else(|_| KnownViolation::default());
+        let same = json!({ "from": "x", "to": "y", "rule": { "name": "r", "severity": "error" } });
+        let other = json!({ "from": "x", "to": "z", "rule": { "name": "r", "severity": "error" } });
+        assert!(unmatched(std::slice::from_ref(&entry), &[same]).is_empty());
+        assert_eq!(unmatched(&[entry], &[other]), [0]);
+    }
+
+    #[test]
+    fn entries_as_written_match_as_the_typed_ones_do() {
+        let written = [
+            serde_json::to_value(entry("a.ts")).unwrap_or(Value::Null),
+            serde_json::to_value(entry("gone.ts")).unwrap_or(Value::Null),
+        ];
+        assert_eq!(unmatched_as_written(&written, &[violation("a.ts")]), [1]);
+        assert_eq!(unmatched_as_written(&[json!({ "rule": 3 })], &[]), [0]);
+        assert!(unmatched_as_written(&[], &[]).is_empty());
+    }
+
+    #[test]
+    fn observing_changes_no_violation() {
+        let entries = [entry("a.ts"), entry("gone.ts")];
+        let mut past = Vec::new();
+        let mut set = KnownSet::new(&entries, today(), &mut past);
+        let found = [violation("a.ts")];
+        set.observe(&found);
+        assert_eq!(found[0], violation("a.ts"));
+        assert_eq!(set.unmatched(), [1]);
+    }
+
+    #[test]
+    fn a_saved_result_keeps_or_lacks_the_advised_exit_code() {
+        let mut saved = GraphDocument::default();
+        saved.summary.violations =
+            from_values(vec![violation("a.ts")]).unwrap_or_else(|_| Vec::new());
+        saved.summary.error = 1;
+        // A result from before 18.4.0 has none and gets none.
+        let mut old = saved.clone();
+        assert!(apply_to_document(&mut old, &[entry("a.ts")], today()).is_ok());
+        assert_eq!(old.summary.advised_exit_code, None);
+        assert_eq!(old.summary.baseline_size, Some(1));
+        assert_eq!(old.summary.baseline_stale, Some(0));
+        assert_eq!(old.summary.error, 0);
+        // A result that has one has it redone, stale entries weighed by the severity it records.
+        saved.summary.advised_exit_code = Some(1);
+        saved.summary.options_used.insert(
+            "baseline".into(),
+            json!({ "staleEntriesSeverity": "error" }),
+        );
+        let mut new = saved.clone();
+        assert!(apply_to_document(&mut new, &[entry("a.ts"), entry("gone.ts")], today()).is_ok());
+        assert_eq!(new.summary.baseline_stale, Some(1));
+        assert_eq!(new.summary.advised_exit_code, Some(1));
+        // Without the baseline the counts go, and the code is the error count again.
+        assert!(restore_severities(&mut new).is_ok());
+        assert_eq!(new.summary.baseline_size, None);
+        assert_eq!(new.summary.baseline_stale, None);
+        assert_eq!(new.summary.advised_exit_code, Some(new.summary.error));
+    }
 }
 
 #[cfg(test)]

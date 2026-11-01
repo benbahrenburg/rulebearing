@@ -184,7 +184,7 @@ impl TsCompilerOptions {
 #[expect(
     clippy::struct_excessive_bools,
     reason = "each flag is one independent option (detectJSDocImports, \
-              detectProcessBuiltinModuleCalls, experimentalStats, the code layer, Markdown fences), \
+              detectImportsInAmbientModules, detectProcessBuiltinModuleCalls, experimentalStats, the code layer, Markdown fences), \
               not a state"
 )]
 #[derive(Debug, Clone)]
@@ -205,6 +205,8 @@ pub struct Settings {
     pub detect_jsdoc_imports: bool,
     /// `process.getBuiltinModule`.
     pub detect_process_builtin_module_calls: bool,
+    /// Imports in `declare module` and namespace blocks.
+    pub detect_imports_in_ambient_modules: bool,
     /// Extensions scanned but not parsed.
     pub extra_extensions_to_scan: Vec<String>,
     /// `doNotFollow`.
@@ -271,6 +273,9 @@ impl Settings {
             detect_process_builtin_module_calls: options
                 .detect_process_builtin_module_calls
                 .unwrap_or(false),
+            detect_imports_in_ambient_modules: options
+                .detect_imports_in_ambient_modules
+                .unwrap_or(false),
             extra_extensions_to_scan: options.extra_extensions_to_scan.clone().unwrap_or_default(),
             do_not_follow: Filter::compile(options.do_not_follow.as_ref())?,
             exclude: Filter::compile(options.exclude.as_ref())?,
@@ -307,6 +312,7 @@ impl Settings {
             exotic_require_strings: self.exotic_require_strings.clone(),
             detect_jsdoc_imports: self.detect_jsdoc_imports,
             detect_process_builtin_module_calls: self.detect_process_builtin_module_calls,
+            detect_imports_in_ambient_modules: self.detect_imports_in_ambient_modules,
         }
     }
 

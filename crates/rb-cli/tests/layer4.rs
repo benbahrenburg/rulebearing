@@ -207,8 +207,9 @@ fn is_dependency_cruiser_config(path: &Path) -> bool {
 /// are normalised (`assertRuleSetValid` in upstream's `src/main/cruise.mjs`).
 ///
 /// `options.baseline` is removed first. dependency-cruiser releases after the pinned 18.2.0 accept
-/// it and its own repository's configuration uses it; the loader records it with a warning
-/// (`rb-config/src/normalize.rs`), and the pinned schema does not know it.
+/// it and its own repository's configuration uses it, and the loader reads it, but the pinned
+/// schema does not know it until the pin moves
+/// ([plan 0011 Step 16](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#28-steps-for-sub-wave-11h-the-pin)).
 fn accepted_config(path: &Path) -> Result<Value, rb_config::ConfigError> {
     let mut merged = rb_config::load::merged(path, &rb_config::load::LoadOptions::default())?;
     if let Some(Value::Object(options)) = merged.get_mut("options") {

@@ -427,7 +427,9 @@ pub const SHAREABLE_OPTIONS: &[&str] = &[
     "baseDir",
     "cache",
     "collapse",
+    "baseline",
     "combinedDependencies",
+    "detectImportsInAmbientModules",
     "detectJSDocImports",
     "detectProcessBuiltinModuleCalls",
     "doNotFollow",
@@ -439,6 +441,7 @@ pub const SHAREABLE_OPTIONS: &[&str] = &[
     "externalModuleResolutionStrategy",
     "focus",
     "focusDepth",
+    "ignoreKnown",
     "includeOnly",
     "knownViolations",
     "maxDepth",
@@ -458,6 +461,27 @@ pub const SHAREABLE_OPTIONS: &[&str] = &[
     "tsPreCompilationDeps",
     "webpackConfig",
 ];
+
+/// `getAdvisedExitCode`: the error count, plus the stale baseline entries when
+/// `options.baseline.staleEntriesSeverity` is `error` (absent means `warn`). Uncapped, and without
+/// Rulebearing's expired entries or ratchets
+/// ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md),
+/// [FR-CORE-06](../../../docs/prd.md#fr-core-06)).
+pub fn advised_exit_code(error: u64, baseline_stale: Option<u64>, severity: Option<&str>) -> u64 {
+    if severity == Some("error") {
+        error.saturating_add(baseline_stale.unwrap_or(0))
+    } else {
+        error
+    }
+}
+
+/// `options.baseline.staleEntriesSeverity` as `optionsUsed` records it.
+pub fn stale_entries_severity(options: &Map<String, Value>) -> Option<&str> {
+    options
+        .get("baseline")?
+        .get("staleEntriesSeverity")?
+        .as_str()
+}
 
 /// `summarizeOptions`: the shareable options, `includeOnly` flattened to its path, plus `args`.
 pub fn options_used(options: &Map<String, Value>, args: &[String]) -> Map<String, Value> {
@@ -492,6 +516,68 @@ mod tests {
     use proptest::prelude::*;
 
     use super::*;
+
+    /// The contract of ADR-0080: every severity, absent stale counts, no cap.
+    #[test]
+    fn the_advised_exit_code_is_upstreams_formula() {
+        let table: [(u64, Option<u64>, Option<&str>, u64); 9] = [
+            (2, Some(3), Some("error"), 5),
+            (2, Some(3), Some("warn"), 2),
+            (2, Some(3), Some("info"), 2),
+            (2, Some(3), Some("ignore"), 2),
+            (2, Some(3), None, 2),
+            (2, None, Some("error"), 2),
+            (0, Some(0), Some("error"), 0),
+            (200, Some(200), Some("error"), 400),
+            (u64::MAX, Some(1), Some("error"), u64::MAX),
+        ];
+        for (error, stale, severity, expected) in table {
+            assert_eq!(
+                advised_exit_code(error, stale, severity),
+                expected,
+                "{error} {stale:?} {severity:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_stale_severity_is_read_from_the_options_used() {
+        let options = |value: Value| value.as_object().cloned().unwrap_or_default();
+        assert_eq!(
+            stale_entries_severity(&options(
+                json!({ "baseline": { "staleEntriesSeverity": "error" } })
+            )),
+            Some("error")
+        );
+        assert_eq!(
+            stale_entries_severity(&options(json!({ "baseline": { "mode": "full" } }))),
+            None
+        );
+        assert_eq!(stale_entries_severity(&options(json!({}))), None);
+    }
+
+    #[test]
+    fn the_baseline_options_are_shared_as_upstream_shares_them() {
+        let options = json!({ "baseline": { "mode": "format" }, "ignoreKnown": false,
+            "detectImportsInAmbientModules": true });
+        let used = options_used(options.as_object().unwrap_or(&Map::new()), &[]);
+        assert_eq!(used["baseline"], json!({ "mode": "format" }));
+        assert_eq!(used["ignoreKnown"], json!(false));
+        assert_eq!(used["detectImportsInAmbientModules"], json!(true));
+    }
+
+    proptest! {
+        #[test]
+        fn only_an_error_severity_counts_stale_entries(
+            error in 0u64..1_000_000,
+            stale in 0u64..1_000_000,
+            severity in "[a-z]{0,6}",
+        ) {
+            prop_assume!(severity != "error");
+            prop_assert_eq!(advised_exit_code(error, Some(stale), Some(&severity)), error);
+            prop_assert_eq!(advised_exit_code(error, Some(stale), Some("error")), error + stale);
+        }
+    }
 
     fn rules(value: Value) -> DependencyRules {
         let map = match value {

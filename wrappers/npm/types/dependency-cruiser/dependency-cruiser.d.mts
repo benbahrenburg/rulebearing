@@ -2,8 +2,8 @@ import type { ICruiseResult } from "./cruise-result.mjs";
 import type { ICruiseOptions, IFormatOptions } from "./options.mjs";
 import type { IResolveOptions } from "./resolve-options.mjs";
 import type {
-  IAvailableExtension,
-  IAvailableTranspiler,
+	IAvailableExtension,
+	IAvailableTranspiler,
 } from "./environment.mjs";
 
 export type * from "./rule-set.mjs";
@@ -21,35 +21,41 @@ export type * from "./environment.mjs";
 export const allExtensions: IAvailableExtension[];
 
 export interface IReporterOutput {
-  /**
-   * The output proper of the reporter. For most reporters this will be
-   * a string.
-   */
-  output: ICruiseResult | string;
-  /**
-   * The exit code - reporters can return a non-zero value when they find
-   * errors here. api consumers (like a cli) can use this to return a
-   * non-zero exit code, so the build breaks when something is wrong
-   *
-   * This is e.g. the default behavior of the `err` and `err-long` reporters.
-   */
-  exitCode: number;
+	/**
+	 * The output proper of the reporter. For most reporters this will be
+	 * a string.
+	 */
+	output: ICruiseResult | string;
+	/**
+	 * Textual meta information to show in a side-channel (like stderr). E.g.
+	 * the baseline reporter returns the numerical diffs between the current
+	 * and the new baseline.
+	 */
+	meta?: string;
+	/**
+	 * The exit code - reporters can return a non-zero value when they find
+	 * errors here. api consumers (like a cli) can use this to return a
+	 * non-zero exit code, so the build breaks when something is wrong
+	 *
+	 * This is e.g. the default behavior of the `err` and `err-long` reporters.
+	 */
+	exitCode: number;
 }
 
 export interface ITranspileOptions {
-  /**
-   * An object with with a typescript config object. Note that the
-   * API will not take any 'extends' keys there into account, so
-   * before calling make sure to flatten them out if you want them
-   * used (e.g. with 'dependency-cruiser/config-utl/extract-ts-config')
-   */
-  tsConfig?: any;
-  /**
-   * An object with with a babel config object. Either pass the options
-   * manually or extract them from a configuration file with e.g. with
-   * 'dependency-cruiser/config-utl/extract-babel-config')
-   */
-  babelConfig?: any;
+	/**
+	 * An object with with a typescript config object. Note that the
+	 * API will not take any 'extends' keys there into account, so
+	 * before calling make sure to flatten them out if you want them
+	 * used (e.g. with 'dependency-cruiser/config-utl/extract-ts-config')
+	 */
+	tsConfig?: any;
+	/**
+	 * An object with with a babel config object. Either pass the options
+	 * manually or extract them from a configuration file with e.g. with
+	 * 'dependency-cruiser/config-utl/extract-babel-config')
+	 */
+	babelConfig?: any;
 }
 
 /**
@@ -67,10 +73,10 @@ export interface ITranspileOptions {
  *                        like TypeScript or Babel
  */
 export function cruise(
-  pFileAndDirectoryArray: string[],
-  pCruiseOptions?: ICruiseOptions,
-  pResolveOptions?: Partial<IResolveOptions>,
-  pTranspileOptions?: ITranspileOptions,
+	pFileAndDirectoryArray: string[],
+	pCruiseOptions?: ICruiseOptions,
+	pResolveOptions?: Partial<IResolveOptions>,
+	pTranspileOptions?: ITranspileOptions,
 ): Promise<IReporterOutput>;
 
 /**
@@ -81,8 +87,8 @@ export function cruise(
  * @param pOutputType Which reporter to use to format the cruise result with
  */
 export function format(
-  pResult: ICruiseResult,
-  pFormatOptions: IFormatOptions,
+	pResult: ICruiseResult,
+	pFormatOptions: IFormatOptions,
 ): Promise<IReporterOutput>;
 
 /**

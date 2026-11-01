@@ -1,5 +1,54 @@
 {
   "$defs": {
+    "BaselineMode": {
+      "description": "`options.baseline.mode`.",
+      "oneOf": [
+        {
+          "const": "full",
+          "description": "Every current violation.",
+          "type": "string"
+        },
+        {
+          "const": "shrink-only",
+          "description": "The baseline less the entries no violation matches; never adds one.",
+          "type": "string"
+        },
+        {
+          "const": "format",
+          "description": "The baseline's entries, unchanged in content.",
+          "type": "string"
+        }
+      ]
+    },
+    "BaselineOptions": {
+      "additionalProperties": false,
+      "description": "`options.baseline`: how the baseline is updated, and what a stale entry weighs\n([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md),\n[ADR-0037](../../../docs/adr/0037-baseline-modes.md),\n[FR-CFG-01](../../../docs/prd.md#fr-cfg-01)).",
+      "properties": {
+        "mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BaselineMode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What a baseline holds after an update: the `baseline` reporter and the default of\n`rulebearing baseline --baseline-mode`. Default: `full`."
+        },
+        "staleEntriesSeverity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Severity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The severity of a stale baseline entry. `error` adds each one to\n`summary.advisedExitCode`. Default: `warn`."
+        }
+      },
+      "type": "object"
+    },
     "BuiltInModules": {
       "additionalProperties": false,
       "description": "`builtInModules`.",
@@ -4157,6 +4206,53 @@
       ],
       "type": "object"
     },
+    "MarkdownReporterOptions": {
+      "additionalProperties": true,
+      "description": "`options.reporterOptions.markdown`'s stale-baseline table, and the reporter's other keys.",
+      "properties": {
+        "collapseStaleBaseline": {
+          "default": null,
+          "description": "Whether the stale baseline entries sit in a `<details>` block. Default: `true`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "collapseStaleBaselineMessage": {
+          "default": null,
+          "description": "The `<summary>` text of that block.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "showStaleBaselineDetails": {
+          "default": null,
+          "description": "Whether to list stale baseline entries. Default: `true`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "staleBaselineHeader": {
+          "default": null,
+          "description": "The heading above the stale baseline entries.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "staleBaselineIntro": {
+          "default": null,
+          "description": "The text before the stale baseline entries.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
     "ModuleRestriction": {
       "description": "`module`: the restriction of a dependents rule or a required rule.",
       "properties": {
@@ -4613,6 +4709,18 @@
             "null"
           ]
         },
+        "baseline": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BaselineOptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The default baseline mode and the severity of stale baseline entries."
+        },
         "builtInModules": {
           "anyOf": [
             {
@@ -4642,6 +4750,13 @@
         },
         "combinedDependencies": {
           "description": "Whether every `package.json` up the tree counts for npm classification. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "detectImportsInAmbientModules": {
+          "description": "Whether imports inside `declare module` and namespace blocks are dependencies. Default:\n`false` ([plan 0011 Step 12](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#25-steps-for-sub-wave-11e-extraction)).",
           "type": [
             "boolean",
             "null"
@@ -4764,6 +4879,14 @@
           "default": null,
           "description": "`highlight`: a pattern, a list, or `{ path }`."
         },
+        "ignoreKnown": {
+          "default": null,
+          "description": "`false` keeps known violations at their rule's severity; stale entries are still counted.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "includeOnly": {
           "anyOf": [
             {
@@ -4857,6 +4980,14 @@
           "description": "`reaches`: a pattern, a list, or `{ path }`."
         },
         "reporterOptions": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReporterOptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
           "default": null,
           "description": "Per-reporter settings."
         },
@@ -5068,6 +5199,25 @@
         "to",
         "into"
       ],
+      "type": "object"
+    },
+    "ReporterOptions": {
+      "additionalProperties": true,
+      "description": "`options.reporterOptions`: the `markdown` section typed for its stale-baseline keys, every\nother section and key as the reporter reads it.",
+      "properties": {
+        "markdown": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarkdownReporterOptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "`markdown`."
+        }
+      },
       "type": "object"
     },
     "Rule": {
@@ -5603,6 +5753,13 @@
         },
         "combinedDependencies": {
           "description": "Whether every `package.json` up the tree counts for npm classification. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "detectImportsInAmbientModules": {
+          "description": "Whether imports inside `declare module` and namespace blocks are dependencies. Default:\n`false` ([plan 0011 Step 12](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#25-steps-for-sub-wave-11e-extraction)).",
           "type": [
             "boolean",
             "null"

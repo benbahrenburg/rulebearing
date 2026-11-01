@@ -14,5 +14,5 @@ import type { ICruiseOptions } from "../options.mjs";
  * @throws when the config is not valid (/ does not exist/ isn't readable)
  */
 export default function extractDepcruiseOptions(
-  pConfigFileName: string,
+	pConfigFileName: string,
 ): Promise<ICruiseOptions>;

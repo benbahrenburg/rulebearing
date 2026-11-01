@@ -21,7 +21,7 @@ import type { IConfiguration } from "../configuration.mjs";
  * @throws when the config is not valid (/ does not exist/ isn't readable)
  */
 export default function extractDepcruiseConfig(
-  pConfigFileName: string,
-  pAlreadyVisited?: Set<string>,
-  pBaseDirectory?: string,
+	pConfigFileName: string,
+	pAlreadyVisited?: Set<string>,
+	pBaseDirectory?: string,
 ): Promise<IConfiguration>;

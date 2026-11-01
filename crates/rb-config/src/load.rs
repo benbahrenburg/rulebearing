@@ -502,6 +502,9 @@ fn assemble(
             slices,
             diagrams,
         },
+        known_violations_given: merged
+            .get("options")
+            .is_some_and(|o| o.get("knownViolations").is_some()),
         known_violations,
         compat,
         origin: None,
@@ -641,6 +644,127 @@ pub fn known_violations_file(file: &Path) -> Result<Vec<KnownViolation>, ConfigE
         reason: format!("{e}; write one with `rulebearing baseline`"),
     })?;
     known_violations_text(file, &text)
+}
+
+#[cfg(test)]
+mod options_of_18_7 {
+    use super::*;
+    use crate::model::{BaselineMode, BaselineOptions};
+    use rb_model::Severity;
+    use serde_json::json;
+
+    fn load(options: &Value) -> Result<Config, ConfigError> {
+        from_canonical(
+            json!({ "options": options })
+                .as_object()
+                .cloned()
+                .unwrap_or_default(),
+            CompatMode::DependencyCruiser,
+        )
+    }
+
+    #[test]
+    fn baseline_is_typed_for_every_mode_and_severity() -> Result<(), ConfigError> {
+        for (name, mode) in [
+            ("full", BaselineMode::Full),
+            ("shrink-only", BaselineMode::ShrinkOnly),
+            ("format", BaselineMode::Format),
+        ] {
+            let config = load(&json!({ "baseline": { "mode": name } }))?;
+            assert_eq!(
+                config.options.baseline,
+                Some(BaselineOptions {
+                    mode: Some(mode),
+                    stale_entries_severity: None
+                })
+            );
+        }
+        for severity in Severity::ALL {
+            let config =
+                load(&json!({ "baseline": { "staleEntriesSeverity": severity.as_str() } }))?;
+            assert_eq!(
+                config
+                    .options
+                    .baseline
+                    .and_then(|b| b.stale_entries_severity),
+                Some(*severity)
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn baseline_no_longer_warns() -> Result<(), ConfigError> {
+        let config = load(&json!({ "baseline": { "mode": "full" } }))?;
+        assert!(config.warnings.is_empty(), "{:?}", config.warnings);
+        Ok(())
+    }
+
+    #[test]
+    fn a_wrong_value_is_a_named_error() {
+        for options in [
+            json!({ "baseline": { "mode": "partial" } }),
+            json!({ "baseline": { "staleEntriesSeverity": "fatal" } }),
+            json!({ "baseline": { "unknown": true } }),
+            json!({ "baseline": "full" }),
+            json!({ "ignoreKnown": "yes" }),
+            json!({ "detectImportsInAmbientModules": "yes" }),
+            json!({ "reporterOptions": { "markdown": { "showStaleBaselineDetails": "yes" } } }),
+            json!({ "reporterOptions": { "markdown": { "staleBaselineHeader": true } } }),
+            json!({ "reporterOptions": { "markdown": { "collapseStaleBaseline": "yes" } } }),
+            json!({ "reporterOptions": { "markdown": { "collapseStaleBaselineMessage": 1 } } }),
+            json!({ "reporterOptions": { "markdown": { "staleBaselineIntro": false } } }),
+        ] {
+            assert!(load(&options).is_err(), "{options}");
+        }
+    }
+
+    #[test]
+    fn the_new_keys_load() -> Result<(), ConfigError> {
+        let config = load(&json!({
+            "ignoreKnown": false,
+            "detectImportsInAmbientModules": true,
+            "reporterOptions": { "markdown": {
+                "showStaleBaselineDetails": true, "staleBaselineHeader": "h",
+                "collapseStaleBaseline": false, "collapseStaleBaselineMessage": "m",
+                "staleBaselineIntro": "i",
+            } },
+        }))?;
+        assert_eq!(config.options.ignore_known, Some(false));
+        assert_eq!(
+            config
+                .languages
+                .typescript
+                .detect_imports_in_ambient_modules,
+            Some(true)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_list_counts_as_given_even_when_empty() -> Result<(), ConfigError> {
+        assert!(load(&json!({ "knownViolations": [] }))?.known_violations_given);
+        assert!(!load(&json!({}))?.known_violations_given);
+        Ok(())
+    }
+
+    #[test]
+    fn the_schema_names_the_new_keys() {
+        let schema = crate::schema::generate();
+        for key in [
+            "ignoreKnown",
+            "detectImportsInAmbientModules",
+            "staleEntriesSeverity",
+            "shrink-only",
+            "showStaleBaselineDetails",
+            "staleBaselineHeader",
+            "collapseStaleBaseline",
+            "collapseStaleBaselineMessage",
+            "staleBaselineIntro",
+        ] {
+            assert!(schema.contains(key), "{key}");
+        }
+    }
 }
 
 #[cfg(test)]

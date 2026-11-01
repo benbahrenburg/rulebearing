@@ -18,9 +18,9 @@
 
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{
-    Argument, ArrayExpressionElement, BindingPattern, CallExpression, Expression,
+    Argument, ArrayExpressionElement, BindingPattern, CallExpression, Declaration, Expression,
     ImportDeclaration, ImportDeclarationSpecifier, ImportOrExportKind, Program, Statement,
-    TSModuleReference, TSType,
+    TSModuleBlock, TSModuleReference, TSNamespaceDeclaration, TSNamespaceDeclarationBody, TSType,
 };
 use oxc_ast_visit::{Visit, walk};
 use oxc_parser::{ParseOptions, Parser};
@@ -51,6 +51,8 @@ pub struct WalkOptions {
     pub detect_jsdoc_imports: bool,
     /// Whether `process.getBuiltinModule` calls count.
     pub detect_process_builtin_module_calls: bool,
+    /// Whether imports in `declare module` and namespace blocks count (tsc only).
+    pub detect_imports_in_ambient_modules: bool,
 }
 
 /// One dependency form found in the source.
@@ -448,11 +450,55 @@ fn is_type_only_import(import: &ImportDeclaration<'_>, source: &str) -> bool {
             .all(|s| s.import_kind == ImportOrExportKind::Type)
 }
 
+/// `getStatements`: the statements of a file in order and, with `detectImportsInAmbientModules`,
+/// each `declare module`, `declare global` or namespace block's statements right after the block,
+/// recursively, whether or not the declaration is exported.
+fn top_level<'s, 'a>(body: &'s [Statement<'a>], ambient: bool, out: &mut Vec<&'s Statement<'a>>) {
+    for statement in body {
+        out.push(statement);
+        if !ambient {
+            continue;
+        }
+        let block = match statement {
+            Statement::TSExternalModuleDeclaration(module) => module.body.as_deref(),
+            Statement::TSGlobalDeclaration(global) => Some(&global.body),
+            Statement::TSNamespaceDeclaration(namespace) => Some(namespace_block(namespace)),
+            Statement::ExportDeclaration(export) => match &export.declaration {
+                Declaration::TSExternalModuleDeclaration(module) => module.body.as_deref(),
+                Declaration::TSGlobalDeclaration(global) => Some(&global.body),
+                Declaration::TSNamespaceDeclaration(namespace) => Some(namespace_block(namespace)),
+                _ => None,
+            },
+            _ => None,
+        };
+        if let Some(block) = block {
+            top_level(&block.body, ambient, out);
+        }
+    }
+}
+
+/// The block of a namespace; `namespace A.B { }` nests a declaration per segment.
+fn namespace_block<'s, 'a>(namespace: &'s TSNamespaceDeclaration<'a>) -> &'s TSModuleBlock<'a> {
+    let mut body = &namespace.body;
+    loop {
+        match body {
+            TSNamespaceDeclarationBody::TSNamespaceDeclaration(inner) => body = &inner.body,
+            TSNamespaceDeclarationBody::TSModuleBlock(block) => return block,
+        }
+    }
+}
+
 fn tsc(program: &Program<'_>, source: &str, options: &WalkOptions) -> Vec<Found> {
     let mut found = Vec::new();
     let mut exports = Vec::new();
     let mut equals = Vec::new();
-    for statement in &program.body {
+    let mut statements = Vec::new();
+    top_level(
+        &program.body,
+        options.detect_imports_in_ambient_modules,
+        &mut statements,
+    );
+    for statement in statements {
         match statement {
             Statement::ImportDeclaration(import) => {
                 let types: &[D] = if is_type_only_import(import, source) {
@@ -1139,6 +1185,90 @@ impl<'a> Visit<'a> for AcornAmd<'_> {
                 self.found.extend(cjs.found);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod ambient_modules {
+    use super::*;
+
+    fn modules(source: &str, ambient: bool) -> Vec<(String, Vec<D>)> {
+        let options = WalkOptions {
+            detect_imports_in_ambient_modules: ambient,
+            ..WalkOptions::default()
+        };
+        walk_source(source, SourceType::ts(), Flavour::Tsc, &options)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|found| (found.module, found.dependency_types))
+            .collect()
+    }
+
+    /// dependency-cruiser 18.7.0's `test/extract/tsc/ambient-modules.spec.mjs`, case by case.
+    #[test]
+    fn the_upstream_cases() {
+        let table: [(&str, &str, &[D]); 7] = [
+            (
+                r#"declare module "p" { import { T } from "another"; export { T }; }"#,
+                "another",
+                &[D::Import],
+            ),
+            (
+                r#"declare module "p" { export * from "again"; }"#,
+                "again",
+                &[D::Export],
+            ),
+            (
+                r#"declare module "p" { import l = require("legacy"); export { l }; }"#,
+                "legacy",
+                &[D::ImportEquals],
+            ),
+            (
+                r#"declare module "p" { import type { T } from "another"; export type { T }; }"#,
+                "another",
+                &[D::TypeOnly, D::Import],
+            ),
+            (
+                r#"declare namespace O { namespace I { import l = require("legacy"); } }"#,
+                "legacy",
+                &[D::ImportEquals],
+            ),
+            (
+                r#"declare namespace O.I { import l = require("legacy"); }"#,
+                "legacy",
+                &[D::ImportEquals],
+            ),
+            (
+                r#"export namespace O { import l = require("legacy"); }"#,
+                "legacy",
+                &[D::ImportEquals],
+            ),
+        ];
+        for (source, module, types) in table {
+            assert_eq!(
+                modules(source, true),
+                [(module.to_owned(), types.to_vec())],
+                "{source}"
+            );
+            assert_eq!(modules(source, false), [], "off by default: {source}");
+        }
+    }
+
+    #[test]
+    fn a_module_declaration_without_a_block_is_left_alone() {
+        assert_eq!(modules(r#"declare module "p";"#, true), []);
+    }
+
+    #[test]
+    fn a_global_block_is_read_and_the_order_is_the_statements() {
+        let source = r#"
+            import "first";
+            declare global { import g = require("second"); }
+            declare module "p" { import "third"; }
+        "#;
+        let names: Vec<String> = modules(source, true).into_iter().map(|m| m.0).collect();
+        assert_eq!(names, ["first", "third", "second"]);
+        assert_eq!(modules(source, false).len(), 1);
     }
 }
 

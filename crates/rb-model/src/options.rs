@@ -226,6 +226,10 @@ pub struct TypeScriptOptions {
         skip_serializing_if = "Option::is_none"
     )]
     pub detect_js_doc_imports: Option<bool>,
+    /// Whether imports inside `declare module` and namespace blocks are dependencies. Default:
+    /// `false` ([plan 0011 Step 12](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#25-steps-for-sub-wave-11e-extraction)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub detect_imports_in_ambient_modules: Option<bool>,
     /// Whether `process.getBuiltinModule` calls are dependencies. Default: `false`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub detect_process_builtin_module_calls: Option<bool>,

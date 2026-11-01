@@ -5,7 +5,7 @@
 // docs/adr/0062-the-node-binding-reads-typescript-and-babel-configs-with-the-callers-packages.md.
 // Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 22. Requirement: FR-DIST-02.
 // Specification: docs/artifacts/dependency-cruiser-18.2.0-coverage.md#programmatic-api; the
-// signatures are dependency-cruiser 18.2.0's own (types/dependency-cruiser/, vendored verbatim),
+// signatures are dependency-cruiser 18.7.0's own (types/dependency-cruiser/, vendored verbatim),
 // and this module is checked against them.
 //
 // Each function is the native addon's (crates/rb-node, over rb_cli::api): the command line's own

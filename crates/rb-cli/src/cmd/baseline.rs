@@ -67,9 +67,10 @@ pub struct BaselineArgs {
           default_value = rb_config::load::DEFAULT_KNOWN_VIOLATIONS_FILE)]
     pub output_to: String,
     /// full writes every current violation; shrink-only removes entries that no longer occur and
-    /// fails naming them; format rewrites the file in canonical form
-    #[arg(long, value_enum, value_name = "MODE", default_value_t = BaselineMode::Full)]
-    pub baseline_mode: BaselineMode,
+    /// fails naming them; format rewrites the file in canonical form. Default: the configuration's
+    /// options.baseline.mode, else full
+    #[arg(long, value_enum, value_name = "MODE")]
+    pub baseline_mode: Option<BaselineMode>,
     /// The last day the entries apply (YYYY-MM-DD), on each entry that has none
     #[arg(long, value_name = "DATE")]
     pub expires: Option<String>,
@@ -183,9 +184,39 @@ pub fn run(ctx: &mut Context<'_>, args: &BaselineArgs) -> Outcome {
         Ok(l) => l,
         Err(outcome) => return outcome,
     };
-    match args.baseline_mode {
+    // `--baseline-mode format` reads only the file. Anything else needs the configuration, once:
+    // `--config -` reads it from stdin.
+    let config = if args.baseline_mode == Some(BaselineMode::Format) {
+        None
+    } else {
+        match configure::load(ctx, &args.config) {
+            Ok(config) => config,
+            Err(e) => return failed(RunExit::InvalidConfig, &e.to_string()),
+        }
+    };
+    // The flag, else `options.baseline.mode`, else `full`
+    // ([ADR-0080](../../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
+    let mode = args
+        .baseline_mode
+        .unwrap_or_else(|| configured_mode(config.as_ref()));
+    match mode {
         BaselineMode::Format => format(ctx, args, &lifecycle),
-        BaselineMode::Full | BaselineMode::ShrinkOnly => cruise(ctx, args, &lifecycle),
+        BaselineMode::Full | BaselineMode::ShrinkOnly => {
+            cruise(ctx, args, &lifecycle, mode, config)
+        }
+    }
+}
+
+/// `options.baseline.mode` as this command's mode; `full` when absent.
+fn configured_mode(config: Option<&rb_config::Config>) -> BaselineMode {
+    use rb_config::model::BaselineMode as Configured;
+    match config
+        .and_then(|c| c.options.baseline.as_ref())
+        .and_then(|b| b.mode)
+    {
+        Some(Configured::ShrinkOnly) => BaselineMode::ShrinkOnly,
+        Some(Configured::Format) => BaselineMode::Format,
+        Some(Configured::Full) | None => BaselineMode::Full,
     }
 }
 
@@ -246,11 +277,13 @@ enum Source {
     Config,
 }
 
-fn cruise(ctx: &mut Context<'_>, args: &BaselineArgs, lifecycle: &Lifecycle) -> Outcome {
-    let config = match configure::load(ctx, &args.config) {
-        Ok(config) => config,
-        Err(e) => return failed(RunExit::InvalidConfig, &e.to_string()),
-    };
+fn cruise(
+    ctx: &mut Context<'_>,
+    args: &BaselineArgs,
+    lifecycle: &Lifecycle,
+    mode: BaselineMode,
+    config: Option<rb_config::Config>,
+) -> Outcome {
     let has_config = config.is_some();
     let mut effective = config.unwrap_or_default();
     let flags = CruiseArgs {
@@ -269,7 +302,7 @@ fn cruise(ctx: &mut Context<'_>, args: &BaselineArgs, lifecycle: &Lifecycle) -> 
             Err(outcome) => return outcome,
         }
     };
-    let shrink = args.baseline_mode == BaselineMode::ShrinkOnly;
+    let shrink = mode == BaselineMode::ShrinkOnly;
     let source = match file {
         Some(file) => {
             if shrink {
@@ -449,6 +482,35 @@ fn shrink_only(
         stdout,
         stderr,
         code: RunExit::Violations(stale.len() as u64).code(),
+    }
+}
+
+#[cfg(test)]
+mod configured_mode_tests {
+    use super::*;
+    use rb_config::model::{BaselineMode as Configured, BaselineOptions};
+
+    fn with(mode: Option<Configured>) -> rb_config::Config {
+        let mut config = rb_config::Config::default();
+        config.options.baseline = Some(BaselineOptions {
+            mode,
+            stale_entries_severity: None,
+        });
+        config
+    }
+
+    #[test]
+    fn the_configuration_sets_the_default_mode() {
+        let table = [
+            (Some(Configured::Full), BaselineMode::Full),
+            (Some(Configured::ShrinkOnly), BaselineMode::ShrinkOnly),
+            (Some(Configured::Format), BaselineMode::Format),
+            (None, BaselineMode::Full),
+        ];
+        for (configured, expected) in table {
+            assert_eq!(configured_mode(Some(&with(configured))), expected);
+        }
+        assert_eq!(configured_mode(None), BaselineMode::Full);
     }
 }
 

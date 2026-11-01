@@ -17,8 +17,8 @@ use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
-use rb_config::model::DependencyRules;
-use rb_model::{Folder, GraphDocument, Module};
+use rb_config::model::{DependencyRules, KnownViolation};
+use rb_model::{Folder, GraphDocument, Module, Summary};
 use serde_json::{Map, Value};
 
 use crate::compare::{compare_modules, compare_violations};
@@ -27,6 +27,19 @@ use crate::graph::consolidate::consolidate_to_pattern;
 use crate::graph::filters::{Filters, apply};
 use crate::js;
 use crate::summarize::{options_used, summarize_folders, summarize_modules, violation_stats};
+
+/// `baselineStale` against what is left after the filters, as upstream's re-summary has it; a
+/// result without the field stays without it.
+fn recount_stale(summary: &mut Summary, options: &Map<String, Value>, violations: &[Value]) {
+    if summary.baseline_stale.is_some()
+        && let Some(entries) = options
+            .get("knownViolations")
+            .cloned()
+            .and_then(|known| serde_json::from_value::<Vec<KnownViolation>>(known).ok())
+    {
+        summary.baseline_stale = Some(crate::known::unmatched(&entries, violations).len() as u64);
+    }
+}
 
 /// The format options a report applies.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -203,6 +216,7 @@ pub fn rewrap(
         .map(|a| a.split(' ').map(str::to_owned).collect())
         .unwrap_or_default();
     let mut summary = summary;
+    recount_stale(&mut summary, &merged, &violations);
     summary.violations = violations
         .into_iter()
         .map(serde_json::from_value)
@@ -219,6 +233,7 @@ pub fn rewrap(
             .sum(),
     );
     summary.options_used = options_used(&merged, &args);
+    crate::known::refresh_advised(&mut summary);
     if let Some(rules) = rules {
         rule_set_used(&mut summary.rule_set_used, rules);
     }
@@ -235,6 +250,46 @@ pub fn rewrap(
         revision_data,
         code,
     })
+}
+
+#[cfg(test)]
+mod baseline_counts {
+    use super::*;
+    use serde_json::json;
+
+    fn saved(advised: Option<u64>, stale: Option<u64>) -> GraphDocument {
+        let mut document = GraphDocument::default();
+        document.summary.advised_exit_code = advised;
+        document.summary.baseline_stale = stale;
+        document.summary.error = 4;
+        if let Value::Object(options) = json!({
+            "baseline": { "staleEntriesSeverity": "error" },
+            "knownViolations": [
+                { "type": "dependency", "from": "gone", "to": "b",
+                  "rule": { "name": "no-b", "severity": "error" } },
+            ],
+        }) {
+            document.summary.options_used = options;
+        }
+        document
+    }
+
+    #[test]
+    fn a_re_report_redoes_the_stale_count_and_the_advised_code() -> Result<(), EngineError> {
+        let out = rewrap(saved(Some(9), Some(0)), &FormatOptions::default(), None)?;
+        assert_eq!(out.summary.baseline_stale, Some(1));
+        assert_eq!(out.summary.error, 0);
+        assert_eq!(out.summary.advised_exit_code, Some(1));
+        Ok(())
+    }
+
+    #[test]
+    fn a_result_from_before_18_4_stays_without_them() -> Result<(), EngineError> {
+        let out = rewrap(saved(None, None), &FormatOptions::default(), None)?;
+        assert_eq!(out.summary.baseline_stale, None);
+        assert_eq!(out.summary.advised_exit_code, None);
+        Ok(())
+    }
 }
 
 #[cfg(test)]
