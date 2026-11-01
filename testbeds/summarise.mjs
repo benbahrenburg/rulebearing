@@ -50,6 +50,14 @@ const rows = readdirSync(out)
     })
     .sort((a, b) => a.role.localeCompare(b.role) || a.repo.localeCompare(b.repo));
 
+// What a row's run proves, so a row with no incumbent still says what it tests.
+const tested = (row) =>
+    ({
+        oracle: `${row.tool} runs on the repository's own rules, beside Rulebearing where it has a time`,
+        greenfield: '`init`: the rules it proposes cruise clean and match the committed fixture',
+        scale: 'Wall-clock and peak memory of a cruise with the rules `init` proposes',
+        own: "Nothing yet: a maintainer's repository, listed for the adoption signals",
+    })[row.role] ?? row.role;
 const seconds = (timing) =>
     typeof timing?.wall_seconds === 'number' ? `${timing.wall_seconds} s` : '';
 const memory = (timing) =>
@@ -67,11 +75,11 @@ const lines = [
             ', ',
         )}. Rulebearing runs on the dependency-cruiser rows (wave 1); its time is the median of three runs, and zero diff compares its result with the incumbent's.`,
     '',
-    '| Repository | Role | Incumbent | Status | Incumbent time | Incumbent peak memory | Rulebearing time | Zero diff |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| Repository | Role | What is tested | Incumbent | Status | Incumbent time | Incumbent peak memory | Rulebearing time | Zero diff |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
     ...rows.map(
         (row) =>
-            `| [${row.repo}](https://github.com/${row.repo}/tree/${row.sha}) | ${row.role} | ${row.tool} | ${row.status} | ${seconds(row.incumbent)} | ${memory(row.incumbent)} | ${seconds(row.rulebearing)} | ${row.zeroDiff ?? ''} |`,
+            `| [${row.repo}](https://github.com/${row.repo}/tree/${row.sha}) | ${row.role} | ${tested(row)} | ${row.tool} | ${row.status} | ${seconds(row.incumbent)} | ${memory(row.incumbent)} | ${seconds(row.rulebearing)} | ${row.zeroDiff ?? ''} |`,
     ),
 ];
 const table = `${lines.join('\n')}\n`;

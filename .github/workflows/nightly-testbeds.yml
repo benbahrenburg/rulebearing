@@ -670,7 +670,7 @@ jobs:
         run: |
           python3 -c 'import yaml; print("\n".join(r["repo"] for r in yaml.safe_load(open("testbeds/manifest.yaml"))["rows"] if r["tool"] == "none"))' |
             while IFS= read -r repo; do testbeds/run.sh "$repo" testbeds/out; done
-      - run: node testbeds/summarise.mjs testbeds/out --layer5 target/conformance/layer5
+      - run: node testbeds/summarise.mjs testbeds/out --layer5 target/conformance/layer5 --readme README.md
       - run: cat testbeds/out/summary.md >> "$GITHUB_STEP_SUMMARY"
       # The scale table (plan 0003, Step 24): tonight's scale rows and the Stop-hook p95 against the
       # committed testbeds/results/scale.json, written there and into the README. A regression
