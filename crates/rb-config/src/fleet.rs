@@ -100,7 +100,7 @@ pub fn valid_name(name: &str) -> bool {
 /// # Errors
 /// [`ConfigError::Invalid`] naming what is wrong.
 pub fn read_manifest(text: &str) -> Result<FleetManifest, ConfigError> {
-    let manifest: FleetManifest = serde_yaml::from_str(text).map_err(invalid)?;
+    let manifest: FleetManifest = crate::yaml::from_str(text).map_err(invalid)?;
     if manifest.repos.is_empty() {
         return Err(invalid("`repos` lists no repository"));
     }

@@ -5,8 +5,9 @@
 //! - Requirement: [FR-CLI-04](../../../../../docs/prd.md#fr-cli-04)
 //! - Decision: [ADR-0005](../../../../../docs/adr/0005-native-config-superset-and-compat.md) (the native format)
 //!
-//! `serde_yaml` writes no comments and `serde_json`'s map order depends on a crate feature, so the
-//! importers build a [`Node`] tree, whose maps keep insertion order, and [`render`] writes it. A
+//! A serde serialiser writes no comment above a list item, and `serde_json`'s map order depends on
+//! a crate feature, so the importers build a [`Node`] tree, whose maps keep insertion order, and
+//! [`render`] writes it. A
 //! list item can carry comment lines above it, and can be written commented out, so a rule the
 //! importer will not enable still shows what it would have been. [`Node::to_json`] gives the same
 //! tree to the configuration loader, which is how every importer proves its output loads.
@@ -321,7 +322,7 @@ mod tests {
             text,
             "# header Layers\n# rules: {}\n# - live: yes\n# end\n# above\n# rules\nrules:\n  # Layers\n  # rules: {}\n  # - live: yes\n  # end\n  #\n  - name: x\n"
         );
-        let parsed: serde_json::Value = serde_yaml::from_str(&text).unwrap_or_default();
+        let parsed: serde_json::Value = rb_config::yaml::from_str(&text).unwrap_or_default();
         assert_eq!(parsed, serde_json::json!({"rules": [{"name": "x"}]}));
         assert_eq!(comment_lines("  ", "a\u{2028}b"), ["  # a", "  # b"]);
     }
@@ -350,7 +351,7 @@ mod tests {
         #[test]
         fn every_scalar_reads_back_as_itself(text in "\\PC{0,24}") {
             let yaml = format!("k: {}\n", scalar(&text));
-            let back: Value = serde_yaml::from_str(&yaml).map_err(|e| TestCaseError::fail(e.to_string()))?;
+            let back: Value = rb_config::yaml::from_str(&yaml).map_err(|e| TestCaseError::fail(e.to_string()))?;
             prop_assert_eq!(back["k"].as_str(), Some(text.as_str()));
         }
     }
@@ -393,7 +394,7 @@ mod tests {
         let text = render(&document);
         let expected = "# head\n#\n$schema: https://x/y.json\n# the rules\nrules:\n  elements:\n    # Classes()\n    - name: a\n      select:\n        kind: class\n      tags: [x, yy]\n      empty: []\n      flag: true\n      n: 1\n    # reason\n    # - name: a\n    #   select:\n    #     kind: class\n    #   tags: [x, yy]\n    #   empty: []\n    #   flag: true\n    #   n: 1\n";
         assert_eq!(text, expected);
-        let back: Value = serde_yaml::from_str(&text).unwrap_or_default();
+        let back: Value = rb_config::yaml::from_str(&text).unwrap_or_default();
         assert_eq!(back, document.to_json());
         assert_eq!(
             back["rules"]["elements"].as_array().map(Vec::len),
@@ -417,7 +418,7 @@ mod tests {
         };
         let text = render(&document);
         assert_eq!(text, "elements: []\n  # why\n  # - name: x\n");
-        let back: Value = serde_yaml::from_str(&text).unwrap_or_default();
+        let back: Value = rb_config::yaml::from_str(&text).unwrap_or_default();
         assert_eq!(back["elements"], serde_json::json!([]));
     }
 
@@ -440,7 +441,7 @@ mod tests {
         };
         let text = render(&document);
         assert!(text.contains("  long:\n    - item-number-0\n"), "{text}");
-        let back: Value = serde_yaml::from_str(&text).unwrap_or_default();
+        let back: Value = rb_config::yaml::from_str(&text).unwrap_or_default();
         assert_eq!(back, document.to_json());
     }
 

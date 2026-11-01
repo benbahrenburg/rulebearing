@@ -39,7 +39,6 @@ rb-extract-python = { workspace = true, optional = true }
 # `preserve_order`: package.json and every JSON the CLI rewrites keep their key order in every
 # feature set, not only when oxc_resolver (extract-ts) happens to enable it.
 serde_json = { workspace = true, features = ["preserve_order"] }
-serde_yaml = { workspace = true }
 serde = { workspace = true }
 clap = { workspace = true }
 thiserror = { workspace = true }

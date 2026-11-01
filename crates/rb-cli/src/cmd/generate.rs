@@ -576,7 +576,8 @@ rules:
         assert!(out.contains(
             "    from: { path: \"^x\" }\n    examples:\n      forbidden: [\"r -> s\", \"t -> u\"]\n      allowed: [\"p -> q\"]\n    to: { path: \"^y\" }\n"
         ), "{out}");
-        let value: serde_yaml::Value = serde_yaml::from_str(&out).map_err(|e| e.to_string())?;
+        let value: serde_json::Value =
+            rb_config::yaml::from_str(&out).map_err(|e| e.to_string())?;
         assert_eq!(value["forbidden"][1]["examples"]["allowed"][0], "p -> q");
         Ok(())
     }
@@ -606,7 +607,8 @@ rules:
     fn allowed_items_are_found_by_position() -> Result<(), String> {
         let text = "allowed:\n  - from: { path: \"^a\" }\n    to: {}\n  -\n    from: { path: \"^b\" }\n    to: {}\nforbidden: []\n";
         let out = set_examples(text, Locator::Allowed(1), &generated())?;
-        let value: serde_yaml::Value = serde_yaml::from_str(&out).map_err(|e| e.to_string())?;
+        let value: serde_json::Value =
+            rb_config::yaml::from_str(&out).map_err(|e| e.to_string())?;
         assert_eq!(value["allowed"][1]["examples"]["forbidden"][0], "r -> s");
         assert!(value["allowed"][0].get("examples").is_none());
         assert!(set_examples(text, Locator::Allowed(2), &generated()).is_err());

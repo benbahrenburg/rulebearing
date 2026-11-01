@@ -1654,8 +1654,13 @@ mod tests {
                 prop_assert!(rb_rules::patterns::test(&pattern, name), "{pattern} misses {name}");
             }
             prop_assert!(!rb_rules::patterns::test(&pattern, &other));
+            // The pattern is anchored, so a name with a character in front is not matched unless
+            // it is itself one of the names (["p.ts", "xp.ts"] lists "xp.ts").
             let prefixed = format!("x{}", names[0]);
-            prop_assert!(!rb_rules::patterns::test(&pattern, &prefixed));
+            prop_assert_eq!(
+                rb_rules::patterns::test(&pattern, &prefixed),
+                names.contains(&prefixed)
+            );
         }
 
         #[test]

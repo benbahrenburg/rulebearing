@@ -134,7 +134,7 @@ pub fn preset_rule_names(preset: Preset) -> Vec<String> {
     else {
         return Vec::new();
     };
-    let Ok(value) = serde_yaml::from_str::<Value>(text) else {
+    let Ok(value) = rb_config::yaml::from_str::<Value>(text) else {
         return Vec::new();
     };
     ["forbidden", "allowed", "required"]
@@ -557,7 +557,7 @@ fn orphan_exclusions(found: &Discovery) -> Vec<String> {
     };
     let mut out: Vec<String> =
         match extends::resolve(&format!("rulebearing:{preset}"), Path::new(".")) {
-            Ok(Target::NativePreset(_, text)) => serde_yaml::from_str::<Value>(text)
+            Ok(Target::NativePreset(_, text)) => rb_config::yaml::from_str::<Value>(text)
                 .ok()
                 .and_then(|preset| {
                     preset

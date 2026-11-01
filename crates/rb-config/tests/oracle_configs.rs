@@ -24,9 +24,9 @@ const NEEDS_NODE: &str = "invertase/react-native-firebase";
 fn rows() -> Result<Vec<(String, String)>, Box<dyn Error>> {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../testbeds/manifest.yaml");
     let text = std::fs::read_to_string(manifest)?;
-    let value: serde_yaml::Value = serde_yaml::from_str(&text)?;
+    let value: serde_json::Value = rb_config::yaml::from_str(&text)?;
     let mut out = Vec::new();
-    for row in value["rows"].as_sequence().into_iter().flatten() {
+    for row in value["rows"].as_array().into_iter().flatten() {
         if row["tool"].as_str() == Some("dependency-cruiser")
             && let (Some(repo), Some(config)) = (row["repo"].as_str(), row["config"].as_str())
         {

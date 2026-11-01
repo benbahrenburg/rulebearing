@@ -91,8 +91,9 @@ rayon = "1"
 wasm-bindgen = "0.2.128"
 js-sys = "0.3.105"
 rquickjs = { version = "0.14", default-features = false, features = ["std", "loader"] }
-# Configuration formats (docs/adr/0005-native-config-superset-and-compat.md).
-serde_yaml = "0.9"
+# Configuration formats (docs/adr/0005-native-config-superset-and-compat.md); YAML through
+# serde-saphyr, safe Rust (docs/adr/0079-yaml-is-parsed-with-serde-saphyr.md).
+serde-saphyr = "2.0"
 toml = "1"
 # The JavaScript-pattern compatibility table walks the parsed pattern (docs/adr/0016).
 regex-syntax = "0.8"

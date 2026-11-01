@@ -42,6 +42,22 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+/// Parses one YAML document with the options every YAML read uses: YAML 1.2 booleans, `<<` an
+/// ordinary key, the last of two equal keys winning, unknown tags refused, one-line errors and
+/// the parser's default budget. They are `rb_config::yaml::options`, repeated here because this
+/// crate does not depend on `rb-config`
+/// ([ADR-0079](../../../docs/adr/0079-yaml-is-parsed-with-serde-saphyr.md)).
+fn from_yaml<'de, T: Deserialize<'de>>(text: &'de str) -> Result<T, serde_saphyr::Error> {
+    let mut options = serde_saphyr::Options::default();
+    options.strict_booleans = true;
+    options.merge_keys = serde_saphyr::MergeKeyPolicy::AsOrdinary;
+    options.duplicate_keys = serde_saphyr::DuplicateKeyPolicy::LastWins;
+    options.reject_unsupported_tags = true;
+    options.non_finite_float_policy = serde_saphyr::NonFiniteFloatPolicy::PassThrough;
+    options.with_snippet = false;
+    serde_saphyr::from_str_with_options(text, options)
+}
+
 /// The operation extension that names the file handling an operation, relative to the
 /// repository the server document is in.
 pub const HANDLER_KEY: &str = "x-rulebearing-handler";
@@ -131,8 +147,7 @@ pub enum DeclaredError {
 /// # Errors
 /// [`DeclaredError::Edges`] naming the entry, when the text is not the format.
 pub fn read_edges(text: &str) -> Result<EdgesFile, DeclaredError> {
-    let file: EdgesFile =
-        serde_yaml::from_str(text).map_err(|e| DeclaredError::Edges(e.to_string()))?;
+    let file: EdgesFile = from_yaml(text).map_err(|e| DeclaredError::Edges(e.to_string()))?;
     let checked = |what: String, path: &str| {
         if path.trim().is_empty() {
             Err(DeclaredError::Edges(format!("{what} is empty")))
@@ -182,7 +197,7 @@ pub fn read_openapi(server: &str, text: &str) -> Result<Vec<Operation>, Declared
     let document: Value = if text.trim_start().starts_with('{') {
         serde_json::from_str(text).map_err(|e| failed(format!("not JSON: {e}")))?
     } else {
-        serde_yaml::from_str(text).map_err(|e| failed(format!("not YAML: {e}")))?
+        from_yaml(text).map_err(|e| failed(format!("not YAML: {e}")))?
     };
     if document.get("openapi").is_none() && document.get("swagger").is_none() {
         return Err(failed(

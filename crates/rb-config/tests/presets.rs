@@ -106,7 +106,7 @@ fn every_preset_resolves_to_its_snapshot() -> Result<(), Box<dyn Error>> {
 /// A preset's file as written, before `extends`.
 fn written(name: &str) -> Result<Value, Box<dyn Error>> {
     match resolve(&format!("rulebearing:{name}"), Path::new("."))? {
-        Target::NativePreset(_, text) => Ok(serde_yaml::from_str(text)?),
+        Target::NativePreset(_, text) => Ok(rb_config::yaml::from_str(text)?),
         other => Err(format!("{name} is {other:?}").into()),
     }
 }

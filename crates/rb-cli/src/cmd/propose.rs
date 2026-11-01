@@ -297,7 +297,7 @@ fn normalise(path: &str) -> String {
 }
 
 fn yaml_value(text: &str, flag: &str) -> Result<Value, Outcome> {
-    serde_yaml::from_str::<Value>(text).map_err(|e| {
+    rb_config::yaml::from_str::<Value>(text).map_err(|e| {
         Outcome::failed(
             RunExit::InvalidConfig,
             format!("rulebearing propose: {flag} is not YAML: {e}\n"),
