@@ -237,7 +237,8 @@ fn cruise_with(
     if let Err(e) = configure::apply_flags(&mut effective, args, ctx) {
         return failed(&RunError::Config(e), "");
     }
-    let affected = match affected(ctx, args, &mut effective) {
+    let status = run_status(ctx, args, &effective, given.is_none());
+    let affected = match affected(ctx, args, &mut effective, &status) {
         Ok(selection) => selection,
         Err(outcome) => return *outcome,
     };
@@ -248,11 +249,8 @@ fn cruise_with(
     {
         return failed(&e, &stderr);
     }
-    effective.options.metrics = Some(configure::wants_metrics(
-        &effective,
-        args.metrics && !args.no_metrics,
-        &output_type,
-    ));
+    let wanted = args.metrics && !args.no_metrics;
+    effective.options.metrics = Some(configure::wants_metrics(&effective, wanted, &output_type));
     let options = RunOptions {
         liveness: liveness != Liveness::Off,
         options_used: configure::options_used(
@@ -276,6 +274,7 @@ fn cruise_with(
         cache: cache.as_ref(),
         evaluation: evaluation.as_deref(),
         report: renders_cached.then_some(report_part.as_str()),
+        status: &status,
     };
     let produced = match given {
         Some(given) => evaluate_given(ctx, &effective, given, &options, &mut progress),
@@ -349,7 +348,12 @@ fn finish(
     let (cache, report_options, report_part) = (reporting.cache, reporting.options, reporting.part);
     let evaluation = reporting.evaluation.clone();
     let plans = plans_for(finishing.args, effective);
-    let report = |verdict: &Verdict| render(ctx, verdict, output_type, report_options, plans);
+    // `None` for a report nobody reads ([`report_read`]): it is not rendered, so not stored.
+    let report = |verdict: &Verdict, tail: &Tail| {
+        report_read(&finishing, tail, plans)
+            .then(|| render(ctx, verdict, output_type, report_options, plans))
+            .transpose()
+    };
     let (mut outcome, writing) = match produced {
         Evaluated::Rendered(output, tail) => (
             conclude(
@@ -365,14 +369,13 @@ fn finish(
         ),
         Evaluated::Stored(verdict, key) => {
             let tail = verdict.tail();
-            match report(&verdict) {
-                Ok((output, count)) => {
+            match report(&verdict, &tail) {
+                Ok(rendered) => {
                     // The rendered output is kept for the next run with the same report, so the
-                    // run's copy is a clone only when the cache stores it.
-                    let kept = match (cache, report_part) {
-                        (Some(cache), Some(report_part)) => Some((cache, report_part)),
-                        _ => None,
-                    };
+                    // run's copy is a clone only when the cache stores it. A report not rendered
+                    // is not kept: a plain `-T agent` run has the same key.
+                    let kept = cache.zip(report_part).filter(|_| rendered.is_some());
+                    let (output, count) = rendered.unwrap_or_default();
                     let (printed, stored) = if kept.is_some() {
                         (output.clone(), Some(output))
                     } else {
@@ -406,12 +409,12 @@ fn finish(
             summarise(&mut run.document.summary, &ratchets, liveness);
             let verdict = Verdict::of(*run, ratchets);
             let tail = verdict.tail();
-            let outcome = match report(&verdict) {
-                Ok((output, count)) => conclude(
+            let outcome = match report(&verdict, &tail) {
+                Ok(rendered) => conclude(
                     ctx,
                     effective,
                     &tail,
-                    (output, count),
+                    rendered.unwrap_or_default(),
                     finishing,
                     progress,
                     stderr,
@@ -445,6 +448,34 @@ fn finish(
 
 /// The cache options of a run, none over `--graph FILE`, and the evaluated layer's key without
 /// the extraction: none when the layer is off for this run.
+/// The run's one `git status`, taken when `--affected` or the cache first asks. The cache's
+/// `metadata` strategy always asks, so then it starts now, beside `--affected`'s own git; an
+/// extraction the caller made (`extracts` false) reads no cache.
+fn run_status(
+    ctx: &Context<'_>,
+    args: &CruiseArgs,
+    config: &Config,
+    extracts: bool,
+) -> crate::git::Snapshot {
+    let status = crate::git::Snapshot::new(&ctx.cwd);
+    if extracts && reads_status(args, config) {
+        status.prefetch();
+    }
+    status
+}
+
+/// Whether the run goes through a cache whose `metadata` strategy reads `git status` for what
+/// changed: the cache on (not over `--graph FILE`), with that strategy.
+fn reads_status(args: &CruiseArgs, config: &Config) -> bool {
+    args.graph.is_none()
+        && config
+            .options
+            .cache
+            .as_ref()
+            .and_then(rb_config::model::CacheSetting::options)
+            .is_some_and(|c| c.strategy == rb_model::CacheStrategy::Metadata)
+}
+
 fn cache_of(
     ctx: &Context<'_>,
     config: &Config,
@@ -491,6 +522,8 @@ struct Mode<'a> {
     cache: Option<&'a rb_model::CacheOptions>,
     evaluation: Option<&'a str>,
     report: Option<&'a str>,
+    /// The run's `git status`, which the cache reads its changes and presence set from.
+    status: &'a crate::git::Snapshot,
 }
 
 /// The evaluated run: over `--graph FILE`, through the cache when `--cache` or `options.cache`
@@ -569,8 +602,14 @@ fn cached(
     progress: &mut Progress,
 ) -> Result<(Evaluated, crate::cache::Writing), RunError> {
     use crate::cache::evaluated;
-    let mut extracted =
-        crate::cache::extract_cached(ctx, config, &options.paths, cache, mode.evaluation)?;
+    let mut extracted = crate::cache::extract_cached(
+        ctx,
+        config,
+        &options.paths,
+        cache,
+        mode.evaluation,
+        Some(mode.status.clone()),
+    )?;
     progress.stage(&format!("extract ({})", extracted.served));
     if let Content::Evaluated(stored) = &extracted.content {
         let rendered = mode
@@ -594,7 +633,14 @@ fn cached(
         }
         // The verdict named is unusable: extract as if it had never been stored.
         drop(extracted.writing);
-        extracted = crate::cache::extract_cached(ctx, config, &options.paths, cache, None)?;
+        extracted = crate::cache::extract_cached(
+            ctx,
+            config,
+            &options.paths,
+            cache,
+            None,
+            Some(mode.status.clone()),
+        )?;
     }
     match extracted.content {
         Content::Extracted(document, warnings) => {
@@ -721,6 +767,46 @@ fn warned(stderr: &str, tail: &Tail) -> String {
     out
 }
 
+/// The run's verdict from its tail, before the approximate-gate refusal: 2 whatever the
+/// reporter when the run cannot be trusted; the error count only for a reporter that gates
+/// (ADR-0030). A rule that matches nothing counts under strict liveness only (ADR-0032). The
+/// count is the report's, after `reaches` and `--affected` kept their modules, as upstream's
+/// reporter counts the re-summarised result.
+fn verdict_code(
+    tail: &Tail,
+    liveness: Liveness,
+    output_type: &str,
+    plugin_count: Option<u64>,
+) -> RunExit {
+    let strict = liveness == Liveness::Strict;
+    let ratchets = &tail.ratchets;
+    let vacuous = !tail.vacuous.is_empty() || !ratchets.vacuous.is_empty();
+    if (strict && vacuous) || ratchets.no_budget() {
+        RunExit::Untrustworthy
+    } else if rb_report::gates(output_type) {
+        RunExit::Violations(tail.error + tail.expired.len() as u64 + ratchets.exceeded())
+    } else if let Some(count) = plugin_count {
+        // A plugin decides its own count, as upstream's command line exits with it (ADR-0030).
+        RunExit::Violations(count)
+    } else {
+        RunExit::Violations(0)
+    }
+}
+
+/// Whether the report is read at all. A Stop hook's answer quotes the report only when there are
+/// errors to block on ([`stop_hook`]); with none it is empty whatever the report says, so the
+/// report is not rendered. The hook's reporter is `agent` (never a plugin, whose count would
+/// come from rendering), and `--with-plans`, whose planning can fail the run, always renders.
+fn report_read(finishing: &Finishing<'_>, tail: &Tail, plans: Option<&Config>) -> bool {
+    !finishing.args.from_hook
+        || finishing.api.is_some()
+        || plans.is_some()
+        || matches!(
+            verdict_code(tail, finishing.liveness, finishing.output_type, None),
+            RunExit::Violations(count) if count > 0
+        )
+}
+
 /// What [`conclude`] needs of the command line.
 #[derive(Clone, Copy)]
 struct Finishing<'a> {
@@ -799,22 +885,8 @@ fn conclude(
     for v in &tail.vacuous {
         let _ = writeln!(stderr, "{}", vacuous_message(&v.name, &v.side, strict));
     }
-    let vacuous = !tail.vacuous.is_empty() || !ratchets.vacuous.is_empty();
-    // 2 whatever the reporter; the error count only for a reporter that gates (ADR-0030). A rule
-    // that matches nothing counts under strict liveness only (ADR-0032). The count is the
-    // report's, after `reaches` and `--affected` kept their modules, as upstream's reporter
-    // counts the re-summarised result.
     let decides = rb_report::gates(output_type) || plugin_count.is_some();
-    let mut code = if (strict && vacuous) || ratchets.no_budget() {
-        RunExit::Untrustworthy
-    } else if rb_report::gates(output_type) {
-        RunExit::Violations(tail.error + tail.expired.len() as u64 + ratchets.exceeded())
-    } else if let Some(count) = plugin_count {
-        // A plugin decides its own count, as upstream's command line exits with it (ADR-0030).
-        RunExit::Violations(count)
-    } else {
-        RunExit::Violations(0)
-    };
+    let mut code = verdict_code(tail, liveness, output_type, plugin_count);
     if args.from_hook {
         return stop_hook(code, &stdout, stderr);
     }
@@ -860,6 +932,7 @@ fn affected(
     ctx: &Context<'_>,
     args: &CruiseArgs,
     config: &mut Config,
+    status: &crate::git::Snapshot,
 ) -> Result<Option<crate::affected::Selection>, Box<Outcome>> {
     let Some(request) =
         crate::affected::request(args.affected.as_deref(), args.affected_depth, config)
@@ -873,7 +946,7 @@ fn affected(
         };
     };
     let saved = ctx.resolve(pipeline::SAVED_GRAPH);
-    crate::affected::select(&ctx.cwd, &saved, request, config)
+    crate::affected::select(&ctx.cwd, &saved, request, config, Some(status))
         .map(Some)
         .map_err(|e| {
             Box::new(Outcome::failed(
@@ -955,7 +1028,114 @@ fn stop_hook(code: RunExit, report: &str, stderr: String) -> Outcome {
 
 #[cfg(test)]
 mod tests {
-    use super::{config_warnings, renders_cached, vacuous_message};
+    use super::{
+        Finishing, config_warnings, renders_cached, report_read, vacuous_message, verdict_code,
+    };
+    use crate::RunExit;
+    use crate::cache::evaluated::Tail;
+    use crate::cli::{CruiseArgs, Liveness};
+    use crate::ratchets::Ratchets;
+
+    fn tail(error: u64, vacuous: bool) -> Tail {
+        Tail {
+            expired: Vec::new(),
+            vacuous: if vacuous {
+                vec![rb_model::VacuousRule {
+                    name: "r".into(),
+                    side: "from".into(),
+                    severity: None,
+                }]
+            } else {
+                Vec::new()
+            },
+            ratchets: Ratchets::default(),
+            warnings: Vec::new(),
+            error,
+            approximate: false,
+            fired: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn the_verdict_is_the_table_of_adr_0008() {
+        let code = |t: &Tail, liveness, output_type, plugin| {
+            verdict_code(t, liveness, output_type, plugin)
+        };
+        let clean = tail(0, false);
+        let errors = tail(3, false);
+        let empty = tail(0, true);
+        assert_eq!(
+            code(&errors, Liveness::Warn, "err", None),
+            RunExit::Violations(3)
+        );
+        assert_eq!(
+            code(&errors, Liveness::Warn, "agent", None),
+            RunExit::Violations(3)
+        );
+        assert_eq!(
+            code(&errors, Liveness::Warn, "json", None),
+            RunExit::Violations(0)
+        );
+        assert_eq!(
+            code(&clean, Liveness::Warn, "json", Some(7)),
+            RunExit::Violations(7)
+        );
+        assert_eq!(
+            code(&empty, Liveness::Strict, "err", None),
+            RunExit::Untrustworthy
+        );
+        assert_eq!(
+            code(&empty, Liveness::Warn, "err", None),
+            RunExit::Violations(0)
+        );
+    }
+
+    #[test]
+    fn only_a_stop_hook_with_nothing_to_block_on_skips_its_report() {
+        let hook = CruiseArgs {
+            from_hook: true,
+            ..CruiseArgs::default()
+        };
+        let plain = CruiseArgs::default();
+        let verdict = std::cell::Cell::new(None);
+        let config = rb_config::Config::default();
+        let finishing = |args, api| Finishing {
+            args,
+            liveness: Liveness::Warn,
+            output_type: "agent",
+            output_to: "-",
+            api,
+        };
+        let read = |args, api, t: &Tail, plans| report_read(&finishing(args, api), t, plans);
+        assert!(
+            !read(&hook, None, &tail(0, false), None),
+            "nothing to block on"
+        );
+        assert!(
+            read(&hook, None, &tail(1, false), None),
+            "the report is the reason"
+        );
+        assert!(
+            read(&plain, None, &tail(0, false), None),
+            "a plain run prints it"
+        );
+        assert!(
+            read(&hook, Some(&verdict), &tail(0, false), None),
+            "a library call returns it"
+        );
+        assert!(
+            read(&hook, None, &tail(0, false), Some(&config)),
+            "planning can fail the run"
+        );
+        let strict = Finishing {
+            liveness: Liveness::Strict,
+            ..finishing(&hook, None)
+        };
+        assert!(
+            !report_read(&strict, &tail(1, true), None),
+            "an untrustworthy run does not block, whatever it counted"
+        );
+    }
 
     #[test]
     fn only_reporters_that_depend_on_the_key_alone_are_served_rendered() {

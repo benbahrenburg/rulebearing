@@ -38,7 +38,7 @@ pub mod cmd;
 pub mod configure;
 pub mod context;
 pub mod exit;
-mod git;
+pub mod git;
 pub mod graphviz;
 pub mod pipeline;
 pub mod plugin;
