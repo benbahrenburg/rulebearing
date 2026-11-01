@@ -37,6 +37,12 @@ updates:
       # Move this with the Node version in the workflows.
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
+      # The Babel packages are the caller's Babel the rb-node tests run extractBabelConfig with.
+      # dependency-cruiser 18.2.0 supports @babel/core >=7 <8 (wrappers/npm/src/api/config-utl/
+      # transpilers.ts), so under Babel 8 the function answers {} by design and the parity tests
+      # fail. Move this with the conformance pin (docs/adr/0009-conformance-suites-as-specification.md).
+      - dependency-name: "@babel/*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
