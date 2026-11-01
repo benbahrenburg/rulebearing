@@ -44,11 +44,17 @@ use serde_json::Value;
 
 /// Parses one YAML document with the options every YAML read uses: YAML 1.2 booleans, `<<` an
 /// ordinary key, the last of two equal keys winning, unknown tags refused, one-line errors and
-/// the parser's default budget. They are `rb_config::yaml::options`, repeated here because this
+/// the parser's budget with its size limits raised to the text's length
+/// ([ADR-0081](../../../docs/adr/0081-the-yaml-budget-scales-with-the-text.md)). They are `rb_config::yaml::options`, repeated here because this
 /// crate does not depend on `rb-config`
 /// ([ADR-0079](../../../docs/adr/0079-yaml-is-parsed-with-serde-saphyr.md)).
 fn from_yaml<'de, T: Deserialize<'de>>(text: &'de str) -> Result<T, serde_saphyr::Error> {
+    let mut budget = serde_saphyr::budget::Budget::default();
+    budget.max_nodes = budget.max_nodes.max(text.len());
+    budget.max_events = budget.max_events.max(text.len().saturating_mul(2));
+    budget.max_total_scalar_bytes = budget.max_total_scalar_bytes.max(text.len());
     let mut options = serde_saphyr::Options::default();
+    options.budget = Some(budget);
     options.strict_booleans = true;
     options.merge_keys = serde_saphyr::MergeKeyPolicy::AsOrdinary;
     options.duplicate_keys = serde_saphyr::DuplicateKeyPolicy::LastWins;

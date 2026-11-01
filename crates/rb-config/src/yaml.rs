@@ -12,20 +12,38 @@
 //! this replaced: YAML 1.2 booleans (`yes` and `no` stay strings), `<<` an ordinary key, the last of
 //! two equal keys wins, an unknown tag is an error, and `.inf` and `.nan` reach `serde_json` as
 //! `null`. Errors are one line, without a source snippet, because the callers wrap them in their
-//! own named reason. The parser's default budget bounds every document, so an alias bomb or a deep
-//! nest is an error, never a hang or a panic.
+//! own named reason. The parser's budget bounds every document, with its node, event and scalar
+//! limits raised to the size of the text ([ADR-0081](../../../docs/adr/0081-the-yaml-budget-scales-with-the-text.md)):
+//! a document that uses no alias always fits, however large, and an alias bomb or a deep nest is
+//! an error, never a hang or a panic.
 
 use serde::de::Deserialize;
 use serde_json::{Map, Value};
+use serde_saphyr::budget::Budget;
 use serde_saphyr::{DuplicateKeyPolicy, MergeKeyPolicy, NonFiniteFloatPolicy, Options};
 
 /// The YAML parser's error.
 pub use serde_saphyr::Error;
 
-/// The parser options every YAML read uses ([ADR-0079](../../../docs/adr/0079-yaml-is-parsed-with-serde-saphyr.md)).
+/// The parser's default budget with the limits that count a document's size raised to `length`
+/// bytes of text. Every node and every event takes at least a byte of text, or two events a
+/// collection of at least two bytes, so text without aliases cannot breach them; only expanding
+/// an alias can ([ADR-0081](../../../docs/adr/0081-the-yaml-budget-scales-with-the-text.md)).
 #[must_use]
-pub fn options() -> Options {
+pub fn budget(length: usize) -> Budget {
+    let mut budget = Budget::default();
+    budget.max_nodes = budget.max_nodes.max(length);
+    budget.max_events = budget.max_events.max(length.saturating_mul(2));
+    budget.max_total_scalar_bytes = budget.max_total_scalar_bytes.max(length);
+    budget
+}
+
+/// The parser options every YAML read uses, for a text of `length` bytes
+/// ([ADR-0079](../../../docs/adr/0079-yaml-is-parsed-with-serde-saphyr.md)).
+#[must_use]
+pub fn options(length: usize) -> Options {
     let mut options = Options::default();
+    options.budget = Some(budget(length));
     options.strict_booleans = true;
     options.merge_keys = MergeKeyPolicy::AsOrdinary;
     options.duplicate_keys = DuplicateKeyPolicy::LastWins;
@@ -42,7 +60,7 @@ pub fn options() -> Options {
 /// [`Error`] when the text is not one YAML document of the shape `T` asks for, or exceeds the
 /// parser's budget.
 pub fn from_str<'de, T: Deserialize<'de>>(text: &'de str) -> Result<T, Error> {
-    serde_saphyr::from_str_with_options(text, options())
+    serde_saphyr::from_str_with_options(text, options(text.len()))
 }
 
 /// Parses one YAML document from bytes.
@@ -51,7 +69,7 @@ pub fn from_str<'de, T: Deserialize<'de>>(text: &'de str) -> Result<T, Error> {
 ///
 /// [`Error`] as [`from_str`], and when the bytes are not text.
 pub fn from_slice<'de, T: Deserialize<'de>>(bytes: &'de [u8]) -> Result<T, Error> {
-    serde_saphyr::from_slice_with_options(bytes, options())
+    serde_saphyr::from_slice_with_options(bytes, options(bytes.len()))
 }
 
 /// Writes a mapping as one YAML document, in block style, keys in the map's order.
@@ -261,6 +279,66 @@ mod tests {
     fn an_alias_bomb_is_bounded() {
         // Eleven levels of ten aliases each: 10^11 nodes if expanded.
         let mut text = String::from("a0: &a0 [x, x, x, x, x, x, x, x, x, x]\n");
+        for level in 1..12 {
+            let prev = level - 1;
+            let refs = vec![format!("*a{prev}"); 10].join(", ");
+            text.extend([format!("a{level}: &a{level} [{refs}]\n")]);
+        }
+        assert!(parse(&text).is_err());
+    }
+
+    #[test]
+    fn a_document_past_the_default_budget_parses() -> Result<(), Error> {
+        // What `init` writes for a large repository: a known-violations list far past the
+        // parser's default 250,000 nodes and 1,000,000 events (apache/superset, nightly run
+        // 41344094939). Block and flow forms, the densest text there is per node included.
+        let entries = "  - {from: a, to: b, rule: r}\n".repeat(300_000);
+        let block = format!("known:\n{entries}");
+        let value: Value = from_str(&block)?;
+        assert_eq!(value["known"].as_array().map(Vec::len), Some(300_000));
+
+        let flow = format!("[{}0]", "0,".repeat(1_100_000));
+        let value: Value = from_str(&flow)?;
+        assert_eq!(value.as_array().map(Vec::len), Some(1_100_001));
+
+        let collections = format!("[{}[]]", "[],".repeat(600_000));
+        let value: Value = from_slice(collections.as_bytes())?;
+        assert_eq!(value.as_array().map(Vec::len), Some(600_001));
+        Ok(())
+    }
+
+    #[test]
+    fn the_budget_is_the_default_for_small_text_and_grows_with_large() {
+        let defaults = Budget::default();
+        assert_eq!(budget(0).max_nodes, defaults.max_nodes);
+        assert_eq!(budget(defaults.max_nodes).max_nodes, defaults.max_nodes);
+        assert_eq!(
+            budget(defaults.max_nodes + 1).max_nodes,
+            defaults.max_nodes + 1
+        );
+        assert_eq!(budget(0).max_events, defaults.max_events);
+        assert_eq!(
+            budget(defaults.max_events).max_events,
+            2 * defaults.max_events
+        );
+        assert_eq!(
+            budget(0).max_total_scalar_bytes,
+            defaults.max_total_scalar_bytes
+        );
+        let big = defaults.max_total_scalar_bytes + 1;
+        assert_eq!(budget(big).max_total_scalar_bytes, big);
+        // Only the limits that count size move; the alias and depth limits do not.
+        assert_eq!(budget(big).max_aliases, defaults.max_aliases);
+        assert_eq!(budget(big).max_depth, defaults.max_depth);
+        assert_eq!(budget(usize::MAX).max_events, usize::MAX);
+    }
+
+    #[test]
+    fn a_bomb_in_a_large_text_is_still_bounded() {
+        // Padding raises the budget by the size of the text, and expansion passes it anyway.
+        let mut text = String::from("pad: ");
+        text.push_str(&"x".repeat(5_000_000));
+        text.push_str("\na0: &a0 [x, x, x, x, x, x, x, x, x, x]\n");
         for level in 1..12 {
             let prev = level - 1;
             let refs = vec![format!("*a{prev}"); 10].join(", ");
