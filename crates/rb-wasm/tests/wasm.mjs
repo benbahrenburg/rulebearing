@@ -50,8 +50,30 @@ assert.ok(compressed < limit, `the module is ${String(compressed)} bytes compres
 
 const guards = path.join(root, 'cookbook/guards');
 let fixtures = 0;
+// Recipes whose configuration reads a second file: the module has no disk, so `evaluate()` refuses
+// them, naming the key and the file, and finds nothing the command line did not.
+const NEEDS_THE_DISK = new Map([
+    ['allow-empty-by-list', /extends `\.\/\.dependency-cruiser\.json`/u],
+    ['defines-exception-list', /defines `migratingPackages`: .*eng\/migration\.json/u],
+]);
+for (const [slug, refusal] of NEEDS_THE_DISK) {
+    const dir = path.join(guards, slug);
+    assert.throws(
+        () =>
+            rb.evaluate(
+                readFileSync(path.join(dir, 'rulebearing.yaml'), 'utf8'),
+                readFileSync(path.join(dir, 'graph.json'), 'utf8'),
+                'json',
+            ),
+        refusal,
+        `${slug}: refused`,
+    );
+}
 for (const slug of readdirSync(guards)) {
     const dir = path.join(guards, slug);
+    if (NEEDS_THE_DISK.has(slug)) {
+        continue;
+    }
     if (!existsSync(path.join(dir, 'expected.json'))) {
         continue;
     }
