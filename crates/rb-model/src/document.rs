@@ -569,6 +569,11 @@ pub struct RepoReceipt {
     pub warn: u64,
     /// Info-severity violations of the repository's own rules.
     pub info: u64,
+    /// The stale baseline entries the repository's own `staleEntriesSeverity: error` counts toward
+    /// the exit code; absent when none do
+    /// ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stale_counted: Option<u64>,
     /// The repository run's own receipt: files and modules per language.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub inspected: Option<Inspected>,

@@ -138,12 +138,24 @@ pub fn is_output_type(name: &str) -> bool {
     name.starts_with("plugin:") || OUTPUT_TYPES.iter().any(|(n, _)| *n == name)
 }
 
+/// `summary.advisedExitCode`, or `summary.error` on a result written before the field existed:
+/// the code upstream's gating reporters return. The process's own exit code, with Rulebearing's
+/// counts on top, is `rb-cli`'s to decide
+/// ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
+pub(crate) fn advised_count(summary: &Value) -> u64 {
+    summary
+        .get("advisedExitCode")
+        .or_else(|| summary.get("error"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+}
+
 /// A reporter's output: the text and the exit code dependency-cruiser's reporter would give.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rendered {
     /// The report.
     pub output: String,
-    /// The reporter's exit code: the error count for the finding reporters, 0 for the data ones.
+    /// The reporter's exit code: `summary.advisedExitCode` for the finding reporters, 0 for the data ones.
     pub exit_code: u64,
 }
 
@@ -301,11 +313,7 @@ pub fn render_with(
         "x-dot-webpage" => web_page(result, reporter_options("dot").as_ref(), options)?,
         "null" => Rendered {
             output: String::new(),
-            exit_code: result
-                .get("summary")
-                .and_then(|s| s.get("error"))
-                .and_then(Value::as_u64)
-                .unwrap_or(0),
+            exit_code: result.get("summary").map_or(0, advised_count),
         },
         other => {
             return Err(match OUTPUT_TYPES.iter().find(|(n, _)| *n == other) {
@@ -504,6 +512,38 @@ pub(crate) fn decision(comment: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Upstream's 18.7.0 gating reporters return `advisedExitCode`, or `error` without it, and
+    /// the others 0 ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
+    #[test]
+    fn a_gating_reporter_returns_the_advised_code() {
+        let o = ReportOptions::default();
+        let summary = |extra: Value| {
+            let mut summary = serde_json::json!({
+                "violations": [], "error": 2, "warn": 0, "info": 0, "totalCruised": 1
+            });
+            if let (Some(fields), Value::Object(more)) = (summary.as_object_mut(), extra) {
+                fields.extend(more);
+            }
+            serde_json::json!({ "modules": [], "summary": summary })
+        };
+        for (extra, expected) in [
+            (serde_json::json!({ "advisedExitCode": 5 }), 5),
+            (serde_json::json!({ "advisedExitCode": 0 }), 0),
+            (serde_json::json!({}), 2),
+        ] {
+            let result = summary(extra);
+            for t in GATING {
+                assert_eq!(
+                    render(t, &result, &o).map(|r| r.exit_code),
+                    Ok(expected),
+                    "{t}"
+                );
+            }
+            assert_eq!(render("csv", &result, &o).map(|r| r.exit_code), Ok(0));
+        }
+        assert_eq!(advised_count(&Value::Null), 0);
+    }
 
     #[test]
     fn a_rule_is_found_by_name_in_every_family() {

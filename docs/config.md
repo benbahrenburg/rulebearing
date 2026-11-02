@@ -122,7 +122,7 @@ The top level holds `$schema`, `extends`, `defines`, `languages`, `options`, `ru
 | --- | --- |
 | `ignoreKnown` | `false` keeps known violations at their rule's severity and applies no `expires` date; stale entries are still counted. `--ignore-known` and `--no-ignore-known` set it |
 | `baseline.mode` | `full` (the default), `shrink-only` or `format`: what the `baseline` reporter holds, and the default of `rulebearing baseline --baseline-mode` |
-| `baseline.staleEntriesSeverity` | `error`, `warn` (the default), `info` or `ignore`. `error` adds each stale entry to `summary.advisedExitCode`. The gating reporters exit with that field from sub-wave 11B of plan 0011; until then they exit on the error count |
+| `baseline.staleEntriesSeverity` | `error`, `warn` (the default), `info` or `ignore`. `error` adds each stale entry to `summary.advisedExitCode`, which a gating reporter exits with, so a stale entry fails the run ([ADR-0080](adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)). The other values change no exit code |
 | `detectImportsInAmbientModules` | `true` also reads imports inside `declare module`, `declare global` and namespace blocks, with the `tsc` parser behaviour. Default `false` |
 
 **Markdown fences.** In a native file, listing `.md` in `extraExtensionsToScan` also reads the `js`, `ts`, `jsx`, `tsx`, `javascript` and `typescript` code fences of those files, with each dependency's line and column pointing into the Markdown. A dependency-cruiser file keeps dependency-cruiser's behaviour, which never reads a file of `extraExtensionsToScan` ([ADR-0036](adr/0036-markdown-fences-follow-the-configuration-format.md)).

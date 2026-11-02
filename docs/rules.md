@@ -104,7 +104,7 @@ A capturing group in `from.path` is available in `to` as `$1` to `$9` (and `$0` 
 
 ## Severity and the exit code
 
-`error`, `warn`, `info` and `ignore`. A gating reporter (`err`, `err-long`, `null`, `teamcity`, `azure-devops`, `github-annotations`, `agent`) exits with the number of `error` violations, capped at 255; `json`, `csv` and `text` exit 0, as dependency-cruiser's do, so a pipeline can save JSON in one step and gate in the next ([ADR-0008](adr/0008-exit-code-contract.md), [ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). Exit 2 means the run cannot be trusted and exit 3 means the configuration is invalid, whatever the reporter.
+`error`, `warn`, `info` and `ignore`. A gating reporter (`err`, `err-long`, `null`, `teamcity`, `azure-devops`, `github-annotations`, `agent`) exits with the number of `error` violations, plus any expired entries and exceeded ratchets, plus the stale baseline entries when `options.baseline.staleEntriesSeverity` is `error` ([ADR-0080](adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)), capped at 255; `json`, `csv` and `text` exit 0, as dependency-cruiser's do, so a pipeline can save JSON in one step and gate in the next ([ADR-0008](adr/0008-exit-code-contract.md), [ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). Exit 2 means the run cannot be trusted and exit 3 means the configuration is invalid, whatever the reporter.
 
 ## Liveness
 

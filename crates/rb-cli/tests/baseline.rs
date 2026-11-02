@@ -612,6 +612,94 @@ mod options_of_18_7 {
         Ok(())
     }
 
+    /// Plan 0011 sub-wave 11B, ADR-0080: one error and one stale entry over every severity, each
+    /// gating reporter in one step and through a saved result. Only `error` counts the entry, and
+    /// a reporter that does not gate exits 0.
+    #[test]
+    fn the_gating_reporters_exit_on_stale_entries_by_severity() -> Result<(), Box<dyn Error>> {
+        for (severity, expected) in [
+            (Some("error"), 2),
+            (Some("warn"), 1),
+            (Some("info"), 1),
+            (Some("ignore"), 1),
+            (None, 1),
+        ] {
+            let options = severity.map_or_else(String::new, |s| {
+                format!(r#", "baseline": {{ "staleEntriesSeverity": "{s}" }}"#)
+            });
+            let dir = tree(
+                &format!("gate-{}", severity.unwrap_or("absent")),
+                &config(&options),
+            )?;
+            let code = |args: &[&str]| run(&dir, args).map(|o| o.status.code());
+            for reporter in [
+                "err",
+                "err-long",
+                "null",
+                "azure-devops",
+                "teamcity",
+                "github-annotations",
+                "agent",
+            ] {
+                assert_eq!(
+                    code(&["cruise", "-T", reporter, "src"])?,
+                    Some(expected),
+                    "{severity:?} {reporter}"
+                );
+            }
+            assert_eq!(code(&["cruise", "-T", "csv", "src"])?, Some(0));
+            let strict = code(&["cruise", "-T", "err", "--exit-code-mode", "strict", "src"])?;
+            assert_eq!(strict, Some(10 + expected), "{severity:?} strict");
+            // A second run reads the verdict from the cache and exits the same.
+            for _ in 0..2 {
+                let cached = code(&["cruise", "-T", "err", "--cache", ".graph", "src"])?;
+                assert_eq!(cached, Some(expected), "{severity:?} cached");
+            }
+            std::fs::write(
+                dir.join("saved.json"),
+                run(&dir, &["cruise", "-T", "json", "src"])?.stdout,
+            )?;
+            for (reporter, gated) in [("err", expected), ("null", expected), ("csv", 0)] {
+                let saved = code(&["fmt", "--exit-code", "-T", reporter, "saved.json"])?;
+                assert_eq!(saved, Some(gated), "{severity:?} fmt {reporter}");
+            }
+            assert_eq!(code(&["fmt", "-T", "err", "saved.json"])?, Some(0));
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+        Ok(())
+    }
+
+    /// A result without `advisedExitCode` (dependency-cruiser before 18.4.0) gates on
+    /// `summary.error`, stale entries and severity or not, and a stale entry adds to an expired one.
+    #[test]
+    fn a_saved_result_without_the_field_gates_on_the_error_count() -> Result<(), Box<dyn Error>> {
+        let dir = tree(
+            "gate-old-result",
+            &config(r#", "baseline": { "staleEntriesSeverity": "error" }"#),
+        )?;
+        let mut saved: Value =
+            serde_json::from_slice(&run(&dir, &["cruise", "-T", "json", "src"])?.stdout)?;
+        let write = |saved: &Value| -> Result<(), Box<dyn Error>> {
+            std::fs::write(dir.join("saved.json"), serde_json::to_vec(saved)?)?;
+            Ok(())
+        };
+        let code = || run(&dir, &["fmt", "--exit-code", "-T", "err", "saved.json"]);
+        write(&saved)?;
+        assert_eq!(code()?.status.code(), Some(2));
+        saved["summary"]["expired"] =
+            json!([{ "name": "r", "expires": "2020-01-01", "kind": "rule" }]);
+        write(&saved)?;
+        assert_eq!(code()?.status.code(), Some(3), "stale plus expired");
+        if let Some(summary) = saved["summary"].as_object_mut() {
+            summary.remove("advisedExitCode");
+            summary.remove("expired");
+        }
+        write(&saved)?;
+        assert_eq!(code()?.status.code(), Some(1), "without the field");
+        let _ = std::fs::remove_dir_all(&dir);
+        Ok(())
+    }
+
     #[test]
     fn ignore_known_false_softens_nothing_and_a_flag_overrides_it() -> Result<(), Box<dyn Error>> {
         let dir = tree("ignore-false", &config(r#", "ignoreKnown": false"#))?;

@@ -278,7 +278,24 @@ fn formatted_document(
     } else if no_budget || vacuous {
         RunExit::Untrustworthy
     } else if rb_report::gates(&args.output_type) {
-        RunExit::Violations(document.summary.error + exceeded + expired)
+        // A fleet's repository counted its stale entries by its own severity, which the fleet's
+        // `advisedExitCode` cannot hold (ADR-0080, ADR-0078).
+        let fleet_stale = document.summary.fleet.as_ref().map_or(0, |fleet| {
+            fleet
+                .per_repo
+                .values()
+                .filter_map(|repo| repo.stale_counted)
+                .fold(0, u64::saturating_add)
+        });
+        RunExit::Violations(
+            crate::exit::gating_count(
+                document.summary.advised_exit_code,
+                document.summary.error,
+                expired,
+                exceeded,
+            )
+            .saturating_add(fleet_stale),
+        )
     } else if plugin.is_some() {
         // A plugin decides its own count (ADR-0030).
         RunExit::Violations(rendered.exit_code)

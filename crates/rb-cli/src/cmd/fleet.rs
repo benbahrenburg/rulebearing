@@ -481,6 +481,11 @@ fn cruise_one(
             .map(|m| m.dependencies.len() as u64)
             .sum(),
         error: document.summary.error,
+        stale_counted: document
+            .summary
+            .advised_exit_code
+            .map(|advised| advised.saturating_sub(document.summary.error))
+            .filter(|counted| *counted > 0),
         warn: document.summary.warn,
         info: document.summary.info,
         inspected: document.summary.inspected.clone(),

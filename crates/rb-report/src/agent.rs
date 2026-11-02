@@ -241,7 +241,7 @@ pub fn render(result: &Value, max_findings: usize) -> Rendered {
     output.push('\n');
     Rendered {
         output,
-        exit_code: summary.get("error").and_then(Value::as_u64).unwrap_or(0),
+        exit_code: crate::advised_count(&summary),
     }
 }
 

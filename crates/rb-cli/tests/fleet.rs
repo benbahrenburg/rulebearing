@@ -327,6 +327,36 @@ fn a_gating_reporter_exits_with_the_fleet_and_repository_error_count() -> Result
     Ok(())
 }
 
+/// A repository's own `staleEntriesSeverity: error` fails the fleet as it fails the repository,
+/// and the saved fleet result gates the same (plan 0011 sub-wave 11B, ADR-0080).
+#[test]
+fn counted_stale_entries_in_one_repository_fail_the_fleet() -> Result {
+    let dir = fleet("stale-counted")?;
+    let config = dir.join("web/rulebearing.yaml");
+    let rules = std::fs::read_to_string(&config)?;
+    let with = |severity: &str| {
+        format!(
+            "{rules}options:\n  baseline: {{ staleEntriesSeverity: {severity} }}\n  knownViolations:\n    - type: dependency\n      from: src/gone.ts\n      to: src/also-gone.ts\n      rule: {{ name: generated-only-through-client, severity: warn }}\n"
+        )
+    };
+    std::fs::write(&config, with("warn"))?;
+    assert_eq!(run(&dir, &["fleet", "-T", "err"])?.status.code(), Some(1));
+    std::fs::write(&config, with("error"))?;
+    let output = run(&dir, &["fleet", "-T", "err"])?;
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    let saved = run(&dir, &["fleet", "-T", "json"])?;
+    let document: Value = serde_json::from_slice(&saved.stdout)?;
+    assert_eq!(
+        document["summary"]["fleet"]["perRepo"]["web"]["staleCounted"],
+        1
+    );
+    std::fs::write(dir.join("saved.json"), &saved.stdout)?;
+    let again = run(&dir, &["fmt", "--exit-code", "-T", "err", "saved.json"])?;
+    assert_eq!(again.status.code(), Some(2), "{again:?}");
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
 /// The document with each repository's cache verdict taken out, as text.
 fn without_cache_verdicts(mut document: Value) -> String {
     if let Some(per_repo) = document["summary"]["fleet"]["perRepo"].as_object_mut() {

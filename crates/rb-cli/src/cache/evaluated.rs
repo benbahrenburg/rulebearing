@@ -135,6 +135,10 @@ pub struct Tail {
     pub warnings: Vec<String>,
     /// The report's error-severity violations, `summary.error`.
     pub error: u64,
+    /// The report's `summary.advisedExitCode`, which [`crate::exit::gating_count`] reads
+    /// ([ADR-0080](../../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub advised_exit_code: Option<u64>,
     /// The graph was read in source mode, so the run never decides a gate
     /// ([`crate::exit::gate`]).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -154,6 +158,7 @@ impl Verdict {
             ratchets: self.ratchets.clone(),
             warnings: self.warnings.clone(),
             error: self.document.summary.error,
+            advised_exit_code: self.document.summary.advised_exit_code,
             approximate: crate::exit::is_approximate(&self.document),
             fired: self
                 .document

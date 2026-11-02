@@ -105,15 +105,12 @@ pub fn render(result: &Value) -> Rendered {
         };
         format!("no dependency violations found{ignore} ({stats})")
     };
-    let result = if n("error") > 0 {
-        "Failed"
-    } else {
-        "Succeeded"
-    };
+    let code = crate::advised_count(&summary);
+    let result = if code > 0 { "Failed" } else { "Succeeded" };
     let _ = writeln!(output, "##vso[task.complete result={result};]{message}");
     Rendered {
         output,
-        exit_code: n("error"),
+        exit_code: code,
     }
 }
 
@@ -133,6 +130,12 @@ mod tests {
         ], "error": 1, "warn": 2, "info": 1, "ignore": 1, "totalCruised": 3, "totalDependenciesCruised": 2 } });
         let out = render(&result);
         assert_eq!(out.exit_code, 1);
+        // Upstream's 18.7.0 spec: an advised code with no violation still fails the task.
+        let stale = render(&json!({ "summary": {
+            "violations": [], "error": 0, "warn": 0, "info": 0, "advisedExitCode": 2,
+            "totalCruised": 1 } }));
+        assert!(stale.output.contains("##vso[task.complete result=Failed;]"));
+        assert_eq!(stale.exit_code, 2);
         assert!(
             out.output
                 .contains("##vso[task.logissue type=error;sourcepath=a;code=d;]a -> b\n")
