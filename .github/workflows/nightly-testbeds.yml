@@ -568,10 +568,13 @@ jobs:
     timeout-minutes: 15
     # contents: write publishes the testbeds-results branch and the scale-table and coverage-tables
     # branches; pull-requests: write opens their pull requests (plan 0003, Step 24; plan 0004,
-    # Step 4).
+    # Step 4); actions: write dispatches ci.yml on each of those two branches, because a push or
+    # pull request made with the workflow token starts no workflow and the required checks would
+    # never report.
     permissions:
       contents: write
       pull-requests: write
+      actions: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -723,6 +726,7 @@ jobs:
           git add -- "${files[@]}"
           git commit -qm "testbeds: the scale table, nightly run ${GITHUB_RUN_ID}" -- "${files[@]}"
           git push --force origin HEAD:refs/heads/testbeds/scale-table
+          gh workflow run ci.yml --ref testbeds/scale-table
           if [ "$(gh pr list --head testbeds/scale-table --state open --json number --jq length)" = "0" ]; then
             gh pr create --base main --head testbeds/scale-table \
               --title "testbeds: the scale table, nightly run ${GITHUB_RUN_ID}" \
@@ -761,6 +765,7 @@ jobs:
           git config user.email "41898729+github-actions[bot]@users.noreply.github.com"
           git commit -qm "testbeds: the coverage tables, nightly run ${GITHUB_RUN_ID}" -- "$file"
           git push --force origin HEAD:refs/heads/testbeds/coverage-tables
+          gh workflow run ci.yml --ref testbeds/coverage-tables
           if [ "$(gh pr list --head testbeds/coverage-tables --state open --json number --jq length)" = "0" ]; then
             gh pr create --base main --head testbeds/coverage-tables \
               --title "testbeds: the coverage tables, nightly run ${GITHUB_RUN_ID}" \
