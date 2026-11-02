@@ -22,7 +22,7 @@
 //! `declaredKind` before them (`crate::declared`); `knownViolations` keeps keys it does not
 //! read, and matches an entry by its rule and ends as before.
 
-use rb_rules::compare::compare_violations;
+use rb_rules::compare::{compare_violations, compare_violations_ex_severities};
 use rb_rules::known::unmatched_as_written;
 use serde_json::Value;
 
@@ -115,6 +115,23 @@ pub fn partition(known: &[Value], current: &[Value]) -> (Vec<Value>, Vec<Value>)
         .partition(|(at, _)| stale.contains(at));
     let values = |list: Vec<(usize, &Value)>| list.into_iter().map(|(_, v)| v.clone()).collect();
     (values(same), values(old))
+}
+
+/// `diffViolationArrays(knownViolations, violations).old`: the entries of
+/// `summary.optionsUsed.knownViolations` no current violation matches, in upstream's order, or
+/// `None` on a result without that list. `err-html` and `markdown` print these.
+pub(crate) fn stale_entries(summary: &Value) -> Option<Vec<Value>> {
+    let known = summary
+        .get("optionsUsed")?
+        .get("knownViolations")?
+        .as_array()?;
+    let current = summary
+        .get("violations")
+        .and_then(Value::as_array)
+        .map_or(&[][..], Vec::as_slice);
+    let (_, mut stale) = partition(known, current);
+    stale.sort_by(compare_violations_ex_severities);
+    Some(stale)
 }
 
 /// Renders `baseline`, in the mode `summary.optionsUsed.baseline.mode` names (`full` when absent).

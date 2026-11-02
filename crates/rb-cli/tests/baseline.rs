@@ -739,6 +739,34 @@ mod options_of_18_7 {
         Ok(())
     }
 
+    /// Plan 0011 sub-wave 11D: the run 11B made fail on stale entries alone says why, in every
+    /// reporter that gates or reports it. The one error is itself known here, so the only thing
+    /// left to fail on is the stale entry.
+    #[test]
+    fn a_run_failing_on_stale_entries_alone_says_why() -> Result<(), Box<dyn Error>> {
+        let dir = tree(
+            "stale-alone",
+            &config(r#", "ignoreKnown": true, "baseline": { "staleEntriesSeverity": "error" }"#),
+        )?;
+        std::fs::remove_file(dir.join("src/domain/other.ts"))?;
+        let line = "x 1 stale known violations in the baseline. Run with '--baseline --baseline-mode shrink-only' to remove them.\n";
+        for reporter in ["err", "err-long"] {
+            let out = run(&dir, &["cruise", "-T", reporter, "src"])?;
+            let text = String::from_utf8_lossy(&out.stdout);
+            assert!(text.contains("no dependency violations found"), "{text}");
+            assert!(text.contains(line), "{reporter}: {text}");
+            assert_eq!(out.status.code(), Some(1), "{reporter}: {text}");
+        }
+        let out = run(&dir, &["cruise", "-T", "err-html", "src"])?;
+        let page = String::from_utf8_lossy(&out.stdout);
+        assert!(
+            page.contains("<strong>1</strong> stale entries in baseline"),
+            "{page}"
+        );
+        assert!(page.contains("src/gone.ts"), "{page}");
+        Ok(())
+    }
+
     #[test]
     fn the_markdown_table_lists_the_stale_entry() -> Result<(), Box<dyn Error>> {
         let dir = tree(
