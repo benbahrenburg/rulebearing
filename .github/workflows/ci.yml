@@ -20,6 +20,11 @@ on:
   pull_request:
   push:
     branches: [main]
+  # The nightly's scale-table and coverage-tables pull requests are opened with the workflow
+  # token, and GitHub starts no workflow for an event that token causes, except a dispatch. The
+  # nightly dispatches this workflow on each branch it pushes, so the required checks report on
+  # that branch's head commit, which is the pull request's head (.github/workflows/nightly-testbeds.yml).
+  workflow_dispatch:
 
 # Least privilege by default; no job here writes to the repository.
 permissions:
@@ -356,11 +361,12 @@ jobs:
       # Coverage says a line ran; this says a test would notice if it were wrong.
       # Scope and policy: docs/adr/0024-test-quality-gates.md. A pull request mutates the lines it
       # changes; a push to main mutates the whole scope (docs/adr/0059-gates-run-by-tier-and-mutants-by-diff.md).
-      - if: github.event_name == 'pull_request'
+      # A dispatched run stands in for a pull request against main, so it mutates by diff as well.
+      - if: github.event_name != 'push'
         env:
-          BASE_REF: ${{ github.base_ref }}
+          BASE_REF: ${{ github.base_ref || 'main' }}
         run: scripts/mutants-diff.sh "origin/$BASE_REF" --shard ${{ matrix.shard }}/8 --jobs 2
-      - if: github.event_name != 'pull_request'
+      - if: github.event_name == 'push'
         run: cargo mutants --no-shuffle --package rb-model --package rb-rules --package xtask --shard ${{ matrix.shard }}/8 --jobs 2
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
