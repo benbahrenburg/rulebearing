@@ -1,6 +1,6 @@
 # ADR-0079: YAML is parsed with serde-saphyr, with options that keep what serde_yaml meant
 
-- **Status:** Proposed (2026-11-01)
+- **Status:** Accepted (2026-11-01, by the owner)
 - **Date:** 2026-11-01
 - **Derives from:** [ADR-0025](0025-ci-and-supply-chain-hardening.md) (`cargo deny check licenses advisories bans sources` is a required check), [ADR-0005](0005-native-config-superset-and-compat.md) (the native format is YAML), [architecture § Technology choices](../architecture.md#technology-choices)
 - **Supersedes:** nothing. It replaces the `serde_yaml` row of the serialisation choice in [architecture § Technology choices](../architecture.md#technology-choices), which cites [ADR-0004](0004-graph-document-is-cruise-result-superset.md) for the graph document only.
