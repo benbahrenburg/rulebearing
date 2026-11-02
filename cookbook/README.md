@@ -55,11 +55,16 @@ cookbook/guards/run.sh --all           # every fixture, one line each
 
 [`guards/run.sh`](guards/run.sh) lists the commands it runs. `RB` names another binary.
 
+## The page
+
+[docs/guards.md](../docs/guards.md) copies the recipes. A fence with the info string `yaml guard=<slug>` is a byte copy of `guards/<slug>/rulebearing.yaml`, and `yaml guard=<slug>#<rule>` is a byte copy of that one rule. `cargo xtask lint` and `cargo xtask guards-doc` fail when a block differs from its fixture, names a fixture or rule that does not exist, or carries no `guard=`, and when a fixture has no block ([plan 0005, Step 5](../docs/plans/pending/0005-guard-catalogue.md#step-5-the-guards-doc-check-in-xtask-5b)).
+
 ## Adding a recipe
 
 1. Write `rulebearing.yaml`, `graph.json` and `README.md`.
 2. Run `RB_UPDATE_SNAPSHOTS=1 cookbook/guards/run.sh <slug>` to write `expected.json`, `expanded.yaml` and `converted/`.
 3. Read what it wrote. The violations must be the ones the README says the graph holds, and nothing else.
 4. Run `cookbook/guards/run.sh <slug>` without the variable.
+5. Copy `rulebearing.yaml` into [docs/guards.md](../docs/guards.md) in a `guard=<slug>` block, and add its row to the page's catalogue table.
 
 A recipe that does not behave as the cookbook says is a finding. Correct the recipe in the fixture and say so in its README; the dated cookbook export in `docs/artifacts/` is not edited. If the engine is wrong rather than the recipe, record the defect in plan 0005's status table against the plan that owns the engine.

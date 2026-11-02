@@ -1,8 +1,82 @@
 # Guards
 
-Recipes for the guards a team writes by hand, each one a fixture that CI runs with the same commands you run. Copy a block, change the paths, and run `rulebearing test` and `rulebearing config lint` over it.
+Recipes for the guards a team writes by hand, each one a fixture that CI runs with the same commands you run. Copy a block, change the paths, and run the commands under [Prove the rule](#prove-the-rule).
 
-This page holds the budgets and exceptions section so far. The remaining sections arrive with their fixtures ([plan 0005](plans/pending/0005-guard-catalogue.md)). Every block is a copy of `cookbook/guards/<slug>/rulebearing.yaml`, and each fixture's README says what its graph holds and what each failure exits with ([cookbook/README.md](../cookbook/README.md)).
+This page holds the recipes that have a fixture today. More arrive with their fixtures ([plan 0005](plans/pending/0005-guard-catalogue.md)). Every YAML block below is a byte copy of `cookbook/guards/<slug>/rulebearing.yaml`, or of one rule of it, and `cargo xtask lint` fails when one differs ([ADR-0023](adr/0023-documentation-link-and-lint-gates.md)). Each fixture's README says what its graph holds and what each failure exits with ([cookbook/README.md](../cookbook/README.md)).
+
+The file's overall shape, and every key, is in [config.md](config.md).
+
+| Exit code | Meaning ([ADR-0008](adr/0008-exit-code-contract.md)) |
+| --- | --- |
+| 0 to 255 | The count of errors from a gating reporter: error-severity violations, expired rules and baseline entries, and exceeded ratchets ([ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)) |
+| 2 | Also: the run cannot be trusted, such as a vacuous rule or a missing budget |
+| 3 | The configuration is invalid, such as an unknown key, a missing decision token or a name in `allowEmpty` that is no rule |
+
+## Anatomy of a rule
+
+Every family shares the same metadata. This is the rule from [`no-circular`](../cookbook/guards/no-circular/README.md):
+
+```yaml guard=no-circular#no-circular
+      - name: no-circular
+        comment: "A module on a cycle cannot be changed, tested or moved on its own. plan:0005-guard-catalogue"
+        fix: "Break the cycle: move the shared code into a module both sides import, or invert one edge behind an interface. Type-only imports do not count."
+        severity: error
+        from: {}
+        to:
+          circular: true
+          viaOnly: { dependencyTypesNot: [type-only] }
+        examples:
+          forbidden: ["src/order/order.ts -> src/order/order.ts"]
+          allowed: ["src/main.ts -> src/order/order.ts"]
+```
+
+| Field | What it does |
+| --- | --- |
+| `name` | Stable and kebab-case. The baseline and the violation id key on it |
+| `comment` | The why, with a decision token, `adr:NNNN` or `plan:<slug>`. `--require-comment-token` makes a rule without one exit 3 |
+| `fix` | The imperative to follow when the rule fires |
+| `severity` | `error` counts toward the exit code; `warn` and `info` are reported; `ignore` is silent |
+| `from`, `to` | Matchers on the resolved path and on the module's and the edge's facts |
+| `examples` | Edges `rulebearing test` builds into a synthetic graph, so a rule's pattern is tested like code |
+
+`owner`, `expires` and `allowEmpty` appear in [Budgets and exceptions](#budgets-and-exceptions).
+
+## Guard catalogue
+
+| You want to guard | Rule shape | Proven by |
+| --- | --- | --- |
+| No import cycles, ignoring type-only edges | `to.circular` with `viaOnly` | [`no-circular`](../cookbook/guards/no-circular/README.md) |
+| A count that may only fall | `rules.ratchets` with a budget file | [`ratchet-routes-via-service`](../cookbook/guards/ratchet-routes-via-service/README.md) |
+| Accept today's findings, with a deadline | `options.knownViolations` with `expires` | [`baseline-known-violations`](../cookbook/guards/baseline-known-violations/README.md) |
+| A temporary rule | `expires` and `owner` | [`expiring-exception-rule`](../cookbook/guards/expiring-exception-rule/README.md) |
+| A named exception list kept out of the regex | `defines` from JSON, `${name}` | [`defines-exception-list`](../cookbook/guards/defines-exception-list/README.md) |
+| A rule ahead of its first match | `allowEmpty` on the rule | [`allow-empty-by-rule`](../cookbook/guards/allow-empty-by-rule/README.md) |
+| The same, for a rule in a dependency-cruiser file | the top-level `allowEmpty` list | [`allow-empty-by-list`](../cookbook/guards/allow-empty-by-list/README.md) |
+
+## Code quality guards
+
+Facts about the graph itself.
+
+### No cycles, and type-only edges do not count
+
+`viaOnly` requires every edge of the cycle to be other than type-only, so a cycle closed only through `import type` does not fire. Written as `to: { circular: true, dependencyTypesNot: [type-only] }`, the filter applies only to the reported edge. Proven by [`no-circular`](../cookbook/guards/no-circular/README.md).
+
+```yaml guard=no-circular
+rules:
+  dependencies:
+    forbidden:
+      - name: no-circular
+        comment: "A module on a cycle cannot be changed, tested or moved on its own. plan:0005-guard-catalogue"
+        fix: "Break the cycle: move the shared code into a module both sides import, or invert one edge behind an interface. Type-only imports do not count."
+        severity: error
+        from: {}
+        to:
+          circular: true
+          viaOnly: { dependencyTypesNot: [type-only] }
+        examples:
+          forbidden: ["src/order/order.ts -> src/order/order.ts"]
+          allowed: ["src/main.ts -> src/order/order.ts"]
+```
 
 ## Budgets and exceptions
 
@@ -132,3 +206,26 @@ rules:
           forbidden: ["plugins/a/index.ts -> plugins/b/index.ts"]
           allowed: ["plugins/a/index.ts -> plugins/a/util.ts"]
 ```
+
+## Prove the rule
+
+A rule is code. These commands are its tests, its linter and its documentation.
+
+| Command | Answers |
+| --- | --- |
+| `rulebearing test` | Does each rule flag its `examples.forbidden` edges and pass its `examples.allowed` ones? |
+| `rulebearing config lint --graph <graph>` | Can a rule never match? Is it shadowed by an earlier one? Is a `fix` missing, or a restatement of the name? With `--require-comment-token`, is a decision token missing? |
+| `rulebearing explain <rule>` | The rule in a sentence, its reason and fix, and the first edges it matched |
+| `rulebearing rules --json` | Every rule with its family, severity and how many modules each side matched |
+| `rulebearing cruise --require-comment-token -T err-long` | The gate itself. Every finding prints the rule's `fix` |
+
+## Before you merge a rule
+
+- The `comment` says why and carries `adr:NNNN` or `plan:<slug>`.
+- The `fix` is an imperative someone can follow without opening the rule.
+- `examples.forbidden` and `examples.allowed` are present and `rulebearing test` is green. A ratchet has no `examples`; `rulebearing count` shows what it counts.
+- `rulebearing rules --json` shows a match on the `from` side, or the rule has `allowEmpty` with the reason in its `comment`.
+- `rulebearing config lint` reports nothing.
+- A temporary rule or baseline entry has `owner` and `expires`.
+- No ratchet ceiling was raised, and no `pathNot` was widened to get green without a decision recorded.
+- The rule uses `pathNot` rather than lookaround, and captures rather than duplicated literals.

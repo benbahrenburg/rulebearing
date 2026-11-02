@@ -5,6 +5,9 @@
 //! - Plan: [Wave 0, sub-wave 0A](../../docs/plans/implemented/0000-wave-0-spike.md)
 //! - Requirements: [NFR-DOC-01](../../docs/prd.md#nfr-doc-01), [NFR-QUAL-02](../../docs/prd.md#nfr-qual-02)
 //!
+//! [`guards_doc`] holds `docs/guards.md` to the guard catalogue's fixtures
+//! ([plan 0005, Step 5](../../docs/plans/pending/0005-guard-catalogue.md#step-5-the-guards-doc-check-in-xtask-5b)).
+//!
 //! Two jobs: [`doclinks`] checks that every relative link between documents and from a doc
 //! comment resolves, and the binary in `main.rs` is the one lint entry point for all four
 //! languages. The library is compiled by `xtask/gate/build.rs`, so the link check runs on every
@@ -12,6 +15,7 @@
 //! ([ADR-0058](../../docs/adr/0058-the-edit-compile-cycle-rebuilds-only-what-changed.md)).
 
 pub mod doclinks;
+pub mod guards_doc;
 
 use std::fs;
 use std::io;

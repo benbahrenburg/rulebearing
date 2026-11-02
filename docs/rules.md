@@ -1,5 +1,7 @@
 # Rules
 
+Proven recipes for the common guards, each one a fixture CI runs, are in [guards.md](guards.md).
+
 The rule language is dependency-cruiser 18.2.0's, whole: every rule shape and attribute it accepts is accepted here with the same meaning, and its own test suites prove it ([conformance gate 1](../conformance/README.md)). The exhaustive list, with each row's status, is the [coverage tab § Rules](artifacts/dependency-cruiser-18.2.0-coverage.md#rules); this page explains the shapes and what Rulebearing adds. Source: [design § Dependency rules](artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820). Where rules live and how files are found is in [config.md](config.md).
 
 ## The four families

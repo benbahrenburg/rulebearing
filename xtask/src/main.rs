@@ -6,6 +6,7 @@
 //!
 //! ```text
 //! cargo xtask check-links      documentation links only (also runs on every compile)
+//! cargo xtask guards-doc       docs/guards.md against the guard catalogue's fixtures
 //! cargo xtask lint             every linter for every language in the repository
 //! cargo xtask lint --fix       the same, applying what each linter can fix
 //! cargo xtask ci               lint, then the workspace test suite
@@ -19,7 +20,7 @@
 use std::path::Path;
 use std::process::{Command, ExitCode};
 
-use xtask::{any_file, doclinks, repo_root};
+use xtask::{any_file, doclinks, guards_doc, repo_root};
 
 /// What one lint step did.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -62,6 +63,7 @@ fn main() -> ExitCode {
 
     match flags.first().copied() {
         Some("check-links") => check_links(&root),
+        Some("guards-doc") => check_guards_doc(&root),
         Some("lint") => lint(&root, fix, strict),
         Some("ci") => {
             let lint_code = lint(&root, false, strict);
@@ -95,7 +97,8 @@ fn usage() -> String {
         "",
         "Commands:",
         "  check-links   every relative link in docs and doc comments resolves",
-        "  lint          check-links plus every configured linter, all languages",
+        "  guards-doc    every YAML block in docs/guards.md is a copy of its fixture",
+        "  lint          check-links and guards-doc plus every configured linter, all languages",
         "  ci            lint, then cargo test --workspace",
         "",
         "Flags:",
@@ -135,9 +138,34 @@ fn check_links(root: &Path) -> ExitCode {
     }
 }
 
+/// Runs the `guards-doc` check and prints the report.
+fn check_guards_doc(root: &Path) -> ExitCode {
+    match guards_doc::check(root) {
+        Ok(report) if report.is_clean() => {
+            println!(
+                "guards doc: {} blocks of {} match their fixtures",
+                report.blocks,
+                guards_doc::PAGE
+            );
+            ExitCode::SUCCESS
+        }
+        Ok(report) => {
+            for finding in &report.findings {
+                eprintln!("{finding}");
+            }
+            eprintln!("guards doc: {} finding(s)", report.findings.len());
+            ExitCode::FAILURE
+        }
+        Err(error) => {
+            eprintln!("guards doc: could not run: {error}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
 /// Runs every linter that applies to this repository.
 fn lint(root: &Path, fix: bool, strict: bool) -> ExitCode {
-    let mut steps = vec![docs_step(root)];
+    let mut steps = vec![docs_step(root), guards_doc_step(root)];
     steps.extend(rust_steps(root, fix, strict));
     steps.extend(typescript_steps(root, fix, strict));
     steps.extend(python_steps(root, fix, strict));
@@ -162,6 +190,27 @@ fn docs_step(root: &Path) -> Step {
     Step {
         language: "docs",
         name: "doc links",
+        outcome,
+    }
+}
+
+/// `docs/guards.md` against the fixtures. Always applicable: a missing page fails.
+fn guards_doc_step(root: &Path) -> Step {
+    let outcome = match guards_doc::check(root) {
+        Ok(report) if report.is_clean() => Outcome::Passed,
+        Ok(report) => Outcome::Failed(
+            report
+                .findings
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join("\n"),
+        ),
+        Err(error) => Outcome::Failed(format!("{}: {error}", guards_doc::PAGE)),
+    };
+    Step {
+        language: "docs",
+        name: "guards doc",
         outcome,
     }
 }
