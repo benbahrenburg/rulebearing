@@ -1,0 +1,11 @@
+{
+  "violations": [],
+  "vacuousRules": [],
+  "expired": [
+    {
+      "name": "no-legacy-http-client",
+      "expires": "2020-01-01",
+      "kind": "rule"
+    }
+  ]
+}

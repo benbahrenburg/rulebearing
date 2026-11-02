@@ -1,0 +1,9 @@
+{
+  "violations": [],
+  "vacuousRules": [
+    {
+      "name": "plugins-stay-apart",
+      "side": "from"
+    }
+  ]
+}

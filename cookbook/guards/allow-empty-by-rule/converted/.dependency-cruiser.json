@@ -1,0 +1,16 @@
+{
+  "forbidden": [
+    {
+      "name": "plugins-stay-apart",
+      "comment": "Plugins are independent; the first one lands next sprint, so this rule matches nothing yet. plan:0005-guard-catalogue",
+      "to": {
+        "path": "^plugins/([^/]+)/",
+        "pathNot": "^plugins/$1/"
+      },
+      "severity": "error",
+      "from": {
+        "path": "^plugins/([^/]+)/"
+      }
+    }
+  ]
+}

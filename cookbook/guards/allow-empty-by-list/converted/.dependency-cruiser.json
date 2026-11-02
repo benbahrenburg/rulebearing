@@ -1,0 +1,11 @@
+{
+  "extends": "./.dependency-cruiser.json",
+  "allowEmpty": [
+    "plugins-stay-apart"
+  ],
+  "forbidden": [
+    {
+      "name": "plugins-stay-apart"
+    }
+  ]
+}

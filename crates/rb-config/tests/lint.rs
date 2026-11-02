@@ -70,6 +70,21 @@ fn graph_findings_need_a_graph() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// `allowEmpty` excuses a rule that matches nothing, on the rule or by name in the list, so
+/// "fix the pattern or delete the rule" is not a finding for it (plan 0005, Step 4; ADR-0032).
+#[test]
+fn allow_empty_excuses_never_matches() -> Result<(), Box<dyn Error>> {
+    assert_eq!(
+        codes("never-matches-allow-empty.yaml", true)?,
+        Vec::<&str>::new()
+    );
+    assert_eq!(
+        codes("never-matches-allow-empty-list.yaml", true)?,
+        Vec::<&str>::new()
+    );
+    Ok(())
+}
+
 #[test]
 fn type_only_on_dotnet_is_the_only_finding_of_its_fixture() -> Result<(), Box<dyn Error>> {
     assert_eq!(

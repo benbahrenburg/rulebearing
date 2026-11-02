@@ -1,0 +1,12 @@
+rules:
+  dependencies:
+    forbidden:
+      - name: plugins-stay-apart
+        comment: "Plugins are independent; the first one lands next sprint, so this rule matches nothing yet. plan:0005-guard-catalogue"
+        fix: "Talk to another plugin through the host API."
+        severity: error
+        from: { path: "^plugins/([^/]+)/" }
+        to: { path: "^plugins/([^/]+)/", pathNot: "^plugins/$1/" }
+        examples:
+          forbidden: ["plugins/a/index.ts -> plugins/b/index.ts"]
+          allowed: ["plugins/a/index.ts -> plugins/a/util.ts"]

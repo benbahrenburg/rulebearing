@@ -1,0 +1,22 @@
+rules:
+  dependencies:
+    forbidden:
+      - name: ui-never-imports-server
+        comment: "Server code in a page ships secrets and database clients to the browser. plan:0005-guard-catalogue"
+        fix: "Call the server code through a route or a server action; do not import it from a page."
+        severity: error
+        from: { path: "^apps/[^/]+/src/app/" }
+        to: { path: "^apps/[^/]+/src/server/" }
+        examples:
+          forbidden: ["apps/web/src/app/orders/page.tsx -> apps/web/src/server/db.ts"]
+          allowed: ["apps/web/src/app/orders/page.tsx -> apps/web/src/lib/format.ts"]
+options:
+  knownViolations:
+    - id: RB-40dba9c6
+      rule: { name: ui-never-imports-server, severity: error }
+      expires: 2020-01-01
+      owner: "@orders-team"
+    - from: apps/web/src/app/users/page.tsx
+      to: apps/web/src/server/auth.ts
+      type: dependency
+      rule: { name: ui-never-imports-server, severity: error }

@@ -1,0 +1,14 @@
+rules:
+  dependencies:
+    forbidden:
+      - name: no-legacy-http-client
+        comment: "The legacy client is being retired; this rule goes when its last caller does. plan:0005-guard-catalogue"
+        fix: "Use packages/http instead of packages/legacy-http."
+        severity: error
+        owner: "@web-platform"
+        expires: 2099-12-31
+        from: { path: "^packages/", pathNot: "^packages/legacy-http/" }
+        to: { path: "^packages/legacy-http/" }
+        examples:
+          forbidden: ["packages/orders/src/index.ts -> packages/legacy-http/src/index.ts"]
+          allowed: ["packages/orders/src/index.ts -> packages/http/src/index.ts"]

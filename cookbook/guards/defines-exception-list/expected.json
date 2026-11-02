@@ -1,0 +1,22 @@
+{
+  "violations": [
+    {
+      "from": "packages/search/src/index.ts",
+      "to": "packages/legacy-http/src/index.ts",
+      "unresolvedTo": "./index",
+      "dependencyTypes": [
+        "local",
+        "import"
+      ],
+      "type": "dependency",
+      "rule": {
+        "name": "no-legacy-http-client-except-migrating",
+        "severity": "error"
+      },
+      "id": "RB-324a7975",
+      "fix": "Use packages/http; add the package to eng/migration.json only with the owner's review.",
+      "decision": "plan:0005-guard-catalogue"
+    }
+  ],
+  "vacuousRules": []
+}

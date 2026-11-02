@@ -1,0 +1,10 @@
+count
+--from
+^apps/([^/]+)/src/app/.*/(page|route)\.tsx?$
+--to
+^apps/$1/src/(server|domain)/
+--budget
+budget.json
+--write
+--graph
+graph.json

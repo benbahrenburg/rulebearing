@@ -1,0 +1,3 @@
+dropped 2 item(s) dependency-cruiser cannot hold:
+  forbidden[ui-never-imports-server].fix: a Rulebearing rule field
+  forbidden[ui-never-imports-server].examples: a Rulebearing rule field
