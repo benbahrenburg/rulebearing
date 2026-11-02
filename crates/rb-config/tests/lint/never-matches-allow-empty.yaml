@@ -1,0 +1,10 @@
+rules:
+  dependencies:
+    forbidden:
+      - name: plugins-stay-apart
+        comment: "Matches nothing until the first plugin lands. plan:0005-guard-catalogue"
+        fix: "Talk to another plugin through the host API."
+        severity: error
+        allowEmpty: true
+        from: { path: "^nowhere/" }
+        to: { path: "^nowhere-either/" }

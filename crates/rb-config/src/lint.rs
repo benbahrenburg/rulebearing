@@ -9,7 +9,7 @@
 //!
 //! | Code | Finding | Needs a graph |
 //! | --- | --- | --- |
-//! | `never-matches` | a rule's `from`, `module` or `to.path` matches nothing in the graph | yes |
+//! | `never-matches` | a rule's `from`, `module` or `to.path` matches nothing in the graph, unless the rule is excused by `allowEmpty` | yes |
 //! | `shadowed` | a rule repeats an earlier rule's restrictions, so it can never add a finding | no |
 //! | `overlapping-allowed` | two `allowed` entries admit the same edges | no |
 //! | `allowed-admits-everything` | an `allowed` entry with empty `from` and `to` | no |
@@ -100,6 +100,11 @@ fn graph_findings(rule: &Rule, family: Family, graph: &GraphDocument, out: &mut 
         .flat_map(|m| m.dependencies.iter().map(|d| d.resolved.as_str()))
         .collect();
     let mut never = |side: &str| {
+        // `allowEmpty` says the rule may match nothing yet, so "fix or delete it" is wrong
+        // (docs/adr/0032-liveness-follows-the-configuration-format.md).
+        if rule.meta.allow_empty {
+            return;
+        }
         out.push(Finding {
             rule: rule.name().to_owned(),
             code: "never-matches",
