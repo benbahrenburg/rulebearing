@@ -1,5 +1,7 @@
 //! `err` and `err-long`: dependency-cruiser 18.2.0's `src/report/error.mjs`, ported, with the
-//! rule's `fix` printed under each finding by `err-long`.
+//! rule's `fix` printed under each finding by `err-long`, and 18.7.0's line for stale baseline
+//! entries ([plan 0011 Step 9](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#24-steps-for-sub-wave-11d-the-reporters),
+//! [ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
 //!
 //! - Specification: `test/report/error/*.spec.mjs`, run unmodified by conformance gate 1 layer 3
 //!   ([ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md))
@@ -188,6 +190,41 @@ fn ignore_warning(summary: &Value, color: bool) -> String {
     }
 }
 
+/// `SEVERITY2ICON`: the mark before an environment issue or the stale-entry line.
+fn severity_icon(severity: &str) -> &'static str {
+    match severity {
+        "error" => "x",
+        "warn" => "‼",
+        "info" => "i",
+        "ignore" => "-",
+        _ => "undefined",
+    }
+}
+
+/// `formatStaleBaselineMessage`: the count of stale baseline entries at
+/// `optionsUsed.baseline.staleEntriesSeverity` (`warn` when absent), and how to remove them. It
+/// is what explains a run that fails on stale entries alone, so it prints with or without
+/// violations. A result without `baselineStale` prints nothing, so 18.2.0's output is unchanged.
+fn stale_baseline_message(summary: &Value, color: bool) -> String {
+    let Some(count) = crate::stale_count(summary) else {
+        return String::new();
+    };
+    let severity = summary
+        .get("optionsUsed")
+        .and_then(|o| o.get("baseline"))
+        .and_then(|b| b.get("staleEntriesSeverity"))
+        .and_then(Value::as_str)
+        .unwrap_or("warn");
+    styled(
+        Style::for_severity(severity),
+        &format!(
+            "{} {count} stale known violations in the baseline. Run with '--baseline --baseline-mode shrink-only' to remove them.\n",
+            severity_icon(severity)
+        ),
+        color,
+    )
+}
+
 fn environment_issues(summary: &Value, color: bool) -> String {
     let issues = summary
         .get("environment")
@@ -195,13 +232,6 @@ fn environment_issues(summary: &Value, color: bool) -> String {
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default();
-    let icon = |s: &str| match s {
-        "error" => "x",
-        "warn" => "‼",
-        "info" => "i",
-        "ignore" => "-",
-        _ => "undefined",
-    };
     let lines: Vec<String> = issues
         .iter()
         .map(|issue| {
@@ -210,7 +240,7 @@ fn environment_issues(summary: &Value, color: bool) -> String {
                 Style::for_severity(&sev),
                 &format!(
                     "{} {}: {}",
-                    icon(&sev),
+                    severity_icon(&sev),
                     styled(Some(Style::Bold), &text(issue, "name"), color),
                     text(issue, "description")
                 ),
@@ -238,9 +268,10 @@ pub fn render(result: &Value, o: ErrOptions) -> Rendered {
     let dependencies = crate::js_number(summary.get("totalDependenciesCruised"));
     let output = if violations.is_empty() {
         format!(
-            "\n{} no dependency violations found ({modules} modules, {dependencies} dependencies cruised)\n{}{}\n",
+            "\n{} no dependency violations found ({modules} modules, {dependencies} dependencies cruised)\n{}{}{}\n",
             styled(Some(Style::Green), "✔", o.color),
             ignore_warning(&summary, o.color),
+            stale_baseline_message(&summary, o.color),
             environment_issues(&summary, o.color)
         )
     } else {
@@ -290,6 +321,7 @@ pub fn render(result: &Value, o: ErrOptions) -> Rendered {
             message
         });
         out.push_str(&ignore_warning(&summary, o.color));
+        out.push_str(&stale_baseline_message(&summary, o.color));
         out.push_str(&environment_issues(&summary, o.color));
         out.push('\n');
         out
@@ -317,6 +349,87 @@ mod tests {
         ErrOptions {
             long,
             ..ErrOptions::default()
+        }
+    }
+
+    const STALE_LINE: &str = "stale known violations in the baseline. Run with '--baseline --baseline-mode shrink-only' to remove them.\n";
+
+    /// Plan 0011 Step 9: the run that exits non-zero on stale entries alone says why, in the
+    /// bytes of upstream's `test/report/error/error.spec.mjs` at 18.7.0, in `err` and `err-long`.
+    #[test]
+    fn stale_entries_explain_a_run_with_no_violations() {
+        let extra = json!({ "error": 0, "baselineStale": 2, "advisedExitCode": 2,
+            "optionsUsed": { "baseline": { "staleEntriesSeverity": "error" } } });
+        for long in [false, true] {
+            let r = render(&result(&json!([]), &extra), plain(long));
+            assert_eq!(
+                r.output,
+                format!(
+                    "\n✔ no dependency violations found (3 modules, 4 dependencies cruised)\nx 2 {STALE_LINE}\n"
+                )
+            );
+            assert_eq!(r.exit_code, 2);
+        }
+    }
+
+    #[test]
+    fn the_stale_line_follows_the_ignored_line_and_precedes_the_environment() {
+        let violation = json!([{ "from": "a", "to": "b", "type": "dependency",
+            "rule": { "name": "r", "severity": "warn" } }]);
+        let extra = json!({ "error": 0, "warn": 1, "ignore": 1, "baselineStale": 1,
+            "environment": { "issues": [
+                { "name": "n", "severity": "info", "description": "d" }] } });
+        for long in [false, true] {
+            let r = render(&result(&violation, &extra), plain(long));
+            assert!(
+                r.output.ends_with(&format!(
+                    "cruised.\n‼ 1 known violations ignored. Run with --no-ignore-known to see them.\n‼ 1 {STALE_LINE}\ni n: d\n"
+                )),
+                "{}",
+                r.output
+            );
+        }
+    }
+
+    #[test]
+    fn the_stale_line_takes_each_severity_and_its_colour() {
+        for (severity, icon) in [
+            ("error", "x"),
+            ("warn", "‼"),
+            ("info", "i"),
+            ("ignore", "-"),
+        ] {
+            let extra = json!({ "error": 0, "baselineStale": 1,
+                "optionsUsed": { "baseline": { "staleEntriesSeverity": severity } } });
+            let out = render(&result(&json!([]), &extra), plain(false)).output;
+            assert!(out.contains(&format!("\n{icon} 1 {STALE_LINE}")), "{out}");
+            let coloured = ErrOptions {
+                color: true,
+                ..ErrOptions::default()
+            };
+            let painted = render(&result(&json!([]), &extra), coloured).output;
+            assert!(
+                painted.contains(&styled(
+                    Style::for_severity(severity),
+                    &format!("{icon} 1 {STALE_LINE}"),
+                    true
+                )),
+                "{painted}"
+            );
+        }
+    }
+
+    #[test]
+    fn no_stale_entry_prints_no_stale_line() {
+        for extra in [
+            json!({ "error": 0, "baselineStale": 0 }),
+            json!({ "error": 0 }),
+        ] {
+            let out = render(&result(&json!([]), &extra), plain(false)).output;
+            assert_eq!(
+                out,
+                "\n✔ no dependency violations found (3 modules, 4 dependencies cruised)\n\n"
+            );
         }
     }
 

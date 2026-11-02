@@ -19,6 +19,8 @@
 
 **Gates** means the exit code is `summary.advisedExitCode` (the error-severity violations, plus the stale baseline entries under `staleEntriesSeverity: error`), or `summary.error` on a result without it, plus the expired entries and the exceeded ratchets, capped at 255 ([ADR-0080](adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)). The others exit 0 on a trustworthy run, as in dependency-cruiser, so a pipeline can save JSON in one step and gate in the next ([ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md)). Every reporter exits 2 on a run that cannot be trusted and 3 on an invalid configuration ([ADR-0008](adr/0008-exit-code-contract.md)).
 
+`err` and `err-long` print a line for stale baseline entries, after the summary and in both the clean and the failing case: `x 1 stale known violations in the baseline. Run with '--baseline --baseline-mode shrink-only' to remove them.`, marked and coloured by `options.baseline.staleEntriesSeverity` (`warn` when absent), as dependency-cruiser 18.7.0 does ([ADR-0080](adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)). The wording is upstream's. `--baseline` on `cruise` arrives with [sub-wave 11C](../README.md#roadmap); until then `rulebearing baseline --baseline-mode shrink-only` does it ([cli.md § Baselines](cli.md#baselines)).
+
 ## Wave 2
 
 | Output type | Writes | Gates |
@@ -28,7 +30,7 @@
 | `junit` | JUnit XML, one test case per rule ([below](#junit-and-trx)) | no |
 | `trx` | Visual Studio TRX, one unit test per rule | no |
 
-The rest of wave 2 is the graph reporters (`dot`, `ddot`, `archi` / `cdot`, `flat` / `fdot`, `mermaid`, `d2`), `metrics` and `err-html`; none gates.
+The rest of wave 2 is the graph reporters (`dot`, `ddot`, `archi` / `cdot`, `flat` / `fdot`, `mermaid`, `d2`), `metrics` and `err-html`; none gates. `err-html` adds the number of stale baseline entries to its counts and lists them in a table of their own, as dependency-cruiser 18.7.0 does ([ADR-0080](adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
 
 ## Wave 3
 
@@ -43,7 +45,7 @@ Each is byte for byte dependency-cruiser 18.2.0's: gate 1 layer 3 runs upstream'
 
 ### `markdown`
 
-`reporterOptions.markdown` takes dependency-cruiser's keys with its defaults: `showTitle`, `title`, `showSummary`, `showSummaryHeader`, `summaryHeader`, `showStatsSummary`, `showRulesSummary`, `includeIgnoredInSummary`, `showDetails`, `includeIgnoredInDetails`, `showDetailsHeader`, `detailsHeader`, `collapseDetails`, `collapsedMessage`, `noViolationsMessage`, `showFooter`, `footer`, `showExternalModulesUnresolved` and `showAliasedModulesUnresolved` ([coverage tab § Options](artifacts/dependency-cruiser-18.2.0-coverage.md#options)). From 18.7.0's reporter it also takes `showStaleBaselineDetails`, `staleBaselineHeader`, `collapseStaleBaseline`, `collapseStaleBaselineMessage` and `staleBaselineIntro`, which govern a table of the baseline entries no violation matches, and the statistics line counts those entries when there are any ([coverage tab § Options](artifacts/dependency-cruiser-18.7.0-coverage.md#options)). As upstream, `showStatsSummary` is accepted and has no effect (upstream's reporter always writes the statistics line), and a key given as `null` replaces its default. The default footer names dependency-cruiser 18.2.0, whose output this reproduces, and the run's time, which `SOURCE_DATE_EPOCH` pins.
+`reporterOptions.markdown` takes dependency-cruiser's keys with its defaults: `showTitle`, `title`, `showSummary`, `showSummaryHeader`, `summaryHeader`, `showStatsSummary`, `showRulesSummary`, `includeIgnoredInSummary`, `showDetails`, `includeIgnoredInDetails`, `showDetailsHeader`, `detailsHeader`, `collapseDetails`, `collapsedMessage`, `noViolationsMessage`, `showFooter`, `footer`, `showExternalModulesUnresolved` and `showAliasedModulesUnresolved` ([coverage tab § Options](artifacts/dependency-cruiser-18.2.0-coverage.md#options)). From 18.7.0's reporter it also takes `showStaleBaselineDetails`, `staleBaselineHeader`, `collapseStaleBaseline`, `collapseStaleBaselineMessage` and `staleBaselineIntro`, which govern a table of the baseline entries no violation matches, sorted by rule, `from` and `to` whatever the file's order, and the statistics line counts those entries when there are any ([coverage tab § Options](artifacts/dependency-cruiser-18.7.0-coverage.md#options)). As upstream, `showStatsSummary` is accepted and has no effect (upstream's reporter always writes the statistics line), and a key given as `null` replaces its default. The default footer names dependency-cruiser 18.2.0, whose output this reproduces, and the run's time, which `SOURCE_DATE_EPOCH` pins.
 
 ### `anon`
 

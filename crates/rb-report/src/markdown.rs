@@ -113,13 +113,9 @@ pub fn severity_icon(severity: Option<&Value>) -> &'static str {
 pub fn stats_summary(summary: &Value) -> String {
     let spacer = "&nbsp;".repeat(4);
     let count = |key: &str| js::field(summary, key);
-    let stale = summary
-        .get("baselineStale")
-        .and_then(Value::as_u64)
-        .filter(|stale| *stale > 0)
-        .map_or_else(String::new, |stale| {
-            format!("{spacer}**{stale}** stale entries in baseline")
-        });
+    let stale = crate::stale_count(summary).map_or_else(String::new, |stale| {
+        format!("{spacer}**{stale}** stale entries in baseline")
+    });
     format!(
         "**{}** modules{spacer}**{}** dependencies{spacer}**{}** errors{spacer}**{}** warnings{spacer}**{}** informational{spacer}**{}** ignored{stale}\n",
         count("totalCruised"),
@@ -169,26 +165,19 @@ pub fn violation_rows(summary: &Value, options: &Map<String, Value>) -> String {
 /// violation matches, as a table under its header; empty when there are none
 /// ([plan 0011 Step 10](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#24-steps-for-sub-wave-11d-the-reporters)).
 ///
-/// A result without `summary.baselineStale` was saved by a version that has no such table, and
-/// re-reports as that version did, which is what gate 1 compares at the 18.2.0 pin. Every
-/// Rulebearing run with known violations carries the field. Upstream's 18.7.0 reporter does not
-/// ask for it, so [plan 0011 Step 16](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#28-steps-for-sub-wave-11h-the-pin)
-/// drops this condition when the pin moves.
-fn stale_baseline_details(summary: &Value, options: &Map<String, Value>) -> String {
-    if summary.get("baselineStale").is_none() {
+/// A result without `summary.baselineStale`, reported without any of the stale-baseline options,
+/// was saved by a version that has no such table, and re-reports as that version did, which is
+/// what gate 1 compares at the 18.2.0 pin: its mocks carry `knownViolations`. Every Rulebearing
+/// run with known violations carries the field. Upstream's 18.7.0 reporter asks for neither, so
+/// [plan 0011 Step 16](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#28-steps-for-sub-wave-11h-the-pin)
+/// drops `given` and this condition when the pin moves.
+fn stale_baseline_details(summary: &Value, options: &Map<String, Value>, given: bool) -> String {
+    if !given && summary.get("baselineStale").is_none() {
         return String::new();
     }
-    let Some(known) = summary
-        .get("optionsUsed")
-        .and_then(|o| o.get("knownViolations"))
-        .and_then(Value::as_array)
-    else {
+    let Some(stale) = crate::baseline::stale_entries(summary).filter(|s| !s.is_empty()) else {
         return String::new();
     };
-    let (_, stale) = crate::baseline::partition(known, violations(summary));
-    if stale.is_empty() {
-        return String::new();
-    }
     let mut out = option_text(options, "staleBaselineHeader");
     out.push_str("\n\n");
     let collapse = flag(options, "collapseStaleBaseline");
@@ -296,9 +285,20 @@ fn summary_section(summary: &Value, options: &Map<String, Value>) -> String {
     out
 }
 
+/// Whether `reporterOptions.markdown` names a stale-baseline key, the option half of the condition
+/// on [`stale_baseline_details`], which Step 16 removes.
+fn stale_option_given(options: Option<&Value>) -> bool {
+    options.and_then(Value::as_object).is_some_and(|given| {
+        crate::json::MARKDOWN_AHEAD_OF_PIN
+            .iter()
+            .any(|k| given.contains_key(*k))
+    })
+}
+
 /// Renders `markdown`, with `options` the `reporterOptions.markdown` section and `timestamp` the
 /// run's time, ISO 8601 without the `Z`. Always exits 0, as upstream's reporter does.
 pub fn render(result: &Value, options: Option<&Value>, timestamp: &str) -> Rendered {
+    let stale_given = stale_option_given(options);
     let options = merge_options(options, timestamp);
     let summary = result.get("summary").unwrap_or(&Value::Null);
     let mut output = String::new();
@@ -313,7 +313,7 @@ pub fn render(result: &Value, options: Option<&Value>, timestamp: &str) -> Rende
         output.push_str(&details(summary, &options, &Edges::of(result)));
     }
     if flag(&options, "showStaleBaselineDetails") {
-        output.push_str(&stale_baseline_details(summary, &options));
+        output.push_str(&stale_baseline_details(summary, &options, stale_given));
     }
     if flag(&options, "showFooter") {
         output.push_str(&option_text(&options, "footer"));
@@ -395,14 +395,14 @@ mod tests {
     #[test]
     fn no_stale_entry_or_no_baseline_prints_no_table() {
         assert_eq!(
-            stale_baseline_details(&json!({ "violations": [] }), &defaults()),
+            stale_baseline_details(&json!({ "violations": [] }), &defaults(), false),
             ""
         );
         let summary = json!({ "violations": [], "baselineStale": 0,
             "optionsUsed": { "knownViolations": [] } });
-        assert_eq!(stale_baseline_details(&summary, &defaults()), "");
+        assert_eq!(stale_baseline_details(&summary, &defaults(), false), "");
         let no_list = json!({ "violations": [], "baselineStale": 0 });
-        assert_eq!(stale_baseline_details(&no_list, &defaults()), "");
+        assert_eq!(stale_baseline_details(&no_list, &defaults(), true), "");
     }
 
     #[test]
@@ -415,6 +415,49 @@ mod tests {
             render(&saved, Some(&only_stale(&json!({}))), STAMP).output,
             ""
         );
+    }
+
+    /// The two tests of upstream's 18.7.0 spec that set a stale option and no `baselineStale`.
+    #[test]
+    fn a_stale_option_prints_the_table_without_the_count() {
+        let mut saved = stale_result();
+        saved["summary"]
+            .as_object_mut()
+            .map(|summary| summary.remove("baselineStale"));
+        for (key, value) in [
+            ("staleBaselineHeader", json!("H")),
+            ("collapseStaleBaseline", json!(false)),
+            ("collapseStaleBaselineMessage", json!("M")),
+            ("staleBaselineIntro", json!("I")),
+            ("showStaleBaselineDetails", json!(true)),
+        ] {
+            let options = only_stale(&json!({ key: value }));
+            let out = render(&saved, Some(&options), STAMP).output;
+            assert!(out.contains(STALE_ROWS), "{key}: {out}");
+        }
+    }
+
+    /// Upstream's `diffViolationArrays` sorts what it returns, so the table does not depend on
+    /// the order of the file; two runs print the same bytes.
+    #[test]
+    fn the_stale_table_is_in_upstreams_order_whatever_the_files_order() {
+        let entry = |rule: &str, from: &str, severity: &str| json!({ "from": from, "to": "x", "rule": { "name": rule, "severity": severity } });
+        let (a, b, c) = (
+            entry("no-a", "z", "warn"),
+            entry("no-b", "a", "error"),
+            entry("no-b", "b", "info"),
+        );
+        let table = |known: Value| {
+            let result = json!({ "summary": { "baselineStale": 3, "violations": [],
+                "optionsUsed": { "knownViolations": known } } });
+            render(&result, Some(&only_stale(&json!({}))), STAMP).output
+        };
+        let forward = table(json!([a, b, c]));
+        assert_eq!(forward, table(json!([c, a, b])));
+        assert_eq!(forward, table(json!([a, b, c])));
+        let at = |needle: &str| forward.find(needle).unwrap_or(usize::MAX);
+        assert!(at("_no-a_|z|") < at("_no-b_|a|"), "{forward}");
+        assert!(at("_no-b_|a|") < at("_no-b_|b|"), "{forward}");
     }
 
     #[test]

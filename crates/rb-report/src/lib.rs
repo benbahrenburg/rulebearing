@@ -150,6 +150,13 @@ pub(crate) fn advised_count(summary: &Value) -> u64 {
         .unwrap_or(0)
 }
 
+/// `summary.baselineStale` as a reporter prints it, when `(baselineStale ?? 0) > 0`
+/// ([plan 0011 Step 9](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#24-steps-for-sub-wave-11d-the-reporters)).
+pub(crate) fn stale_count(summary: &Value) -> Option<String> {
+    let count = summary.get("baselineStale")?;
+    (js::to_number(Some(count)) > 0.0).then(|| js::to_string(Some(count)))
+}
+
 /// A reporter's output: the text and the exit code dependency-cruiser's reporter would give.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rendered {

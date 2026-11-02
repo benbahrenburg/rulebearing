@@ -51,10 +51,21 @@ fn compare_arrays(first: &[Value], second: &[Value], by_name: bool) -> Ordering 
 
 /// `compareViolations`.
 pub fn compare_violations(first: &Value, second: &Value) -> Ordering {
+    let severity = |v: &'_ Value| {
+        v.get("rule")
+            .and_then(|r| js::str_of(r, "severity"))
+            .map(str::to_owned)
+    };
+    compare_severities(severity(first).as_deref(), severity(second).as_deref())
+        .then_with(|| compare_violations_ex_severities(first, second))
+}
+
+/// `compareViolationsExSeverities` (dependency-cruiser 18.7.0): every field of
+/// [`compare_violations`] but the severity, which is how `diffViolationArrays` orders a baseline.
+pub fn compare_violations_ex_severities(first: &Value, second: &Value) -> Ordering {
     let rule = |v: &Value| v.get("rule").cloned().unwrap_or(Value::Null);
     let (r1, r2) = (rule(first), rule(second));
-    compare_severities(js::str_of(&r1, "severity"), js::str_of(&r2, "severity"))
-        .then_with(|| collate::compare(text_or_empty(&r1, "name"), text_or_empty(&r2, "name")))
+    collate::compare(text_or_empty(&r1, "name"), text_or_empty(&r2, "name"))
         .then_with(|| collate::compare(text_or_empty(first, "from"), text_or_empty(second, "from")))
         .then_with(|| collate::compare(text_or_empty(first, "to"), text_or_empty(second, "to")))
         .then_with(|| {
@@ -103,6 +114,25 @@ pub fn sign(order: Ordering) -> i32 {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn the_order_without_severities_ignores_only_the_severity() {
+        let v = |sev: &str, name: &str, from: &str, to: &str| json!({ "rule": { "severity": sev, "name": name }, "from": from, "to": to });
+        let (error, warn) = (v("error", "b", "x", "y"), v("warn", "a", "x", "y"));
+        assert_eq!(compare_violations(&error, &warn), Ordering::Less);
+        assert_eq!(
+            compare_violations_ex_severities(&error, &warn),
+            Ordering::Greater
+        );
+        assert_eq!(
+            compare_violations_ex_severities(&v("error", "a", "x", "y"), &v("warn", "a", "x", "y")),
+            Ordering::Equal
+        );
+        assert_eq!(
+            compare_violations_ex_severities(&v("warn", "a", "a", "y"), &v("warn", "a", "b", "y")),
+            Ordering::Less
+        );
+    }
 
     #[test]
     fn severities_order_error_first_and_unknown_before_all() {
