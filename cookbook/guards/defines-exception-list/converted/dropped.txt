@@ -1,0 +1,5 @@
+dropped 4 item(s) dependency-cruiser cannot hold:
+  defines: substituted into the patterns; dependency-cruiser has no defines
+  forbidden[no-legacy-http-client-except-migrating].fix: a Rulebearing rule field
+  forbidden[no-legacy-http-client-except-migrating].examples: a Rulebearing rule field
+  forbidden[no-legacy-http-client-except-migrating].owner: a Rulebearing rule field

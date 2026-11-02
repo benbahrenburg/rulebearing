@@ -26,9 +26,24 @@ Both runners run in the `guards` CI job; the docs site renders the question page
 | `expanded.yaml` | when the recipe uses `defines` or a shorthand | `config expand`'s output |
 | `converted/.dependency-cruiser.json`, `converted/dropped.txt` | for a dependency-layer recipe | `config convert --to dependency-cruiser`'s output and its report of what it dropped |
 | `budget.json` | for a ratchet recipe | the budget file |
-| `negative/<case>/rulebearing.yaml`, `exit-code`, optional `graph.json` | when the recipe has a failure to prove | a configuration that must stop `cruise` with that exit code ([ADR-0008](../docs/adr/0008-exit-code-contract.md)) |
+| `exit-code` | when the recipe's gate is part of its point | the code `cruise --require-comment-token -T err` must exit with |
+| `negative/<case>/` | when the recipe has a failure to prove | the files that differ from the fixture, and the control files below |
 
 The graph makes every rule non-vacuous, so `vacuousRules` is empty, except in a recipe whose point is `allowEmpty`.
+
+`expected.json` also holds `summary.ratchets` and `summary.expired` when the run has them. A relative `budget` resolves against the working directory, so the runner runs each command in the fixture's folder.
+
+## A negative case
+
+The runner copies the fixture to a temporary folder, overlays `negative/<case>/` on it, and runs one command there ([ADR-0008](../docs/adr/0008-exit-code-contract.md)). A refusal changes nothing, so the runner also proves every file in the copy is byte-identical afterwards.
+
+| Control file | Required | Holds |
+| --- | --- | --- |
+| `exit-code` | yes | the code the command must exit with |
+| `command` | no | its arguments, one per line. The default is `cruise --config rulebearing.yaml --graph graph.json --require-comment-token -T err` |
+| `remove` | no | files to delete from the copy, one per line |
+| `names` | no | text the output must contain, one per line, so a case cannot pass by failing for another reason |
+| `expected.json` | no | as a fixture's, from `cruise -T json` over the copy |
 
 ## Running
 

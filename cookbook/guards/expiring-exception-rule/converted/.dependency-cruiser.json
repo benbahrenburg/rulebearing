@@ -1,0 +1,16 @@
+{
+  "forbidden": [
+    {
+      "name": "no-legacy-http-client",
+      "comment": "The legacy client is being retired; this rule goes when its last caller does. plan:0005-guard-catalogue",
+      "to": {
+        "path": "^packages/legacy-http/"
+      },
+      "severity": "error",
+      "from": {
+        "path": "^packages/",
+        "pathNot": "^packages/legacy-http/"
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+extends: ./.dependency-cruiser.json
+allowEmpty: [plugins-stay-apart]
+rules:
+  dependencies:
+    forbidden:
+      - name: plugins-stay-apart
+        fix: "Talk to another plugin through the host API."
+        examples:
+          forbidden: ["plugins/a/index.ts -> plugins/b/index.ts"]
+          allowed: ["plugins/a/index.ts -> plugins/a/util.ts"]

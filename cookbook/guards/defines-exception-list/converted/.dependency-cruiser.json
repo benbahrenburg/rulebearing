@@ -1,0 +1,19 @@
+{
+  "forbidden": [
+    {
+      "name": "no-legacy-http-client-except-migrating",
+      "comment": "The legacy client is retired; the packages still migrating are listed in JSON with an owner's review. plan:0005-guard-catalogue",
+      "to": {
+        "path": "^packages/legacy-http/"
+      },
+      "severity": "error",
+      "from": {
+        "path": "^packages/",
+        "pathNot": [
+          "^packages/(billing|orders)/",
+          "^packages/legacy-http/"
+        ]
+      }
+    }
+  ]
+}

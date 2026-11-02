@@ -1,0 +1,152 @@
+{
+  "modules": [
+    {
+      "source": "packages/billing/src/index.ts",
+      "dependencies": [
+        {
+          "module": "./index",
+          "resolved": "packages/legacy-http/src/index.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true,
+      "language": "typescript"
+    },
+    {
+      "source": "packages/checkout/src/index.ts",
+      "dependencies": [
+        {
+          "module": "./index",
+          "resolved": "packages/http/src/index.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true,
+      "language": "typescript"
+    },
+    {
+      "source": "packages/http/src/index.ts",
+      "dependencies": [],
+      "dependents": [
+        "packages/checkout/src/index.ts"
+      ],
+      "orphan": false,
+      "valid": true,
+      "language": "typescript"
+    },
+    {
+      "source": "packages/legacy-http/src/index.ts",
+      "dependencies": [],
+      "dependents": [
+        "packages/billing/src/index.ts",
+        "packages/orders/src/index.ts",
+        "packages/search/src/index.ts"
+      ],
+      "orphan": false,
+      "valid": true,
+      "language": "typescript"
+    },
+    {
+      "source": "packages/orders/src/index.ts",
+      "dependencies": [
+        {
+          "module": "./index",
+          "resolved": "packages/legacy-http/src/index.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true,
+      "language": "typescript"
+    },
+    {
+      "source": "packages/search/src/index.ts",
+      "dependencies": [
+        {
+          "module": "./index",
+          "resolved": "packages/legacy-http/src/index.ts",
+          "coreModule": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "followable": true,
+          "dynamic": false,
+          "exoticallyRequired": false,
+          "matchesDoNotFollow": false,
+          "couldNotResolve": false,
+          "circular": false,
+          "moduleSystem": "es6",
+          "valid": true,
+          "line": 1,
+          "column": 1,
+          "dependencyKind": "import"
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true,
+      "language": "typescript"
+    }
+  ],
+  "summary": {
+    "violations": [],
+    "error": 0,
+    "warn": 0,
+    "info": 0,
+    "ignore": 0,
+    "totalCruised": 6,
+    "totalDependenciesCruised": 4,
+    "optionsUsed": {}
+  }
+}

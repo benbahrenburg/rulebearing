@@ -1,0 +1,20 @@
+rules:
+  dependencies:
+    forbidden:
+    - name: no-legacy-http-client-except-migrating
+      comment: The legacy client is retired; the packages still migrating are listed in JSON with an owner's review. plan:0005-guard-catalogue
+      fix: Use packages/http; add the package to eng/migration.json only with the owner's review.
+      severity: error
+      owner: '@web-platform'
+      from:
+        path: ^packages/
+        pathNot:
+        - ^packages/(billing|orders)/
+        - ^packages/legacy-http/
+      to:
+        path: ^packages/legacy-http/
+      examples:
+        forbidden:
+        - packages/search/src/index.ts -> packages/legacy-http/src/index.ts
+        allowed:
+        - packages/billing/src/index.ts -> packages/legacy-http/src/index.ts

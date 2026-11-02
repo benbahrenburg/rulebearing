@@ -1,0 +1,37 @@
+{
+  "forbidden": [
+    {
+      "name": "ui-never-imports-server",
+      "comment": "Server code in a page ships secrets and database clients to the browser. plan:0005-guard-catalogue",
+      "to": {
+        "path": "^apps/[^/]+/src/server/"
+      },
+      "severity": "error",
+      "from": {
+        "path": "^apps/[^/]+/src/app/"
+      }
+    }
+  ],
+  "options": {
+    "knownViolations": [
+      {
+        "id": "RB-40dba9c6",
+        "rule": {
+          "name": "ui-never-imports-server",
+          "severity": "error"
+        },
+        "expires": "2099-12-31",
+        "owner": "@orders-team"
+      },
+      {
+        "from": "apps/web/src/app/users/page.tsx",
+        "to": "apps/web/src/server/auth.ts",
+        "type": "dependency",
+        "rule": {
+          "name": "ui-never-imports-server",
+          "severity": "error"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "violations": [],
+  "vacuousRules": [],
+  "ratchets": [
+    {
+      "name": "routes-via-service",
+      "budget": "budget.json",
+      "count": 2,
+      "ceiling": 2,
+      "status": "held"
+    }
+  ]
+}

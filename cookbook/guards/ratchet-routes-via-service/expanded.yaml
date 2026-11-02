@@ -1,0 +1,11 @@
+rules:
+  ratchets:
+  - name: routes-via-service
+    comment: Route files reach the database through the service layer; the direct edges are being retired. adr:0029
+    fix: Move the query into apps/<app>/src/server/services and call it from the route.
+    owner: '@web-platform'
+    from:
+      path: ^apps/([^/]+)/src/app/.*/(page|route)\.tsx?$
+    to:
+      path: ^apps/$1/src/(server|domain)/
+    budget: budget.json

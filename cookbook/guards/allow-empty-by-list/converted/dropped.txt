@@ -1,0 +1,3 @@
+dropped 2 item(s) dependency-cruiser cannot hold:
+  forbidden[plugins-stay-apart].fix: a Rulebearing rule field
+  forbidden[plugins-stay-apart].examples: a Rulebearing rule field

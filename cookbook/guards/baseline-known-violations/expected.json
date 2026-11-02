@@ -1,0 +1,39 @@
+{
+  "violations": [
+    {
+      "from": "apps/web/src/app/orders/page.tsx",
+      "to": "apps/web/src/server/db.ts",
+      "unresolvedTo": "./db",
+      "dependencyTypes": [
+        "local",
+        "import"
+      ],
+      "type": "dependency",
+      "rule": {
+        "name": "ui-never-imports-server",
+        "severity": "ignore"
+      },
+      "id": "RB-40dba9c6",
+      "fix": "Call the server code through a route or a server action; do not import it from a page.",
+      "decision": "plan:0005-guard-catalogue"
+    },
+    {
+      "from": "apps/web/src/app/users/page.tsx",
+      "to": "apps/web/src/server/auth.ts",
+      "unresolvedTo": "./auth",
+      "dependencyTypes": [
+        "local",
+        "import"
+      ],
+      "type": "dependency",
+      "rule": {
+        "name": "ui-never-imports-server",
+        "severity": "ignore"
+      },
+      "id": "RB-a0be7f23",
+      "fix": "Call the server code through a route or a server action; do not import it from a page.",
+      "decision": "plan:0005-guard-catalogue"
+    }
+  ],
+  "vacuousRules": []
+}
