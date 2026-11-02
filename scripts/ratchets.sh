@@ -4,7 +4,7 @@
 # fall, and the layer 1 threshold in
 # conformance/dependency-cruiser/threshold.json may not fall.
 #
-# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 4 (the `ratchets` job).
+# Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 4 (the `ratchets` job).
 # Decision: docs/adr/0009-conformance-suites-as-specification.md.
 # Usage: scripts/ratchets.sh [base-ref]   (default: origin/$GITHUB_BASE_REF, else origin/main)
 #

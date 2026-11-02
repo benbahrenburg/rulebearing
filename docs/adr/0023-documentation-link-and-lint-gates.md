@@ -4,7 +4,7 @@
 - **Date:** 2026-09-21
 - **Derives from:** [ADR-0001](0001-record-architecture-decisions.md) ("link everything"), [ADR-0018](0018-test-coverage-threshold.md), [design § What Rust does not solve](../artifacts/design.md#what-rust-does-not-solve) (the suites, not the maintainer, are the reviewer), [design § Docs derived from the rules](../artifacts/design.md#docs-derived-from-the-rules-never-written-beside-them)
 - **Constrains:** [architecture.md § Verification strategy](../architecture.md#verification-strategy), [§ Repository layout](../architecture.md#repository-layout), [CLAUDE.md](../../CLAUDE.md), `.github/workflows/ci.yml`
-- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md), sub-wave 0A
+- **Implemented by:** [Wave 0 plan](../plans/implemented/0000-wave-0-spike.md), sub-wave 0A
 - **Requirements:** [NFR-DOC-01](../prd.md#nfr-doc-01), [NFR-QUAL-02](../prd.md#nfr-qual-02)
 
 ## Context

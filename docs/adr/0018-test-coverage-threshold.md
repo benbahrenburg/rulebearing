@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** the user's project brief (70% test coverage); [design.md § What Rust does not solve](../artifacts/design.md#what-rust-does-not-solve) (the suites as reviewer)
 - **Constrains:** [architecture.md § Verification strategy](../architecture.md#verification-strategy), [CLAUDE.md § Testing and coverage](../../CLAUDE.md#testing-and-coverage), `.github/workflows/ci.yml`
-- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md)
+- **Implemented by:** [Wave 0 plan](../plans/implemented/0000-wave-0-spike.md)
 
 ## Context
 

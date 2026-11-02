@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § The fallback, decided now rather than under pressure](../artifacts/design.md#the-fallback-decided-now-rather-than-under-pressure); [§ Waves](../artifacts/design.md#waves) (wave 0 exit criterion)
 - **Constrains:** [architecture.md § Extractors](../architecture.md#extractors), [§ Risks and their mitigations](../architecture.md#risks-and-their-mitigations)
-- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md) § Spike B
+- **Implemented by:** [Wave 0 plan](../plans/implemented/0000-wave-0-spike.md) § Spike B
 
 ## Context
 

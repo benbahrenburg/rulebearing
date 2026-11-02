@@ -1,7 +1,7 @@
 //! Resolving a specifier to a file and classifying the result, as dependency-cruiser does over
 //! enhanced-resolve, here over `oxc_resolver`, its Rust port.
 //!
-//! - Plan: [Wave 0, Step 8](../../../docs/plans/pending/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
+//! - Plan: [Wave 0, Step 8](../../../docs/plans/implemented/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
 //!   (`resolve.rs`: "`oxc_resolver` configured from `TypeScriptOptions`; classifies the result into
 //!   the alias family, `core`, `npm*`, `local`, `undetermined`, `unknown`")
 //! - Decision: [ADR-0012](../../../docs/adr/0012-oxc-for-typescript.md)

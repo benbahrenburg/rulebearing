@@ -1,7 +1,7 @@
 # cargo-fuzz targets for the parsers that read untrusted bytes.
 # A workspace of its own, so the main workspace never needs a nightly toolchain or libFuzzer.
 # Run: cargo +nightly fuzz run metadata_reader -- -max_total_time=600   (from this folder)
-# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 9; requirement docs/prd.md#nfr-sec-01.
+# Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 9; requirement docs/prd.md#nfr-sec-01.
 [package]
 name = "rb-fuzz"
 version = "0.0.0"

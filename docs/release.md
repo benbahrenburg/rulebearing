@@ -1,6 +1,6 @@
 # Releasing
 
-How Rulebearing reaches its four registries and GitHub releases. Decisions: [ADR-0020](adr/0020-single-name-across-registries.md) (one name everywhere, reserved on one day), [ADR-0019](adr/0019-mit-licence.md) (MIT), [ADR-0025](adr/0025-ci-and-supply-chain-hardening.md) (pinned, least-privileged workflows). Plan: [wave 0, Step 11](plans/pending/0000-wave-0-spike.md#step-11-name-reservation-and-release-plumbing-0e).
+How Rulebearing reaches its four registries and GitHub releases. Decisions: [ADR-0020](adr/0020-single-name-across-registries.md) (one name everywhere, reserved on one day), [ADR-0019](adr/0019-mit-licence.md) (MIT), [ADR-0025](adr/0025-ci-and-supply-chain-hardening.md) (pinned, least-privileged workflows). Plan: [wave 0, Step 11](plans/implemented/0000-wave-0-spike.md#step-11-name-reservation-and-release-plumbing-0e).
 
 ## The 0.0.1 name reservation (wave 0, done once)
 

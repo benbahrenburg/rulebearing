@@ -1,7 +1,7 @@
 //! String order as JavaScript's `localeCompare` gives it, which is how dependency-cruiser sorts a
 //! module's dependencies and its violations.
 //!
-//! - Plans: [Wave 0, Step 8](../../../docs/plans/pending/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
+//! - Plans: [Wave 0, Step 8](../../../docs/plans/implemented/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
 //!   (the extractor's dependency order), [Wave 1, Step 7](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
 //!   (the engine's violation order); it lives here so both share one implementation
 //! - Specification: dependency-cruiser 18.2.0 `extract-dependencies.mjs` (`compareDeps` uses

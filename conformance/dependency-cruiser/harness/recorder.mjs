@@ -1,6 +1,6 @@
 // Records calls to dependency-cruiser's extraction surfaces for export-expectations.mjs.
 //
-// Plan: docs/plans/pending/0000-wave-0-spike.md, Step 5 item 1.
+// Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 5 item 1.
 //
 // Only the outermost surface call of a test is recorded: extractDependencies calls resolve, which
 // calls determineDependencyTypes, and the specification of the outer call already includes the

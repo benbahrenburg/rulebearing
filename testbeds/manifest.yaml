@@ -1,6 +1,6 @@
 # Open-source test beds, from docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against,
 # plus the maintainer's own repositories (role own, docs/prd.md#nfr-adopt-02).
-# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 7 and § 1.5. Runner: testbeds/run.sh.
+# Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 7 and § 1.5. Runner: testbeds/run.sh.
 #
 # Fields: repo, sha (pinned by testbeds/pin.sh), role (oracle | greenfield | scale | own), languages,
 # tool (the incumbent: dependency-cruiser | netarchtest | archunitnet | import-linter | none), and per

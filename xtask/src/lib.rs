@@ -2,7 +2,7 @@
 //!
 //! - Decision: [ADR-0023](../../docs/adr/0023-documentation-link-and-lint-gates.md)
 //! - Architecture: [`docs/architecture.md#verification-strategy`](../../docs/architecture.md#verification-strategy)
-//! - Plan: [Wave 0, sub-wave 0A](../../docs/plans/pending/0000-wave-0-spike.md)
+//! - Plan: [Wave 0, sub-wave 0A](../../docs/plans/implemented/0000-wave-0-spike.md)
 //! - Requirements: [NFR-DOC-01](../../docs/prd.md#nfr-doc-01), [NFR-QUAL-02](../../docs/prd.md#nfr-qual-02)
 //!
 //! Two jobs: [`doclinks`] checks that every relative link between documents and from a doc

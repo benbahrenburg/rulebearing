@@ -3,7 +3,7 @@
 // `<url>?rb-original`); what a spec imports is a thin module that re-exports everything and
 // replaces the wrapped export with a recording one.
 //
-// Plan: docs/plans/pending/0000-wave-0-spike.md, Step 5 item 1. Registered by export-expectations.mjs.
+// Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 5 item 1. Registered by export-expectations.mjs.
 
 const RECORDER = new URL('./recorder.mjs', import.meta.url).href;
 let sourceRoot = '';

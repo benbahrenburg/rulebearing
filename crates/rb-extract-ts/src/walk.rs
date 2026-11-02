@@ -1,7 +1,7 @@
 //! Every dependency form in a JavaScript or TypeScript source, found the way dependency-cruiser
 //! finds it.
 //!
-//! - Plan: [Wave 0, Step 8](../../../docs/plans/pending/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
+//! - Plan: [Wave 0, Step 8](../../../docs/plans/implemented/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
 //!   (`walk.rs`)
 //! - Decision: [ADR-0012](../../../docs/adr/0012-oxc-for-typescript.md) (one parser, `oxc_parser`)
 //! - Source: [design § The five stages](../../../docs/artifacts/design.md#the-five-stages), stage 2;

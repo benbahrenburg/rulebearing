@@ -3,7 +3,7 @@
 //!
 //! - Specification: ECMA-335 II.22.37 (`TypeDef`), II.22.32 (`NestedClass`), II.22.10
 //!   (`CustomAttribute`), II.23.3 (custom attribute value blobs)
-//! - Plan: [Wave 0, Step 9](../../../docs/plans/pending/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
+//! - Plan: [Wave 0, Step 9](../../../docs/plans/implemented/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
 //!   and § 1.6 (the attribution denominator excludes `<Module>` and compiler-generated types)
 //! - Decision: [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md)
 

@@ -1,7 +1,7 @@
 //! From files to modules: which walker a file gets, resolving and filtering what it finds, the
 //! initial file list, and following dependencies to the modules they reach.
 //!
-//! - Plan: [Wave 0, Step 8](../../../docs/plans/pending/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
+//! - Plan: [Wave 0, Step 8](../../../docs/plans/implemented/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
 //!   (`discover.rs`, `parse.rs`, `lib.rs` of the step's table, here as one module)
 //! - Source: [design § The five stages](../../../docs/artifacts/design.md#the-five-stages), stages
 //!   1 and 2; [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)

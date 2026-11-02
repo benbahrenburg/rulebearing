@@ -4,7 +4,7 @@
 - **Date:** 2026-09-21
 - **Derives from:** [ADR-0019](0019-mit-licence.md) (licence policy), [ADR-0010](0010-crate-layout-and-extractor-boundary.md) (feature-gated extractors), [ADR-0002](0002-rust-as-implementation-language.md) (`rust-version`), [design § Rules an agent writes, held to the same bar](../artifacts/design.md#rules-an-agent-writes-held-to-the-same-bar) (hermetic runs), [architecture § Security posture](../architecture.md#security-posture)
 - **Constrains:** `.github/workflows/*.yml`, `deny.toml`, `.github/dependabot.yml`, `.githooks/`, [CLAUDE.md](../../CLAUDE.md)
-- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md), sub-wave 0A
+- **Implemented by:** [Wave 0 plan](../plans/implemented/0000-wave-0-spike.md), sub-wave 0A
 - **Requirements:** [NFR-QUAL-02](../prd.md#nfr-qual-02), [NFR-SEC-01](../prd.md#nfr-sec-01), [NFR-COMPAT-01](../prd.md#nfr-compat-01)
 
 ## Context

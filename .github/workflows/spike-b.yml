@@ -2,7 +2,7 @@
 # source file, measured weekly through the three-week window ADR-0003 sets (plan 0000, weeks 2 to 4).
 # The pooled line is printed in the job summary and every repository's JSON is uploaded; the plan's
 # 0D status table links the run for each week's figure.
-# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 9. Decision: docs/adr/0003-dotnet-extractor-fallback.md.
+# Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 9. Decision: docs/adr/0003-dotnet-extractor-fallback.md.
 # Actions pinned by SHA (docs/adr/0025-ci-and-supply-chain-hardening.md).
 name: spike-b
 

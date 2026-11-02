@@ -5,7 +5,7 @@
 //!   (the strings are dependency-cruiser's, unchanged, plus additive values)
 //! - Source: [coverage § Dependency types and module systems](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#dependency-types-and-module-systems),
 //!   [design § Dependency rules](../../../docs/artifacts/design.md#dependency-rules-the-whole-of-dependency-cruiser-1820)
-//! - Plan: [Wave 0, Step 3](../../../docs/plans/pending/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
+//! - Plan: [Wave 0, Step 3](../../../docs/plans/implemented/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
 //! - Requirement: [FR-CORE-03](../../../docs/prd.md#fr-core-03)
 //!
 //! Every vocabulary is declared once through `vocabulary!`, which generates the enum, its string

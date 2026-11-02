@@ -2,7 +2,7 @@
 # Fails when Rulebearing's wall-clock time on any test bed regressed by more than the threshold
 # against the build behind the previous committed summary (design § Test beds, item 3).
 #
-# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 7 item 3. Requirement: docs/prd.md#nfr-conf-03.
+# Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 7 item 3. Requirement: docs/prd.md#nfr-conf-03.
 # Usage: testbeds/check-regression.sh <summary.json> [threshold-percent]
 #
 # Each row's `regression` pair was timed in one job, on one runner: this build and the baseline

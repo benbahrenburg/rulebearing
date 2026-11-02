@@ -6,7 +6,7 @@
 //! - Architecture: [`docs/architecture.md#the-graph-document`](../../../docs/architecture.md#the-graph-document)
 //! - Decision: [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md),
 //!   [ADR-0015](../../../docs/adr/0015-stable-violation-id.md)
-//! - Plan: [Wave 0, sub-wave 0A](../../../docs/plans/pending/0000-wave-0-spike.md)
+//! - Plan: [Wave 0, sub-wave 0A](../../../docs/plans/implemented/0000-wave-0-spike.md)
 //! - Requirements: [FR-CORE-03](../../../docs/prd.md#fr-core-03), [FR-CORE-04](../../../docs/prd.md#fr-core-04)
 //! - Source: [design § The five stages](../../../docs/artifacts/design.md#the-five-stages), stage 3
 //!

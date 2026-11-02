@@ -4,7 +4,7 @@
 //! - Contract: [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
 //! - Architecture: [The graph document](../../../docs/architecture.md#the-graph-document)
 //! - Source: [coverage § Result document](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#result-document-cruise-result-schema)
-//! - Plan: [Wave 0, Step 3](../../../docs/plans/pending/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
+//! - Plan: [Wave 0, Step 3](../../../docs/plans/implemented/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
 //! - Requirement: [FR-CORE-03](../../../docs/prd.md#fr-core-03)
 //!
 //! **Field names are a public contract.** Every name is the schema's camelCase name. A field the

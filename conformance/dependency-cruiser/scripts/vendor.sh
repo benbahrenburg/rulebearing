@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Vendors dependency-cruiser's test inputs at the version in ../PIN.
 #
-# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 5 item 1 (and Step 3 item 7 for the report
+# Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 5 item 1 (and Step 3 item 7 for the report
 # fixtures the rb-model round-trip test reads). Decision: docs/adr/0009-conformance-suites-as-specification.md.
 # Licence: dependency-cruiser is MIT; its LICENSE is copied beside the fixtures (docs/adr/0019-mit-licence.md).
 #

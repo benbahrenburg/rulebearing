@@ -1,7 +1,7 @@
 //! The reader's first end-to-end test: ArchUnitNET's `TestAssembly`, committed as a fixture.
 //!
-//! - Plan: [Wave 0, Step 6](../../../docs/plans/pending/0000-wave-0-spike.md#step-6-conformance-gate-2-skeleton-0b)
-//!   item 4 and [Step 9](../../../docs/plans/pending/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
+//! - Plan: [Wave 0, Step 6](../../../docs/plans/implemented/0000-wave-0-spike.md#step-6-conformance-gate-2-skeleton-0b)
+//!   item 4 and [Step 9](../../../docs/plans/implemented/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
 //! - Decision: [ADR-0003](../../../docs/adr/0003-dotnet-extractor-fallback.md) (the figure),
 //!   [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md) (the fixture)
 //! - Fixture: `conformance/archunitnet/fixtures/TestAssembly.{dll,pdb}` (0.13.4, portable PDB)

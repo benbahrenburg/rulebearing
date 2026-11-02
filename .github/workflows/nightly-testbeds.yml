@@ -2,7 +2,7 @@
 # (docs/artifacts/design.md#test-beds-open-source-repositories-to-validate-against).
 # Each row of testbeds/manifest.yaml is cloned at its pinned SHA, its incumbent tool runs with the
 # repository's own configuration, and the output, wall-clock time and peak memory are kept.
-# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 7. Requirement: docs/prd.md#nfr-conf-03.
+# Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 7. Requirement: docs/prd.md#nfr-conf-03.
 #
 # A row that fails to clone, build or run is reported as `error` and never fails the run
 # (§ 1.7, Reliability); a Rulebearing timing regression over 20%, against the build behind the

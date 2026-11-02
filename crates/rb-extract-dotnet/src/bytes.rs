@@ -3,7 +3,7 @@
 //!
 //! - Architecture: [Security posture](../../../docs/architecture.md#security-posture) (untrusted
 //!   input produces exit 2 with a named reason)
-//! - Plan: [Wave 0, Step 9](../../../docs/plans/pending/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
+//! - Plan: [Wave 0, Step 9](../../../docs/plans/implemented/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
 //! - Specification: ECMA-335 II.23.2 (compressed integers)
 
 use std::fmt;

@@ -2,7 +2,7 @@
 //!
 //! - Specification: ECMA-335 II.25 (file format extensions to PE); the PE/COFF specification for
 //!   the debug directory (CodeView `RSDS` and embedded portable PDB entries)
-//! - Plan: [Wave 0, Step 9](../../../docs/plans/pending/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
+//! - Plan: [Wave 0, Step 9](../../../docs/plans/implemented/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
 //!   (`pe.rs`)
 //! - Architecture: [Extractors](../../../docs/architecture.md#extractors) (the .NET reader)
 

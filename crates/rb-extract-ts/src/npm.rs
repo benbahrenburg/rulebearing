@@ -1,6 +1,6 @@
 //! `package.json`: finding the manifest that classifies a dependency, and what it says about it.
 //!
-//! - Plan: [Wave 0, Step 8](../../../docs/plans/pending/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
+//! - Plan: [Wave 0, Step 8](../../../docs/plans/implemented/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
 //!   (`npm.rs`: "nearest `package.json` walk-up to classify `npm`, `npm-dev`, `npm-peer`,
 //!   `npm-optional`, `npm-bundled`, `npm-no-pkg`, `npm-unknown`")
 //! - Source: [coverage § Extraction and resolution](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution),

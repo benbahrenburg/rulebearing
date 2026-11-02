@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § Why](../artifacts/design.md#why), [§ Open questions](../artifacts/design.md#open-questions) (Licence)
 - **Constrains:** `LICENSE`, `conformance/`
-- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md)
+- **Implemented by:** [Wave 0 plan](../plans/implemented/0000-wave-0-spike.md)
 
 ## Decision
 
