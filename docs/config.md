@@ -1,5 +1,7 @@
 # Configuration
 
+Proven recipes to copy into a configuration are in [guards.md](guards.md).
+
 Rulebearing reads two configuration formats into one model: dependency-cruiser's, unchanged, and its own native format, which is a superset. Decisions: [ADR-0005](adr/0005-native-config-superset-and-compat.md) (the two formats), [ADR-0006](adr/0006-embedded-quickjs-config-evaluator.md) (JavaScript in a sandbox), [ADR-0016](adr/0016-linear-time-regex-and-strict-compat.md) and [ADR-0028](adr/0028-backreferences-by-instantiation-on-the-linear-engine.md) (regular expressions). Source: [design § Configuration](artifacts/design.md#configuration-a-native-format-and-dependency-cruisers-as-it-is). The rule language itself is in [rules.md](rules.md).
 
 ## Finding the file

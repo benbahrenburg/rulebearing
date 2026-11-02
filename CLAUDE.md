@@ -44,7 +44,7 @@ One entry point runs every linter for every language, and the documentation link
 
 | Language | Linters | Configuration |
 | --- | --- | --- |
-| Documentation | link and anchor check over every `.md` and every Rust doc comment | `xtask/src/doclinks.rs` |
+| Documentation | link and anchor check over every `.md` and every Rust doc comment; every YAML block of `docs/guards.md` is a byte copy of its fixture | `xtask/src/doclinks.rs`, `xtask/src/guards_doc.rs` |
 | Rust | `rustfmt`, `clippy` (pedantic; `unwrap`, `expect`, `panic` denied), `cargo deny` | `rustfmt.toml`, `[workspace.lints]`, `deny.toml` |
 | TypeScript, JavaScript | `eslint` with `typescript-eslint` strict and stylistic type-checked, `prettier` | `eslint.config.mjs`, `.prettierrc.json`, `tsconfig.base.json`, `package.json` |
 | Python | `ruff check` (`select = ["ALL"]`), `ruff format`, `mypy --strict` | `pyproject.toml` |
@@ -143,6 +143,7 @@ The workspace lints in `Cargo.toml` are the rule; `cargo clippy --workspace --al
 cargo lint                                              # every linter, every language, plus doc links
 cargo lint-fix                                          # the same, applying what can be fixed
 cargo check-links                                       # documentation links and anchors only
+cargo xtask guards-doc                                  # docs/guards.md against the guard fixtures only
 cargo ci                                                # lint, then the workspace test suite
 cargo build --release                                   # target/release/rulebearing (checks doc links)
 cargo test --workspace --all-features

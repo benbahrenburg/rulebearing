@@ -626,3 +626,5 @@ jobs:
       # Also runs inside every compile through crates/rb-model/build.rs; this job is the fast,
       # named signal on a pull request (docs/adr/0023-documentation-link-and-lint-gates.md).
       - run: cargo xtask check-links
+      # docs/guards.md against the guard catalogue's fixtures (plan 0005, Step 5).
+      - run: cargo xtask guards-doc

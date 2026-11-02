@@ -93,3 +93,5 @@ cookbook/questions/*/converted/
 cookbook/questions/*/imported/
 # Written by the eval harness (eval/run.py, plan 0004 Step 10), never edited by hand.
 eval/results/
+# guards-doc test fixtures: byte-compared trees (plan 0005, Step 5).
+xtask/tests/guards_doc/
