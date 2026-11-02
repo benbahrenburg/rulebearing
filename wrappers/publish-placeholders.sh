@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Publishes the four 0.0.1 name reservations on one day, in the order docs/release.md gives:
 # crates.io, npm, PyPI, NuGet (docs/adr/0020-single-name-across-registries.md).
-# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 11.
+# Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 11.
 #
 # Usage: wrappers/publish-placeholders.sh [--dry-run]
 #   --dry-run  packages everything and runs each registry's own dry run; publishes nothing and

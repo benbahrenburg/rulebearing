@@ -1,7 +1,7 @@
 //! Imports written in JSDoc comments, which dependency-cruiser's tsc extractor reports when
 //! `detectJSDocImports` is on.
 //!
-//! - Plan: [Wave 0, Step 8](../../../docs/plans/pending/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
+//! - Plan: [Wave 0, Step 8](../../../docs/plans/implemented/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
 //!   (`walk.rs`: "JSDoc `@import`/`{import()}` from the comment table")
 //! - Source: [coverage § Dependency types and module systems](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#dependency-types-and-module-systems)
 //!   (`jsdoc`, `jsdoc-import-tag`, `jsdoc-bracket-import`)

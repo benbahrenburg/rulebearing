@@ -3,7 +3,7 @@
 //! - Decision: [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md) (`pdb`,
 //!   `inferred`, `none`); [ADR-0003](../../../docs/adr/0003-dotnet-extractor-fallback.md) (the 99%
 //!   trigger this measures)
-//! - Plan: [Wave 0, Step 9](../../../docs/plans/pending/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
+//! - Plan: [Wave 0, Step 9](../../../docs/plans/implemented/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
 //!   (`attribute.rs`) and § 1.6 (the denominator)
 //! - Source: [design § One engine](../../../docs/artifacts/design.md#one-engine-three-languages-one-monorepo),
 //!   row Module identity (`/_/` prefixes unmapped)

@@ -2,7 +2,7 @@
 # Spike B: the share of the .NET oracle repositories' types the Rust reader attributes to a source
 # file, the figure ADR-0003's 99% trigger is decided on.
 #
-# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 9 (the pooled line) and § 1.6 (the rules for
+# Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 9 (the pooled line) and § 1.6 (the rules for
 # the denominator, .NET Framework projects and repositories that will not build).
 # Decision: docs/adr/0003-dotnet-extractor-fallback.md.
 #

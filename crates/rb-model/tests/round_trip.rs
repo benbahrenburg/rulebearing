@@ -2,7 +2,7 @@
 //!
 //! - Contract: [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
 //!   ("the module layer is dependency-cruiser's `cruise-result` schema, unchanged")
-//! - Plan: [Wave 0, Step 3](../../../docs/plans/pending/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
+//! - Plan: [Wave 0, Step 3](../../../docs/plans/implemented/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
 //!   item 7; quality attribute "Compatibility" in § 1.7
 //! - Requirement: [FR-CORE-03](../../../docs/prd.md#fr-core-03)
 //! - Fixtures: every cruise result in dependency-cruiser 18.2.0's `test/report`, vendored by

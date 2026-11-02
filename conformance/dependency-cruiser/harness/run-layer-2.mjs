@@ -1,7 +1,7 @@
 // Conformance gate 1 layer 2: dependency-cruiser's own test/validate and test/graph-utl specs,
 // run unmodified, with the unit under test replaced by Rulebearing (layer2-hooks.mjs, shim.mjs).
 //
-// Plan: docs/plans/pending/0000-wave-0-spike.md, Step 5 items 3 and 4.
+// Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 5 items 3 and 4.
 // Decision: docs/adr/0009-conformance-suites-as-specification.md (excluded.json may only shrink).
 //
 // Usage: node run-layer-2.mjs <dependency-cruiser checkout> [--record]

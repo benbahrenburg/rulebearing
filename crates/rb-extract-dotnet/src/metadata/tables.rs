@@ -2,7 +2,7 @@
 //!
 //! - Specification: ECMA-335 II.22 (every table's columns), II.24.2.6 (the stream layout and the
 //!   width of heap, table and coded indices); portable PDB tables 0x30 to 0x37
-//! - Plan: [Wave 0, Step 9](../../../../docs/plans/pending/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
+//! - Plan: [Wave 0, Step 9](../../../../docs/plans/implemented/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
 //!   (`metadata/tables.rs`: the row readers, "other tables are sized and skipped")
 //!
 //! Every table's column list is declared below, including the tables the spike never reads,

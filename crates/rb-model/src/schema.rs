@@ -1,7 +1,7 @@
 //! The graph document's JSON schema, generated from the types so it cannot drift from them.
 //!
 //! - Decision: [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
-//! - Plan: [Wave 0, Step 3](../../../docs/plans/pending/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
+//! - Plan: [Wave 0, Step 3](../../../docs/plans/implemented/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
 //!   item 6 (`schema/v1.json`, the `schema-check` job)
 //! - Requirement: [FR-CORE-03](../../../docs/prd.md#fr-core-03)
 //!

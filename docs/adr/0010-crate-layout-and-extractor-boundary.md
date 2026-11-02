@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § Crate layout](../artifacts/design.md#crate-layout), [§ Architecture](../artifacts/design.md#architecture), [§ One engine, three languages, one monorepo](../artifacts/design.md#one-engine-three-languages-one-monorepo)
 - **Constrains:** [architecture.md § Crate layout](../architecture.md#crate-layout), the workspace `Cargo.toml`
-- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md)
+- **Implemented by:** [Wave 0 plan](../plans/implemented/0000-wave-0-spike.md)
 
 ## Context
 

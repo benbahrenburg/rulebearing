@@ -3,7 +3,7 @@
 //!
 //! - Architecture: [`docs/architecture.md#outputs-and-ci-contract`](../../../docs/architecture.md#outputs-and-ci-contract)
 //! - Decision: [ADR-0008](../../../docs/adr/0008-exit-code-contract.md)
-//! - Plan: [Wave 0, Step 2](../../../docs/plans/pending/0000-wave-0-spike.md#step-2-cargo-workspace-and-the-ten-crates-0a)
+//! - Plan: [Wave 0, Step 2](../../../docs/plans/implemented/0000-wave-0-spike.md#step-2-cargo-workspace-and-the-ten-crates-0a)
 
 use std::io::Write as _;
 use std::process::ExitCode;

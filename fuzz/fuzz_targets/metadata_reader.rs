@@ -1,7 +1,7 @@
 //! Fuzzes the ECMA-335 assembly reader and the portable PDB reader: arbitrary bytes must produce
 //! an error, never a panic, an overflow or an unbounded allocation.
 //!
-//! - Plan: [Wave 0, Step 9](../../docs/plans/pending/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
+//! - Plan: [Wave 0, Step 9](../../docs/plans/implemented/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
 //!   (the fuzz target, ten clean minutes)
 //! - Architecture: [Security posture](../../docs/architecture.md#security-posture)
 //! - Requirement: [NFR-SEC-01](../../docs/prd.md#nfr-sec-01)

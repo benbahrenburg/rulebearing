@@ -1,6 +1,6 @@
 //! Prints the Spike B attribution report for one built solution as JSON.
 //!
-//! - Plan: [Wave 0, Step 9](../../../docs/plans/pending/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
+//! - Plan: [Wave 0, Step 9](../../../docs/plans/implemented/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
 //!   (`examples/attribution.rs`, run by `conformance/archunitnet/scripts/spike-b-attribution.sh`)
 //! - Decision: [ADR-0003](../../../docs/adr/0003-dotnet-extractor-fallback.md)
 //!

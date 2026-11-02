@@ -1,7 +1,7 @@
 // Records conformance gate 1 layer 1: every test in dependency-cruiser's test/extract, run under
 // the pinned version, with the input and output of the extraction function it exercises.
 //
-// Plan: docs/plans/pending/0000-wave-0-spike.md, Step 5 item 1 and § 1.6 ("Spike A fixture
+// Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 5 item 1 and § 1.6 ("Spike A fixture
 // expectations without Node at test time"). Decision: docs/adr/0009-conformance-suites-as-specification.md.
 // Called by scripts/vendor.sh. Usage: node export-expectations.mjs <dependency-cruiser checkout> <output dir>
 //

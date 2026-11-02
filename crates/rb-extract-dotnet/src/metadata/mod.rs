@@ -2,7 +2,7 @@
 //!
 //! - Specification: ECMA-335 II.24 (metadata physical layout), II.22 (tables); the portable PDB
 //!   format (tables 0x30 to 0x37 and the `#Pdb` stream)
-//! - Plan: [Wave 0, Step 9](../../../../docs/plans/pending/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
+//! - Plan: [Wave 0, Step 9](../../../../docs/plans/implemented/0000-wave-0-spike.md#step-9-spike-b-rb-extract-dotnet-0d)
 //!   (`metadata/streams.rs`, `metadata/tables.rs`)
 //! - Architecture: [Extractors](../../../../docs/architecture.md#extractors) (the .NET reader)
 //!

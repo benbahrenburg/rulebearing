@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § Language decision](../artifacts/design.md#language-decision), [§ Why Rust wins](../artifacts/design.md#why-rust-wins), [§ What Rust does not solve](../artifacts/design.md#what-rust-does-not-solve)
 - **Constrains:** [architecture.md § Technology choices](../architecture.md#technology-choices), [§ Distribution](../architecture.md#distribution)
-- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md)
+- **Implemented by:** [Wave 0 plan](../plans/implemented/0000-wave-0-spike.md)
 
 ## Context
 

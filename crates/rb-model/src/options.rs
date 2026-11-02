@@ -4,7 +4,7 @@
 //!   (an extractor may not depend on `rb-config`, so its options live here)
 //! - Source: [design § The native format](../../../docs/artifacts/design.md#the-native-format)
 //!   (the `languages` block), [coverage § Options](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#options)
-//! - Plan: [Wave 0, Step 3](../../../docs/plans/pending/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
+//! - Plan: [Wave 0, Step 3](../../../docs/plans/implemented/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
 //! - Requirement: [FR-CORE-03](../../../docs/prd.md#fr-core-03)
 //!
 //! Every field is an `Option` so that "not set" and "set to the default" stay distinguishable

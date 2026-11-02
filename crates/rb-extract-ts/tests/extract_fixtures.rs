@@ -1,8 +1,8 @@
 //! Conformance gate 1, layer 1: dependency-cruiser 18.2.0's `test/extract` cases, replayed
 //! against the Rust extractor.
 //!
-//! - Plan: [Wave 0, Step 5](../../../docs/plans/pending/0000-wave-0-spike.md#step-5-conformance-gate-1-skeleton-0b)
-//!   item 2 (the harness) and [Step 8](../../../docs/plans/pending/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
+//! - Plan: [Wave 0, Step 5](../../../docs/plans/implemented/0000-wave-0-spike.md#step-5-conformance-gate-1-skeleton-0b)
+//!   item 2 (the harness) and [Step 8](../../../docs/plans/implemented/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
 //!   (the extractor it measures)
 //! - Decision: [ADR-0009](../../../docs/adr/0009-conformance-suites-as-specification.md),
 //!   [ADR-0012](../../../docs/adr/0012-oxc-for-typescript.md)

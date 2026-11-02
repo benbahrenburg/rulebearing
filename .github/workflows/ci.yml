@@ -7,7 +7,7 @@
 # Test-quality gates: docs/adr/0024-test-quality-gates.md.
 # Hardening (least privilege, pinned actions, timeouts, MSRV, feature powerset):
 #   docs/adr/0025-ci-and-supply-chain-hardening.md.
-# Plan: docs/plans/pending/0000-wave-0-spike.md, sub-wave 0A.
+# Plan: docs/plans/implemented/0000-wave-0-spike.md, sub-wave 0A.
 #
 # Job names are the check names of plan 0000 § 1.5, which the branch ruleset on `main` requires
 # and later plans cite as evidence; renaming one means updating the ruleset in the same change.

@@ -2,7 +2,7 @@
 // original module is forwarded to `rulebearing validate`, so dependency-cruiser's own specs run
 // unmodified against Rulebearing's engine.
 //
-// Plan: docs/plans/pending/0000-wave-0-spike.md, Step 5 item 3. Design: docs/artifacts/design.md
+// Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 5 item 3. Design: docs/artifacts/design.md
 // § Conformance gate 1 (layer 2). Loaded through layer2-hooks.mjs by run-layer-2.mjs.
 //
 // Protocol (what wave 1's `validate` subcommand implements): the binary is started as

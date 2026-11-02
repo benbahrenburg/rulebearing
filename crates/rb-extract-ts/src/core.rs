@@ -1,6 +1,6 @@
 //! Runtime built-in modules: `fs`, `node:path`, `bun:ffi`.
 //!
-//! - Plan: [Wave 0, Step 8](../../../docs/plans/pending/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
+//! - Plan: [Wave 0, Step 8](../../../docs/plans/implemented/0000-wave-0-spike.md#step-8-spike-a-rb-extract-ts-0c)
 //!   (`core.rs`: "bundled per-Node-version core module list, `node:` protocol")
 //! - Source: [coverage § Extraction and resolution](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution),
 //!   row Core module detection

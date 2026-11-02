@@ -3,7 +3,7 @@
 //! - Decision: [ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md) (the
 //!   table and rules 1 and 2), [ADR-0067](../../../docs/adr/0067-the-playground-facade-and-an-optional-javascript-engine.md)
 //!   (the `rb-wasm` row)
-//! - Plan: [Wave 0, Step 2](../../../docs/plans/pending/0000-wave-0-spike.md#step-2-cargo-workspace-and-the-ten-crates-0a)
+//! - Plan: [Wave 0, Step 2](../../../docs/plans/implemented/0000-wave-0-spike.md#step-2-cargo-workspace-and-the-ten-crates-0a)
 //!   item 4
 //! - Requirement: [FR-CORE-01](../../../docs/prd.md#fr-core-01)
 //!

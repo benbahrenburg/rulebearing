@@ -3,7 +3,7 @@
 # portable PDB and the Apache-2.0 notice; ported.json and unported.json are valid, and ported.json
 # counts the cases in ported/*.yaml (all three written by conformance/archunitnet/tools/port.py).
 #
-# Plans: docs/plans/pending/0000-wave-0-spike.md, Step 6 item 3 (the `conformance-gate-2` job);
+# Plans: docs/plans/implemented/0000-wave-0-spike.md, Step 6 item 3 (the `conformance-gate-2` job);
 # docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 7 (the TestAssemblies and
 # the ported cases).
 # Decisions: docs/adr/0009-conformance-suites-as-specification.md, docs/adr/0019-mit-licence.md.

@@ -46,7 +46,7 @@ The package is a launcher and the API above ([architecture § Distribution](../.
 | `rulebearing-cli-linux-arm64-gnu` | `aarch64-unknown-linux-gnu` | Linux arm64, glibc |
 | `rulebearing-cli-win32-x64-msvc` | `x86_64-pc-windows-msvc` | Windows x64 |
 
-The platform packages are unscoped because the `@rulebearing` npm scope is not held ([ADR-0020](../../docs/adr/0020-single-name-across-registries.md), [plan 0000 sub-wave 0E](../../docs/plans/pending/0000-wave-0-spike.md#wave-0e-decision-and-release-plumbing)).
+The platform packages are unscoped because the `@rulebearing` npm scope is not held ([ADR-0020](../../docs/adr/0020-single-name-across-registries.md), [plan 0000 sub-wave 0E](../../docs/plans/implemented/0000-wave-0-spike.md#wave-0e-decision-and-release-plumbing)).
 
 At run time, `bin/rulebearing.js` picks the platform package from `process.platform`, `process.arch` and, on Linux, the C library (musl when Node's diagnostic report has no `glibcVersionRuntime`). It resolves that package from its own location, runs `bin/rulebearing` (or `bin/rulebearing.exe`) with stdio inherited and every argument unchanged, and exits with the binary's exit code, or re-raises the signal that stopped it. It never re-implements a subcommand.
 

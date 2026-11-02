@@ -4,7 +4,7 @@
 - **Date:** 2026-09-21
 - **Derives from:** [ADR-0018](0018-test-coverage-threshold.md) (the 70% floor), [ADR-0009](0009-conformance-suites-as-specification.md) (the suites are the specification), [design § What Rust does not solve](../artifacts/design.md#what-rust-does-not-solve) (one maintainer, the suites as reviewer), [design § Rules an agent writes, held to the same bar](../artifacts/design.md#rules-an-agent-writes-held-to-the-same-bar)
 - **Constrains:** [architecture.md § Verification strategy](../architecture.md#verification-strategy), [CLAUDE.md](../../CLAUDE.md), `.github/workflows/ci.yml`, `mutants.toml`
-- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md), sub-wave 0A
+- **Implemented by:** [Wave 0 plan](../plans/implemented/0000-wave-0-spike.md), sub-wave 0A
 - **Requirements:** [NFR-QUAL-01](../prd.md#nfr-qual-01), [NFR-QUAL-02](../prd.md#nfr-qual-02)
 
 ## Context

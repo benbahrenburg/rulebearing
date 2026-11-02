@@ -2,7 +2,7 @@
 //!
 //! - Contract: [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
 //!   (the JSON is dependency-cruiser's, byte for byte after key ordering)
-//! - Plan: [Wave 0, Step 3](../../../docs/plans/pending/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
+//! - Plan: [Wave 0, Step 3](../../../docs/plans/implemented/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
 //!
 //! JavaScript has one number type, so an instability of one prints as `1`; serde prints an `f64`
 //! one as `1.0`. The difference is invisible to a JSON reader and visible to a byte comparison, and

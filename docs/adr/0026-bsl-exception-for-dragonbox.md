@@ -4,7 +4,7 @@
 - **Date:** 2026-09-22
 - **Derives from:** [ADR-0019](0019-mit-licence.md) (licence policy), [ADR-0012](0012-oxc-for-typescript.md) (oxc for TypeScript), [ADR-0025](0025-ci-and-supply-chain-hardening.md) (`cargo deny` gates the supply chain)
 - **Constrains:** `deny.toml`
-- **Implemented by:** [Wave 0 plan](../plans/pending/0000-wave-0-spike.md), sub-wave 0C
+- **Implemented by:** [Wave 0 plan](../plans/implemented/0000-wave-0-spike.md), sub-wave 0C
 - **Requirements:** [NFR-COMPAT-01](../prd.md#nfr-compat-01)
 
 ## Context

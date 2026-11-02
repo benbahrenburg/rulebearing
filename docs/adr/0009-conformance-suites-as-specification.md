@@ -4,7 +4,7 @@
 - **Date:** 2026-09-20
 - **Derives from:** [design.md § Conformance gate 1](../artifacts/design.md#conformance-gate-1-dependency-cruisers-tests-validate-rulebearing), [§ Conformance gate 2](../artifacts/design.md#conformance-gate-2-archunitnets-test-assemblies-validate-the-element-rules), [§ Test beds](../artifacts/design.md#test-beds-open-source-repositories-to-validate-against), [§ Specification coverage](../artifacts/design.md#specification-coverage)
 - **Constrains:** [architecture.md § Verification strategy](../architecture.md#verification-strategy)
-- **Implemented by:** every wave plan; the harness lands in [Wave 0](../plans/pending/0000-wave-0-spike.md)
+- **Implemented by:** every wave plan; the harness lands in [Wave 0](../plans/implemented/0000-wave-0-spike.md)
 
 ## Context
 

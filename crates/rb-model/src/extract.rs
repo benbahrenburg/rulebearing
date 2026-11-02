@@ -3,7 +3,7 @@
 //! - Decision: [ADR-0010](../../../docs/adr/0010-crate-layout-and-extractor-boundary.md)
 //!   (extractors depend on `rb-model` only and write document types)
 //! - Architecture: [Extractors](../../../docs/architecture.md#extractors)
-//! - Plan: [Wave 0, Step 3](../../../docs/plans/pending/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
+//! - Plan: [Wave 0, Step 3](../../../docs/plans/implemented/0000-wave-0-spike.md#step-3-rb-model-graph-document-schema-violation-id-0a)
 //!   (the trait is frozen in § 1.5)
 //! - Exit codes: [ADR-0008](../../../docs/adr/0008-exit-code-contract.md) (every
 //!   [`ExtractError`] is a reason the run is untrustworthy, exit 2)

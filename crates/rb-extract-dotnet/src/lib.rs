@@ -3,7 +3,7 @@
 //! - Architecture: [`docs/architecture.md#extractors`](../../../docs/architecture.md#extractors)
 //! - Decisions: [ADR-0011](../../../docs/adr/0011-read-dotnet-assemblies-not-source.md),
 //!   [ADR-0003](../../../docs/adr/0003-dotnet-extractor-fallback.md) (the C# fallback trigger)
-//! - Plans: [Wave 0, Spike B](../../../docs/plans/pending/0000-wave-0-spike.md),
+//! - Plans: [Wave 0, Spike B](../../../docs/plans/implemented/0000-wave-0-spike.md),
 //!   [Wave 2, sub-wave 2A](../../../docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md),
 //!   [Wave 3](../../../docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md) (`--mode source`)
 //! - Requirements: [FR-EXT-DN-01](../../../docs/prd.md#fr-ext-dn-01) to [FR-EXT-DN-04](../../../docs/prd.md#fr-ext-dn-04)

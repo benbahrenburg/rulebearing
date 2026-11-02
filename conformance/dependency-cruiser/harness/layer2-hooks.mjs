@@ -3,7 +3,7 @@
 // Imports of the same modules from anywhere else, including from the upstream source itself,
 // are left alone, so only the unit under test is replaced.
 //
-// Plan: docs/plans/pending/0000-wave-0-spike.md, Step 5 item 4.
+// Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 5 item 4.
 
 const SHIM = new URL('./shim.mjs', import.meta.url).href;
 const FORWARD = 'rb-forward:';

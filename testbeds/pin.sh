@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Re-pins every row of manifest.yaml to the head of its repository's default branch.
-# Plan: docs/plans/pending/0000-wave-0-spike.md, Step 7 item 1. Commit the diff by pull request;
+# Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 7 item 1. Commit the diff by pull request;
 # the nightly table then compares against the new SHAs.
 # Usage: testbeds/pin.sh [repo ...]   (default: every row)
 set -euo pipefail

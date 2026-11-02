@@ -1,7 +1,7 @@
 // Writes every cruise-result mock under dependency-cruiser's test/report as a JSON file, so the
 // rb-model round-trip test (crates/rb-model/tests/round_trip.rs) can read them without Node.
 //
-// Plan: docs/plans/pending/0000-wave-0-spike.md, Step 3 item 7. Called by scripts/vendor.sh.
+// Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 3 item 7. Called by scripts/vendor.sh.
 // Usage: node export-report-mocks.mjs <dependency-cruiser checkout> <output directory>
 //
 // A mock counts when its default export has both `modules` and `summary`, the two keys the

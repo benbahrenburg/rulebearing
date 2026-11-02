@@ -1,6 +1,6 @@
 // Assembles the nightly test-bed table from every row's result.json.
 //
-// Plan: docs/plans/pending/0000-wave-0-spike.md, Step 7 item 3. Requirement: docs/prd.md#nfr-conf-03.
+// Plan: docs/plans/implemented/0000-wave-0-spike.md, Step 7 item 3. Requirement: docs/prd.md#nfr-conf-03.
 // Usage: node testbeds/summarise.mjs <out-dir> [--readme README.md] [--layer5 <dir>]
 //
 // With --layer5, each <dir>/<owner>__<repo>/row.json that gate 1's layer 5 wrote gives its row
