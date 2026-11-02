@@ -330,7 +330,7 @@ fn a_gating_reporter_exits_with_the_fleet_and_repository_error_count() -> Result
 /// A repository's own `staleEntriesSeverity: error` fails the fleet as it fails the repository,
 /// and the saved fleet result gates the same (plan 0011 sub-wave 11B, ADR-0080).
 #[test]
-fn a_repositorys_counted_stale_entries_fail_the_fleet() -> Result {
+fn counted_stale_entries_in_one_repository_fail_the_fleet() -> Result {
     let dir = fleet("stale-counted")?;
     let config = dir.join("web/rulebearing.yaml");
     let rules = std::fs::read_to_string(&config)?;

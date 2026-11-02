@@ -155,7 +155,7 @@ pub(crate) fn advised_count(summary: &Value) -> u64 {
 pub struct Rendered {
     /// The report.
     pub output: String,
-    /// The reporter's exit code: [`advised_count`] for the finding reporters, 0 for the data ones.
+    /// The reporter's exit code: `summary.advisedExitCode` for the finding reporters, 0 for the data ones.
     pub exit_code: u64,
 }
 
