@@ -22,6 +22,8 @@
 //! `declaredKind` before them (`crate::declared`); `knownViolations` keeps keys it does not
 //! read, and matches an entry by its rule and ends as before.
 
+use rb_rules::compare::compare_violations;
+use rb_rules::known::unmatched_as_written;
 use serde_json::Value;
 
 use crate::Rendered;
@@ -102,10 +104,56 @@ pub fn text(entries: &[Value]) -> String {
     output
 }
 
-/// Renders `baseline`. It exits 0, as dependency-cruiser's does.
+/// The entries of `known` by whether a violation of `current` still matches them, in the order
+/// given: (still matched, stale). The matching is the engine's, so these lists and
+/// `summary.baselineStale` always agree; a list the engine cannot read matches nothing.
+pub fn partition(known: &[Value], current: &[Value]) -> (Vec<Value>, Vec<Value>) {
+    let stale = unmatched_as_written(known, current);
+    let (old, same): (Vec<_>, Vec<_>) = known
+        .iter()
+        .enumerate()
+        .partition(|(at, _)| stale.contains(at));
+    let values = |list: Vec<(usize, &Value)>| list.into_iter().map(|(_, v)| v.clone()).collect();
+    (values(same), values(old))
+}
+
+/// Renders `baseline`, in the mode `summary.optionsUsed.baseline.mode` names (`full` when absent).
+/// `shrink-only` holds the known entries a violation still matches and `format` every known entry,
+/// each sorted as upstream's reporter sorts them; `full` holds the current violations. It exits 0,
+/// as dependency-cruiser's does.
 pub fn render(result: &Value, lifecycle: &Lifecycle) -> Rendered {
+    let summary = result.get("summary").unwrap_or(&Value::Null);
+    let options = summary.get("optionsUsed").unwrap_or(&Value::Null);
+    let mode = options
+        .get("baseline")
+        .and_then(|b| b.get("mode"))
+        .and_then(Value::as_str);
+    let known = || {
+        options
+            .get("knownViolations")
+            .and_then(Value::as_array)
+            .map_or(&[][..], Vec::as_slice)
+    };
+    let current = || {
+        summary
+            .get("violations")
+            .and_then(Value::as_array)
+            .map_or(&[][..], Vec::as_slice)
+    };
+    let kept = match mode {
+        Some("shrink-only") => Some(partition(known(), current()).0),
+        Some("format") => Some(known().to_vec()),
+        _ => None,
+    };
+    let output = kept.map_or_else(
+        || text(&entries(result, lifecycle, &[])),
+        |mut kept| {
+            kept.sort_by(compare_violations);
+            text(&kept)
+        },
+    );
     Rendered {
-        output: text(&entries(result, lifecycle, &[])),
+        output,
         exit_code: 0,
     }
 }
@@ -114,6 +162,79 @@ pub fn render(result: &Value, lifecycle: &Lifecycle) -> Rendered {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    fn violation(from: &str, severity: &str) -> Value {
+        json!({ "type": "dependency", "from": from, "to": "z.ts",
+                "rule": { "name": "no-z", "severity": severity } })
+    }
+
+    fn with_mode(mode: &str) -> Value {
+        json!({ "summary": {
+            "violations": [violation("a.ts", "ignore"), violation("new.ts", "error")],
+            "optionsUsed": {
+                "baseline": { "mode": mode },
+                "knownViolations": [violation("stale.ts", "error"), violation("a.ts", "error")],
+            },
+        } })
+    }
+
+    #[test]
+    fn the_mode_decides_what_the_reporter_holds() {
+        let from = |output: &str| -> Vec<String> {
+            serde_json::from_str::<Vec<Value>>(output)
+                .unwrap_or_default()
+                .iter()
+                .map(|v| crate::text(v, "from"))
+                .collect()
+        };
+        let lifecycle = Lifecycle::default();
+        assert_eq!(
+            from(&render(&with_mode("full"), &lifecycle).output),
+            ["a.ts", "new.ts"]
+        );
+        assert_eq!(
+            from(&render(&with_mode("shrink-only"), &lifecycle).output),
+            ["a.ts"]
+        );
+        assert_eq!(
+            from(&render(&with_mode("format"), &lifecycle).output),
+            ["a.ts", "stale.ts"]
+        );
+        for mode in ["full", "shrink-only", "format"] {
+            let rendered = render(&with_mode(mode), &lifecycle);
+            assert_eq!(rendered.exit_code, 0);
+            assert_eq!(rendered, render(&with_mode(mode), &lifecycle), "{mode}");
+        }
+    }
+
+    #[test]
+    fn partition_keeps_the_order_and_ignores_severity() {
+        let known = [violation("b.ts", "error"), violation("a.ts", "warn")];
+        let current = [violation("c.ts", "error"), violation("a.ts", "ignore")];
+        let (same, old) = partition(&known, &current);
+        assert_eq!(same, [violation("a.ts", "warn")]);
+        assert_eq!(old, [violation("b.ts", "error")]);
+        assert_eq!(partition(&[], &[]), (Vec::new(), Vec::new()));
+    }
+
+    #[test]
+    fn an_entry_with_an_id_matches_on_the_id() {
+        let entry = json!({ "id": "RB-1", "rule": { "name": "no-z" } });
+        let mut current = violation("a.ts", "error");
+        current["id"] = json!("RB-1");
+        let other = json!({ "id": "RB-2", "rule": { "name": "no-z" } });
+        let (same, old) = partition(&[entry.clone(), other.clone()], &[current]);
+        assert_eq!(same, [entry]);
+        assert_eq!(old, [other]);
+    }
+
+    #[test]
+    fn a_list_the_engine_cannot_read_is_all_stale() {
+        let odd = json!({ "rule": 3 });
+        let (same, old) = partition(std::slice::from_ref(&odd), &[]);
+        assert!(same.is_empty());
+        assert_eq!(old, [odd]);
+    }
 
     fn result() -> Value {
         json!({ "summary": { "error": 2, "violations": [

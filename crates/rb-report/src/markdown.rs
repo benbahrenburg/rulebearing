@@ -28,6 +28,9 @@ use crate::err_html::{
 };
 use crate::{Edges, Rendered, js};
 
+/// Upstream's default `staleBaselineIntro`, word for word.
+const STALE_BASELINE_INTRO: &str = "These violations are in the baseline (typically `.dependency-cruiser-known-violations.json`) but don't match any real violations anymore, e.g. because they were fixed in the meantime. You can remove them with dependency-cruiser's [`--baseline --baseline-mode shrink-only`](https://github.com/sverweij/dependency-cruiser/blob/main/doc/cli.md#--baseline-create-or-update-a-known-violations-baseline) command line options.";
+
 /// Every key of upstream's `REPORT_DEFAULTS` except `footer`, whose default carries the time, with
 /// its default.
 pub fn defaults() -> Map<String, Value> {
@@ -58,6 +61,17 @@ pub fn defaults() -> Map<String, Value> {
             "noViolationsMessage",
             json!(":revolving_hearts: No violations found. Get gummy bears to celebrate."),
         ),
+        ("showStaleBaselineDetails", json!(true)),
+        (
+            "staleBaselineHeader",
+            json!("### :ghost: Stale entries in the baseline"),
+        ),
+        ("collapseStaleBaseline", json!(true)),
+        (
+            "collapseStaleBaselineMessage",
+            json!("Stale violations in the baseline - click to expand"),
+        ),
+        ("staleBaselineIntro", json!(STALE_BASELINE_INTRO)),
         ("showFooter", json!(true)),
     ];
     pairs.into_iter().map(|(k, v)| (k.to_owned(), v)).collect()
@@ -99,8 +113,15 @@ pub fn severity_icon(severity: Option<&Value>) -> &'static str {
 pub fn stats_summary(summary: &Value) -> String {
     let spacer = "&nbsp;".repeat(4);
     let count = |key: &str| js::field(summary, key);
+    let stale = summary
+        .get("baselineStale")
+        .and_then(Value::as_u64)
+        .filter(|stale| *stale > 0)
+        .map_or_else(String::new, |stale| {
+            format!("{spacer}**{stale}** stale entries in baseline")
+        });
     format!(
-        "**{}** modules{spacer}**{}** dependencies{spacer}**{}** errors{spacer}**{}** warnings{spacer}**{}** informational{spacer}**{}** ignored\n",
+        "**{}** modules{spacer}**{}** dependencies{spacer}**{}** errors{spacer}**{}** warnings{spacer}**{}** informational{spacer}**{}** ignored{stale}\n",
         count("totalCruised"),
         count("totalDependenciesCruised"),
         count("error"),
@@ -141,18 +162,66 @@ pub fn rules_summary(summary: &Value, include_ignored: bool) -> String {
 /// `formatViolations(violations, options)`: one row per violation, the ignored ones only when
 /// `includeIgnoredInDetails` is set.
 pub fn violation_rows(summary: &Value, options: &Map<String, Value>) -> String {
-    violation_rows_marked(summary, options, &Edges::of(&Value::Null))
+    violation_rows_marked(violations(summary), options, &Edges::of(&Value::Null))
+}
+
+/// `staleBaselineDetails`: the entries of `summary.optionsUsed.knownViolations` no current
+/// violation matches, as a table under its header; empty when there are none
+/// ([plan 0011 Step 10](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#24-steps-for-sub-wave-11d-the-reporters)).
+///
+/// A result without `summary.baselineStale` was saved by a version that has no such table, and
+/// re-reports as that version did, which is what gate 1 compares at the 18.2.0 pin. Every
+/// Rulebearing run with known violations carries the field. Upstream's 18.7.0 reporter does not
+/// ask for it, so [plan 0011 Step 16](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#28-steps-for-sub-wave-11h-the-pin)
+/// drops this condition when the pin moves.
+fn stale_baseline_details(summary: &Value, options: &Map<String, Value>) -> String {
+    if summary.get("baselineStale").is_none() {
+        return String::new();
+    }
+    let Some(known) = summary
+        .get("optionsUsed")
+        .and_then(|o| o.get("knownViolations"))
+        .and_then(Value::as_array)
+    else {
+        return String::new();
+    };
+    let (_, stale) = crate::baseline::partition(known, violations(summary));
+    if stale.is_empty() {
+        return String::new();
+    }
+    let mut out = option_text(options, "staleBaselineHeader");
+    out.push_str("\n\n");
+    let collapse = flag(options, "collapseStaleBaseline");
+    if collapse {
+        let _ = write!(
+            out,
+            "<details><summary>{}</summary>\n\n",
+            option_text(options, "collapseStaleBaselineMessage")
+        );
+    }
+    out.push_str(&option_text(options, "staleBaselineIntro"));
+    out.push_str("\n\n");
+    out.push_str(&violation_rows_marked(
+        &stale,
+        options,
+        &Edges::of(&Value::Null),
+    ));
+    out.push_str("\n\n");
+    if collapse {
+        out.push_str("</details>\n\n");
+    }
+    out
 }
 
 /// [`violation_rows`], with a declared edge marked in the "to" cell
 /// ([`crate::err_html::determine_to_marked`]).
 fn violation_rows_marked(
-    summary: &Value,
+    violations: &[Value],
     options: &Map<String, Value>,
     edges: &Edges<'_>,
 ) -> String {
     let include_ignored = js::truthy(options.get("includeIgnoredInDetails"));
-    violations(summary)
+    violations
         .iter()
         .filter(|v| {
             let severity = v.get("rule").and_then(|r| r.get("severity"));
@@ -201,7 +270,7 @@ fn details(summary: &Value, options: &Map<String, Value>, edges: &Edges<'_>) -> 
             option_text(options, "collapsedMessage")
         );
     }
-    out.push_str(&violation_rows_marked(summary, options, edges));
+    out.push_str(&violation_rows_marked(violations(summary), options, edges));
     out.push_str("\n\n");
     if collapse {
         out.push_str("</details>\n\n");
@@ -243,6 +312,9 @@ pub fn render(result: &Value, options: Option<&Value>, timestamp: &str) -> Rende
     if flag(&options, "showDetails") {
         output.push_str(&details(summary, &options, &Edges::of(result)));
     }
+    if flag(&options, "showStaleBaselineDetails") {
+        output.push_str(&stale_baseline_details(summary, &options));
+    }
     if flag(&options, "showFooter") {
         output.push_str(&option_text(&options, "footer"));
         output.push_str("\n\n");
@@ -258,6 +330,102 @@ mod tests {
     use super::*;
 
     const STAMP: &str = "2026-09-27T10:00:00.000";
+
+    fn stale_result() -> Value {
+        json!({
+            "modules": [],
+            "summary": {
+                "totalCruised": 1, "totalDependenciesCruised": 1,
+                "error": 0, "warn": 0, "info": 0, "ignore": 0, "baselineStale": 1,
+                "violations": [],
+                "optionsUsed": { "knownViolations": [
+                    { "type": "dependency", "from": "src/a.js", "to": "src/b.js",
+                      "rule": { "name": "no-b", "severity": "error" } },
+                ] },
+            },
+        })
+    }
+
+    const STALE_ROWS: &str = "|violated rule|module|to|\n|:---|:---|:---|\n|:exclamation:&nbsp;_no-b_|src/a.js|src/b.js|\n\n\n";
+
+    fn only_stale(extra: &Value) -> Value {
+        let mut options = json!({ "showTitle": false, "showSummary": false, "showDetails": false,
+            "showFooter": false, "noViolationsMessage": "" });
+        for (key, value) in extra.as_object().into_iter().flatten() {
+            options[key] = value.clone();
+        }
+        options
+    }
+
+    #[test]
+    fn the_stale_table_defaults_to_a_collapsed_block_with_upstreams_words() {
+        let out = render(&stale_result(), Some(&only_stale(&json!({}))), STAMP).output;
+        assert_eq!(
+            out,
+            format!(
+                "### :ghost: Stale entries in the baseline\n\n<details><summary>Stale violations in the baseline - click to expand</summary>\n\n{STALE_BASELINE_INTRO}\n\n{STALE_ROWS}</details>\n\n"
+            )
+        );
+        assert_eq!(
+            out,
+            render(&stale_result(), Some(&only_stale(&json!({}))), STAMP).output
+        );
+    }
+
+    #[test]
+    fn each_stale_option_acts() {
+        let options = only_stale(&json!({
+            "staleBaselineHeader": "H", "collapseStaleBaseline": false, "staleBaselineIntro": "I",
+        }));
+        assert_eq!(
+            render(&stale_result(), Some(&options), STAMP).output,
+            format!("H\n\nI\n\n{STALE_ROWS}")
+        );
+        let message = only_stale(&json!({
+            "staleBaselineHeader": "H", "collapseStaleBaselineMessage": "M", "staleBaselineIntro": "I",
+        }));
+        assert_eq!(
+            render(&stale_result(), Some(&message), STAMP).output,
+            format!("H\n\n<details><summary>M</summary>\n\nI\n\n{STALE_ROWS}</details>\n\n")
+        );
+        let off = only_stale(&json!({ "showStaleBaselineDetails": false }));
+        assert_eq!(render(&stale_result(), Some(&off), STAMP).output, "");
+    }
+
+    #[test]
+    fn no_stale_entry_or_no_baseline_prints_no_table() {
+        assert_eq!(
+            stale_baseline_details(&json!({ "violations": [] }), &defaults()),
+            ""
+        );
+        let summary = json!({ "violations": [], "baselineStale": 0,
+            "optionsUsed": { "knownViolations": [] } });
+        assert_eq!(stale_baseline_details(&summary, &defaults()), "");
+        let no_list = json!({ "violations": [], "baselineStale": 0 });
+        assert_eq!(stale_baseline_details(&no_list, &defaults()), "");
+    }
+
+    #[test]
+    fn a_result_saved_before_the_counts_existed_prints_no_table() {
+        let mut saved = stale_result();
+        saved["summary"]
+            .as_object_mut()
+            .map(|summary| summary.remove("baselineStale"));
+        assert_eq!(
+            render(&saved, Some(&only_stale(&json!({}))), STAMP).output,
+            ""
+        );
+    }
+
+    #[test]
+    fn the_stats_line_counts_stale_entries_only_when_there_are_some() {
+        assert!(
+            stats_summary(&json!({ "baselineStale": 2 }))
+                .ends_with("ignored&nbsp;&nbsp;&nbsp;&nbsp;**2** stale entries in baseline\n")
+        );
+        assert!(stats_summary(&json!({ "baselineStale": 0 })).ends_with("ignored\n"));
+        assert!(stats_summary(&json!({})).ends_with("ignored\n"));
+    }
 
     fn result() -> Value {
         json!({
@@ -411,7 +579,7 @@ mod tests {
             assert_eq!(severity_icon(Some(&severity)), icon);
         }
         assert_eq!(severity_icon(None), ":warning:");
-        assert_eq!(defaults().len(), 18);
+        assert_eq!(defaults().len(), 23);
         assert_eq!(
             merge_options(None, STAMP)["footer"],
             json!(default_footer(STAMP))

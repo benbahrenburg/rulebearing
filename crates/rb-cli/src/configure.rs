@@ -385,8 +385,12 @@ pub fn known_violations(
 ) -> Result<(), ConfigError> {
     if known.no_ignore_known {
         config.known_violations.clear();
+        config.known_violations_given = false;
+        config.options.ignore_known = Some(false);
     } else if let Some(file) = &known.ignore_known {
         config.known_violations = rb_config::load::known_violations_file(&ctx.resolve(file))?;
+        config.known_violations_given = true;
+        config.options.ignore_known = Some(true);
     }
     Ok(())
 }

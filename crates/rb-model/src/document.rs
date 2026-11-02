@@ -465,6 +465,20 @@ pub struct Summary {
     /// Ignore-severity violations.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ignore: Option<u64>,
+    /// The entries in the baseline; present when known violations are in use, as upstream's
+    /// `getBaselineDiffCounts` writes it
+    /// ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub baseline_size: Option<u64>,
+    /// The entries in the baseline no current violation matches; present when known violations
+    /// are in use ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub baseline_stale: Option<u64>,
+    /// `error`, plus `baselineStale` when `options.baseline.staleEntriesSeverity` is `error`,
+    /// uncapped. Written on every run; absent on a saved result from dependency-cruiser before
+    /// 18.4.0 ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub advised_exit_code: Option<u64>,
     /// Modules cruised.
     pub total_cruised: u64,
     /// Dependencies cruised.

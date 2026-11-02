@@ -39,6 +39,23 @@ pub const SUMMARY_ADDITIONS: &[&str] = &[
     "fleet",
     "declared",
 ];
+/// `summary` keys of dependency-cruiser 18.7.0 that the pinned 18.2.0 schema does not know.
+/// `--strict-schema` means the pinned schema, so they go until the pin moves, and
+/// [plan 0011 Step 16](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#28-steps-for-sub-wave-11h-the-pin)
+/// empties this list.
+pub const SUMMARY_AHEAD_OF_PIN: &[&str] = &["baselineSize", "baselineStale", "advisedExitCode"];
+/// `optionsUsed` keys of 18.7.0 the pinned schema does not know, as [`SUMMARY_AHEAD_OF_PIN`].
+pub const OPTIONS_AHEAD_OF_PIN: &[&str] =
+    &["baseline", "ignoreKnown", "detectImportsInAmbientModules"];
+/// `reporterOptions.markdown` keys of 18.7.0 the pinned schema does not know, as
+/// [`SUMMARY_AHEAD_OF_PIN`].
+pub const MARKDOWN_AHEAD_OF_PIN: &[&str] = &[
+    "showStaleBaselineDetails",
+    "staleBaselineHeader",
+    "collapseStaleBaseline",
+    "collapseStaleBaselineMessage",
+    "staleBaselineIntro",
+];
 /// Rule-set keys Rulebearing adds (inside `summary.ruleSetUsed`): the element, slice and diagram
 /// rules.
 pub const RULE_SET_ADDITIONS: &[&str] = &["elements", "slices", "diagrams"];
@@ -88,6 +105,13 @@ pub fn strip(result: &mut Value) {
     });
     if let Some(summary) = result.get_mut("summary") {
         remove(summary, SUMMARY_ADDITIONS);
+        remove(summary, SUMMARY_AHEAD_OF_PIN);
+        if let Some(options) = summary.get_mut("optionsUsed") {
+            remove(options, OPTIONS_AHEAD_OF_PIN);
+            if let Some(markdown) = options.pointer_mut("/reporterOptions/markdown") {
+                remove(markdown, MARKDOWN_AHEAD_OF_PIN);
+            }
+        }
         if let Some(Value::Array(violations)) = summary.get_mut("violations") {
             violations.retain(|v| {
                 let rule = v
@@ -128,6 +152,32 @@ pub fn render(result: &Value, strict_schema: bool) -> Rendered {
     Rendered {
         output,
         exit_code: 0,
+    }
+}
+
+#[cfg(test)]
+mod ahead_of_the_pin {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn strict_schema_removes_what_the_pinned_schema_does_not_know() {
+        let mut result = json!({ "summary": {
+            "error": 1, "baselineSize": 2, "baselineStale": 1, "advisedExitCode": 1,
+            "optionsUsed": {
+                "maxDepth": 1, "baseline": { "mode": "full" }, "ignoreKnown": true,
+                "detectImportsInAmbientModules": false,
+                "reporterOptions": { "markdown": { "title": "t", "showStaleBaselineDetails": true,
+                    "staleBaselineHeader": "h", "collapseStaleBaseline": true,
+                    "collapseStaleBaselineMessage": "m", "staleBaselineIntro": "i" } },
+            },
+        } });
+        strip(&mut result);
+        assert_eq!(
+            result,
+            json!({ "summary": { "error": 1, "optionsUsed": { "maxDepth": 1,
+                "reporterOptions": { "markdown": { "title": "t" } } } } })
+        );
     }
 }
 

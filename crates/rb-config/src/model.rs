@@ -56,6 +56,9 @@ pub struct Config {
     /// `options.knownViolations`, read path only in wave 1
     /// ([Wave 1 plan § 1.6](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#16-decisions-applied-and-decisions-to-make)).
     pub known_violations: Vec<KnownViolation>,
+    /// Whether a known-violations list was given, empty or not: `summary.baselineSize` is
+    /// written then, as upstream writes it for any `knownViolations` array.
+    pub known_violations_given: bool,
     /// The front-end that read the root file.
     pub compat: CompatMode,
     /// The file the configuration came from, when it came from a file.
@@ -187,9 +190,15 @@ pub struct Options {
     /// `outputTo`, when a config pins one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub output_to: Option<String>,
-    /// `baseline` (`mode`, `staleEntriesSeverity`), accepted and recorded (wave 2).
+    /// `baseline`: the default baseline mode and the severity of stale entries
+    /// ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub baseline: Option<Value>,
+    pub baseline: Option<BaselineOptions>,
+    /// `ignoreKnown`: `false` keeps known violations at their rule's severity while still
+    /// counting which entries are stale, as upstream's `softenKnownViolations` does. Absent means
+    /// the known violations apply.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ignore_known: Option<bool>,
     /// `affected`: `true` for the changes since `main`, a revision, or `false`. dependency-cruiser
     /// reads it from the command line only and ignores it in a configuration; a native
     /// configuration applies it as `--affected` would (`rb-cli`'s `affected` module). Never in
@@ -202,6 +211,35 @@ pub struct Options {
     /// reports `webpackConfig` as written, as upstream does.
     #[serde(skip)]
     pub webpack_config_json: Option<Value>,
+}
+
+/// `options.baseline`: how the baseline is updated, and what a stale entry weighs
+/// ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md),
+/// [ADR-0037](../../../docs/adr/0037-baseline-modes.md),
+/// [FR-CFG-01](../../../docs/prd.md#fr-cfg-01)).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct BaselineOptions {
+    /// What a baseline holds after an update: the `baseline` reporter and the default of
+    /// `rulebearing baseline --baseline-mode`. Default: `full`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mode: Option<BaselineMode>,
+    /// The severity of a stale baseline entry. `error` adds each one to
+    /// `summary.advisedExitCode`. Default: `warn`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stale_entries_severity: Option<Severity>,
+}
+
+/// `options.baseline.mode`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum BaselineMode {
+    /// Every current violation.
+    Full,
+    /// The baseline less the entries no violation matches; never adds one.
+    ShrinkOnly,
+    /// The baseline's entries, unchanged in content.
+    Format,
 }
 
 /// `options.cache` after normalisation: off (`false`, or `--no-cache`), or the folder, strategy

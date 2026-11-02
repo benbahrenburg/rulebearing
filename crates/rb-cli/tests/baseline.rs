@@ -560,3 +560,139 @@ fn element_violations_take_the_same_baseline() -> Result<(), Box<dyn Error>> {
     let _ = std::fs::remove_dir_all(&dir);
     Ok(())
 }
+
+/// `options.baseline`, `ignoreKnown` and the markdown table act: plan 0011 sub-wave 11A, ADR-0080.
+mod options_of_18_7 {
+    use super::*;
+
+    const ONE: &str = r#"{ "type": "dependency", "from": "src/domain/model.ts", "to": "src/web/view.ts",
+        "rule": { "name": "domain-not-to-web", "severity": "error" } }"#;
+    const GONE: &str = r#"{ "type": "dependency", "from": "src/gone.ts", "to": "src/web/view.ts",
+        "rule": { "name": "domain-not-to-web", "severity": "error" } }"#;
+
+    fn config(options: &str) -> String {
+        format!(
+            r#"{{ "forbidden": [{{ "name": "domain-not-to-web", "severity": "error",
+                   "from": {{ "path": "^src/domain/" }}, "to": {{ "path": "^src/web/" }} }}],
+                 "options": {{ "tsPreCompilationDeps": true, "knownViolations": [{ONE}, {GONE}]{options} }} }}"#
+        )
+    }
+
+    fn summary(dir: &Path, args: &[&str]) -> Result<Value, Box<dyn Error>> {
+        let out = run(dir, &[&["cruise", "-T", "json", "src"], args].concat())?;
+        let result: Value = serde_json::from_slice(&out.stdout)?;
+        Ok(result["summary"].clone())
+    }
+
+    #[test]
+    fn the_summary_counts_and_the_stale_severity() -> Result<(), Box<dyn Error>> {
+        let warn = tree("stale-warn", &config(""))?;
+        let found = summary(&warn, &[])?;
+        assert_eq!(
+            (
+                &found["error"],
+                &found["baselineSize"],
+                &found["baselineStale"],
+                &found["advisedExitCode"]
+            ),
+            (&json!(1), &json!(2), &json!(1), &json!(1))
+        );
+        let error = tree(
+            "stale-error",
+            &config(r#", "baseline": { "staleEntriesSeverity": "error" }"#),
+        )?;
+        let found = summary(&error, &[])?;
+        assert_eq!(found["advisedExitCode"], 2);
+        assert_eq!(
+            found["optionsUsed"]["baseline"],
+            json!({ "staleEntriesSeverity": "error" })
+        );
+        let first = run(&error, &["cruise", "-T", "json", "src"])?.stdout;
+        assert_eq!(first, run(&error, &["cruise", "-T", "json", "src"])?.stdout);
+        Ok(())
+    }
+
+    #[test]
+    fn ignore_known_false_softens_nothing_and_a_flag_overrides_it() -> Result<(), Box<dyn Error>> {
+        let dir = tree("ignore-false", &config(r#", "ignoreKnown": false"#))?;
+        let found = summary(&dir, &[])?;
+        assert_eq!((&found["error"], &found["ignore"]), (&json!(2), &json!(0)));
+        assert_eq!(found["baselineStale"], 1);
+        assert_eq!(found["optionsUsed"]["ignoreKnown"], false);
+        std::fs::write(dir.join("k.json"), format!("[{ONE}]"))?;
+        let found = summary(&dir, &["--ignore-known", "k.json"])?;
+        assert_eq!((&found["error"], &found["ignore"]), (&json!(1), &json!(1)));
+        assert_eq!(found["optionsUsed"]["ignoreKnown"], true);
+        let found = summary(&dir, &["--no-ignore-known"])?;
+        assert_eq!(found["optionsUsed"]["ignoreKnown"], false);
+        assert!(found.get("baselineSize").is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn the_mode_reaches_the_reporter_and_the_subcommand() -> Result<(), Box<dyn Error>> {
+        let dir = tree(
+            "mode",
+            &config(r#", "baseline": { "mode": "shrink-only" }"#),
+        )?;
+        let out = run(&dir, &["cruise", "-T", "baseline", "src"])?;
+        let kept: Value = serde_json::from_slice(&out.stdout)?;
+        assert_eq!(kept.as_array().map(Vec::len), Some(1));
+        assert_eq!(kept[0]["from"], "src/domain/model.ts");
+        // `rulebearing baseline` takes the configured mode: shrink-only fails on the stale entry.
+        let shrunk = run(&dir, &["baseline", "src", "-f", "-"])?;
+        assert_eq!(shrunk.status.code(), Some(1), "{}", stderr(&shrunk));
+        // The flag wins.
+        let full = run(
+            &dir,
+            &["baseline", "src", "--baseline-mode", "full", "-f", "-"],
+        )?;
+        assert_eq!(full.status.code(), Some(0), "{}", stderr(&full));
+        Ok(())
+    }
+
+    #[test]
+    fn the_markdown_table_lists_the_stale_entry() -> Result<(), Box<dyn Error>> {
+        let dir = tree(
+            "markdown",
+            &config(
+                r#", "reporterOptions": { "markdown": { "staleBaselineHeader": "HEADER", "collapseStaleBaseline": false, "staleBaselineIntro": "INTRO" } }"#,
+            ),
+        )?;
+        let out = run(&dir, &["cruise", "-T", "markdown", "src"])?;
+        let text = String::from_utf8_lossy(&out.stdout);
+        assert!(text.contains("**1** stale entries in baseline"), "{text}");
+        assert!(
+            text.contains("HEADER\n\nINTRO\n\n|violated rule|module|to|"),
+            "{text}"
+        );
+        assert!(text.contains("src/gone.ts"), "{text}");
+        Ok(())
+    }
+
+    #[test]
+    fn ambient_modules_act_and_miss_the_cache() -> Result<(), Box<dyn Error>> {
+        let dir = tree("ambient", &config(""))?;
+        std::fs::write(
+            dir.join("src/types.d.ts"),
+            "declare module \"x\" { import { w } from \"./web/view\"; }\n",
+        )?;
+        let dependencies = |dir: &Path, name: &str| -> Result<usize, Box<dyn Error>> {
+            let out = run(dir, &["cruise", "-T", "json", "src", "--cache", name])?;
+            let result: Value = serde_json::from_slice(&out.stdout)?;
+            let module = result["modules"]
+                .as_array()
+                .and_then(|m| m.iter().find(|m| m["source"] == "src/types.d.ts"))
+                .cloned()
+                .unwrap_or(Value::Null);
+            Ok(module["dependencies"].as_array().map_or(0, Vec::len))
+        };
+        assert_eq!(dependencies(&dir, ".cache")?, 0);
+        std::fs::write(
+            dir.join(".dependency-cruiser.json"),
+            config(r#", "detectImportsInAmbientModules": true"#),
+        )?;
+        assert_eq!(dependencies(&dir, ".cache")?, 1);
+        Ok(())
+    }
+}

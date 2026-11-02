@@ -109,12 +109,21 @@ The top level holds `$schema`, `extends`, `defines`, `languages`, `options`, `ru
 | `rules.independence` | A pattern with one capturing group; a module in one group may not import a module in another |
 | `rules.ratchets` | A count of direct edges that may only fall, against a budget file `{ "ceiling": n }` ([ADR-0029](adr/0029-ratchets-enforced-by-cruise-and-reported-in-the-summary.md)) |
 | `defines.<name>` | A value read from a JSON file (`fromJson`), selected with dot-separated keys, `[*]` and `[n]` (`select`), escaped, and joined with `joinWith` (default `\|`); `${name}` in any pattern is replaced by it |
-| `options` | Everything else of dependency-cruiser's `options`, including `knownViolations` |
+| `options` | Everything else of dependency-cruiser's `options`, including `knownViolations`, `ignoreKnown` and `baseline` |
 | `allowEmpty` | Rules and ratchets allowed to match nothing, by name (`allowed[N]` for the Nth `allowed` entry), including rules from an extended dependency-cruiser file, which cannot carry the key itself. A name that is no rule is an error, so an exception cannot outlive its rule ([ADR-0032](adr/0032-liveness-follows-the-configuration-format.md)) |
 
 `rulebearing config expand FILE` prints a native file with `defines` substituted and the shorthands expanded into the rules they stand for.
 
 **`webpackConfig`** (`fileName`, `env`, `arguments`, or `--webpack-config [FILE]`) is evaluated in the same sandbox as a JavaScript configuration, or by Node under `--config-via-node`. A function-shaped configuration is called with `env` and `arguments`, an array's first element is taken, and the `resolve` block's `alias`, `aliasFields`, `conditionNames`, `exportsFields`, `extensions`, `mainFields`, `mainFiles`, `modules` and `symlinks` reach the resolver, winning over `enhancedResolveOptions` as they do in dependency-cruiser; any other key is named in a warning. A configuration that loads webpack plugins from `node_modules` needs Node: evaluate it elsewhere and pass the JSON (the configuration, or its `resolve` block) with `--webpack-config-json FILE`.
+
+**Baselines** ([ADR-0080](adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
+
+| Option | What it does |
+| --- | --- |
+| `ignoreKnown` | `false` keeps known violations at their rule's severity and applies no `expires` date; stale entries are still counted. `--ignore-known` and `--no-ignore-known` set it |
+| `baseline.mode` | `full` (the default), `shrink-only` or `format`: what the `baseline` reporter holds, and the default of `rulebearing baseline --baseline-mode` |
+| `baseline.staleEntriesSeverity` | `error`, `warn` (the default), `info` or `ignore`. `error` adds each stale entry to `summary.advisedExitCode`. The gating reporters exit with that field from sub-wave 11B of plan 0011; until then they exit on the error count |
+| `detectImportsInAmbientModules` | `true` also reads imports inside `declare module`, `declare global` and namespace blocks, with the `tsc` parser behaviour. Default `false` |
 
 **Markdown fences.** In a native file, listing `.md` in `extraExtensionsToScan` also reads the `js`, `ts`, `jsx`, `tsx`, `javascript` and `typescript` code fences of those files, with each dependency's line and column pointing into the Markdown. A dependency-cruiser file keeps dependency-cruiser's behaviour, which never reads a file of `extraExtensionsToScan` ([ADR-0036](adr/0036-markdown-fences-follow-the-configuration-format.md)).
 

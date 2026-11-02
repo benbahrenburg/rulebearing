@@ -658,6 +658,7 @@
     "warn": 1,
     "info": 0,
     "ignore": 0,
+    "advisedExitCode": 4,
     "totalCruised": 11,
     "totalDependenciesCruised": 11,
     "ruleSetUsed": {
@@ -702,6 +703,7 @@
     "optionsUsed": {
       "baseDir": "/playground",
       "combinedDependencies": false,
+      "detectImportsInAmbientModules": false,
       "detectJSDocImports": false,
       "detectProcessBuiltinModuleCalls": false,
       "exoticRequireStrings": [],

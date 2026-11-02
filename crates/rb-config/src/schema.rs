@@ -20,8 +20,8 @@ use crate::capability::{Capability, capability};
 use crate::elements::{Concept, Side, VOCABULARY, ValueKind, spellings, split_key};
 
 use crate::model::{
-    Define, FilterOption, GraphFilter, IndependenceShorthand, KnownViolation, LayersShorthand,
-    Ratchet, Rule, Telemetry,
+    BaselineOptions, Define, FilterOption, GraphFilter, IndependenceShorthand, KnownViolation,
+    LayersShorthand, Ratchet, Rule, Telemetry,
 };
 
 /// A native configuration file: `rulebearing.yaml`, `.json`, `.jsonc` or `.toml`.
@@ -135,7 +135,7 @@ pub struct OptionsSchema {
     pub progress: Option<Value>,
     /// Per-reporter settings.
     #[serde(default)]
-    pub reporter_options: Option<Value>,
+    pub reporter_options: Option<ReporterOptions>,
     /// The extraction cache (`--cache`): `true` for the default folder (`.graph/cache`), a
     /// folder, `false` for off, or `{ folder, strategy, compress }`.
     #[serde(default)]
@@ -143,6 +143,48 @@ pub struct OptionsSchema {
     /// Violations to report at a lower severity, keyed by stable id or by rule, from and to.
     #[serde(default)]
     pub known_violations: Option<Vec<KnownViolation>>,
+    /// `false` keeps known violations at their rule's severity; stale entries are still counted.
+    #[serde(default)]
+    pub ignore_known: Option<bool>,
+    /// The default baseline mode and the severity of stale baseline entries.
+    #[serde(default)]
+    pub baseline: Option<BaselineOptions>,
+}
+
+/// `options.reporterOptions`: the `markdown` section typed for its stale-baseline keys, every
+/// other section and key as the reporter reads it.
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct ReporterOptions {
+    /// `markdown`.
+    #[serde(default)]
+    pub markdown: Option<MarkdownReporterOptions>,
+    /// The other reporters' sections.
+    #[serde(flatten)]
+    pub others: BTreeMap<String, Value>,
+}
+
+/// `options.reporterOptions.markdown`'s stale-baseline table, and the reporter's other keys.
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct MarkdownReporterOptions {
+    /// Whether to list stale baseline entries. Default: `true`.
+    #[serde(default)]
+    pub show_stale_baseline_details: Option<bool>,
+    /// The heading above the stale baseline entries.
+    #[serde(default)]
+    pub stale_baseline_header: Option<String>,
+    /// Whether the stale baseline entries sit in a `<details>` block. Default: `true`.
+    #[serde(default)]
+    pub collapse_stale_baseline: Option<bool>,
+    /// The `<summary>` text of that block.
+    #[serde(default)]
+    pub collapse_stale_baseline_message: Option<String>,
+    /// The text before the stale baseline entries.
+    #[serde(default)]
+    pub stale_baseline_intro: Option<String>,
+    /// The reporter's other keys.
+    #[serde(flatten)]
+    pub others: BTreeMap<String, Value>,
 }
 
 /// `options.cache` in any of its forms.

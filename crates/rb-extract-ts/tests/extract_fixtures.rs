@@ -175,6 +175,7 @@ const EXTRACTION_KEYS: &[&str] = &[
     "parser",
     "exoticRequireStrings",
     "detectJSDocImports",
+    "detectImportsInAmbientModules",
     "detectProcessBuiltinModuleCalls",
     "preserveSymlinks",
     "combinedDependencies",
@@ -345,6 +346,10 @@ fn walk_case(
             .unwrap_or(false),
         detect_process_builtin_module_calls: input
             .get("detectProcessBuiltinModuleCalls")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+        detect_imports_in_ambient_modules: input
+            .get("detectImportsInAmbientModules")
             .and_then(Value::as_bool)
             .unwrap_or(false),
     };
