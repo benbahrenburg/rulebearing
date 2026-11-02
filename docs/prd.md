@@ -243,7 +243,7 @@ Source: [design § The native format](artifacts/design.md#the-native-format), [�
 
 Acceptance:
 - `err-long` prints the `fix` under each finding; fixture in `rb-report/tests`.
-- A rule with `expires` set to yesterday exits 2 with the rule named.
+- A rule with `expires` set to yesterday counts as one error, so alone it exits 1 with the rule named ([ADR-0030](adr/0030-the-reporter-decides-the-error-count-exit.md), [ADR-0031](adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)).
 - `--require-comment-token` on the reference monorepo's config passes; on a config with one untokened rule exits 3.
 
 Source: [design § Rule metadata that says what to do](artifacts/design.md#rule-metadata-that-says-what-to-do) | Wave: 1 | ADRs: [0021](adr/0021-agent-surface-cli-first.md)
