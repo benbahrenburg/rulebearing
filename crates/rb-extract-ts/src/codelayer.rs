@@ -84,6 +84,7 @@ use rb_model::{
 use serde::{Deserialize, Serialize};
 
 use crate::pipeline::Lines;
+use crate::walk::js_text;
 use rayon::prelude::*;
 
 /// What an import binds.
@@ -348,7 +349,8 @@ fn member_name(key: &PropertyKey<'_>, computed: bool) -> Option<String> {
     if computed && !matches!(key, PropertyKey::StringLiteral(_)) {
         return None;
     }
-    key.static_name().map(std::borrow::Cow::into_owned)
+    key.static_name()
+        .map(|name| js_text!(name.as_js_str()).into_owned())
 }
 
 /// The first pass: what the file declares, imports and exports.
@@ -372,7 +374,7 @@ impl Index {
         for statement in body {
             match statement {
                 Statement::ImportDeclaration(import) => {
-                    let specifier = import.source.value.to_string();
+                    let specifier = js_text!(import.source.value).into_owned();
                     for binding in import.specifiers.iter().flatten() {
                         let (local, imported) = match binding {
                             ImportDeclarationSpecifier::ImportSpecifier(s) => {
@@ -395,7 +397,10 @@ impl Index {
                     {
                         self.imports.insert(
                             import.id.name.to_string(),
-                            (reference.expression.value.to_string(), Imported::Module),
+                            (
+                                js_text!(reference.expression.value).into_owned(),
+                                Imported::Module,
+                            ),
                         );
                     }
                 }
@@ -416,7 +421,7 @@ impl Index {
                         if !is_require {
                             continue;
                         }
-                        let specifier = specifier.value.to_string();
+                        let specifier = js_text!(specifier.value).into_owned();
                         match &declarator.id {
                             BindingPattern::BindingIdentifier(id) => {
                                 self.imports
@@ -432,7 +437,10 @@ impl Index {
                                     };
                                     self.imports.insert(
                                         local.to_string(),
-                                        (specifier.clone(), Imported::Named(key.into_owned())),
+                                        (
+                                            specifier.clone(),
+                                            Imported::Named(js_text!(key.as_js_str()).into_owned()),
+                                        ),
                                     );
                                 }
                             }
@@ -575,7 +583,7 @@ impl Index {
                     }
                 }
                 Statement::ExportFromDeclaration(export) if prefix.is_none() => {
-                    let from = export.source.value.to_string();
+                    let from = js_text!(export.source.value).into_owned();
                     for specifier in &export.specifiers {
                         self.exports.push(Export::From {
                             exported: specifier.exported.name().to_string(),
@@ -585,7 +593,7 @@ impl Index {
                     }
                 }
                 Statement::ExportAllDeclaration(export) if prefix.is_none() => {
-                    let specifier = export.source.value.to_string();
+                    let specifier = js_text!(export.source.value).into_owned();
                     self.exports.push(match &export.exported {
                         Some(name) => Export::From {
                             exported: name.name().to_string(),
@@ -653,7 +661,8 @@ impl Index {
                         if let (Some(key), Some(local)) =
                             (property.key.static_name(), identifier(&property.value))
                         {
-                            self.local_specifiers.push((local, key.into_owned()));
+                            self.local_specifiers
+                                .push((local, js_text!(key.as_js_str()).into_owned()));
                         }
                     }
                 }
@@ -895,7 +904,7 @@ impl<'s> Collector<'s> {
     /// written, anything else its source text.
     fn literal(&self, argument: &Argument<'_>) -> String {
         match argument {
-            Argument::StringLiteral(literal) => literal.value.to_string(),
+            Argument::StringLiteral(literal) => js_text!(literal.value).into_owned(),
             Argument::BooleanLiteral(literal) => literal.value.to_string(),
             other => self.text(other.span()),
         }

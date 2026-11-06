@@ -8,7 +8,7 @@
 #   site/build.sh [out-dir]          # RB_SCHEMA_REF=vX.Y.Z picks the schemas' release tag;
 #                                    # by default the highest vX.Y.Z tag in the checkout
 #
-# Needs: the wasm32-unknown-unknown target, wasm-bindgen 0.2.128 (the version the workspace pins),
+# Needs: the wasm32-unknown-unknown target, wasm-bindgen 0.2.130 (the version the workspace pins),
 # jq, Node 22 and `npm ci` at the repository root.
 # Decisions: docs/adr/0072-the-docs-site-builds-from-docs-and-serves-the-released-schemas.md,
 # docs/adr/0074-the-cookbook-question-pages-are-fixtures-beside-the-guard-catalogue.md.

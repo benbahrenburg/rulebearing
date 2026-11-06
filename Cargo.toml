@@ -67,13 +67,13 @@ jsonschema = { version = "0.58", default-features = false }
 
 # The TypeScript extractor (plan 0000, Step 8). oxc is pinned to exact versions and bumped only by a
 # pull request that re-runs conformance gate 1 (docs/adr/0012-oxc-for-typescript.md). All MIT.
-oxc_allocator = "=0.153.0"
-oxc_ast = "=0.153.0"
-oxc_ast_visit = "=0.153.0"
-oxc_diagnostics = "=0.153.0"
-oxc_parser = "=0.153.0"
-oxc_semantic = "=0.153.0"
-oxc_span = "=0.153.0"
+oxc_allocator = "=0.156.0"
+oxc_ast = "=0.156.0"
+oxc_ast_visit = "=0.156.0"
+oxc_diagnostics = "=0.156.0"
+oxc_parser = "=0.156.0"
+oxc_semantic = "=0.156.0"
+oxc_span = "=0.156.0"
 # `yarn_pnp` resolves through a Yarn Plug'n'Play manifest for `externalModuleResolutionStrategy:
 # yarn-pnp` (plan 0001, sub-wave 1C); it adds the BSD-2-Clause `pnp` crate.
 oxc_resolver = { version = "=11.24.3", features = ["yarn_pnp"] }
@@ -88,8 +88,8 @@ rayon = "1"
 # Wave 1 (docs/plans/implemented/0001-wave-1-typescript-parity.md § 1.8). All MIT or MIT/Apache-2.0.
 # The configuration evaluator is QuickJS, sandboxed (docs/adr/0006-embedded-quickjs-config-evaluator.md).
 # The playground's wasm facade (plan 0004, Step 2): rb-wasm only, on wasm32 only.
-wasm-bindgen = "0.2.128"
-js-sys = "0.3.105"
+wasm-bindgen = "=0.2.130"
+js-sys = "0.3.107"
 rquickjs = { version = "0.14", default-features = false, features = ["std", "loader"] }
 # Configuration formats (docs/adr/0005-native-config-superset-and-compat.md); YAML through
 # serde-saphyr, safe Rust (docs/adr/0079-yaml-is-parsed-with-serde-saphyr.md).
@@ -119,8 +119,8 @@ tree-sitter-c-sharp = "=0.23.5"
 
 # `rb-node`, the Node binding (plan 0003, Step 22): the N-API glue and its build script. Pinned to
 # exact versions. All MIT.
-napi = { version = "=3.15.0", default-features = false, features = ["napi8", "serde-json"] }
-napi-derive = "=3.6.13"
+napi = { version = "=3.16.0", default-features = false, features = ["napi8", "serde-json"] }
+napi-derive = "=3.7.0"
 napi-build = "=2.6.0"
 
 [workspace.lints.rust]
