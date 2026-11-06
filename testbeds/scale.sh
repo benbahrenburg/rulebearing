@@ -14,6 +14,11 @@
 # median kept as rulebearing-source-timing.json beside the compiled one: the scale table
 # (testbeds/bench/scale_table.py, plan 0003 Step 24) has a row for each mode.
 #
+# With $RULEBEARING_BASELINE_BIN, the baseline build is cruised after each run on this runner
+# (median_cruise in lib.sh), its medians kept as baseline-timing.json and, for a .NET row,
+# baseline-source-timing.json. The scale table's regression check compares each row with that
+# pair, because hosted runners differ by more than 20% on the same binary from one night to the next.
+#
 # Writes <out-dir>/<owner>__<repo>/result.json (the shape testbeds/run.sh writes) with status:
 #   ok      the cruises completed; the detail counts the modules per language
 #   failed  init could not write a configuration, or a cruise did not complete (see the logs)
@@ -56,7 +61,10 @@ if ! median_cruise --output-type json "${paths[@]}"; then
   exit 0
 fi
 if [[ " $(manifest_field languages) " == *dotnet* ]]; then
+  # median_cruise clears and rewrites the baseline's files, so the compiled pass's are set aside.
   mv "$out/rulebearing-timing.json" "$out/rulebearing-compiled-timing.json"
+  [ -f "$out/baseline-timing.json" ] && mv "$out/baseline-timing.json" "$out/baseline-compiled-timing.json"
+  [ -f "$out/baseline.err" ] && mv "$out/baseline.err" "$out/baseline-compiled.err"
   if ! median_cruise --output-type json --mode source "${paths[@]}"; then
     mv "$out/rulebearing-compiled-timing.json" "$out/rulebearing-timing.json"
     row_result failed "a source-mode cruise did not complete (see cruise.out.time)"
@@ -64,6 +72,10 @@ if [[ " $(manifest_field languages) " == *dotnet* ]]; then
   fi
   mv "$out/rulebearing-timing.json" "$out/rulebearing-source-timing.json"
   mv "$out/rulebearing-compiled-timing.json" "$out/rulebearing-timing.json"
+  [ -f "$out/baseline-timing.json" ] && mv "$out/baseline-timing.json" "$out/baseline-source-timing.json"
+  [ -f "$out/baseline.err" ] && mv "$out/baseline.err" "$out/baseline-source.err"
+  [ -f "$out/baseline-compiled-timing.json" ] && mv "$out/baseline-compiled-timing.json" "$out/baseline-timing.json"
+  [ -f "$out/baseline-compiled.err" ] && mv "$out/baseline-compiled.err" "$out/baseline.err"
 fi
 modules="$(python3 -c '
 import collections, json, sys

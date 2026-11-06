@@ -112,9 +112,19 @@ json.dump({"wall_seconds": round(float(sys.argv[2]) - float(sys.argv[1]), 2),
 # median is kept as $out/rulebearing-timing.json. Every run must succeed: the first that exits
 # non-zero stops the loop and its exit code is returned, with its output in $out/cruise.out, so a
 # failing first or second run is never hidden by a third that passes. Returns 0 when all three do.
+#
+# With $RULEBEARING_BASELINE_BIN (the build behind the previous committed summary, its commit in
+# $RULEBEARING_BASELINE_SHA), each run is followed by one of the baseline with the same arguments,
+# and the baseline's median is kept as $out/baseline-timing.json with its commit, so the scale
+# table's regression check compares two builds timed on one runner, as testbeds/run.sh does for
+# check-regression.sh. A baseline run that fails drops the baseline for this call, says why in
+# $out/baseline.err, and never costs the row its own time.
 median_cruise() { # cruise arguments...
   : "${out:?}" "${checkout:?}" "${bin:?}"
-  local run status=0
+  local run status=0 baseline="${RULEBEARING_BASELINE_BIN:-}"
+  [ -n "$baseline" ] && [ ! -x "$baseline" ] && baseline=""
+  rm -f "$out"/cruise-timing-*.json "$out"/baseline-cruise-timing-*.json "$out/baseline-timing.json" \
+    "$out/baseline.err" "$out/baseline.out.time"
   for run in 1 2 3; do
     timed "$out/cruise-timing-$run.json" "$checkout" "$out/cruise.out" "$bin" cruise --no-progress "$@"
     status=$?
@@ -122,13 +132,28 @@ median_cruise() { # cruise arguments...
       echo "median_cruise: run $run of 3 exited $status" >&2
       return "$status"
     fi
+    if [ -n "$baseline" ] &&
+       ! timed "$out/baseline-cruise-timing-$run.json" "$checkout" "$out/baseline.out" \
+         "$baseline" cruise --no-progress "$@"; then
+      cp "$out/baseline.out.time" "$out/baseline.err"
+      rm -f "$out"/baseline-cruise-timing-*.json
+      baseline=""
+    fi
   done
-  python3 - "$out" <<'PY'
+  rm -f "$out/baseline.out"
+  python3 - "$out" "${RULEBEARING_BASELINE_SHA:-}" <<'PY'
 import json, os, sys
-out = sys.argv[1]
-runs = sorted((json.load(open(os.path.join(out, f"cruise-timing-{n}.json"))) for n in (1, 2, 3)),
-              key=lambda r: r["wall_seconds"])
-json.dump(runs[1], open(os.path.join(out, "rulebearing-timing.json"), "w"), indent=2)
+out, baseline_sha = sys.argv[1], sys.argv[2]
+def median(prefix):
+    paths = [os.path.join(out, f"{prefix}-timing-{n}.json") for n in (1, 2, 3)]
+    if not all(os.path.exists(p) for p in paths):
+        return None
+    return sorted((json.load(open(p)) for p in paths), key=lambda r: r["wall_seconds"])[1]
+json.dump(median("cruise"), open(os.path.join(out, "rulebearing-timing.json"), "w"), indent=2)
+baseline = median("baseline-cruise")
+if baseline:
+    json.dump({**baseline, "sha": baseline_sha},
+              open(os.path.join(out, "baseline-timing.json"), "w"), indent=2)
 PY
   return "$status"
 }
