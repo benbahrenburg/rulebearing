@@ -211,7 +211,9 @@ jobs:
   # The scale rows (design § Test beds, item 3; plan 0002, Step 15): each is built, given the
   # configuration init writes, and cruised three times (testbeds/scale.sh). The median is the row's
   # Rulebearing time, and the summary job's regression check fails the night when it grows by more
-  # than 20%. A row that cannot build or run is reported, as the incumbent rows are.
+  # than 20% against the baseline build, cruised after each run on this runner: two nights' times
+  # come from two runners, which differ by more than 20% on the same binary. A row that cannot
+  # build or run is reported, as the incumbent rows are.
   scale:
     name: scale ${{ matrix.repo }}
     needs: [build]
@@ -243,6 +245,11 @@ jobs:
           name: rulebearing-binary
           path: target/release
       - run: chmod +x target/release/rulebearing
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        continue-on-error: true
+        with:
+          name: rulebearing-baseline
+          path: target/baseline
       - id: slug
         env:
           REPO: ${{ matrix.repo }}
@@ -286,6 +293,12 @@ jobs:
             done
           ) &
           monitor=$!
+          if [ -f target/baseline/rulebearing ]; then
+            chmod +x target/baseline/rulebearing
+            export RULEBEARING_BASELINE_BIN="$PWD/target/baseline/rulebearing"
+            RULEBEARING_BASELINE_SHA="$(cat target/baseline/SHA)"
+            export RULEBEARING_BASELINE_SHA
+          fi
           status=0
           testbeds/scale.sh "$REPO" testbeds/out || status=$?
           kill "$monitor" 2> /dev/null || true
@@ -675,8 +688,9 @@ jobs:
             while IFS= read -r repo; do testbeds/run.sh "$repo" testbeds/out; done
       - run: node testbeds/summarise.mjs testbeds/out --layer5 target/conformance/layer5 --readme README.md
       - run: cat testbeds/out/summary.md >> "$GITHUB_STEP_SUMMARY"
-      # The scale table (plan 0003, Step 24): tonight's scale rows and the Stop-hook p95 against the
-      # committed testbeds/results/scale.json, written there and into the README. A regression
+      # The scale table (plan 0003, Step 24): tonight's scale rows, each compared with the baseline
+      # timed beside it on its runner, and the Stop-hook p95, written to testbeds/results/scale.json
+      # and into the README; rows that did not complete keep the committed file's. A regression
       # fails the night, after the table is published below.
       - id: scale
         if: always()

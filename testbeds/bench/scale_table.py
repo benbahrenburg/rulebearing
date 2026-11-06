@@ -10,15 +10,21 @@ docs/prd.md#nfr-perf-03.
   python3 testbeds/bench/scale_table.py measure --rows testbeds/out \
       --stop-hook testbeds/results/stop-hook.json --run <id>
       read tonight's rows (each <slug>/rulebearing-timing.json, and for a .NET row also
-      rulebearing-source-timing.json, from testbeds/scale.sh), compare them with the committed
-      testbeds/results/scale.json, and write scale.json and scale.md; exit 1 on a regression
+      rulebearing-source-timing.json, from testbeds/scale.sh), compare each with the baseline
+      timed beside it, carry the committed testbeds/results/scale.json's rows that did not
+      complete, and write scale.json and scale.md; exit 1 on a regression
   python3 testbeds/bench/scale_table.py --readme README.md   write the table between the markers
   python3 testbeds/bench/scale_table.py --check README.md    exit 1 when the README's is stale
 
 A row that did not complete tonight keeps its last measurement, marked with the run it came from,
 so the table never shows a gap as zero. A regression is a time or peak more than 20% above the
-previous published row's, and more than a floor (2 s, 100 MB), since hosted runners differ by a
-few seconds on the same binary. Standard library only.
+baseline's, and more than a floor (2 s, 100 MB). The baseline is the build behind the previous
+committed summary, cruised after each of tonight's runs on the same runner (baseline-timing.json,
+baseline-source-timing.json; median_cruise in testbeds/lib.sh), the pair testbeds/run.sh times
+for check-regression.sh. Two nights' times are never compared: hosted runners differ by more than
+20% on the same binary (n8n's median ran from 10.3 s to 14.5 s over five nights of one build). A
+row without a pair, the first night or a baseline that did not build or run, is not compared, and
+the output says so. Standard library only.
 """
 
 from __future__ import annotations
@@ -46,16 +52,19 @@ class Scale:
     repo: str
     mode: str
     timing: str
+    baseline: str
 
 
+DEFAULT = ("rulebearing-timing.json", "baseline-timing.json")
+SOURCE = ("rulebearing-source-timing.json", "baseline-source-timing.json")
 ROWS = (
-    Scale("n8n-io/n8n", "", "rulebearing-timing.json"),
-    Scale("grafana/grafana", "", "rulebearing-timing.json"),
-    Scale("elastic/kibana", "", "rulebearing-timing.json"),
-    Scale("dotnet/aspnetcore", "compiled", "rulebearing-timing.json"),
-    Scale("dotnet/aspnetcore", "source", "rulebearing-source-timing.json"),
-    Scale("jellyfin/jellyfin", "compiled", "rulebearing-timing.json"),
-    Scale("home-assistant/core", "", "rulebearing-timing.json"),
+    Scale("n8n-io/n8n", "", *DEFAULT),
+    Scale("grafana/grafana", "", *DEFAULT),
+    Scale("elastic/kibana", "", *DEFAULT),
+    Scale("dotnet/aspnetcore", "compiled", *DEFAULT),
+    Scale("dotnet/aspnetcore", "source", *SOURCE),
+    Scale("jellyfin/jellyfin", "compiled", *DEFAULT),
+    Scale("home-assistant/core", "", *DEFAULT),
 )
 
 
@@ -72,32 +81,46 @@ def load(path: Path) -> Any:  # noqa: ANN401 - JSON
         return None
 
 
+def megabytes(timing: dict[str, Any]) -> int | None:
+    """A timing's peak resident memory in MB, when it was measured."""
+    rss = timing.get("max_rss_kb")
+    return round(rss / 1024) if isinstance(rss, int) else None
+
+
 def measured(rows: Path, scale: Scale, run: str) -> dict[str, Any] | None:
-    """Tonight's measurement of a row, when it completed."""
+    """Tonight's measurement of a row, when it completed, with the baseline timed beside it."""
     folder = rows / scale.repo.replace("/", "__")
     result = load(folder / "result.json") or {}
     timing = load(folder / scale.timing)
     if result.get("status") != "ok" or not timing or timing.get("exit_code") != 0:
         return None
-    rss = timing.get("max_rss_kb")
-    return {
+    row: dict[str, Any] = {
         "repo": scale.repo,
         "mode": scale.mode,
         "sha": result.get("sha", ""),
         "detail": result.get("detail", ""),
         "seconds": timing["wall_seconds"],
-        "peakMb": round(rss / 1024) if isinstance(rss, int) else None,
+        "peakMb": megabytes(timing),
         "run": run,
     }
+    baseline = load(folder / scale.baseline)
+    if baseline and baseline.get("exit_code") == 0:
+        row["baseline"] = {
+            "sha": baseline.get("sha", ""),
+            "seconds": baseline["wall_seconds"],
+            "peakMb": megabytes(baseline),
+        }
+    return row
 
 
-def regressions(current: dict[str, Any], previous: dict[str, Any] | None) -> list[str]:
-    """What grew by more than the threshold and the floor against the previous row."""
-    if not previous or previous.get("sha") != current.get("sha"):
+def regressions(current: dict[str, Any]) -> list[str]:
+    """What grew by more than the threshold and the floor against the baseline on its runner."""
+    baseline = current.get("baseline")
+    if not baseline:
         return []
     found = []
     for field, floor, unit in (("seconds", FLOOR_SECONDS, "s"), ("peakMb", FLOOR_MB, "MB")):
-        now, before = current.get(field), previous.get(field)
+        now, before = current.get(field), baseline.get(field)
         if (
             isinstance(now, (int, float))
             and isinstance(before, (int, float))
@@ -105,8 +128,8 @@ def regressions(current: dict[str, Any], previous: dict[str, Any] | None) -> lis
             and now - before > floor
         ):
             found.append(
-                f"{key(current['repo'], current['mode'])}: {field} {now} {unit}, "
-                f"the previous row (run {previous.get('run', '?')}) {before} {unit}"
+                f"{key(current['repo'], current['mode'])}: {field} {now} {unit}, the baseline "
+                f"{str(baseline.get('sha', ''))[:12]} {before} {unit} on the same runner"
             )
     return found
 
@@ -114,20 +137,20 @@ def regressions(current: dict[str, Any], previous: dict[str, Any] | None) -> lis
 def measure(
     rows: Path, stop_hook: Path, run: str, previous: dict[str, Any]
 ) -> tuple[dict[str, Any], list[str]]:
-    """Tonight's table, carried rows marked, and the regressions against `previous`."""
+    """Tonight's table, rows carried from `previous` marked, and the regressions."""
     before = {key(r["repo"], r["mode"]): r for r in previous.get("rows", [])}
     table: list[dict[str, Any]] = []
     found: list[str] = []
     for scale in ROWS:
         now = measured(rows, scale, run)
-        last = before.get(key(scale.repo, scale.mode))
         if now is None:
+            last = before.get(key(scale.repo, scale.mode))
             if last is not None:
                 table.append({**last, "stale": True})
             else:
                 table.append({"repo": scale.repo, "mode": scale.mode, "stale": True})
             continue
-        found += regressions(now, last)
+        found += regressions(now)
         table.append(now)
     hook = load(stop_hook)
     document: dict[str, Any] = {"run": run, "rows": table}
@@ -225,7 +248,18 @@ def main(argv: list[str] | None = None) -> int:
         )
         for line in found:
             sys.stdout.write(f"::error::scale regression: {line}\n")
-        sys.stdout.write(f"scale: {len(document['rows'])} rows, {len(found)} regressed\n")
+        fresh = [r for r in document["rows"] if not r.get("stale")]
+        for row in fresh:
+            if "baseline" not in row:
+                sys.stdout.write(
+                    f"scale: {key(row['repo'], row['mode'])} has no baseline timed beside it; "
+                    "not compared\n"
+                )
+        compared = sum("baseline" in r for r in fresh)
+        sys.stdout.write(
+            f"scale: {len(document['rows'])} rows, {compared} compared with the baseline, "
+            f"{len(found)} regressed\n"
+        )
         return 1 if found else 0
     target = args.readme or args.check
     if target is None:
